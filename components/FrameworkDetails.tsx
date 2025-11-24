@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ComplianceFramework, ComplianceStatus, ViewState } from '../types';
-import { ArrowLeft, CheckCircle, Circle, FileText, Upload, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Circle, FileText, Upload, AlertTriangle, Loader2 } from 'lucide-react';
+import { classifyEvidence } from '../services/geminiService';
 
 interface FrameworkDetailsProps {
   framework: ComplianceFramework | undefined;
@@ -10,6 +11,9 @@ interface FrameworkDetailsProps {
 export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, onBack }) => {
   if (!framework) return <div>Framework not found</div>;
 
+  const [analyzingFile, setAnalyzingFile] = useState<string | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+
   const controls = [
     { id: 'c1', name: 'Access Control Policy', status: 'Compliant', evidence: 'policy_v2.pdf' },
     { id: 'c2', name: 'Data Encryption (At Rest)', status: 'Compliant', evidence: 'aws_config.json' },
@@ -17,6 +21,15 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     { id: 'c4', name: 'Vendor Risk Assessment', status: 'In Review', evidence: 'Pending approval' },
     { id: 'c5', name: 'Employee Training', status: 'Compliant', evidence: 'training_logs.csv' },
   ];
+
+  const handleMockUpload = async () => {
+    const filename = "penetration_test_2024.pdf";
+    setAnalyzingFile(filename);
+    setAnalysisResult(null);
+    const result = await classifyEvidence(filename);
+    setAnalysisResult(result);
+    setAnalyzingFile(null);
+  };
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -57,10 +70,27 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         </div>
       </div>
 
+      {/* AI Analysis Result Toast */}
+      {analysisResult && (
+        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex items-center justify-between text-blue-800 animate-fadeIn">
+           <span className="font-medium">AI Analysis: File likely maps to "{analysisResult}"</span>
+           <button onClick={() => setAnalysisResult(null)} className="text-blue-500 hover:text-blue-700"><Circle size={16}/></button>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
           <h3 className="font-semibold text-gray-800">Controls & Evidence</h3>
-          <button className="text-sm bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50">Download Report</button>
+          <div className="flex space-x-2">
+            <button 
+              onClick={handleMockUpload} 
+              disabled={!!analyzingFile}
+              className="text-sm bg-brand-600 text-white px-3 py-1.5 rounded-lg hover:bg-brand-700 flex items-center shadow-sm"
+            >
+              {analyzingFile ? <Loader2 className="animate-spin mr-2" size={14}/> : <Upload className="mr-2" size={14}/>}
+              {analyzingFile ? 'AI Analyzing...' : 'Smart Upload'}
+            </button>
+          </div>
         </div>
         <div className="divide-y divide-gray-100">
           {controls.map((control) => (

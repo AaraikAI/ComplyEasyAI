@@ -11,8 +11,17 @@ import {
   Activity,
   Search,
   Bell,
-  Lock
+  Lock,
+  Sparkles,
+  Briefcase,
+  GitGraph,
+  Mail,
+  ShieldAlert,
+  Users,
+  Database,
+  LifeBuoy
 } from 'lucide-react';
+import { ComplianceChat } from './ComplianceChat';
 
 interface LayoutProps {
   currentView: ViewState;
@@ -30,13 +39,25 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
     { id: 'frameworks', label: 'Frameworks', icon: ShieldCheck, roles: ['admin', 'editor'], relatedViews: ['framework-details'] },
     { id: 'reports', label: 'Report Generator', icon: FileText, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'audit', label: 'Audit Trail', icon: Activity, roles: ['admin', 'editor'], relatedViews: [] },
-    { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin'], relatedViews: [] },
   ];
+
+  const aiTools = [
+    { id: 'ai-policy', label: 'Policy Generator', icon: Sparkles },
+    { id: 'ai-contract', label: 'Contract Analyzer', icon: Briefcase },
+    { id: 'ai-gap', label: 'Gap Analysis', icon: GitGraph },
+    { id: 'ai-rfp', label: 'RFP Responder', icon: FileText },
+    { id: 'ai-phishing', label: 'Phishing Sim', icon: Mail },
+    { id: 'ai-vendor', label: 'Vendor Risk', icon: ShieldAlert },
+    { id: 'ai-data-map', label: 'GDPR Mapper', icon: Database },
+    { id: 'ai-bcp', label: 'BCP Generator', icon: LifeBuoy },
+  ];
+
+  const settingsItem = { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin'], relatedViews: [] };
 
   if (!currentUser) return null;
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
@@ -50,6 +71,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
         fixed inset-y-0 left-0 z-30 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        flex flex-col
       `}>
         <div className="flex items-center justify-between p-6 border-b border-slate-700">
           <div className="flex items-center space-x-2">
@@ -63,31 +85,81 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
           </button>
         </div>
 
-        <nav className="p-4 space-y-1">
-          {navItems.filter(item => item.roles.includes(currentUser.role)).map((item) => {
-            const Icon = item.icon;
-            // Active if exact match OR if current view is a related sub-view
-            const isActive = currentView === item.id || item.relatedViews.includes(currentView);
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  onNavigate(item.id as ViewState);
-                  setSidebarOpen(false);
-                }}
-                className={`
-                  w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors cursor-pointer
-                  ${isActive ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
-                `}
-              >
-                <Icon size={20} />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            );
-          })}
+        <nav className="p-4 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+          {/* Main Nav */}
+          <div className="space-y-1">
+             <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Platform</p>
+             {navItems.filter(item => item.roles.includes(currentUser.role)).map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id || item.relatedViews.includes(currentView);
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    onNavigate(item.id as ViewState);
+                    setSidebarOpen(false);
+                  }}
+                  className={`
+                    w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors cursor-pointer
+                    ${isActive ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
+                  `}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* AI Tools Nav */}
+          <div className="space-y-1">
+             <p className="px-4 text-xs font-semibold text-brand-400 uppercase tracking-wider mb-2 flex items-center">
+                <Sparkles size={10} className="mr-1"/> AI Tools
+             </p>
+             {aiTools.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    onNavigate(item.id as ViewState);
+                    setSidebarOpen(false);
+                  }}
+                  className={`
+                    w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors cursor-pointer
+                    ${isActive ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
+                  `}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Admin Nav */}
+          {currentUser.role === 'admin' && (
+             <div className="space-y-1">
+                <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Admin</p>
+                <button
+                  onClick={() => {
+                    onNavigate('settings');
+                    setSidebarOpen(false);
+                  }}
+                  className={`
+                    w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors cursor-pointer
+                    ${currentView === 'settings' ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
+                  `}
+                >
+                  <Settings size={20} />
+                  <span className="font-medium">Settings</span>
+                </button>
+             </div>
+          )}
         </nav>
 
-        <div className="absolute bottom-0 w-full p-4 border-t border-slate-700">
+        <div className="p-4 border-t border-slate-700">
           <div className="mb-4 px-4 flex items-center space-x-2 text-xs text-green-400">
             <Lock size={12} />
             <span>Encrypted • Zero Trust</span>
@@ -103,7 +175,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Top Header */}
         <header className="bg-white border-b border-gray-200 flex items-center justify-between px-6 py-4">
           <div className="flex items-center">
@@ -114,7 +186,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
               <Menu size={24} />
             </button>
             <h1 className="text-2xl font-semibold text-gray-800 capitalize">
-              {currentView.replace('-', ' ')}
+              {currentView.replace('ai-', 'AI ').replace('-', ' ')}
             </h1>
           </div>
 
@@ -123,7 +195,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input 
                 type="text" 
-                placeholder="Search policies..." 
+                placeholder="Search..." 
                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-64 transition-shadow"
               />
             </div>
@@ -145,11 +217,14 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
         </header>
 
         {/* Scrollable Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          <div className="max-w-7xl mx-auto animate-fadeIn">
+        <main className="flex-1 overflow-y-auto p-6 bg-gray-50 relative">
+          <div className="max-w-7xl mx-auto animate-fadeIn pb-20">
             {children}
           </div>
         </main>
+        
+        {/* Global Chat Bot */}
+        <ComplianceChat />
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import { ComplianceFramework, ComplianceStatus, FrameworkType, RiskItem, AuditLog, User, Integration } from './types';
 
 export const MOCK_USERS: User[] = [
@@ -58,6 +59,7 @@ export const MOCK_RISKS: RiskItem[] = [
     description: 'Unencrypted S3 Bucket detected in production environment.',
     category: 'Infrastructure',
     detectedAt: '2 hours ago',
+    status: 'Open',
   },
   {
     id: 'r2',
@@ -65,6 +67,7 @@ export const MOCK_RISKS: RiskItem[] = [
     description: '3 employees have not completed mandatory security training.',
     category: 'Personnel',
     detectedAt: '1 day ago',
+    status: 'Open',
   },
   {
     id: 'r3',
@@ -72,6 +75,7 @@ export const MOCK_RISKS: RiskItem[] = [
     description: 'Vendor "AnalyticsCorp" DPA missing signature.',
     category: 'Vendor Management',
     detectedAt: '3 days ago',
+    status: 'Open',
   },
 ];
 

@@ -9,6 +9,14 @@ import { Frameworks } from './components/Frameworks';
 import { FrameworkDetails } from './components/FrameworkDetails';
 import { RiskManagement } from './components/RiskManagement';
 import { Settings } from './components/Settings';
+import { PolicyGenerator } from './components/AIFeatures/PolicyGenerator';
+import { ContractAnalyzer } from './components/AIFeatures/ContractAnalyzer';
+import { GapAnalysis } from './components/AIFeatures/GapAnalysis';
+import { RFPResponder } from './components/AIFeatures/RFPResponder';
+import { PhishingGenerator } from './components/AIFeatures/PhishingGenerator';
+import { VendorScorer } from './components/AIFeatures/VendorScorer';
+import { DataMapper } from './components/AIFeatures/DataMapper';
+import { BCPGenerator } from './components/AIFeatures/BCPGenerator';
 import { INITIAL_FRAMEWORKS } from './constants';
 
 const App: React.FC = () => {
@@ -74,8 +82,23 @@ const App: React.FC = () => {
         );
       case 'risks':
         return <RiskManagement onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-policy':
+        return <PolicyGenerator onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-contract':
+        return <ContractAnalyzer onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-gap':
+        return <GapAnalysis onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-rfp':
+        return <RFPResponder onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-phishing':
+        return <PhishingGenerator onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-vendor':
+        return <VendorScorer onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-data-map':
+        return <DataMapper onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-bcp':
+        return <BCPGenerator onBack={() => setCurrentView('dashboard')} />;
       case 'settings':
-        // RBAC Check for settings
         if (currentUser?.role !== 'admin') {
            return <div className="p-10 text-center text-red-500">Access Denied: You do not have permission to view Settings.</div>;
         }
