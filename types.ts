@@ -1,3 +1,4 @@
+
 export enum ComplianceStatus {
   COMPLIANT = 'Compliant',
   AT_RISK = 'At Risk',
@@ -31,6 +32,12 @@ export interface RiskItem {
   description: string;
   category: string;
   detectedAt: string;
+  status: 'Open' | 'In Progress' | 'Resolved' | 'Ignored';
+  assignedTo?: string; // User Name
+  assignedAvatar?: string;
+  aiPriorityScore?: number; // 0-100
+  aiRationale?: string;
+  mitigationPlan?: string;
 }
 
 export interface ComplianceFramework {
@@ -60,4 +67,27 @@ export interface Integration {
   icon: string;
 }
 
-export type ViewState = 'landing' | 'dashboard' | 'reports' | 'frameworks' | 'framework-details' | 'settings' | 'audit' | 'risks';
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: Date;
+}
+
+export type ViewState = 
+  | 'landing' 
+  | 'dashboard' 
+  | 'reports' 
+  | 'frameworks' 
+  | 'framework-details' 
+  | 'settings' 
+  | 'audit' 
+  | 'risks'
+  | 'ai-policy'
+  | 'ai-contract'
+  | 'ai-gap'
+  | 'ai-rfp'
+  | 'ai-phishing'
+  | 'ai-vendor'
+  | 'ai-data-map'
+  | 'ai-bcp';
