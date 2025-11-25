@@ -96,6 +96,7 @@ export interface ChatMessage {
 export type ViewState = 
   | 'landing' 
   | 'dashboard' 
+  | 'my-tasks'
   | 'reports' 
   | 'frameworks' 
   | 'framework-details' 

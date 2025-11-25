@@ -39,6 +39,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'editor', 'viewer'], relatedViews: ['risks'] },
+    { id: 'my-tasks', label: 'My Tasks', icon: CheckSquare, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'frameworks', label: 'Frameworks', icon: ShieldCheck, roles: ['admin', 'editor'], relatedViews: ['framework-details'] },
     { id: 'reports', label: 'Report Generator', icon: FileText, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'audit', label: 'Audit Trail', icon: Activity, roles: ['admin', 'editor'], relatedViews: [] },

@@ -10,6 +10,7 @@ import { AuditTrail } from './components/AuditTrail';
 import { Frameworks } from './components/Frameworks';
 import { FrameworkDetails } from './components/FrameworkDetails';
 import { RiskManagement } from './components/RiskManagement';
+import { MyTasks } from './components/MyTasks';
 import { Settings } from './components/Settings';
 import { PolicyGenerator } from './components/AIFeatures/PolicyGenerator';
 import { ContractAnalyzer } from './components/AIFeatures/ContractAnalyzer';
@@ -84,6 +85,8 @@ const MainApp: React.FC = () => {
         );
       case 'risks':
         return <RiskManagement onBack={() => setCurrentView('dashboard')} />;
+      case 'my-tasks':
+        return <MyTasks />;
       case 'ai-policy':
         return <PolicyGenerator onBack={() => setCurrentView('dashboard')} />;
       case 'ai-contract':
