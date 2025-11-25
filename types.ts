@@ -18,14 +18,27 @@ export enum FrameworkType {
 
 export type Role = 'admin' | 'editor' | 'viewer';
 
+// Database Schema: User
 export interface User {
   id: string;
   name: string;
   email: string;
   role: Role;
   avatar: string;
+  organizationId: string;
+  lastLogin?: string;
 }
 
+// Database Schema: Organization
+export interface Organization {
+  id: string;
+  name: string;
+  plan: 'Basic' | 'Pro' | 'Enterprise';
+  stripeCustomerId?: string;
+  subscriptionStatus?: 'active' | 'past_due' | 'canceled';
+}
+
+// Database Schema: Risk
 export interface RiskItem {
   id: string;
   severity: 'High' | 'Medium' | 'Low';
@@ -38,8 +51,10 @@ export interface RiskItem {
   aiPriorityScore?: number; // 0-100
   aiRationale?: string;
   mitigationPlan?: string;
+  organizationId?: string;
 }
 
+// Database Schema: Framework
 export interface ComplianceFramework {
   id: string;
   name: string;
@@ -47,8 +62,10 @@ export interface ComplianceFramework {
   progress: number;
   nextAuditDate: string;
   region?: string;
+  organizationId?: string;
 }
 
+// Database Schema: AuditLog
 export interface AuditLog {
   id: string;
   action: string;
@@ -56,6 +73,7 @@ export interface AuditLog {
   timestamp: string;
   hash: string; // Blockchain hash simulation
   verified: boolean;
+  organizationId?: string;
 }
 
 export interface Integration {
@@ -65,6 +83,7 @@ export interface Integration {
   connected: boolean;
   lastSync: string;
   icon: string;
+  config?: Record<string, any>; // Encrypted config placeholder
 }
 
 export interface ChatMessage {

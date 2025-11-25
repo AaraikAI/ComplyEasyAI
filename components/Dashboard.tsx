@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   AreaChart, 
@@ -110,8 +111,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, onNavigate }) 
         {/* Main Chart */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-6">Compliance Readiness Trend</h3>
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          {/* Added min-height to parent container to fix recharts rendering issue */}
+          <div className="h-72 w-full min-h-[300px]">
+            <ResponsiveContainer width="99%" height="100%">
               <AreaChart data={data}>
                 <defs>
                   <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">

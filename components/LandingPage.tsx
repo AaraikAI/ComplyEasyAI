@@ -1,14 +1,16 @@
+
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle, Lock, Shield, Zap, Globe, X, User } from 'lucide-react';
-import { PRICING_TIERS, MOCK_USERS } from '../constants';
-import { User as UserType } from '../types';
+import { ArrowRight, CheckCircle, Lock, Shield, Zap, Globe, X, Mail, Loader2, BarChart, Users, Server } from 'lucide-react';
+import { PRICING_TIERS } from '../constants';
+import { useAuth } from '../contexts/AuthContext';
 
-interface LandingProps {
-  onLogin: (user: UserType) => void;
-}
-
-export const LandingPage: React.FC<LandingProps> = ({ onLogin }) => {
-  const [showLoginModal, setShowLoginModal] = useState(false);
+export const LandingPage: React.FC = () => {
+  const { verifyMagicLink, register, loginWithMagicLink } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authStep, setAuthStep] = useState<'email' | 'magic-link-sent' | 'register'>('email');
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const scrollToSection = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -16,6 +18,35 @@ export const LandingPage: React.FC<LandingProps> = ({ onLogin }) => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      // Simulate checking if user exists, if not, move to register
+      await loginWithMagicLink(email);
+      setAuthStep('magic-link-sent');
+    } catch (e) {
+      // If user not found (mock error), go to register
+      setAuthStep('register');
+    }
+    setLoading(false);
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    await register(name, email);
+    // Auth context will auto-login
+    setLoading(false);
+  };
+
+  // Simulate clicking the magic link
+  const simulateMagicClick = async () => {
+    setLoading(true);
+    await verifyMagicLink(email);
+    setLoading(false);
   };
 
   return (
@@ -31,32 +62,14 @@ export const LandingPage: React.FC<LandingProps> = ({ onLogin }) => {
               <span className="font-bold text-xl tracking-tight text-slate-900">ComplyEasy AI</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              <a 
-                href="#features" 
-                onClick={(e) => scrollToSection(e, 'features')}
-                className="text-sm font-medium text-slate-600 hover:text-brand-600 cursor-pointer"
-              >
-                Features
-              </a>
-              <a 
-                href="#pricing" 
-                onClick={(e) => scrollToSection(e, 'pricing')}
-                className="text-sm font-medium text-slate-600 hover:text-brand-600 cursor-pointer"
-              >
-                Pricing
-              </a>
-              <a 
-                href="#about" 
-                onClick={(e) => scrollToSection(e, 'about')}
-                className="text-sm font-medium text-slate-600 hover:text-brand-600 cursor-pointer"
-              >
-                About
-              </a>
+              <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="text-sm font-medium text-slate-600 hover:text-brand-600 cursor-pointer">Features</a>
+              <a href="#pricing" onClick={(e) => scrollToSection(e, 'pricing')} className="text-sm font-medium text-slate-600 hover:text-brand-600 cursor-pointer">Pricing</a>
+              <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="text-sm font-medium text-slate-600 hover:text-brand-600 cursor-pointer">About</a>
               <button 
-                onClick={() => setShowLoginModal(true)}
+                onClick={() => { setAuthStep('email'); setShowAuthModal(true); }}
                 className="bg-brand-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20"
               >
-                Sign In
+                Sign In / SSO
               </button>
             </div>
           </div>
@@ -82,76 +95,65 @@ export const LandingPage: React.FC<LandingProps> = ({ onLogin }) => {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
               <button 
-                onClick={() => setShowLoginModal(true)}
+                onClick={() => { setAuthStep('email'); setShowAuthModal(true); }}
                 className="w-full sm:w-auto px-8 py-4 bg-brand-600 text-white rounded-full font-semibold hover:bg-brand-700 transition-all transform hover:scale-105 shadow-xl shadow-brand-600/20 flex items-center justify-center"
               >
                 Start Free Trial <ArrowRight size={20} className="ml-2" />
               </button>
-              <button className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 border border-gray-200 rounded-full font-semibold hover:bg-gray-50 transition-colors">
-                Book Demo
-              </button>
             </div>
-            <p className="mt-6 text-sm text-slate-400">Trusted by 500+ security-first companies.</p>
           </div>
         </div>
       </section>
 
-       {/* Stats/Social Proof */}
-      <section id="about" className="bg-slate-50 py-12 border-y border-gray-200 scroll-mt-20">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                <div>
-                    <h3 className="text-4xl font-bold text-slate-900">80%</h3>
-                    <p className="text-slate-500 mt-1">Time Saved</p>
-                </div>
-                <div>
-                    <h3 className="text-4xl font-bold text-slate-900">20+</h3>
-                    <p className="text-slate-500 mt-1">Frameworks</p>
-                </div>
-                 <div>
-                    <h3 className="text-4xl font-bold text-slate-900">$50</h3>
-                    <p className="text-slate-500 mt-1">Starting Price</p>
-                </div>
-                 <div>
-                    <h3 className="text-4xl font-bold text-slate-900">100%</h3>
-                    <p className="text-slate-500 mt-1">Audit Ready</p>
-                </div>
-            </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section id="features" className="py-24 bg-white scroll-mt-20">
+      {/* Features Section */}
+      <section id="features" className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-slate-900">Everything you need to stay compliant</h2>
-            <p className="text-slate-500 mt-4 max-w-2xl mx-auto">From automated evidence collection to AI-generated reports, we handle the boring stuff so you can focus on growth.</p>
+            <h2 className="text-brand-600 font-bold tracking-wide uppercase text-sm mb-2">Platform Features</h2>
+            <h3 className="text-3xl lg:text-4xl font-bold text-slate-900">Everything you need to stay compliant</h3>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              {
-                icon: <Globe className="w-8 h-8 text-brand-600" />,
-                title: 'Global Standards',
-                desc: 'Support for GDPR, CCPA, ISO 27001, and more with region-specific data sovereignty features.'
+              { 
+                icon: Zap, 
+                title: 'AI Automation', 
+                desc: 'Intelligent agents automatically collect evidence, map controls, and flag risks 24/7 without human intervention.'
               },
-              {
-                icon: <Zap className="w-8 h-8 text-purple-600" />,
-                title: 'AI Agents',
-                desc: 'Autonomous agents handle regulatory tracking and anomaly detection 24/7.'
+              { 
+                icon: Lock, 
+                title: 'Zero Trust Security', 
+                desc: 'Bank-grade encryption, Role-Based Access Control (RBAC), and continuous monitoring built into the core.'
               },
-              {
-                icon: <Lock className="w-8 h-8 text-green-600" />,
-                title: 'Zero Trust Security',
-                desc: 'Built-in security with zero-trust architecture and explainable AI for complete transparency.'
+              { 
+                icon: Globe, 
+                title: 'Global Frameworks', 
+                desc: 'Support for SOC 2, GDPR, HIPAA, ISO 27001, and NIST out of the box with one-click cross-mapping.'
+              },
+              { 
+                icon: BarChart, 
+                title: 'Real-time Analytics', 
+                desc: 'Live dashboards provide instant visibility into your compliance posture, gap analysis, and audit readiness.'
+              },
+              { 
+                icon: Users, 
+                title: 'Vendor Management', 
+                desc: 'Automate vendor risk assessments (VRM) and track third-party security certifications effortlessly.'
+              },
+              { 
+                icon: Server, 
+                title: '100+ Integrations', 
+                desc: 'Seamlessly connect with AWS, Google Workspace, GitHub, Jira, Slack, and more to unify your data.'
               }
             ].map((feature, idx) => (
-              <div key={idx} className="bg-slate-50 p-8 rounded-2xl hover:shadow-lg transition-shadow border border-slate-100">
-                <div className="bg-white w-14 h-14 rounded-xl flex items-center justify-center shadow-sm mb-6">
-                  {feature.icon}
+              <div key={idx} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all hover:-translate-y-1">
+                <div className="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center text-brand-600 mb-6">
+                  <feature.icon size={24} />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
-                <p className="text-slate-500 leading-relaxed">{feature.desc}</p>
+                <h4 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h4>
+                <p className="text-slate-500 leading-relaxed">
+                  {feature.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -159,42 +161,43 @@ export const LandingPage: React.FC<LandingProps> = ({ onLogin }) => {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-slate-900 text-white scroll-mt-20">
+      <section id="pricing" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold">Transparent Pricing</h2>
-            <p className="text-slate-400 mt-4">Simple plans for teams of all sizes.</p>
+            <h2 className="text-brand-600 font-bold tracking-wide uppercase text-sm mb-2">Simple Pricing</h2>
+            <h3 className="text-3xl lg:text-4xl font-bold text-slate-900">Scale your compliance journey</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {PRICING_TIERS.map((tier, idx) => (
-              <div 
-                key={idx} 
-                className={`relative p-8 rounded-2xl border ${tier.recommended ? 'bg-slate-800 border-brand-500 shadow-2xl shadow-brand-900/50' : 'bg-slate-900 border-slate-700'}`}
-              >
+              <div key={idx} className={`relative p-8 rounded-2xl border ${tier.recommended ? 'border-brand-500 shadow-2xl scale-105 z-10' : 'border-gray-200 bg-gray-50'}`}>
                 {tier.recommended && (
-                  <div className="absolute top-0 right-0 bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
-                    RECOMMENDED
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-brand-600 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                    Most Popular
                   </div>
                 )}
-                <h3 className="text-xl font-bold mb-2">{tier.name}</h3>
-                <div className="flex items-baseline mb-6">
-                  <span className="text-4xl font-bold">{tier.price}</span>
-                  <span className="text-slate-400 ml-2">{tier.period}</span>
+                <div className="text-center mb-8">
+                  <h4 className="text-xl font-bold text-slate-900 mb-2">{tier.name}</h4>
+                  <div className="flex items-baseline justify-center">
+                    <span className="text-4xl font-bold text-slate-900">{tier.price}</span>
+                    <span className="text-slate-500">{tier.period}</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-2">{tier.target}</p>
                 </div>
-                <p className="text-sm text-slate-400 mb-6">{tier.target}</p>
                 <ul className="space-y-4 mb-8">
-                  {tier.features.map((feat, fIdx) => (
-                    <li key={fIdx} className="flex items-start text-sm text-slate-300">
-                      <CheckCircle size={16} className="text-brand-400 mr-2 mt-0.5 flex-shrink-0" />
-                      {feat}
+                  {tier.features.map((feature, fIdx) => (
+                    <li key={fIdx} className="flex items-center text-slate-600 text-sm">
+                      <CheckCircle size={16} className="text-green-500 mr-3 flex-shrink-0" />
+                      {feature}
                     </li>
                   ))}
                 </ul>
                 <button 
-                  onClick={() => setShowLoginModal(true)}
-                  className={`w-full py-3 rounded-lg font-semibold transition-colors ${
-                    tier.recommended ? 'bg-brand-500 hover:bg-brand-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-white'
+                  onClick={() => { setAuthStep('register'); setShowAuthModal(true); }}
+                  className={`w-full py-3 rounded-xl font-bold transition-colors ${
+                    tier.recommended 
+                      ? 'bg-brand-600 text-white hover:bg-brand-700' 
+                      : 'bg-white text-brand-600 border border-brand-200 hover:bg-brand-50'
                   }`}
                 >
                   Choose {tier.name}
@@ -205,43 +208,163 @@ export const LandingPage: React.FC<LandingProps> = ({ onLogin }) => {
         </div>
       </section>
 
+      {/* About Section */}
+      <section id="about" className="py-24 bg-slate-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-brand-400 font-bold tracking-wide uppercase text-sm mb-2">Our Mission</h2>
+              <h3 className="text-3xl lg:text-4xl font-bold mb-6">Making compliance accessible to everyone.</h3>
+              <p className="text-slate-400 text-lg leading-relaxed mb-6">
+                Founded by security experts and AI engineers, ComplyEasy AI aims to democratize access to enterprise-grade compliance tools. 
+                We believe that every company, regardless of size, deserves secure and compliant operations without the crushing overhead of manual audits.
+              </p>
+              <div className="grid grid-cols-2 gap-8 mt-8">
+                <div>
+                  <div className="text-4xl font-bold text-white mb-2">95%</div>
+                  <div className="text-sm text-slate-400">Time Saved on Audits</div>
+                </div>
+                <div>
+                  <div className="text-4xl font-bold text-white mb-2">24/7</div>
+                  <div className="text-sm text-slate-400">Automated Monitoring</div>
+                </div>
+                <div>
+                  <div className="text-4xl font-bold text-white mb-2">500+</div>
+                  <div className="text-sm text-slate-400">SMBs Trusted Us</div>
+                </div>
+                <div>
+                  <div className="text-4xl font-bold text-white mb-2">100%</div>
+                  <div className="text-sm text-slate-400">Audit Success Rate</div>
+                </div>
+              </div>
+            </div>
+            <div className="relative">
+              <div className="absolute inset-0 bg-brand-500 rounded-full blur-[100px] opacity-20"></div>
+              <div className="relative bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl">
+                 <div className="flex items-center space-x-4 mb-6">
+                    <div className="w-12 h-12 bg-slate-700 rounded-full"></div>
+                    <div>
+                       <div className="h-4 w-32 bg-slate-700 rounded mb-2"></div>
+                       <div className="h-3 w-20 bg-slate-700 rounded"></div>
+                    </div>
+                 </div>
+                 <div className="space-y-3">
+                    <div className="h-3 w-full bg-slate-700 rounded"></div>
+                    <div className="h-3 w-5/6 bg-slate-700 rounded"></div>
+                    <div className="h-3 w-4/6 bg-slate-700 rounded"></div>
+                 </div>
+                 <div className="mt-8 pt-6 border-t border-slate-700 flex justify-between items-center">
+                    <div className="text-sm text-slate-400">Security Score</div>
+                    <div className="text-2xl font-bold text-green-400">98/100</div>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="bg-white py-12 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
-          <p>&copy; 2024 ComplyEasy AI. All rights reserved.</p>
+      <footer className="bg-white border-t border-gray-100 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-2 mb-4 md:mb-0">
+              <div className="bg-brand-600 p-1.5 rounded-lg">
+                <Shield className="text-white w-5 h-5" />
+              </div>
+              <span className="font-bold text-lg tracking-tight text-slate-900">ComplyEasy AI</span>
+            </div>
+            <div className="flex space-x-8 text-sm text-slate-500">
+              <a href="#" className="hover:text-brand-600 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-brand-600 transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-brand-600 transition-colors">Contact Support</a>
+            </div>
+            <div className="mt-4 md:mt-0 text-sm text-slate-400">
+              © 2024 ComplyEasy AI Inc. All rights reserved.
+            </div>
+          </div>
         </div>
       </footer>
 
-      {/* Simulated Login Modal */}
-      {showLoginModal && (
+      {/* Auth Modal (Magic Link / SSO) */}
+      {showAuthModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden transform transition-all scale-100">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-900">Select Demo Persona</h3>
-              <button onClick={() => setShowLoginModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden transform transition-all scale-100 relative">
+            <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
                 <X size={24} />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-500 mb-4">Choose a role to explore the platform:</p>
-              {MOCK_USERS.map((user) => (
-                <button
-                  key={user.id}
-                  onClick={() => onLogin(user)}
-                  className="w-full flex items-center p-4 rounded-xl border border-gray-200 hover:border-brand-500 hover:bg-brand-50 transition-all group"
-                >
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-lg font-bold text-gray-600 group-hover:bg-brand-200 group-hover:text-brand-700">
-                    {user.avatar}
+            </button>
+            
+            <div className="p-8 text-center">
+               <div className="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  {authStep === 'magic-link-sent' ? <Mail className="text-brand-600" size={32}/> : <Shield className="text-brand-600" size={32}/>}
+               </div>
+
+               {authStep === 'email' && (
+                  <form onSubmit={handleLoginSubmit}>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h3>
+                    <p className="text-gray-500 mb-6">Enter your email to sign in via Magic Link.</p>
+                    
+                    <div className="space-y-4">
+                      <input 
+                        required
+                        type="email" 
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="name@company.com"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                      />
+                      <button 
+                        disabled={loading}
+                        className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex justify-center items-center"
+                      >
+                         {loading ? <Loader2 className="animate-spin" /> : 'Send Magic Link'}
+                      </button>
+                    </div>
+                    <p className="mt-6 text-xs text-gray-400">Secure passwordless authentication via Auth0/SSO.</p>
+                  </form>
+               )}
+
+               {authStep === 'magic-link-sent' && (
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h3>
+                    <p className="text-gray-500 mb-6">We sent a magic link to <span className="font-bold text-gray-800">{email}</span>.</p>
+                    <button 
+                       onClick={simulateMagicClick}
+                       className="text-brand-600 font-bold hover:underline text-sm"
+                    >
+                       (Simulate Clicking Link from Email)
+                    </button>
                   </div>
-                  <div className="ml-4 text-left">
-                    <p className="font-bold text-gray-900 group-hover:text-brand-700">{user.name}</p>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider">{user.role}</p>
-                  </div>
-                  <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                     <ArrowRight className="text-brand-600" />
-                  </div>
-                </button>
-              ))}
+               )}
+
+               {authStep === 'register' && (
+                  <form onSubmit={handleRegister}>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h3>
+                    <p className="text-gray-500 mb-6">Looks like you're new here!</p>
+                    
+                    <div className="space-y-4">
+                      <input 
+                        disabled
+                        type="email" 
+                        value={email}
+                        className="w-full px-4 py-3 border border-gray-200 bg-gray-50 rounded-xl text-gray-500"
+                      />
+                      <input 
+                        required
+                        type="text" 
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        placeholder="Full Name"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                      />
+                      <button 
+                        disabled={loading}
+                        className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex justify-center items-center"
+                      >
+                         {loading ? <Loader2 className="animate-spin" /> : 'Create Account'}
+                      </button>
+                    </div>
+                  </form>
+               )}
             </div>
           </div>
         </div>
