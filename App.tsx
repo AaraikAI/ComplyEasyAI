@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { ViewState, User, ComplianceFramework, ComplianceStatus } from './types';
+
+import React, { useState, useEffect } from 'react';
+import { ViewState, ComplianceFramework } from './types';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
@@ -17,35 +19,33 @@ import { PhishingGenerator } from './components/AIFeatures/PhishingGenerator';
 import { VendorScorer } from './components/AIFeatures/VendorScorer';
 import { DataMapper } from './components/AIFeatures/DataMapper';
 import { BCPGenerator } from './components/AIFeatures/BCPGenerator';
-import { INITIAL_FRAMEWORKS } from './constants';
+import { api } from './services/api';
 
-const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<ViewState>('landing');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [frameworks, setFrameworks] = useState<ComplianceFramework[]>(INITIAL_FRAMEWORKS);
+const MainApp: React.FC = () => {
+  const { isAuthenticated, user, isLoading } = useAuth();
+  const [currentView, setCurrentView] = useState<ViewState>('dashboard');
+  const [frameworks, setFrameworks] = useState<ComplianceFramework[]>([]);
   const [selectedFrameworkId, setSelectedFrameworkId] = useState<string | null>(null);
 
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
-    setCurrentView('dashboard');
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadFrameworks();
+    }
+  }, [isAuthenticated]);
+
+  const loadFrameworks = async () => {
+    const data = await api.frameworks.list();
+    setFrameworks(data);
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCurrentView('landing');
-    setSelectedFrameworkId(null);
-  };
-
-  const handleAddFramework = (name: string, region?: string) => {
-    const newFramework: ComplianceFramework = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: name,
-      status: ComplianceStatus.IN_REVIEW,
-      progress: 0,
-      nextAuditDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-      region: region
-    };
-    setFrameworks([...frameworks, newFramework]);
+  const handleAddFramework = async (name: string, region?: string) => {
+    // Optimistic Update
+    const newFw: any = { id: 'temp', name, region, status: 'In Review', progress: 0, nextAuditDate: '2025-01-01' };
+    setFrameworks([...frameworks, newFw]);
+    
+    // API Call
+    await api.frameworks.create(newFw);
+    loadFrameworks(); // Refresh to get real ID
   };
 
   const handleSelectFramework = (id: string) => {
@@ -53,9 +53,11 @@ const App: React.FC = () => {
     setCurrentView('framework-details');
   };
 
-  const getSelectedFramework = () => {
-    return frameworks.find(f => f.id === selectedFrameworkId);
-  };
+  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
+
+  if (!isAuthenticated) {
+    return <LandingPage />;
+  }
 
   const renderContent = () => {
     switch (currentView) {
@@ -76,7 +78,7 @@ const App: React.FC = () => {
       case 'framework-details':
         return (
           <FrameworkDetails 
-            framework={getSelectedFramework()} 
+            framework={frameworks.find(f => f.id === selectedFrameworkId)} 
             onBack={() => setCurrentView('frameworks')} 
           />
         );
@@ -99,28 +101,25 @@ const App: React.FC = () => {
       case 'ai-bcp':
         return <BCPGenerator onBack={() => setCurrentView('dashboard')} />;
       case 'settings':
-        if (currentUser?.role !== 'admin') {
-           return <div className="p-10 text-center text-red-500">Access Denied: You do not have permission to view Settings.</div>;
-        }
+        if (user?.role !== 'admin') return <div>Access Denied</div>;
         return <Settings />;
       default:
         return <Dashboard frameworks={frameworks} onNavigate={setCurrentView} />;
     }
   };
 
-  if (currentView === 'landing') {
-    return <LandingPage onLogin={handleLogin} />;
-  }
-
   return (
-    <Layout 
-      currentView={currentView} 
-      onNavigate={setCurrentView} 
-      currentUser={currentUser}
-      onLogout={handleLogout}
-    >
+    <Layout currentView={currentView} onNavigate={setCurrentView}>
       {renderContent()}
     </Layout>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 };
 

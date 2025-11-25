@@ -7,21 +7,24 @@ export const MOCK_USERS: User[] = [
     name: 'Sarah Connor',
     email: 'sarah@complyeasy.ai',
     role: 'admin',
-    avatar: 'SC'
+    avatar: 'SC',
+    organizationId: 'org1'
   },
   {
     id: 'u2',
     name: 'Mike Ross',
     email: 'mike@complyeasy.ai',
     role: 'editor',
-    avatar: 'MR'
+    avatar: 'MR',
+    organizationId: 'org1'
   },
   {
     id: 'u3',
     name: 'Jane Doe',
     email: 'jane@complyeasy.ai',
     role: 'viewer',
-    avatar: 'JD'
+    avatar: 'JD',
+    organizationId: 'org1'
   }
 ];
 

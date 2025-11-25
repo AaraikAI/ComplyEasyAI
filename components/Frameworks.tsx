@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AVAILABLE_FRAMEWORKS } from '../constants';
 import { ComplianceFramework, ComplianceStatus } from '../types';
@@ -78,7 +79,6 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
           </div>
         ))}
         
-        {/* Add New Framework Card (Quick Action) */}
         <button 
           onClick={() => setIsModalOpen(true)}
           className="bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-brand-300 hover:bg-brand-50 transition-colors group h-full min-h-[200px]"
@@ -91,7 +91,6 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
         </button>
       </div>
 
-      {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl animate-fadeIn">

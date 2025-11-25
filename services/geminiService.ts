@@ -1,14 +1,38 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
+// In production, this should point to your backend proxy (e.g., /api/ai/proxy)
+// to avoid exposing the API Key in the frontend bundle.
+// For this demo environment, we fallback to direct calls if no proxy is set.
+const BACKEND_PROXY_URL = ''; 
+
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const checkApiKey = (): boolean => {
-  if (!process.env.API_KEY) {
-    console.error("API Key is missing.");
+  if (!process.env.API_KEY && !BACKEND_PROXY_URL) {
+    console.error("API Key is missing and no backend proxy configured.");
     return false;
   }
   return true;
+};
+
+// Helper to use Proxy if available, else direct SDK
+const executeGenAI = async (model: string, prompt: string, schema?: any) => {
+  if (BACKEND_PROXY_URL) {
+    // secure proxy call
+    const res = await fetch(BACKEND_PROXY_URL, {
+        method: 'POST',
+        body: JSON.stringify({ model, prompt, schema })
+    });
+    return await res.json();
+  } else {
+    // direct SDK call (Demo only)
+    return await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: schema ? { responseMimeType: "application/json", responseSchema: schema } : undefined
+    });
+  }
 };
 
 export const generateComplianceReport = async (
@@ -16,278 +40,85 @@ export const generateComplianceReport = async (
   companyName: string,
   context: string
 ): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
+  if (!checkApiKey()) return "Configuration Error.";
 
   try {
     const prompt = `
-      You are an expert Compliance Officer AI for ComplyEasy.
-      Generate a professional executive summary for a ${framework} compliance audit report for a company named "${companyName}".
-      
-      Context provided: "${context}"
-
-      Structure the response with:
-      1. Executive Summary
-      2. Key Findings (Successes)
-      3. Critical Gaps (Simulated based on context or general common gaps if vague)
-      4. Remediation Recommendations
-      
-      Keep it concise, professional, and formatted in Markdown.
+      You are an expert Compliance Officer AI.
+      Generate a professional executive summary for a ${framework} compliance audit report for "${companyName}".
+      Context: "${context}"
+      Structure: Executive Summary, Key Findings, Critical Gaps, Recommendations.
+      Markdown format.
     `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-
+    const response = await executeGenAI('gemini-2.5-flash', prompt);
     return response.text || "Failed to generate report.";
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("AI Error:", error);
     return "An error occurred while generating the report.";
   }
 };
 
-export const chatWithComplianceBot = async (
-  message: string,
-  context?: string
-): Promise<string> => {
-  if (!checkApiKey()) return "I can't answer right now because the API Key is missing.";
-
-  try {
-    const prompt = `
-      You are ComplyEasy AI, a helpful assistant for compliance and security.
-      Context: ${context || 'General compliance assistance.'}
-      User Question: "${message}"
-      Answer concisely and helpfully.
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-
-    return response.text || "I couldn't process that request.";
-  } catch (error) {
-    console.error("Gemini Chat Error:", error);
-    return "Sorry, I encountered a temporary error.";
-  }
+export const chatWithComplianceBot = async (message: string): Promise<string> => {
+    if (!checkApiKey()) return "System offline.";
+    try {
+        const response = await executeGenAI('gemini-2.5-flash', `You are a compliance assistant. User: ${message}`);
+        return response.text || "Error.";
+    } catch (e) { return "Error."; }
 };
 
-// 1. AI Remediation Plan
-export const generateRemediationPlan = async (riskDescription: string): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
-  try {
-    const prompt = `
-      Provide a step-by-step technical remediation plan for the following security risk:
-      "${riskDescription}"
-      
-      Include:
-      1. Immediate containment steps.
-      2. Technical fix (CLI commands, config changes, or code snippets if applicable for AWS/Azure/GCP).
-      3. Verification steps.
-      Format in Markdown.
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text || "No remediation plan generated.";
-  } catch (e) { return "Error generating plan."; }
+export const generateRemediationPlan = async (risk: string): Promise<string> => {
+    try {
+        const response = await executeGenAI('gemini-2.5-flash', `Provide technical remediation steps for risk: "${risk}". Markdown format.`);
+        return response.text || "Error.";
+    } catch (e) { return "Error."; }
 };
 
-// 2. AI Policy Generator
 export const generatePolicy = async (type: string, company: string, tone: string): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
-  try {
-    const prompt = `
-      Write a comprehensive ${type} for ${company}.
-      Tone: ${tone}.
-      Include standard sections: Purpose, Scope, Policy Details, Roles & Responsibilities, Enforcement.
-      Format in Markdown.
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text || "Failed to generate policy.";
-  } catch (e) { return "Error generating policy."; }
+    try {
+        const response = await executeGenAI('gemini-2.5-flash', `Write a ${tone} ${type} policy for ${company}. Markdown.`);
+        return response.text || "Error.";
+    } catch (e) { return "Error."; }
 };
 
-// 3. AI Contract Analyzer
 export const analyzeContract = async (text: string): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
-  try {
-    const prompt = `
-      Analyze the following contract clause for GDPR and Data Privacy compliance.
-      Highlight red flags, missing DPA clauses, or liability issues.
-      
-      Contract Text: "${text.substring(0, 5000)}"
-      
-      Output Format:
-      - **Compliance Score**: (0-100)
-      - **Key Risks**: (List)
-      - **Missing Clauses**: (List)
-      - **Recommendations**: (Text)
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text || "Failed to analyze contract.";
-  } catch (e) { return "Error analyzing contract."; }
+    try {
+        const response = await executeGenAI('gemini-2.5-flash', `Analyze for GDPR/Security risks: "${text.substring(0,2000)}..."`);
+        return response.text || "Error.";
+    } catch (e) { return "Error."; }
 };
 
-// 4. AI Gap Analysis
 export const performGapAnalysis = async (current: string[], target: string): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
-  try {
-    const prompt = `
-      I currently have compliance with: ${current.join(', ')}.
-      I want to achieve compliance with: ${target}.
-      
-      Perform a gap analysis.
-      List the specific controls or policies I likely lack given my current standing.
-      Be specific to the frameworks.
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text || "Failed to perform gap analysis.";
-  } catch (e) { return "Error performing gap analysis."; }
+    try {
+        const response = await executeGenAI('gemini-2.5-flash', `Gap analysis: Current=${current.join(',')}, Target=${target}.`);
+        return response.text || "Error.";
+    } catch (e) { return "Error."; }
 };
 
-// 5. AI Evidence Classification
 export const classifyEvidence = async (filename: string): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
-  try {
-    const prompt = `
-      I am uploading a file named "${filename}" as evidence for a compliance audit.
-      Which standard security control (ISO 27001 / SOC 2) does this likely satisfy?
-      Return just the Control Name and ID (e.g., "Access Control (CC6.1)").
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text || "Unclassified";
-  } catch (e) { return "Unclassified"; }
+    try {
+        const response = await executeGenAI('gemini-2.5-flash', `Classify compliance evidence file: "${filename}". Return control name only.`);
+        return response.text || "Unknown";
+    } catch (e) { return "Unknown"; }
 };
 
-// 6. RFP Auto-Responder
-export const generateRFPResponse = async (question: string, context: string): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
-  try {
-    const prompt = `
-      You are a Security Compliance Officer filling out an RFP/Security Questionnaire.
-      Context about our security: ${context}
-      
-      Question: "${question}"
-      
-      Provide a professional, affirmative (where possible), and concise answer.
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text || "Failed to generate response.";
-  } catch (e) { return "Error generating response."; }
-};
+export const generateRFPResponse = async (q: string, ctx: string) => (await executeGenAI('gemini-2.5-flash', `Answer RFP question: "${q}" given context: "${ctx}"`)).text;
+export const generatePhishingSim = async (t: string, d: string) => (await executeGenAI('gemini-2.5-flash', `Phishing email for ${d} dept about ${t}.`)).text;
+export const scoreVendorRisk = async (v: string, s: string, d: string) => (await executeGenAI('gemini-2.5-flash', `Risk score vendor ${v}, service ${s}, data ${d}.`)).text;
+export const mapGDPRData = async (p: string) => (await executeGenAI('gemini-2.5-flash', `GDPR RoPA for process: ${p}.`)).text;
+export const generateBCP = async (s: string) => (await executeGenAI('gemini-2.5-flash', `BCP plan for: ${s}.`)).text;
 
-// 7. Phishing Simulation Generator
-export const generatePhishingSim = async (theme: string, department: string): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
-  try {
-    const prompt = `
-      Create a phishing simulation email template for the "${department}" department.
-      Theme: "${theme}".
-      
-      Include:
-      1. Email Subject Line (make it urgent/clickable)
-      2. Sender Name (fake but realistic)
-      3. Email Body (HTML formatted text)
-      4. The "Red Flags" users should have spotted.
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text || "Failed to generate simulation.";
-  } catch (e) { return "Error generating simulation."; }
-};
-
-// 8. Vendor Risk Scorer
-export const scoreVendorRisk = async (vendorName: string, serviceType: string, dataAccess: string): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
-  try {
-    const prompt = `
-      Assess the inherent security risk of the following vendor:
-      Vendor: ${vendorName}
-      Service Type: ${serviceType}
-      Data Access: ${dataAccess}
-      
-      Output in Markdown:
-      - **Risk Score**: (High / Medium / Low)
-      - **Justification**: (Why?)
-      - **Recommended Controls**: (e.g., SOC2 report, DPA, SSO)
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text || "Failed to score vendor.";
-  } catch (e) { return "Error scoring vendor."; }
-};
-
-// 9. GDPR Data Mapper
-export const mapGDPRData = async (process: string): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
-  try {
-    const prompt = `
-      For the business process "${process}", generate a GDPR Record of Processing Activities (RoPA) entry.
-      
-      Include:
-      - Data Categories involved (e.g., Name, IP, Financial)
-      - Data Subjects (e.g., Employees, Customers)
-      - Lawful Basis (e.g., Consent, Contract)
-      - Retention Period (suggested)
-      Format as a Markdown table.
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text || "Failed to map data.";
-  } catch (e) { return "Error mapping data."; }
-};
-
-// 10. BCP Generator
-export const generateBCP = async (scenario: string): Promise<string> => {
-  if (!checkApiKey()) return "API Key missing.";
-  try {
-    const prompt = `
-      Generate a Business Continuity Plan (BCP) checklist for the scenario: "${scenario}".
-      
-      Include:
-      1. Immediate Response Team
-      2. Communication Plan (Internal & External)
-      3. Recovery Steps
-      4. RTO/RPO estimates (generic)
-      Format in Markdown.
-    `;
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-    return response.text || "Failed to generate BCP.";
-  } catch (e) { return "Error generating BCP."; }
-};
-
-// 11. AI Risk Prioritization
 export const prioritizeRisks = async (risks: any[]): Promise<any[]> => {
   if (!checkApiKey()) return [];
   try {
-    // We only send ID, description, and severity to save tokens
-    const riskSummary = risks.map(r => ({ id: r.id, description: r.description, severity: r.severity }));
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `
-        Analyze the following security risks. 
-        Assign a 'criticality score' (0-100) to each based on potential business impact and likelihood of exploitation.
-        Provide a short 1-sentence rationale for the score.
-        
-        Risks: ${JSON.stringify(riskSummary)}
-      `,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
+    const summary = risks.map(r => ({ id: r.id, desc: r.description, sev: r.severity }));
+    const schema = {
+        type: Type.ARRAY,
+        items: {
             type: Type.OBJECT,
-            properties: {
-              id: { type: Type.STRING },
-              score: { type: Type.INTEGER },
-              rationale: { type: Type.STRING }
-            }
-          }
+            properties: { id: {type: Type.STRING}, score: {type: Type.INTEGER}, rationale: {type: Type.STRING} }
         }
-      }
-    });
-    
-    const jsonStr = response.text || "[]";
-    return JSON.parse(jsonStr);
-  } catch (e) {
-    console.error("Prioritization error", e);
-    return [];
-  }
+    };
+    const response = await executeGenAI('gemini-2.5-flash', `Score risks 0-100: ${JSON.stringify(summary)}`, schema);
+    return JSON.parse(response.text || "[]");
+  } catch (e) { return []; }
 };

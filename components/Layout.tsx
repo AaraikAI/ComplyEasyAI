@@ -1,38 +1,41 @@
-import React, { useState } from 'react';
-import { ViewState, User } from '../types';
+
+import React, { useState, useMemo } from 'react';
+import { ViewState } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { MOCK_RISKS } from '../constants';
 import { 
-  LayoutDashboard, 
-  FileText, 
-  ShieldCheck, 
-  Settings, 
-  LogOut, 
-  Menu, 
-  X,
-  Activity,
-  Search,
-  Bell,
-  Lock,
-  Sparkles,
-  Briefcase,
-  GitGraph,
-  Mail,
-  ShieldAlert,
-  Users,
-  Database,
-  LifeBuoy
+  LayoutDashboard, FileText, ShieldCheck, Settings, LogOut, Menu, X,
+  Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare
 } from 'lucide-react';
 import { ComplianceChat } from './ComplianceChat';
 
 interface LayoutProps {
   currentView: ViewState;
   onNavigate: (view: ViewState) => void;
-  currentUser: User | null;
-  onLogout: () => void;
   children: React.ReactNode;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, currentUser, onLogout, children }) => {
+export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, children }) => {
+  const { user, logout } = useAuth();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Calculate notifications
+  const notifications = useMemo(() => {
+    if (!user) return [];
+    const tasks = MOCK_RISKS.filter(r => r.assignedTo === user.name).map(r => ({
+      id: r.id,
+      title: 'Risk Assigned to You',
+      desc: r.description,
+      time: r.detectedAt,
+      type: 'task'
+    }));
+    
+    const system = [
+      { id: 'sys1', title: 'Audit Preparedness', desc: 'SOC 2 Audit is in 20 days.', time: '1 day ago', type: 'alert' }
+    ];
+    return [...tasks, ...system];
+  }, [user]);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'editor', 'viewer'], relatedViews: ['risks'] },
@@ -52,9 +55,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
     { id: 'ai-bcp', label: 'BCP Generator', icon: LifeBuoy },
   ];
 
-  const settingsItem = { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin'], relatedViews: [] };
-
-  if (!currentUser) return null;
+  if (!user) return null;
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
@@ -86,19 +87,15 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
         </div>
 
         <nav className="p-4 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-          {/* Main Nav */}
           <div className="space-y-1">
              <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Platform</p>
-             {navItems.filter(item => item.roles.includes(currentUser.role)).map((item) => {
+             {navItems.filter(item => item.roles.includes(user.role)).map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id || item.relatedViews.includes(currentView);
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    onNavigate(item.id as ViewState);
-                    setSidebarOpen(false);
-                  }}
+                  onClick={() => { onNavigate(item.id as ViewState); setSidebarOpen(false); }}
                   className={`
                     w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors cursor-pointer
                     ${isActive ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
@@ -111,7 +108,6 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
             })}
           </div>
 
-          {/* AI Tools Nav */}
           <div className="space-y-1">
              <p className="px-4 text-xs font-semibold text-brand-400 uppercase tracking-wider mb-2 flex items-center">
                 <Sparkles size={10} className="mr-1"/> AI Tools
@@ -122,10 +118,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    onNavigate(item.id as ViewState);
-                    setSidebarOpen(false);
-                  }}
+                  onClick={() => { onNavigate(item.id as ViewState); setSidebarOpen(false); }}
                   className={`
                     w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors cursor-pointer
                     ${isActive ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
@@ -138,15 +131,11 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
             })}
           </div>
 
-          {/* Admin Nav */}
-          {currentUser.role === 'admin' && (
+          {user.role === 'admin' && (
              <div className="space-y-1">
                 <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Admin</p>
                 <button
-                  onClick={() => {
-                    onNavigate('settings');
-                    setSidebarOpen(false);
-                  }}
+                  onClick={() => { onNavigate('settings'); setSidebarOpen(false); }}
                   className={`
                     w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors cursor-pointer
                     ${currentView === 'settings' ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
@@ -165,7 +154,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
             <span>Encrypted • Zero Trust</span>
           </div>
           <button 
-            onClick={onLogout}
+            onClick={logout}
             className="w-full flex items-center space-x-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors cursor-pointer"
           >
             <LogOut size={20} />
@@ -176,8 +165,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Top Header */}
-        <header className="bg-white border-b border-gray-200 flex items-center justify-between px-6 py-4">
+        <header className="bg-white border-b border-gray-200 flex items-center justify-between px-6 py-4 sticky top-0 z-10">
           <div className="flex items-center">
             <button 
               onClick={() => setSidebarOpen(true)}
@@ -191,39 +179,67 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, current
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="hidden md:flex relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-64 transition-shadow"
-              />
+            <div className="relative">
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+              >
+                <Bell size={24} />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                )}
+              </button>
+
+              {isNotificationsOpen && (
+                <div className="absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-fadeIn">
+                  <div className="p-4 border-b border-gray-100 bg-gray-50">
+                    <h3 className="font-bold text-gray-900">Notifications</h3>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length > 0 ? notifications.map(n => (
+                      <div key={n.id} className="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer">
+                         <div className="flex items-start space-x-3">
+                           <div className={`mt-1 p-1.5 rounded-full ${n.type === 'task' ? 'bg-brand-100 text-brand-600' : 'bg-yellow-100 text-yellow-600'}`}>
+                             {n.type === 'task' ? <CheckSquare size={14}/> : <ShieldAlert size={14}/>}
+                           </div>
+                           <div>
+                             <p className="text-sm font-bold text-gray-900">{n.title}</p>
+                             <p className="text-xs text-gray-500 mt-0.5">{n.desc}</p>
+                             <p className="text-xs text-gray-400 mt-1">{n.time}</p>
+                           </div>
+                         </div>
+                      </div>
+                    )) : (
+                      <div className="p-8 text-center text-gray-500">
+                        <p className="text-sm">No new notifications.</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3 text-center border-t border-gray-100 bg-gray-50">
+                    <button className="text-xs font-bold text-brand-600 hover:text-brand-800">Mark all as read</button>
+                  </div>
+                </div>
+              )}
             </div>
-            <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
-              <Bell size={24} />
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
             
             <div className="flex items-center space-x-3 border-l border-gray-200 pl-4">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
-                <p className="text-xs text-gray-500 capitalize">{currentUser.role}</p>
+                <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                <p className="text-xs text-gray-500 capitalize">{user.role}</p>
               </div>
               <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center border border-brand-200 text-brand-700 font-bold shadow-sm">
-                {currentUser.avatar}
+                {user.avatar}
               </div>
             </div>
           </div>
         </header>
 
-        {/* Scrollable Content Area */}
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50 relative">
           <div className="max-w-7xl mx-auto animate-fadeIn pb-20">
             {children}
           </div>
         </main>
         
-        {/* Global Chat Bot */}
         <ComplianceChat />
       </div>
     </div>
