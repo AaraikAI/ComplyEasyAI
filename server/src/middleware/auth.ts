@@ -1,18 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import config from '../config';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { User } from '@prisma/client';
 
 export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-    organizationId: string;
-  };
+  user?: User;
 }
 
+/**
+ * Authenticate JWT token middleware
+ */
 export const authenticate = async (
   req: AuthRequest,
   res: Response,
@@ -36,15 +35,10 @@ export const authenticate = async (
         organizationId: string;
       };
 
-      // Verify user still exists
+      // Fetch user from database
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          organizationId: true,
-        },
+        include: { organization: true },
       });
 
       if (!user) {
@@ -55,21 +49,22 @@ export const authenticate = async (
       req.user = user;
       next();
     } catch (error) {
-      logger.error('JWT verification failed', error);
-      res.status(401).json({ error: 'Invalid or expired token' });
-      return;
+      logger.error('Token verification failed', error);
+      res.status(401).json({ error: 'Invalid token' });
     }
   } catch (error) {
     logger.error('Authentication error', error);
-    res.status(500).json({ error: 'Internal server error' });
-    return;
+    res.status(500).json({ error: 'Authentication error' });
   }
 };
 
+/**
+ * Authorization middleware (role-based)
+ */
 export const authorize = (...allowedRoles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      res.status(401).json({ error: 'Not authenticated' });
+      res.status(401).json({ error: 'Authentication required' });
       return;
     }
 
@@ -88,15 +83,11 @@ export const generateToken = (payload: {
   role: string;
   organizationId: string;
 }): string => {
-  return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn,
-  });
+  return jwt.sign(payload, config.jwt.secret, config.jwt.expiresIn);
 };
 
 export const generateRefreshToken = (userId: string): string => {
-  return jwt.sign({ userId }, config.jwt.refreshSecret, {
-    expiresIn: config.jwt.refreshExpiresIn,
-  });
+  return jwt.sign({ userId }, config.jwt.refreshSecret, config.jwt.refreshExpiresIn);
 };
 
 export const verifyRefreshToken = (token: string): string | null => {
@@ -104,6 +95,7 @@ export const verifyRefreshToken = (token: string): string | null => {
     const decoded = jwt.verify(token, config.jwt.refreshSecret) as { userId: string };
     return decoded.userId;
   } catch (error) {
+    logger.error('Refresh token verification failed', error);
     return null;
   }
 };

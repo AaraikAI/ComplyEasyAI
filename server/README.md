@@ -187,6 +187,41 @@ npm start
 - `GET /api/billing/subscription` - Get subscription status
 - `POST /api/billing/webhook` - Stripe webhook handler (public)
 
+### Integrations
+- `GET /api/integrations` - List all integrations
+- `GET /api/integrations/:provider` - Get integration status
+
+#### Google Workspace
+- `GET /api/integrations/google/authorize` - Start OAuth flow
+- `GET /api/integrations/google/callback` - OAuth callback (public)
+- `POST /api/integrations/google/sync` - Sync data (users/groups/audit/drive)
+- `DELETE /api/integrations/google` - Disconnect integration
+
+#### GitHub
+- `GET /api/integrations/github/authorize` - Start OAuth flow
+- `GET /api/integrations/github/callback` - OAuth callback (public)
+- `POST /api/integrations/github/sync` - Sync data (repositories/commits/security/compliance)
+- `DELETE /api/integrations/github` - Disconnect integration
+
+#### Slack
+- `GET /api/integrations/slack/authorize` - Start OAuth flow
+- `GET /api/integrations/slack/callback` - OAuth callback (public)
+- `POST /api/integrations/slack/sync` - Sync data (channels/users/history)
+- `POST /api/integrations/slack/message` - Post message to channel
+- `DELETE /api/integrations/slack` - Disconnect integration
+
+#### Jira
+- `GET /api/integrations/jira/authorize` - Start OAuth flow
+- `GET /api/integrations/jira/callback` - OAuth callback (public)
+- `POST /api/integrations/jira/sync` - Sync data (projects/issues/compliance/audit)
+- `POST /api/integrations/jira/issue` - Create issue
+- `DELETE /api/integrations/jira` - Disconnect integration
+
+#### AWS
+- `POST /api/integrations/aws/connect` - Connect with IAM credentials
+- `POST /api/integrations/aws/sync` - Sync data (cloudtrail/s3/iam/config/security-hub/compliance-scan)
+- `DELETE /api/integrations/aws` - Disconnect integration
+
 ### Health
 - `GET /health` - Health check endpoint
 
