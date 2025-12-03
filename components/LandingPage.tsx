@@ -1,6 +1,9 @@
 
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle, Lock, Shield, Zap, Globe, X, Mail, Loader2, BarChart, Users, Server } from 'lucide-react';
+import { 
+  ArrowRight, CheckCircle, Lock, Shield, Zap, Globe, X, Mail, Loader2, BarChart, Users, Server,
+  ShieldCheck, EyeOff, Key, GitMerge, BrainCircuit, Timer 
+} from 'lucide-react';
 import { PRICING_TIERS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -144,6 +147,37 @@ export const LandingPage: React.FC = () => {
                 icon: Server, 
                 title: '100+ Integrations', 
                 desc: 'Seamlessly connect with AWS, Google Workspace, GitHub, Jira, Slack, and more to unify your data.'
+              },
+              // New Visionary Features
+              {
+                icon: ShieldCheck,
+                title: 'Zero-Knowledge Proofs',
+                desc: 'Prove compliance to partners and auditors with cryptographic proofs (zk-SNARKs) without ever revealing your sensitive underlying data.'
+              },
+              {
+                icon: EyeOff,
+                title: 'AI Air Gap & Redaction',
+                desc: 'Automatic PII redaction layer ensures your sensitive customer data is sanitized before it ever touches an AI model.'
+              },
+              {
+                icon: Key,
+                title: 'BYOK Encryption',
+                desc: 'Maintain absolute control over your data. Encrypt your compliance database with your own keys managed in AWS KMS or Azure Vault.'
+              },
+              {
+                icon: GitMerge,
+                title: 'Compliance-as-Code',
+                desc: 'Block non-compliant infrastructure changes at the Pull Request level. Integrate policy checks directly into your CI/CD pipeline.'
+              },
+              {
+                icon: BrainCircuit,
+                title: 'Homomorphic AI',
+                desc: 'The holy grail of cloud security. Our AI agents analyze risks on encrypted data without ever needing to decrypt it.'
+              },
+              {
+                icon: Timer,
+                title: 'JIT Admin Access',
+                desc: 'Eliminate dormant admin accounts. Grant temporary, time-bound privileged access that automatically expires after the task is done.'
               }
             ].map((feature, idx) => (
               <div key={idx} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all hover:-translate-y-1">

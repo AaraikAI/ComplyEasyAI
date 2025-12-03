@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ViewState, ComplianceFramework } from './types';
+import { ViewState, ComplianceFramework, RiskItem } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
@@ -26,17 +26,21 @@ const MainApp: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
   const [frameworks, setFrameworks] = useState<ComplianceFramework[]>([]);
+  const [risks, setRisks] = useState<RiskItem[]>([]);
   const [selectedFrameworkId, setSelectedFrameworkId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadFrameworks();
+      loadData();
     }
   }, [isAuthenticated]);
 
-  const loadFrameworks = async () => {
-    const data = await api.frameworks.list();
-    setFrameworks(data);
+  const loadData = async () => {
+    // Load all core data
+    const fwData = await api.frameworks.list();
+    const risksData = await api.risks.list();
+    setFrameworks(fwData);
+    setRisks(risksData);
   };
 
   const handleAddFramework = async (name: string, region?: string) => {
@@ -46,7 +50,7 @@ const MainApp: React.FC = () => {
     
     // API Call
     await api.frameworks.create(newFw);
-    loadFrameworks(); // Refresh to get real ID
+    loadData(); // Refresh to get real ID and sync
   };
 
   const handleSelectFramework = (id: string) => {
@@ -63,7 +67,7 @@ const MainApp: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard frameworks={frameworks} onNavigate={setCurrentView} />;
+        return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
       case 'reports':
         return <AIReportGenerator />;
       case 'audit':
@@ -84,7 +88,7 @@ const MainApp: React.FC = () => {
           />
         );
       case 'risks':
-        return <RiskManagement onBack={() => setCurrentView('dashboard')} />;
+        return <RiskManagement onBack={() => { loadData(); setCurrentView('dashboard'); }} />;
       case 'my-tasks':
         return <MyTasks />;
       case 'ai-policy':
@@ -107,7 +111,7 @@ const MainApp: React.FC = () => {
         if (user?.role !== 'admin') return <div>Access Denied</div>;
         return <Settings />;
       default:
-        return <Dashboard frameworks={frameworks} onNavigate={setCurrentView} />;
+        return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }
   };
 

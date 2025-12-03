@@ -29,7 +29,7 @@ describe('AIReportGenerator', () => {
   });
 
   test('triggers generation', async () => {
-    (generateComplianceReport as jest.Mock).mockResolvedValue('## Executive Summary\nLooks good.');
+    (generateComplianceReport as any).mockResolvedValue('## Executive Summary\nLooks good.');
     render(<AIReportGenerator />);
     
     const contextArea = screen.getByPlaceholderText(/E.g., We have migrated/i);
