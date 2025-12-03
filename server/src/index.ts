@@ -13,6 +13,7 @@ import risksRoutes from './routes/risks';
 import frameworksRoutes from './routes/frameworks';
 import aiRoutes from './routes/ai';
 import billingRoutes from './routes/billing';
+import integrationsRoutes from './routes/integrations';
 
 const app = express();
 
@@ -67,6 +68,7 @@ app.use('/api/risks', apiLimiter, risksRoutes);
 app.use('/api/frameworks', apiLimiter, frameworksRoutes);
 app.use('/api/ai', aiRoutes); // Has its own rate limiter
 app.use('/api/billing', billingRoutes);
+app.use('/api/integrations', apiLimiter, integrationsRoutes);
 
 // 404 handler
 app.use(notFound);
