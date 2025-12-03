@@ -15,7 +15,7 @@ jest.mock('../../../services/geminiService');
 
 describe('AI Features', () => {
   test('PolicyGenerator generates content', async () => {
-    (geminiService.generatePolicy as jest.Mock).mockResolvedValue('# Policy Content');
+    (geminiService.generatePolicy as any).mockResolvedValue('# Policy Content');
     render(<PolicyGenerator onBack={jest.fn()} />);
     
     fireEvent.click(screen.getByText('Generate Policy'));
@@ -23,7 +23,7 @@ describe('AI Features', () => {
   });
 
   test('ContractAnalyzer handles input', async () => {
-    (geminiService.analyzeContract as jest.Mock).mockResolvedValue('# Risks Found');
+    (geminiService.analyzeContract as any).mockResolvedValue('# Risks Found');
     render(<ContractAnalyzer onBack={jest.fn()} />);
     
     const input = screen.getByPlaceholderText(/Paste contract text/i);
@@ -34,7 +34,7 @@ describe('AI Features', () => {
   });
 
   test('BCPGenerator renders result', async () => {
-    (geminiService.generateBCP as jest.Mock).mockResolvedValue('# Recovery Plan');
+    (geminiService.generateBCP as any).mockResolvedValue('# Recovery Plan');
     render(<BCPGenerator onBack={jest.fn()} />);
     
     fireEvent.click(screen.getByText('Generate Plan'));

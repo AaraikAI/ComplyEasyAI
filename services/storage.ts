@@ -14,11 +14,12 @@ const DB_KEYS = {
 
 // --- Initialization Logic (Seed Data) ---
 const initDB = () => {
+  // Check and seed each table individually to ensure data integrity
   if (!localStorage.getItem(DB_KEYS.USERS)) {
-    // Seed Users
     localStorage.setItem(DB_KEYS.USERS, JSON.stringify(MOCK_USERS));
-    
-    // Seed Org
+  }
+
+  if (!localStorage.getItem(DB_KEYS.ORGS)) {
     const org: Organization = {
       id: 'org1',
       name: 'Acme Corp',
@@ -26,11 +27,21 @@ const initDB = () => {
       subscriptionStatus: 'active'
     };
     localStorage.setItem(DB_KEYS.ORGS, JSON.stringify([org]));
+  }
 
-    // Seed Data
+  if (!localStorage.getItem(DB_KEYS.RISKS)) {
     localStorage.setItem(DB_KEYS.RISKS, JSON.stringify(MOCK_RISKS));
+  }
+
+  if (!localStorage.getItem(DB_KEYS.FRAMEWORKS)) {
     localStorage.setItem(DB_KEYS.FRAMEWORKS, JSON.stringify(INITIAL_FRAMEWORKS));
+  }
+
+  if (!localStorage.getItem(DB_KEYS.LOGS)) {
     localStorage.setItem(DB_KEYS.LOGS, JSON.stringify(MOCK_AUDIT_LOGS));
+  }
+
+  if (!localStorage.getItem(DB_KEYS.INTEGRATIONS)) {
     localStorage.setItem(DB_KEYS.INTEGRATIONS, JSON.stringify(MOCK_INTEGRATIONS));
   }
 };
@@ -87,6 +98,11 @@ export const db = {
         risks.unshift(risk); // Add new risks to top
         saveTable(DB_KEYS.RISKS, risks);
       }
+    },
+    create: (risk: RiskItem) => {
+      const risks = getTable<RiskItem>(DB_KEYS.RISKS);
+      risks.unshift(risk);
+      saveTable(DB_KEYS.RISKS, risks);
     }
   },
   frameworks: {

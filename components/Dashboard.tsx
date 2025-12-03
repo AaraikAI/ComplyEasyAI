@@ -10,11 +10,11 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 import { Shield, AlertTriangle, CheckCircle, TrendingUp, ChevronRight } from 'lucide-react';
-import { MOCK_RISKS } from '../constants';
-import { ComplianceFramework, ViewState } from '../types';
+import { ComplianceFramework, ViewState, RiskItem } from '../types';
 
 interface DashboardProps {
   frameworks: ComplianceFramework[];
+  risks: RiskItem[];
   onNavigate: (view: ViewState) => void;
 }
 
@@ -27,12 +27,21 @@ const data = [
   { name: 'Jun', score: 91 },
 ];
 
-export const Dashboard: React.FC<DashboardProps> = ({ frameworks, onNavigate }) => {
-  const avgScore = Math.round(frameworks.reduce((acc, fw) => acc + fw.progress, 0) / (frameworks.length || 1));
+export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavigate }) => {
+  // Calculate average score - handle empty frameworks gracefully
+  const avgScore = frameworks.length > 0 
+    ? Math.round(frameworks.reduce((acc, fw) => acc + fw.progress, 0) / frameworks.length)
+    : 0;
+    
   const activeCount = frameworks.length;
-  const criticalRiskCount = MOCK_RISKS.filter(r => r.severity === 'High').length;
+  const criticalRiskCount = risks.filter(r => r.severity === 'High' && r.status !== 'Resolved').length;
   const upcomingAudit = frameworks.sort((a, b) => new Date(a.nextAuditDate).getTime() - new Date(b.nextAuditDate).getTime())[0];
   const auditDays = upcomingAudit ? Math.ceil((new Date(upcomingAudit.nextAuditDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24)) : 0;
+
+  // Get top 3 recent open risks for the dashboard widget
+  const priorityRisks = risks
+    .filter(r => r.status === 'Open' || r.status === 'In Progress')
+    .slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -140,7 +149,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, onNavigate }) 
              <button onClick={() => onNavigate('risks')} className="text-sm text-brand-600 font-medium hover:text-brand-800">View All</button>
           </div>
           <div className="space-y-4">
-            {MOCK_RISKS.map((risk) => (
+            {priorityRisks.length > 0 ? priorityRisks.map((risk) => (
               <div 
                 key={risk.id} 
                 onClick={() => onNavigate('risks')}
@@ -148,21 +157,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, onNavigate }) 
               >
                 <div className="flex justify-between items-start mb-1">
                   <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                    risk.severity === 'High' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                    risk.severity === 'High' ? 'bg-red-100 text-red-700' : 
+                    risk.severity === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-800'
                   }`}>
                     {risk.severity} Risk
                   </span>
                   <span className="text-xs text-gray-400">{risk.detectedAt}</span>
                 </div>
-                <p className="text-sm font-medium text-gray-800 group-hover:text-brand-600 transition-colors">{risk.description}</p>
+                <p className="text-sm font-medium text-gray-800 group-hover:text-brand-600 transition-colors line-clamp-2">{risk.description}</p>
                 <p className="text-xs text-gray-500 mt-1">{risk.category}</p>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-8 text-gray-400">
+                <CheckCircle size={32} className="mx-auto mb-2 text-green-500 opacity-50"/>
+                <p>No open risks</p>
+              </div>
+            )}
             <button 
               onClick={() => onNavigate('risks')}
               className="w-full py-2 text-sm text-brand-600 font-medium hover:text-brand-800 hover:bg-brand-50 rounded transition-colors"
             >
-              View All Risks
+              View Risk Registry
             </button>
           </div>
         </div>

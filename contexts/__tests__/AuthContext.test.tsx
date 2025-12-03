@@ -31,7 +31,7 @@ const TestComp = () => {
 
 describe('AuthContext', () => {
   test('login flow', async () => {
-    (api.auth.login as jest.Mock).mockResolvedValue({ id: '1', email: 'test@test.com' });
+    (api.auth.login as any).mockResolvedValue({ id: '1', email: 'test@test.com' });
     
     // We need to verify verifyMagicLink ideally, but loginWithMagicLink triggers the 'sent' state in UI.
     // However, the context exposes verifyMagicLink too.

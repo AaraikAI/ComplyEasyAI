@@ -1,5 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
+import { redactPII, rehydratePII } from './piiService';
 
 // In production, this should point to your backend proxy (e.g., /api/ai/proxy)
 // to avoid exposing the API Key in the frontend bundle.
@@ -18,20 +19,38 @@ const checkApiKey = (): boolean => {
 
 // Helper to use Proxy if available, else direct SDK
 const executeGenAI = async (model: string, prompt: string, schema?: any) => {
-  if (BACKEND_PROXY_URL) {
-    // secure proxy call
-    const res = await fetch(BACKEND_PROXY_URL, {
-        method: 'POST',
-        body: JSON.stringify({ model, prompt, schema })
-    });
-    return await res.json();
-  } else {
-    // direct SDK call (Demo only)
-    return await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: schema ? { responseMimeType: "application/json", responseSchema: schema } : undefined
-    });
+  // 1. Redact PII (AI Air Gap)
+  const { redactedText, map } = redactPII(prompt);
+  console.log("🔒 Secured Prompt (Redacted):", redactedText);
+
+  let responseText = '';
+
+  try {
+    if (BACKEND_PROXY_URL) {
+      // secure proxy call
+      const res = await fetch(BACKEND_PROXY_URL, {
+          method: 'POST',
+          body: JSON.stringify({ model, prompt: redactedText, schema })
+      });
+      const data = await res.json();
+      responseText = data.text;
+    } else {
+      // direct SDK call (Demo only)
+      const result = await ai.models.generateContent({
+          model,
+          contents: redactedText,
+          config: schema ? { responseMimeType: "application/json", responseSchema: schema } : undefined
+      });
+      responseText = result.text || '';
+    }
+
+    // 2. Rehydrate Response (Restore PII for the user)
+    const finalText = rehydratePII(responseText, map);
+    return { text: finalText };
+
+  } catch (error) {
+    console.error("AI Error:", error);
+    throw error;
   }
 };
 

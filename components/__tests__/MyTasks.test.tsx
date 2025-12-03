@@ -56,8 +56,8 @@ describe('MyTasks Component', () => {
   ];
 
   beforeEach(() => {
-    (useAuth as jest.Mock).mockReturnValue({ user: mockUser });
-    (api.risks.list as jest.Mock).mockResolvedValue(mockTasks);
+    (useAuth as any).mockReturnValue({ user: mockUser });
+    (api.risks.list as any).mockResolvedValue(mockTasks);
   });
 
   test('renders tasks assigned to user', async () => {
