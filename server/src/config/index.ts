@@ -55,6 +55,16 @@ interface Config {
       clientSecret: string;
       callbackUrl: string;
     };
+    slack: {
+      clientId: string;
+      clientSecret: string;
+      callbackUrl: string;
+    };
+    jira: {
+      clientId: string;
+      clientSecret: string;
+      callbackUrl: string;
+    };
   };
   security: {
     rateLimitWindowMs: number;
@@ -116,6 +126,16 @@ const config: Config = {
       clientId: process.env.GITHUB_CLIENT_ID || '',
       clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
       callbackUrl: process.env.GITHUB_CALLBACK_URL || '',
+    },
+    slack: {
+      clientId: process.env.SLACK_CLIENT_ID || '',
+      clientSecret: process.env.SLACK_CLIENT_SECRET || '',
+      callbackUrl: process.env.SLACK_CALLBACK_URL || '',
+    },
+    jira: {
+      clientId: process.env.JIRA_CLIENT_ID || '',
+      clientSecret: process.env.JIRA_CLIENT_SECRET || '',
+      callbackUrl: process.env.JIRA_CALLBACK_URL || '',
     },
   },
   security: {
