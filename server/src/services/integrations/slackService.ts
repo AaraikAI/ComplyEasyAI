@@ -1,0 +1,532 @@
+/**
+ * Slack OAuth 2.0 and API Integration Service
+ * Handles authentication, token management, and messaging with Slack
+ */
+
+import axios from 'axios';
+import config from '../../config';
+import prisma from '../../config/database';
+import logger from '../../config/logger';
+
+interface SlackTokenResponse {
+  ok: boolean;
+  access_token: string;
+  token_type: string;
+  scope: string;
+  bot_user_id: string;
+  app_id: string;
+  team: {
+    id: string;
+    name: string;
+  };
+  authed_user: {
+    id: string;
+    scope: string;
+    access_token: string;
+    token_type: string;
+  };
+}
+
+interface SlackUser {
+  id: string;
+  team_id: string;
+  name: string;
+  real_name: string;
+  email?: string;
+  is_admin: boolean;
+  is_owner: boolean;
+}
+
+class SlackService {
+  private readonly apiBaseUrl = 'https://slack.com/api';
+  private readonly authBaseUrl = 'https://slack.com/oauth/v2';
+
+  /**
+   * Generate authorization URL for OAuth flow
+   */
+  getAuthorizationUrl(state: string): string {
+    const scopes = [
+      'channels:read',
+      'channels:history',
+      'chat:write',
+      'users:read',
+      'users:read.email',
+      'team:read',
+      'audit:read',
+    ];
+
+    const params = new URLSearchParams({
+      client_id: config.oauth.slack.clientId,
+      scope: scopes.join(','),
+      redirect_uri: config.oauth.slack.callbackUrl,
+      state,
+    });
+
+    return `${this.authBaseUrl}/authorize?${params.toString()}`;
+  }
+
+  /**
+   * Exchange authorization code for access token
+   */
+  async getAccessToken(code: string): Promise<SlackTokenResponse> {
+    try {
+      const response = await axios.post(
+        `${this.authBaseUrl}/access`,
+        null,
+        {
+          params: {
+            client_id: config.oauth.slack.clientId,
+            client_secret: config.oauth.slack.clientSecret,
+            code,
+            redirect_uri: config.oauth.slack.callbackUrl,
+          },
+        }
+      );
+
+      const data: SlackTokenResponse = response.data;
+
+      if (!data.ok || !data.access_token) {
+        throw new Error('No access token received from Slack');
+      }
+
+      return data;
+    } catch (error) {
+      logger.error('Error exchanging Slack auth code for token', error);
+      throw new Error('Failed to exchange authorization code');
+    }
+  }
+
+  /**
+   * Get authenticated user info
+   */
+  async getUserInfo(accessToken: string): Promise<SlackUser> {
+    try {
+      const response = await axios.get(`${this.apiBaseUrl}/users.identity`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.data.ok) {
+        throw new Error(response.data.error || 'Failed to fetch user info');
+      }
+
+      return {
+        id: response.data.user.id,
+        team_id: response.data.team.id,
+        name: response.data.user.name,
+        real_name: response.data.user.real_name || response.data.user.name,
+        email: response.data.user.email,
+        is_admin: false,
+        is_owner: false,
+      };
+    } catch (error) {
+      logger.error('Error fetching Slack user info', error);
+      throw new Error('Failed to fetch user information');
+    }
+  }
+
+  /**
+   * Save integration to database
+   */
+  async saveIntegration(
+    organizationId: string,
+    tokenResponse: SlackTokenResponse
+  ): Promise<void> {
+    try {
+      await prisma.integration.upsert({
+        where: {
+          organizationId_provider: {
+            organizationId,
+            provider: 'slack',
+          },
+        },
+        create: {
+          organizationId,
+          name: 'Slack',
+          category: 'communication',
+          provider: 'slack',
+          connected: true,
+          accessToken: tokenResponse.access_token,
+          config: {
+            teamId: tokenResponse.team.id,
+            teamName: tokenResponse.team.name,
+            botUserId: tokenResponse.bot_user_id,
+            appId: tokenResponse.app_id,
+            scope: tokenResponse.scope,
+            authedUser: tokenResponse.authed_user,
+          },
+          lastSync: new Date(),
+        },
+        update: {
+          connected: true,
+          accessToken: tokenResponse.access_token,
+          config: {
+            teamId: tokenResponse.team.id,
+            teamName: tokenResponse.team.name,
+            botUserId: tokenResponse.bot_user_id,
+            appId: tokenResponse.app_id,
+            scope: tokenResponse.scope,
+            authedUser: tokenResponse.authed_user,
+          },
+          lastSync: new Date(),
+        },
+      });
+
+      logger.info(`Slack integration saved for organization ${organizationId}`);
+    } catch (error) {
+      logger.error('Error saving Slack integration', error);
+      throw new Error('Failed to save integration');
+    }
+  }
+
+  /**
+   * Get integration from database
+   */
+  async getIntegration(organizationId: string) {
+    return prisma.integration.findUnique({
+      where: {
+        organizationId_provider: {
+          organizationId,
+          provider: 'slack',
+        },
+      },
+    });
+  }
+
+  /**
+   * Make authenticated API request
+   */
+  private async makeRequest(accessToken: string, endpoint: string, params?: any) {
+    try {
+      const response = await axios.get(`${this.apiBaseUrl}/${endpoint}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        params,
+      });
+
+      if (!response.data.ok) {
+        throw new Error(response.data.error || 'Slack API request failed');
+      }
+
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.error === 'invalid_auth') {
+        throw new Error('Authentication failed. Please reconnect Slack integration.');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * List workspace channels
+   */
+  async listChannels(organizationId: string): Promise<any[]> {
+    try {
+      const integration = await this.getIntegration(organizationId);
+
+      if (!integration || !integration.connected || !integration.accessToken) {
+        throw new Error('Slack integration not connected');
+      }
+
+      const data = await this.makeRequest(integration.accessToken, 'conversations.list', {
+        limit: 100,
+        exclude_archived: true,
+      });
+
+      const channels = data.channels || [];
+
+      logger.info(`Listed ${channels.length} Slack channels for org ${organizationId}`);
+
+      return channels.map((channel: any) => ({
+        id: channel.id,
+        name: channel.name,
+        isPrivate: channel.is_private,
+        isMember: channel.is_member,
+        memberCount: channel.num_members,
+        topic: channel.topic?.value,
+        purpose: channel.purpose?.value,
+        createdAt: new Date(channel.created * 1000),
+      }));
+    } catch (error) {
+      logger.error('Error listing Slack channels', error);
+      throw new Error('Failed to list channels');
+    }
+  }
+
+  /**
+   * List workspace users
+   */
+  async listUsers(organizationId: string): Promise<any[]> {
+    try {
+      const integration = await this.getIntegration(organizationId);
+
+      if (!integration || !integration.connected || !integration.accessToken) {
+        throw new Error('Slack integration not connected');
+      }
+
+      const data = await this.makeRequest(integration.accessToken, 'users.list', {
+        limit: 100,
+      });
+
+      const members = data.members || [];
+
+      logger.info(`Listed ${members.length} Slack users for org ${organizationId}`);
+
+      return members
+        .filter((member: any) => !member.deleted && !member.is_bot)
+        .map((member: any) => ({
+          id: member.id,
+          name: member.name,
+          realName: member.real_name,
+          email: member.profile?.email,
+          displayName: member.profile?.display_name,
+          isAdmin: member.is_admin,
+          isOwner: member.is_owner,
+          isPrimaryOwner: member.is_primary_owner,
+          isRestricted: member.is_restricted,
+          isUltraRestricted: member.is_ultra_restricted,
+          timezone: member.tz,
+        }));
+    } catch (error) {
+      logger.error('Error listing Slack users', error);
+      throw new Error('Failed to list users');
+    }
+  }
+
+  /**
+   * Get channel history
+   */
+  async getChannelHistory(
+    organizationId: string,
+    channelId: string,
+    limit: number = 100
+  ): Promise<any[]> {
+    try {
+      const integration = await this.getIntegration(organizationId);
+
+      if (!integration || !integration.connected || !integration.accessToken) {
+        throw new Error('Slack integration not connected');
+      }
+
+      const data = await this.makeRequest(integration.accessToken, 'conversations.history', {
+        channel: channelId,
+        limit,
+      });
+
+      const messages = data.messages || [];
+
+      logger.info(`Fetched ${messages.length} messages from Slack channel ${channelId}`);
+
+      return messages.map((message: any) => ({
+        type: message.type,
+        user: message.user,
+        text: message.text,
+        timestamp: new Date(parseFloat(message.ts) * 1000),
+        threadTs: message.thread_ts,
+        replyCount: message.reply_count,
+      }));
+    } catch (error) {
+      logger.error('Error fetching Slack channel history', error);
+      throw new Error('Failed to fetch channel history');
+    }
+  }
+
+  /**
+   * Post message to channel
+   */
+  async postMessage(
+    organizationId: string,
+    channelId: string,
+    text: string,
+    blocks?: any[]
+  ): Promise<any> {
+    try {
+      const integration = await this.getIntegration(organizationId);
+
+      if (!integration || !integration.connected || !integration.accessToken) {
+        throw new Error('Slack integration not connected');
+      }
+
+      const response = await axios.post(
+        `${this.apiBaseUrl}/chat.postMessage`,
+        {
+          channel: channelId,
+          text,
+          blocks,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${integration.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.data.ok) {
+        throw new Error(response.data.error || 'Failed to post message');
+      }
+
+      logger.info(`Posted message to Slack channel ${channelId} for org ${organizationId}`);
+
+      return {
+        channel: response.data.channel,
+        timestamp: response.data.ts,
+        message: response.data.message,
+      };
+    } catch (error) {
+      logger.error('Error posting Slack message', error);
+      throw new Error('Failed to post message');
+    }
+  }
+
+  /**
+   * Get audit logs (requires Enterprise Grid)
+   */
+  async getAuditLogs(organizationId: string, limit: number = 100): Promise<any[]> {
+    try {
+      const integration = await this.getIntegration(organizationId);
+
+      if (!integration || !integration.connected || !integration.accessToken) {
+        throw new Error('Slack integration not connected');
+      }
+
+      const data = await this.makeRequest(integration.accessToken, 'admin.audit.anomaly.allow.getList', {
+        limit,
+      });
+
+      const logs = data.entries || [];
+
+      logger.info(`Fetched ${logs.length} audit log entries from Slack for org ${organizationId}`);
+
+      return logs.map((log: any) => ({
+        id: log.id,
+        dateCreate: new Date(log.date_create * 1000),
+        action: log.action,
+        actor: log.actor,
+        entity: log.entity,
+        context: log.context,
+      }));
+    } catch (error: any) {
+      // Audit logs require Enterprise Grid plan
+      if (error.message?.includes('paid_only')) {
+        logger.warn('Slack audit logs require Enterprise Grid subscription');
+        return [];
+      }
+      logger.error('Error fetching Slack audit logs', error);
+      throw new Error('Failed to fetch audit logs');
+    }
+  }
+
+  /**
+   * Send compliance notification
+   */
+  async sendComplianceNotification(
+    organizationId: string,
+    channelId: string,
+    notification: {
+      title: string;
+      message: string;
+      severity: 'info' | 'warning' | 'critical';
+      actionUrl?: string;
+    }
+  ): Promise<void> {
+    try {
+      const colors = {
+        info: '#36a64f',
+        warning: '#ff9900',
+        critical: '#ff0000',
+      };
+
+      const blocks = [
+        {
+          type: 'header',
+          text: {
+            type: 'plain_text',
+            text: notification.title,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: notification.message,
+          },
+        },
+      ];
+
+      if (notification.actionUrl) {
+        blocks.push({
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: 'View Details',
+              },
+              url: notification.actionUrl,
+              style: notification.severity === 'critical' ? 'danger' : 'primary',
+            },
+          ],
+        } as any);
+      }
+
+      await this.postMessage(organizationId, channelId, notification.message, blocks);
+
+      logger.info(`Sent compliance notification to Slack channel ${channelId}`);
+    } catch (error) {
+      logger.error('Error sending compliance notification', error);
+      throw new Error('Failed to send notification');
+    }
+  }
+
+  /**
+   * Disconnect integration
+   */
+  async disconnect(organizationId: string): Promise<void> {
+    try {
+      // Revoke token
+      const integration = await this.getIntegration(organizationId);
+
+      if (integration && integration.accessToken) {
+        try {
+          await axios.post(
+            `${this.apiBaseUrl}/auth.revoke`,
+            null,
+            {
+              headers: {
+                Authorization: `Bearer ${integration.accessToken}`,
+              },
+            }
+          );
+        } catch (error) {
+          logger.warn('Error revoking Slack token (may already be revoked)', error);
+        }
+      }
+
+      // Update database
+      await prisma.integration.update({
+        where: {
+          organizationId_provider: {
+            organizationId,
+            provider: 'slack',
+          },
+        },
+        data: {
+          connected: false,
+          accessToken: null,
+          lastSync: null,
+        },
+      });
+
+      logger.info(`Slack integration disconnected for organization ${organizationId}`);
+    } catch (error) {
+      logger.error('Error disconnecting Slack integration', error);
+      throw new Error('Failed to disconnect Slack integration');
+    }
+  }
+}
+
+export default new SlackService();

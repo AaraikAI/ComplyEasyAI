@@ -99,6 +99,86 @@ psql -c "GRANT ALL PRIVILEGES ON DATABASE complyeasy_db TO complyeasy;"
    - Events to listen: `checkout.session.completed`, `customer.subscription.*`, `invoice.*`
 5. Copy webhook signing secret
 
+### OAuth Integrations
+
+#### Google Workspace OAuth
+
+1. Go to Google Cloud Console: https://console.cloud.google.com
+2. Create a new project or select existing
+3. Enable APIs:
+   - Google Workspace Admin SDK
+   - Google Drive API
+   - Admin Reports API
+4. Create OAuth 2.0 credentials:
+   - Go to "Credentials" > "Create Credentials" > "OAuth client ID"
+   - Application type: Web application
+   - Authorized redirect URIs: `https://your-api-domain.com/api/integrations/google/callback`
+5. Copy Client ID and Client Secret
+6. Set environment variables:
+   ```bash
+   GOOGLE_CLIENT_ID=your-client-id
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   GOOGLE_CALLBACK_URL=https://your-api-domain.com/api/integrations/google/callback
+   ```
+
+#### GitHub OAuth
+
+1. Go to GitHub Settings: https://github.com/settings/developers
+2. Click "New OAuth App"
+3. Fill in details:
+   - Application name: ComplyEasy AI
+   - Homepage URL: `https://your-frontend-domain.com`
+   - Authorization callback URL: `https://your-api-domain.com/api/integrations/github/callback`
+4. Copy Client ID and generate Client Secret
+5. Set environment variables:
+   ```bash
+   GITHUB_CLIENT_ID=your-client-id
+   GITHUB_CLIENT_SECRET=your-client-secret
+   GITHUB_CALLBACK_URL=https://your-api-domain.com/api/integrations/github/callback
+   ```
+
+#### Slack OAuth
+
+1. Go to Slack API: https://api.slack.com/apps
+2. Click "Create New App" > "From scratch"
+3. Add OAuth scopes (in "OAuth & Permissions"):
+   - channels:read, channels:history, chat:write, users:read, users:read.email, team:read
+4. Add redirect URL:
+   - `https://your-api-domain.com/api/integrations/slack/callback`
+5. Copy Client ID and Client Secret from "Basic Information"
+6. Set environment variables:
+   ```bash
+   SLACK_CLIENT_ID=your-client-id
+   SLACK_CLIENT_SECRET=your-client-secret
+   SLACK_CALLBACK_URL=https://your-api-domain.com/api/integrations/slack/callback
+   ```
+
+#### Jira OAuth (Atlassian)
+
+1. Go to Atlassian Developer Console: https://developer.atlassian.com/console/myapps/
+2. Click "Create" > "OAuth 2.0 integration"
+3. Add permissions:
+   - Jira API: read:jira-user, read:jira-work, write:jira-work
+4. Add callback URL:
+   - `https://your-api-domain.com/api/integrations/jira/callback`
+5. Copy Client ID and generate Secret
+6. Set environment variables:
+   ```bash
+   JIRA_CLIENT_ID=your-client-id
+   JIRA_CLIENT_SECRET=your-client-secret
+   JIRA_CALLBACK_URL=https://your-api-domain.com/api/integrations/jira/callback
+   ```
+
+#### AWS Integration
+
+AWS uses IAM credentials instead of OAuth:
+1. Create IAM user with appropriate permissions:
+   - CloudTrailReadOnlyAccess
+   - SecurityAudit
+   - ReadOnlyAccess (or more restrictive custom policy)
+2. Generate Access Key ID and Secret Access Key
+3. Users will provide credentials via the UI (stored encrypted in database)
+
 ### AWS S3
 
 1. Create S3 bucket:
