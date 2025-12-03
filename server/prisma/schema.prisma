@@ -1,0 +1,237 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  editor
+  viewer
+}
+
+enum ComplianceStatus {
+  Compliant
+  At_Risk
+  Non_Compliant
+  In_Review
+}
+
+enum RiskSeverity {
+  High
+  Medium
+  Low
+}
+
+enum RiskStatus {
+  Open
+  In_Progress
+  Resolved
+  Ignored
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  canceled
+  trialing
+}
+
+enum Plan {
+  Basic
+  Pro
+  Enterprise
+}
+
+model Organization {
+  id                   String              @id @default(uuid())
+  name                 String
+  plan                 Plan                @default(Basic)
+  stripeCustomerId     String?             @unique
+  subscriptionStatus   SubscriptionStatus  @default(trialing)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  users                User[]
+  frameworks           ComplianceFramework[]
+  risks                RiskItem[]
+  auditLogs            AuditLog[]
+  integrations         Integration[]
+
+  @@index([stripeCustomerId])
+}
+
+model User {
+  id              String        @id @default(uuid())
+  email           String        @unique
+  name            String
+  role            Role          @default(viewer)
+  avatar          String?
+  passwordHash    String?
+  emailVerified   Boolean       @default(false)
+  lastLogin       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  assignedRisks   RiskItem[]
+  auditLogs       AuditLog[]
+
+  @@index([email])
+  @@index([organizationId])
+}
+
+model ComplianceFramework {
+  id              String            @id @default(uuid())
+  name            String
+  status          ComplianceStatus  @default(In_Review)
+  progress        Int               @default(0)
+  nextAuditDate   DateTime
+  region          String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  organizationId  String
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  controls        FrameworkControl[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model FrameworkControl {
+  id              String              @id @default(uuid())
+  name            String
+  description     String?
+  status          String              @default("Pending")
+  evidence        String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  frameworkId     String
+  framework       ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  @@index([frameworkId])
+}
+
+model RiskItem {
+  id                String        @id @default(uuid())
+  severity          RiskSeverity
+  description       String
+  category          String
+  status            RiskStatus    @default(Open)
+  aiPriorityScore   Int?
+  aiRationale       String?
+  mitigationPlan    String?
+  detectedAt        DateTime      @default(now())
+  resolvedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  organizationId    String
+  organization      Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  assignedToId      String?
+  assignedTo        User?         @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([severity])
+  @@index([assignedToId])
+}
+
+model AuditLog {
+  id              String        @id @default(uuid())
+  action          String
+  details         String?
+  ipAddress       String?
+  userAgent       String?
+  hash            String        @unique
+  verified        Boolean       @default(true)
+  timestamp       DateTime      @default(now())
+
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([timestamp])
+  @@index([hash])
+}
+
+model Integration {
+  id              String        @id @default(uuid())
+  name            String
+  category        String
+  provider        String
+  connected       Boolean       @default(false)
+  accessToken     String?       @db.Text
+  refreshToken    String?       @db.Text
+  expiresAt       DateTime?
+  lastSync        DateTime?
+  config          Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, provider])
+  @@index([organizationId])
+}
+
+model MagicLink {
+  id              String        @id @default(uuid())
+  email           String
+  token           String        @unique
+  expiresAt       DateTime
+  used            Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  @@index([email])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model FileUpload {
+  id              String        @id @default(uuid())
+  filename        String
+  originalName    String
+  mimeType        String
+  size            Int
+  s3Key           String        @unique
+  s3Bucket        String
+  url             String
+  uploadedBy      String
+  organizationId  String
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+
+  @@index([organizationId])
+  @@index([uploadedBy])
+  @@index([s3Key])
+}
+
+model StripeEvent {
+  id              String        @id @default(uuid())
+  eventId         String        @unique
+  type            String
+  data            Json
+  processed       Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  @@index([eventId])
+  @@index([type])
+  @@index([processed])
+}
