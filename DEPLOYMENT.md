@@ -1,590 +1,908 @@
-# ComplyEasy AI - Complete Deployment Guide
+# ComplyEasy AI - Production Deployment Guide
 
-This guide covers deploying both the frontend and backend to production.
+## 📋 Table of Contents
+1. [Pre-Deployment Checklist](#pre-deployment-checklist)
+2. [Infrastructure Setup](#infrastructure-setup)
+3. [Database Configuration](#database-configuration)
+4. [Environment Configuration](#environment-configuration)
+5. [Deployment Options](#deployment-options)
+6. [Post-Deployment Steps](#post-deployment-steps)
+7. [Monitoring & Maintenance](#monitoring--maintenance)
 
-## Architecture Overview
+---
 
-```
-┌─────────────────┐         ┌──────────────────┐         ┌──────────────────┐
-│   Frontend      │────────▶│   Backend API    │────────▶│   PostgreSQL     │
-│   (React/Vite)  │         │   (Express/TS)   │         │   Database       │
-└─────────────────┘         └──────────────────┘         └──────────────────┘
-         │                           │
-         │                           │
-         ▼                           ▼
-  ┌─────────────┐           ┌──────────────┐
-  │   Vercel/   │           │   Gemini AI  │
-  │  Netlify    │           │   SendGrid   │
-  └─────────────┘           │   Stripe     │
-                            │   AWS S3     │
-                            └──────────────┘
-```
+## Pre-Deployment Checklist
 
-## Prerequisites
+Before deploying to production:
 
-### Required Services
-1. **PostgreSQL Database** (Supabase, Railway, or self-hosted)
-2. **Gemini API Key** (https://makersuite.google.com/app/apikey)
-3. **SendGrid Account** (https://sendgrid.com)
-4. **Stripe Account** (https://stripe.com)
-5. **AWS S3 Bucket** (https://aws.amazon.com/s3/)
-6. **Hosting Platform** (Vercel, Railway, Heroku, or self-hosted)
+### Code & Testing
+- [ ] All tests pass locally (see TESTING.md)
+- [ ] Code is committed and pushed to main/production branch
+- [ ] No sensitive data in code (API keys, passwords)
+- [ ] Environment variables documented
+- [ ] Dependencies updated to stable versions
+- [ ] Security audit completed (`npm audit`)
 
-### Optional Services
-- **Sentry** - Error tracking
-- **DataDog** - Application monitoring
-- **CloudFlare** - CDN and DDoS protection
+### Infrastructure
+- [ ] Domain name registered
+- [ ] SSL/TLS certificate obtained
+- [ ] Production database provisioned
+- [ ] File storage configured (AWS S3 or similar)
+- [ ] Email service configured (SendGrid)
+- [ ] Monitoring tools setup
 
-## Step 1: Set Up Database
+### Security
+- [ ] JWT secret generated (strong, random)
+- [ ] Encryption keys generated
+- [ ] Rate limiting configured
+- [ ] CORS origins restricted to production domains
+- [ ] SQL injection protections verified
+- [ ] XSS protections enabled (Helmet.js configured)
 
-### Option A: Supabase (Recommended)
+---
 
-1. Create account at https://supabase.com
-2. Create new project
-3. Get connection string from Settings > Database
-4. Format: `postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres`
+## Infrastructure Setup
 
-### Option B: Railway
+### Option 1: Cloud Platform (Recommended)
 
-1. Create account at https://railway.app
-2. New Project > Add PostgreSQL
-3. Copy `DATABASE_URL` from Variables tab
+We'll cover deployment to **Heroku**, **AWS**, **DigitalOcean**, and **Railway**.
 
-### Option C: Self-Hosted
+---
+
+## Deployment Options
+
+### Option A: Deploy to Heroku
+
+#### Step 1: Install Heroku CLI
 
 ```bash
-# Install PostgreSQL
-sudo apt-get install postgresql
+# Install Heroku CLI
+curl https://cli-assets.heroku.com/install.sh | sh
 
-# Create database
-createdb complyeasy_db
-
-# Create user
-psql -c "CREATE USER complyeasy WITH PASSWORD 'your_password';"
-psql -c "GRANT ALL PRIVILEGES ON DATABASE complyeasy_db TO complyeasy;"
+# Login
+heroku login
 ```
 
-## Step 2: Configure External Services
-
-### Gemini AI
-
-1. Go to https://makersuite.google.com/app/apikey
-2. Create API key
-3. Copy key for environment variables
-
-### SendGrid
-
-1. Sign up at https://sendgrid.com
-2. Create API key with "Mail Send" permissions
-3. Verify sender email:
-   - Go to Settings > Sender Authentication
-   - Add and verify your email domain
-4. Copy API key
-
-### Stripe
-
-1. Sign up at https://stripe.com
-2. Get API keys from Developers > API keys
-3. Create products and prices:
-   ```bash
-   # Using Stripe CLI
-   stripe products create --name="Basic Plan" --description="Basic features"
-   stripe prices create --product=prod_xxx --unit-amount=7500 --currency=usd --recurring[interval]=month
-
-   # Repeat for Pro ($200) and Enterprise ($500)
-   ```
-4. Set up webhook endpoint:
-   - Developers > Webhooks > Add endpoint
-   - URL: `https://your-api-domain.com/api/billing/webhook`
-   - Events to listen: `checkout.session.completed`, `customer.subscription.*`, `invoice.*`
-5. Copy webhook signing secret
-
-### OAuth Integrations
-
-#### Google Workspace OAuth
-
-1. Go to Google Cloud Console: https://console.cloud.google.com
-2. Create a new project or select existing
-3. Enable APIs:
-   - Google Workspace Admin SDK
-   - Google Drive API
-   - Admin Reports API
-4. Create OAuth 2.0 credentials:
-   - Go to "Credentials" > "Create Credentials" > "OAuth client ID"
-   - Application type: Web application
-   - Authorized redirect URIs: `https://your-api-domain.com/api/integrations/google/callback`
-5. Copy Client ID and Client Secret
-6. Set environment variables:
-   ```bash
-   GOOGLE_CLIENT_ID=your-client-id
-   GOOGLE_CLIENT_SECRET=your-client-secret
-   GOOGLE_CALLBACK_URL=https://your-api-domain.com/api/integrations/google/callback
-   ```
-
-#### GitHub OAuth
-
-1. Go to GitHub Settings: https://github.com/settings/developers
-2. Click "New OAuth App"
-3. Fill in details:
-   - Application name: ComplyEasy AI
-   - Homepage URL: `https://your-frontend-domain.com`
-   - Authorization callback URL: `https://your-api-domain.com/api/integrations/github/callback`
-4. Copy Client ID and generate Client Secret
-5. Set environment variables:
-   ```bash
-   GITHUB_CLIENT_ID=your-client-id
-   GITHUB_CLIENT_SECRET=your-client-secret
-   GITHUB_CALLBACK_URL=https://your-api-domain.com/api/integrations/github/callback
-   ```
-
-#### Slack OAuth
-
-1. Go to Slack API: https://api.slack.com/apps
-2. Click "Create New App" > "From scratch"
-3. Add OAuth scopes (in "OAuth & Permissions"):
-   - channels:read, channels:history, chat:write, users:read, users:read.email, team:read
-4. Add redirect URL:
-   - `https://your-api-domain.com/api/integrations/slack/callback`
-5. Copy Client ID and Client Secret from "Basic Information"
-6. Set environment variables:
-   ```bash
-   SLACK_CLIENT_ID=your-client-id
-   SLACK_CLIENT_SECRET=your-client-secret
-   SLACK_CALLBACK_URL=https://your-api-domain.com/api/integrations/slack/callback
-   ```
-
-#### Jira OAuth (Atlassian)
-
-1. Go to Atlassian Developer Console: https://developer.atlassian.com/console/myapps/
-2. Click "Create" > "OAuth 2.0 integration"
-3. Add permissions:
-   - Jira API: read:jira-user, read:jira-work, write:jira-work
-4. Add callback URL:
-   - `https://your-api-domain.com/api/integrations/jira/callback`
-5. Copy Client ID and generate Secret
-6. Set environment variables:
-   ```bash
-   JIRA_CLIENT_ID=your-client-id
-   JIRA_CLIENT_SECRET=your-client-secret
-   JIRA_CALLBACK_URL=https://your-api-domain.com/api/integrations/jira/callback
-   ```
-
-#### AWS Integration
-
-AWS uses IAM credentials instead of OAuth:
-1. Create IAM user with appropriate permissions:
-   - CloudTrailReadOnlyAccess
-   - SecurityAudit
-   - ReadOnlyAccess (or more restrictive custom policy)
-2. Generate Access Key ID and Secret Access Key
-3. Users will provide credentials via the UI (stored encrypted in database)
-
-### AWS S3
-
-1. Create S3 bucket:
-   ```bash
-   aws s3 mb s3://complyeasy-uploads
-   ```
-2. Enable encryption:
-   ```bash
-   aws s3api put-bucket-encryption --bucket complyeasy-uploads \
-     --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
-   ```
-3. Configure CORS:
-   ```json
-   [
-     {
-       "AllowedHeaders": ["*"],
-       "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
-       "AllowedOrigins": ["https://your-frontend-domain.com"],
-       "ExposeHeaders": []
-     }
-   ]
-   ```
-4. Create IAM user with S3 access:
-   - Policy: AmazonS3FullAccess (or custom restrictive policy)
-   - Get Access Key ID and Secret Access Key
-
-## Step 3: Deploy Backend
-
-### Option A: Railway (Recommended - Easiest)
-
-1. Install Railway CLI:
-   ```bash
-   npm install -g @railway/cli
-   ```
-
-2. Login and initialize:
-   ```bash
-   railway login
-   cd server
-   railway init
-   ```
-
-3. Add PostgreSQL:
-   ```bash
-   railway add postgresql
-   ```
-
-4. Set environment variables:
-   ```bash
-   railway variables set NODE_ENV=production
-   railway variables set PORT=5000
-   railway variables set JWT_SECRET=your-jwt-secret-min-32-chars
-   railway variables set JWT_REFRESH_SECRET=your-refresh-secret
-   railway variables set GEMINI_API_KEY=your-gemini-key
-   railway variables set SENDGRID_API_KEY=your-sendgrid-key
-   railway variables set SENDGRID_FROM_EMAIL=noreply@yourdomain.com
-   railway variables set STRIPE_SECRET_KEY=sk_live_xxx
-   railway variables set STRIPE_WEBHOOK_SECRET=whsec_xxx
-   railway variables set STRIPE_BASIC_PRICE_ID=price_xxx
-   railway variables set STRIPE_PRO_PRICE_ID=price_xxx
-   railway variables set STRIPE_ENTERPRISE_PRICE_ID=price_xxx
-   railway variables set AWS_ACCESS_KEY_ID=your-access-key
-   railway variables set AWS_SECRET_ACCESS_KEY=your-secret
-   railway variables set AWS_REGION=us-east-1
-   railway variables set AWS_S3_BUCKET=complyeasy-uploads
-   railway variables set CORS_ORIGIN=https://your-frontend-domain.com
-   ```
-
-5. Deploy:
-   ```bash
-   railway up
-   ```
-
-6. Run migrations:
-   ```bash
-   railway run npm run prisma:migrate
-   ```
-
-7. Get your backend URL:
-   ```bash
-   railway domain
-   ```
-
-### Option B: Heroku
-
-1. Create Heroku app:
-   ```bash
-   heroku create complyeasy-api
-   heroku addons:create heroku-postgresql:hobby-dev
-   ```
-
-2. Set environment variables:
-   ```bash
-   heroku config:set NODE_ENV=production
-   heroku config:set JWT_SECRET=your-secret
-   # ... set all other variables
-   ```
-
-3. Deploy:
-   ```bash
-   git subtree push --prefix server heroku main
-   ```
-
-4. Run migrations:
-   ```bash
-   heroku run npm run prisma:migrate
-   ```
-
-### Option C: Docker + Self-Hosted
-
-1. Create Dockerfile in `/server`:
-   ```dockerfile
-   FROM node:18-alpine
-   WORKDIR /app
-   COPY package*.json ./
-   RUN npm ci --only=production
-   COPY . .
-   RUN npm run build
-   RUN npx prisma generate
-   EXPOSE 5000
-   CMD ["npm", "start"]
-   ```
-
-2. Build and run:
-   ```bash
-   docker build -t complyeasy-api .
-   docker run -d -p 5000:5000 --env-file .env complyeasy-api
-   ```
-
-3. Run migrations:
-   ```bash
-   docker exec -it [container-id] npm run prisma:migrate
-   ```
-
-## Step 4: Deploy Frontend
-
-### Update Frontend Configuration
-
-1. Create `.env` file in project root:
-   ```env
-   VITE_API_URL=https://your-backend-domain.com/api
-   ```
-
-2. Update vite.config.ts if needed
-
-### Option A: Vercel (Recommended)
-
-1. Install Vercel CLI:
-   ```bash
-   npm install -g vercel
-   ```
-
-2. Deploy:
-   ```bash
-   vercel
-   ```
-
-3. Set environment variable:
-   - Go to project settings
-   - Add `VITE_API_URL=https://your-backend-domain.com/api`
-
-4. Redeploy:
-   ```bash
-   vercel --prod
-   ```
-
-### Option B: Netlify
-
-1. Install Netlify CLI:
-   ```bash
-   npm install -g netlify-cli
-   ```
-
-2. Deploy:
-   ```bash
-   netlify init
-   netlify deploy --prod
-   ```
-
-3. Set environment variables in Netlify dashboard
-
-### Option C: Static Hosting (AWS S3 + CloudFront)
-
-1. Build frontend:
-   ```bash
-   npm run build
-   ```
-
-2. Upload to S3:
-   ```bash
-   aws s3 sync dist/ s3://your-frontend-bucket/
-   ```
-
-3. Configure CloudFront distribution for SPA routing
-
-## Step 5: Post-Deployment Configuration
-
-### 1. Update Stripe Webhook URL
-
-Update your Stripe webhook endpoint to point to your production backend:
-```
-https://your-backend-domain.com/api/billing/webhook
-```
-
-### 2. Configure CORS
-
-Update backend CORS_ORIGIN to your frontend domain:
-```bash
-railway variables set CORS_ORIGIN=https://your-frontend-domain.com
-```
-
-### 3. Set up Custom Domain (Optional)
-
-**Backend (Railway):**
-```bash
-railway domain add api.yourdomain.com
-```
-
-**Frontend (Vercel):**
-- Go to project settings > Domains
-- Add `yourdomain.com`
-- Configure DNS as instructed
-
-### 4. Enable HTTPS/SSL
-
-Both Railway and Vercel provide automatic HTTPS. For self-hosted:
+#### Step 2: Create Heroku Apps
 
 ```bash
-# Using Let's Encrypt
-sudo certbot --nginx -d yourdomain.com -d api.yourdomain.com
+# Backend app
+heroku create complyeasy-backend
+
+# Frontend app
+heroku create complyeasy-frontend
 ```
 
-### 5. Set up Monitoring
+#### Step 3: Add PostgreSQL Database
 
-**Sentry:**
 ```bash
+# Add Heroku Postgres (Standard plan recommended)
+heroku addons:create heroku-postgresql:standard-0 --app complyeasy-backend
+
+# Get database URL
+heroku config:get DATABASE_URL --app complyeasy-backend
+```
+
+#### Step 4: Configure Environment Variables
+
+```bash
+# Set all environment variables
+heroku config:set \
+  NODE_ENV=production \
+  JWT_SECRET="$(openssl rand -hex 32)" \
+  ENCRYPTION_KEY="$(openssl rand -hex 32)" \
+  GEMINI_API_KEY="your-gemini-api-key" \
+  SENDGRID_API_KEY="your-sendgrid-key" \
+  FROM_EMAIL="noreply@complyeasy.ai" \
+  AWS_ACCESS_KEY_ID="your-aws-key" \
+  AWS_SECRET_ACCESS_KEY="your-aws-secret" \
+  AWS_REGION="us-east-1" \
+  AWS_S3_BUCKET="complyeasy-prod-uploads" \
+  STRIPE_SECRET_KEY="sk_live_..." \
+  FRONTEND_URL="https://complyeasy-frontend.herokuapp.com" \
+  --app complyeasy-backend
+```
+
+#### Step 5: Deploy Backend
+
+```bash
+cd /home/user/ComplyEasyAI/server
+
+# Initialize git (if not already)
+git init
+git add .
+git commit -m "Initial production deployment"
+
+# Add Heroku remote
+heroku git:remote -a complyeasy-backend
+
+# Deploy
+git push heroku main
+
+# Run database migrations
+heroku run npx prisma migrate deploy --app complyeasy-backend
+
+# Scale dynos
+heroku ps:scale web=1:standard-1x --app complyeasy-backend
+```
+
+#### Step 6: Deploy Frontend
+
+```bash
+cd /home/user/ComplyEasyAI
+
+# Update frontend API URL in .env.production
+echo "VITE_API_URL=https://complyeasy-backend.herokuapp.com/api" > .env.production
+
+# Build frontend
+npm run build
+
+# Deploy to Heroku
+heroku git:remote -a complyeasy-frontend
+git push heroku main
+```
+
+#### Step 7: Configure Custom Domain (Optional)
+
+```bash
+# Add custom domain
+heroku domains:add www.complyeasy.ai --app complyeasy-backend
+heroku domains:add www.complyeasy.ai --app complyeasy-frontend
+
+# Get DNS targets
+heroku domains --app complyeasy-backend
+
+# Add CNAME records in your DNS provider:
+# api.complyeasy.ai → <heroku-dns-target>
+# www.complyeasy.ai → <heroku-dns-target>
+```
+
+---
+
+### Option B: Deploy to AWS (EC2 + RDS)
+
+#### Step 1: Create RDS PostgreSQL Database
+
+```bash
+# Via AWS CLI
+aws rds create-db-instance \
+  --db-instance-identifier complyeasy-prod-db \
+  --db-instance-class db.t3.medium \
+  --engine postgres \
+  --master-username complyeasy_admin \
+  --master-user-password "YourSecurePassword123!" \
+  --allocated-storage 100 \
+  --vpc-security-group-ids sg-xxxxx \
+  --backup-retention-period 7 \
+  --multi-az \
+  --publicly-accessible false
+
+# Get database endpoint
+aws rds describe-db-instances \
+  --db-instance-identifier complyeasy-prod-db \
+  --query 'DBInstances[0].Endpoint.Address'
+```
+
+#### Step 2: Launch EC2 Instance
+
+```bash
+# Launch Ubuntu 22.04 LTS instance (t3.medium recommended)
+aws ec2 run-instances \
+  --image-id ami-0c55b159cbfafe1f0 \
+  --instance-type t3.medium \
+  --key-name your-key-pair \
+  --security-group-ids sg-xxxxx \
+  --subnet-id subnet-xxxxx \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=ComplyEasy-Backend}]'
+
+# Get instance public IP
+aws ec2 describe-instances \
+  --instance-ids i-xxxxx \
+  --query 'Reservations[0].Instances[0].PublicIpAddress'
+```
+
+#### Step 3: Connect and Setup EC2
+
+```bash
+# SSH into instance
+ssh -i your-key.pem ubuntu@<instance-public-ip>
+
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install Node.js 18
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Install PM2 (process manager)
+sudo npm install -g pm2
+
+# Install Nginx
+sudo apt install -y nginx
+
+# Clone repository
+cd /var/www
+sudo git clone https://github.com/yourusername/ComplyEasyAI.git
+cd ComplyEasyAI/server
+sudo npm install --production
+```
+
+#### Step 4: Configure Environment Variables
+
+```bash
+# Create .env file
+sudo nano /var/www/ComplyEasyAI/server/.env
+
+# Add production variables (same as Heroku section above)
+```
+
+#### Step 5: Setup PM2
+
+```bash
+cd /var/www/ComplyEasyAI/server
+
+# Build TypeScript
+npm run build
+
+# Start with PM2
+pm2 start dist/index.js --name complyeasy-backend
+
+# Save PM2 configuration
+pm2 save
+
+# Setup PM2 startup script
+pm2 startup systemd
+# Run the command it outputs
+
+# Monitor
+pm2 monit
+```
+
+#### Step 6: Configure Nginx Reverse Proxy
+
+```bash
+sudo nano /etc/nginx/sites-available/complyeasy
+
+# Add configuration:
+server {
+    listen 80;
+    server_name api.complyeasy.ai;
+
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # WebSocket support
+    location /socket.io/ {
+        proxy_pass http://localhost:3001/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+}
+
+# Enable site
+sudo ln -s /etc/nginx/sites-available/complyeasy /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+#### Step 7: Setup SSL with Let's Encrypt
+
+```bash
+# Install Certbot
+sudo apt install -y certbot python3-certbot-nginx
+
+# Get SSL certificate
+sudo certbot --nginx -d api.complyeasy.ai
+
+# Auto-renewal is configured automatically
+# Test renewal
+sudo certbot renew --dry-run
+```
+
+#### Step 8: Run Database Migrations
+
+```bash
+cd /var/www/ComplyEasyAI/server
+npx prisma migrate deploy
+```
+
+---
+
+### Option C: Deploy to DigitalOcean App Platform
+
+#### Step 1: Create DigitalOcean Account and Install CLI
+
+```bash
+# Install doctl
+sudo snap install doctl
+
+# Authenticate
+doctl auth init
+```
+
+#### Step 2: Create Database
+
+```bash
+# Create managed PostgreSQL database
+doctl databases create complyeasy-db \
+  --engine pg \
+  --region nyc3 \
+  --size db-s-2vcpu-4gb \
+  --num-nodes 1
+
+# Get connection details
+doctl databases connection complyeasy-db
+```
+
+#### Step 3: Deploy via App Platform
+
+```bash
+# Create app.yaml
+cat > app.yaml << 'EOF'
+name: complyeasy
+region: nyc
+services:
+- name: backend
+  github:
+    repo: yourusername/ComplyEasyAI
+    branch: main
+    deploy_on_push: true
+  source_dir: /server
+  build_command: npm run build
+  run_command: npm start
+  environment_slug: node-js
+  instance_count: 2
+  instance_size_slug: professional-xs
+  http_port: 3001
+  envs:
+  - key: NODE_ENV
+    value: production
+  - key: DATABASE_URL
+    value: ${complyeasy-db.DATABASE_URL}
+  - key: JWT_SECRET
+    value: ${JWT_SECRET}
+    type: SECRET
+  - key: ENCRYPTION_KEY
+    value: ${ENCRYPTION_KEY}
+    type: SECRET
+
+- name: frontend
+  github:
+    repo: yourusername/ComplyEasyAI
+    branch: main
+    deploy_on_push: true
+  source_dir: /
+  build_command: npm run build
+  environment_slug: node-js
+  http_port: 5173
+  routes:
+  - path: /
+EOF
+
+# Deploy
+doctl apps create --spec app.yaml
+```
+
+---
+
+### Option D: Deploy to Railway
+
+#### Step 1: Install Railway CLI
+
+```bash
+npm install -g @railway/cli
+
+# Login
+railway login
+```
+
+#### Step 2: Initialize Project
+
+```bash
+cd /home/user/ComplyEasyAI/server
+
+# Create new project
+railway init
+
+# Add PostgreSQL
+railway add --plugin postgresql
+
+# Link to project
+railway link
+```
+
+#### Step 3: Configure Environment Variables
+
+```bash
+# Set variables via CLI
+railway variables set NODE_ENV=production
+railway variables set JWT_SECRET=$(openssl rand -hex 32)
+railway variables set ENCRYPTION_KEY=$(openssl rand -hex 32)
+railway variables set GEMINI_API_KEY=your-key
+# ... add all other variables
+```
+
+#### Step 4: Deploy
+
+```bash
+# Deploy backend
+railway up
+
+# Deploy frontend (in new terminal)
+cd /home/user/ComplyEasyAI
+railway init
+railway up
+```
+
+---
+
+## Database Configuration
+
+### Step 1: Secure Database Access
+
+```bash
+# For AWS RDS
+# 1. Use SSL connections
+# 2. Restrict security group to only EC2 instances
+# 3. Enable automated backups
+# 4. Enable encryption at rest
+
+# Update DATABASE_URL to use SSL
+DATABASE_URL="postgresql://user:pass@host:5432/db?sslmode=require"
+```
+
+### Step 2: Run Migrations
+
+```bash
+# Connect to production database
+npx prisma migrate deploy
+
+# Verify
+npx prisma db pull
+```
+
+### Step 3: Setup Database Backups
+
+```bash
+# For managed databases (Heroku, AWS RDS, DO)
+# Backups are automatic
+
+# For self-hosted PostgreSQL
+# Setup daily backups
+crontab -e
+
+# Add:
+0 2 * * * pg_dump -U complyeasy_admin complyeasy > /backups/complyeasy-$(date +\%Y\%m\%d).sql
+```
+
+---
+
+## Environment Configuration
+
+### Production Environment Variables
+
+Create comprehensive `.env.production`:
+
+```bash
+# Server
+NODE_ENV=production
+PORT=3001
+FRONTEND_URL=https://www.complyeasy.ai
+
+# Database
+DATABASE_URL=postgresql://user:password@host:5432/complyeasy?sslmode=require
+
+# Security
+JWT_SECRET=<64-char-random-hex>
+ENCRYPTION_KEY=<64-char-random-hex>
+
+# AI
+GEMINI_API_KEY=<your-gemini-api-key>
+
+# Email
+SENDGRID_API_KEY=<your-sendgrid-key>
+FROM_EMAIL=noreply@complyeasy.ai
+
+# Storage
+AWS_ACCESS_KEY_ID=<your-aws-key>
+AWS_SECRET_ACCESS_KEY=<your-aws-secret>
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=complyeasy-prod-uploads
+
+# Payments
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# OAuth (if enabled)
+GOOGLE_CLIENT_ID=<google-client-id>
+GOOGLE_CLIENT_SECRET=<google-client-secret>
+GOOGLE_REDIRECT_URI=https://api.complyeasy.ai/api/integrations/google/callback
+
+GITHUB_CLIENT_ID=<github-client-id>
+GITHUB_CLIENT_SECRET=<github-client-secret>
+GITHUB_REDIRECT_URI=https://api.complyeasy.ai/api/integrations/github/callback
+
+SLACK_CLIENT_ID=<slack-client-id>
+SLACK_CLIENT_SECRET=<slack-client-secret>
+SLACK_REDIRECT_URI=https://api.complyeasy.ai/api/integrations/slack/callback
+
+JIRA_CLIENT_ID=<jira-client-id>
+JIRA_CLIENT_SECRET=<jira-client-secret>
+JIRA_REDIRECT_URI=https://api.complyeasy.ai/api/integrations/jira/callback
+
+# Advanced Features (optional)
+ETHEREUM_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/your-api-key
+POLYGON_RPC_URL=https://polygon-mainnet.g.alchemy.com/v2/your-api-key
+BLOCKCHAIN_PRIVATE_KEY=<your-private-key>
+COMPLIANCE_CONTRACT_ADDRESS=0x...
+AWS_KMS_KEY_ID=<kms-key-id>
+AZURE_KEY_VAULT_URL=https://your-vault.vault.azure.net/
+OPA_ENDPOINT=http://opa-server:8181
+
+# Monitoring (optional)
+SENTRY_DSN=<your-sentry-dsn>
+LOGTAIL_SOURCE_TOKEN=<logtail-token>
+```
+
+### Generate Secure Secrets
+
+```bash
+# JWT Secret (64 bytes)
+openssl rand -hex 32
+
+# Encryption Key (32 bytes)
+openssl rand -hex 16
+
+# Alternative using Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+---
+
+## Post-Deployment Steps
+
+### Step 1: Verify Deployment
+
+```bash
+# Test API health
+curl https://api.complyeasy.ai/health
+
+# Expected: { "status": "ok", "database": "connected", ... }
+
+# Test authentication
+curl -X POST https://api.complyeasy.ai/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "SecurePass123!",
+    "name": "Test User",
+    "organizationName": "Test Org"
+  }'
+```
+
+### Step 2: Setup Domain & SSL
+
+```bash
+# Point DNS records to your server:
+# A record: api.complyeasy.ai → <server-ip>
+# A record: www.complyeasy.ai → <server-ip>
+
+# Verify DNS propagation
+dig api.complyeasy.ai +short
+
+# SSL should be configured via:
+# - Heroku: Automatic with paid dynos
+# - AWS: ACM certificate + CloudFront
+# - DigitalOcean: Automatic
+# - Self-hosted: Let's Encrypt (already configured)
+```
+
+### Step 3: Configure CDN (Optional but Recommended)
+
+```bash
+# Use CloudFlare for:
+# - DDoS protection
+# - Global CDN
+# - Additional SSL/TLS
+# - Rate limiting
+
+# Steps:
+# 1. Create CloudFlare account
+# 2. Add domain
+# 3. Update nameservers at domain registrar
+# 4. Enable proxy (orange cloud) for DNS records
+# 5. Configure SSL to "Full (strict)"
+# 6. Enable additional security features
+```
+
+### Step 4: Setup Monitoring
+
+#### Install Sentry for Error Tracking
+
+```bash
+# Install Sentry SDK
 npm install @sentry/node @sentry/tracing
-```
 
-Add to server/src/index.ts:
-```typescript
+# Add to server/src/index.ts (before other code)
 import * as Sentry from '@sentry/node';
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV,
+  tracesSampleRate: 1.0,
 });
 ```
 
-## Step 6: Verify Deployment
+#### Setup Uptime Monitoring
 
-### Backend Health Check
 ```bash
-curl https://your-backend-domain.com/health
+# Use UptimeRobot or similar
+# Monitor endpoints:
+# - https://api.complyeasy.ai/health (every 5 minutes)
+# - https://www.complyeasy.ai (every 5 minutes)
+
+# Configure alerts via email/SMS/Slack
 ```
 
-Expected response:
-```json
-{
-  "status": "healthy",
-  "timestamp": "2024-01-01T00:00:00.000Z",
-  "uptime": 123.456,
-  "environment": "production"
-}
+#### Setup Log Aggregation
+
+```bash
+# Install winston + logtail
+npm install winston-logtail
+
+# Update logger in server/src/config/logger.ts
+import { Logtail } from '@logtail/node';
+import { LogtailTransport } from '@logtail/winston';
+
+const logtail = new Logtail(process.env.LOGTAIL_SOURCE_TOKEN!);
+
+logger.add(new LogtailTransport(logtail));
 ```
 
-### Test Authentication Flow
-1. Visit your frontend
-2. Request magic link
-3. Check email
-4. Verify login works
-
-### Test AI Features
-1. Generate a compliance report
-2. Test chat bot
-3. Verify all AI tools respond
-
-### Test Payment Flow
-1. Go to Settings > Billing
-2. Click upgrade plan
-3. Complete test payment (use Stripe test card: 4242 4242 4242 4242)
-4. Verify webhook processed
-
-## Troubleshooting
-
-### Frontend Can't Connect to Backend
-- Verify VITE_API_URL is correct
-- Check CORS configuration
-- Verify backend is running: `curl [backend]/health`
-
-### Database Connection Errors
-- Verify DATABASE_URL format
-- Check database is accessible
-- Run migrations: `npm run prisma:migrate`
-
-### Stripe Webhook Failures
-- Verify webhook URL in Stripe dashboard
-- Check webhook secret matches
-- Test with Stripe CLI: `stripe listen --forward-to localhost:5000/api/billing/webhook`
-
-### Email Not Sending
-- Verify SendGrid API key
-- Check sender verification
-- Review SendGrid activity logs
-
-### File Upload Failures
-- Verify AWS credentials
-- Check S3 bucket permissions
-- Verify CORS configuration on S3
-
-## Performance Optimization
-
-### Backend
-- Enable database connection pooling
-- Implement Redis caching for frequently accessed data
-- Use CDN for static assets
-- Enable gzip compression
-
-### Frontend
-- Enable code splitting
-- Lazy load routes
-- Optimize images
-- Use service workers for caching
+---
 
 ## Security Hardening
 
-- [ ] Rotate all secrets regularly
-- [ ] Enable 2FA on all service accounts
-- [ ] Set up IP whitelisting for database
-- [ ] Configure rate limiting rules
-- [ ] Enable WAF (Web Application Firewall)
-- [ ] Set up DDoS protection
-- [ ] Regular security audits
-- [ ] Dependency vulnerability scanning
-- [ ] Enable audit logging
-- [ ] Configure backup strategy
+### Step 1: Enable Rate Limiting
 
-## Backup Strategy
+Already configured in code, but verify:
 
-### Database Backups
-```bash
-# Daily automated backups
-pg_dump $DATABASE_URL > backup_$(date +%Y%m%d).sql
+```typescript
+// server/src/middleware/rateLimiter.ts
+export const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP',
+});
 
-# Restore from backup
-psql $DATABASE_URL < backup_20240101.sql
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // Limit each IP to 5 login attempts per windowMs
+  message: 'Too many login attempts',
+});
 ```
 
-### File Backups (S3)
-- Enable S3 versioning
-- Set up lifecycle policies
-- Configure cross-region replication
+### Step 2: Setup Firewall
 
-## Monitoring & Alerts
+```bash
+# For AWS Security Groups
+# Allow:
+# - Port 80 (HTTP) from 0.0.0.0/0
+# - Port 443 (HTTPS) from 0.0.0.0/0
+# - Port 22 (SSH) from your IP only
+# - Port 5432 (PostgreSQL) from EC2 security group only
 
-Set up alerts for:
-- API response time > 2s
-- Error rate > 1%
-- Database CPU > 80%
-- Disk space < 20%
-- Payment webhook failures
-- Email delivery failures
+# For DigitalOcean/self-hosted
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 22/tcp
+sudo ufw enable
+```
 
-## Scaling
+### Step 3: Regular Security Updates
+
+```bash
+# Setup automatic security updates (Ubuntu)
+sudo apt install unattended-upgrades
+sudo dpkg-reconfigure --priority=low unattended-upgrades
+
+# For dependencies
+npm audit fix
+npm outdated
+```
+
+---
+
+## Monitoring & Maintenance
+
+### Daily Tasks
+
+- [ ] Check error logs
+- [ ] Monitor uptime
+- [ ] Review security alerts
+
+### Weekly Tasks
+
+- [ ] Review database performance
+- [ ] Check disk space
+- [ ] Analyze API usage patterns
+- [ ] Review backup status
+
+### Monthly Tasks
+
+- [ ] Update dependencies (`npm update`)
+- [ ] Review and rotate API keys
+- [ ] Database optimization
+- [ ] Security audit
+- [ ] Load testing
+
+### Database Maintenance
+
+```bash
+# PostgreSQL vacuum and analyze
+psql $DATABASE_URL -c "VACUUM ANALYZE;"
+
+# Check database size
+psql $DATABASE_URL -c "SELECT pg_size_pretty(pg_database_size('complyeasy'));"
+
+# Check table sizes
+psql $DATABASE_URL -c "
+  SELECT
+    schemaname,
+    tablename,
+    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+  FROM pg_tables
+  WHERE schemaname = 'public'
+  ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+"
+```
+
+---
+
+## Rollback Procedure
+
+If deployment fails:
+
+### Heroku
+
+```bash
+# List releases
+heroku releases --app complyeasy-backend
+
+# Rollback to previous version
+heroku rollback v123 --app complyeasy-backend
+```
+
+### AWS/Self-hosted
+
+```bash
+# Stop current version
+pm2 stop complyeasy-backend
+
+# Checkout previous version
+cd /var/www/ComplyEasyAI
+git log --oneline -5
+git checkout <previous-commit-hash>
+
+# Rebuild and restart
+cd server
+npm run build
+pm2 restart complyeasy-backend
+```
+
+### Database Rollback
+
+```bash
+# Restore from backup
+pg_restore -U complyeasy_admin -d complyeasy /backups/complyeasy-20251203.sql
+
+# Or rollback specific migration
+npx prisma migrate resolve --rolled-back <migration-name>
+```
+
+---
+
+## Production Checklist
+
+Before going live:
+
+- [ ] All environment variables set
+- [ ] Database migrations run
+- [ ] SSL certificate installed
+- [ ] Custom domain configured
+- [ ] DNS records updated
+- [ ] Monitoring setup (Sentry, Uptime)
+- [ ] Backups configured
+- [ ] Load testing completed
+- [ ] Security scan completed
+- [ ] Documentation updated
+- [ ] Team notified
+- [ ] Emergency contacts documented
+
+---
+
+## Support & Troubleshooting
+
+### Common Issues
+
+**Issue: Database connection timeout**
+```bash
+# Check security group/firewall
+# Verify DATABASE_URL
+# Test connection: psql $DATABASE_URL
+```
+
+**Issue: Memory errors**
+```bash
+# Increase Node.js memory
+node --max-old-space-size=4096 dist/index.js
+
+# Or in PM2
+pm2 start dist/index.js --node-args="--max-old-space-size=4096"
+```
+
+**Issue: WebSocket not connecting**
+```bash
+# Ensure nginx WebSocket config is correct
+# Check CORS settings
+# Verify socket.io version compatibility
+```
+
+---
+
+## Scaling Strategy
 
 ### Horizontal Scaling
-- Use load balancer (AWS ALB, nginx)
-- Deploy multiple backend instances
-- Configure session affinity
+
+```bash
+# Heroku
+heroku ps:scale web=3:standard-2x --app complyeasy-backend
+
+# AWS with Load Balancer
+# 1. Create Application Load Balancer
+# 2. Create Auto Scaling Group
+# 3. Configure health checks
+# 4. Set min/max instances (2-10)
+
+# PM2 Cluster Mode
+pm2 start dist/index.js -i max --name complyeasy-backend
+```
 
 ### Database Scaling
-- Read replicas for read-heavy workloads
-- Connection pooling (PgBouncer)
-- Database sharding for multi-tenancy
 
-## Cost Optimization
+```bash
+# Enable read replicas (AWS RDS)
+aws rds create-db-instance-read-replica \
+  --db-instance-identifier complyeasy-replica \
+  --source-db-instance-identifier complyeasy-prod-db
 
-### Estimated Monthly Costs (Production)
-- **Backend Hosting (Railway)**: $20-50
-- **Database (Supabase Pro)**: $25
-- **Gemini AI**: Pay per use (~$50-200)
-- **SendGrid (Essentials)**: $20
-- **Stripe**: 2.9% + $0.30 per transaction
-- **AWS S3**: ~$5-20 depending on usage
-- **Total**: ~$140-345/month + transaction fees
+# Connection pooling (PgBouncer)
+# Install on separate instance and point DATABASE_URL to it
+```
 
-### Cost Reduction Tips
-- Use database connection pooling
-- Implement caching to reduce AI calls
-- Optimize S3 storage with lifecycle policies
-- Use CDN to reduce egress costs
+---
 
-## Support
+## Success! 🎉
 
-- Documentation: https://docs.complyeasy.ai
-- Email: support@complyeasy.ai
-- GitHub Issues: https://github.com/complyeasyai/issues
+Your ComplyEasy AI application is now deployed to production and ready to serve users!
 
-## Next Steps After Deployment
+**Next Steps:**
+1. Monitor logs for first 24 hours
+2. Set up alerting for critical issues
+3. Implement analytics (Google Analytics, Mixpanel, etc.)
+4. Document API for external consumers
+5. Create user onboarding flow
+6. Set up customer support system
 
-1. Set up monitoring dashboards
-2. Configure automated backups
-3. Create staging environment
-4. Set up CI/CD pipeline
-5. Perform load testing
-6. Security audit
-7. Documentation updates
-8. User acceptance testing
-9. Launch! 🚀
+For questions or issues, refer to the troubleshooting section or create an issue on GitHub.
