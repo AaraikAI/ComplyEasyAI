@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import config, { validateConfig } from './config';
@@ -6,9 +7,11 @@ import logger from './config/logger';
 import prisma from './config/database';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
+import websocketService from './services/websocketService';
 
 // Routes
 import authRoutes from './routes/auth';
+import twoFactorRoutes from './routes/twoFactor';
 import risksRoutes from './routes/risks';
 import frameworksRoutes from './routes/frameworks';
 import aiRoutes from './routes/ai';
@@ -48,11 +51,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.get('/health', async (req: Request, res: Response) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
+    const wsConnected = websocketService.getIO() !== null;
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: config.server.env,
+      websocket: wsConnected ? 'connected' : 'disconnected',
     });
   } catch (error) {
     res.status(503).json({
@@ -64,6 +69,7 @@ app.get('/health', async (req: Request, res: Response) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/2fa', twoFactorRoutes);
 app.use('/api/risks', apiLimiter, risksRoutes);
 app.use('/api/frameworks', apiLimiter, frameworksRoutes);
 app.use('/api/ai', aiRoutes); // Has its own rate limiter
@@ -76,8 +82,14 @@ app.use(notFound);
 // Error handler (must be last)
 app.use(errorHandler);
 
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Initialize WebSocket
+websocketService.initialize(httpServer);
+
 // Start server
-const server = app.listen(config.server.port, () => {
+httpServer.listen(config.server.port, () => {
   logger.info(`
     ╔════════════════════════════════════════╗
     ║   ComplyEasy AI Backend Server         ║
@@ -85,6 +97,7 @@ const server = app.listen(config.server.port, () => {
     ║   Environment: ${config.server.env.padEnd(27)} ║
     ║   Port: ${String(config.server.port).padEnd(31)} ║
     ║   Database: Connected                  ║
+    ║   WebSocket: Enabled (/ws)             ║
     ╚════════════════════════════════════════╝
   `);
 });
@@ -93,8 +106,16 @@ const server = app.listen(config.server.port, () => {
 const gracefulShutdown = async (signal: string) => {
   logger.info(`${signal} received. Starting graceful shutdown...`);
 
-  server.close(async () => {
+  httpServer.close(async () => {
     logger.info('HTTP server closed');
+
+    // Close WebSocket connections
+    const io = websocketService.getIO();
+    if (io) {
+      io.close(() => {
+        logger.info('WebSocket server closed');
+      });
+    }
 
     try {
       await prisma.$disconnect();

@@ -222,8 +222,22 @@ npm start
 - `POST /api/integrations/aws/sync` - Sync data (cloudtrail/s3/iam/config/security-hub/compliance-scan)
 - `DELETE /api/integrations/aws` - Disconnect integration
 
+### Two-Factor Authentication
+- `POST /api/2fa/setup` - Generate 2FA secret and QR code (authenticated)
+- `POST /api/2fa/verify-enable` - Verify token and enable 2FA (authenticated)
+- `POST /api/2fa/verify` - Verify 2FA token during login (public)
+- `POST /api/2fa/verify-backup` - Verify backup code during login (public)
+- `POST /api/2fa/disable` - Disable 2FA (authenticated)
+- `POST /api/2fa/regenerate-codes` - Regenerate backup codes (authenticated)
+- `GET /api/2fa/status` - Get 2FA status (authenticated)
+
+### Real-Time WebSocket
+- WebSocket endpoint: `ws://localhost:5000/ws`
+- Authentication: Pass JWT token in `auth.token` during connection
+- Events: `risk:updated`, `framework:updated`, `ai:task:status`, `integration:sync`, `audit:log`, `notification`
+
 ### Health
-- `GET /health` - Health check endpoint
+- `GET /health` - Health check endpoint (includes WebSocket status)
 
 ## Security Features
 
