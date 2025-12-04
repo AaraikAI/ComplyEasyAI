@@ -1,0 +1,369 @@
+/**
+ * Two-Factor Authentication Service
+ * Handles TOTP generation, verification, and backup codes
+ */
+
+import speakeasy from 'speakeasy';
+import QRCode from 'qrcode';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import prisma from '../config/database';
+import logger from '../config/logger';
+
+interface TwoFactorSetup {
+  secret: string;
+  qrCodeUrl: string;
+  backupCodes: string[];
+}
+
+interface TwoFactorSecret {
+  ascii: string;
+  hex: string;
+  base32: string;
+  otpauth_url?: string;
+}
+
+class TwoFactorService {
+  /**
+   * Generate 2FA secret and QR code for user setup
+   */
+  async setupTwoFactor(userId: string, userEmail: string): Promise<TwoFactorSetup> {
+    try {
+      // Generate secret
+      const secret = speakeasy.generateSecret({
+        name: `ComplyEasy AI (${userEmail})`,
+        issuer: 'ComplyEasy AI',
+        length: 32,
+      }) as TwoFactorSecret;
+
+      if (!secret.otpauth_url) {
+        throw new Error('Failed to generate OTP auth URL');
+      }
+
+      // Generate QR code
+      const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+      // Generate backup codes
+      const backupCodes = this.generateBackupCodes(8);
+
+      // Save encrypted secret (don't enable yet - user must verify first)
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          twoFactorSecret: this.encryptSecret(secret.base32),
+          twoFactorVerified: false,
+        },
+      });
+
+      // Save hashed backup codes
+      await this.saveBackupCodes(userId, backupCodes);
+
+      logger.info(`2FA setup initiated for user ${userId}`);
+
+      return {
+        secret: secret.base32,
+        qrCodeUrl,
+        backupCodes,
+      };
+    } catch (error) {
+      logger.error('Error setting up 2FA', error);
+      throw new Error('Failed to setup two-factor authentication');
+    }
+  }
+
+  /**
+   * Verify TOTP token and enable 2FA
+   */
+  async verifyAndEnableTwoFactor(userId: string, token: string): Promise<boolean> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { twoFactorSecret: true, twoFactorEnabled: true },
+      });
+
+      if (!user || !user.twoFactorSecret) {
+        throw new Error('2FA not set up for this user');
+      }
+
+      if (user.twoFactorEnabled) {
+        throw new Error('2FA already enabled');
+      }
+
+      const secret = this.decryptSecret(user.twoFactorSecret);
+
+      // Verify token
+      const verified = speakeasy.totp.verify({
+        secret,
+        encoding: 'base32',
+        token,
+        window: 2, // Allow 2 time steps before/after for clock skew
+      });
+
+      if (!verified) {
+        logger.warn(`Failed 2FA verification attempt for user ${userId}`);
+        return false;
+      }
+
+      // Enable 2FA
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          twoFactorEnabled: true,
+          twoFactorVerified: true,
+        },
+      });
+
+      logger.info(`2FA enabled for user ${userId}`);
+      return true;
+    } catch (error) {
+      logger.error('Error verifying 2FA token', error);
+      throw new Error('Failed to verify two-factor authentication');
+    }
+  }
+
+  /**
+   * Verify TOTP token during login
+   */
+  async verifyTwoFactorToken(userId: string, token: string): Promise<boolean> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          twoFactorSecret: true,
+          twoFactorEnabled: true,
+          twoFactorVerified: true,
+        },
+      });
+
+      if (!user || !user.twoFactorSecret || !user.twoFactorEnabled) {
+        return false;
+      }
+
+      const secret = this.decryptSecret(user.twoFactorSecret);
+
+      const verified = speakeasy.totp.verify({
+        secret,
+        encoding: 'base32',
+        token,
+        window: 2,
+      });
+
+      if (verified) {
+        logger.info(`Successful 2FA verification for user ${userId}`);
+      } else {
+        logger.warn(`Failed 2FA verification for user ${userId}`);
+      }
+
+      return verified;
+    } catch (error) {
+      logger.error('Error verifying 2FA token', error);
+      return false;
+    }
+  }
+
+  /**
+   * Verify backup code
+   */
+  async verifyBackupCode(userId: string, code: string): Promise<boolean> {
+    try {
+      const backupCodes = await prisma.twoFactorBackupCode.findMany({
+        where: {
+          userId,
+          used: false,
+        },
+      });
+
+      for (const backupCode of backupCodes) {
+        const isMatch = await bcrypt.compare(code, backupCode.code);
+
+        if (isMatch) {
+          // Mark code as used
+          await prisma.twoFactorBackupCode.update({
+            where: { id: backupCode.id },
+            data: {
+              used: true,
+              usedAt: new Date(),
+            },
+          });
+
+          logger.info(`Backup code used for user ${userId}`);
+          return true;
+        }
+      }
+
+      logger.warn(`Invalid backup code attempt for user ${userId}`);
+      return false;
+    } catch (error) {
+      logger.error('Error verifying backup code', error);
+      return false;
+    }
+  }
+
+  /**
+   * Disable 2FA (requires current 2FA token or backup code)
+   */
+  async disableTwoFactor(userId: string, token: string): Promise<boolean> {
+    try {
+      // Verify token first
+      const verified =
+        (await this.verifyTwoFactorToken(userId, token)) ||
+        (await this.verifyBackupCode(userId, token));
+
+      if (!verified) {
+        return false;
+      }
+
+      // Disable 2FA
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          twoFactorEnabled: false,
+          twoFactorSecret: null,
+          twoFactorVerified: false,
+        },
+      });
+
+      // Delete all backup codes
+      await prisma.twoFactorBackupCode.deleteMany({
+        where: { userId },
+      });
+
+      logger.info(`2FA disabled for user ${userId}`);
+      return true;
+    } catch (error) {
+      logger.error('Error disabling 2FA', error);
+      throw new Error('Failed to disable two-factor authentication');
+    }
+  }
+
+  /**
+   * Regenerate backup codes (requires 2FA token)
+   */
+  async regenerateBackupCodes(userId: string, token: string): Promise<string[] | null> {
+    try {
+      // Verify token first
+      const verified = await this.verifyTwoFactorToken(userId, token);
+
+      if (!verified) {
+        return null;
+      }
+
+      // Delete old backup codes
+      await prisma.twoFactorBackupCode.deleteMany({
+        where: { userId },
+      });
+
+      // Generate new backup codes
+      const backupCodes = this.generateBackupCodes(8);
+      await this.saveBackupCodes(userId, backupCodes);
+
+      logger.info(`Backup codes regenerated for user ${userId}`);
+      return backupCodes;
+    } catch (error) {
+      logger.error('Error regenerating backup codes', error);
+      throw new Error('Failed to regenerate backup codes');
+    }
+  }
+
+  /**
+   * Get remaining backup codes count
+   */
+  async getRemainingBackupCodesCount(userId: string): Promise<number> {
+    try {
+      const count = await prisma.twoFactorBackupCode.count({
+        where: {
+          userId,
+          used: false,
+        },
+      });
+
+      return count;
+    } catch (error) {
+      logger.error('Error getting backup codes count', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Check if user has 2FA enabled
+   */
+  async isTwoFactorEnabled(userId: string): Promise<boolean> {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { twoFactorEnabled: true },
+      });
+
+      return user?.twoFactorEnabled || false;
+    } catch (error) {
+      logger.error('Error checking 2FA status', error);
+      return false;
+    }
+  }
+
+  /**
+   * Generate backup codes
+   */
+  private generateBackupCodes(count: number): string[] {
+    const codes: string[] = [];
+
+    for (let i = 0; i < count; i++) {
+      // Generate 8-character alphanumeric code
+      const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+      codes.push(code);
+    }
+
+    return codes;
+  }
+
+  /**
+   * Save hashed backup codes to database
+   */
+  private async saveBackupCodes(userId: string, codes: string[]): Promise<void> {
+    const hashedCodes = await Promise.all(
+      codes.map(async (code) => ({
+        userId,
+        code: await bcrypt.hash(code, 10),
+      }))
+    );
+
+    await prisma.twoFactorBackupCode.createMany({
+      data: hashedCodes,
+    });
+  }
+
+  /**
+   * Encrypt secret for storage
+   */
+  private encryptSecret(secret: string): string {
+    // In production, use a proper encryption key from environment
+    const algorithm = 'aes-256-cbc';
+    const key = crypto.scryptSync(process.env.ENCRYPTION_KEY || 'default-key', 'salt', 32);
+    const iv = crypto.randomBytes(16);
+
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    let encrypted = cipher.update(secret, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+
+    return `${iv.toString('hex')}:${encrypted}`;
+  }
+
+  /**
+   * Decrypt secret from storage
+   */
+  private decryptSecret(encryptedSecret: string): string {
+    const algorithm = 'aes-256-cbc';
+    const key = crypto.scryptSync(process.env.ENCRYPTION_KEY || 'default-key', 'salt', 32);
+
+    const [ivHex, encrypted] = encryptedSecret.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    return decrypted;
+  }
+}
+
+export default new TwoFactorService();
