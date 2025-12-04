@@ -110,6 +110,17 @@ class AuthController {
         data: { used: true },
       });
 
+      // Check if 2FA is enabled
+      if (user.twoFactorEnabled) {
+        // Return pending 2FA response
+        res.json({
+          twoFactorRequired: true,
+          userId: user.id,
+          message: 'Two-factor authentication required',
+        });
+        return;
+      }
+
       // Update last login
       await prisma.user.update({
         where: { id: user.id },
@@ -139,6 +150,7 @@ class AuthController {
       });
 
       res.json({
+        twoFactorRequired: false,
         accessToken,
         refreshToken,
         user: {
@@ -268,6 +280,92 @@ class AuthController {
       logger.error('Registration error', error);
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to register user', 500);
+    }
+  }
+
+  async completeTwoFactorLogin(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId, token } = req.body;
+
+      if (!userId || !token) {
+        throw new AppError('User ID and 2FA token are required', 400);
+      }
+
+      // Get user
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { organization: true },
+      });
+
+      if (!user) {
+        throw new AppError('User not found', 404);
+      }
+
+      if (!user.twoFactorEnabled) {
+        throw new AppError('2FA is not enabled for this user', 400);
+      }
+
+      // Verify 2FA token (either TOTP or backup code)
+      const twoFactorService = (await import('../services/twoFactorService')).default;
+      const isValidToken = await twoFactorService.verifyTwoFactorToken(userId, token);
+      const isValidBackup = !isValidToken
+        ? await twoFactorService.verifyBackupCode(userId, token)
+        : false;
+
+      if (!isValidToken && !isValidBackup) {
+        throw new AppError('Invalid authentication code', 401);
+      }
+
+      // Update last login
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() },
+      });
+
+      // Generate JWT tokens
+      const accessToken = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        organizationId: user.organizationId,
+      });
+
+      const refreshToken = generateRefreshToken(user.id);
+
+      // Log authentication
+      await prisma.auditLog.create({
+        data: {
+          action: '2FA Login Success',
+          userId: user.id,
+          organizationId: user.organizationId,
+          hash: uuidv4(),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        },
+      });
+
+      res.json({
+        accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          avatar: user.avatar,
+          organization: {
+            id: user.organization.id,
+            name: user.organization.name,
+            plan: user.organization.plan,
+          },
+        },
+      });
+
+      logger.info(`User completed 2FA login: ${user.email}`);
+    } catch (error) {
+      logger.error('Complete 2FA login error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to complete 2FA login', 500);
     }
   }
 

@@ -68,25 +68,46 @@ model Organization {
 }
 
 model User {
-  id              String        @id @default(uuid())
-  email           String        @unique
-  name            String
-  role            Role          @default(viewer)
-  avatar          String?
-  passwordHash    String?
-  emailVerified   Boolean       @default(false)
-  lastLogin       DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                    String        @id @default(uuid())
+  email                 String        @unique
+  name                  String
+  role                  Role          @default(viewer)
+  avatar                String?
+  passwordHash          String?
+  emailVerified         Boolean       @default(false)
+  lastLogin             DateTime?
 
-  organizationId  String
-  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Two-Factor Authentication
+  twoFactorEnabled      Boolean       @default(false)
+  twoFactorSecret       String?       @db.Text
+  twoFactorVerified     Boolean       @default(false)
 
-  assignedRisks   RiskItem[]
-  auditLogs       AuditLog[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  organizationId        String
+  organization          Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  assignedRisks         RiskItem[]
+  auditLogs             AuditLog[]
+  backupCodes           TwoFactorBackupCode[]
 
   @@index([email])
   @@index([organizationId])
+}
+
+model TwoFactorBackupCode {
+  id              String        @id @default(uuid())
+  code            String
+  used            Boolean       @default(false)
+  usedAt          DateTime?
+  createdAt       DateTime      @default(now())
+
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
 }
 
 model ComplianceFramework {
