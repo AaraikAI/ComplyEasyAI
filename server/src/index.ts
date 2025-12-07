@@ -18,6 +18,11 @@ import aiRoutes from './routes/ai';
 import billingRoutes from './routes/billing';
 import integrationsRoutes from './routes/integrations';
 
+// Enterprise Module Routes
+import personnelRoutes from './routes/personnel';
+import vendorRoutes from './routes/vendors';
+import enterpriseRoutes from './routes/enterprise';
+
 const app = express();
 
 // Validate configuration
@@ -76,6 +81,11 @@ app.use('/api/ai', aiRoutes); // Has its own rate limiter
 app.use('/api/billing', billingRoutes);
 app.use('/api/integrations', apiLimiter, integrationsRoutes);
 
+// Enterprise Module routes
+app.use('/api/personnel', apiLimiter, personnelRoutes);
+app.use('/api/vendors', apiLimiter, vendorRoutes);
+app.use('/api/enterprise', apiLimiter, enterpriseRoutes);
+
 // 404 handler
 app.use(notFound);
 
@@ -93,11 +103,30 @@ httpServer.listen(config.server.port, () => {
   logger.info(`
     ╔════════════════════════════════════════╗
     ║   ComplyEasy AI Backend Server         ║
-    ║   Version: 1.0.0                       ║
+    ║   Version: 2.0.0 - ENTERPRISE          ║
     ║   Environment: ${config.server.env.padEnd(27)} ║
     ║   Port: ${String(config.server.port).padEnd(31)} ║
     ║   Database: Connected                  ║
     ║   WebSocket: Enabled (/ws)             ║
+    ║                                        ║
+    ║   Enterprise Features:                 ║
+    ║   ✓ Personnel & Access Management      ║
+    ║   ✓ Vendor Risk Management             ║
+    ║   ✓ Full Risk Management               ║
+    ║   ✓ Questionnaire Automation           ║
+    ║   ✓ Policy Library                     ║
+    ║   ✓ Trust Center                       ║
+    ║   ✓ Multi-Workspace                    ║
+    ║   ✓ Reporting Engine                   ║
+    ║   ✓ Continuous Monitoring              ║
+    ║   ✓ Issue Management                   ║
+    ║                                        ║
+    ║   Visionary AI Features:               ║
+    ║   ✓ AI Compliance Co-Pilot             ║
+    ║   ✓ Predictive Risk Intelligence       ║
+    ║   ✓ Automated Policy Generation        ║
+    ║   ✓ Intelligent Autopilot              ║
+    ║   ✓ Compliance Benchmarking            ║
     ╚════════════════════════════════════════╝
   `);
 });
