@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import logger from '../config/logger';
+import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
 
@@ -33,6 +34,7 @@ export class AuditLogger {
           metadata: params.metadata || {},
           ipAddress: params.ipAddress,
           userAgent: params.userAgent,
+          hash: uuidv4(),
           timestamp: new Date(),
         },
       });
@@ -77,6 +79,7 @@ export class AuditLogger {
           resourceType: event.resourceType,
           resourceId: event.resourceId,
           metadata: event.metadata || {},
+          hash: uuidv4(),
           timestamp: new Date(),
         })),
       });
@@ -182,10 +185,14 @@ export class AuditLogger {
 
     logs.forEach((log) => {
       actionCounts[log.action] = (actionCounts[log.action] || 0) + 1;
-      resourceTypeCounts[log.resourceType] =
-        (resourceTypeCounts[log.resourceType] || 0) + 1;
-      userActivityCounts[log.userId] =
-        (userActivityCounts[log.userId] || 0) + 1;
+      if (log.resourceType) {
+        resourceTypeCounts[log.resourceType] =
+          (resourceTypeCounts[log.resourceType] || 0) + 1;
+      }
+      if (log.userId) {
+        userActivityCounts[log.userId] =
+          (userActivityCounts[log.userId] || 0) + 1;
+      }
     });
 
     return {
@@ -277,12 +284,12 @@ export class AuditLogger {
 
       const rows = logs.map((log) => [
         log.timestamp.toISOString(),
-        log.userId,
-        log.user.name,
-        log.user.email,
+        log.userId || '',
+        log.user?.name || '',
+        log.user?.email || '',
         log.action,
-        log.resourceType,
-        log.resourceId,
+        log.resourceType || '',
+        log.resourceId || '',
         log.ipAddress || '',
         JSON.stringify(log.metadata),
       ]);
