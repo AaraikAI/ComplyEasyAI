@@ -13,21 +13,23 @@ export class ReportingService {
    */
   async createReport(data: {
     organizationId: string;
-    reportName: string;
+    name: string;
     reportType: string;
-    parameters: any;
-    schedule?: string;
+    template: any;
+    description?: string;
+    schedule?: any;
     recipients?: any;
     userId: string;
   }) {
     const report = await prisma.customReport.create({
       data: {
         organizationId: data.organizationId,
-        reportName: data.reportName,
+        name: data.name,
+        description: data.description,
         reportType: data.reportType,
-        parameters: data.parameters,
+        template: data.template,
         schedule: data.schedule,
-        recipients: data.recipients || [],
+        recipients: data.recipients,
       },
     });
 
