@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { AuditLogger } from '../utils/auditLogger';
 
 const prisma = new PrismaClient();
@@ -151,17 +151,15 @@ export class PersonnelService {
     reviewerId: string;
     organizationId: string;
     dueDate: Date;
-    scope?: any;
   }) {
     const review = await prisma.accessReview.create({
       data: {
         personnelId: data.personnelId,
-        reviewType: data.reviewType,
         reviewerId: data.reviewerId,
         organizationId: data.organizationId,
         dueDate: data.dueDate,
-        scope: data.scope || {},
         status: 'Pending',
+        findings: { reviewType: data.reviewType },
       },
       include: {
         personnel: {
@@ -191,8 +189,8 @@ export class PersonnelService {
   async completeAccessReview(
     reviewId: string,
     data: {
-      findings: any;
-      accessChanges: any;
+      findings: Record<string, unknown>;
+      accessChanges: Record<string, unknown>;
       approved: boolean;
     },
     userId: string,
@@ -202,9 +200,8 @@ export class PersonnelService {
       where: { id: reviewId },
       data: {
         status: 'Completed',
-        completedAt: new Date(),
-        findings: data.findings,
-        accessChanges: data.accessChanges,
+        completedDate: new Date(),
+        findings: { ...data.findings, accessChanges: data.accessChanges } as Prisma.InputJsonValue,
       },
       include: {
         personnel: {
@@ -220,9 +217,9 @@ export class PersonnelService {
       await prisma.personnel.update({
         where: { id: review.personnelId },
         data: {
-          systemAccess: data.accessChanges.systemAccess,
-          dataAccess: data.accessChanges.dataAccess,
-          physicalAccess: data.accessChanges.physicalAccess,
+          systemAccess: data.accessChanges.systemAccess as Prisma.InputJsonValue,
+          dataAccess: data.accessChanges.dataAccess as Prisma.InputJsonValue,
+          physicalAccess: data.accessChanges.physicalAccess as Prisma.InputJsonValue,
         },
       });
     }

@@ -8,8 +8,8 @@ import axios from 'axios';
 import crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import logger from '../config/logger';
-import prisma from '../config/database';
+import logger from '../../config/logger';
+import prisma from '../../config/database';
 
 interface Policy {
   id: string;

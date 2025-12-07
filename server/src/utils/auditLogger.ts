@@ -1,7 +1,16 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import logger from '../config/logger';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
+
+/**
+ * Generate a unique hash for audit log entry
+ */
+function generateAuditHash(data: Record<string, unknown>): string {
+  const content = JSON.stringify(data) + Date.now() + Math.random();
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
 
 /**
  * Centralized Audit Logging System
@@ -18,21 +27,26 @@ export class AuditLogger {
     action: string;
     resourceType: string;
     resourceId: string;
-    metadata?: any;
+    metadata?: Prisma.InputJsonValue;
     ipAddress?: string;
     userAgent?: string;
   }): Promise<void> {
     try {
+      const logData = {
+        userId: params.userId,
+        organizationId: params.organizationId,
+        action: params.action,
+        resourceType: params.resourceType,
+        resourceId: params.resourceId,
+      };
+
       await prisma.auditLog.create({
         data: {
-          userId: params.userId,
-          organizationId: params.organizationId,
-          action: params.action,
-          resourceType: params.resourceType,
-          resourceId: params.resourceId,
+          ...logData,
           metadata: params.metadata || {},
           ipAddress: params.ipAddress,
           userAgent: params.userAgent,
+          hash: generateAuditHash(logData),
           timestamp: new Date(),
         },
       });
@@ -65,20 +79,26 @@ export class AuditLogger {
       action: string;
       resourceType: string;
       resourceId: string;
-      metadata?: any;
+      metadata?: Prisma.InputJsonValue;
     }>
   ): Promise<void> {
     try {
       await prisma.auditLog.createMany({
-        data: events.map((event) => ({
-          userId: event.userId,
-          organizationId: event.organizationId,
-          action: event.action,
-          resourceType: event.resourceType,
-          resourceId: event.resourceId,
-          metadata: event.metadata || {},
-          timestamp: new Date(),
-        })),
+        data: events.map((event) => {
+          const logData = {
+            userId: event.userId,
+            organizationId: event.organizationId,
+            action: event.action,
+            resourceType: event.resourceType,
+            resourceId: event.resourceId,
+          };
+          return {
+            ...logData,
+            metadata: event.metadata || {},
+            hash: generateAuditHash(logData),
+            timestamp: new Date(),
+          };
+        }),
       });
 
       logger.info(`Batch audit log: ${events.length} events`);
@@ -182,10 +202,14 @@ export class AuditLogger {
 
     logs.forEach((log) => {
       actionCounts[log.action] = (actionCounts[log.action] || 0) + 1;
-      resourceTypeCounts[log.resourceType] =
-        (resourceTypeCounts[log.resourceType] || 0) + 1;
-      userActivityCounts[log.userId] =
-        (userActivityCounts[log.userId] || 0) + 1;
+      if (log.resourceType) {
+        resourceTypeCounts[log.resourceType] =
+          (resourceTypeCounts[log.resourceType] || 0) + 1;
+      }
+      if (log.userId) {
+        userActivityCounts[log.userId] =
+          (userActivityCounts[log.userId] || 0) + 1;
+      }
     });
 
     return {
@@ -277,12 +301,12 @@ export class AuditLogger {
 
       const rows = logs.map((log) => [
         log.timestamp.toISOString(),
-        log.userId,
-        log.user.name,
-        log.user.email,
+        log.userId || '',
+        log.user?.name || '',
+        log.user?.email || '',
         log.action,
-        log.resourceType,
-        log.resourceId,
+        log.resourceType || '',
+        log.resourceId || '',
         log.ipAddress || '',
         JSON.stringify(log.metadata),
       ]);

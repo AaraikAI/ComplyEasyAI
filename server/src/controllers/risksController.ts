@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
@@ -7,9 +7,10 @@ import geminiService from '../services/geminiService';
 import { v4 as uuidv4 } from 'uuid';
 
 class RisksController {
-  async list(req: AuthRequest, res: Response): Promise<void> {
+  list: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const organizationId = req.user!.organizationId;
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
       const { status, severity, assignedTo } = req.query;
 
       const risks = await prisma.riskItem.findMany({
@@ -40,12 +41,13 @@ class RisksController {
       logger.error('List risks error', error);
       throw new AppError('Failed to fetch risks', 500);
     }
-  }
+  };
 
-  async getById(req: AuthRequest, res: Response): Promise<void> {
+  getById: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { id } = req.params;
-      const organizationId = req.user!.organizationId;
+      const organizationId = authReq.user!.organizationId;
 
       const risk = await prisma.riskItem.findFirst({
         where: {
@@ -74,12 +76,13 @@ class RisksController {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to fetch risk', 500);
     }
-  }
+  };
 
-  async create(req: AuthRequest, res: Response): Promise<void> {
+  create: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const organizationId = req.user!.organizationId;
-      const { severity, description, category, assignedToId } = req.body;
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
+      const { title, severity, description, category, assignedToId } = req.body;
 
       if (!severity || !description || !category) {
         throw new AppError('Severity, description, and category are required', 400);
@@ -87,6 +90,7 @@ class RisksController {
 
       const risk = await prisma.riskItem.create({
         data: {
+          title: title || description.substring(0, 100),
           severity,
           description,
           category,
@@ -109,10 +113,10 @@ class RisksController {
       await prisma.auditLog.create({
         data: {
           action: `Risk Created: ${description.substring(0, 50)}`,
-          userId: req.user!.id,
+          userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
-          ipAddress: req.ip,
+          ipAddress: req.ip || undefined,
           userAgent: req.headers['user-agent'],
         },
       });
@@ -124,12 +128,13 @@ class RisksController {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to create risk', 500);
     }
-  }
+  };
 
-  async update(req: AuthRequest, res: Response): Promise<void> {
+  update: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { id } = req.params;
-      const organizationId = req.user!.organizationId;
+      const organizationId = authReq.user!.organizationId;
       const updateData = req.body;
 
       // Verify risk exists and belongs to organization
@@ -167,10 +172,10 @@ class RisksController {
         data: {
           action: `Risk Updated: ${risk.description.substring(0, 50)}`,
           details: JSON.stringify(updateData),
-          userId: req.user!.id,
+          userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
-          ipAddress: req.ip,
+          ipAddress: req.ip || undefined,
           userAgent: req.headers['user-agent'],
         },
       });
@@ -182,12 +187,13 @@ class RisksController {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to update risk', 500);
     }
-  }
+  };
 
-  async delete(req: AuthRequest, res: Response): Promise<void> {
+  delete: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { id } = req.params;
-      const organizationId = req.user!.organizationId;
+      const organizationId = authReq.user!.organizationId;
 
       const risk = await prisma.riskItem.findFirst({
         where: { id, organizationId },
@@ -205,10 +211,10 @@ class RisksController {
       await prisma.auditLog.create({
         data: {
           action: `Risk Deleted: ${risk.description.substring(0, 50)}`,
-          userId: req.user!.id,
+          userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
-          ipAddress: req.ip,
+          ipAddress: req.ip || undefined,
           userAgent: req.headers['user-agent'],
         },
       });
@@ -220,11 +226,12 @@ class RisksController {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to delete risk', 500);
     }
-  }
+  };
 
-  async prioritize(req: AuthRequest, res: Response): Promise<void> {
+  prioritize: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const organizationId = req.user!.organizationId;
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
 
       const risks = await prisma.riskItem.findMany({
         where: {
@@ -239,7 +246,7 @@ class RisksController {
       }
 
       // Use Gemini AI to prioritize
-      const prioritized = await geminiService.prioritizeRisks(risks, req.user!.id);
+      const prioritized = await geminiService.prioritizeRisks(risks, authReq.user!.id);
 
       // Update risks with AI scores
       for (const item of prioritized) {
@@ -256,10 +263,10 @@ class RisksController {
       await prisma.auditLog.create({
         data: {
           action: `AI Risk Prioritization Completed (${risks.length} risks)`,
-          userId: req.user!.id,
+          userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
-          ipAddress: req.ip,
+          ipAddress: req.ip || undefined,
           userAgent: req.headers['user-agent'],
         },
       });
@@ -270,12 +277,13 @@ class RisksController {
       logger.error('Prioritize risks error', error);
       throw new AppError('Failed to prioritize risks', 500);
     }
-  }
+  };
 
-  async generateRemediation(req: AuthRequest, res: Response): Promise<void> {
+  generateRemediation: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { id } = req.params;
-      const organizationId = req.user!.organizationId;
+      const organizationId = authReq.user!.organizationId;
 
       const risk = await prisma.riskItem.findFirst({
         where: { id, organizationId },
@@ -288,7 +296,7 @@ class RisksController {
       // Generate remediation plan using Gemini
       const plan = await geminiService.generateRemediationPlan(
         risk.description,
-        req.user!.id
+        authReq.user!.id
       );
 
       // Update risk with remediation plan
@@ -303,16 +311,18 @@ class RisksController {
       logger.error('Generate remediation error', error);
       throw new AppError('Failed to generate remediation plan', 500);
     }
-  }
+  };
 
-  async scan(req: AuthRequest, res: Response): Promise<void> {
+  scan: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const organizationId = req.user!.organizationId;
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
 
       // Simulate automated risk scanning
       // In production, this would integrate with actual security tools
       const simulatedRisk = await prisma.riskItem.create({
         data: {
+          title: 'Publicly accessible database instance without encryption',
           severity: 'High',
           description: 'Automated scan detected: Publicly accessible database instance without encryption',
           category: 'Infrastructure',
@@ -325,10 +335,10 @@ class RisksController {
         data: {
           action: 'Automated Risk Scan Completed',
           details: `New risk detected: ${simulatedRisk.id}`,
-          userId: req.user!.id,
+          userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
-          ipAddress: req.ip,
+          ipAddress: req.ip || undefined,
           userAgent: req.headers['user-agent'],
         },
       });
@@ -343,7 +353,7 @@ class RisksController {
       logger.error('Risk scan error', error);
       throw new AppError('Failed to complete risk scan', 500);
     }
-  }
+  };
 }
 
 export default new RisksController();
