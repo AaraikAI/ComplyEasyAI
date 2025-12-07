@@ -1,9 +1,28 @@
-import { PrismaClient, QuestionnaireStatus } from '@prisma/client';
+import { PrismaClient, QuestionnaireStatus, QuestionnaireQuestion, QuestionnaireResponse, Prisma } from '@prisma/client';
 import { AuditLogger } from '../utils/auditLogger';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const prisma = new PrismaClient();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+
+interface QuestionnaireWithRelations {
+  id: string;
+  organizationId: string;
+  title: string;
+  description: string | null;
+  questionnaireType: string;
+  status: QuestionnaireStatus;
+  requestedBy: string | null;
+  requestDate: Date | null;
+  dueDate: Date | null;
+  aiAssisted: boolean;
+  aiConfidence: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt: Date | null;
+  questions: QuestionnaireQuestion[];
+  responses: QuestionnaireResponse[];
+}
 
 /**
  * Questionnaire Automation Service
@@ -20,7 +39,7 @@ export class QuestionnaireService {
     questionnaireType: string;
     requestedBy?: string;
     requestDate?: Date;
-    dueDate?: Date;
+    dueDate?: Date | null;
     userId: string;
   }) {
     const questionnaire = await prisma.questionnaire.create({
@@ -31,7 +50,7 @@ export class QuestionnaireService {
         questionnaireType: data.questionnaireType,
         requestedBy: data.requestedBy,
         requestDate: data.requestDate || new Date(),
-        dueDate: data.dueDate,
+        dueDate: data.dueDate ?? null,
         status: 'Draft',
       },
     });
@@ -58,7 +77,7 @@ export class QuestionnaireService {
       questionType: string;
       category?: string;
       required?: boolean;
-      options?: any;
+      options?: Record<string, unknown>;
     }>,
     userId: string,
     organizationId: string
@@ -72,8 +91,8 @@ export class QuestionnaireService {
             questionType: q.questionType,
             category: q.category || 'General',
             required: q.required ?? true,
-            questionOrder: index + 1,
-            options: q.options || {},
+            order: index + 1,
+            options: (q.options || {}) as Prisma.InputJsonValue,
           },
         });
       })
@@ -104,8 +123,9 @@ export class QuestionnaireService {
       where: { id: questionnaireId },
       include: {
         questions: {
-          orderBy: { questionOrder: 'asc' },
+          orderBy: { order: 'asc' },
         },
+        responses: true,
       },
     });
 
@@ -131,7 +151,7 @@ export class QuestionnaireService {
       throw new Error('Organization not found');
     }
 
-    const responses: any[] = [];
+    const responses: QuestionnaireResponse[] = [];
     let totalConfidence = 0;
 
     // Generate AI responses for each question
@@ -149,7 +169,7 @@ export class QuestionnaireService {
           responseText: aiResponse.answer,
           aiGenerated: true,
           aiConfidence: aiResponse.confidence,
-          evidence: aiResponse.evidence,
+          responseData: aiResponse.evidence as Prisma.InputJsonValue,
         },
       });
 
@@ -158,7 +178,9 @@ export class QuestionnaireService {
     }
 
     // Update questionnaire with AI assistance flag
-    const averageConfidence = totalConfidence / questionnaire.questions.length;
+    const averageConfidence = questionnaire.questions.length > 0
+      ? totalConfidence / questionnaire.questions.length
+      : 0;
 
     await prisma.questionnaire.update({
       where: { id: questionnaireId },
@@ -194,11 +216,11 @@ export class QuestionnaireService {
   private async generateSingleAIResponse(
     question: string,
     category: string,
-    organization: any
+    organization: Record<string, unknown>
   ): Promise<{
     answer: string;
     confidence: number;
-    evidence: any;
+    evidence: Record<string, unknown>;
   }> {
     try {
       const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
@@ -234,7 +256,7 @@ Format your response as JSON:
         return {
           answer: parsed.answer,
           confidence: parsed.confidence,
-          evidence: parsed.evidence || [],
+          evidence: { items: parsed.evidence || [] },
         };
       }
 
@@ -242,7 +264,7 @@ Format your response as JSON:
       return {
         answer: text,
         confidence: 0.5,
-        evidence: [],
+        evidence: { items: [] },
       };
     } catch (error) {
       console.error('AI response generation failed:', error);
@@ -250,7 +272,7 @@ Format your response as JSON:
         answer:
           'This question requires manual review. Please provide a response based on your organization\'s specific practices.',
         confidence: 0.0,
-        evidence: [],
+        evidence: { items: [] },
       };
     }
   }
@@ -258,43 +280,47 @@ Format your response as JSON:
   /**
    * Private helper: Build organization context for AI
    */
-  private buildOrganizationContext(organization: any): string {
+  private buildOrganizationContext(organization: Record<string, unknown>): string {
     const context: string[] = [];
+    const org = organization as {
+      name: string;
+      plan: string;
+      frameworks?: Array<{ name: string; controls?: unknown[] }>;
+      policies?: Array<{ title: string }>;
+      trustCertificates?: Array<{ status: string; certificateType: string }>;
+    };
 
     // Add basic info
-    context.push(`Organization Name: ${organization.name}`);
-    context.push(`Plan: ${organization.plan}`);
+    context.push(`Organization Name: ${org.name}`);
+    context.push(`Plan: ${org.plan}`);
 
     // Add frameworks
-    if (organization.frameworks && organization.frameworks.length > 0) {
-      const frameworks = organization.frameworks
-        .map((f: any) => f.name)
+    if (org.frameworks && org.frameworks.length > 0) {
+      const frameworks = org.frameworks
+        .map((f) => f.name)
         .join(', ');
       context.push(`Compliance Frameworks: ${frameworks}`);
 
-      const totalControls = organization.frameworks.reduce(
-        (sum: number, f: any) => sum + (f.controls?.length || 0),
+      const totalControls = org.frameworks.reduce(
+        (sum: number, f) => sum + (f.controls?.length || 0),
         0
       );
       context.push(`Total Controls Implemented: ${totalControls}`);
     }
 
     // Add policies
-    if (organization.policies && organization.policies.length > 0) {
-      const policies = organization.policies
-        .map((p: any) => p.title)
+    if (org.policies && org.policies.length > 0) {
+      const policies = org.policies
+        .map((p) => p.title)
         .join(', ');
       context.push(`Policies: ${policies}`);
     }
 
     // Add certifications
-    if (
-      organization.trustCertificates &&
-      organization.trustCertificates.length > 0
-    ) {
-      const certs = organization.trustCertificates
-        .filter((c: any) => c.status === 'Active')
-        .map((c: any) => c.certificationType)
+    if (org.trustCertificates && org.trustCertificates.length > 0) {
+      const certs = org.trustCertificates
+        .filter((c) => c.status === 'Valid')
+        .map((c) => c.certificateType)
         .join(', ');
       if (certs) {
         context.push(`Certifications: ${certs}`);
@@ -312,8 +338,8 @@ Format your response as JSON:
     questionId: string,
     data: {
       responseText: string;
-      evidence?: any;
-      attachments?: any;
+      responseData?: Record<string, unknown>;
+      attachments?: Record<string, unknown>;
     },
     userId: string,
     organizationId: string
@@ -334,10 +360,9 @@ Format your response as JSON:
         where: { id: existing.id },
         data: {
           responseText: data.responseText,
-          evidence: data.evidence,
-          attachments: data.attachments,
-          reviewedBy: userId,
-          reviewedAt: new Date(),
+          responseData: data.responseData as Prisma.InputJsonValue,
+          attachments: data.attachments as Prisma.InputJsonValue,
+          reviewedByHuman: true,
         },
       });
     } else {
@@ -347,8 +372,8 @@ Format your response as JSON:
           questionnaireId,
           questionId,
           responseText: data.responseText,
-          evidence: data.evidence,
-          attachments: data.attachments,
+          responseData: data.responseData as Prisma.InputJsonValue,
+          attachments: data.attachments as Prisma.InputJsonValue,
           aiGenerated: false,
         },
       });
@@ -388,14 +413,14 @@ Format your response as JSON:
     }
 
     const requiredQuestions = questionnaire.questions.filter(
-      (q) => q.required
+      (q: QuestionnaireQuestion) => q.required
     );
     const answeredQuestions = new Set(
-      questionnaire.responses.map((r) => r.questionId)
+      questionnaire.responses.map((r: QuestionnaireResponse) => r.questionId)
     );
 
     const unansweredRequired = requiredQuestions.filter(
-      (q) => !answeredQuestions.has(q.id)
+      (q: QuestionnaireQuestion) => !answeredQuestions.has(q.id)
     );
 
     if (unansweredRequired.length > 0) {
@@ -467,7 +492,7 @@ Format your response as JSON:
         questions: true,
         responses: true,
       },
-    });
+    }) as QuestionnaireWithRelations[];
 
     const now = new Date();
 
@@ -520,7 +545,7 @@ Format your response as JSON:
   /**
    * Private helper: Calculate average completion time
    */
-  private calculateAverageCompletionTime(questionnaires: any[]): number {
+  private calculateAverageCompletionTime(questionnaires: QuestionnaireWithRelations[]): number {
     const completed = questionnaires.filter(
       (q) => q.status === 'Completed' && q.completedAt && q.requestDate
     );
@@ -529,7 +554,7 @@ Format your response as JSON:
 
     const totalDays = completed.reduce((sum, q) => {
       const days =
-        (q.completedAt.getTime() - q.requestDate.getTime()) /
+        (q.completedAt!.getTime() - q.requestDate!.getTime()) /
         (24 * 60 * 60 * 1000);
       return sum + days;
     }, 0);
@@ -548,7 +573,7 @@ Format your response as JSON:
       where: { id: questionnaireId },
       include: {
         questions: {
-          orderBy: { questionOrder: 'asc' },
+          orderBy: { order: 'asc' },
         },
         responses: true,
       },

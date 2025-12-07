@@ -5,8 +5,8 @@
  */
 
 import crypto from 'crypto';
-import logger from '../config/logger';
-import prisma from '../config/database';
+import logger from '../../config/logger';
+import prisma from '../../config/database';
 
 type PrivilegeLevel =
   | 'viewer'

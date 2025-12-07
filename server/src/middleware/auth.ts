@@ -1,19 +1,30 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import config from '../config';
 import prisma from '../config/database';
 import logger from '../config/logger';
-import { User } from '@prisma/client';
+import { User, Organization } from '@prisma/client';
+
+export interface AuthUser extends User {
+  organization?: Organization;
+}
 
 export interface AuthRequest extends Request {
-  user?: User;
+  user?: AuthUser;
 }
+
+// Type helper for route handlers
+export type AuthRequestHandler = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => void | Promise<void>;
 
 /**
  * Authenticate JWT token middleware
  */
-export const authenticate = async (
-  req: AuthRequest,
+const authenticateMiddleware = async (
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -46,7 +57,7 @@ export const authenticate = async (
         return;
       }
 
-      req.user = user;
+      (req as AuthRequest).user = user;
       next();
     } catch (error) {
       logger.error('Token verification failed', error);
@@ -58,17 +69,21 @@ export const authenticate = async (
   }
 };
 
+// Export as RequestHandler for Express compatibility
+export const authenticate: RequestHandler = authenticateMiddleware;
+
 /**
  * Authorization middleware (role-based)
  */
-export const authorize = (...allowedRoles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
+export const authorize = (...allowedRoles: string[]): RequestHandler => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const authReq = req as AuthRequest;
+    if (!authReq.user) {
       res.status(401).json({ error: 'Authentication required' });
       return;
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!allowedRoles.includes(authReq.user.role)) {
       res.status(403).json({ error: 'Insufficient permissions' });
       return;
     }
@@ -83,11 +98,13 @@ export const generateToken = (payload: {
   role: string;
   organizationId: string;
 }): string => {
-  return jwt.sign(payload, config.jwt.secret, config.jwt.expiresIn);
+  const options: SignOptions = { expiresIn: config.jwt.expiresIn as jwt.SignOptions['expiresIn'] };
+  return jwt.sign(payload, config.jwt.secret, options);
 };
 
 export const generateRefreshToken = (userId: string): string => {
-  return jwt.sign({ userId }, config.jwt.refreshSecret, config.jwt.refreshExpiresIn);
+  const options: SignOptions = { expiresIn: config.jwt.refreshExpiresIn as jwt.SignOptions['expiresIn'] };
+  return jwt.sign({ userId }, config.jwt.refreshSecret, options);
 };
 
 export const verifyRefreshToken = (token: string): string | null => {

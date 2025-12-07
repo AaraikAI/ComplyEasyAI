@@ -249,7 +249,7 @@ export class MultiWorkspaceService {
     targetOrganizationIds: string[],
     userId: string
   ) {
-    const framework = await prisma.framework.findFirst({
+    const framework = await prisma.complianceFramework.findFirst({
       where: {
         id: frameworkId,
         organizationId: sourceOrganizationId,
@@ -265,25 +265,23 @@ export class MultiWorkspaceService {
 
     const cloned = await Promise.all(
       targetOrganizationIds.map(async (targetOrgId) => {
-        const newFramework = await prisma.framework.create({
+        const newFramework = await prisma.complianceFramework.create({
           data: {
             name: framework.name,
-            description: framework.description,
-            version: framework.version,
+            region: framework.region,
             organizationId: targetOrgId,
+            nextAuditDate: framework.nextAuditDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           },
         });
 
         // Clone controls
         await Promise.all(
-          framework.controls.map((control) =>
+          framework.controls.map((control: { name: string; description: string | null; status: string }) =>
             prisma.frameworkControl.create({
               data: {
                 frameworkId: newFramework.id,
-                controlId: control.controlId,
-                title: control.title,
+                name: control.name,
                 description: control.description,
-                category: control.category,
                 status: 'Pending',
               },
             })

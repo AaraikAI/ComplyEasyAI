@@ -44,7 +44,7 @@ export class VisionaryAIService {
       issues,
       policies,
     ] = await Promise.all([
-      prisma.framework.findMany({
+      prisma.complianceFramework.findMany({
         where: { organizationId },
         include: { controls: true },
       }),
@@ -63,42 +63,42 @@ export class VisionaryAIService {
 
     // Build context for AI analysis
     const context = {
-      frameworks: frameworks.map((f) => ({
+      frameworks: frameworks.map((f: { name: string; controls: Array<{ status: string }> }) => ({
         name: f.name,
         totalControls: f.controls.length,
-        implemented: f.controls.filter((c) => c.status === 'Implemented').length,
+        implemented: f.controls.filter((c: { status: string }) => c.status === 'Implemented').length,
         complianceRate: Math.round(
-          (f.controls.filter((c) => c.status === 'Implemented').length /
+          (f.controls.filter((c: { status: string }) => c.status === 'Implemented').length /
             f.controls.length) *
             100
         ),
       })),
       risks: {
         total: risks.length,
-        critical: risks.filter((r) => r.severity === 'Critical').length,
-        open: risks.filter((r) => r.status === 'Open').length,
+        critical: risks.filter((r: { severity: string }) => r.severity === 'Critical').length,
+        open: risks.filter((r: { status: string }) => r.status === 'Open').length,
       },
       vendors: {
         total: vendors.length,
         highRisk: vendors.filter(
-          (v) => v.riskLevel === 'High' || v.riskLevel === 'Critical'
+          (v: { riskLevel: string }) => v.riskLevel === 'High' || v.riskLevel === 'Critical'
         ).length,
       },
       personnel: {
         total: personnel.length,
-        trainingCompliant: personnel.filter((p) => p.securityTraining).length,
+        trainingCompliant: personnel.filter((p: { securityTraining: boolean }) => p.securityTraining).length,
       },
       monitors: {
         total: monitors.length,
-        failing: monitors.filter((m) => m.status === 'Failing').length,
+        failing: monitors.filter((m: { status: string }) => m.status === 'Failing').length,
       },
       issues: {
         total: issues.length,
-        critical: issues.filter((i) => i.priority === 'Critical').length,
+        critical: issues.filter((i: { priority: string }) => i.priority === 'Critical').length,
       },
       policies: {
         total: policies.length,
-        approved: policies.filter((p) => p.status === 'Approved').length,
+        approved: policies.filter((p: { status: string }) => p.status === 'Approved').length,
       },
     };
 
@@ -370,7 +370,7 @@ Make it professional, legally sound, and actionable.`;
     requiresApproval: any[];
     impactScore: number;
   }> {
-    const frameworks = await prisma.framework.findMany({
+    const frameworks = await prisma.complianceFramework.findMany({
       where: {
         organizationId,
         ...(options.targetFramework && { id: options.targetFramework }),
@@ -386,15 +386,15 @@ Make it professional, legally sound, and actionable.`;
     // Identify compliance gaps
     for (const framework of frameworks) {
       const pendingControls = framework.controls.filter(
-        (c) => c.status === 'Pending' || c.status === 'Not_Implemented'
+        (c: { status: string }) => c.status === 'Pending' || c.status === 'Not_Implemented'
       );
 
       for (const control of pendingControls) {
         const gap = {
           framework: framework.name,
-          controlId: control.controlId,
-          title: control.title,
-          category: control.category,
+          controlId: control.id,
+          title: control.name,
+          description: control.description,
           severity: this.assessGapSeverity(control),
         };
 

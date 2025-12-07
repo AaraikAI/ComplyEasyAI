@@ -27,7 +27,7 @@ export class IssueManagementService {
     tags?: any;
   }) {
     // Calculate SLA status
-    const slaStatus = this.calculateSLAStatus(data.slaTarget);
+    const slaStatus = this.calculateSLAStatus(data.slaTarget ?? null);
 
     const issue = await prisma.issue.create({
       data: {
@@ -186,19 +186,14 @@ export class IssueManagementService {
     data: {
       content: string;
       userId: string;
-      attachments?: any;
     },
     organizationId: string
   ) {
     const comment = await prisma.issueComment.create({
       data: {
         issueId,
-        content: data.content,
-        userId: data.userId,
-        attachments: data.attachments || {},
-      },
-      include: {
-        user: true,
+        comment: data.content,
+        author: data.userId,
       },
     });
 

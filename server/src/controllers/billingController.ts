@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import stripeService from '../services/stripeService';
 import prisma from '../config/database';
@@ -7,10 +7,11 @@ import logger from '../config/logger';
 import config from '../config';
 
 class BillingController {
-  async createCheckout(req: AuthRequest, res: Response): Promise<void> {
+  createCheckout: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { plan } = req.body;
-      const organizationId = req.user!.organizationId;
+      const organizationId = authReq.user!.organizationId;
 
       if (!['Basic', 'Pro', 'Enterprise'].includes(plan)) {
         throw new AppError('Invalid plan', 400);
@@ -39,8 +40,8 @@ class BillingController {
 
       const checkoutUrl = await stripeService.createCheckoutSession({
         priceId,
-        customerId: organization.stripeCustomerId,
-        customerEmail: req.user!.email,
+        customerId: organization.stripeCustomerId ?? undefined,
+        customerEmail: authReq.user!.email,
         organizationId,
         successUrl: `${config.server.clientUrl}/settings?success=true`,
         cancelUrl: `${config.server.clientUrl}/settings?canceled=true`,
@@ -52,11 +53,12 @@ class BillingController {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to create checkout session', 500);
     }
-  }
+  };
 
-  async createPortalSession(req: AuthRequest, res: Response): Promise<void> {
+  createPortalSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const organizationId = req.user!.organizationId;
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
 
       const organization = await prisma.organization.findUnique({
         where: { id: organizationId },
@@ -77,17 +79,17 @@ class BillingController {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to create portal session', 500);
     }
-  }
+  };
 
-  async webhook(req: any, res: Response): Promise<void> {
+  webhook: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const signature = req.headers['stripe-signature'];
+      const signature = req.headers['stripe-signature'] as string;
 
       if (!signature) {
         throw new AppError('Missing stripe signature', 400);
       }
 
-      await stripeService.handleWebhook(req.rawBody, signature);
+      await stripeService.handleWebhook((req as any).rawBody, signature);
 
       res.json({ received: true });
     } catch (error) {
@@ -95,11 +97,12 @@ class BillingController {
       if (error instanceof AppError) throw error;
       throw new AppError('Webhook processing failed', 500);
     }
-  }
+  };
 
-  async getSubscription(req: AuthRequest, res: Response): Promise<void> {
+  getSubscription: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const organizationId = req.user!.organizationId;
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
 
       const organization = await prisma.organization.findUnique({
         where: { id: organizationId },
@@ -118,7 +121,7 @@ class BillingController {
       logger.error('Get subscription error', error);
       throw new AppError('Failed to fetch subscription', 500);
     }
-  }
+  };
 }
 
 export default new BillingController();
