@@ -804,14 +804,17 @@ model IssueComment {
 // ============================================================================
 
 model AuditLog {
-  id        String   @id @default(uuid())
-  action    String
-  details   String?
-  ipAddress String?
-  userAgent String?
-  hash      String   @unique
-  verified  Boolean  @default(true)
-  timestamp DateTime @default(now())
+  id             String   @id @default(uuid())
+  action         String
+  details        String?
+  resourceType   String?  // Type of resource (e.g., "Personnel", "Vendor", "Risk")
+  resourceId     String?  // ID of the affected resource
+  metadata       Json?    // Additional structured data about the action
+  ipAddress      String?
+  userAgent      String?
+  hash           String   @unique
+  verified       Boolean  @default(true)
+  timestamp      DateTime @default(now())
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -822,6 +825,9 @@ model AuditLog {
   @@index([organizationId])
   @@index([timestamp])
   @@index([hash])
+  @@index([action])
+  @@index([resourceType])
+  @@index([userId])
 }
 
 model Integration {
