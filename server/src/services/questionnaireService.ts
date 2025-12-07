@@ -248,7 +248,7 @@ Format your response as JSON:
       console.error('AI response generation failed:', error);
       return {
         answer:
-          'This question requires manual review. Please provide a response based on your organization's specific practices.',
+          'This question requires manual review. Please provide a response based on your organization\'s specific practices.',
         confidence: 0.0,
         evidence: [],
       };
