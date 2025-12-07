@@ -1,0 +1,417 @@
+import { PrismaClient } from '@prisma/client';
+import { AuditLogger } from '../utils/auditLogger';
+
+const prisma = new PrismaClient();
+
+/**
+ * Policy & Controls Library Service
+ * Manages policy templates, bulk imports, and cross-framework control mapping
+ */
+export class PolicyLibraryService {
+  /**
+   * Create policy
+   */
+  async createPolicy(data: {
+    organizationId: string;
+    title: string;
+    category: string;
+    content: string;
+    version: string;
+    status?: string;
+    owner?: string;
+    approver?: string;
+    effectiveDate?: Date;
+    reviewDate?: Date;
+    tags?: any;
+    frameworkId?: string;
+    userId: string;
+  }) {
+    const policy = await prisma.policy.create({
+      data: {
+        organizationId: data.organizationId,
+        title: data.title,
+        category: data.category,
+        content: data.content,
+        version: data.version,
+        status: data.status || 'Draft',
+        owner: data.owner,
+        approver: data.approver,
+        effectiveDate: data.effectiveDate,
+        reviewDate: data.reviewDate,
+        tags: data.tags || {},
+        frameworkId: data.frameworkId,
+      },
+      include: {
+        framework: true,
+      },
+    });
+
+    await AuditLogger.log({
+      userId: data.userId,
+      organizationId: data.organizationId,
+      action: 'policy.created',
+      resourceType: 'Policy',
+      resourceId: policy.id,
+      metadata: { title: data.title, category: data.category },
+    });
+
+    return policy;
+  }
+
+  /**
+   * Bulk import policies
+   */
+  async bulkImportPolicies(
+    organizationId: string,
+    policies: Array<{
+      title: string;
+      category: string;
+      content: string;
+      version?: string;
+      owner?: string;
+      tags?: any;
+    }>,
+    userId: string
+  ) {
+    const imported = await Promise.all(
+      policies.map(async (policy) => {
+        return await this.createPolicy({
+          organizationId,
+          title: policy.title,
+          category: policy.category,
+          content: policy.content,
+          version: policy.version || '1.0',
+          owner: policy.owner,
+          tags: policy.tags,
+          userId,
+        });
+      })
+    );
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'policy.bulk_imported',
+      resourceType: 'Policy',
+      resourceId: organizationId,
+      metadata: { count: policies.length },
+    });
+
+    return imported;
+  }
+
+  /**
+   * Get policy templates by category
+   */
+  async getPolicyTemplates(category?: string) {
+    const templates = {
+      'Information Security': [
+        {
+          title: 'Information Security Policy',
+          content: `# Information Security Policy
+
+## 1. Purpose
+This policy establishes the framework for information security within the organization.
+
+## 2. Scope
+Applies to all employees, contractors, and third parties with access to organizational information.
+
+## 3. Policy Statements
+- All information assets must be classified according to sensitivity
+- Access to information must be granted based on least privilege principle
+- Security incidents must be reported within 24 hours
+
+## 4. Responsibilities
+- CISO: Overall information security program
+- IT Team: Implementation of technical controls
+- Employees: Compliance with security policies`,
+          category: 'Information Security',
+        },
+        {
+          title: 'Access Control Policy',
+          content: `# Access Control Policy
+
+## 1. Purpose
+Define requirements for controlling access to organizational resources.
+
+## 2. Access Provisioning
+- All access requests must be approved by resource owner
+- Access granted based on job role and business need
+- Regular access reviews conducted quarterly
+
+## 3. Authentication
+- Strong passwords required (12+ characters, complexity)
+- Multi-factor authentication required for privileged access
+- Session timeouts enforced
+
+## 4. Deprovisioning
+- Access removed within 24 hours of termination
+- Privileged access removed immediately`,
+          category: 'Information Security',
+        },
+      ],
+      'Data Privacy': [
+        {
+          title: 'Data Privacy Policy',
+          content: `# Data Privacy Policy
+
+## 1. Purpose
+Protect personal data and ensure GDPR/privacy compliance.
+
+## 2. Data Collection
+- Only collect data necessary for business purposes
+- Obtain consent for data processing
+- Provide privacy notice to data subjects
+
+## 3. Data Protection
+- Encrypt personal data at rest and in transit
+- Implement access controls for personal data
+- Conduct privacy impact assessments
+
+## 4. Data Subject Rights
+- Right to access, rectification, erasure
+- Right to data portability
+- Right to object to processing`,
+          category: 'Data Privacy',
+        },
+      ],
+      'Business Continuity': [
+        {
+          title: 'Business Continuity Plan',
+          content: `# Business Continuity Plan
+
+## 1. Purpose
+Ensure business operations continue during disruptions.
+
+## 2. Critical Business Functions
+- [List critical functions]
+- Recovery time objectives (RTO)
+- Recovery point objectives (RPO)
+
+## 3. Emergency Response
+- Incident declaration procedures
+- Communication protocols
+- Escalation procedures
+
+## 4. Recovery Procedures
+- System restoration steps
+- Data recovery procedures
+- Alternative site activation`,
+          category: 'Business Continuity',
+        },
+      ],
+      'Vendor Management': [
+        {
+          title: 'Third-Party Risk Management Policy',
+          content: `# Third-Party Risk Management Policy
+
+## 1. Purpose
+Manage risks associated with third-party relationships.
+
+## 2. Vendor Assessment
+- Due diligence before engagement
+- Security assessments for high-risk vendors
+- Annual vendor reviews
+
+## 3. Contractual Requirements
+- Data protection clauses
+- Security requirements
+- Right to audit
+
+## 4. Ongoing Monitoring
+- Performance monitoring
+- Security incident notification
+- Compliance verification`,
+          category: 'Vendor Management',
+        },
+      ],
+    };
+
+    if (category && templates[category as keyof typeof templates]) {
+      return templates[category as keyof typeof templates];
+    }
+
+    return templates;
+  }
+
+  /**
+   * Create cross-framework control mapping
+   */
+  async createControlMapping(
+    sourceControlId: string,
+    targetControlId: string,
+    mappingType: string,
+    notes: string,
+    userId: string,
+    organizationId: string
+  ) {
+    const sourceControl = await prisma.frameworkControl.findUnique({
+      where: { id: sourceControlId },
+    });
+
+    if (!sourceControl) {
+      throw new Error('Source control not found');
+    }
+
+    const updated = await prisma.frameworkControl.update({
+      where: { id: sourceControlId },
+      data: {
+        crossFrameworkMapping: {
+          mappings: [
+            ...(sourceControl.crossFrameworkMapping as any)?.mappings || [],
+            {
+              targetControlId,
+              mappingType,
+              notes,
+              createdAt: new Date(),
+            },
+          ],
+        },
+      },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'control.mapping_created',
+      resourceType: 'FrameworkControl',
+      resourceId: sourceControlId,
+      metadata: { targetControlId, mappingType },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Get policies by organization
+   */
+  async getPoliciesByOrganization(
+    organizationId: string,
+    filters?: {
+      category?: string;
+      status?: string;
+    }
+  ) {
+    return await prisma.policy.findMany({
+      where: {
+        organizationId,
+        ...(filters?.category && { category: filters.category }),
+        ...(filters?.status && { status: filters.status }),
+      },
+      include: {
+        framework: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  /**
+   * Update policy
+   */
+  async updatePolicy(
+    policyId: string,
+    data: {
+      title?: string;
+      content?: string;
+      status?: string;
+      version?: string;
+      approver?: string;
+      effectiveDate?: Date;
+      reviewDate?: Date;
+    },
+    userId: string,
+    organizationId: string
+  ) {
+    const policy = await prisma.policy.update({
+      where: { id: policyId },
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'policy.updated',
+      resourceType: 'Policy',
+      resourceId: policyId,
+      metadata: { updates: Object.keys(data) },
+    });
+
+    return policy;
+  }
+
+  /**
+   * Approve policy
+   */
+  async approvePolicy(
+    policyId: string,
+    approverId: string,
+    organizationId: string
+  ) {
+    const policy = await prisma.policy.update({
+      where: { id: policyId },
+      data: {
+        status: 'Approved',
+        approver: approverId,
+        approvedAt: new Date(),
+      },
+    });
+
+    await AuditLogger.log({
+      userId: approverId,
+      organizationId,
+      action: 'policy.approved',
+      resourceType: 'Policy',
+      resourceId: policyId,
+      metadata: { approver: approverId },
+    });
+
+    return policy;
+  }
+
+  /**
+   * Get policy metrics
+   */
+  async getPolicyMetrics(organizationId: string) {
+    const policies = await prisma.policy.findMany({
+      where: { organizationId },
+    });
+
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    return {
+      total: policies.length,
+      byStatus: {
+        draft: policies.filter((p) => p.status === 'Draft').length,
+        review: policies.filter((p) => p.status === 'In_Review').length,
+        approved: policies.filter((p) => p.status === 'Approved').length,
+        archived: policies.filter((p) => p.status === 'Archived').length,
+      },
+      byCategory: this.getCategoryDistribution(policies),
+      reviewsDue: policies.filter(
+        (p) => p.reviewDate && p.reviewDate < thirtyDaysFromNow
+      ).length,
+      overdue: policies.filter((p) => p.reviewDate && p.reviewDate < now)
+        .length,
+    };
+  }
+
+  /**
+   * Private helper: Get category distribution
+   */
+  private getCategoryDistribution(policies: any[]) {
+    const distribution: Record<string, number> = {};
+
+    policies.forEach((policy) => {
+      const category = policy.category || 'Uncategorized';
+      distribution[category] = (distribution[category] || 0) + 1;
+    });
+
+    return distribution;
+  }
+}
+
+export default new PolicyLibraryService();
