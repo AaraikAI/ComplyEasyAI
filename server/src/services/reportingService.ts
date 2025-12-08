@@ -19,6 +19,10 @@ export class ReportingService {
     organizationId: string;
     name: string;
     reportType: string;
+    template: any;
+    description?: string;
+    schedule?: any;
+    recipients?: any;
     template: Prisma.InputJsonValue;
     schedule?: Prisma.InputJsonValue;
     recipients?: Prisma.InputJsonValue;
@@ -28,6 +32,7 @@ export class ReportingService {
       data: {
         organizationId: data.organizationId,
         name: data.name,
+        description: data.description,
         reportType: data.reportType,
         template: data.template,
         schedule: data.schedule,

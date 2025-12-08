@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import logger from '../config/logger';
+import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
 const prisma = new PrismaClient();
@@ -46,6 +47,7 @@ export class AuditLogger {
           metadata: params.metadata || {},
           ipAddress: params.ipAddress,
           userAgent: params.userAgent,
+          hash: uuidv4(),
           hash: generateAuditHash(logData),
           timestamp: new Date(),
         },
@@ -84,6 +86,16 @@ export class AuditLogger {
   ): Promise<void> {
     try {
       await prisma.auditLog.createMany({
+        data: events.map((event) => ({
+          userId: event.userId,
+          organizationId: event.organizationId,
+          action: event.action,
+          resourceType: event.resourceType,
+          resourceId: event.resourceId,
+          metadata: event.metadata || {},
+          hash: uuidv4(),
+          timestamp: new Date(),
+        })),
         data: events.map((event) => {
           const logData = {
             userId: event.userId,
