@@ -1,15 +1,13 @@
-
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 import React from 'react';
 
-declare const jest: any;
-
 // Mock the Google GenAI SDK to prevent actual API calls during tests
-jest.mock('@google/genai', () => {
+vi.mock('@google/genai', () => {
   return {
-    GoogleGenAI: jest.fn().mockImplementation(() => ({
+    GoogleGenAI: vi.fn().mockImplementation(() => ({
       models: {
-        generateContent: jest.fn().mockResolvedValue({
+        generateContent: vi.fn().mockResolvedValue({
           text: 'Mocked AI Response'
         })
       }
@@ -24,10 +22,10 @@ jest.mock('@google/genai', () => {
 });
 
 // Mock Recharts to avoid rendering complex SVG in JSDOM
-jest.mock('recharts', () => {
-  const OriginalModule = jest.requireActual('recharts');
+vi.mock('recharts', async () => {
+  const actual = await vi.importActual('recharts');
   return {
-    ...OriginalModule,
+    ...actual,
     ResponsiveContainer: ({ children }: any) => React.createElement('div', { className: "recharts-responsive-container" }, children),
   };
 });

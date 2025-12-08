@@ -4,10 +4,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Frameworks } from '../Frameworks';
 import { ComplianceFramework, ComplianceStatus, FrameworkType } from '../../types';
 
-declare const describe: any;
-declare const test: any;
-declare const expect: any;
-declare const jest: any;
+
+
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 describe('Frameworks Component', () => {
   const mockActive: ComplianceFramework[] = [
@@ -19,16 +18,16 @@ describe('Frameworks Component', () => {
       nextAuditDate: '2024-12-31' 
     }
   ];
-  const mockAdd = jest.fn();
-  const mockSelect = jest.fn();
+  const mockAdd = vi.fn();
+  const mockSelect = vi.fn();
 
-  test('renders active frameworks', () => {
+  it('renders active frameworks', () => {
     render(<Frameworks activeFrameworks={mockActive} onAddFramework={mockAdd} onSelectFramework={mockSelect} />);
     expect(screen.getByText(FrameworkType.SOC2)).toBeInTheDocument();
     expect(screen.getByText('100%')).toBeInTheDocument();
   });
 
-  test('opens add modal and filters catalog', () => {
+  it('opens add modal and filters catalog', () => {
     render(<Frameworks activeFrameworks={mockActive} onAddFramework={mockAdd} onSelectFramework={mockSelect} />);
     
     fireEvent.click(screen.getByText('Add Framework'));
@@ -41,7 +40,7 @@ describe('Frameworks Component', () => {
     expect(screen.queryByText('NIST')).not.toBeInTheDocument(); // Assuming NIST doesn't match 'HIPAA'
   });
 
-  test('adds a framework', () => {
+  it('adds a framework', () => {
     render(<Frameworks activeFrameworks={mockActive} onAddFramework={mockAdd} onSelectFramework={mockSelect} />);
     fireEvent.click(screen.getByText('Add Framework'));
     
