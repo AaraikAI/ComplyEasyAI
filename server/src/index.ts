@@ -2,12 +2,14 @@ import express, { Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
 import config, { validateConfig } from './config';
 import logger from './config/logger';
 import prisma from './config/database';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
 import websocketService from './services/websocketService';
+import swaggerSpec from './config/swagger';
 
 // Routes
 import authRoutes from './routes/auth';
@@ -50,6 +52,18 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use((req: Request, res: Response, next: NextFunction) => {
   logger.info(`${req.method} ${req.path} - ${req.ip}`);
   next();
+});
+
+// API Documentation (Swagger UI)
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'ComplyEasy AI API Docs',
+}));
+
+// OpenAPI spec endpoint
+app.get('/api/docs.json', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
 });
 
 // Health check endpoint
@@ -127,6 +141,10 @@ httpServer.listen(config.server.port, () => {
     ║   ✓ Automated Policy Generation        ║
     ║   ✓ Intelligent Autopilot              ║
     ║   ✓ Compliance Benchmarking            ║
+    ║                                        ║
+    ║   Documentation:                       ║
+    ║   → API Docs: /api/docs                ║
+    ║   → OpenAPI Spec: /api/docs.json       ║
     ╚════════════════════════════════════════╝
   `);
 });

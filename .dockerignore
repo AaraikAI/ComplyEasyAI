@@ -1,0 +1,77 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+**/dist
+server/dist
+.next
+out
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Testing
+coverage
+**/coverage
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+jest.config.js
+.jest
+
+# Documentation
+*.md
+!README.md
+docs
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.docker
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+.travis.yml
+
+# Prisma migrations (keep schema)
+server/prisma/migrations
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+
+# Reports
+reports
+junit.xml
+
+# Package manager locks (optional - uncomment if you want to rebuild dependencies)
+# package-lock.json
+# server/package-lock.json
