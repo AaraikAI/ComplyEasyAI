@@ -4,23 +4,22 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AIReportGenerator } from '../AIReportGenerator';
 import { generateComplianceReport } from '../../services/geminiService';
 
-declare const describe: any;
-declare const test: any;
-declare const expect: any;
-declare const jest: any;
 
-jest.mock('../../services/geminiService', () => ({
-  generateComplianceReport: jest.fn()
+
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+
+vi.mock('../../services/geminiService', () => ({
+  generateComplianceReport: vi.fn()
 }));
 
 describe('AIReportGenerator', () => {
-  test('renders form inputs', () => {
+  it('renders form inputs', () => {
     render(<AIReportGenerator />);
     expect(screen.getByText('Report Configuration')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Acme Corp')).toBeInTheDocument();
   });
 
-  test('disables generate button if context empty', () => {
+  it('disables generate button if context empty', () => {
     render(<AIReportGenerator />);
     const btn = screen.getByText('Generate Report');
     // Initially disabled or check logic? The component disables if !context
@@ -28,7 +27,7 @@ describe('AIReportGenerator', () => {
     expect(btn).toBeDisabled(); // Or checking class for disabled style
   });
 
-  test('triggers generation', async () => {
+  it('triggers generation', async () => {
     (generateComplianceReport as any).mockResolvedValue('## Executive Summary\nLooks good.');
     render(<AIReportGenerator />);
     

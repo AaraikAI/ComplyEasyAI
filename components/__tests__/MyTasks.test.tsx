@@ -5,31 +5,29 @@ import { MyTasks } from '../MyTasks';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 
-declare const describe: any;
-declare const test: any;
-declare const expect: any;
-declare const jest: any;
-declare const beforeEach: any;
+
+
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 // Mock dependencies
-jest.mock('../../services/api', () => ({
+vi.mock('../../services/api', () => ({
   api: {
     risks: {
-      list: jest.fn(),
-      update: jest.fn()
+      list: vi.fn(),
+      update: vi.fn()
     },
     audit: {
-      log: jest.fn()
+      log: vi.fn()
     }
   }
 }));
 
-jest.mock('../../contexts/AuthContext', () => ({
-  useAuth: jest.fn()
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: vi.fn()
 }));
 
-jest.mock('../../services/geminiService', () => ({
-  generateRemediationPlan: jest.fn().mockResolvedValue('AI Fix Plan')
+vi.mock('../../services/geminiService', () => ({
+  generateRemediationPlan: vi.fn().mockResolvedValue('AI Fix Plan')
 }));
 
 describe('MyTasks Component', () => {
@@ -60,7 +58,7 @@ describe('MyTasks Component', () => {
     (api.risks.list as any).mockResolvedValue(mockTasks);
   });
 
-  test('renders tasks assigned to user', async () => {
+  it('renders tasks assigned to user', async () => {
     render(<MyTasks />);
     await waitFor(() => {
       expect(screen.getByText('High Severity Task')).toBeInTheDocument();
@@ -68,7 +66,7 @@ describe('MyTasks Component', () => {
     });
   });
 
-  test('filters tasks by severity', async () => {
+  it('filters tasks by severity', async () => {
     render(<MyTasks />);
     await waitFor(() => screen.getByText('High Severity Task'));
 
@@ -79,7 +77,7 @@ describe('MyTasks Component', () => {
     expect(screen.queryByText('Low Severity Task')).not.toBeInTheDocument();
   });
 
-  test('opens action modal and updates task', async () => {
+  it('opens action modal and updates task', async () => {
     render(<MyTasks />);
     await waitFor(() => screen.getByText('High Severity Task'));
 

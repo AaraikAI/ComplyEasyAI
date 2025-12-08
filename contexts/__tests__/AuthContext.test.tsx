@@ -4,19 +4,18 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../AuthContext';
 import { api } from '../../services/api';
 
-declare const describe: any;
-declare const test: any;
-declare const expect: any;
-declare const jest: any;
 
-jest.mock('../../services/api', () => ({
+
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+
+vi.mock('../../services/api', () => ({
   api: {
     auth: {
-      requestMagicLink: jest.fn(),
-      verifyMagicLink: jest.fn(),
-      register: jest.fn(),
-      refreshToken: jest.fn(),
-      logout: jest.fn()
+      requestMagicLink: vi.fn(),
+      verifyMagicLink: vi.fn(),
+      register: vi.fn(),
+      refreshToken: vi.fn(),
+      logout: vi.fn()
     }
   }
 }));
@@ -33,7 +32,7 @@ const TestComp = () => {
 };
 
 describe('AuthContext', () => {
-  test('login flow', async () => {
+  it('login flow', async () => {
     // Mock the magic link request - this just sends the email
     (api.auth.requestMagicLink as any).mockResolvedValue({ message: 'Magic link sent' });
 
