@@ -4,6 +4,19 @@ import config from '../config';
 import logger from '../config/logger';
 import prisma from '../config/database';
 
+// Multer file interface to avoid Express.Multer namespace issues
+interface MulterFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination?: string;
+  filename?: string;
+  path?: string;
+  buffer: Buffer;
+}
+
 // Configure AWS SDK
 AWS.config.update({
   accessKeyId: config.aws.accessKeyId,
@@ -14,7 +27,7 @@ AWS.config.update({
 const s3 = new AWS.S3();
 
 interface UploadOptions {
-  file: Express.Multer.File;
+  file: MulterFile;
   userId: string;
   organizationId: string;
   folder?: string;
@@ -184,7 +197,7 @@ class S3Service {
     }
   }
 
-  private validateFile(file: Express.Multer.File): void {
+  private validateFile(file: MulterFile): void {
     // Check file size
     if (file.size > this.MAX_FILE_SIZE) {
       throw new Error(`File size exceeds maximum allowed size of ${this.MAX_FILE_SIZE / 1024 / 1024}MB`);
