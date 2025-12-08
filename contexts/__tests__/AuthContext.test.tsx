@@ -12,8 +12,11 @@ declare const jest: any;
 jest.mock('../../services/api', () => ({
   api: {
     auth: {
-      login: jest.fn(),
-      register: jest.fn()
+      requestMagicLink: jest.fn(),
+      verifyMagicLink: jest.fn(),
+      register: jest.fn(),
+      refreshToken: jest.fn(),
+      logout: jest.fn()
     }
   }
 }));
@@ -31,19 +34,20 @@ const TestComp = () => {
 
 describe('AuthContext', () => {
   test('login flow', async () => {
-    (api.auth.login as any).mockResolvedValue({ id: '1', email: 'test@test.com' });
-    
-    // We need to verify verifyMagicLink ideally, but loginWithMagicLink triggers the 'sent' state in UI.
-    // However, the context exposes verifyMagicLink too.
-    // For this test, let's assume we can mock the internal verify flow or use a helper.
-    // Actually, Layout calls verifyMagicLink. 
-    // Let's test basic context provider rendering first.
-    
+    // Mock the magic link request - this just sends the email
+    (api.auth.requestMagicLink as any).mockResolvedValue({ message: 'Magic link sent' });
+
+    // Mock the verification - this returns the user after clicking the email link
+    (api.auth.verifyMagicLink as any).mockResolvedValue({ id: '1', email: 'test@test.com' });
+
+    // For this test, we verify basic context provider rendering
+    // loginWithMagicLink only triggers email send, verifyMagicLink logs the user in
+
     render(
       <AuthProvider>
         <TestComp />
       </AuthProvider>
     );
-    expect(screen.getByTestId('user-email')).toBe('No User');
+    expect(screen.getByTestId('user-email').textContent).toBe('No User');
   });
 });
