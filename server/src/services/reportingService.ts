@@ -1,7 +1,11 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, AuditLog, RiskItem, Vendor, FrameworkControl, ComplianceFramework, Prisma } from '@prisma/client';
 import { AuditLogger } from '../utils/auditLogger';
 
 const prisma = new PrismaClient();
+
+interface FrameworkWithControls extends ComplianceFramework {
+  controls: FrameworkControl[];
+}
 
 /**
  * Customizable Reporting Service
@@ -19,6 +23,9 @@ export class ReportingService {
     description?: string;
     schedule?: any;
     recipients?: any;
+    template: Prisma.InputJsonValue;
+    schedule?: Prisma.InputJsonValue;
+    recipients?: Prisma.InputJsonValue;
     userId: string;
   }) {
     const report = await prisma.customReport.create({
@@ -52,7 +59,7 @@ export class ReportingService {
     organizationId: string,
     frameworkId?: string
   ) {
-    const frameworks = await prisma.framework.findMany({
+    const frameworks = await prisma.complianceFramework.findMany({
       where: {
         organizationId,
         ...(frameworkId && { id: frameworkId }),
@@ -66,49 +73,50 @@ export class ReportingService {
       organizationId,
       reportType: 'Compliance Status',
       generatedAt: new Date(),
-      frameworks: frameworks.map((f) => ({
+      frameworks: frameworks.map((f: FrameworkWithControls) => ({
         name: f.name,
-        version: f.version,
+        status: f.status,
+        progress: f.progress,
         totalControls: f.controls.length,
         implementedControls: f.controls.filter(
-          (c) => c.status === 'Implemented'
+          (c: FrameworkControl) => c.status === 'Implemented'
         ).length,
         inProgressControls: f.controls.filter(
-          (c) => c.status === 'In_Progress'
+          (c: FrameworkControl) => c.status === 'In_Progress'
         ).length,
-        pendingControls: f.controls.filter((c) => c.status === 'Pending')
+        pendingControls: f.controls.filter((c: FrameworkControl) => c.status === 'Pending')
           .length,
         complianceRate:
           f.controls.length > 0
             ? Math.round(
-                (f.controls.filter((c) => c.status === 'Implemented').length /
+                (f.controls.filter((c: FrameworkControl) => c.status === 'Implemented').length /
                   f.controls.length) *
                   100
               )
             : 0,
-        controlsByCategory: this.groupByCategory(f.controls),
+        controlsByStatus: this.groupByStatus(f.controls),
       })),
       summary: {
         totalFrameworks: frameworks.length,
         totalControls: frameworks.reduce(
-          (sum, f) => sum + f.controls.length,
+          (sum: number, f: FrameworkWithControls) => sum + f.controls.length,
           0
         ),
         implementedControls: frameworks.reduce(
-          (sum, f) =>
-            sum + f.controls.filter((c) => c.status === 'Implemented').length,
+          (sum: number, f: FrameworkWithControls) =>
+            sum + f.controls.filter((c: FrameworkControl) => c.status === 'Implemented').length,
           0
         ),
         overallComplianceRate:
-          frameworks.reduce((sum, f) => sum + f.controls.length, 0) > 0
+          frameworks.reduce((sum: number, f: FrameworkWithControls) => sum + f.controls.length, 0) > 0
             ? Math.round(
                 (frameworks.reduce(
-                  (sum, f) =>
+                  (sum: number, f: FrameworkWithControls) =>
                     sum +
-                    f.controls.filter((c) => c.status === 'Implemented').length,
+                    f.controls.filter((c: FrameworkControl) => c.status === 'Implemented').length,
                   0
                 ) /
-                  frameworks.reduce((sum, f) => sum + f.controls.length, 0)) *
+                  frameworks.reduce((sum: number, f: FrameworkWithControls) => sum + f.controls.length, 0)) *
                   100
               )
             : 0,
@@ -121,8 +129,8 @@ export class ReportingService {
   /**
    * Generate risk report
    */
-  async generateRiskReport(organizationId: string, timeRange?: any) {
-    const where: any = { organizationId };
+  async generateRiskReport(organizationId: string, timeRange?: { start: Date; end: Date }) {
+    const where: Record<string, unknown> = { organizationId };
 
     if (timeRange) {
       where.detectedAt = {
@@ -145,12 +153,12 @@ export class ReportingService {
       timeRange,
       summary: {
         totalRisks: risks.length,
-        criticalRisks: risks.filter((r) => r.severity === 'Critical').length,
-        highRisks: risks.filter((r) => r.severity === 'High').length,
-        mediumRisks: risks.filter((r) => r.severity === 'Medium').length,
-        lowRisks: risks.filter((r) => r.severity === 'Low').length,
-        openRisks: risks.filter((r) => r.status === 'Open').length,
-        resolvedRisks: risks.filter((r) => r.status === 'Resolved').length,
+        criticalRisks: risks.filter((r: RiskItem) => r.severity === 'Critical').length,
+        highRisks: risks.filter((r: RiskItem) => r.severity === 'High').length,
+        mediumRisks: risks.filter((r: RiskItem) => r.severity === 'Medium').length,
+        lowRisks: risks.filter((r: RiskItem) => r.severity === 'Low').length,
+        openRisks: risks.filter((r: RiskItem) => r.status === 'Open').length,
+        resolvedRisks: risks.filter((r: RiskItem) => r.status === 'Resolved').length,
       },
       risksByCategory: this.groupByCategory(risks),
       topRisks: risks
@@ -186,11 +194,11 @@ export class ReportingService {
       generatedAt: new Date(),
       summary: {
         totalVendors: vendors.length,
-        criticalRisk: vendors.filter((v) => v.riskLevel === 'Critical').length,
-        highRisk: vendors.filter((v) => v.riskLevel === 'High').length,
-        mediumRisk: vendors.filter((v) => v.riskLevel === 'Medium').length,
-        lowRisk: vendors.filter((v) => v.riskLevel === 'Low').length,
-        withDataAccess: vendors.filter((v) => v.hasDataAccess).length,
+        criticalRisk: vendors.filter((v: Vendor) => v.riskLevel === 'Critical').length,
+        highRisk: vendors.filter((v: Vendor) => v.riskLevel === 'High').length,
+        mediumRisk: vendors.filter((v: Vendor) => v.riskLevel === 'Medium').length,
+        lowRisk: vendors.filter((v: Vendor) => v.riskLevel === 'Low').length,
+        withDataAccess: vendors.filter((v: Vendor) => v.hasDataAccess).length,
       },
       vendors: vendors.map((v) => ({
         name: v.name,
@@ -240,12 +248,12 @@ export class ReportingService {
       timeRange,
       summary: {
         totalEvents: auditLogs.length,
-        uniqueUsers: new Set(auditLogs.map((log) => log.userId)).size,
+        uniqueUsers: new Set(auditLogs.map((log: AuditLog) => log.userId)).size,
         eventsByAction: this.groupByAction(auditLogs),
       },
       recentEvents: auditLogs.slice(0, 100).map((log) => ({
         timestamp: log.timestamp,
-        user: log.user.name,
+        user: log.user?.name || 'Unknown',
         action: log.action,
         resourceType: log.resourceType,
         resourceId: log.resourceId,
@@ -268,7 +276,7 @@ export class ReportingService {
       questionnaires,
       policies,
     ] = await Promise.all([
-      prisma.framework.findMany({
+      prisma.complianceFramework.findMany({
         where: { organizationId },
         include: { controls: true },
       }),
@@ -286,37 +294,37 @@ export class ReportingService {
       compliance: {
         frameworks: frameworks.length,
         totalControls: frameworks.reduce(
-          (sum, f) => sum + f.controls.length,
+          (sum: number, f: FrameworkWithControls) => sum + f.controls.length,
           0
         ),
         implementedControls: frameworks.reduce(
-          (sum, f) =>
-            sum + f.controls.filter((c) => c.status === 'Implemented').length,
+          (sum: number, f: FrameworkWithControls) =>
+            sum + f.controls.filter((c: FrameworkControl) => c.status === 'Implemented').length,
           0
         ),
         overallComplianceRate:
-          frameworks.reduce((sum, f) => sum + f.controls.length, 0) > 0
+          frameworks.reduce((sum: number, f: FrameworkWithControls) => sum + f.controls.length, 0) > 0
             ? Math.round(
                 (frameworks.reduce(
-                  (sum, f) =>
+                  (sum: number, f: FrameworkWithControls) =>
                     sum +
-                    f.controls.filter((c) => c.status === 'Implemented').length,
+                    f.controls.filter((c: FrameworkControl) => c.status === 'Implemented').length,
                   0
                 ) /
-                  frameworks.reduce((sum, f) => sum + f.controls.length, 0)) *
+                  frameworks.reduce((sum: number, f: FrameworkWithControls) => sum + f.controls.length, 0)) *
                   100
               )
             : 0,
       },
       risks: {
         total: risks.length,
-        critical: risks.filter((r) => r.severity === 'Critical').length,
-        open: risks.filter((r) => r.status === 'Open').length,
+        critical: risks.filter((r: RiskItem) => r.severity === 'Critical').length,
+        open: risks.filter((r: RiskItem) => r.status === 'Open').length,
       },
       vendors: {
         total: vendors.length,
-        highRisk: vendors.filter((v) => v.riskLevel === 'High' || v.riskLevel === 'Critical').length,
-        withDataAccess: vendors.filter((v) => v.hasDataAccess).length,
+        highRisk: vendors.filter((v: Vendor) => v.riskLevel === 'High' || v.riskLevel === 'Critical').length,
+        withDataAccess: vendors.filter((v: Vendor) => v.hasDataAccess).length,
       },
       personnel: {
         total: personnel.length,
@@ -345,7 +353,7 @@ export class ReportingService {
    */
   async scheduleReport(
     reportId: string,
-    schedule: string,
+    schedule: Prisma.InputJsonValue,
     userId: string,
     organizationId: string
   ) {
@@ -353,7 +361,7 @@ export class ReportingService {
       where: { id: reportId },
       data: {
         schedule,
-        lastRun: null,
+        lastGenerated: null,
       },
     });
 
@@ -372,7 +380,7 @@ export class ReportingService {
   /**
    * Export report (placeholder for PDF/Excel generation)
    */
-  async exportReport(reportData: any, format: 'json' | 'pdf' | 'xlsx') {
+  async exportReport(reportData: Record<string, unknown>, format: 'json' | 'pdf' | 'xlsx') {
     // For now, return JSON
     // PDF/Excel generation would require additional libraries
     return {
@@ -385,7 +393,7 @@ export class ReportingService {
   /**
    * Private helpers
    */
-  private groupByCategory(items: any[]) {
+  private groupByCategory(items: Array<{ category?: string | null }>) {
     const grouped: Record<string, number> = {};
     items.forEach((item) => {
       const category = item.category || 'Uncategorized';
@@ -394,7 +402,15 @@ export class ReportingService {
     return grouped;
   }
 
-  private groupByAction(logs: any[]) {
+  private groupByStatus(items: Array<{ status: string }>) {
+    const grouped: Record<string, number> = {};
+    items.forEach((item) => {
+      grouped[item.status] = (grouped[item.status] || 0) + 1;
+    });
+    return grouped;
+  }
+
+  private groupByAction(logs: AuditLog[]) {
     const grouped: Record<string, number> = {};
     logs.forEach((log) => {
       grouped[log.action] = (grouped[log.action] || 0) + 1;

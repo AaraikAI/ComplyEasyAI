@@ -6,8 +6,8 @@
 
 import { ethers } from 'ethers';
 import crypto from 'crypto';
-import logger from '../config/logger';
-import prisma from '../config/database';
+import logger from '../../config/logger';
+import prisma from '../../config/database';
 
 type BlockchainNetwork = 'ethereum' | 'polygon' | 'hyperledger';
 
@@ -596,7 +596,7 @@ class BlockchainService {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          timestamp: 'desc',
         },
         take: 100,
       });

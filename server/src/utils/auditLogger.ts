@@ -1,8 +1,17 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
+
+/**
+ * Generate a unique hash for audit log entry
+ */
+function generateAuditHash(data: Record<string, unknown>): string {
+  const content = JSON.stringify(data) + Date.now() + Math.random();
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
 
 /**
  * Centralized Audit Logging System
@@ -19,22 +28,27 @@ export class AuditLogger {
     action: string;
     resourceType: string;
     resourceId: string;
-    metadata?: any;
+    metadata?: Prisma.InputJsonValue;
     ipAddress?: string;
     userAgent?: string;
   }): Promise<void> {
     try {
+      const logData = {
+        userId: params.userId,
+        organizationId: params.organizationId,
+        action: params.action,
+        resourceType: params.resourceType,
+        resourceId: params.resourceId,
+      };
+
       await prisma.auditLog.create({
         data: {
-          userId: params.userId,
-          organizationId: params.organizationId,
-          action: params.action,
-          resourceType: params.resourceType,
-          resourceId: params.resourceId,
+          ...logData,
           metadata: params.metadata || {},
           ipAddress: params.ipAddress,
           userAgent: params.userAgent,
           hash: uuidv4(),
+          hash: generateAuditHash(logData),
           timestamp: new Date(),
         },
       });
@@ -67,7 +81,7 @@ export class AuditLogger {
       action: string;
       resourceType: string;
       resourceId: string;
-      metadata?: any;
+      metadata?: Prisma.InputJsonValue;
     }>
   ): Promise<void> {
     try {
@@ -82,6 +96,21 @@ export class AuditLogger {
           hash: uuidv4(),
           timestamp: new Date(),
         })),
+        data: events.map((event) => {
+          const logData = {
+            userId: event.userId,
+            organizationId: event.organizationId,
+            action: event.action,
+            resourceType: event.resourceType,
+            resourceId: event.resourceId,
+          };
+          return {
+            ...logData,
+            metadata: event.metadata || {},
+            hash: generateAuditHash(logData),
+            timestamp: new Date(),
+          };
+        }),
       });
 
       logger.info(`Batch audit log: ${events.length} events`);

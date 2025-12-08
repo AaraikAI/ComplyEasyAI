@@ -5,6 +5,7 @@
  */
 
 import AWS from 'aws-sdk';
+import { Prisma } from '@prisma/client';
 import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
@@ -516,7 +517,7 @@ class AWSService {
         },
         data: {
           connected: false,
-          config: null,
+          config: Prisma.DbNull,
           lastSync: null,
         },
       });

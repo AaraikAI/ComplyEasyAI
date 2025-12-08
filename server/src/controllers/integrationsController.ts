@@ -3,7 +3,7 @@
  * Handles OAuth flows and integration management for all external services
  */
 
-import { Request, Response } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import logger from '../config/logger';
@@ -66,9 +66,10 @@ const verifyState = (state: string, provider: string): string | null => {
 // GOOGLE OAUTH
 // ============================================================================
 
-export const authorizeGoogle = async (req: AuthRequest, res: Response): Promise<void> => {
+export const authorizeGoogle: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const state = generateState(organizationId, 'google');
     const authUrl = googleService.getAuthorizationUrl(state);
 
@@ -79,7 +80,7 @@ export const authorizeGoogle = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-export const callbackGoogle = async (req: Request, res: Response): Promise<void> => {
+export const callbackGoogle: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { code, state } = req.query;
 
@@ -112,9 +113,10 @@ export const callbackGoogle = async (req: Request, res: Response): Promise<void>
   }
 };
 
-export const syncGoogleData = async (req: AuthRequest, res: Response): Promise<void> => {
+export const syncGoogleData: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const { type } = req.body;
 
     let result;
@@ -144,9 +146,10 @@ export const syncGoogleData = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
-export const disconnectGoogle = async (req: AuthRequest, res: Response): Promise<void> => {
+export const disconnectGoogle: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     await googleService.disconnect(organizationId);
     res.json({ success: true });
   } catch (error) {
@@ -159,9 +162,10 @@ export const disconnectGoogle = async (req: AuthRequest, res: Response): Promise
 // GITHUB OAUTH
 // ============================================================================
 
-export const authorizeGitHub = async (req: AuthRequest, res: Response): Promise<void> => {
+export const authorizeGitHub: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const state = generateState(organizationId, 'github');
     const authUrl = githubService.getAuthorizationUrl(state);
 
@@ -172,7 +176,7 @@ export const authorizeGitHub = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-export const callbackGitHub = async (req: Request, res: Response): Promise<void> => {
+export const callbackGitHub: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { code, state } = req.query;
 
@@ -204,9 +208,10 @@ export const callbackGitHub = async (req: Request, res: Response): Promise<void>
   }
 };
 
-export const syncGitHubData = async (req: AuthRequest, res: Response): Promise<void> => {
+export const syncGitHubData: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const { type, owner, repo } = req.body;
 
     let result;
@@ -244,9 +249,10 @@ export const syncGitHubData = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
-export const disconnectGitHub = async (req: AuthRequest, res: Response): Promise<void> => {
+export const disconnectGitHub: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     await githubService.disconnect(organizationId);
     res.json({ success: true });
   } catch (error) {
@@ -259,9 +265,10 @@ export const disconnectGitHub = async (req: AuthRequest, res: Response): Promise
 // SLACK OAUTH
 // ============================================================================
 
-export const authorizeSlack = async (req: AuthRequest, res: Response): Promise<void> => {
+export const authorizeSlack: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const state = generateState(organizationId, 'slack');
     const authUrl = slackService.getAuthorizationUrl(state);
 
@@ -272,7 +279,7 @@ export const authorizeSlack = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
-export const callbackSlack = async (req: Request, res: Response): Promise<void> => {
+export const callbackSlack: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { code, state } = req.query;
 
@@ -301,9 +308,10 @@ export const callbackSlack = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const syncSlackData = async (req: AuthRequest, res: Response): Promise<void> => {
+export const syncSlackData: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const { type, channelId } = req.body;
 
     let result;
@@ -334,9 +342,10 @@ export const syncSlackData = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-export const postSlackMessage = async (req: AuthRequest, res: Response): Promise<void> => {
+export const postSlackMessage: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const { channelId, text, blocks } = req.body;
 
     if (!channelId || !text) {
@@ -352,9 +361,10 @@ export const postSlackMessage = async (req: AuthRequest, res: Response): Promise
   }
 };
 
-export const disconnectSlack = async (req: AuthRequest, res: Response): Promise<void> => {
+export const disconnectSlack: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     await slackService.disconnect(organizationId);
     res.json({ success: true });
   } catch (error) {
@@ -367,9 +377,10 @@ export const disconnectSlack = async (req: AuthRequest, res: Response): Promise<
 // JIRA OAUTH
 // ============================================================================
 
-export const authorizeJira = async (req: AuthRequest, res: Response): Promise<void> => {
+export const authorizeJira: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const state = generateState(organizationId, 'jira');
     const authUrl = jiraService.getAuthorizationUrl(state);
 
@@ -380,7 +391,7 @@ export const authorizeJira = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-export const callbackJira = async (req: Request, res: Response): Promise<void> => {
+export const callbackJira: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { code, state } = req.query;
 
@@ -426,10 +437,11 @@ export const callbackJira = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-export const syncJiraData = async (req: AuthRequest, res: Response): Promise<void> => {
+export const syncJiraData: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
-    const { type, jql, projectKey } = req.body;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+    const { type, jql } = req.body;
 
     let result;
 
@@ -458,9 +470,10 @@ export const syncJiraData = async (req: AuthRequest, res: Response): Promise<voi
   }
 };
 
-export const createJiraIssue = async (req: AuthRequest, res: Response): Promise<void> => {
+export const createJiraIssue: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const { projectKey, summary, description, issueType, priority } = req.body;
 
     if (!projectKey || !summary || !description || !issueType) {
@@ -482,9 +495,10 @@ export const createJiraIssue = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-export const disconnectJira = async (req: AuthRequest, res: Response): Promise<void> => {
+export const disconnectJira: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     await jiraService.disconnect(organizationId);
     res.json({ success: true });
   } catch (error) {
@@ -497,9 +511,10 @@ export const disconnectJira = async (req: AuthRequest, res: Response): Promise<v
 // AWS INTEGRATION (credentials-based, not OAuth)
 // ============================================================================
 
-export const connectAWS = async (req: AuthRequest, res: Response): Promise<void> => {
+export const connectAWS: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const { accessKeyId, secretAccessKey, region, sessionToken } = req.body;
 
     if (!accessKeyId || !secretAccessKey || !region) {
@@ -534,9 +549,10 @@ export const connectAWS = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
-export const syncAWSData = async (req: AuthRequest, res: Response): Promise<void> => {
+export const syncAWSData: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const { type } = req.body;
 
     let result;
@@ -572,9 +588,10 @@ export const syncAWSData = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
-export const disconnectAWS = async (req: AuthRequest, res: Response): Promise<void> => {
+export const disconnectAWS: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     await awsService.disconnect(organizationId);
     res.json({ success: true });
   } catch (error) {
@@ -587,9 +604,10 @@ export const disconnectAWS = async (req: AuthRequest, res: Response): Promise<vo
 // GENERAL INTEGRATION MANAGEMENT
 // ============================================================================
 
-export const listIntegrations = async (req: AuthRequest, res: Response): Promise<void> => {
+export const listIntegrations: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
 
     const integrations = await prisma.integration.findMany({
       where: { organizationId },
@@ -612,9 +630,10 @@ export const listIntegrations = async (req: AuthRequest, res: Response): Promise
   }
 };
 
-export const getIntegrationStatus = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getIntegrationStatus: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organizationId;
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
     const { provider } = req.params;
 
     const integration = await prisma.integration.findUnique({
