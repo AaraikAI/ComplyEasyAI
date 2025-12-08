@@ -1,7 +1,17 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { AuditLogger } from '../utils/auditLogger';
 
 const prisma = new PrismaClient();
+
+interface ControlStatus {
+  status: string;
+}
+
+interface FrameworkWithControls {
+  id: string;
+  name: string;
+  controls: ControlStatus[];
+}
 
 /**
  * Trust Center & External Audit Portal Service
@@ -13,25 +23,25 @@ export class TrustCenterService {
    */
   async createCertificate(data: {
     organizationId: string;
-    certificationType: string;
+    certificateType: string;
     issuer: string;
-    issuedDate: Date;
+    issueDate: Date;
     expiryDate: Date;
-    certificateUrl?: string;
-    scope?: string;
+    documentUrl?: string;
+    metadata?: Prisma.InputJsonValue;
     publiclyVisible?: boolean;
     userId: string;
   }) {
     const certificate = await prisma.trustCertificate.create({
       data: {
         organizationId: data.organizationId,
-        certificationType: data.certificationType,
+        certificateType: data.certificateType,
         issuer: data.issuer,
-        issuedDate: data.issuedDate,
+        issueDate: data.issueDate,
         expiryDate: data.expiryDate,
-        certificateUrl: data.certificateUrl,
-        scope: data.scope,
-        status: 'Active',
+        documentUrl: data.documentUrl,
+        metadata: data.metadata,
+        status: 'Valid',
         publiclyVisible: data.publiclyVisible ?? true,
       },
     });
@@ -42,7 +52,7 @@ export class TrustCenterService {
       action: 'trust_certificate.created',
       resourceType: 'TrustCertificate',
       resourceId: certificate.id,
-      metadata: { certificationType: data.certificationType },
+      metadata: { certificateType: data.certificateType },
     });
 
     return certificate;
@@ -68,21 +78,21 @@ export class TrustCenterService {
     const certificates = await prisma.trustCertificate.findMany({
       where: {
         organizationId,
-        status: 'Active',
+        status: 'Valid',
         publiclyVisible: true,
       },
       select: {
         id: true,
-        certificationType: true,
+        certificateType: true,
         issuer: true,
-        issuedDate: true,
+        issueDate: true,
         expiryDate: true,
-        scope: true,
+        metadata: true,
       },
     });
 
     // Get public frameworks
-    const frameworks = await prisma.framework.findMany({
+    const frameworks = await prisma.complianceFramework.findMany({
       where: { organizationId },
       select: {
         id: true,
@@ -90,7 +100,7 @@ export class TrustCenterService {
         controls: {
           select: {
             id: true,
-            title: true,
+            name: true,
             status: true,
           },
         },
@@ -101,14 +111,11 @@ export class TrustCenterService {
     const complianceMetrics = frameworks.map((f) => ({
       framework: f.name,
       totalControls: f.controls.length,
-      implementedControls: f.controls.filter((c) => c.status === 'Implemented')
-        .length,
+      implementedControls: f.controls.filter((c) => c.status === 'Implemented').length,
       complianceRate:
         f.controls.length > 0
           ? Math.round(
-              (f.controls.filter((c) => c.status === 'Implemented').length /
-                f.controls.length) *
-                100
+              (f.controls.filter((c) => c.status === 'Implemented').length / f.controls.length) * 100
             )
           : 0,
     }));
@@ -135,7 +142,7 @@ export class TrustCenterService {
     frameworkId: string,
     userId: string
   ) {
-    const framework = await prisma.framework.findFirst({
+    const framework = await prisma.complianceFramework.findFirst({
       where: {
         id: frameworkId,
         organizationId,
@@ -150,22 +157,22 @@ export class TrustCenterService {
       throw new Error('Framework not found');
     }
 
-    const implementedControls = framework.controls.filter(
-      (c) => c.status === 'Implemented'
-    ).length;
+    const implementedControls = framework.controls.filter((c) => c.status === 'Implemented').length;
     const totalControls = framework.controls.length;
-    const complianceRate = Math.round(
-      (implementedControls / totalControls) * 100
-    );
+    const complianceRate = totalControls > 0
+      ? Math.round((implementedControls / totalControls) * 100)
+      : 0;
 
     // Create certificate record
     const certificate = await this.createCertificate({
       organizationId,
-      certificationType: `${framework.name} Compliance`,
+      certificateType: `${framework.name} Compliance`,
       issuer: 'ComplyEasy AI',
-      issuedDate: new Date(),
+      issueDate: new Date(),
       expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-      scope: `${implementedControls}/${totalControls} controls implemented (${complianceRate}%)`,
+      metadata: {
+        scope: `${implementedControls}/${totalControls} controls implemented (${complianceRate}%)`,
+      },
       publiclyVisible: true,
       userId,
     });
@@ -185,7 +192,7 @@ export class TrustCenterService {
   async getCertificatesByOrganization(organizationId: string) {
     return await prisma.trustCertificate.findMany({
       where: { organizationId },
-      orderBy: { issuedDate: 'desc' },
+      orderBy: { issueDate: 'desc' },
     });
   }
 

@@ -1,4 +1,4 @@
-import { PrismaClient, VendorRiskLevel, VendorStatus } from '@prisma/client';
+import { PrismaClient, VendorRiskLevel, VendorStatus, Vendor, Prisma, MonitorStatus } from '@prisma/client';
 import { AuditLogger } from '../utils/auditLogger';
 
 const prisma = new PrismaClient();
@@ -24,7 +24,7 @@ export class VendorRiskService {
     contractEnd?: Date;
     annualSpend?: number;
     hasDataAccess?: boolean;
-    dataTypes?: any;
+    dataTypes?: Prisma.InputJsonValue;
     userId: string;
   }) {
     const vendor = await prisma.vendor.create({
@@ -41,7 +41,7 @@ export class VendorRiskService {
         contractEnd: data.contractEnd,
         annualSpend: data.annualSpend,
         hasDataAccess: data.hasDataAccess || false,
-        dataTypes: data.dataTypes || {},
+        dataTypes: data.dataTypes,
         status: 'Onboarding',
         riskLevel: 'Medium',
         riskScore: 0,
@@ -51,7 +51,7 @@ export class VendorRiskService {
     // Create initial assessment
     await this.createVendorAssessment({
       vendorId: vendor.id,
-      assessmentType: 'Initial_Onboarding',
+      assessmentType: 'Initial',
       organizationId: data.organizationId,
       userId: data.userId,
     });
@@ -76,15 +76,13 @@ export class VendorRiskService {
     assessmentType: string;
     organizationId: string;
     userId: string;
-    dueDate?: Date;
   }) {
     const assessment = await prisma.vendorAssessment.create({
       data: {
         vendorId: data.vendorId,
         assessmentType: data.assessmentType,
         status: 'In_Progress',
-        dueDate: data.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        questions: this.getAssessmentQuestions(data.assessmentType),
+        assessedBy: data.userId,
       },
       include: {
         vendor: true,
@@ -109,10 +107,10 @@ export class VendorRiskService {
   async completeVendorAssessment(
     assessmentId: string,
     data: {
-      responses: any;
-      findings: any;
-      riskScore: number;
+      findings: Prisma.InputJsonValue;
+      score: number;
       riskLevel: VendorRiskLevel;
+      recommendations?: string;
     },
     userId: string,
     organizationId: string
@@ -121,11 +119,11 @@ export class VendorRiskService {
       where: { id: assessmentId },
       data: {
         status: 'Completed',
-        completedAt: new Date(),
-        responses: data.responses,
+        assessedDate: new Date(),
         findings: data.findings,
-        riskScore: data.riskScore,
+        score: data.score,
         riskLevel: data.riskLevel,
+        recommendations: data.recommendations,
       },
       include: {
         vendor: true,
@@ -136,7 +134,7 @@ export class VendorRiskService {
     await prisma.vendor.update({
       where: { id: assessment.vendorId },
       data: {
-        riskScore: data.riskScore,
+        riskScore: data.score,
         riskLevel: data.riskLevel,
         status: 'Active',
       },
@@ -149,7 +147,7 @@ export class VendorRiskService {
       resourceType: 'VendorAssessment',
       resourceId: assessmentId,
       metadata: {
-        riskScore: data.riskScore,
+        score: data.score,
         riskLevel: data.riskLevel,
       },
     });
@@ -163,20 +161,17 @@ export class VendorRiskService {
   async createVendorReview(data: {
     vendorId: string;
     reviewType: string;
-    reviewerId: string;
+    reviewer: string;
     organizationId: string;
-    scope?: any;
-    dueDate?: Date;
+    nextReviewDate?: Date;
   }) {
     const review = await prisma.vendorReview.create({
       data: {
         vendorId: data.vendorId,
         reviewType: data.reviewType,
-        reviewerId: data.reviewerId,
-        status: 'Scheduled',
-        scheduledDate: new Date(),
-        scope: data.scope || {},
-        dueDate: data.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        reviewer: data.reviewer,
+        reviewDate: new Date(),
+        nextReviewDate: data.nextReviewDate,
       },
       include: {
         vendor: true,
@@ -184,7 +179,7 @@ export class VendorRiskService {
     });
 
     await AuditLogger.log({
-      userId: data.reviewerId,
+      userId: data.reviewer,
       organizationId: data.organizationId,
       action: 'vendor.review.created',
       resourceType: 'VendorReview',
@@ -201,8 +196,8 @@ export class VendorRiskService {
   async completeVendorReview(
     reviewId: string,
     data: {
-      findings: any;
-      recommendations: any;
+      findings: Prisma.InputJsonValue;
+      actionItems: Prisma.InputJsonValue;
       passed: boolean;
       nextReviewDate?: Date;
     },
@@ -212,10 +207,8 @@ export class VendorRiskService {
     const review = await prisma.vendorReview.update({
       where: { id: reviewId },
       data: {
-        status: 'Completed',
-        completedDate: new Date(),
         findings: data.findings,
-        recommendations: data.recommendations,
+        actionItems: data.actionItems,
         nextReviewDate: data.nextReviewDate,
       },
       include: {
@@ -240,7 +233,6 @@ export class VendorRiskService {
       resourceId: reviewId,
       metadata: {
         passed: data.passed,
-        findingsCount: data.findings?.length || 0,
       },
     });
 
@@ -253,7 +245,7 @@ export class VendorRiskService {
   async createVendorMonitor(data: {
     vendorId: string;
     monitorType: string;
-    configuration: any;
+    configuration?: Prisma.InputJsonValue;
     organizationId: string;
     userId: string;
   }) {
@@ -261,10 +253,8 @@ export class VendorRiskService {
       data: {
         vendorId: data.vendorId,
         monitorType: data.monitorType,
-        configuration: data.configuration,
-        frequency: 'Daily',
-        active: true,
-        status: 'Active',
+        findings: data.configuration || {},
+        status: MonitorStatus.Unknown,
       },
       include: {
         vendor: true,
@@ -289,10 +279,9 @@ export class VendorRiskService {
   async updateVendorMonitorResults(
     monitorId: string,
     data: {
-      status: string;
+      status: MonitorStatus;
       lastCheckDate: Date;
-      findings?: any;
-      alerts?: any;
+      findings?: Prisma.InputJsonValue;
     },
     userId: string,
     organizationId: string
@@ -301,24 +290,23 @@ export class VendorRiskService {
       where: { id: monitorId },
       data: {
         status: data.status,
-        lastCheckDate: data.lastCheckDate,
+        lastCheck: data.lastCheckDate,
         findings: data.findings,
-        alerts: data.alerts,
       },
       include: {
         vendor: true,
       },
     });
 
-    // If critical findings, create an issue
-    if (data.alerts && data.alerts.critical > 0) {
+    // If status is Failing, log an audit event
+    if (data.status === MonitorStatus.Failing) {
       await AuditLogger.log({
         userId,
         organizationId,
         action: 'vendor.monitor.critical_alert',
         resourceType: 'VendorMonitor',
         resourceId: monitorId,
-        metadata: { alerts: data.alerts },
+        metadata: { status: data.status, findings: data.findings },
       });
     }
 
@@ -333,16 +321,14 @@ export class VendorRiskService {
       where: { id: vendorId },
       include: {
         assessments: {
-          orderBy: { completedAt: 'desc' },
+          orderBy: { assessedDate: 'desc' },
           take: 5,
         },
         reviews: {
-          orderBy: { completedDate: 'desc' },
+          orderBy: { reviewDate: 'desc' },
           take: 5,
         },
-        monitors: {
-          where: { active: true },
-        },
+        monitors: true,
       },
     });
 
@@ -360,19 +346,18 @@ export class VendorRiskService {
       complianceScore: this.calculateComplianceScore(vendor),
       securityScore: this.calculateSecurityScore(vendor),
       assessmentHistory: vendor.assessments.map((a) => ({
-        date: a.completedAt,
+        date: a.assessedDate,
         type: a.assessmentType,
-        riskScore: a.riskScore,
+        score: a.score,
         riskLevel: a.riskLevel,
       })),
       recentReviews: vendor.reviews.map((r) => ({
-        date: r.completedDate,
+        date: r.reviewDate,
         type: r.reviewType,
-        status: r.status,
       })),
       activeMonitors: vendor.monitors.length,
       monitoringStatus:
-        vendor.monitors.filter((m) => m.status === 'Active').length ===
+        vendor.monitors.filter((m) => m.status === MonitorStatus.Passing).length ===
         vendor.monitors.length
           ? 'Healthy'
           : 'Issues_Detected',
@@ -437,33 +422,17 @@ export class VendorRiskService {
       },
       reviewMetrics: {
         totalReviews: vendors.reduce((sum, v) => sum + v.reviews.length, 0),
-        pendingReviews: vendors.reduce(
-          (sum, v) =>
-            sum + v.reviews.filter((r) => r.status === 'Scheduled').length,
-          0
-        ),
-        overdueReviews: vendors.reduce(
-          (sum, v) =>
-            sum +
-            v.reviews.filter(
-              (r) =>
-                r.status === 'Scheduled' &&
-                r.dueDate &&
-                r.dueDate < new Date()
-            ).length,
-          0
-        ),
       },
       monitoringMetrics: {
         activeMonitors: vendors.reduce(
-          (sum, v) => sum + v.monitors.filter((m) => m.active).length,
+          (sum, v) => sum + v.monitors.filter((m) => m.status === MonitorStatus.Passing).length,
           0
         ),
-        alertsDetected: vendors.reduce(
-          (sum, v) =>
-            sum + v.monitors.filter((m) => m.alerts && m.alerts.count > 0).length,
-          0
-        ),
+        alertsDetected: vendors.reduce((sum, v) => {
+          return sum + v.monitors.filter((m) => {
+            return m.status === MonitorStatus.Failing || m.status === MonitorStatus.Warning;
+          }).length;
+        }, 0),
       },
       complianceCertifications: {
         soc2: vendors.filter((v) => v.soc2Report).length,
@@ -508,61 +477,25 @@ export class VendorRiskService {
       },
       include: {
         assessments: {
-          orderBy: { completedAt: 'desc' },
+          orderBy: { assessedDate: 'desc' },
           take: 1,
         },
         reviews: {
-          orderBy: { completedDate: 'desc' },
+          orderBy: { reviewDate: 'desc' },
           take: 1,
         },
-        monitors: {
-          where: { active: true },
-        },
+        monitors: true,
       },
       orderBy: { riskScore: 'desc' },
     });
   }
 
   /**
-   * Private helper: Get assessment questions
-   */
-  private getAssessmentQuestions(assessmentType: string) {
-    const questions = {
-      Initial_Onboarding: [
-        'Does the vendor have SOC 2 Type II certification?',
-        'Does the vendor have ISO 27001 certification?',
-        'What is the vendor\'s data breach history?',
-        'Does the vendor have a documented SDLC?',
-        'What encryption methods are used for data at rest and in transit?',
-        'Does the vendor perform regular penetration testing?',
-        'What is the vendor\'s incident response process?',
-        'Does the vendor have cyber insurance?',
-      ],
-      Annual_Review: [
-        'Have there been any security incidents in the past year?',
-        'Are all certifications still current?',
-        'Has the vendor\'s risk profile changed?',
-        'Are SLAs being met?',
-        'Have there been any changes to data processing?',
-      ],
-      Security_Assessment: [
-        'What authentication methods are supported?',
-        'Is MFA enforced for all users?',
-        'What is the password policy?',
-        'How often are security patches applied?',
-        'What logging and monitoring capabilities exist?',
-      ],
-    };
-
-    return questions[assessmentType as keyof typeof questions] || [];
-  }
-
-  /**
    * Private helper: Calculate compliance score
    */
-  private calculateComplianceScore(vendor: any): number {
+  private calculateComplianceScore(vendor: Vendor): number {
     let score = 0;
-    let maxScore = 4;
+    const maxScore = 4;
 
     if (vendor.soc2Report) score += 1;
     if (vendor.iso27001Certified) score += 1;
@@ -575,7 +508,7 @@ export class VendorRiskService {
   /**
    * Private helper: Calculate security score
    */
-  private calculateSecurityScore(vendor: any): number {
+  private calculateSecurityScore(vendor: Vendor & { monitors?: Array<{ status: MonitorStatus }> }): number {
     let score = 100;
 
     // Deduct points based on risk level
@@ -592,10 +525,11 @@ export class VendorRiskService {
       score -= 20;
     }
 
-    // Deduct if active monitors show issues
-    const activeMonitors = vendor.monitors?.filter((m: any) => m.active) || [];
-    const issueMonitors =
-      activeMonitors.filter((m: any) => m.status !== 'Active') || [];
+    // Deduct if monitors show issues
+    const monitors = vendor.monitors || [];
+    const issueMonitors = monitors.filter(
+      (m) => m.status === MonitorStatus.Failing || m.status === MonitorStatus.Warning
+    );
     if (issueMonitors.length > 0) {
       score -= Math.min(issueMonitors.length * 10, 30);
     }
