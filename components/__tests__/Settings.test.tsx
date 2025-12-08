@@ -4,20 +4,19 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Settings } from '../Settings';
 import { api } from '../../services/api';
 
-declare const describe: any;
-declare const test: any;
-declare const expect: any;
-declare const jest: any;
 
-jest.mock('../../services/api', () => ({
+
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+
+vi.mock('../../services/api', () => ({
   api: {
-    auth: { register: jest.fn() },
-    billing: { createCheckout: jest.fn() }
+    auth: { register: vi.fn() },
+    billing: { createCheckout: vi.fn() }
   }
 }));
 
 // Mock PaymentModal since it's tested separately
-jest.mock('../PaymentModal', () => ({
+vi.mock('../PaymentModal', () => ({
   PaymentModal: ({ onSuccess, onClose }: any) => (
     <div data-testid="payment-modal">
       <button onClick={onSuccess}>Pay Success</button>
@@ -27,13 +26,13 @@ jest.mock('../PaymentModal', () => ({
 }));
 
 describe('Settings Component', () => {
-  test('renders profile tab by default', () => {
+  it('renders profile tab by default', () => {
     render(<Settings />);
     expect(screen.getByText('My Profile')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Sarah Connor')).toBeInTheDocument();
   });
 
-  test('switches tabs correctly', () => {
+  it('switches tabs correctly', () => {
     render(<Settings />);
     fireEvent.click(screen.getByText('Team Members'));
     expect(screen.getByText('Invite Member')).toBeInTheDocument();
@@ -42,7 +41,7 @@ describe('Settings Component', () => {
     expect(screen.getByText('Available Plans')).toBeInTheDocument();
   });
 
-  test('handles team member invitation', async () => {
+  it('handles team member invitation', async () => {
     render(<Settings />);
     fireEvent.click(screen.getByText('Team Members'));
     fireEvent.click(screen.getByText('Invite Member'));
@@ -57,7 +56,7 @@ describe('Settings Component', () => {
     });
   });
 
-  test('billing upgrade flow', async () => {
+  it('billing upgrade flow', async () => {
     render(<Settings />);
     fireEvent.click(screen.getByText('Billing & Plan'));
     
