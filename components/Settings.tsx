@@ -38,8 +38,8 @@ export const Settings: React.FC = () => {
       avatar: newMember.name.substring(0, 2).toUpperCase(),
       organizationId: 'org1'
     };
-    // Mock API call to invite
-    await api.auth.register(newUser);
+    // API call to invite/register new team member
+    await api.auth.register(newMember.name, newMember.email);
     setUsers([...users, newUser]);
     setShowInviteModal(false);
     setNewMember({ name: '', email: '', role: 'viewer' });
@@ -58,7 +58,7 @@ export const Settings: React.FC = () => {
 
   const handlePaymentSuccess = () => {
     setCurrentPlan(selectedPlan);
-    api.billing.upgrade(selectedPlan as any);
+    api.billing.createCheckout(selectedPlan as 'Basic' | 'Pro' | 'Enterprise');
   };
 
   const handleSaveProfile = () => {

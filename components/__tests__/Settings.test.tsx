@@ -12,7 +12,7 @@ declare const jest: any;
 jest.mock('../../services/api', () => ({
   api: {
     auth: { register: jest.fn() },
-    billing: { upgrade: jest.fn() }
+    billing: { createCheckout: jest.fn() }
   }
 }));
 
@@ -70,7 +70,7 @@ describe('Settings Component', () => {
     fireEvent.click(screen.getByText('Pay Success'));
     
     await waitFor(() => {
-      expect(api.billing.upgrade).toHaveBeenCalledWith('Enterprise');
+      expect(api.billing.createCheckout).toHaveBeenCalledWith('Enterprise');
     });
   });
 });

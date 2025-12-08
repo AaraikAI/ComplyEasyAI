@@ -10,7 +10,7 @@ const getAuthToken = (): string | null => {
 
 // Set auth token in localStorage
 const setAuthToken = (token: string): void => {
-  localStorage.setItem('authToken');
+  localStorage.setItem('authToken', token);
 };
 
 // Clear auth token
@@ -266,6 +266,13 @@ export const api = {
   audit: {
     list: async () => {
       return fetchAPI<AuditLog[]>('/audit');
+    },
+
+    log: async (action: string, user: string, details?: string) => {
+      return fetchAPI<AuditLog>('/audit', {
+        method: 'POST',
+        body: JSON.stringify({ action, user, details }),
+      });
     },
   },
 

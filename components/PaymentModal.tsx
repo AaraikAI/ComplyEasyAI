@@ -23,8 +23,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, onClose
     setStep('processing');
 
     try {
-      // Simulate Stripe Confirmation
-      await api.billing.upgrade(plan as any);
+      // Create Stripe checkout session
+      await api.billing.createCheckout(plan as 'Basic' | 'Pro' | 'Enterprise');
       setStep('success');
       setTimeout(() => {
         onSuccess();
