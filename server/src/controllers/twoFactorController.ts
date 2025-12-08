@@ -3,7 +3,7 @@
  * Handles 2FA setup, verification, and management endpoints
  */
 
-import { Response } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import twoFactorService from '../services/twoFactorService';
 import logger from '../config/logger';
@@ -11,10 +11,11 @@ import logger from '../config/logger';
 /**
  * Setup 2FA - Generate secret and QR code
  */
-export const setupTwoFactor = async (req: AuthRequest, res: Response): Promise<void> => {
+export const setupTwoFactor: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user!.id;
-    const userEmail = req.user!.email;
+    const authReq = req as AuthRequest;
+    const userId = authReq.user!.id;
+    const userEmail = authReq.user!.email;
 
     const setup = await twoFactorService.setupTwoFactor(userId, userEmail);
 
@@ -39,9 +40,10 @@ export const setupTwoFactor = async (req: AuthRequest, res: Response): Promise<v
 /**
  * Verify 2FA token and enable 2FA
  */
-export const verifyAndEnable = async (req: AuthRequest, res: Response): Promise<void> => {
+export const verifyAndEnable: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user!.id;
+    const authReq = req as AuthRequest;
+    const userId = authReq.user!.id;
     const { token } = req.body;
 
     if (!token) {
@@ -78,7 +80,7 @@ export const verifyAndEnable = async (req: AuthRequest, res: Response): Promise<
 /**
  * Verify 2FA token during login
  */
-export const verifyToken = async (req: AuthRequest, res: Response): Promise<void> => {
+export const verifyToken: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, token } = req.body;
 
@@ -116,7 +118,7 @@ export const verifyToken = async (req: AuthRequest, res: Response): Promise<void
 /**
  * Verify backup code
  */
-export const verifyBackupCode = async (req: AuthRequest, res: Response): Promise<void> => {
+export const verifyBackupCode: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, code } = req.body;
 
@@ -154,9 +156,10 @@ export const verifyBackupCode = async (req: AuthRequest, res: Response): Promise
 /**
  * Disable 2FA
  */
-export const disableTwoFactor = async (req: AuthRequest, res: Response): Promise<void> => {
+export const disableTwoFactor: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user!.id;
+    const authReq = req as AuthRequest;
+    const userId = authReq.user!.id;
     const { token } = req.body;
 
     if (!token) {
@@ -193,9 +196,10 @@ export const disableTwoFactor = async (req: AuthRequest, res: Response): Promise
 /**
  * Regenerate backup codes
  */
-export const regenerateBackupCodes = async (req: AuthRequest, res: Response): Promise<void> => {
+export const regenerateBackupCodes: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user!.id;
+    const authReq = req as AuthRequest;
+    const userId = authReq.user!.id;
     const { token } = req.body;
 
     if (!token) {
@@ -235,9 +239,10 @@ export const regenerateBackupCodes = async (req: AuthRequest, res: Response): Pr
 /**
  * Get 2FA status
  */
-export const getTwoFactorStatus = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getTwoFactorStatus: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user!.id;
+    const authReq = req as AuthRequest;
+    const userId = authReq.user!.id;
 
     const enabled = await twoFactorService.isTwoFactorEnabled(userId);
     const remainingCodes = enabled

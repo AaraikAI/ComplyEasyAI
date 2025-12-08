@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response, RequestHandler } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
@@ -6,9 +6,10 @@ import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
 
 class FrameworksController {
-  async list(req: AuthRequest, res: Response): Promise<void> {
+  list: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const organizationId = req.user!.organizationId;
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
 
       const frameworks = await prisma.complianceFramework.findMany({
         where: { organizationId },
@@ -23,12 +24,13 @@ class FrameworksController {
       logger.error('List frameworks error', error);
       throw new AppError('Failed to fetch frameworks', 500);
     }
-  }
+  };
 
-  async getById(req: AuthRequest, res: Response): Promise<void> {
+  getById: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { id } = req.params;
-      const organizationId = req.user!.organizationId;
+      const organizationId = authReq.user!.organizationId;
 
       const framework = await prisma.complianceFramework.findFirst({
         where: { id, organizationId },
@@ -45,11 +47,12 @@ class FrameworksController {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to fetch framework', 500);
     }
-  }
+  };
 
-  async create(req: AuthRequest, res: Response): Promise<void> {
+  create: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const organizationId = req.user!.organizationId;
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
       const { name, region, nextAuditDate } = req.body;
 
       if (!name || !nextAuditDate) {
@@ -69,7 +72,7 @@ class FrameworksController {
       await prisma.auditLog.create({
         data: {
           action: `Framework Added: ${name}`,
-          userId: req.user!.id,
+          userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
         },
@@ -82,12 +85,13 @@ class FrameworksController {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to create framework', 500);
     }
-  }
+  };
 
-  async update(req: AuthRequest, res: Response): Promise<void> {
+  update: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { id } = req.params;
-      const organizationId = req.user!.organizationId;
+      const organizationId = authReq.user!.organizationId;
       const updateData = req.body;
 
       const existingFramework = await prisma.complianceFramework.findFirst({
@@ -106,7 +110,7 @@ class FrameworksController {
       await prisma.auditLog.create({
         data: {
           action: `Framework Updated: ${framework.name}`,
-          userId: req.user!.id,
+          userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
         },
@@ -118,12 +122,13 @@ class FrameworksController {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to update framework', 500);
     }
-  }
+  };
 
-  async delete(req: AuthRequest, res: Response): Promise<void> {
+  delete: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
+      const authReq = req as AuthRequest;
       const { id } = req.params;
-      const organizationId = req.user!.organizationId;
+      const organizationId = authReq.user!.organizationId;
 
       const framework = await prisma.complianceFramework.findFirst({
         where: { id, organizationId },
@@ -138,7 +143,7 @@ class FrameworksController {
       await prisma.auditLog.create({
         data: {
           action: `Framework Deleted: ${framework.name}`,
-          userId: req.user!.id,
+          userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
         },
@@ -150,7 +155,7 @@ class FrameworksController {
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to delete framework', 500);
     }
-  }
+  };
 }
 
 export default new FrameworksController();

@@ -4,10 +4,10 @@
  * Uses Microsoft SEAL (node-seal) library for BFV and CKKS schemes
  */
 
-import { SEAL } from 'node-seal';
+import SEAL from 'node-seal';
 import crypto from 'crypto';
-import logger from '../config/logger';
-import prisma from '../config/database';
+import logger from '../../config/logger';
+import prisma from '../../config/database';
 
 interface EncryptedData {
   ciphertext: string;
