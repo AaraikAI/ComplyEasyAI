@@ -10,7 +10,7 @@ interface AuthContextType {
   loginWithMagicLink: (email: string) => Promise<void>;
   verifyMagicLink: (token: string) => Promise<void>;
   logout: () => void;
-  register: (name: string, email: string) => Promise<void>;
+  register: (name: string, email: string, organizationName?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,35 +32,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithMagicLink = async (email: string) => {
-    // In production: Call API to send email with token
-    // Simulation: We just verify the user exists
-    const user = await api.auth.login(email);
+    // In production: Call API to send email with magic link token
+    await api.auth.requestMagicLink(email);
     // Store temp token to simulate "Check your email" state if needed
-    console.log(`Magic Link sent to ${email} (Simulated)`);
+    console.log(`Magic Link sent to ${email}`);
   };
 
-  const verifyMagicLink = async (email: string) => {
-    // Simulation: This would be called when user clicks email link
-    const user = await api.auth.login(email);
-    if (user) {
+  const verifyMagicLink = async (token: string) => {
+    // Called when user clicks magic link from email
+    const verifiedUser = await api.auth.verifyMagicLink(token);
+    if (verifiedUser) {
       localStorage.setItem('session_token', `jwt_${Date.now()}`); // Mock JWT
-      localStorage.setItem('user_data', JSON.stringify(user));
-      setUser(user);
+      localStorage.setItem('user_data', JSON.stringify(verifiedUser));
+      setUser(verifiedUser);
     }
   };
 
-  const register = async (name: string, email: string) => {
-    const newUser: User = {
-      id: `u_${Date.now()}`,
+  const register = async (name: string, email: string, organizationName?: string) => {
+    // Call the API to register the user
+    const response: any = await api.auth.register(name, email, organizationName);
+
+    // Create user object from response or construct from input
+    const newUser: User = response?.user || {
+      id: response?.id || `u_${Date.now()}`,
       name,
       email,
       role: 'admin', // First user is admin
       avatar: name.substring(0, 2).toUpperCase(),
-      organizationId: 'org1'
+      organizationId: response?.organizationId || 'org1'
     };
-    await api.auth.register(newUser);
-    // Auto login
-    localStorage.setItem('session_token', `jwt_${Date.now()}`);
+
+    // Auto login after registration
+    localStorage.setItem('session_token', response?.accessToken || `jwt_${Date.now()}`);
     localStorage.setItem('user_data', JSON.stringify(newUser));
     setUser(newUser);
   };

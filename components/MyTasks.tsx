@@ -97,7 +97,7 @@ export const MyTasks: React.FC = () => {
         mitigationPlan: remediationPlan || undefined
       };
       
-      await api.risks.update(updatedTask);
+      await api.risks.update(updatedTask.id, updatedTask);
       await api.audit.log(`Task ${updatedTask.id} status updated to ${newStatus}`, user?.name || 'User');
       
       setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));

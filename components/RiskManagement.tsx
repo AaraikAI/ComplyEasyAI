@@ -121,7 +121,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         const aiData = prioritizedData.find((p: any) => p.id === risk.id);
         if (aiData) {
           const updated = { ...risk, aiPriorityScore: aiData.score, aiRationale: aiData.rationale };
-          api.risks.update(updated); // Sync to DB
+          api.risks.update(updated.id, updated); // Sync to DB
           return updated;
         }
         return risk;
@@ -158,7 +158,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         mitigationPlan: remediationPlan || undefined
       };
       
-      await api.risks.update(updatedRisk);
+      await api.risks.update(updatedRisk.id, updatedRisk);
       await api.audit.log(`Risk ${updatedRisk.id} updated to ${updatedRisk.status}`, 'Admin'); // Use real user in production
       
       setRisks(prev => prev.map(r => r.id === updatedRisk.id ? updatedRisk : r));
