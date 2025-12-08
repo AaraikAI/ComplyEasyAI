@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { authAsyncHandler, asyncHandler, AuthenticatedRequest } from '../types/express';
 
@@ -191,7 +191,7 @@ const trustCenterRouter = Router();
 // Public route - no auth required
 trustCenterRouter.get(
   '/public/:organizationId',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const trustCenter = await trustCenterService.getPublicTrustCenter(
       req.params.organizationId
     );

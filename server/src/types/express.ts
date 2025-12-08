@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 
 /**
  * Async route handler type for Express
@@ -34,11 +34,11 @@ export type AuthenticatedAsyncHandler = (
 
 /**
  * Wraps async route handlers to catch errors automatically
- * Supports both 2-param (controller) and 3-param (middleware) signatures
+ * Supports both controller methods (RequestHandler) and custom async functions
  */
 export const asyncHandler = (
-  fn: ((req: any, res: Response, next?: NextFunction) => Promise<any>) | ((req: any, res: Response) => Promise<any>)
-) => {
+  fn: RequestHandler | ((req: Request, res: Response, next?: NextFunction) => Promise<unknown>)
+): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
@@ -48,8 +48,8 @@ export const asyncHandler = (
  * Wraps authenticated async route handlers
  */
 export const authAsyncHandler = (
-  fn: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<any>
-) => {
+  fn: (req: AuthenticatedRequest, res: Response, next: NextFunction) => Promise<unknown>
+): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req as AuthenticatedRequest, res, next)).catch(next);
   };
