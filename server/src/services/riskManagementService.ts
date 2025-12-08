@@ -1,7 +1,11 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, RiskSeverity, RiskItem, RiskAssessment } from '@prisma/client';
 import { AuditLogger } from '../utils/auditLogger';
 
 const prisma = new PrismaClient();
+
+interface RiskAssessmentWithRisks extends RiskAssessment {
+  risks: RiskItem[];
+}
 
 /**
  * Full Risk Management Service
@@ -13,22 +17,23 @@ export class RiskManagementService {
    */
   async createRiskAssessment(data: {
     organizationId: string;
-    frameworkId?: string;
+    name: string;
+    description?: string;
     assessmentType: string;
-    scope: any;
+    scope?: string;
+    methodology?: string;
     userId: string;
   }) {
     const assessment = await prisma.riskAssessment.create({
       data: {
         organizationId: data.organizationId,
-        frameworkId: data.frameworkId,
+        name: data.name,
+        description: data.description,
         assessmentType: data.assessmentType,
         status: 'In_Progress',
         scope: data.scope,
-        methodology: 'ISO_31000',
-      },
-      include: {
-        framework: true,
+        methodology: data.methodology || 'ISO_31000',
+        startDate: new Date(),
       },
     });
 
@@ -100,8 +105,6 @@ export class RiskManagementService {
   async completeRiskAssessment(
     assessmentId: string,
     data: {
-      findings: any;
-      recommendations: any;
       overallRiskScore: number;
     },
     userId: string,
@@ -111,13 +114,10 @@ export class RiskManagementService {
       where: { id: assessmentId },
       data: {
         status: 'Completed',
-        completedAt: new Date(),
-        findings: data.findings,
-        recommendations: data.recommendations,
+        completedDate: new Date(),
         overallRiskScore: data.overallRiskScore,
       },
       include: {
-        framework: true,
         risks: true,
       },
     });
@@ -269,7 +269,7 @@ export class RiskManagementService {
   async getRiskRegister(
     organizationId: string,
     filters?: {
-      severity?: string;
+      severity?: RiskSeverity;
       status?: string;
       category?: string;
     }
@@ -277,7 +277,7 @@ export class RiskManagementService {
     const risks = await prisma.riskItem.findMany({
       where: {
         organizationId,
-        ...(filters?.severity && { severity: filters.severity as any }),
+        ...(filters?.severity && { severity: filters.severity }),
         ...(filters?.status && { status: filters.status as any }),
         ...(filters?.category && { category: filters.category }),
       },
@@ -307,7 +307,7 @@ export class RiskManagementService {
       include: {
         risks: true,
       },
-    });
+    }) as RiskAssessmentWithRisks[];
 
     const now = new Date();
 
@@ -412,7 +412,7 @@ export class RiskManagementService {
     organizationId: string,
     timeRange?: { start: Date; end: Date }
   ) {
-    const where: any = { organizationId };
+    const where: Record<string, unknown> = { organizationId };
 
     if (timeRange) {
       where.detectedAt = {
@@ -451,7 +451,7 @@ export class RiskManagementService {
   /**
    * Private helper: Calculate risk severity based on score
    */
-  private calculateRiskSeverity(riskScore: number): string {
+  private calculateRiskSeverity(riskScore: number): RiskSeverity {
     if (riskScore >= 20) return 'Critical';
     if (riskScore >= 12) return 'High';
     if (riskScore >= 6) return 'Medium';
@@ -461,7 +461,7 @@ export class RiskManagementService {
   /**
    * Private helper: Get category distribution
    */
-  private getCategoryDistribution(risks: any[]) {
+  private getCategoryDistribution(risks: RiskItem[]) {
     const distribution: Record<string, number> = {};
 
     risks.forEach((risk) => {
@@ -475,7 +475,7 @@ export class RiskManagementService {
   /**
    * Private helper: Calculate risk trend
    */
-  private calculateRiskTrend(risks: any[]) {
+  private calculateRiskTrend(risks: RiskItem[]) {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
@@ -503,7 +503,7 @@ export class RiskManagementService {
   /**
    * Private helper: Calculate remediation effectiveness
    */
-  private calculateRemediationEffectiveness(risks: any[]) {
+  private calculateRemediationEffectiveness(risks: RiskItem[]) {
     const resolvedRisks = risks.filter((r) => r.status === 'Resolved');
 
     if (resolvedRisks.length === 0) {
@@ -533,7 +533,7 @@ export class RiskManagementService {
   /**
    * Private helper: Calculate average resolution time
    */
-  private calculateAverageResolutionTime(risks: any[]): number {
+  private calculateAverageResolutionTime(risks: RiskItem[]): number {
     const resolvedRisks = risks.filter(
       (r) => r.status === 'Resolved' && r.resolvedAt
     );
@@ -541,7 +541,7 @@ export class RiskManagementService {
     if (resolvedRisks.length === 0) return 0;
 
     const totalTime = resolvedRisks.reduce((sum, r) => {
-      const time = r.resolvedAt.getTime() - r.detectedAt.getTime();
+      const time = r.resolvedAt!.getTime() - r.detectedAt.getTime();
       return sum + time / (24 * 60 * 60 * 1000); // Convert to days
     }, 0);
 
@@ -551,7 +551,7 @@ export class RiskManagementService {
   /**
    * Private helper: Calculate risk velocity
    */
-  private calculateRiskVelocity(risks: any[], timeRange?: any): number {
+  private calculateRiskVelocity(risks: RiskItem[], timeRange?: { start: Date; end: Date }): number {
     if (!timeRange) return 0;
 
     const days =
@@ -564,7 +564,7 @@ export class RiskManagementService {
   /**
    * Private helper: Analyze category trends
    */
-  private analyzeCategoriesTrends(risks: any[]) {
+  private analyzeCategoriesTrends(risks: RiskItem[]) {
     const categories = this.getCategoryDistribution(risks);
 
     return Object.entries(categories)
@@ -579,8 +579,13 @@ export class RiskManagementService {
   /**
    * Private helper: Analyze remediation owners
    */
-  private analyzeRemediationOwners(risks: any[]) {
-    const owners: Record<string, any> = {};
+  private analyzeRemediationOwners(risks: RiskItem[]) {
+    const owners: Record<string, {
+      owner: string;
+      totalRisks: number;
+      resolvedRisks: number;
+      overdueRisks: number;
+    }> = {};
 
     risks.forEach((risk) => {
       const owner = risk.remediationOwner || 'Unassigned';
@@ -609,7 +614,7 @@ export class RiskManagementService {
       }
     });
 
-    return Object.values(owners).map((owner: any) => ({
+    return Object.values(owners).map((owner) => ({
       ...owner,
       resolutionRate:
         owner.totalRisks > 0

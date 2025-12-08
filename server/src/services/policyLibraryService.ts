@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Policy, Prisma } from '@prisma/client';
 import { AuditLogger } from '../utils/auditLogger';
 
 const prisma = new PrismaClient();
@@ -16,14 +16,14 @@ export class PolicyLibraryService {
     title: string;
     category: string;
     content: string;
-    version: string;
+    version?: string;
     status?: string;
     owner?: string;
     approver?: string;
     effectiveDate?: Date;
     reviewDate?: Date;
-    tags?: any;
-    frameworkId?: string;
+    tags?: Prisma.InputJsonValue;
+    framework?: string;
     userId: string;
   }) {
     const policy = await prisma.policy.create({
@@ -32,17 +32,14 @@ export class PolicyLibraryService {
         title: data.title,
         category: data.category,
         content: data.content,
-        version: data.version,
+        version: data.version || '1.0',
         status: data.status || 'Draft',
         owner: data.owner,
         approver: data.approver,
         effectiveDate: data.effectiveDate,
         reviewDate: data.reviewDate,
-        tags: data.tags || {},
-        frameworkId: data.frameworkId,
-      },
-      include: {
-        framework: true,
+        tags: data.tags,
+        framework: data.framework,
       },
     });
 
@@ -69,7 +66,7 @@ export class PolicyLibraryService {
       content: string;
       version?: string;
       owner?: string;
-      tags?: any;
+      tags?: Prisma.InputJsonValue;
     }>,
     userId: string
   ) {
@@ -253,20 +250,22 @@ Manage risks associated with third-party relationships.
       throw new Error('Source control not found');
     }
 
+    const existingMappings = (sourceControl.mappedControls as { mappings?: unknown[] } | null)?.mappings || [];
+
     const updated = await prisma.frameworkControl.update({
       where: { id: sourceControlId },
       data: {
-        crossFrameworkMapping: {
+        mappedControls: {
           mappings: [
-            ...(sourceControl.crossFrameworkMapping as any)?.mappings || [],
+            ...existingMappings,
             {
               targetControlId,
               mappingType,
               notes,
-              createdAt: new Date(),
+              createdAt: new Date().toISOString(),
             },
           ],
-        },
+        } as Prisma.InputJsonValue,
       },
     });
 
@@ -297,9 +296,6 @@ Manage risks associated with third-party relationships.
         organizationId,
         ...(filters?.category && { category: filters.category }),
         ...(filters?.status && { status: filters.status }),
-      },
-      include: {
-        framework: true,
       },
       orderBy: { updatedAt: 'desc' },
     });
@@ -355,7 +351,7 @@ Manage risks associated with third-party relationships.
       data: {
         status: 'Approved',
         approver: approverId,
-        approvedAt: new Date(),
+        approvalDate: new Date(),
       },
     });
 
@@ -402,7 +398,7 @@ Manage risks associated with third-party relationships.
   /**
    * Private helper: Get category distribution
    */
-  private getCategoryDistribution(policies: any[]) {
+  private getCategoryDistribution(policies: Policy[]) {
     const distribution: Record<string, number> = {};
 
     policies.forEach((policy) => {

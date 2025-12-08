@@ -19,8 +19,8 @@ import {
 } from '@azure/keyvault-keys';
 import { DefaultAzureCredential } from '@azure/identity';
 import crypto from 'crypto';
-import logger from '../config/logger';
-import prisma from '../config/database';
+import logger from '../../config/logger';
+import prisma from '../../config/database';
 
 type KeyProvider = 'aws_kms' | 'azure_kv' | 'local';
 
