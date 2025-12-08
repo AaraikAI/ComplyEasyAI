@@ -1,14 +1,15 @@
 import { Router } from 'express';
 import authController from '../controllers/authController';
 import { authLimiter } from '../middleware/rateLimiter';
+import { asyncHandler } from '../types/express';
 
 const router = Router();
 
-router.post('/magic-link', authLimiter, authController.requestMagicLink);
-router.post('/verify', authLimiter, authController.verifyMagicLink);
-router.post('/2fa/complete', authLimiter, authController.completeTwoFactorLogin);
-router.post('/register', authLimiter, authController.register);
-router.post('/refresh', authController.refreshToken);
-router.post('/logout', authController.logout);
+router.post('/magic-link', authLimiter, asyncHandler(authController.requestMagicLink.bind(authController)));
+router.post('/verify', authLimiter, asyncHandler(authController.verifyMagicLink.bind(authController)));
+router.post('/2fa/complete', authLimiter, asyncHandler(authController.completeTwoFactorLogin.bind(authController)));
+router.post('/register', authLimiter, asyncHandler(authController.register.bind(authController)));
+router.post('/refresh', asyncHandler(authController.refreshToken.bind(authController)));
+router.post('/logout', asyncHandler(authController.logout.bind(authController)));
 
 export default router;

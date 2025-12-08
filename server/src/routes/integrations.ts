@@ -6,6 +6,7 @@
 import express from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import * as integrationsController from '../controllers/integrationsController';
+import { asyncHandler } from '../types/express';
 
 const router = express.Router();
 
@@ -18,18 +19,18 @@ router.get(
   '/google/authorize',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.authorizeGoogle
+  asyncHandler(integrationsController.authorizeGoogle)
 );
 
 // OAuth callback (public - no auth required)
-router.get('/google/callback', integrationsController.callbackGoogle);
+router.get('/google/callback', asyncHandler(integrationsController.callbackGoogle));
 
 // Sync data
 router.post(
   '/google/sync',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.syncGoogleData
+  asyncHandler(integrationsController.syncGoogleData)
 );
 
 // Disconnect
@@ -37,7 +38,7 @@ router.delete(
   '/google',
   authenticate,
   authorize('admin'),
-  integrationsController.disconnectGoogle
+  asyncHandler(integrationsController.disconnectGoogle)
 );
 
 // ============================================================================
@@ -48,23 +49,23 @@ router.get(
   '/github/authorize',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.authorizeGitHub
+  asyncHandler(integrationsController.authorizeGitHub)
 );
 
-router.get('/github/callback', integrationsController.callbackGitHub);
+router.get('/github/callback', asyncHandler(integrationsController.callbackGitHub));
 
 router.post(
   '/github/sync',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.syncGitHubData
+  asyncHandler(integrationsController.syncGitHubData)
 );
 
 router.delete(
   '/github',
   authenticate,
   authorize('admin'),
-  integrationsController.disconnectGitHub
+  asyncHandler(integrationsController.disconnectGitHub)
 );
 
 // ============================================================================
@@ -75,30 +76,30 @@ router.get(
   '/slack/authorize',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.authorizeSlack
+  asyncHandler(integrationsController.authorizeSlack)
 );
 
-router.get('/slack/callback', integrationsController.callbackSlack);
+router.get('/slack/callback', asyncHandler(integrationsController.callbackSlack));
 
 router.post(
   '/slack/sync',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.syncSlackData
+  asyncHandler(integrationsController.syncSlackData)
 );
 
 router.post(
   '/slack/message',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.postSlackMessage
+  asyncHandler(integrationsController.postSlackMessage)
 );
 
 router.delete(
   '/slack',
   authenticate,
   authorize('admin'),
-  integrationsController.disconnectSlack
+  asyncHandler(integrationsController.disconnectSlack)
 );
 
 // ============================================================================
@@ -109,30 +110,30 @@ router.get(
   '/jira/authorize',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.authorizeJira
+  asyncHandler(integrationsController.authorizeJira)
 );
 
-router.get('/jira/callback', integrationsController.callbackJira);
+router.get('/jira/callback', asyncHandler(integrationsController.callbackJira));
 
 router.post(
   '/jira/sync',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.syncJiraData
+  asyncHandler(integrationsController.syncJiraData)
 );
 
 router.post(
   '/jira/issue',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.createJiraIssue
+  asyncHandler(integrationsController.createJiraIssue)
 );
 
 router.delete(
   '/jira',
   authenticate,
   authorize('admin'),
-  integrationsController.disconnectJira
+  asyncHandler(integrationsController.disconnectJira)
 );
 
 // ============================================================================
@@ -143,21 +144,21 @@ router.post(
   '/aws/connect',
   authenticate,
   authorize('admin'),
-  integrationsController.connectAWS
+  asyncHandler(integrationsController.connectAWS)
 );
 
 router.post(
   '/aws/sync',
   authenticate,
   authorize('admin', 'editor'),
-  integrationsController.syncAWSData
+  asyncHandler(integrationsController.syncAWSData)
 );
 
 router.delete(
   '/aws',
   authenticate,
   authorize('admin'),
-  integrationsController.disconnectAWS
+  asyncHandler(integrationsController.disconnectAWS)
 );
 
 // ============================================================================
@@ -168,14 +169,14 @@ router.delete(
 router.get(
   '/',
   authenticate,
-  integrationsController.listIntegrations
+  asyncHandler(integrationsController.listIntegrations)
 );
 
 // Get integration status
 router.get(
   '/:provider',
   authenticate,
-  integrationsController.getIntegrationStatus
+  asyncHandler(integrationsController.getIntegrationStatus)
 );
 
 export default router;
