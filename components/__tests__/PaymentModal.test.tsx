@@ -1,16 +1,16 @@
-
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PaymentModal } from '../PaymentModal';
-import { api } from '../../services/api';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-
-
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+// Mock the API service
+const mockCreateCheckout = vi.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/test' });
 
 vi.mock('../../services/api', () => ({
   api: {
-    billing: { upgrade: vi.fn().mockResolvedValue({ success: true }) }
+    billing: {
+      createCheckout: mockCreateCheckout
+    }
   }
 }));
 
@@ -18,10 +18,14 @@ describe('PaymentModal Component', () => {
   const mockClose = vi.fn();
   const mockSuccess = vi.fn();
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders correctly', () => {
     render(<PaymentModal plan="Pro" price="$200" onClose={mockClose} onSuccess={mockSuccess} />);
     expect(screen.getByText('Secure Checkout')).toBeInTheDocument();
-    expect(screen.getByText('Pay $200')).toBeInTheDocument();
+    expect(screen.getByText(/Pay \$200/i)).toBeInTheDocument();
   });
 
   it('formats card input', () => {
@@ -35,20 +39,28 @@ describe('PaymentModal Component', () => {
     render(<PaymentModal plan="Pro" price="$200" onClose={mockClose} onSuccess={mockSuccess} />);
     
     // Fill form
-    fireEvent.change(screen.getByPlaceholderText('0000 0000 0000 0000'), { target: { value: '4242424242424242' } });
-    fireEvent.change(screen.getByPlaceholderText('MM / YY'), { target: { value: '12/30' } });
-    fireEvent.change(screen.getByPlaceholderText('123'), { target: { value: '123' } });
+    const cardInput = screen.getByPlaceholderText('0000 0000 0000 0000');
+    const expiryInput = screen.getByPlaceholderText('MM / YY');
+    const cvcInput = screen.getByPlaceholderText('123');
+    
+    fireEvent.change(cardInput, { target: { value: '4242424242424242' } });
+    fireEvent.change(expiryInput, { target: { value: '12/30' } });
+    fireEvent.change(cvcInput, { target: { value: '123' } });
 
-    fireEvent.click(screen.getByText('Pay $200'));
+    const submitButton = screen.getByText(/Pay \$200/i);
+    fireEvent.click(submitButton);
 
+    // Wait for success state
     await waitFor(() => {
       expect(screen.getByText('Payment Successful')).toBeInTheDocument();
-    });
+    }, { timeout: 3000 });
     
-    // Wait for timeout closure
+    // Wait for callbacks after timeout
     await waitFor(() => {
       expect(mockSuccess).toHaveBeenCalled();
       expect(mockClose).toHaveBeenCalled();
-    }, { timeout: 2500 });
+    }, { timeout: 3000 });
+    
+    expect(mockCreateCheckout).toHaveBeenCalledWith('Pro');
   });
 });

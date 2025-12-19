@@ -10,6 +10,8 @@ import { errorHandler, notFound } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
 import websocketService from './services/websocketService';
 import swaggerSpec from './config/swagger';
+import monitoring, { initializeSentry, initializeAPM } from './config/monitoring';
+import { monitoringMiddleware, errorTrackingMiddleware } from './middleware/monitoring';
 
 // Routes
 import authRoutes from './routes/auth';
@@ -27,21 +29,64 @@ import enterpriseRoutes from './routes/enterprise';
 
 const app = express();
 
-// Validate configuration
+// Initialize monitoring (Sentry, APM)
 try {
-  validateConfig();
+  initializeSentry();
+  initializeAPM();
+  logger.info('Monitoring initialized');
 } catch (error) {
-  logger.error('Configuration validation failed', error);
+  logger.warn('Monitoring initialization failed:', error);
+}
+
+// Validate configuration on startup
+try {
+  logger.info('Validating environment configuration...');
+  validateConfig();
+  logger.info('✓ Environment configuration validated successfully');
+} catch (error) {
+  logger.error('❌ Configuration validation failed:', error);
+  logger.error('\nPlease run "npm run validate:env" for detailed validation.');
+  logger.error('See ENVIRONMENT_VARIABLES.md for setup instructions.\n');
   process.exit(1);
 }
 
-// Security middleware
-app.use(helmet());
+// Security middleware with enhanced headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", config.server.apiUrl],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true,
+  },
+  frameguard: {
+    action: 'deny',
+  },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin',
+  },
+}));
+
 app.use(cors({
   origin: config.security.corsOrigin || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
+  maxAge: 86400, // 24 hours
 }));
 
 // Body parsing middleware
@@ -49,6 +94,9 @@ app.use(cors({
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Monitoring middleware (must be early in the stack)
+app.use(monitoringMiddleware);
 
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -104,6 +152,9 @@ app.use('/api/enterprise', apiLimiter, enterpriseRoutes);
 
 // 404 handler
 app.use(notFound);
+
+// Error tracking middleware (captures errors to Sentry before errorHandler)
+app.use(errorTrackingMiddleware);
 
 // Error handler (must be last)
 app.use(errorHandler);

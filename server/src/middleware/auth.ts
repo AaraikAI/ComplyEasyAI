@@ -3,6 +3,7 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import config from '../config';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import monitoring from '../config/monitoring';
 import { User, Organization } from '@prisma/client';
 
 export interface AuthUser extends User {
@@ -58,6 +59,10 @@ const authenticateMiddleware = async (
       }
 
       (req as AuthRequest).user = user;
+      
+      // Set user context for error tracking
+      monitoring.setUserContext(user.id, user.email, user.organizationId);
+      
       next();
     } catch (error) {
       logger.error('Token verification failed', error);

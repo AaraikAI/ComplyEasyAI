@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import logger from '../config/logger';
+import monitoring from '../config/monitoring';
 
 export class AppError extends Error {
   statusCode: number;
@@ -31,6 +32,19 @@ export const errorHandler = (
 
   // Unhandled errors
   logger.error(`500 - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, err);
+  
+  // Capture to Sentry (if not already captured by errorTrackingMiddleware)
+  monitoring.captureException(err, {
+    request: {
+      method: req.method,
+      path: req.originalUrl,
+      query: req.query,
+    },
+    user: (req as any).user ? {
+      id: (req as any).user.id,
+      email: (req as any).user.email,
+    } : undefined,
+  });
 
   res.status(500).json({
     error: 'Internal server error',
