@@ -10,6 +10,7 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: 'tsconfig.json',
+      isolatedModules: true, // Faster compilation
     }],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
@@ -37,6 +38,16 @@ module.exports = {
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
+  // Optimize test execution
+  maxWorkers: '50%', // Use 50% of available CPUs for parallelization
+  maxConcurrency: 5, // Limit concurrent test suites
+  // Memory optimization
+  cache: true,
+  cacheDirectory: '<rootDir>/.jest-cache',
+  // Isolate tests to prevent memory leaks
+  testEnvironmentOptions: {
+    NODE_OPTIONS: '--max-old-space-size=4096',
+  },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
@@ -50,4 +61,8 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(uuid)/)',
   ],
+  // Optimize module resolution
+  moduleDirectories: ['node_modules', '<rootDir>'],
+  // Reduce memory usage by limiting worker processes
+  workerIdleMemoryLimit: '500MB',
 };

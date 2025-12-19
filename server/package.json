@@ -7,19 +7,27 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --reporters=default --reporters=jest-junit",
-    "test:unit": "jest --testPathPattern=__tests__/unit",
-    "test:integration": "jest --testPathPattern=__tests__/integration",
+    "test": "NODE_OPTIONS=--max-old-space-size=4096 jest",
+    "test:watch": "NODE_OPTIONS=--max-old-space-size=4096 jest --watch",
+    "test:coverage": "NODE_OPTIONS=--max-old-space-size=4096 jest --coverage",
+    "test:ci": "NODE_OPTIONS=--max-old-space-size=4096 jest --ci --coverage --reporters=default --reporters=jest-junit",
+    "test:unit": "NODE_OPTIONS=--max-old-space-size=4096 jest --testPathPattern=__tests__/unit",
+    "test:integration": "NODE_OPTIONS=--max-old-space-size=4096 jest --testPathPattern=__tests__/integration",
+    "test:e2e": "NODE_OPTIONS=--max-old-space-size=4096 jest --testPathPattern=__tests__/e2e",
+    "test:all": "NODE_OPTIONS=--max-old-space-size=4096 jest --testPathPattern='__tests__/(unit|integration|e2e)'",
+    "test:single": "NODE_OPTIONS=--max-old-space-size=4096 jest --runInBand",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "setup:oauth": "ts-node scripts/setupOAuth.ts",
     "validate:env": "ts-node scripts/validateEnv.ts",
     "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix"
+    "lint:fix": "eslint src --ext .ts --fix",
+    "security:audit": "npm audit --audit-level=moderate",
+    "security:audit:fix": "npm audit fix",
+    "security:check": "node scripts/security-audit.js",
+    "performance:load": "node scripts/load-test.js",
+    "performance:profile": "node scripts/profile-queries.js"
   },
   "dependencies": {
     "@aws-sdk/client-kms": "^3.699.0",
@@ -85,6 +93,8 @@
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "@sentry/node": "^8.0.0",
+    "@sentry/profiling-node": "^8.0.0"
   }
 }

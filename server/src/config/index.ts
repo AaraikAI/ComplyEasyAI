@@ -148,18 +148,97 @@ const config: Config = {
   },
 };
 
-// Validation function
+// Validation function - Comprehensive validation matching validateEnv.ts
 export const validateConfig = (): void => {
-  const requiredVars = [
-    'DATABASE_URL',
-    'JWT_SECRET',
-    'GEMINI_API_KEY',
-  ];
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
-  const missing = requiredVars.filter(varName => !process.env[varName]);
+  // Core Configuration
+  if (!process.env.DATABASE_URL) {
+    errors.push('DATABASE_URL is required');
+  } else if (!process.env.DATABASE_URL.startsWith('postgresql://')) {
+    errors.push('DATABASE_URL must be a valid PostgreSQL connection string');
+  }
 
-  if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  if (!process.env.JWT_SECRET) {
+    errors.push('JWT_SECRET is required');
+  } else if (process.env.JWT_SECRET.length < 32) {
+    errors.push('JWT_SECRET must be at least 32 characters long');
+  }
+
+  if (!process.env.JWT_REFRESH_SECRET) {
+    errors.push('JWT_REFRESH_SECRET is required');
+  } else if (process.env.JWT_REFRESH_SECRET.length < 32) {
+    errors.push('JWT_REFRESH_SECRET must be at least 32 characters long');
+  }
+
+  if (!process.env.ENCRYPTION_KEY) {
+    errors.push('ENCRYPTION_KEY is required');
+  } else if (process.env.ENCRYPTION_KEY.length < 16) {
+    errors.push('ENCRYPTION_KEY must be at least 16 characters long');
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    errors.push('GEMINI_API_KEY is required');
+  }
+
+  // Email Service (required for magic links)
+  if (!process.env.SENDGRID_API_KEY) {
+    errors.push('SENDGRID_API_KEY is required for email functionality');
+  }
+
+  if (!process.env.SENDGRID_FROM_EMAIL) {
+    errors.push('SENDGRID_FROM_EMAIL is required for email functionality');
+  } else {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(process.env.SENDGRID_FROM_EMAIL)) {
+      errors.push('SENDGRID_FROM_EMAIL must be a valid email address');
+    }
+  }
+
+  // Payment Processing (required for billing)
+  if (!process.env.STRIPE_SECRET_KEY) {
+    warnings.push('STRIPE_SECRET_KEY is not set - billing features will not work');
+  } else if (!process.env.STRIPE_SECRET_KEY.startsWith('sk_')) {
+    errors.push('STRIPE_SECRET_KEY must start with "sk_"');
+  }
+
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    warnings.push('STRIPE_WEBHOOK_SECRET is not set - webhook verification will fail');
+  } else if (!process.env.STRIPE_WEBHOOK_SECRET.startsWith('whsec_')) {
+    errors.push('STRIPE_WEBHOOK_SECRET must start with "whsec_"');
+  }
+
+  // AWS Services (required for S3 and BYOK)
+  if (!process.env.AWS_ACCESS_KEY_ID) {
+    warnings.push('AWS_ACCESS_KEY_ID is not set - S3 and BYOK features will not work');
+  }
+
+  if (!process.env.AWS_SECRET_ACCESS_KEY) {
+    warnings.push('AWS_SECRET_ACCESS_KEY is not set - S3 and BYOK features will not work');
+  }
+
+  if (!process.env.AWS_S3_BUCKET) {
+    warnings.push('AWS_S3_BUCKET is not set - file storage will not work');
+  }
+
+  // CORS Origin
+  if (!process.env.CORS_ORIGIN) {
+    errors.push('CORS_ORIGIN is required for security');
+  }
+
+  // Log warnings in non-production environments
+  if (warnings.length > 0 && process.env.NODE_ENV !== 'production') {
+    console.warn('⚠️  Configuration Warnings:');
+    warnings.forEach(warning => console.warn(`   - ${warning}`));
+  }
+
+  // Throw errors for missing required variables
+  if (errors.length > 0) {
+    throw new Error(
+      `Configuration validation failed:\n${errors.map(e => `  - ${e}`).join('\n')}\n\n` +
+      `Run 'npm run validate:env' for detailed validation or check ENVIRONMENT_VARIABLES.md for setup instructions.`
+    );
   }
 };
 
