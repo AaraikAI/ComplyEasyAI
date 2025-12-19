@@ -62,10 +62,19 @@ class AuthController {
       // Send magic link email
       await emailService.sendMagicLink(email, token);
 
-      res.json({
+      // In development, also return the token for testing (remove in production!)
+      const response: any = {
         message: 'Magic link sent to your email',
         email,
-      });
+      };
+
+      // Only return token in development mode for testing
+      if (process.env.NODE_ENV === 'development') {
+        response.devToken = token;
+        response.devMessage = 'Development mode: Use this token to verify the magic link';
+      }
+
+      res.json(response);
     } catch (error) {
       logger.error('Request magic link error', error);
       if (error instanceof AppError) throw error;

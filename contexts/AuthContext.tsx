@@ -20,9 +20,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Session Check (Simulate HttpOnly Cookie check)
+    // Session Check - look for auth token or session token
+    const authToken = localStorage.getItem('authToken');
     const storedSession = localStorage.getItem('session_token');
-    if (storedSession) {
+    
+    if (authToken || storedSession) {
       const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
       if (userData.id) {
         setUser(userData);
@@ -32,45 +34,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithMagicLink = async (email: string) => {
-    // In production: Call API to send email with magic link token
-    await api.auth.requestMagicLink(email);
-    // Store temp token to simulate "Check your email" state if needed
-    console.log(`Magic Link sent to ${email}`);
+    try {
+      // Call API to send magic link email
+      // In development, this returns the token for testing
+      const response = await api.auth.requestMagicLink(email);
+      console.log(`Magic Link sent to ${email}`);
+      // Return response so we can access devToken in development
+      return response;
+    } catch (error) {
+      console.error('Failed to send magic link:', error);
+      throw error;
+    }
   };
 
   const verifyMagicLink = async (token: string) => {
-    // Called when user clicks magic link from email
-    const verifiedUser = await api.auth.verifyMagicLink(token);
-    if (verifiedUser) {
-      localStorage.setItem('session_token', `jwt_${Date.now()}`); // Mock JWT
-      localStorage.setItem('user_data', JSON.stringify(verifiedUser));
-      setUser(verifiedUser);
+    try {
+      // Call API to verify magic link token
+      const user = await api.auth.verifyMagicLink(token);
+      if (user) {
+        // The API service already handles storing the token and user data
+        setUser(user);
+      }
+    } catch (error) {
+      console.error('Failed to verify magic link:', error);
+      throw error;
     }
   };
 
   const register = async (name: string, email: string, organizationName?: string) => {
-    // Call the API to register the user
-    const response: any = await api.auth.register(name, email, organizationName);
-
-    // Create user object from response or construct from input
-    const newUser: User = response?.user || {
-      id: response?.id || `u_${Date.now()}`,
-      name,
-      email,
-      role: 'admin', // First user is admin
-      avatar: name.substring(0, 2).toUpperCase(),
-      organizationId: response?.organizationId || 'org1'
-    };
-
-    // Auto login after registration
-    localStorage.setItem('session_token', response?.accessToken || `jwt_${Date.now()}`);
-    localStorage.setItem('user_data', JSON.stringify(newUser));
-    setUser(newUser);
+    try {
+      // Call API to register new user
+      const response: any = await api.auth.register(name, email, organizationName);
+      
+      // Registration returns user info, but login requires magic link
+      // For better UX, we'll request a magic link immediately after registration
+      // The user will need to verify via the magic link sent to their email
+      if (response && response.user) {
+        // Store partial user data (will be completed after magic link verification)
+        const partialUser: User = {
+          id: response.user.id,
+          name: response.user.name,
+          email: response.user.email,
+          role: 'admin',
+          avatar: name.substring(0, 2).toUpperCase(),
+          organizationId: response.user.organizationId || 'org1' // Will be updated after verification
+        };
+        localStorage.setItem('user_data', JSON.stringify(partialUser));
+        // Don't set user yet - wait for magic link verification
+      }
+    } catch (error) {
+      console.error('Failed to register:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
+    // Clear all auth-related storage
     localStorage.removeItem('session_token');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user_data');
+    // Also call API logout to clear server-side session
+    api.auth.logout();
     setUser(null);
   };
 

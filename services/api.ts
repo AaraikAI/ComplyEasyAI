@@ -1,7 +1,12 @@
 import { User, RiskItem, ComplianceFramework, AuditLog } from '../types';
 
 // Backend API Configuration
-const API_BASE_URL = process.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+// Log API URL in development (Vite uses import.meta.env, not process.env)
+if (import.meta.env.DEV) {
+  console.log('API Base URL:', API_BASE_URL);
+}
 
 // Get auth token from localStorage
 const getAuthToken = (): string | null => {
@@ -57,7 +62,8 @@ export const api = {
   // --- Auth & User ---
   auth: {
     requestMagicLink: async (email: string) => {
-      return fetchAPI('/auth/magic-link', {
+      // Returns response with devToken in development mode
+      return fetchAPI<any>('/auth/magic-link', {
         method: 'POST',
         body: JSON.stringify({ email }),
       });
@@ -71,11 +77,23 @@ export const api = {
 
       if (response.accessToken) {
         setAuthToken(response.accessToken);
-        localStorage.setItem('user_data', JSON.stringify(response.user));
         localStorage.setItem('refreshToken', response.refreshToken);
+        
+        // Map backend user response to frontend User type
+        const user = {
+          id: response.user.id,
+          name: response.user.name,
+          email: response.user.email,
+          role: response.user.role,
+          avatar: response.user.avatar || response.user.name.substring(0, 2).toUpperCase(),
+          organizationId: response.user.organization?.id || response.user.organizationId,
+        };
+        
+        localStorage.setItem('user_data', JSON.stringify(user));
+        return user;
       }
 
-      return response.user;
+      throw new Error('No access token received');
     },
 
     register: async (name: string, email: string, organizationName?: string) => {

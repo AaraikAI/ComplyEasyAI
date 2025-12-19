@@ -38,8 +38,10 @@ try {
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: config.security.corsOrigin,
+  origin: config.security.corsOrigin || 'http://localhost:3000',
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Body parsing middleware
