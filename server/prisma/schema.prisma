@@ -1,6 +1,3 @@
-// This is your Prisma schema file
-// Learn more: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,6 +5,605 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                   String                @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name                 String
+  plan                 Plan                  @default(Basic)
+  stripeCustomerId     String?               @unique
+  subscriptionStatus   SubscriptionStatus    @default(trialing)
+  parentOrganizationId String?
+  isParent             Boolean               @default(false)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @default(now()) @updatedAt
+  accessReviews        AccessReview[]
+  auditLogs            AuditLog[]
+  frameworks           ComplianceFramework[]
+  monitors             ContinuousMonitor[]
+  reports              CustomReport[]
+  integrations         Integration[]
+  issues               Issue[]
+  parentOrganization   Organization?         @relation("OrgHierarchy", fields: [parentOrganizationId], references: [id])
+  childOrganizations   Organization[]        @relation("OrgHierarchy")
+  personnel            Personnel[]
+  policies             Policy[]
+  questionnaires       Questionnaire[]
+  riskAssessments      RiskAssessment[]
+  risks                RiskItem[]
+  trustCertificates    TrustCertificate[]
+  users                User[]
+  vendors              Vendor[]
+
+  @@index([stripeCustomerId])
+  @@index([parentOrganizationId])
+}
+
+model User {
+  id                    String                @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  email                 String                @unique
+  name                  String
+  role                  Role                  @default(viewer)
+  avatar                String?
+  passwordHash          String?
+  emailVerified         Boolean               @default(false)
+  lastLogin             DateTime?
+  employeeId            String?               @unique
+  department            String?
+  jobTitle              String?
+  manager               String?
+  startDate             DateTime?
+  endDate               DateTime?
+  active                Boolean               @default(true)
+  twoFactorEnabled      Boolean               @default(false)
+  twoFactorSecret       String?
+  twoFactorVerified     Boolean               @default(false)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @default(now()) @updatedAt
+  organizationId        String
+  accessReviewsReviewer AccessReview[]        @relation("Reviewer")
+  auditLogs             AuditLog[]
+  assignedIssues        Issue[]               @relation("AssignedTo")
+  createdIssues         Issue[]               @relation("CreatedBy")
+  personnelRecord       Personnel?
+  assignedRisks         RiskItem[]
+  backupCodes           TwoFactorBackupCode[]
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([organizationId])
+  @@index([employeeId])
+}
+
+model TwoFactorBackupCode {
+  id        String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  code      String
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+}
+
+model Personnel {
+  id                  String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId              String         @unique
+  organizationId      String
+  onboardingStatus    String         @default("Not_Started")
+  onboardingDate      DateTime?
+  offboardingDate     DateTime?
+  offboardingReason   String?
+  systemAccess        Json?
+  dataAccess          Json?
+  physicalAccess      Json?
+  backgroundCheck     Boolean        @default(false)
+  backgroundCheckDate DateTime?
+  securityTraining    Boolean        @default(false)
+  trainingDate        DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @default(now()) @updatedAt
+  accessReviews       AccessReview[]
+  organization        Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model AccessReview {
+  id             String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  personnelId    String
+  reviewerId     String
+  status         AccessReviewStatus @default(Pending)
+  dueDate        DateTime
+  completedDate  DateTime?
+  findings       Json?
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  personnel      Personnel          @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+  reviewer       User               @relation("Reviewer", fields: [reviewerId], references: [id])
+
+  @@index([organizationId])
+  @@index([personnelId])
+  @@index([status])
+}
+
+model Vendor {
+  id                 String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name               String
+  organizationId     String
+  website            String?
+  contactName        String?
+  contactEmail       String?
+  contactPhone       String?
+  riskLevel          VendorRiskLevel    @default(Medium)
+  riskScore          Int                @default(0)
+  status             VendorStatus       @default(Onboarding)
+  category           String?
+  serviceDescription String?
+  contractStart      DateTime?
+  contractEnd        DateTime?
+  annualSpend        Float?
+  hasDataAccess      Boolean            @default(false)
+  dataTypes          Json?
+  securityContact    String?
+  lastSecurityReview DateTime?
+  nextSecurityReview DateTime?
+  soc2Report         Boolean            @default(false)
+  iso27001Certified  Boolean            @default(false)
+  gdprCompliant      Boolean            @default(false)
+  hipaaBaa           Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @default(now()) @updatedAt
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assessments        VendorAssessment[]
+  monitors           VendorMonitor[]
+  reviews            VendorReview[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([riskLevel])
+}
+
+model VendorAssessment {
+  id              String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  vendorId        String
+  assessmentType  String
+  status          String           @default("In_Progress")
+  score           Int?
+  riskLevel       VendorRiskLevel?
+  findings        Json?
+  recommendations String?
+  assessedBy      String?
+  assessedDate    DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @default(now()) @updatedAt
+  vendor          Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+}
+
+model VendorReview {
+  id             String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  vendorId       String
+  reviewType     String
+  reviewDate     DateTime
+  reviewer       String
+  findings       Json?
+  actionItems    Json?
+  nextReviewDate DateTime?
+  createdAt      DateTime  @default(now())
+  vendor         Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+}
+
+model VendorMonitor {
+  id          String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  vendorId    String
+  monitorType String
+  status      MonitorStatus @default(Unknown)
+  lastCheck   DateTime?
+  findings    Json?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+  vendor      Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([status])
+}
+
+model RiskAssessment {
+  id               String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String
+  name             String
+  description      String?
+  assessmentType   String
+  scope            String?
+  methodology      String?
+  status           String       @default("Draft")
+  startDate        DateTime?
+  completedDate    DateTime?
+  overallRiskScore Int?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @default(now()) @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  risks            RiskItem[]   @relation("AssessmentRisks")
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model ComplianceFramework {
+  id             String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name           String
+  status         ComplianceStatus   @default(In_Review)
+  progress       Int                @default(0)
+  nextAuditDate  DateTime
+  region         String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  controls       FrameworkControl[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model FrameworkControl {
+  id             String              @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name           String
+  description    String?
+  status         String              @default("Pending")
+  evidence       String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @default(now()) @updatedAt
+  frameworkId    String
+  mappedControls Json?
+  framework      ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  @@index([frameworkId])
+}
+
+model RiskItem {
+  id               String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  title            String
+  severity         RiskSeverity
+  description      String
+  category         String
+  status           RiskStatus      @default(Open)
+  likelihood       Int             @default(3)
+  impact           Int             @default(3)
+  riskScore        Int?
+  aiPriorityScore  Int?
+  aiRationale      String?
+  mitigationPlan   String?
+  remediationOwner String?
+  targetDate       DateTime?
+  detectedAt       DateTime        @default(now())
+  resolvedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now()) @updatedAt
+  organizationId   String
+  assignedToId     String?
+  assessmentId     String?
+  assessment       RiskAssessment? @relation("AssessmentRisks", fields: [assessmentId], references: [id])
+  assignedTo       User?           @relation(fields: [assignedToId], references: [id])
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([severity])
+  @@index([assignedToId])
+  @@index([assessmentId])
+}
+
+model Questionnaire {
+  id                String                  @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId    String
+  title             String
+  description       String?
+  questionnaireType String
+  status            QuestionnaireStatus     @default(Draft)
+  requestedBy       String?
+  requestDate       DateTime?
+  dueDate           DateTime?
+  aiAssisted        Boolean                 @default(false)
+  aiConfidence      Float?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @default(now()) @updatedAt
+  completedAt       DateTime?
+  organization      Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  questions         QuestionnaireQuestion[]
+  responses         QuestionnaireResponse[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model QuestionnaireQuestion {
+  id              String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  questionnaireId String
+  questionText    String
+  questionType    String
+  category        String?
+  required        Boolean       @default(false)
+  options         Json?
+  order           Int           @default(0)
+  createdAt       DateTime      @default(now())
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+
+  @@index([questionnaireId])
+}
+
+model QuestionnaireResponse {
+  id              String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  questionnaireId String
+  questionId      String
+  responseText    String?
+  responseData    Json?
+  aiGenerated     Boolean       @default(false)
+  aiConfidence    Float?
+  reviewedByHuman Boolean       @default(false)
+  attachments     Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @default(now()) @updatedAt
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+
+  @@index([questionnaireId])
+  @@index([questionId])
+}
+
+model Policy {
+  id              String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  title           String
+  policyNumber    String?
+  version         String       @default("1.0")
+  category        String
+  framework       String?
+  content         String
+  summary         String?
+  status          String       @default("Draft")
+  owner           String?
+  approver        String?
+  approvalDate    DateTime?
+  effectiveDate   DateTime?
+  reviewDate      DateTime?
+  nextReviewDate  DateTime?
+  tags            Json?
+  relatedPolicies Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now()) @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([framework])
+}
+
+model TrustCertificate {
+  id                String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId    String
+  certificateType   String
+  certificateNumber String?
+  issuer            String
+  issueDate         DateTime
+  expiryDate        DateTime
+  status            String       @default("Valid")
+  documentUrl       String?
+  publiclyVisible   Boolean      @default(false)
+  metadata          Json?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @default(now()) @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model CustomReport {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  name           String
+  description    String?
+  reportType     String
+  template       Json
+  filters        Json?
+  schedule       Json?
+  lastGenerated  DateTime?
+  nextGeneration DateTime?
+  recipients     Json?
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([reportType])
+}
+
+model ContinuousMonitor {
+  id             String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  name           String
+  monitorType    String
+  integrationId  String?
+  configuration  Json
+  testScript     String?
+  status         MonitorStatus   @default(Unknown)
+  lastRun        DateTime?
+  nextRun        DateTime?
+  frequency      String          @default("Daily")
+  findings       Json?
+  alerts         Json?
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now()) @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  results        MonitorResult[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([monitorType])
+}
+
+model MonitorResult {
+  id                 String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  monitorId          String
+  status             MonitorStatus
+  runDate            DateTime          @default(now())
+  passedTests        Int               @default(0)
+  failedTests        Int               @default(0)
+  findings           Json?
+  evidence           Json?
+  autoRemediated     Boolean           @default(false)
+  remediationActions Json?
+  monitor            ContinuousMonitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId])
+  @@index([status])
+}
+
+model Issue {
+  id               String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String
+  title            String
+  description      String
+  issueType        String
+  category         String?
+  priority         IssuePriority  @default(Medium)
+  status           IssueStatus    @default(Open)
+  assignedToId     String?
+  createdById      String
+  slaTarget        DateTime?
+  slaStatus        String?
+  remediationPlan  String?
+  remediationSteps Json?
+  dueDate          DateTime?
+  resolvedDate     DateTime?
+  closedDate       DateTime?
+  tags             Json?
+  attachments      Json?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @default(now()) @updatedAt
+  assignedTo       User?          @relation("AssignedTo", fields: [assignedToId], references: [id])
+  createdBy        User           @relation("CreatedBy", fields: [createdById], references: [id])
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  comments         IssueComment[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedToId])
+}
+
+model IssueComment {
+  id        String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  issueId   String
+  comment   String
+  author    String
+  createdAt DateTime @default(now())
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+}
+
+model AuditLog {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  action         String
+  details        String?
+  resourceType   String?
+  resourceId     String?
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  hash           String       @unique
+  verified       Boolean      @default(true)
+  timestamp      DateTime     @default(now())
+  organizationId String
+  userId         String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?        @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([timestamp])
+  @@index([hash])
+  @@index([action])
+  @@index([resourceType])
+  @@index([userId])
+}
+
+model Integration {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name           String
+  category       String
+  provider       String
+  connected      Boolean      @default(false)
+  accessToken    String?
+  refreshToken   String?
+  expiresAt      DateTime?
+  lastSync       DateTime?
+  config         Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, provider])
+  @@index([organizationId])
+}
+
+model MagicLink {
+  id        String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model FileUpload {
+  id             String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  filename       String
+  originalName   String
+  mimeType       String
+  size           Int
+  s3Key          String   @unique
+  s3Bucket       String
+  url            String
+  uploadedBy     String
+  organizationId String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([uploadedBy])
+  @@index([s3Key])
+}
+
+model StripeEvent {
+  id        String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  eventId   String   @unique
+  type      String
+  data      Json
+  processed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+  @@index([type])
+  @@index([processed])
 }
 
 enum Role {
@@ -103,795 +699,4 @@ enum MonitorStatus {
   Failing
   Warning
   Unknown
-}
-
-model Organization {
-  id                 String             @id @default(uuid())
-  name               String
-  plan               Plan               @default(Basic)
-  stripeCustomerId   String?            @unique
-  subscriptionStatus SubscriptionStatus @default(trialing)
-
-  // Multi-workspace support
-  parentOrganizationId String?
-  isParent             Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users        User[]
-  frameworks   ComplianceFramework[]
-  risks        RiskItem[]
-  auditLogs    AuditLog[]
-  integrations Integration[]
-
-  // New relations
-  personnel         Personnel[]
-  accessReviews     AccessReview[]
-  vendors           Vendor[]
-  questionnaires    Questionnaire[]
-  policies          Policy[]
-  trustCertificates TrustCertificate[]
-  reports           CustomReport[]
-  monitors          ContinuousMonitor[]
-  issues            Issue[]
-  riskAssessments   RiskAssessment[]
-
-  // Multi-workspace
-  childOrganizations Organization[] @relation("OrgHierarchy")
-  parentOrganization Organization?  @relation("OrgHierarchy", fields: [parentOrganizationId], references: [id])
-
-  @@index([stripeCustomerId])
-  @@index([parentOrganizationId])
-}
-
-model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  name          String
-  role          Role      @default(viewer)
-  avatar        String?
-  passwordHash  String?
-  emailVerified Boolean   @default(false)
-  lastLogin     DateTime?
-
-  // Identity & Access
-  employeeId String?   @unique
-  department String?
-  jobTitle   String?
-  manager    String?
-  startDate  DateTime?
-  endDate    DateTime?
-  active     Boolean   @default(true)
-
-  // Two-Factor Authentication
-  twoFactorEnabled  Boolean @default(false)
-  twoFactorSecret   String? @db.Text
-  twoFactorVerified Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  assignedRisks RiskItem[]
-  auditLogs     AuditLog[]
-  backupCodes   TwoFactorBackupCode[]
-
-  // New relations
-  personnelRecord       Personnel?
-  accessReviewsReviewer AccessReview[] @relation("Reviewer")
-  assignedIssues        Issue[]        @relation("AssignedTo")
-  createdIssues         Issue[]        @relation("CreatedBy")
-
-  @@index([email])
-  @@index([organizationId])
-  @@index([employeeId])
-}
-
-model TwoFactorBackupCode {
-  id        String    @id @default(uuid())
-  code      String
-  used      Boolean   @default(false)
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([code])
-}
-
-// ============================================================================
-// IDENTITY & ACCESS MANAGEMENT
-// ============================================================================
-
-model Personnel {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  // Onboarding/Offboarding
-  onboardingStatus  String    @default("Not_Started")
-  onboardingDate    DateTime?
-  offboardingDate   DateTime?
-  offboardingReason String?
-
-  // Access
-  systemAccess   Json? // List of systems user has access to
-  dataAccess     Json? // Data classification access levels
-  physicalAccess Json? // Physical locations
-
-  // Compliance
-  backgroundCheck     Boolean   @default(false)
-  backgroundCheckDate DateTime?
-  securityTraining    Boolean   @default(false)
-  trainingDate        DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  accessReviews AccessReview[]
-
-  @@index([organizationId])
-  @@index([userId])
-}
-
-model AccessReview {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  personnelId String
-  personnel   Personnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
-
-  reviewerId String
-  reviewer   User   @relation("Reviewer", fields: [reviewerId], references: [id])
-
-  status        AccessReviewStatus @default(Pending)
-  dueDate       DateTime
-  completedDate DateTime?
-
-  findings Json? // Access changes, issues found
-  notes    String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId])
-  @@index([personnelId])
-  @@index([status])
-}
-
-// ============================================================================
-// VENDOR & THIRD-PARTY RISK MANAGEMENT
-// ============================================================================
-
-model Vendor {
-  id   String @id @default(uuid())
-  name String
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  // Basic Info
-  website      String?
-  contactName  String?
-  contactEmail String?
-  contactPhone String?
-
-  // Risk Assessment
-  riskLevel VendorRiskLevel @default(Medium)
-  riskScore Int             @default(0)
-  status    VendorStatus    @default(Onboarding)
-
-  // Business
-  category           String?
-  serviceDescription String?
-  contractStart      DateTime?
-  contractEnd        DateTime?
-  annualSpend        Float?
-
-  // Security
-  hasDataAccess      Boolean   @default(false)
-  dataTypes          Json? // Types of data vendor accesses
-  securityContact    String?
-  lastSecurityReview DateTime?
-  nextSecurityReview DateTime?
-
-  // Compliance
-  soc2Report        Boolean @default(false)
-  iso27001Certified Boolean @default(false)
-  gdprCompliant     Boolean @default(false)
-  hipaaBaa          Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  assessments VendorAssessment[]
-  reviews     VendorReview[]
-  monitors    VendorMonitor[]
-
-  @@index([organizationId])
-  @@index([status])
-  @@index([riskLevel])
-}
-
-model VendorAssessment {
-  id       String @id @default(uuid())
-  vendorId String
-  vendor   Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-
-  assessmentType String // Initial, Annual, Ad-hoc
-  status         String           @default("In_Progress")
-  score          Int?
-  riskLevel      VendorRiskLevel?
-
-  findings        Json?
-  recommendations String?
-
-  assessedBy   String?
-  assessedDate DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([vendorId])
-}
-
-model VendorReview {
-  id       String @id @default(uuid())
-  vendorId String
-  vendor   Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-
-  reviewType String // Security, Compliance, Performance
-  reviewDate DateTime
-  reviewer   String
-
-  findings       Json?
-  actionItems    Json?
-  nextReviewDate DateTime?
-
-  createdAt DateTime @default(now())
-
-  @@index([vendorId])
-}
-
-model VendorMonitor {
-  id       String @id @default(uuid())
-  vendorId String
-  vendor   Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-
-  monitorType String // Uptime, Security, Compliance
-  status      MonitorStatus @default(Unknown)
-  lastCheck   DateTime?
-  findings    Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([vendorId])
-  @@index([status])
-}
-
-// ============================================================================
-// RISK MANAGEMENT
-// ============================================================================
-
-model RiskAssessment {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  name           String
-  description    String?
-  assessmentType String // Internal, External, Vendor, Project
-
-  scope       String?
-  methodology String?
-
-  status        String    @default("Draft")
-  startDate     DateTime?
-  completedDate DateTime?
-
-  overallRiskScore Int?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  risks RiskItem[] @relation("AssessmentRisks")
-
-  @@index([organizationId])
-  @@index([status])
-}
-
-model ComplianceFramework {
-  id            String           @id @default(uuid())
-  name          String
-  status        ComplianceStatus @default(In_Review)
-  progress      Int              @default(0)
-  nextAuditDate DateTime
-  region        String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  controls FrameworkControl[]
-
-  @@index([organizationId])
-  @@index([status])
-}
-
-model FrameworkControl {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  status      String   @default("Pending")
-  evidence    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  frameworkId String
-  framework   ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-
-  // Cross-framework mapping
-  mappedControls Json? // Array of {framework, controlId}
-
-  @@index([frameworkId])
-}
-
-model RiskItem {
-  id          String       @id @default(uuid())
-  title       String
-  severity    RiskSeverity
-  description String
-  category    String
-  status      RiskStatus   @default(Open)
-
-  // Risk scoring
-  likelihood Int  @default(3) // 1-5
-  impact     Int  @default(3) // 1-5
-  riskScore  Int? // likelihood * impact
-
-  aiPriorityScore Int?
-  aiRationale     String?
-
-  // Remediation
-  mitigationPlan   String?
-  remediationOwner String?
-  targetDate       DateTime?
-
-  detectedAt DateTime  @default(now())
-  resolvedAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  assignedToId String?
-  assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
-
-  assessmentId String?
-  assessment   RiskAssessment? @relation("AssessmentRisks", fields: [assessmentId], references: [id])
-
-  @@index([organizationId])
-  @@index([status])
-  @@index([severity])
-  @@index([assignedToId])
-  @@index([assessmentId])
-}
-
-// ============================================================================
-// QUESTIONNAIRE AUTOMATION
-// ============================================================================
-
-model Questionnaire {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  title             String
-  description       String?
-  questionnaireType String // Security, Vendor, Due_Diligence, Custom
-
-  status QuestionnaireStatus @default(Draft)
-
-  // Source
-  requestedBy String? // Company/entity requesting
-  requestDate DateTime?
-  dueDate     DateTime?
-
-  // AI Features
-  aiAssisted   Boolean @default(false)
-  aiConfidence Float?
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  completedAt DateTime?
-
-  questions QuestionnaireQuestion[]
-  responses QuestionnaireResponse[]
-
-  @@index([organizationId])
-  @@index([status])
-}
-
-model QuestionnaireQuestion {
-  id              String        @id @default(uuid())
-  questionnaireId String
-  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
-
-  questionText String
-  questionType String // Text, Multiple_Choice, Yes_No, File
-  category     String?
-  required     Boolean @default(false)
-
-  options Json? // For multiple choice
-  order   Int   @default(0)
-
-  createdAt DateTime @default(now())
-
-  @@index([questionnaireId])
-}
-
-model QuestionnaireResponse {
-  id              String        @id @default(uuid())
-  questionnaireId String
-  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
-
-  questionId   String
-  responseText String?
-  responseData Json? // For complex responses
-
-  // AI assistance
-  aiGenerated     Boolean @default(false)
-  aiConfidence    Float?
-  reviewedByHuman Boolean @default(false)
-
-  attachments Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([questionnaireId])
-  @@index([questionId])
-}
-
-// ============================================================================
-// POLICY & CONTROLS LIBRARY
-// ============================================================================
-
-model Policy {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  title        String
-  policyNumber String?
-  version      String  @default("1.0")
-
-  category  String // Security, Privacy, HR, IT, etc.
-  framework String? // SOC2, ISO27001, HIPAA, etc.
-
-  content String  @db.Text
-  summary String?
-
-  status String @default("Draft")
-
-  owner        String?
-  approver     String?
-  approvalDate DateTime?
-
-  effectiveDate  DateTime?
-  reviewDate     DateTime?
-  nextReviewDate DateTime?
-
-  tags            Json?
-  relatedPolicies Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId])
-  @@index([status])
-  @@index([framework])
-}
-
-// ============================================================================
-// TRUST CENTER & AUDIT PORTAL
-// ============================================================================
-
-model TrustCertificate {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  certificateType   String // SOC2, ISO27001, etc.
-  certificateNumber String?
-
-  issuer     String
-  issueDate  DateTime
-  expiryDate DateTime
-
-  status String @default("Valid")
-
-  documentUrl     String?
-  publiclyVisible Boolean @default(false)
-
-  metadata Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId])
-  @@index([status])
-}
-
-// ============================================================================
-// CUSTOMIZABLE REPORTING
-// ============================================================================
-
-model CustomReport {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  name        String
-  description String?
-  reportType  String // Risk, Compliance, Vendor, Audit, Custom
-
-  template Json // Report structure
-  filters  Json?
-  schedule Json? // Cron-like schedule
-
-  lastGenerated  DateTime?
-  nextGeneration DateTime?
-
-  recipients Json? // Email recipients
-
-  active Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId])
-  @@index([reportType])
-}
-
-// ============================================================================
-// CONTINUOUS MONITORING & AUTOMATED TESTING
-// ============================================================================
-
-model ContinuousMonitor {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  name        String
-  monitorType String // Infrastructure, Cloud, Identity, Device, Code
-
-  integrationId String? // Link to Integration model
-
-  configuration Json // Monitor-specific config
-  testScript    String? @db.Text
-
-  status  MonitorStatus @default(Unknown)
-  lastRun DateTime?
-  nextRun DateTime?
-
-  frequency String @default("Daily")
-
-  findings Json?
-  alerts   Json?
-
-  active Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  results MonitorResult[]
-
-  @@index([organizationId])
-  @@index([status])
-  @@index([monitorType])
-}
-
-model MonitorResult {
-  id String @id @default(uuid())
-
-  monitorId String
-  monitor   ContinuousMonitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
-
-  status  MonitorStatus
-  runDate DateTime      @default(now())
-
-  passedTests Int @default(0)
-  failedTests Int @default(0)
-
-  findings Json?
-  evidence Json?
-
-  autoRemediated     Boolean @default(false)
-  remediationActions Json?
-
-  @@index([monitorId])
-  @@index([status])
-}
-
-// ============================================================================
-// ISSUE & REMEDIATION WORKFLOW
-// ============================================================================
-
-model Issue {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  title       String
-  description String @db.Text
-
-  issueType String // Security, Compliance, Risk, Vendor
-  category  String?
-
-  priority IssuePriority @default(Medium)
-  status   IssueStatus   @default(Open)
-
-  // Assignment
-  assignedToId String?
-  assignedTo   User?   @relation("AssignedTo", fields: [assignedToId], references: [id])
-
-  createdById String
-  createdBy   User   @relation("CreatedBy", fields: [createdById], references: [id])
-
-  // SLA
-  slaTarget DateTime?
-  slaStatus String? // On_Track, At_Risk, Breached
-
-  // Remediation
-  remediationPlan  String? @db.Text
-  remediationSteps Json?
-
-  dueDate      DateTime?
-  resolvedDate DateTime?
-  closedDate   DateTime?
-
-  tags        Json?
-  attachments Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  comments IssueComment[]
-
-  @@index([organizationId])
-  @@index([status])
-  @@index([priority])
-  @@index([assignedToId])
-}
-
-model IssueComment {
-  id String @id @default(uuid())
-
-  issueId String
-  issue   Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
-
-  comment String @db.Text
-  author  String
-
-  createdAt DateTime @default(now())
-
-  @@index([issueId])
-}
-
-// ============================================================================
-// EXISTING MODELS
-// ============================================================================
-
-model AuditLog {
-  id             String   @id @default(uuid())
-  action         String
-  details        String?
-  resourceType   String?  // Type of resource (e.g., "Personnel", "Vendor", "Risk")
-  resourceId     String?  // ID of the affected resource
-  metadata       Json?    // Additional structured data about the action
-  ipAddress      String?
-  userAgent      String?
-  hash           String   @unique
-  verified       Boolean  @default(true)
-  timestamp      DateTime @default(now())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([organizationId])
-  @@index([timestamp])
-  @@index([hash])
-  @@index([action])
-  @@index([resourceType])
-  @@index([userId])
-}
-
-model Integration {
-  id           String    @id @default(uuid())
-  name         String
-  category     String
-  provider     String
-  connected    Boolean   @default(false)
-  accessToken  String?   @db.Text
-  refreshToken String?   @db.Text
-  expiresAt    DateTime?
-  lastSync     DateTime?
-  config       Json?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([organizationId, provider])
-  @@index([organizationId])
-}
-
-model MagicLink {
-  id        String   @id @default(uuid())
-  email     String
-  token     String   @unique
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([email])
-  @@index([token])
-  @@index([expiresAt])
-}
-
-model FileUpload {
-  id             String   @id @default(uuid())
-  filename       String
-  originalName   String
-  mimeType       String
-  size           Int
-  s3Key          String   @unique
-  s3Bucket       String
-  url            String
-  uploadedBy     String
-  organizationId String
-  metadata       Json?
-  createdAt      DateTime @default(now())
-
-  @@index([organizationId])
-  @@index([uploadedBy])
-  @@index([s3Key])
-}
-
-model StripeEvent {
-  id        String   @id @default(uuid())
-  eventId   String   @unique
-  type      String
-  data      Json
-  processed Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([eventId])
-  @@index([type])
-  @@index([processed])
 }

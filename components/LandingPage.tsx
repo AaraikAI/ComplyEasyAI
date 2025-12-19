@@ -14,6 +14,7 @@ export const LandingPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mockToken, setMockToken] = useState<string | null>(null);
 
   const scrollToSection = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -27,12 +28,28 @@ export const LandingPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Simulate checking if user exists, if not, move to register
-      await loginWithMagicLink(email);
+      // Request magic link from backend
+      const response: any = await loginWithMagicLink(email);
+      // In development, backend returns the token directly for testing
+      if (response?.devToken) {
+        setMockToken(response.devToken);
+        console.log('Development token received:', response.devToken);
+      } else {
+        // Fallback: generate a mock token (won't work with real backend)
+        const testToken = `mock_token_${Date.now()}_${email}`;
+        setMockToken(testToken);
+      }
       setAuthStep('magic-link-sent');
-    } catch (e) {
-      // If user not found (mock error), go to register
-      setAuthStep('register');
+    } catch (e: any) {
+      console.error('Login error:', e);
+      const errorMsg = e?.message || 'Failed to send magic link';
+      // If user doesn't exist, backend will auto-create, so just show the error
+      if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch')) {
+        alert('Cannot connect to server. Please check:\n1. Backend server is running\n2. Network connection is active');
+      } else {
+        // If request fails, go to register (user might not exist)
+        setAuthStep('register');
+      }
     }
     setLoading(false);
   };
@@ -40,15 +57,71 @@ export const LandingPage: React.FC = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await register(name, email);
-    // Auth context will auto-login
+    try {
+      await register(name, email);
+      // After registration, request magic link for login
+      const response: any = await loginWithMagicLink(email);
+      // In development, backend returns the token directly for testing
+      if (response?.devToken) {
+        setMockToken(response.devToken);
+        console.log('Development token received:', response.devToken);
+      } else {
+        // Fallback: generate a mock token (won't work with real backend)
+        const testToken = `mock_token_${Date.now()}_${email}`;
+        setMockToken(testToken);
+      }
+      setAuthStep('magic-link-sent');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      const errorMsg = error?.message || 'Unknown error';
+      if (errorMsg.includes('already exists') || errorMsg.includes('409')) {
+        alert('This email is already registered. Please try logging in instead.');
+        setAuthStep('email');
+      } else if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch')) {
+        alert('Cannot connect to server. Please check:\n1. Backend server is running\n2. Network connection is active');
+      } else {
+        alert(`Registration failed: ${errorMsg}\n\nPlease try again or contact support if the issue persists.`);
+      }
+    }
     setLoading(false);
   };
 
   // Simulate clicking the magic link
   const simulateMagicClick = async () => {
     setLoading(true);
-    await verifyMagicLink(email);
+    try {
+      // Note: Mock tokens won't work with the real backend
+      // In production, users click the link in their email which contains the real token
+      // For development: we need the backend to be configured with a database
+      // and the token must be stored in the database by the backend
+      
+      // Try to use mock token (will fail if backend requires real tokens)
+      if (mockToken) {
+        try {
+          await verifyMagicLink(mockToken);
+          // If successful, the AuthContext will update the user state
+          return;
+        } catch (error: any) {
+          // If mock token fails, show helpful message
+          const errorMsg = error?.message || 'Token verification failed';
+          if (errorMsg.includes('Invalid') || errorMsg.includes('expired')) {
+            alert('Development Note: Mock tokens don\'t work with the real backend.\n\n' +
+                  'In production, users receive a real token via email.\n\n' +
+                  'To test with the backend, you need:\n' +
+                  '1. Database configured\n' +
+                  '2. Backend to generate and store real tokens\n' +
+                  '3. Use the token from the database or email');
+          } else {
+            throw error;
+          }
+        }
+      } else {
+        throw new Error('No token available. Please request a magic link first.');
+      }
+    } catch (error: any) {
+      console.error('Magic link verification error:', error);
+      alert(`Failed to verify magic link: ${error?.message || 'Unknown error'}\n\nPlease check:\n1. Backend is running\n2. Database is configured\n3. Try requesting a new magic link`);
+    }
     setLoading(false);
   };
 
