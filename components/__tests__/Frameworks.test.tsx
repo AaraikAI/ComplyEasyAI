@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Frameworks } from '../Frameworks';
-import { ComplianceFramework, ComplianceStatus, FrameworkType } from '../types';
+import { ComplianceFramework, ComplianceStatus, FrameworkType } from '../../types';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 describe('Frameworks Component', () => {

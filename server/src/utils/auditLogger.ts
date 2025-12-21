@@ -1,9 +1,8 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '../config/database';
 import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient();
 
 /**
  * Generate a unique hash for audit log entry
