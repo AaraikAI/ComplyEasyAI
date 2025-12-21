@@ -1,3 +1,1030 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="0" failures="0" errors="0" time="847.269">
+<testsuites name="jest tests" tests="57" failures="55" errors="0" time="4.439">
+  <testsuite name="IssueManagementService" errors="0" failures="12" skipped="0" timestamp="2025-12-21T23:28:31" time="2.748" tests="12">
+    <testcase classname="IssueManagementService createIssue() should create a new issue" name="IssueManagementService createIssue() should create a new issue" time="0.225">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:32:38
+
+  29 // Calculate SLA status
+  30 const slaStatus = this.calculateSLAStatus(data.slaTarget ?? null);
+  31 
+→ 32 const issue = await prisma.issue.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.createIssue (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:32:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:38:22)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService createIssue() should set SLA target based on priority" name="IssueManagementService createIssue() should set SLA target based on priority" time="0.053">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:32:38
+
+  29 // Calculate SLA status
+  30 const slaStatus = this.calculateSLAStatus(data.slaTarget ?? null);
+  31 
+→ 32 const issue = await prisma.issue.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.createIssue (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:32:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:65:7)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService updateIssueStatus() should update an existing issue status" name="IssueManagementService updateIssueStatus() should update an existing issue status" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.findUnique()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:91:38
+
+  88   userId: string,
+  89   organizationId: string
+  90 ) {
+→ 91   const issue = await prisma.issue.findUnique(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.updateIssueStatus (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:91:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:87:22)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService assignIssue() should assign issue to a user" name="IssueManagementService assignIssue() should assign issue to a user" time="0.039">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.update()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:149:38
+
+  146   userId: string,
+  147   organizationId: string
+  148 ) {
+→ 149   const issue = await prisma.issue.update(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.assignIssue (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:149:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:108:22)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService addComment() should add a comment to an issue" name="IssueManagementService addComment() should add a comment to an issue" time="0.056">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issueComment.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:192:47
+
+  189   },
+  190   organizationId: string
+  191 ) {
+→ 192   const comment = await prisma.issueComment.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.addComment (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:192:21)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:137:22)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService updateRemediationPlan() should update remediation plan for an issue" name="IssueManagementService updateRemediationPlan() should update remediation plan for an issue" time="0.034">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.update()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:249:38
+
+  246   userId: string,
+  247   organizationId: string
+  248 ) {
+→ 249   const issue = await prisma.issue.update(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.updateRemediationPlan (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:249:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:156:22)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService getIssueDashboard() should return issue dashboard metrics" name="IssueManagementService getIssueDashboard() should return issue dashboard metrics" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:309:39
+
+  306  * Get issue dashboard
+  307  */
+  308 async getIssueDashboard(organizationId: string) {
+→ 309   const issues = await prisma.issue.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.getIssueDashboard (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:309:20)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:184:25)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService getIssuesByOrganization() should return all issues for organization" name="IssueManagementService getIssuesByOrganization() should return all issues for organization" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:31
+
+  282     assignedToId?: string;
+  283   }
+  284 ) {
+→ 285   return await prisma.issue.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.getIssuesByOrganization (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:12)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:197:22)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by status" name="IssueManagementService getIssuesByOrganization() should filter by status" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:31
+
+  282     assignedToId?: string;
+  283   }
+  284 ) {
+→ 285   return await prisma.issue.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.getIssuesByOrganization (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:12)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:205:7)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by priority" name="IssueManagementService getIssuesByOrganization() should filter by priority" time="0.033">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:31
+
+  282     assignedToId?: string;
+  283   }
+  284 ) {
+→ 285   return await prisma.issue.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.getIssuesByOrganization (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:12)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:221:7)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by assignee" name="IssueManagementService getIssuesByOrganization() should filter by assignee" time="0.031">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:31
+
+  282     assignedToId?: string;
+  283   }
+  284 ) {
+→ 285   return await prisma.issue.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.getIssuesByOrganization (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:12)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:237:7)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService getOverdueIssues() should return all overdue issues for organization" name="IssueManagementService getOverdueIssues() should return all overdue issues for organization" time="0.034">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.issue.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:395:31
+
+  392 async getOverdueIssues(organizationId: string) {
+  393   const now = new Date();
+  394 
+→ 395   return await prisma.issue.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at IssueManagementService.getOverdueIssues (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:395:12)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:261:22)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="RiskManagementService" errors="0" failures="11" skipped="0" timestamp="2025-12-21T23:28:31" time="2.76" tests="11">
+    <testcase classname="RiskManagementService createRiskAssessment() should create a new risk assessment" name="RiskManagementService createRiskAssessment() should create a new risk assessment" time="0.215">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskAssessment.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:27:52
+
+  24   methodology?: string;
+  25   userId: string;
+  26 }) {
+→ 27   const assessment = await prisma.riskAssessment.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.createRiskAssessment (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:27:24)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:50:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService addRiskToAssessment() should add a risk item to an assessment" name="RiskManagementService addRiskToAssessment() should add a risk item to an assessment" time="0.056">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:71:40
+
+  68 
+  69 const severity = this.calculateRiskSeverity(riskScore);
+  70 
+→ 71 const risk = await prisma.riskItem.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.addRiskToAssessment (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:71:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:80:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskRegister() should return all risks for an organization" name="RiskManagementService getRiskRegister() should return all risks for an organization" time="0.064">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
+
+  274     category?: string;
+  275   }
+  276 ) {
+→ 277   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:108:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskRegister() should filter risks by severity" name="RiskManagementService getRiskRegister() should filter risks by severity" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
+
+  274     category?: string;
+  275   }
+  276 ) {
+→ 277   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:122:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskRegister() should filter risks by status" name="RiskManagementService getRiskRegister() should filter risks by status" time="0.035">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
+
+  274     category?: string;
+  275   }
+  276 ) {
+→ 277   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:139:7)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskRegister() should filter risks by category" name="RiskManagementService getRiskRegister() should filter risks by category" time="0.038">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
+
+  274     category?: string;
+  275   }
+  276 ) {
+→ 277   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:153:7)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService updateRiskRemediation() should update a risk remediation plan" name="RiskManagementService updateRiskRemediation() should update a risk remediation plan" time="0.033">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.update()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:154:40
+
+  151   userId: string,
+  152   organizationId: string
+  153 ) {
+→ 154   const risk = await prisma.riskItem.update(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.updateRiskRemediation (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:154:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:174:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskDashboard() should return comprehensive risk dashboard data" name="RiskManagementService getRiskDashboard() should return comprehensive risk dashboard data" time="0.056">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:298:41
+
+  295  * Get risk dashboard
+  296  */
+  297 async getRiskDashboard(organizationId: string) {
+→ 298   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskDashboard (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:298:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:206:25)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskHeatMap() should return risk heat map data" name="RiskManagementService getRiskHeatMap() should return risk heat map data" time="0.035">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:378:41
+
+  375  * Get risk heat map data
+  376  */
+  377 async getRiskHeatMap(organizationId: string) {
+→ 378   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskHeatMap (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:378:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:225:23)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService resolveRisk() should resolve a risk item" name="RiskManagementService resolveRisk() should resolve a risk item" time="0.038">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.update()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:240:40
+
+  237   userId: string,
+  238   organizationId: string
+  239 ) {
+→ 240   const risk = await prisma.riskItem.update(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.resolveRisk (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:240:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:240:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskAnalytics() should return risk analytics over time" name="RiskManagementService getRiskAnalytics() should return risk analytics over time" time="0.032">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:424:41
+
+  421   };
+  422 }
+  423 
+→ 424 const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskAnalytics (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:424:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:266:25)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="VendorRiskService" errors="0" failures="16" skipped="0" timestamp="2025-12-21T23:28:31" time="2.915" tests="16">
+    <testcase classname="VendorRiskService createVendor() should create a new vendor" name="VendorRiskService createVendor() should create a new vendor" time="0.216">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendor.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:30:40
+
+  27   dataTypes?: Prisma.InputJsonValue;
+  28   userId: string;
+  29 }) {
+→ 30   const vendor = await prisma.vendor.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.createVendor (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:30:20)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:38:22)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService createVendor() should calculate initial risk score based on data access" name="VendorRiskService createVendor() should calculate initial risk score based on data access" time="0.055">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendor.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:30:40
+
+  27   dataTypes?: Prisma.InputJsonValue;
+  28   userId: string;
+  29 }) {
+→ 30   const vendor = await prisma.vendor.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.createVendor (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:30:20)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:62:7)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService createVendorAssessment() should create a vendor security assessment" name="VendorRiskService createVendorAssessment() should create a vendor security assessment" time="0.05">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendorAssessment.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:80:54
+
+  77   organizationId: string;
+  78   userId: string;
+  79 }) {
+→ 80   const assessment = await prisma.vendorAssessment.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.createVendorAssessment (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:80:24)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:89:22)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService completeVendorAssessment() should complete vendor assessment and update risk score" name="VendorRiskService completeVendorAssessment() should complete vendor assessment and update risk score" time="0.042">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendorAssessment.update()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:118:54
+
+  115   userId: string,
+  116   organizationId: string
+  117 ) {
+→ 118   const assessment = await prisma.vendorAssessment.update(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.completeVendorAssessment (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:118:24)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:124:22)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService createVendorReview() should schedule a vendor review" name="VendorRiskService createVendorReview() should schedule a vendor review" time="0.037">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendorReview.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:168:46
+
+  165   organizationId: string;
+  166   nextReviewDate?: Date;
+  167 }) {
+→ 168   const review = await prisma.vendorReview.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.createVendorReview (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:168:20)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:155:22)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService createVendorMonitor() should create a continuous monitor for vendor" name="VendorRiskService createVendorMonitor() should create a continuous monitor for vendor" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendorMonitor.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:252:48
+
+  249   organizationId: string;
+  250   userId: string;
+  251 }) {
+→ 252   const monitor = await prisma.vendorMonitor.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.createVendorMonitor (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:252:21)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:183:22)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService updateVendorMonitorResults() should update monitor results" name="VendorRiskService updateVendorMonitorResults() should update monitor results" time="0.038">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendorMonitor.update()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:289:48
+
+  286   userId: string,
+  287   organizationId: string
+  288 ) {
+→ 289   const monitor = await prisma.vendorMonitor.update(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.updateVendorMonitorResults (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:289:21)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:216:22)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService updateVendorMonitorResults() should log alert for failing monitor status" name="VendorRiskService updateVendorMonitorResults() should log alert for failing monitor status" time="0.034">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendorMonitor.update()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:289:48
+
+  286   userId: string,
+  287   organizationId: string
+  288 ) {
+→ 289   const monitor = await prisma.vendorMonitor.update(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.updateVendorMonitorResults (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:289:21)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:245:7)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService getVendorScorecard() should return comprehensive vendor scorecard" name="VendorRiskService getVendorScorecard() should return comprehensive vendor scorecard" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendor.findUnique()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:40
+
+  317  * Get vendor scorecard
+  318  */
+  319 async getVendorScorecard(vendorId: string) {
+→ 320   const vendor = await prisma.vendor.findUnique(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.getVendorScorecard (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:20)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:277:25)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService getVendorScorecard() should throw error for non-existent vendor" name="VendorRiskService getVendorScorecard() should throw error for non-existent vendor" time="0.058">
+      <failure>Error: expect(received).rejects.toThrow(expected)
+
+Expected substring: &quot;Vendor not found&quot;
+Received message:   &quot;
+Invalid `prisma.vendor.findUnique()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:40·
+  317  * Get vendor scorecard
+  318  */
+  319 async getVendorScorecard(vendorId: string) {
+→ 320   const vendor = await prisma.vendor.findUnique(
+Can&apos;t reach database server at `localhost:5432`·
+Please make sure your database server is running at `localhost:5432`.&quot;
+
+      318 |    */
+      319 |   async getVendorScorecard(vendorId: string) {
+    &gt; 320 |     const vendor = await prisma.vendor.findUnique({
+          |                    ^
+      321 |       where: { id: vendorId },
+      322 |       include: {
+      323 |         assessments: {
+
+      at $n.handleRequestError (node_modules/@prisma/client/runtime/library.js:121:7615)
+      at $n.handleAndLogRequestError (node_modules/@prisma/client/runtime/library.js:121:6623)
+      at $n.request (node_modules/@prisma/client/runtime/library.js:121:6307)
+      at l (node_modules/@prisma/client/runtime/library.js:130:9633)
+      at VendorRiskService.getVendorScorecard (src/services/vendorRiskService.ts:320:20)
+      at Object.&lt;anonymous&gt; (src/__tests__/unit/services/vendorRiskService.test.ts:290:7)
+    at Object.toThrow (/home/user/ComplyEasyAI/server/node_modules/expect/build/index.js:218:22)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:292:17)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService getVendorRiskDashboard() should return vendor risk dashboard metrics" name="VendorRiskService getVendorRiskDashboard() should return vendor risk dashboard metrics" time="0.034">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendor.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:388:41
+
+  385  * Get vendor risk dashboard
+  386  */
+  387 async getVendorRiskDashboard(organizationId: string) {
+→ 388   const vendors = await prisma.vendor.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.getVendorRiskDashboard (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:388:21)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:315:25)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService getVendorsByOrganization() should return all vendors for organization" name="VendorRiskService getVendorsByOrganization() should return all vendors for organization" time="0.041">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendor.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:32
+
+  466     hasDataAccess?: boolean;
+  467   }
+  468 ) {
+→ 469   return await prisma.vendor.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.getVendorsByOrganization (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:12)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:330:22)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService getVendorsByOrganization() should filter by risk level" name="VendorRiskService getVendorsByOrganization() should filter by risk level" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendor.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:32
+
+  466     hasDataAccess?: boolean;
+  467   }
+  468 ) {
+→ 469   return await prisma.vendor.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.getVendorsByOrganization (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:12)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:338:7)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService getVendorsByOrganization() should filter by data access" name="VendorRiskService getVendorsByOrganization() should filter by data access" time="0.034">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendor.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:32
+
+  466     hasDataAccess?: boolean;
+  467   }
+  468 ) {
+→ 469   return await prisma.vendor.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.getVendorsByOrganization (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:12)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:354:7)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService calculateComplianceScore() should calculate compliance score based on certifications" name="VendorRiskService calculateComplianceScore() should calculate compliance score based on certifications" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendor.findUnique()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:40
+
+  317  * Get vendor scorecard
+  318  */
+  319 async getVendorScorecard(vendorId: string) {
+→ 320   const vendor = await prisma.vendor.findUnique(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.getVendorScorecard (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:20)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:386:25)</failure>
+    </testcase>
+    <testcase classname="VendorRiskService calculateComplianceScore() should return partial score for some certifications" name="VendorRiskService calculateComplianceScore() should return partial score for some certifications" time="0.033">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.vendor.findUnique()` invocation in
+/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:40
+
+  317  * Get vendor scorecard
+  318  */
+  319 async getVendorScorecard(vendorId: string) {
+→ 320   const vendor = await prisma.vendor.findUnique(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at VendorRiskService.getVendorScorecard (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:20)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:408:25)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="AuditLogger" errors="0" failures="16" skipped="0" timestamp="2025-12-21T23:28:31" time="2.996" tests="18">
+    <testcase classname="AuditLogger log() should create an audit log entry successfully" name="AuditLogger log() should create an audit log entry successfully" time="0.213">
+      <failure>Error: expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+Expected number of calls: 1
+Received number of calls: 0
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:42:42)</failure>
+    </testcase>
+    <testcase classname="AuditLogger log() should include optional metadata in audit log" name="AuditLogger log() should include optional metadata in audit log" time="0.056">
+      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+Expected: {&quot;data&quot;: ObjectContaining {&quot;metadata&quot;: {&quot;format&quot;: &quot;csv&quot;, &quot;records&quot;: 100}}}
+
+Number of calls: 0
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:70:42)</failure>
+    </testcase>
+    <testcase classname="AuditLogger log() should include IP address and user agent when provided" name="AuditLogger log() should include IP address and user agent when provided" time="0.036">
+      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+Expected: {&quot;data&quot;: ObjectContaining {&quot;ipAddress&quot;: &quot;192.168.1.1&quot;, &quot;userAgent&quot;: &quot;Mozilla/5.0&quot;}}
+
+Number of calls: 0
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:91:42)</failure>
+    </testcase>
+    <testcase classname="AuditLogger log() should handle database errors gracefully" name="AuditLogger log() should handle database errors gracefully" time="0.038">
+    </testcase>
+    <testcase classname="AuditLogger log() should generate unique hashes for different entries" name="AuditLogger log() should generate unique hashes for different entries" time="0.072">
+      <failure>Error: expect(received).not.toBe(expected) // Object.is equality
+
+Expected: not undefined
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:143:29)</failure>
+    </testcase>
+    <testcase classname="AuditLogger logBatch() should create multiple audit log entries in batch" name="AuditLogger logBatch() should create multiple audit log entries in batch" time="0.032">
+      <failure>Error: expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+Expected number of calls: 1
+Received number of calls: 0
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:177:46)</failure>
+    </testcase>
+    <testcase classname="AuditLogger logBatch() should handle batch errors gracefully" name="AuditLogger logBatch() should handle batch errors gracefully" time="0.037">
+    </testcase>
+    <testcase classname="AuditLogger query() should query audit logs with filters" name="AuditLogger query() should query audit logs with filters" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:145:23
+
+  142 }
+  143 
+  144 const [logs, total] = await Promise.all([
+→ 145   prisma.auditLog.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at async Promise.all (index 0)
+    at Function.query (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:144:27)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:215:22)</failure>
+    </testcase>
+    <testcase classname="AuditLogger query() should support date range filtering" name="AuditLogger query() should support date range filtering" time="0.037">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:145:23
+
+  142 }
+  143 
+  144 const [logs, total] = await Promise.all([
+→ 145   prisma.auditLog.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at async Promise.all (index 0)
+    at Function.query (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:144:27)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:241:7)</failure>
+    </testcase>
+    <testcase classname="AuditLogger query() should support pagination" name="AuditLogger query() should support pagination" time="0.057">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:145:23
+
+  142 }
+  143 
+  144 const [logs, total] = await Promise.all([
+→ 145   prisma.auditLog.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at async Promise.all (index 0)
+    at Function.query (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:144:27)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:263:22)</failure>
+    </testcase>
+    <testcase classname="AuditLogger getStatistics() should calculate audit log statistics" name="AuditLogger getStatistics() should calculate audit log statistics" time="0.032">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:40
+
+  186   };
+  187 }
+  188 
+→ 189 const logs = await prisma.auditLog.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at Function.getStatistics (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:289:21)</failure>
+    </testcase>
+    <testcase classname="AuditLogger getStatistics() should support time range for statistics" name="AuditLogger getStatistics() should support time range for statistics" time="0.033">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:40
+
+  186   };
+  187 }
+  188 
+→ 189 const logs = await prisma.auditLog.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at Function.getStatistics (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:306:7)</failure>
+    </testcase>
+    <testcase classname="AuditLogger getStatistics() should handle null userId and resourceType" name="AuditLogger getStatistics() should handle null userId and resourceType" time="0.037">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:40
+
+  186   };
+  187 }
+  188 
+→ 189 const logs = await prisma.auditLog.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at Function.getStatistics (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:327:21)</failure>
+    </testcase>
+    <testcase classname="AuditLogger cleanup() should delete old audit logs based on retention period" name="AuditLogger cleanup() should delete old audit logs based on retention period" time="0.035">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.deleteMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:248:42
+
+  245   where.organizationId = organizationId;
+  246 }
+  247 
+→ 248 const result = await prisma.auditLog.deleteMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at Function.cleanup (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:248:20)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:339:28)</failure>
+    </testcase>
+    <testcase classname="AuditLogger cleanup() should support organization-specific cleanup" name="AuditLogger cleanup() should support organization-specific cleanup" time="0.034">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.deleteMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:248:42
+
+  245   where.organizationId = organizationId;
+  246 }
+  247 
+→ 248 const result = await prisma.auditLog.deleteMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at Function.cleanup (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:248:20)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:352:7)</failure>
+    </testcase>
+    <testcase classname="AuditLogger export() should export audit logs as JSON" name="AuditLogger export() should export audit logs as JSON" time="0.034">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:40
+
+  266   endDate: Date;
+  267   format?: &apos;json&apos; | &apos;csv&apos;;
+  268 }) {
+→ 269   const logs = await prisma.auditLog.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at Function.export (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:370:22)</failure>
+    </testcase>
+    <testcase classname="AuditLogger export() should export audit logs as CSV" name="AuditLogger export() should export audit logs as CSV" time="0.034">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:40
+
+  266   endDate: Date;
+  267   format?: &apos;json&apos; | &apos;csv&apos;;
+  268 }) {
+→ 269   const logs = await prisma.auditLog.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at Function.export (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:391:22)</failure>
+    </testcase>
+    <testcase classname="AuditLogger export() should handle missing user data in CSV export" name="AuditLogger export() should handle missing user data in CSV export" time="0.031">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.auditLog.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:40
+
+  266   endDate: Date;
+  267   format?: &apos;json&apos; | &apos;csv&apos;;
+  268 }) {
+→ 269   const logs = await prisma.auditLog.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at Function.export (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:417:22)</failure>
+    </testcase>
+  </testsuite>
 </testsuites>
