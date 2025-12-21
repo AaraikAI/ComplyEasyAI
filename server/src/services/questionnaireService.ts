@@ -1,8 +1,8 @@
-import { PrismaClient, QuestionnaireStatus, QuestionnaireQuestion, QuestionnaireResponse, Prisma } from '@prisma/client';
+import { QuestionnaireStatus, QuestionnaireQuestion, QuestionnaireResponse, Prisma } from '@prisma/client';
+import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const prisma = new PrismaClient();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 interface QuestionnaireWithRelations {

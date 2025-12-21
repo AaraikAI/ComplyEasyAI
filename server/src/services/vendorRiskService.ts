@@ -1,7 +1,7 @@
-import { PrismaClient, VendorRiskLevel, VendorStatus, Vendor, Prisma, MonitorStatus } from '@prisma/client';
+import { VendorRiskLevel, VendorStatus, Vendor, Prisma, MonitorStatus } from '@prisma/client';
+import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 
-const prisma = new PrismaClient();
 
 /**
  * Vendor & Third-Party Risk Management Service

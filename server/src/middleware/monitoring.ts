@@ -13,10 +13,10 @@ import logger from '../config/logger';
  */
 export function monitoringMiddleware(req: Request, res: Response, next: NextFunction): void {
   const startTime = Date.now();
-  const transaction = monitoring.startTransaction({
-    name: `${req.method} ${req.path}`,
-    op: 'http.server',
-  });
+  const transaction = monitoring.startTransaction(
+    `${req.method} ${req.path}`,
+    'http.server'
+  );
 
   // Add request context
   if (transaction) {
@@ -27,15 +27,15 @@ export function monitoringMiddleware(req: Request, res: Response, next: NextFunc
   }
 
   // Add breadcrumb
-  monitoring.addBreadcrumb({
-    message: `${req.method} ${req.path}`,
-    category: 'http',
-    data: {
+  monitoring.addBreadcrumb(
+    `${req.method} ${req.path}`,
+    'http',
+    {
       method: req.method,
       path: req.path,
       statusCode: res.statusCode,
-    },
-  });
+    }
+  );
 
   // Track response
   res.on('finish', () => {
@@ -145,14 +145,14 @@ export function queryMonitoringMiddleware(
   }
 
   // Add breadcrumb
-  monitoring.addBreadcrumb({
-    message: 'Database query',
-    category: 'db',
-    data: {
+  monitoring.addBreadcrumb(
+    'Database query',
+    'db',
+    {
       query: query.substring(0, 200),
       duration,
-    },
-  });
+    }
+  );
 }
 
 export default {
