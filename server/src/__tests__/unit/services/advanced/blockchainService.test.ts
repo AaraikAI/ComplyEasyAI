@@ -30,13 +30,36 @@ jest.mock('ethers', () => ({
     })),
     Contract: jest.fn().mockImplementation(() => ({
       recordAuditLog: jest.fn().mockResolvedValue({
-        hash: jest.fn().mockReturnValue('0xabc123'),
+        hash: '0xabc123',
         wait: jest.fn().mockResolvedValue({
           blockNumber: 12345,
-          transactionHash: '0xtx123',
+          hash: '0xtx123',
         }),
       }),
+      recordCompliance: jest.fn().mockResolvedValue({
+        wait: jest.fn().mockResolvedValue({
+          blockNumber: 12345,
+          hash: '0xtx123',
+          logs: [],
+        }),
+      }),
+      issueComplianceCertificate: jest.fn().mockResolvedValue({
+        wait: jest.fn().mockResolvedValue({
+          blockNumber: 12345,
+          hash: '0xtx123',
+          logs: [],
+        }),
+      }),
+      verifyComplianceCertificate: jest.fn().mockResolvedValue([true, 'SOC2', Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60]),
       verifyAuditLog: jest.fn().mockResolvedValue([true, 12345, '0x123']),
+      interface: {
+        parseLog: jest.fn().mockReturnValue({
+          name: 'CertificateIssued',
+          args: {
+            certId: '0x' + 'c'.repeat(64),
+          },
+        }),
+      },
     })),
   },
 }));
@@ -133,10 +156,13 @@ describe('BlockchainService', () => {
     it('should issue compliance certificate', async () => {
       await blockchainService.initialize();
       
+      const validUntil = new Date();
+      validUntil.setFullYear(validUntil.getFullYear() + 1);
+      
       const result = await blockchainService.issueComplianceCertificate(
         'org-123',
         'SOC2',
-        365,
+        validUntil,
         'polygon'
       );
 
@@ -150,10 +176,7 @@ describe('BlockchainService', () => {
     it('should verify compliance certificate', async () => {
       await blockchainService.initialize();
       
-      const result = await blockchainService.verifyComplianceCertificate(
-        'cert-123',
-        'polygon'
-      );
+      const result = await blockchainService.verifyComplianceCertificate('cert-123');
 
       expect(result).toHaveProperty('valid');
       expect(result).toHaveProperty('framework');

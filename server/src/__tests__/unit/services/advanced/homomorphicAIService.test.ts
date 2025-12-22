@@ -161,8 +161,7 @@ describe('HomomorphicAIService', () => {
 
       const result = await homomorphicAIService.decryptData(
         encryptedData,
-        keys.secretKey,
-        'BFV'
+        keys.secretKey
       );
 
       expect(Array.isArray(result)).toBe(true);
@@ -187,7 +186,8 @@ describe('HomomorphicAIService', () => {
       const result = await homomorphicAIService.encryptedLinearRegression(
         encryptedX,
         [1.0, 2.0, 3.0],
-        keys.publicKey
+        keys.publicKey,
+        keys.relinKeys
       );
 
       expect(result).toHaveProperty('encryptedResult');
@@ -212,11 +212,12 @@ describe('HomomorphicAIService', () => {
 
       const result = await homomorphicAIService.encryptedStatistics(
         encryptedData,
-        keys.publicKey
+        keys.galoisKeys,
+        keys.relinKeys
       );
 
-      expect(result).toHaveProperty('mean');
-      expect(result).toHaveProperty('variance');
+      expect(result).toHaveProperty('encryptedMean');
+      expect(result).toHaveProperty('encryptedVariance');
     });
   });
 });

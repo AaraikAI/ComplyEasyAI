@@ -23,8 +23,15 @@ export const chatWithComplianceBot = async (message: string): Promise<string> =>
   try {
     const response: any = await api.ai.chat(message);
     return response.response || "Error.";
-  } catch (e) {
-    return "Error.";
+  } catch (e: any) {
+    console.error('Chat error:', e);
+    if (e?.message?.includes('401') || e?.message?.includes('No token')) {
+      return "Please log in to use the AI assistant.";
+    }
+    if (e?.message?.includes('quota') || e?.message?.includes('429')) {
+      return "AI service quota exceeded. Please check your Google AI Studio quota.";
+    }
+    return e?.message || "Error. Please try again.";
   }
 };
 
@@ -43,8 +50,11 @@ export const generatePolicy = async (type: string, company: string, tone: string
   try {
     const response: any = await api.ai.generatePolicy(type, company, tone);
     return response.policy || "Error.";
-  } catch (e) {
-    return "Error.";
+  } catch (e: any) {
+    console.error('Policy generation error:', e);
+    return e?.message?.includes('quota') 
+      ? "AI service quota exceeded. Please check your Google AI Studio quota."
+      : e?.message || "Error generating policy. Please try again.";
   }
 };
 

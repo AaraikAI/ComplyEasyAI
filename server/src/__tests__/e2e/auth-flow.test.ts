@@ -53,8 +53,33 @@ describe('E2E: Authentication Flow', () => {
         })
         .expect(201);
 
-      expect(registerResponse.body).toHaveProperty('user');
-      expect(registerResponse.body.user).toHaveProperty('email', 'test@example.com');
+      expect(requestResponse.body).toHaveProperty('message');
+      
+      // Step 2: Verify magic link
+      const token = process.env.NODE_ENV === 'development' 
+        ? requestResponse.body.devToken 
+        : 'test-token';
+      
+      prismaMock.magicLink.findUnique.mockResolvedValueOnce({
+        email: 'test@example.com',
+        token,
+        used: false,
+        expiresAt: new Date(Date.now() + 900000),
+      } as any);
+      prismaMock.user.findUnique.mockResolvedValueOnce({
+        id: 'user-123',
+        email: 'test@example.com',
+        organization: { id: 'org-123' },
+      } as any);
+      prismaMock.magicLink.update.mockResolvedValueOnce({} as any);
+
+      const verifyResponse = await request(app)
+        .post('/api/auth/verify')
+        .send({ token })
+        .expect(200);
+
+      expect(verifyResponse.body).toHaveProperty('user');
+      expect(verifyResponse.body.user).toHaveProperty('email', 'test@example.com');
 
       // Step 2: Request magic link
       const magicLinkResponse = await request(app)
@@ -97,6 +122,18 @@ describe('E2E: Authentication Flow', () => {
 
   describe('Magic Link Authentication Flow', () => {
     it('should handle magic link request and verification', async () => {
+      // Setup mocks
+      prismaMock.user.findUnique.mockResolvedValueOnce({
+        id: 'user-123',
+        email: 'existing@example.com',
+        organization: { id: 'org-123' },
+      } as any);
+      prismaMock.magicLink.create.mockResolvedValueOnce({
+        email: 'existing@example.com',
+        token: 'magic-token',
+        expiresAt: new Date(Date.now() + 900000),
+      } as any);
+
       // Request magic link
       const requestResponse = await request(app)
         .post('/api/auth/magic-link')

@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import config, { validateConfig } from './config';
 import logger from './config/logger';
-import prisma from './config/database';
+import prisma, { testConnection } from './config/database';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
 import websocketService from './services/websocketService';
@@ -119,7 +119,15 @@ app.get('/api/docs.json', (req: Request, res: Response) => {
 // Health check endpoint
 app.get('/health', async (req: Request, res: Response) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    // Try database connection with timeout
+    const dbCheck = Promise.race([
+      prisma.$queryRaw`SELECT 1`,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database connection timeout')), 5000)
+      )
+    ]);
+    
+    await dbCheck;
     const wsConnected = websocketService.getIO() !== null;
     res.json({
       status: 'healthy',
@@ -127,11 +135,16 @@ app.get('/health', async (req: Request, res: Response) => {
       uptime: process.uptime(),
       environment: config.server.env,
       websocket: wsConnected ? 'connected' : 'disconnected',
+      database: 'connected',
     });
-  } catch (error) {
+  } catch (error: any) {
+    // Log error but don't fail completely - allow server to start
+    logger.warn('Health check: Database connection issue:', error.message);
     res.status(503).json({
       status: 'unhealthy',
-      error: 'Database connection failed',
+      error: error.message || 'Database connection failed',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
     });
   }
 });
@@ -164,6 +177,15 @@ const httpServer = createServer(app);
 
 // Initialize WebSocket
 websocketService.initialize(httpServer);
+
+// Test database connection before starting server
+testConnection().then((connected) => {
+  if (!connected) {
+    logger.warn('⚠️  Starting server without database connection - some features may not work');
+  }
+}).catch((error) => {
+  logger.warn('⚠️  Database connection test failed:', error.message);
+});
 
 // Start server
 httpServer.listen(config.server.port, () => {

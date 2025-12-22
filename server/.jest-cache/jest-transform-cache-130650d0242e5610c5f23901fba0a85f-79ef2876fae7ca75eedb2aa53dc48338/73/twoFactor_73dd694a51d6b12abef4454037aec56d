@@ -1,0 +1,63 @@
+1e336212d4d25a7619583332203cf8fc
+"use strict";
+/**
+ * Two-Factor Authentication Routes
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const auth_1 = require("../middleware/auth");
+const twoFactorController = __importStar(require("../controllers/twoFactorController"));
+const express_2 = require("../types/express");
+const router = express_1.default.Router();
+// Setup 2FA (authenticated users only)
+router.post('/setup', auth_1.authenticate, (0, express_2.asyncHandler)(twoFactorController.setupTwoFactor));
+// Verify and enable 2FA
+router.post('/verify-enable', auth_1.authenticate, (0, express_2.asyncHandler)(twoFactorController.verifyAndEnable));
+// Verify 2FA token during login (public - no auth required)
+router.post('/verify', (0, express_2.asyncHandler)(twoFactorController.verifyToken));
+// Verify backup code during login (public - no auth required)
+router.post('/verify-backup', (0, express_2.asyncHandler)(twoFactorController.verifyBackupCode));
+// Disable 2FA (requires authentication)
+router.post('/disable', auth_1.authenticate, (0, express_2.asyncHandler)(twoFactorController.disableTwoFactor));
+// Regenerate backup codes (requires authentication)
+router.post('/regenerate-codes', auth_1.authenticate, (0, express_2.asyncHandler)(twoFactorController.regenerateBackupCodes));
+// Get 2FA status (requires authentication)
+router.get('/status', auth_1.authenticate, (0, express_2.asyncHandler)(twoFactorController.getTwoFactorStatus));
+exports.default = router;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiL1VzZXJzL2d2ZXJtYS9EZXNrdG9wL0FBUkFJSyBMTEMvQ29tcGx5RWFzeUFJL3NlcnZlci9zcmMvcm91dGVzL3R3b0ZhY3Rvci50cyIsIm1hcHBpbmdzIjoiO0FBQUE7O0dBRUc7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBRUgsc0RBQThCO0FBQzlCLDZDQUFrRDtBQUNsRCx3RkFBMEU7QUFDMUUsOENBQWdEO0FBRWhELE1BQU0sTUFBTSxHQUFHLGlCQUFPLENBQUMsTUFBTSxFQUFFLENBQUM7QUFFaEMsdUNBQXVDO0FBQ3ZDLE1BQU0sQ0FBQyxJQUFJLENBQUMsUUFBUSxFQUFFLG1CQUFZLEVBQUUsSUFBQSxzQkFBWSxFQUFDLG1CQUFtQixDQUFDLGNBQWMsQ0FBQyxDQUFDLENBQUM7QUFFdEYsd0JBQXdCO0FBQ3hCLE1BQU0sQ0FBQyxJQUFJLENBQUMsZ0JBQWdCLEVBQUUsbUJBQVksRUFBRSxJQUFBLHNCQUFZLEVBQUMsbUJBQW1CLENBQUMsZUFBZSxDQUFDLENBQUMsQ0FBQztBQUUvRiw0REFBNEQ7QUFDNUQsTUFBTSxDQUFDLElBQUksQ0FBQyxTQUFTLEVBQUUsSUFBQSxzQkFBWSxFQUFDLG1CQUFtQixDQUFDLFdBQVcsQ0FBQyxDQUFDLENBQUM7QUFFdEUsOERBQThEO0FBQzlELE1BQU0sQ0FBQyxJQUFJLENBQUMsZ0JBQWdCLEVBQUUsSUFBQSxzQkFBWSxFQUFDLG1CQUFtQixDQUFDLGdCQUFnQixDQUFDLENBQUMsQ0FBQztBQUVsRix3Q0FBd0M7QUFDeEMsTUFBTSxDQUFDLElBQUksQ0FBQyxVQUFVLEVBQUUsbUJBQVksRUFBRSxJQUFBLHNCQUFZLEVBQUMsbUJBQW1CLENBQUMsZ0JBQWdCLENBQUMsQ0FBQyxDQUFDO0FBRTFGLG9EQUFvRDtBQUNwRCxNQUFNLENBQUMsSUFBSSxDQUFDLG1CQUFtQixFQUFFLG1CQUFZLEVBQUUsSUFBQSxzQkFBWSxFQUFDLG1CQUFtQixDQUFDLHFCQUFxQixDQUFDLENBQUMsQ0FBQztBQUV4RywyQ0FBMkM7QUFDM0MsTUFBTSxDQUFDLEdBQUcsQ0FBQyxTQUFTLEVBQUUsbUJBQVksRUFBRSxJQUFBLHNCQUFZLEVBQUMsbUJBQW1CLENBQUMsa0JBQWtCLENBQUMsQ0FBQyxDQUFDO0FBRTFGLGtCQUFlLE1BQU0sQ0FBQyIsIm5hbWVzIjpbXSwic291cmNlcyI6WyIvVXNlcnMvZ3Zlcm1hL0Rlc2t0b3AvQUFSQUlLIExMQy9Db21wbHlFYXN5QUkvc2VydmVyL3NyYy9yb3V0ZXMvdHdvRmFjdG9yLnRzIl0sInNvdXJjZXNDb250ZW50IjpbIi8qKlxuICogVHdvLUZhY3RvciBBdXRoZW50aWNhdGlvbiBSb3V0ZXNcbiAqL1xuXG5pbXBvcnQgZXhwcmVzcyBmcm9tICdleHByZXNzJztcbmltcG9ydCB7IGF1dGhlbnRpY2F0ZSB9IGZyb20gJy4uL21pZGRsZXdhcmUvYXV0aCc7XG5pbXBvcnQgKiBhcyB0d29GYWN0b3JDb250cm9sbGVyIGZyb20gJy4uL2NvbnRyb2xsZXJzL3R3b0ZhY3RvckNvbnRyb2xsZXInO1xuaW1wb3J0IHsgYXN5bmNIYW5kbGVyIH0gZnJvbSAnLi4vdHlwZXMvZXhwcmVzcyc7XG5cbmNvbnN0IHJvdXRlciA9IGV4cHJlc3MuUm91dGVyKCk7XG5cbi8vIFNldHVwIDJGQSAoYXV0aGVudGljYXRlZCB1c2VycyBvbmx5KVxucm91dGVyLnBvc3QoJy9zZXR1cCcsIGF1dGhlbnRpY2F0ZSwgYXN5bmNIYW5kbGVyKHR3b0ZhY3RvckNvbnRyb2xsZXIuc2V0dXBUd29GYWN0b3IpKTtcblxuLy8gVmVyaWZ5IGFuZCBlbmFibGUgMkZBXG5yb3V0ZXIucG9zdCgnL3ZlcmlmeS1lbmFibGUnLCBhdXRoZW50aWNhdGUsIGFzeW5jSGFuZGxlcih0d29GYWN0b3JDb250cm9sbGVyLnZlcmlmeUFuZEVuYWJsZSkpO1xuXG4vLyBWZXJpZnkgMkZBIHRva2VuIGR1cmluZyBsb2dpbiAocHVibGljIC0gbm8gYXV0aCByZXF1aXJlZClcbnJvdXRlci5wb3N0KCcvdmVyaWZ5JywgYXN5bmNIYW5kbGVyKHR3b0ZhY3RvckNvbnRyb2xsZXIudmVyaWZ5VG9rZW4pKTtcblxuLy8gVmVyaWZ5IGJhY2t1cCBjb2RlIGR1cmluZyBsb2dpbiAocHVibGljIC0gbm8gYXV0aCByZXF1aXJlZClcbnJvdXRlci5wb3N0KCcvdmVyaWZ5LWJhY2t1cCcsIGFzeW5jSGFuZGxlcih0d29GYWN0b3JDb250cm9sbGVyLnZlcmlmeUJhY2t1cENvZGUpKTtcblxuLy8gRGlzYWJsZSAyRkEgKHJlcXVpcmVzIGF1dGhlbnRpY2F0aW9uKVxucm91dGVyLnBvc3QoJy9kaXNhYmxlJywgYXV0aGVudGljYXRlLCBhc3luY0hhbmRsZXIodHdvRmFjdG9yQ29udHJvbGxlci5kaXNhYmxlVHdvRmFjdG9yKSk7XG5cbi8vIFJlZ2VuZXJhdGUgYmFja3VwIGNvZGVzIChyZXF1aXJlcyBhdXRoZW50aWNhdGlvbilcbnJvdXRlci5wb3N0KCcvcmVnZW5lcmF0ZS1jb2RlcycsIGF1dGhlbnRpY2F0ZSwgYXN5bmNIYW5kbGVyKHR3b0ZhY3RvckNvbnRyb2xsZXIucmVnZW5lcmF0ZUJhY2t1cENvZGVzKSk7XG5cbi8vIEdldCAyRkEgc3RhdHVzIChyZXF1aXJlcyBhdXRoZW50aWNhdGlvbilcbnJvdXRlci5nZXQoJy9zdGF0dXMnLCBhdXRoZW50aWNhdGUsIGFzeW5jSGFuZGxlcih0d29GYWN0b3JDb250cm9sbGVyLmdldFR3b0ZhY3RvclN0YXR1cykpO1xuXG5leHBvcnQgZGVmYXVsdCByb3V0ZXI7XG4iXSwidmVyc2lvbiI6M30=
