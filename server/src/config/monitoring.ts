@@ -96,7 +96,7 @@ export function initializeSentry(): void {
         'ENOTFOUND',
         'ETIMEDOUT',
       ],
-      beforeSend(event, hint) {
+      beforeSend(event: any, hint: any): any {
         // Filter out sensitive data
         if (event.request) {
           // Remove sensitive headers

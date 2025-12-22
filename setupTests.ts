@@ -2,6 +2,18 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import React from 'react';
 
+// Global fetch mock to prevent real network calls during tests
+globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+  console.warn(`Test attempted to fetch: ${url} - returning mock response`);
+  return Promise.resolve({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve([]),
+    text: () => Promise.resolve(''),
+    headers: new Headers(),
+  });
+}) as unknown as typeof fetch;
+
 // Mock the Google GenAI SDK to prevent actual API calls during tests
 vi.mock('@google/genai', () => {
   return {
