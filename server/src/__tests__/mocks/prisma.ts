@@ -5,11 +5,12 @@
 
 import { jest } from '@jest/globals';
 
+// Flexible mock function type that works with TypeScript strict mode
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type MockFn = jest.Mock<any>;
+type MockFn = jest.Mock<(...args: any[]) => any>;
 
-// Create a properly typed mock function
-const createMockFn = (): MockFn => jest.fn();
+// Create a properly typed mock function that allows any return value
+const createMockFn = (): MockFn => jest.fn() as MockFn;
 
 // Mock data factories
 export const createMockUser = (overrides: Record<string, unknown> = {}) => ({
@@ -377,11 +378,22 @@ export const prismaMock = {
     deleteMany: createMockFn(),
   },
   twoFactorBackupCode: {
+    findUnique: createMockFn(),
+    findFirst: createMockFn(),
     findMany: createMockFn(),
     create: createMockFn(),
     createMany: createMockFn(),
+    update: createMockFn(),
     delete: createMockFn(),
     deleteMany: createMockFn(),
+  },
+  fileUpload: {
+    findUnique: createMockFn(),
+    findFirst: createMockFn(),
+    findMany: createMockFn(),
+    create: createMockFn(),
+    update: createMockFn(),
+    delete: createMockFn(),
   },
   jITAccessRequest: {
     findUnique: createMockFn(),

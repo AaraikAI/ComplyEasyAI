@@ -26,21 +26,22 @@ jest.mock('aws-sdk', () => ({
   },
 }));
 
-jest.mock('../../config/logger', () => ({
+jest.mock('../../../config/logger', () => ({
   __esModule: true,
   default: {
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
-jest.mock('../../config/database', () => ({
+jest.mock('../../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
 }));
 
-jest.mock('../../config', () => ({
+jest.mock('../../../config', () => ({
   __esModule: true,
   default: {
     aws: {
