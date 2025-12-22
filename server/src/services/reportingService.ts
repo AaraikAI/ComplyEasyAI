@@ -1,7 +1,7 @@
-import { PrismaClient, AuditLog, RiskItem, Vendor, FrameworkControl, ComplianceFramework, Prisma } from '@prisma/client';
+import { AuditLog, RiskItem, Vendor, FrameworkControl, ComplianceFramework, Prisma } from '@prisma/client';
+import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 
-const prisma = new PrismaClient();
 
 interface FrameworkWithControls extends ComplianceFramework {
   controls: FrameworkControl[];

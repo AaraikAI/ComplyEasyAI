@@ -1,7 +1,7 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 
-const prisma = new PrismaClient();
 
 /**
  * Personnel & Identity Management Service

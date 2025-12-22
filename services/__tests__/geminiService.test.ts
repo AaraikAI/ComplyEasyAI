@@ -25,7 +25,9 @@ vi.mock('../api', () => ({
     ai: {
       generateReport: vi.fn().mockResolvedValue({ report: 'Report Content' }),
       chat: vi.fn().mockResolvedValue({ response: 'Chat response' }),
-      prioritizeRisks: vi.fn().mockResolvedValue([
+    },
+    risks: {
+      prioritize: vi.fn().mockResolvedValue([
         { id: '1', score: 95, rationale: 'Critical' }
       ])
     }

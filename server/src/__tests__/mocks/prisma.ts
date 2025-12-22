@@ -383,15 +383,31 @@ export const prismaMock = {
     delete: createMockFn(),
     deleteMany: createMockFn(),
   },
+  jITAccessRequest: {
+    findUnique: createMockFn(),
+    findFirst: createMockFn(),
+    findMany: createMockFn(),
+    create: createMockFn(),
+    update: createMockFn(),
+    delete: createMockFn(),
+    count: createMockFn(),
+  },
+  jITSession: {
+    findUnique: createMockFn(),
+    findFirst: createMockFn(),
+    findMany: createMockFn(),
+    create: createMockFn(),
+    update: createMockFn(),
+    delete: createMockFn(),
+    count: createMockFn(),
+  },
   $transaction: createMockFn().mockImplementation((callback: (tx: typeof prismaMock) => Promise<unknown>) => callback(prismaMock)),
   $queryRaw: createMockFn(),
   $disconnect: createMockFn(),
 };
 
-// Mock the database module
-jest.mock('../../config/database', () => ({
-  __esModule: true,
-  default: prismaMock,
-}));
+// Note: Each test file should mock the database module individually
+// Example for tests in __tests__/unit/: jest.mock('../../../config/database', ...)
+// Example for tests in __tests__/unit/utils/: jest.mock('../../../config/database', ...)
 
 export default prismaMock;

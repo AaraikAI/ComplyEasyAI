@@ -25,7 +25,7 @@ const mockRisksList = vi.fn().mockResolvedValue([
   }
 ]);
 
-vi.mock('../services/api', () => ({
+vi.mock('../../services/api', () => ({
   api: {
     risks: {
       list: mockRisksList
@@ -34,7 +34,7 @@ vi.mock('../services/api', () => ({
 }));
 
 // Mock Gemini service
-vi.mock('../services/geminiService', () => ({
+vi.mock('../../services/geminiService', () => ({
   prioritizeRisks: vi.fn().mockResolvedValue([
     { id: 'r1', score: 99, rationale: 'Test Rationale' }
   ]),

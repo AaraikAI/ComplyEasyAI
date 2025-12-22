@@ -1,7 +1,7 @@
-import { PrismaClient, RiskSeverity, RiskItem, RiskAssessment } from '@prisma/client';
+import { RiskSeverity, RiskItem, RiskAssessment } from '@prisma/client';
+import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 
-const prisma = new PrismaClient();
 
 interface RiskAssessmentWithRisks extends RiskAssessment {
   risks: RiskItem[];

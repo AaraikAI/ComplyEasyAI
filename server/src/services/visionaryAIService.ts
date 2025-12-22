@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AuditLogger } from '../utils/auditLogger';
 
-const prisma = new PrismaClient();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 /**

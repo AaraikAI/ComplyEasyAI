@@ -1,7 +1,7 @@
-import { PrismaClient, Policy, Prisma } from '@prisma/client';
+import { Policy, Prisma } from '@prisma/client';
+import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 
-const prisma = new PrismaClient();
 
 /**
  * Policy & Controls Library Service
