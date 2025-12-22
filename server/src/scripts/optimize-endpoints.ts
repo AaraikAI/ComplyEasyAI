@@ -3,7 +3,6 @@
  * Analyzes and optimizes slow API endpoints
  */
 
-import { QueryProfiler } from '../__tests__/performance/query-profiler';
 import logger from '../config/logger';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -26,12 +25,7 @@ interface OptimizationReport {
 }
 
 class EndpointOptimizer {
-  private queryProfiler: QueryProfiler;
   private endpointMetrics: Map<string, any[]> = new Map();
-
-  constructor() {
-    this.queryProfiler = new QueryProfiler();
-  }
 
   /**
    * Analyze endpoint performance
