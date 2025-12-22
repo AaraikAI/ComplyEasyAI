@@ -118,277 +118,193 @@
     </testcase>
     <testcase classname="E2E: Authentication Flow Token Refresh Flow should refresh access token using refresh token" name="E2E: Authentication Flow Token Refresh Flow should refresh access token using refresh token" time="0.004">
     </testcase>
-  </testsuite>
-  <testsuite name="AuditLogger" errors="0" failures="16" skipped="0" timestamp="2025-12-20T03:21:27" time="0.153" tests="18">
-    <testcase classname="AuditLogger log() should create an audit log entry successfully" name="AuditLogger log() should create an audit log entry successfully" time="0.023">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledTimes(expected)
-
-Expected number of calls: 1
-Received number of calls: 0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:42:42)</failure>
-    </testcase>
-    <testcase classname="AuditLogger log() should include optional metadata in audit log" name="AuditLogger log() should include optional metadata in audit log" time="0.004">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
-
-Expected: {&quot;data&quot;: ObjectContaining {&quot;metadata&quot;: {&quot;format&quot;: &quot;csv&quot;, &quot;records&quot;: 100}}}
-
-Number of calls: 0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:70:42)</failure>
-    </testcase>
-    <testcase classname="AuditLogger log() should include IP address and user agent when provided" name="AuditLogger log() should include IP address and user agent when provided" time="0.005">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
-
-Expected: {&quot;data&quot;: ObjectContaining {&quot;ipAddress&quot;: &quot;192.168.1.1&quot;, &quot;userAgent&quot;: &quot;Mozilla/5.0&quot;}}
-
-Number of calls: 0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:91:42)</failure>
-    </testcase>
-    <testcase classname="AuditLogger log() should handle database errors gracefully" name="AuditLogger log() should handle database errors gracefully" time="0.007">
-    </testcase>
-    <testcase classname="AuditLogger log() should generate unique hashes for different entries" name="AuditLogger log() should generate unique hashes for different entries" time="0.008">
-      <failure>Error: expect(received).not.toBe(expected) // Object.is equality
-
-Expected: not undefined
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:143:29)</failure>
-    </testcase>
-    <testcase classname="AuditLogger logBatch() should create multiple audit log entries in batch" name="AuditLogger logBatch() should create multiple audit log entries in batch" time="0.008">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledTimes(expected)
-
-Expected number of calls: 1
-Received number of calls: 0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:177:46)</failure>
-    </testcase>
-    <testcase classname="AuditLogger logBatch() should handle batch errors gracefully" name="AuditLogger logBatch() should handle batch errors gracefully" time="0.003">
-    </testcase>
-    <testcase classname="AuditLogger query() should query audit logs with filters" name="AuditLogger query() should query audit logs with filters" time="0.005">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:145:23
-
-  142 }
-  143 
-  144 const [logs, total] = await Promise.all([
-→ 145   prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at async Promise.all (index 0)
-    at Function.query (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:144:27)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:215:22)</failure>
-    </testcase>
-    <testcase classname="AuditLogger query() should support date range filtering" name="AuditLogger query() should support date range filtering" time="0.003">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:145:23
-
-  142 }
-  143 
-  144 const [logs, total] = await Promise.all([
-→ 145   prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at async Promise.all (index 0)
-    at Function.query (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:144:27)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:241:7)</failure>
-    </testcase>
-    <testcase classname="AuditLogger query() should support pagination" name="AuditLogger query() should support pagination" time="0.004">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:145:23
-
-  142 }
-  143 
-  144 const [logs, total] = await Promise.all([
-→ 145   prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at async Promise.all (index 0)
-    at Function.query (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:144:27)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:263:22)</failure>
-    </testcase>
-    <testcase classname="AuditLogger getStatistics() should calculate audit log statistics" name="AuditLogger getStatistics() should calculate audit log statistics" time="0.003">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:189:40
-
-  186   };
-  187 }
-  188 
-→ 189 const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.getStatistics (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:189:18)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:289:21)</failure>
-    </testcase>
-    <testcase classname="AuditLogger getStatistics() should support time range for statistics" name="AuditLogger getStatistics() should support time range for statistics" time="0.003">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:189:40
-
-  186   };
-  187 }
-  188 
-→ 189 const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.getStatistics (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:189:18)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:306:7)</failure>
-    </testcase>
-    <testcase classname="AuditLogger getStatistics() should handle null userId and resourceType" name="AuditLogger getStatistics() should handle null userId and resourceType" time="0.002">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:189:40
-
-  186   };
-  187 }
-  188 
-→ 189 const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.getStatistics (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:189:18)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:327:21)</failure>
-    </testcase>
-    <testcase classname="AuditLogger cleanup() should delete old audit logs based on retention period" name="AuditLogger cleanup() should delete old audit logs based on retention period" time="0.003">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.deleteMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:248:42
-
-  245   where.organizationId = organizationId;
-  246 }
-  247 
-→ 248 const result = await prisma.auditLog.deleteMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.cleanup (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:248:20)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:339:28)</failure>
-    </testcase>
-    <testcase classname="AuditLogger cleanup() should support organization-specific cleanup" name="AuditLogger cleanup() should support organization-specific cleanup" time="0.003">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.deleteMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:248:42
-
-  245   where.organizationId = organizationId;
-  246 }
-  247 
-→ 248 const result = await prisma.auditLog.deleteMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.cleanup (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:248:20)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:352:7)</failure>
-    </testcase>
-    <testcase classname="AuditLogger export() should export audit logs as JSON" name="AuditLogger export() should export audit logs as JSON" time="0.002">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:269:40
-
-  266   endDate: Date;
-  267   format?: &apos;json&apos; | &apos;csv&apos;;
-  268 }) {
-→ 269   const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.export (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:269:18)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:370:22)</failure>
-    </testcase>
-    <testcase classname="AuditLogger export() should export audit logs as CSV" name="AuditLogger export() should export audit logs as CSV" time="0.008">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:269:40
-
-  266   endDate: Date;
-  267   format?: &apos;json&apos; | &apos;csv&apos;;
-  268 }) {
-→ 269   const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.export (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:269:18)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:391:22)</failure>
-    </testcase>
-    <testcase classname="AuditLogger export() should handle missing user data in CSV export" name="AuditLogger export() should handle missing user data in CSV export" time="0.004">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:269:40
-
-  266   endDate: Date;
-  267   format?: &apos;json&apos; | &apos;csv&apos;;
-  268 }) {
-→ 269   const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.export (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/utils/auditLogger.ts:269:18)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:417:22)</failure>
+    <testcase classname="JITAccessService checkAccessExpiry() should automatically expire sessions after duration" name="JITAccessService checkAccessExpiry() should automatically expire sessions after duration" time="0.003">
+      <failure>TypeError: jitAccessService_1.default.checkAccessExpiry is not a function
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/jitAccessService.test.ts:218:30)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
   </testsuite>
-  <testsuite name="Risks API" errors="0" failures="15" skipped="0" timestamp="2025-12-20T03:21:27" time="0.181" tests="16">
-    <testcase classname="Risks API GET /api/risks should return all risks for authenticated user" name="Risks API GET /api/risks should return all risks for authenticated user" time="0.012">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
+  <testsuite name="ComplianceAsCodeService" errors="0" failures="6" skipped="0" timestamp="2025-12-22T00:23:05" time="2.064" tests="7">
+    <testcase classname="ComplianceAsCodeService createPolicy() should create a new compliance policy" name="ComplianceAsCodeService createPolicy() should create a new compliance policy" time="0.108">
+      <failure>Error: Failed to create compliance policy
+    at ComplianceAsCodeService.createPolicy (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:121:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:63:22)</failure>
+    </testcase>
+    <testcase classname="ComplianceAsCodeService evaluatePolicy() should evaluate policy and return allowed result" name="ComplianceAsCodeService evaluatePolicy() should evaluate policy and return allowed result" time="0.005">
+      <failure>Error: Policy evaluation failed
+    at ComplianceAsCodeService.evaluatePolicy (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:221:13)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:82:52)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    </testcase>
+    <testcase classname="ComplianceAsCodeService evaluatePolicy() should detect policy violations" name="ComplianceAsCodeService evaluatePolicy() should detect policy violations" time="0.005">
+    </testcase>
+    <testcase classname="ComplianceAsCodeService evaluateMultiplePolicies() should evaluate multiple policies" name="ComplianceAsCodeService evaluateMultiplePolicies() should evaluate multiple policies" time="0.004">
+      <failure>Error: Batch policy evaluation failed
+    at ComplianceAsCodeService.evaluateMultiplePolicies (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:260:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:128:22)</failure>
+    </testcase>
+    <testcase classname="ComplianceAsCodeService generateComplianceReport() should generate compliance report" name="ComplianceAsCodeService generateComplianceReport() should generate compliance report" time="0.004">
+      <failure>Error: Compliance report generation failed
+    at ComplianceAsCodeService.generateComplianceReport (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:304:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:141:22)</failure>
+    </testcase>
+    <testcase classname="ComplianceAsCodeService integrateWithCI() should set up CI integration" name="ComplianceAsCodeService integrateWithCI() should set up CI integration" time="0.004">
+      <failure>TypeError: complianceAsCodeService_1.default.integrateWithCI is not a function
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:164:52)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    </testcase>
+    <testcase classname="ComplianceAsCodeService detectDrift() should detect compliance drift" name="ComplianceAsCodeService detectDrift() should detect compliance drift" time="0.003">
+      <failure>TypeError: complianceAsCodeService_1.default.detectDrift is not a function
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:176:52)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="IssueManagementService" errors="0" failures="4" skipped="0" timestamp="2025-12-22T00:23:05" time="2.117" tests="12">
+    <testcase classname="IssueManagementService createIssue() should create a new issue" name="IssueManagementService createIssue() should create a new issue" time="0.115">
+    </testcase>
+    <testcase classname="IssueManagementService createIssue() should set SLA target based on priority" name="IssueManagementService createIssue() should set SLA target based on priority" time="0.008">
+      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
 
-Expected: 200
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:85:31)
+- Expected
++ Received
+
+  Object {
+-   &quot;data&quot;: ObjectContaining {
++   &quot;data&quot;: Object {
++     &quot;assignedToId&quot;: undefined,
++     &quot;category&quot;: undefined,
++     &quot;createdById&quot;: &quot;user-123&quot;,
++     &quot;description&quot;: &quot;Very urgent&quot;,
++     &quot;dueDate&quot;: undefined,
++     &quot;issueType&quot;: &quot;Bug&quot;,
++     &quot;organizationId&quot;: &quot;org-123&quot;,
+      &quot;priority&quot;: &quot;Critical&quot;,
++     &quot;remediationPlan&quot;: undefined,
++     &quot;remediationSteps&quot;: undefined,
++     &quot;slaStatus&quot;: &quot;On_Track&quot;,
++     &quot;slaTarget&quot;: undefined,
++     &quot;status&quot;: &quot;Open&quot;,
++     &quot;tags&quot;: Object {},
++     &quot;title&quot;: &quot;Critical Issue&quot;,
++   },
++   &quot;include&quot;: Object {
++     &quot;assignedTo&quot;: true,
++     &quot;createdBy&quot;: true,
+    },
+  },
+
+Number of calls: 1
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:80:39)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="Risks API GET /api/risks should filter risks by status" name="Risks API GET /api/risks should filter risks by status" time="0.007">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
+    <testcase classname="IssueManagementService updateIssueStatus() should update an existing issue status" name="IssueManagementService updateIssueStatus() should update an existing issue status" time="0.004">
+      <failure>Error: Issue not found
+    at IssueManagementService.updateIssueStatus (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:96:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:93:22)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService assignIssue() should assign issue to a user" name="IssueManagementService assignIssue() should assign issue to a user" time="0.013">
+    </testcase>
+    <testcase classname="IssueManagementService addComment() should add a comment to an issue" name="IssueManagementService addComment() should add a comment to an issue" time="0.005">
+    </testcase>
+    <testcase classname="IssueManagementService updateRemediationPlan() should update remediation plan for an issue" name="IssueManagementService updateRemediationPlan() should update remediation plan for an issue" time="0.005">
+      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
 
-Expected: 200
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:97:31)
+Expected: ObjectContaining {&quot;action&quot;: &quot;issue.remediation_updated&quot;}
+Received: {&quot;action&quot;: &quot;issue.remediation_plan_updated&quot;, &quot;metadata&quot;: {&quot;dueDate&quot;: undefined}, &quot;organizationId&quot;: &quot;org-123&quot;, &quot;resourceId&quot;: &quot;issue-123&quot;, &quot;resourceType&quot;: &quot;Issue&quot;, &quot;userId&quot;: &quot;user-123&quot;}
+
+Number of calls: 1
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:170:31)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService getIssueDashboard() should return issue dashboard metrics" name="IssueManagementService getIssueDashboard() should return issue dashboard metrics" time="0.006">
+      <failure>Error: expect(received).toHaveProperty(path)
+
+Expected path: &quot;byStatus&quot;
+Received path: []
+
+Received value: {&quot;averageResolutionTime&quot;: 0, &quot;criticalIssues&quot;: [{&quot;assignedTo&quot;: undefined, &quot;id&quot;: &quot;issue-123&quot;, &quot;priority&quot;: &quot;Critical&quot;, &quot;slaStatus&quot;: undefined, &quot;status&quot;: &quot;Open&quot;, &quot;title&quot;: &quot;Security Vulnerability&quot;}], &quot;issuesByAssignee&quot;: [{&quot;assignee&quot;: &quot;Unassigned&quot;, &quot;inProgress&quot;: 0, &quot;open&quot;: 2, &quot;resolved&quot;: 1, &quot;total&quot;: 4}], &quot;overdueIssues&quot;: 0, &quot;priorityDistribution&quot;: {&quot;critical&quot;: 1, &quot;high&quot;: 1, &quot;low&quot;: 1, &quot;medium&quot;: 1}, &quot;slaMetrics&quot;: {&quot;atRisk&quot;: 0, &quot;breached&quot;: 0, &quot;onTrack&quot;: 0}, &quot;statusDistribution&quot;: {&quot;closed&quot;: 1, &quot;inProgress&quot;: 0, &quot;open&quot;: 2, &quot;reopened&quot;: 0, &quot;resolved&quot;: 1}, &quot;totalIssues&quot;: 4, &quot;typeDistribution&quot;: {&quot;Bug&quot;: 4}, &quot;unassignedIssues&quot;: 0}
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:193:25)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="IssueManagementService getIssuesByOrganization() should return all issues for organization" name="IssueManagementService getIssuesByOrganization() should return all issues for organization" time="0.008">
+    </testcase>
+    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by status" name="IssueManagementService getIssuesByOrganization() should filter by status" time="0.004">
+    </testcase>
+    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by priority" name="IssueManagementService getIssuesByOrganization() should filter by priority" time="0.003">
+    </testcase>
+    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by assignee" name="IssueManagementService getIssuesByOrganization() should filter by assignee" time="0.003">
+    </testcase>
+    <testcase classname="IssueManagementService getOverdueIssues() should return all overdue issues for organization" name="IssueManagementService getOverdueIssues() should return all overdue issues for organization" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="HomomorphicAIService" errors="0" failures="7" skipped="0" timestamp="2025-12-22T00:23:05" time="2.094" tests="8">
+    <testcase classname="HomomorphicAIService initialize() should initialize SEAL library" name="HomomorphicAIService initialize() should initialize SEAL library" time="0.108">
+    </testcase>
+    <testcase classname="HomomorphicAIService generateKeys() should generate keys for BFV scheme" name="HomomorphicAIService generateKeys() should generate keys for BFV scheme" time="0.005">
+      <failure>Error: Failed to generate encryption keys
+    at HomomorphicAIService.generateKeys (/home/user/ComplyEasyAI/server/src/services/advanced/homomorphicAIService.ts:128:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/homomorphicAIService.test.ts:104:22)</failure>
     </testcase>
     <testcase classname="Risks API GET /api/risks should filter risks by severity" name="Risks API GET /api/risks should filter risks by severity" time="0.005">
       <failure>Error: expect(received).toBe(expected) // Object.is equality
@@ -400,13 +316,11 @@ Received: 401
     </testcase>
     <testcase classname="Risks API GET /api/risks should return 401 without authentication" name="Risks API GET /api/risks should return 401 without authentication" time="0.003">
     </testcase>
-    <testcase classname="Risks API GET /api/risks/:id should return a specific risk" name="Risks API GET /api/risks/:id should return a specific risk" time="0.004">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: 200
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:140:31)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    <testcase classname="HomomorphicAIService encryptData() should encrypt data using CKKS scheme" name="HomomorphicAIService encryptData() should encrypt data using CKKS scheme" time="0.003">
+      <failure>Error: Failed to generate encryption keys
+    at HomomorphicAIService.generateKeys (/home/user/ComplyEasyAI/server/src/services/advanced/homomorphicAIService.ts:128:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/homomorphicAIService.test.ts:137:20)</failure>
     </testcase>
     <testcase classname="Risks API GET /api/risks/:id should return 404 for non-existent risk" name="Risks API GET /api/risks/:id should return 404 for non-existent risk" time="0.006">
       <failure>Error: expect(received).toBe(expected) // Object.is equality
@@ -416,113 +330,79 @@ Received: 401
     at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:151:31)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="Risks API POST /api/risks should create a new risk" name="Risks API POST /api/risks should create a new risk" time="0.008">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
+    <testcase classname="HomomorphicAIService encryptedLinearRegression() should perform linear regression on encrypted data" name="HomomorphicAIService encryptedLinearRegression() should perform linear regression on encrypted data" time="0.003">
+      <failure>Error: Failed to generate encryption keys
+    at HomomorphicAIService.generateKeys (/home/user/ComplyEasyAI/server/src/services/advanced/homomorphicAIService.ts:128:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/homomorphicAIService.test.ts:175:20)</failure>
+    </testcase>
+    <testcase classname="HomomorphicAIService encryptedStatistics() should compute statistics on encrypted data" name="HomomorphicAIService encryptedStatistics() should compute statistics on encrypted data" time="0.004">
+      <failure>Error: Failed to generate encryption keys
+    at HomomorphicAIService.generateKeys (/home/user/ComplyEasyAI/server/src/services/advanced/homomorphicAIService.ts:128:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/homomorphicAIService.test.ts:201:20)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="BlockchainService" errors="0" failures="6" skipped="0" timestamp="2025-12-22T00:23:05" time="2.086" tests="8">
+    <testcase classname="BlockchainService initialize() should initialize blockchain providers successfully" name="BlockchainService initialize() should initialize blockchain providers successfully" time="0.109">
+    </testcase>
+    <testcase classname="BlockchainService initialize() should handle initialization errors gracefully" name="BlockchainService initialize() should handle initialization errors gracefully" time="0.005">
+    </testcase>
+    <testcase classname="BlockchainService recordAuditLog() should record audit log on blockchain" name="BlockchainService recordAuditLog() should record audit log on blockchain" time="0.004">
+      <failure>Error: Blockchain audit log recording failed
+    at BlockchainService.recordAuditLog (/home/user/ComplyEasyAI/server/src/services/advanced/blockchainService.ts:162:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:73:22)</failure>
+    </testcase>
+    <testcase classname="BlockchainService recordAuditLog() should create correct data hash" name="BlockchainService recordAuditLog() should create correct data hash" time="0.004">
+      <failure>Error: Blockchain audit log recording failed
+    at BlockchainService.recordAuditLog (/home/user/ComplyEasyAI/server/src/services/advanced/blockchainService.ts:162:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:90:22)</failure>
+    </testcase>
+    <testcase classname="BlockchainService verifyAuditLog() should verify audit log on blockchain" name="BlockchainService verifyAuditLog() should verify audit log on blockchain" time="0.006">
+      <failure>Error: expect(received).toHaveProperty(path)
 
-Expected: 201
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:171:31)
+Expected path: &quot;verified&quot;
+Received path: []
+
+Received value: {&quot;exists&quot;: false}
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:107:22)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="Risks API POST /api/risks should validate required fields" name="Risks API POST /api/risks should validate required fields" time="0.005">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: 400
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:183:31)
+    <testcase classname="BlockchainService recordComplianceProof() should record compliance proof on blockchain" name="BlockchainService recordComplianceProof() should record compliance proof on blockchain" time="0.004">
+      <failure>Error: Blockchain compliance proof recording failed
+    at BlockchainService.recordComplianceProof (/home/user/ComplyEasyAI/server/src/services/advanced/blockchainService.ts:397:13)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:124:46)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="Risks API POST /api/risks should validate likelihood range (1-5)" name="Risks API POST /api/risks should validate likelihood range (1-5)" time="0.004">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: 400
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:198:31)
+    <testcase classname="BlockchainService issueComplianceCertificate() should issue compliance certificate" name="BlockchainService issueComplianceCertificate() should issue compliance certificate" time="0.004">
+      <failure>Error: Certificate issuance failed
+    at BlockchainService.issueComplianceCertificate (/home/user/ComplyEasyAI/server/src/services/advanced/blockchainService.ts:468:13)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:136:46)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="Risks API POST /api/risks should validate impact range (1-5)" name="Risks API POST /api/risks should validate impact range (1-5)" time="0.009">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
+    <testcase classname="BlockchainService verifyComplianceCertificate() should verify compliance certificate" name="BlockchainService verifyComplianceCertificate() should verify compliance certificate" time="0.004">
+      <failure>Error: expect(received).toHaveProperty(path)
 
-Expected: 400
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:213:31)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Risks API PATCH /api/risks/:id should update a risk" name="Risks API PATCH /api/risks/:id should update a risk" time="0.005">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
+Expected path: &quot;framework&quot;
+Received path: []
 
-Expected: 200
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:231:31)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Risks API PATCH /api/risks/:id should return 404 for non-existent risk" name="Risks API PATCH /api/risks/:id should return 404 for non-existent risk" time="0.005">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: 404
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:243:31)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Risks API DELETE /api/risks/:id should delete a risk" name="Risks API DELETE /api/risks/:id should delete a risk" time="0.004">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: 200
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:256:31)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Risks API DELETE /api/risks/:id should return 404 for non-existent risk" name="Risks API DELETE /api/risks/:id should return 404 for non-existent risk" time="0.003">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: 404
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:266:31)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Risks API POST /api/risks/prioritize should return prioritized risks" name="Risks API POST /api/risks/prioritize should return prioritized risks" time="0.005">
-      <failure>Error: expect(received).toBe(expected) // Object.is equality
-
-Expected: 200
-Received: 401
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:283:31)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Risks API POST /api/risks/:id/remediation should generate AI remediation suggestions" name="Risks API POST /api/risks/:id/remediation should generate AI remediation suggestions" time="0.003">
-      <failure>Error: expect(received).toContain(expected) // indexOf
-
-Expected value: 401
-Received array: [200, 500]
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:298:26)
+Received value: {&quot;valid&quot;: false}
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:159:22)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
   </testsuite>
-  <testsuite name="API Endpoints Integration Tests" errors="0" failures="10" skipped="0" timestamp="2025-12-20T03:21:25" time="2.805" tests="13">
-    <testcase classname="API Endpoints Integration Tests Health Check should return health status" name="API Endpoints Integration Tests Health Check should return health status" time="0.042">
-      <failure>Error: listen EADDRINUSE: address already in use :::3001
-    at Server.setupListenHandle [as _listen2] (node:net:1939:16)
-    at listenInCluster (node:net:1996:12)
-    at Server.listen (node:net:2101:7)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/index.ts:169:12)
-    at Runtime._execModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1439:24)
-    at Runtime._loadModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1022:12)
-    at Runtime.requireModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:882:12)
-    at Runtime.requireModuleOrMock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1048:21)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/endpoints.test.ts:7:1)
-    at Runtime._execModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1439:24)
-    at Runtime._loadModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1022:12)
-    at Runtime.requireModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:882:12)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
+  <testsuite name="BYOKService" errors="0" failures="8" skipped="0" timestamp="2025-12-22T00:23:05" time="2.117" tests="8">
+    <testcase classname="BYOKService generateDataKey() should generate data key using AWS KMS" name="BYOKService generateDataKey() should generate data key using AWS KMS" time="0.108">
+      <failure>Error: Failed to generate data encryption key
+    at BYOKService.generateDataKey (/home/user/ComplyEasyAI/server/src/services/advanced/byokService.ts:113:13)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-      <failure>Error: expected 200 &quot;OK&quot;, got 503 &quot;Service Unavailable&quot;
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/endpoints.test.ts:30:58)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/byokService.test.ts:64:22)</failure>
+    </testcase>
+    <testcase classname="BYOKService generateDataKey() should generate data key using Azure Key Vault" name="BYOKService generateDataKey() should generate data key using Azure Key Vault" time="0.005">
+      <failure>Error: Failed to generate data encryption key
+    at BYOKService.generateDataKey (/home/user/ComplyEasyAI/server/src/services/advanced/byokService.ts:113:13)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
     at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
     at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
@@ -648,95 +528,13 @@ Received array: [200, 500]
     at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
     at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)
-----
-    at Test._assertStatus (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:309:14)
-    at /Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:365:13
-    at Test._assertFunction (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:342:13)
-    at Test.assert (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:195:23)
-    at localAssert (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:138:14)
-    at Server.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:152:11)
-    at Object.onceWrapper (node:events:632:28)
-    at Server.emit (node:events:518:28)
-    at Server.emit (node:domain:489:12)
-    at emitCloseNT (node:net:2418:8)
-    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/byokService.test.ts:159:22)</failure>
     </testcase>
-    <testcase classname="API Endpoints Integration Tests Risk Management Endpoints should create risk" name="API Endpoints Integration Tests Risk Management Endpoints should create risk" time="0.004">
-      <failure>Error: expected 201 &quot;Created&quot;, got 401 &quot;Unauthorized&quot;
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/endpoints.test.ts:151:10)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)
-----
-    at Test._assertStatus (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:309:14)
-    at /Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:365:13
-    at Test._assertFunction (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:342:13)
-    at Test.assert (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:195:23)
-    at localAssert (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:138:14)
-    at Server.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:152:11)
-    at Object.onceWrapper (node:events:632:28)
-    at Server.emit (node:events:518:28)
-    at Server.emit (node:domain:489:12)
-    at emitCloseNT (node:net:2418:8)
-    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
-    </testcase>
-    <testcase classname="API Endpoints Integration Tests Risk Management Endpoints should get risks" name="API Endpoints Integration Tests Risk Management Endpoints should get risks" time="0.004">
-      <failure>Error: expected 200 &quot;OK&quot;, got 401 &quot;Unauthorized&quot;
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/endpoints.test.ts:170:10)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)
-----
-    at Test._assertStatus (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:309:14)
-    at /Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:365:13
-    at Test._assertFunction (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:342:13)
-    at Test.assert (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:195:23)
-    at localAssert (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:138:14)
-    at Server.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/supertest/lib/test.js:152:11)
-    at Object.onceWrapper (node:events:632:28)
-    at Server.emit (node:events:518:28)
-    at Server.emit (node:domain:489:12)
-    at emitCloseNT (node:net:2418:8)
-    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
-    </testcase>
-    <testcase classname="API Endpoints Integration Tests Risk Management Endpoints should update risk" name="API Endpoints Integration Tests Risk Management Endpoints should update risk" time="0.006">
-      <failure>Error: expected 200 &quot;OK&quot;, got 401 &quot;Unauthorized&quot;
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/integration/api/endpoints.test.ts:190:10)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    <testcase classname="BYOKService rotateKey() should rotate encryption key" name="BYOKService rotateKey() should rotate encryption key" time="0.004">
+      <failure>Error: Key rotation failed
+    at BYOKService.rotateKey (/home/user/ComplyEasyAI/server/src/services/advanced/byokService.ts:504:13)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/byokService.test.ts:173:40)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
     at new Promise (&lt;anonymous&gt;)
     at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
     at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
@@ -1752,365 +1550,502 @@ Please make sure your database server is running at `localhost:5432`.
 Invalid `prisma.vendor.findMany()` invocation in
 /Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:32
 
-  466     hasDataAccess?: boolean;
-  467   }
-  468 ) {
-→ 469   return await prisma.vendor.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at VendorRiskService.getVendorsByOrganization (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:12)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:330:22)</failure>
-    </testcase>
-    <testcase classname="VendorRiskService getVendorsByOrganization() should filter by risk level" name="VendorRiskService getVendorsByOrganization() should filter by risk level" time="0.005">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.vendor.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:32
-
-  466     hasDataAccess?: boolean;
-  467   }
-  468 ) {
-→ 469   return await prisma.vendor.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at VendorRiskService.getVendorsByOrganization (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:12)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:338:7)</failure>
-    </testcase>
-    <testcase classname="VendorRiskService getVendorsByOrganization() should filter by data access" name="VendorRiskService getVendorsByOrganization() should filter by data access" time="0.002">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.vendor.findMany()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:32
-
-  466     hasDataAccess?: boolean;
-  467   }
-  468 ) {
-→ 469   return await prisma.vendor.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at VendorRiskService.getVendorsByOrganization (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:12)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:354:7)</failure>
-    </testcase>
-    <testcase classname="VendorRiskService calculateComplianceScore() should calculate compliance score based on certifications" name="VendorRiskService calculateComplianceScore() should calculate compliance score based on certifications" time="0.002">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.vendor.findUnique()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:40
-
-  317  * Get vendor scorecard
-  318  */
-  319 async getVendorScorecard(vendorId: string) {
-→ 320   const vendor = await prisma.vendor.findUnique(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at VendorRiskService.getVendorScorecard (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:20)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:386:25)</failure>
-    </testcase>
-    <testcase classname="VendorRiskService calculateComplianceScore() should return partial score for some certifications" name="VendorRiskService calculateComplianceScore() should return partial score for some certifications" time="0.002">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.vendor.findUnique()` invocation in
-/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:40
-
-  317  * Get vendor scorecard
-  318  */
-  319 async getVendorScorecard(vendorId: string) {
-→ 320   const vendor = await prisma.vendor.findUnique(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at VendorRiskService.getVendorScorecard (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:20)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:408:25)</failure>
-    </testcase>
-  </testsuite>
-  <testsuite name="AuditLogger" errors="0" failures="8" skipped="0" timestamp="2025-12-20T03:21:28" time="0.042" tests="8">
-    <testcase classname="AuditLogger log should create an audit log entry successfully" name="AuditLogger log should create an audit log entry successfully" time="0.002">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;create&apos;)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/utils/auditLogger.test.ts:58:23)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-    <testcase classname="AuditLogger log should handle errors gracefully and not throw" name="AuditLogger log should handle errors gracefully and not throw" time="0.002">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;create&apos;)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/utils/auditLogger.test.ts:87:23)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-    <testcase classname="AuditLogger log should use default empty object for metadata if not provided" name="AuditLogger log should use default empty object for metadata if not provided" time="0.001">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;create&apos;)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/utils/auditLogger.test.ts:102:23)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-    <testcase classname="AuditLogger logBatch should create multiple audit log entries" name="AuditLogger logBatch should create multiple audit log entries" time="0.001">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;createMany&apos;)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/utils/auditLogger.test.ts:133:23)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-    <testcase classname="AuditLogger query should query audit logs with filters" name="AuditLogger query should query audit logs with filters" time="0.001">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;findMany&apos;)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/utils/auditLogger.test.ts:163:23)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-    <testcase classname="AuditLogger query should apply date range filters" name="AuditLogger query should apply date range filters" time="0.001">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;findMany&apos;)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/utils/auditLogger.test.ts:198:23)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-    <testcase classname="AuditLogger cleanup should delete old audit logs based on retention period" name="AuditLogger cleanup should delete old audit logs based on retention period" time="0.003">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;deleteMany&apos;)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/utils/auditLogger.test.ts:223:23)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-    <testcase classname="AuditLogger cleanup should filter by organization if provided" name="AuditLogger cleanup should filter by organization if provided" time="0.004">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;deleteMany&apos;)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/utils/auditLogger.test.ts:238:23)
-    at Promise.then.completed (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-  </testsuite>
-  <testsuite name="Load Testing" errors="0" failures="11" skipped="0" timestamp="2025-12-20T03:21:25" time="9.463" tests="12">
-    <testcase classname="Load Testing Health Check Endpoint should handle 100 concurrent requests" name="Load Testing Health Check Endpoint should handle 100 concurrent requests" time="0.193">
-      <failure>Error: listen EADDRINUSE: address already in use :::3001
-    at Server.setupListenHandle [as _listen2] (node:net:1939:16)
-    at listenInCluster (node:net:1996:12)
-    at Server.listen (node:net:2101:7)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/index.ts:169:12)
-    at Runtime._execModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1439:24)
-    at Runtime._loadModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1022:12)
-    at Runtime.requireModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:882:12)
-    at Runtime.requireModuleOrMock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1048:21)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/load-test.ts:8:1)
-    at Runtime._execModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1439:24)
-    at Runtime._loadModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1022:12)
-    at Runtime.requireModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:882:12)
-    at Runtime.requireModuleOrMock (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1048:21)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/endpoint-scenarios.test.ts:7:1)
-    at Runtime._execModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1439:24)
-    at Runtime._loadModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1022:12)
-    at Runtime.requireModule (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:882:12)
-    at jestAdapter (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at runTestInternal (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-      <failure>Error: expect(received).toBeGreaterThan(expected)
-
-Expected: &gt; 95
-Received:   0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/load-test.ts:173:41)
+Received has value: undefined
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/advanced.test.ts:164:22)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="Load Testing API Endpoints should handle moderate load on GET /api/frameworks" name="Load Testing API Endpoints should handle moderate load on GET /api/frameworks" time="0.079">
-      <failure>Error: expect(received).toBeGreaterThan(expected)
-
-Expected: &gt; 45
-Received:   0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/load-test.ts:190:41)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    <testcase classname="Advanced Features API Integration BYOK Service Integration should encrypt data using customer key" name="Advanced Features API Integration BYOK Service Integration should encrypt data using customer key" time="0.003">
     </testcase>
-    <testcase classname="Load Testing API Endpoints should handle load on POST /api/risks" name="Load Testing API Endpoints should handle load on POST /api/risks" time="0.065">
-      <failure>Error: expect(received).toBeGreaterThan(expected)
-
-Expected: &gt; 25
-Received:   0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/load-test.ts:214:41)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Load Testing Performance Benchmarks should meet performance SLA for health check" name="Load Testing Performance Benchmarks should meet performance SLA for health check" time="0.249">
-    </testcase>
-    <testcase classname="Load Testing Performance Benchmarks should handle burst traffic" name="Load Testing Performance Benchmarks should handle burst traffic" time="0.386">
-      <failure>Error: expect(received).toBeGreaterThan(expected)
-
-Expected: &gt; 450
-Received:   0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/load-test.ts:238:41)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Endpoint Performance Scenarios Real-World Usage Patterns should handle typical user session (multiple endpoints)" name="Endpoint Performance Scenarios Real-World Usage Patterns should handle typical user session (multiple endpoints)" time="0.004">
-      <failure>Error: expect(received).toBeGreaterThan(expected)
-
-Expected: &gt; 0
-Received:   0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/endpoint-scenarios.test.ts:35:43)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Endpoint Performance Scenarios Real-World Usage Patterns should handle dashboard load (multiple parallel requests)" name="Endpoint Performance Scenarios Real-World Usage Patterns should handle dashboard load (multiple parallel requests)" time="0.01">
-      <failure>Error: expect(received).toBeGreaterThan(expected)
-
-Expected: &gt; 3
-Received:   0
-    at /Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/endpoint-scenarios.test.ts:60:43
-    at Array.forEach (&lt;anonymous&gt;)
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/endpoint-scenarios.test.ts:59:15)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Endpoint Performance Scenarios Peak Load Scenarios should handle morning rush (high concurrent users)" name="Endpoint Performance Scenarios Peak Load Scenarios should handle morning rush (high concurrent users)" time="0.335">
-      <failure>Error: expect(received).toBeGreaterThan(expected)
-
-Expected: &gt; 450
-Received:   0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/endpoint-scenarios.test.ts:73:41)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Endpoint Performance Scenarios Peak Load Scenarios should handle report generation spike" name="Endpoint Performance Scenarios Peak Load Scenarios should handle report generation spike" time="0.02">
-      <failure>Error: expect(received).toBeGreaterThan(expected)
-
-Expected: &gt; 15
-Received:   0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/endpoint-scenarios.test.ts:92:41)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
-    </testcase>
-    <testcase classname="Endpoint Performance Scenarios Edge Cases should handle rapid sequential requests" name="Endpoint Performance Scenarios Edge Cases should handle rapid sequential requests" time="0.167">
+    <testcase classname="Advanced Features API Integration BYOK Service Integration should decrypt data using customer key" name="Advanced Features API Integration BYOK Service Integration should decrypt data using customer key" time="0.004">
       <failure>Error: expect(received).toBe(expected) // Object.is equality
 
-Expected: 100
-Received: 0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/endpoint-scenarios.test.ts:104:41)
+Expected: true
+Received: false
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/advanced.test.ts:204:39)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="Endpoint Performance Scenarios Edge Cases should handle mixed request types" name="Endpoint Performance Scenarios Edge Cases should handle mixed request types" time="0.011">
-      <failure>Error: expect(received).toBeGreaterThan(expected)
-
-Expected: &gt; 8
-Received:   0
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/endpoint-scenarios.test.ts:131:44)
+    <testcase classname="Advanced Features API Integration Homomorphic AI Service Integration should generate encryption keys" name="Advanced Features API Integration Homomorphic AI Service Integration should generate encryption keys" time="0.003">
+    </testcase>
+    <testcase classname="Advanced Features API Integration Homomorphic AI Service Integration should encrypt data for homomorphic operations" name="Advanced Features API Integration Homomorphic AI Service Integration should encrypt data for homomorphic operations" time="0.003">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;publicKey&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/advanced.test.ts:226:14)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="Endpoint Performance Scenarios Long-Running Scenarios should maintain performance over extended period" name="Endpoint Performance Scenarios Long-Running Scenarios should maintain performance over extended period" time="5.36">
-      <failure>Error: expect(received).toBeLessThan(expected)
+    <testcase classname="Advanced Features API Integration JIT Access Service Integration should create access request" name="Advanced Features API Integration JIT Access Service Integration should create access request" time="0.003">
+    </testcase>
+    <testcase classname="Advanced Features API Integration JIT Access Service Integration should approve access request" name="Advanced Features API Integration JIT Access Service Integration should approve access request" time="0.003">
+      <failure>Error: expect(received).toHaveProperty(path, value)
 
-Expected: &lt; 0.5
-Received:   1.0533707865168538
-    at Object.&lt;anonymous&gt; (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/performance/endpoint-scenarios.test.ts:158:27)</failure>
+Matcher error: received value must not be null nor undefined
+
+Received has value: undefined
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/advanced.test.ts:257:22)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Advanced Features API Integration Zero-Knowledge Proof Service Integration should generate compliance proof" name="Advanced Features API Integration Zero-Knowledge Proof Service Integration should generate compliance proof" time="0.004">
+    </testcase>
+    <testcase classname="Advanced Features API Integration Zero-Knowledge Proof Service Integration should verify compliance proof" name="Advanced Features API Integration Zero-Knowledge Proof Service Integration should verify compliance proof" time="0.003">
+      <failure>Error: expect(received).toHaveProperty(path, value)
+
+Matcher error: received value must not be null nor undefined
+
+Received has value: undefined
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/advanced.test.ts:293:22)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Advanced Features API Integration Compliance-as-Code Service Integration should create compliance policy" name="Advanced Features API Integration Compliance-as-Code Service Integration should create compliance policy" time="0.005">
+      <failure>Error: expect(received).toHaveProperty(path, value)
+
+Expected path: &quot;name&quot;
+
+Expected value: &quot;Encryption Policy&quot;
+Received value: &quot;Test Policy&quot;
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/advanced.test.ts:310:22)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Advanced Features API Integration Compliance-as-Code Service Integration should evaluate compliance policy" name="Advanced Features API Integration Compliance-as-Code Service Integration should evaluate compliance policy" time="0.006">
+      <failure>Error: expect(received).toHaveProperty(path)
+
+Matcher error: received value must not be null nor undefined
+
+Received has value: undefined
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/advanced.test.ts:320:22)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Frameworks API" errors="0" failures="3" skipped="0" timestamp="2025-12-22T00:23:07" time="2.043" tests="3">
+    <testcase classname="Frameworks API should list frameworks" name="Frameworks API should list frameworks" time="0.029">
+      <failure>Error: expected 200 &quot;OK&quot;, got 401 &quot;Unauthorized&quot;
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/frameworks.test.ts:69:8)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:309:14)
+    at /home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at emitCloseNT (node:net:2419:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="Frameworks API should get framework by ID" name="Frameworks API should get framework by ID" time="0.007">
+      <failure>Error: expected 200 &quot;OK&quot;, got 401 &quot;Unauthorized&quot;
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/frameworks.test.ts:87:8)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:309:14)
+    at /home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at emitCloseNT (node:net:2419:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="Frameworks API should create framework" name="Frameworks API should create framework" time="0.033">
+      <failure>Error: expected 201 &quot;Created&quot;, got 401 &quot;Unauthorized&quot;
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/frameworks.test.ts:110:8)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:309:14)
+    at /home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at emitCloseNT (node:net:2419:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Auth API" errors="0" failures="8" skipped="0" timestamp="2025-12-22T00:23:07" time="2.15" tests="12">
+    <testcase classname="Auth API POST /api/auth/register should register a new user successfully" name="Auth API POST /api/auth/register should register a new user successfully" time="0.056">
+      <failure>Error: expect(received).toContain(expected) // indexOf
+
+Expected substring: &quot;sent&quot;
+Received string:    &quot;Registration successful. Check your email for login link.&quot;
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/auth.test.ts:80:37)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Auth API POST /api/auth/register should reject registration with existing email" name="Auth API POST /api/auth/register should reject registration with existing email" time="0.008">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 400
+Received: 409
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/auth.test.ts:94:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Auth API POST /api/auth/register should validate required fields" name="Auth API POST /api/auth/register should validate required fields" time="0.006">
+    </testcase>
+    <testcase classname="Auth API POST /api/auth/register should validate email format" name="Auth API POST /api/auth/register should validate email format" time="0.006">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 400
+Received: 500
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/auth.test.ts:118:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Auth API POST /api/auth/magic-link should send magic link for existing user" name="Auth API POST /api/auth/magic-link should send magic link for existing user" time="0.008">
+    </testcase>
+    <testcase classname="Auth API POST /api/auth/magic-link should return 404 for non-existent user" name="Auth API POST /api/auth/magic-link should return 404 for non-existent user" time="0.007">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 404
+Received: 500
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/auth.test.ts:150:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Auth API POST /api/auth/verify should verify valid magic link and return tokens" name="Auth API POST /api/auth/verify should verify valid magic link and return tokens" time="0.01">
+    </testcase>
+    <testcase classname="Auth API POST /api/auth/verify should reject expired magic link" name="Auth API POST /api/auth/verify should reject expired magic link" time="0.01">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 400
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/auth.test.ts:198:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Auth API POST /api/auth/verify should reject already used magic link" name="Auth API POST /api/auth/verify should reject already used magic link" time="0.009">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 400
+Received: 429
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/auth.test.ts:217:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Auth API POST /api/auth/verify should reject invalid token" name="Auth API POST /api/auth/verify should reject invalid token" time="0.007">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 400
+Received: 429
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/auth.test.ts:227:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Auth API POST /api/auth/refresh should refresh access token with valid refresh token" name="Auth API POST /api/auth/refresh should refresh access token with valid refresh token" time="0.007">
+    </testcase>
+    <testcase classname="Auth API GET /api/auth/me should return 401 without authentication" name="Auth API GET /api/auth/me should return 401 without authentication" time="0.006">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 401
+Received: 404
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/auth.test.ts:249:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="Risks API" errors="0" failures="15" skipped="0" timestamp="2025-12-22T00:23:07" time="2.174" tests="16">
+    <testcase classname="Risks API GET /api/risks should return all risks for authenticated user" name="Risks API GET /api/risks should return all risks for authenticated user" time="0.031">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:85:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API GET /api/risks should filter risks by status" name="Risks API GET /api/risks should filter risks by status" time="0.009">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:97:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API GET /api/risks should filter risks by severity" name="Risks API GET /api/risks should filter risks by severity" time="0.007">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:114:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API GET /api/risks should return 401 without authentication" name="Risks API GET /api/risks should return 401 without authentication" time="0.006">
+    </testcase>
+    <testcase classname="Risks API GET /api/risks/:id should return a specific risk" name="Risks API GET /api/risks/:id should return a specific risk" time="0.008">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:140:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API GET /api/risks/:id should return 404 for non-existent risk" name="Risks API GET /api/risks/:id should return 404 for non-existent risk" time="0.007">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 404
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:151:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API POST /api/risks should create a new risk" name="Risks API POST /api/risks should create a new risk" time="0.033">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 201
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:171:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API POST /api/risks should validate required fields" name="Risks API POST /api/risks should validate required fields" time="0.006">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 400
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:183:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API POST /api/risks should validate likelihood range (1-5)" name="Risks API POST /api/risks should validate likelihood range (1-5)" time="0.008">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 400
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:198:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API POST /api/risks should validate impact range (1-5)" name="Risks API POST /api/risks should validate impact range (1-5)" time="0.013">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 400
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:213:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API PATCH /api/risks/:id should update a risk" name="Risks API PATCH /api/risks/:id should update a risk" time="0.006">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:231:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API PATCH /api/risks/:id should return 404 for non-existent risk" name="Risks API PATCH /api/risks/:id should return 404 for non-existent risk" time="0.006">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 404
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:243:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API DELETE /api/risks/:id should delete a risk" name="Risks API DELETE /api/risks/:id should delete a risk" time="0.006">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:256:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API DELETE /api/risks/:id should return 404 for non-existent risk" name="Risks API DELETE /api/risks/:id should return 404 for non-existent risk" time="0.006">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 404
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:266:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API POST /api/risks/prioritize should return prioritized risks" name="Risks API POST /api/risks/prioritize should return prioritized risks" time="0.006">
+      <failure>Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 200
+Received: 401
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:283:31)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+    <testcase classname="Risks API POST /api/risks/:id/remediation should generate AI remediation suggestions" name="Risks API POST /api/risks/:id/remediation should generate AI remediation suggestions" time="0.006">
+      <failure>Error: expect(received).toContain(expected) // indexOf
+
+Expected value: 401
+Received array: [200, 500]
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/integration/api/risks.test.ts:298:26)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="E2E: Risk Management Flow" errors="0" failures="2" skipped="0" timestamp="2025-12-22T00:23:07" time="10.09" tests="2">
+    <testcase classname="E2E: Risk Management Flow Complete Risk Management Workflow should complete full risk lifecycle" name="E2E: Risk Management Flow Complete Risk Management Workflow should complete full risk lifecycle" time="0.051">
+      <failure>Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/index.ts:169:12)
+    at Runtime._execModule (/home/user/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/home/user/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/home/user/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:882:12)
+    at Runtime.requireModuleOrMock (/home/user/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1048:21)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/e2e/risk-management-flow.test.ts:34:1)
+    at Runtime._execModule (/home/user/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/home/user/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/home/user/ComplyEasyAI/server/node_modules/jest-runtime/build/index.js:882:12)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+      <failure>Error: expected 201 &quot;Created&quot;, got 401 &quot;Unauthorized&quot;
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/e2e/risk-management-flow.test.ts:59:10)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:309:14)
+    at /home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at Server.emit (node:domain:489:12)
+    at emitCloseNT (node:net:2419:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="E2E: Risk Management Flow Risk Scanning Workflow should perform risk scan and process results" name="E2E: Risk Management Flow Risk Scanning Workflow should perform risk scan and process results" time="0.008">
+      <failure>Error: expected 200 &quot;OK&quot;, got 401 &quot;Unauthorized&quot;
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/e2e/risk-management-flow.test.ts:113:10)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:309:14)
+    at /home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at Server.emit (node:domain:489:12)
+    at emitCloseNT (node:net:2419:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="E2E: Authentication Flow" errors="0" failures="2" skipped="0" timestamp="2025-12-22T00:23:07" time="10.111" tests="3">
+    <testcase classname="E2E: Authentication Flow Complete User Registration and Login Flow should complete full registration and authentication flow" name="E2E: Authentication Flow Complete User Registration and Login Flow should complete full registration and authentication flow" time="0.062">
+      <failure>Error: expected 201 &quot;Created&quot;, got 500 &quot;Internal Server Error&quot;
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/e2e/auth-flow.test.ts:54:10)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:309:14)
+    at /home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at Server.emit (node:domain:489:12)
+    at emitCloseNT (node:net:2419:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="E2E: Authentication Flow Magic Link Authentication Flow should handle magic link request and verification" name="E2E: Authentication Flow Magic Link Authentication Flow should handle magic link request and verification" time="0.007">
+      <failure>Error: expected 200 &quot;OK&quot;, got 500 &quot;Internal Server Error&quot;
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/e2e/auth-flow.test.ts:106:10)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)
+----
+    at Test._assertStatus (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:309:14)
+    at /home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:365:13
+    at Test._assertFunction (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:342:13)
+    at Test.assert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:195:23)
+    at localAssert (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:138:14)
+    at Server.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/node_modules/supertest/lib/test.js:152:11)
+    at Object.onceWrapper (node:events:633:28)
+    at Server.emit (node:events:519:28)
+    at Server.emit (node:domain:489:12)
+    at emitCloseNT (node:net:2419:8)
+    at processTicksAndRejections (node:internal/process/task_queues:89:21)</failure>
+    </testcase>
+    <testcase classname="E2E: Authentication Flow Token Refresh Flow should refresh access token using refresh token" name="E2E: Authentication Flow Token Refresh Flow should refresh access token using refresh token" time="0.007">
     </testcase>
   </testsuite>
 </testsuites>
