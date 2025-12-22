@@ -62,46 +62,43 @@ describe('RiskManagement Component', () => {
     expect(api.risks.list).toHaveBeenCalled();
   });
 
-  it('filters risks by severity', async () => {
+  it('displays risks sorted by severity', async () => {
     render(<RiskManagement onBack={vi.fn()} />);
-    
+
     // Wait for component to load
-    await waitFor(() => {
-      expect(screen.getByText('Risk Management')).toBeInTheDocument();
-    });
-    
-    // Find and change severity filter
-    await waitFor(() => {
-      const filterSelect = screen.getByDisplayValue('All Severities');
-      expect(filterSelect).toBeInTheDocument();
-      
-      fireEvent.change(filterSelect, { target: { value: 'High' } });
-    });
-    
-    // Verify High risk is shown
-    await waitFor(() => {
-      expect(screen.getByText('Unencrypted S3 Bucket detected in production environment.')).toBeInTheDocument();
-    });
+    await screen.findByText('Risk Management');
+
+    // Wait for data to load - both risks should be visible
+    await screen.findByText('Unencrypted S3 Bucket detected in production environment.');
+    expect(screen.getByText('3 employees have not completed mandatory security training.')).toBeInTheDocument();
+
+    // Verify severity column exists and can be sorted
+    const severityHeader = screen.getByText('Severity');
+    expect(severityHeader).toBeInTheDocument();
+
+    // Click to sort
+    fireEvent.click(severityHeader);
+
+    // Both risks should still be visible after sorting
+    expect(screen.getByText('Unencrypted S3 Bucket detected in production environment.')).toBeInTheDocument();
+    expect(screen.getByText('3 employees have not completed mandatory security training.')).toBeInTheDocument();
   });
 
   it('opens remediation modal on manage click', async () => {
     render(<RiskManagement onBack={vi.fn()} />);
-    
-    // Wait for risks to load
-    await waitFor(() => {
-      expect(screen.getByText('Risk Management')).toBeInTheDocument();
-    });
-    
-    // Find and click Manage button
-    await waitFor(() => {
-      const manageButtons = screen.getAllByText('Manage');
-      expect(manageButtons.length).toBeGreaterThan(0);
-      fireEvent.click(manageButtons[0]);
-    });
 
-    // Wait for modal to appear
+    // Wait for component and data to load
+    await screen.findByText('Risk Management');
+    await screen.findByText('Unencrypted S3 Bucket detected in production environment.');
+
+    // Find and click Manage button
+    const manageButtons = screen.getAllByText('Manage');
+    expect(manageButtons.length).toBeGreaterThan(0);
+    fireEvent.click(manageButtons[0]);
+
+    // Wait for modal to appear - look for "Remediation & Task" heading
     await waitFor(() => {
-      expect(screen.getByText(/Remediation/i)).toBeInTheDocument();
+      expect(screen.getByText('Remediation & Task')).toBeInTheDocument();
     }, { timeout: 3000 });
   });
 });

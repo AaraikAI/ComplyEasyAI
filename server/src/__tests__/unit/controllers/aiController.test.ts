@@ -33,7 +33,7 @@ jest.mock('../../../services/geminiService', () => ({
   },
 }));
 
-jest.mock('../../config/logger', () => ({
+jest.mock('../../../config/logger', () => ({
   __esModule: true,
   default: {
     info: jest.fn(),

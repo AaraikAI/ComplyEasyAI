@@ -20,7 +20,7 @@ jest.mock('@slack/web-api', () => ({
   })),
 }));
 
-jest.mock('../../config/logger', () => ({
+jest.mock('../../../config/logger', () => ({
   __esModule: true,
   default: {
     info: jest.fn(),
@@ -28,7 +28,7 @@ jest.mock('../../config/logger', () => ({
   },
 }));
 
-jest.mock('../../config/database', () => ({
+jest.mock('../../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
 }));

@@ -28,7 +28,7 @@ jest.mock('../../../services/twoFactorService', () => ({
   },
 }));
 
-jest.mock('../../config/logger', () => ({
+jest.mock('../../../config/logger', () => ({
   __esModule: true,
   default: {
     info: jest.fn(),
