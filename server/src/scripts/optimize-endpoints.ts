@@ -3,7 +3,6 @@
  * Analyzes and optimizes slow API endpoints
  */
 
-import { QueryProfiler } from '../__tests__/performance/query-profiler';
 import logger from '../config/logger';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -26,12 +25,7 @@ interface OptimizationReport {
 }
 
 class EndpointOptimizer {
-  private queryProfiler: QueryProfiler;
   private endpointMetrics: Map<string, any[]> = new Map();
-
-  constructor() {
-    this.queryProfiler = new QueryProfiler();
-  }
 
   /**
    * Analyze endpoint performance
@@ -130,7 +124,7 @@ class EndpointOptimizer {
       codeOptimizations.push('Consider using Redis for session and cache management');
     }
 
-    if (endpoints.some((e) => e.averageQueryCount > 15)) {
+    if (endpoints.some((e) => e.slowRequests > 15)) {
       codeOptimizations.push('Implement GraphQL DataLoader pattern for batch loading');
       codeOptimizations.push('Review and optimize database queries with EXPLAIN ANALYZE');
     }
