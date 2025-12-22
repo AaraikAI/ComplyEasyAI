@@ -16,7 +16,7 @@ jest.mock('@google/generative-ai', () => ({
   })),
 }));
 
-jest.mock('../../config/logger', () => ({
+jest.mock('../../../config/logger', () => ({
   __esModule: true,
   default: {
     info: jest.fn(),
@@ -25,7 +25,7 @@ jest.mock('../../config/logger', () => ({
   },
 }));
 
-jest.mock('../../config', () => ({
+jest.mock('../../../config', () => ({
   __esModule: true,
   default: {
     gemini: {

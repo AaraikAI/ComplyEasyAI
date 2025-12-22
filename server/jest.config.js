@@ -9,8 +9,11 @@ module.exports = {
   ],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
+      tsconfig: 'tsconfig.test.json',
       isolatedModules: true, // Faster compilation
+      diagnostics: {
+        ignoreCodes: [151001], // Ignore isolatedModules warning
+      },
     }],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
