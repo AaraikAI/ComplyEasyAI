@@ -3,32 +3,30 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { RiskManagement } from '../RiskManagement';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-// Mock the API service
-const mockRisksList = vi.fn().mockResolvedValue([
-  {
-    id: 'r1',
-    title: 'Unencrypted S3 Bucket',
-    description: 'Unencrypted S3 Bucket detected in production environment.',
-    severity: 'High',
-    status: 'Open',
-    detectedAt: '2024-12-01',
-    aiScore: 95
-  },
-  {
-    id: 'r2',
-    title: 'Security Training Gap',
-    description: '3 employees have not completed mandatory security training.',
-    severity: 'Medium',
-    status: 'Open',
-    detectedAt: '2024-12-02',
-    aiScore: 75
-  }
-]);
-
+// Mock the API service - define inline to avoid hoisting issues
 vi.mock('../../services/api', () => ({
   api: {
     risks: {
-      list: mockRisksList
+      list: vi.fn().mockResolvedValue([
+        {
+          id: 'r1',
+          title: 'Unencrypted S3 Bucket',
+          description: 'Unencrypted S3 Bucket detected in production environment.',
+          severity: 'High',
+          status: 'Open',
+          detectedAt: '2024-12-01',
+          aiScore: 95
+        },
+        {
+          id: 'r2',
+          title: 'Security Training Gap',
+          description: '3 employees have not completed mandatory security training.',
+          severity: 'Medium',
+          status: 'Open',
+          detectedAt: '2024-12-02',
+          aiScore: 75
+        }
+      ])
     }
   }
 }));
@@ -59,7 +57,9 @@ describe('RiskManagement Component', () => {
       expect(screen.getByText('Unencrypted S3 Bucket detected in production environment.')).toBeInTheDocument();
     });
     
-    expect(mockRisksList).toHaveBeenCalled();
+    // Verify the API was called (accessing the mock through the module)
+    const { api } = await import('../../services/api');
+    expect(api.risks.list).toHaveBeenCalled();
   });
 
   it('filters risks by severity', async () => {

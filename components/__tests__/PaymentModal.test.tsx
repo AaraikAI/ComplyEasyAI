@@ -3,13 +3,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PaymentModal } from '../PaymentModal';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-// Mock the API service
-const mockCreateCheckout = vi.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/test' });
-
+// Mock the API service - define mock inline to avoid hoisting issues
 vi.mock('../../services/api', () => ({
   api: {
     billing: {
-      createCheckout: mockCreateCheckout
+      createCheckout: vi.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/test' })
     }
   }
 }));
@@ -61,6 +59,8 @@ describe('PaymentModal Component', () => {
       expect(mockClose).toHaveBeenCalled();
     }, { timeout: 3000 });
     
-    expect(mockCreateCheckout).toHaveBeenCalledWith('Pro');
+    // Verify the checkout was called (accessing the mock through the module)
+    const { api } = await import('../../services/api');
+    expect(api.billing.createCheckout).toHaveBeenCalledWith('Pro');
   });
 });
