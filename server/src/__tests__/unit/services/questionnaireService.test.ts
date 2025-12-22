@@ -5,7 +5,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../mocks/prisma';
 
-jest.mock('../../config/database', () => ({
+jest.mock('../../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
 }));
