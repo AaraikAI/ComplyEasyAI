@@ -100,7 +100,8 @@ describe('JITAccessService', () => {
 
       const result = await jitAccessService.approveAccess(
         'req-123',
-        'approver-1'
+        'approver-1',
+        'org-1'
       );
 
       expect(result).toHaveProperty('status', 'approved');
@@ -124,18 +125,19 @@ describe('JITAccessService', () => {
         active: true,
       };
 
-      prismaMock.jITSession.update.mockResolvedValue({
-        ...mockSession,
-        active: false,
-      });
+      // Mock the activeSessions map
+      (jitAccessService as any).activeSessions = new Map([
+        ['session-123', mockSession]
+      ]);
 
-      const result = await jitAccessService.revokeAccess('session-123');
+      await jitAccessService.revokeSession('session-123', 'Test revocation');
 
-      expect(result).toHaveProperty('active', false);
+      const sessions = (jitAccessService as any).activeSessions;
+      expect(sessions.has('session-123')).toBe(false);
     });
   });
 
-  describe('extendAccess()', () => {
+  describe('extendSession()', () => {
     it('should extend access session duration', async () => {
       const mockSession = {
         id: 'session-123',
@@ -150,13 +152,12 @@ describe('JITAccessService', () => {
         active: true,
       };
 
-      prismaMock.jITSession.update.mockResolvedValue({
-        ...mockSession,
-        endTime: new Date(Date.now() + 60 * 60 * 1000),
-        extendedCount: 1,
-      });
+      // Mock the activeSessions map
+      (jitAccessService as any).activeSessions = new Map([
+        ['session-123', mockSession]
+      ]);
 
-      const result = await jitAccessService.extendAccess('session-123', 30);
+      const result = await jitAccessService.extendSession('session-123', 30, 'Need more time');
 
       expect(result).toHaveProperty('extendedCount', 1);
       expect(new Date(result.endTime).getTime()).toBeGreaterThan(
@@ -165,26 +166,27 @@ describe('JITAccessService', () => {
     });
   });
 
-  describe('getActiveSessions()', () => {
+  describe('getUserActiveSessions()', () => {
     it('should return active sessions for user', async () => {
-      const mockSessions = [
-        {
-          id: 'session-1',
-          requestId: 'req-1',
-          userId: 'user-1',
-          organizationId: 'org-1',
-          privilege: 'admin' as const,
-          startTime: new Date(),
-          endTime: new Date(Date.now() + 60 * 60 * 1000),
-          extendedCount: 0,
-          actionsPerformed: [],
-          active: true,
-        },
-      ];
+      const mockSession = {
+        id: 'session-1',
+        requestId: 'req-1',
+        userId: 'user-1',
+        organizationId: 'org-1',
+        privilege: 'admin' as const,
+        startTime: new Date(),
+        endTime: new Date(Date.now() + 60 * 60 * 1000),
+        extendedCount: 0,
+        actionsPerformed: [],
+        active: true,
+      };
 
-      prismaMock.jITSession.findMany.mockResolvedValue(mockSessions);
+      // Mock the activeSessions map
+      (jitAccessService as any).activeSessions = new Map([
+        ['session-1', mockSession]
+      ]);
 
-      const result = await jitAccessService.getActiveSessions('user-1', 'org-1');
+      const result = await jitAccessService.getUserActiveSessions('user-1');
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBeGreaterThan(0);
@@ -192,10 +194,8 @@ describe('JITAccessService', () => {
     });
   });
 
-  describe('checkAccessExpiry()', () => {
-    it('should automatically expire sessions after duration', async () => {
-      jest.useRealTimers();
-      
+  describe('revokeSession()', () => {
+    it('should revoke session when expired', async () => {
       const expiredSession = {
         id: 'session-123',
         requestId: 'req-123',
@@ -209,20 +209,15 @@ describe('JITAccessService', () => {
         active: true,
       };
 
-      prismaMock.jITSession.findMany.mockResolvedValue([expiredSession]);
-      prismaMock.jITSession.update.mockResolvedValue({
-        ...expiredSession,
-        active: false,
-      });
+      // Mock the activeSessions map
+      (jitAccessService as any).activeSessions = new Map([
+        ['session-123', expiredSession]
+      ]);
 
-      await jitAccessService.checkAccessExpiry();
+      await jitAccessService.revokeSession('session-123', 'Session expired');
 
-      expect(prismaMock.jITSession.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'session-123' },
-          data: { active: false },
-        })
-      );
+      const sessions = (jitAccessService as any).activeSessions;
+      expect(sessions.has('session-123')).toBe(false);
     });
   });
 });

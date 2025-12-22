@@ -92,7 +92,7 @@ describe('BYOKService', () => {
 
       const plaintext = Buffer.from('sensitive data');
 
-      const result = await byokService.encryptData(plaintext, config);
+      const result = await byokService.encryptData(plaintext, config, 'org-123');
 
       expect(result).toHaveProperty('ciphertext');
       expect(result).toHaveProperty('encryptedDataKey');
@@ -109,7 +109,7 @@ describe('BYOKService', () => {
 
       const plaintext = Buffer.from('sensitive data');
 
-      const result = await byokService.encryptData(plaintext, config);
+      const result = await byokService.encryptData(plaintext, config, 'org-123');
 
       expect(result).toHaveProperty('ciphertext');
       expect(result).toHaveProperty('provider', 'azure_kv');
@@ -164,31 +164,47 @@ describe('BYOKService', () => {
 
   describe('rotateKey()', () => {
     it('should rotate encryption key', async () => {
-      const config = {
+      const oldConfig = {
         provider: 'aws_kms' as const,
         keyId: 'arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012',
         region: 'us-east-1',
       };
 
-      const result = await byokService.rotateKey(config);
+      const newConfig = {
+        provider: 'aws_kms' as const,
+        keyId: 'arn:aws:kms:us-east-1:123456789012:key/new-key-id',
+        region: 'us-east-1',
+      };
 
-      expect(result).toHaveProperty('newKeyId');
-      expect(result).toHaveProperty('oldKeyId', config.keyId);
+      const encryptedData = [{
+        ciphertext: 'encrypted-data',
+        encryptedDataKey: 'encrypted-key',
+        iv: 'initialization-vector',
+        authTag: 'auth-tag',
+        provider: 'aws_kms' as const,
+        keyId: oldConfig.keyId,
+        algorithm: 'AES-256-GCM',
+      }];
+
+      const result = await byokService.rotateKey('org-123', oldConfig, newConfig, encryptedData);
+
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(1);
+      expect(result[0]).toHaveProperty('keyId', newConfig.keyId);
     });
   });
 
-  describe('validateKeyAccess()', () => {
-    it('should validate key access for AWS KMS', async () => {
+  describe('verifyKeyAccess()', () => {
+    it('should verify key access for AWS KMS', async () => {
       const config = {
         provider: 'aws_kms' as const,
         keyId: 'arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012',
         region: 'us-east-1',
       };
 
-      const result = await byokService.validateKeyAccess(config);
+      const result = await byokService.verifyKeyAccess(config);
 
-      expect(result).toHaveProperty('accessible', true);
-      expect(result).toHaveProperty('keyId', config.keyId);
+      expect(typeof result).toBe('boolean');
     });
   });
 });

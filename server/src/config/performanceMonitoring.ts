@@ -128,10 +128,10 @@ class PerformanceMonitor {
    */
   private sendToMonitoring(metric: PerformanceMetric): void {
     // Add to Sentry transaction
-    const transaction = monitoring.startTransaction(
-      `${metric.method} ${metric.endpoint}`,
-      'http.server'
-    );
+    const transaction = monitoring.startTransaction({
+      name: `${metric.method} ${metric.endpoint}`,
+      op: 'http.server',
+    });
 
     if (transaction) {
       transaction.setData('responseTime', metric.responseTime);
