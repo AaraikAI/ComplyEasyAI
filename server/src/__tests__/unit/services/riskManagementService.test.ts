@@ -5,6 +5,12 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock, createMockRiskItem } from '../../mocks/prisma';
 
+// Mock the database - MUST be before importing modules that use it
+jest.mock('../../../config/database', () => ({
+  __esModule: true,
+  default: prismaMock,
+}));
+
 // Mock dependencies
 jest.mock('../../../config/logger', () => ({
   __esModule: true,
