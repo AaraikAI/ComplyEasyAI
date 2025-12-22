@@ -1,175 +1,71 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="101" failures="90" errors="0" time="5.466">
-  <testsuite name="ComplianceAsCodeService" errors="0" failures="6" skipped="0" timestamp="2025-12-21T23:52:59" time="2.204" tests="7">
-    <testcase classname="ComplianceAsCodeService createPolicy() should create a new compliance policy" name="ComplianceAsCodeService createPolicy() should create a new compliance policy" time="0.271">
-      <failure>Error: Failed to create compliance policy
-    at ComplianceAsCodeService.createPolicy (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:121:13)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:63:22)</failure>
+<testsuites name="jest tests" tests="101" failures="66" errors="0" time="4.818">
+  <testsuite name="AuditLogger" errors="0" failures="0" skipped="0" timestamp="2025-12-22T00:14:58" time="2.063" tests="18">
+    <testcase classname="AuditLogger log() should create an audit log entry successfully" name="AuditLogger log() should create an audit log entry successfully" time="0.123">
     </testcase>
-    <testcase classname="ComplianceAsCodeService evaluatePolicy() should evaluate policy and return allowed result" name="ComplianceAsCodeService evaluatePolicy() should evaluate policy and return allowed result" time="0.004">
-      <failure>Error: Policy evaluation failed
-    at ComplianceAsCodeService.evaluatePolicy (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:221:13)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:82:52)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    <testcase classname="AuditLogger log() should include optional metadata in audit log" name="AuditLogger log() should include optional metadata in audit log" time="0.005">
     </testcase>
-    <testcase classname="ComplianceAsCodeService evaluatePolicy() should detect policy violations" name="ComplianceAsCodeService evaluatePolicy() should detect policy violations" time="0.005">
+    <testcase classname="AuditLogger log() should include IP address and user agent when provided" name="AuditLogger log() should include IP address and user agent when provided" time="0.004">
     </testcase>
-    <testcase classname="ComplianceAsCodeService evaluateMultiplePolicies() should evaluate multiple policies" name="ComplianceAsCodeService evaluateMultiplePolicies() should evaluate multiple policies" time="0.004">
-      <failure>Error: Batch policy evaluation failed
-    at ComplianceAsCodeService.evaluateMultiplePolicies (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:260:13)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:128:22)</failure>
+    <testcase classname="AuditLogger log() should handle database errors gracefully" name="AuditLogger log() should handle database errors gracefully" time="0.004">
     </testcase>
-    <testcase classname="ComplianceAsCodeService generateComplianceReport() should generate compliance report" name="ComplianceAsCodeService generateComplianceReport() should generate compliance report" time="0.004">
-      <failure>Error: Compliance report generation failed
-    at ComplianceAsCodeService.generateComplianceReport (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:304:13)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:141:22)</failure>
+    <testcase classname="AuditLogger log() should generate unique hashes for different entries" name="AuditLogger log() should generate unique hashes for different entries" time="0.004">
     </testcase>
-    <testcase classname="ComplianceAsCodeService integrateWithCI() should set up CI integration" name="ComplianceAsCodeService integrateWithCI() should set up CI integration" time="0.003">
-      <failure>TypeError: complianceAsCodeService_1.default.integrateWithCI is not a function
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:164:52)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    <testcase classname="AuditLogger logBatch() should create multiple audit log entries in batch" name="AuditLogger logBatch() should create multiple audit log entries in batch" time="0.004">
     </testcase>
-    <testcase classname="ComplianceAsCodeService detectDrift() should detect compliance drift" name="ComplianceAsCodeService detectDrift() should detect compliance drift" time="0.003">
-      <failure>TypeError: complianceAsCodeService_1.default.detectDrift is not a function
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:176:52)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    <testcase classname="AuditLogger logBatch() should handle batch errors gracefully" name="AuditLogger logBatch() should handle batch errors gracefully" time="0.004">
+    </testcase>
+    <testcase classname="AuditLogger query() should query audit logs with filters" name="AuditLogger query() should query audit logs with filters" time="0.005">
+    </testcase>
+    <testcase classname="AuditLogger query() should support date range filtering" name="AuditLogger query() should support date range filtering" time="0.004">
+    </testcase>
+    <testcase classname="AuditLogger query() should support pagination" name="AuditLogger query() should support pagination" time="0.01">
+    </testcase>
+    <testcase classname="AuditLogger getStatistics() should calculate audit log statistics" name="AuditLogger getStatistics() should calculate audit log statistics" time="0.004">
+    </testcase>
+    <testcase classname="AuditLogger getStatistics() should support time range for statistics" name="AuditLogger getStatistics() should support time range for statistics" time="0.003">
+    </testcase>
+    <testcase classname="AuditLogger getStatistics() should handle null userId and resourceType" name="AuditLogger getStatistics() should handle null userId and resourceType" time="0.004">
+    </testcase>
+    <testcase classname="AuditLogger cleanup() should delete old audit logs based on retention period" name="AuditLogger cleanup() should delete old audit logs based on retention period" time="0.004">
+    </testcase>
+    <testcase classname="AuditLogger cleanup() should support organization-specific cleanup" name="AuditLogger cleanup() should support organization-specific cleanup" time="0.003">
+    </testcase>
+    <testcase classname="AuditLogger export() should export audit logs as JSON" name="AuditLogger export() should export audit logs as JSON" time="0.005">
+    </testcase>
+    <testcase classname="AuditLogger export() should export audit logs as CSV" name="AuditLogger export() should export audit logs as CSV" time="0.004">
+    </testcase>
+    <testcase classname="AuditLogger export() should handle missing user data in CSV export" name="AuditLogger export() should handle missing user data in CSV export" time="0.003">
     </testcase>
   </testsuite>
-  <testsuite name="JITAccessService" errors="0" failures="5" skipped="0" timestamp="2025-12-21T23:52:59" time="2.225" tests="7">
-    <testcase classname="JITAccessService requestAccess() should create access request" name="JITAccessService requestAccess() should create access request" time="0.283">
+  <testsuite name="JITAccessService" errors="0" failures="2" skipped="0" timestamp="2025-12-22T00:14:59" time="0.431" tests="7">
+    <testcase classname="JITAccessService requestAccess() should create access request" name="JITAccessService requestAccess() should create access request" time="0.113">
     </testcase>
-    <testcase classname="JITAccessService requestAccess() should reject invalid reason for privilege level" name="JITAccessService requestAccess() should reject invalid reason for privilege level" time="0.019">
+    <testcase classname="JITAccessService requestAccess() should reject invalid reason for privilege level" name="JITAccessService requestAccess() should reject invalid reason for privilege level" time="0.02">
     </testcase>
-    <testcase classname="JITAccessService approveAccess() should approve access request" name="JITAccessService approveAccess() should approve access request" time="0.005">
+    <testcase classname="JITAccessService approveAccess() should approve access request" name="JITAccessService approveAccess() should approve access request" time="0.004">
       <failure>Error: JIT access approval failed
     at JITAccessService.approveAccess (/home/user/ComplyEasyAI/server/src/services/advanced/jitAccessService.ts:184:13)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/jitAccessService.test.ts:101:22)</failure>
     </testcase>
     <testcase classname="JITAccessService revokeAccess() should revoke active access session" name="JITAccessService revokeAccess() should revoke active access session" time="0.004">
-      <failure>TypeError: jitAccessService_1.default.revokeAccess is not a function
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/jitAccessService.test.ts:132:45)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="JITAccessService extendAccess() should extend access session duration" name="JITAccessService extendAccess() should extend access session duration" time="0.004">
-      <failure>TypeError: jitAccessService_1.default.extendAccess is not a function
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/jitAccessService.test.ts:159:45)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    <testcase classname="JITAccessService extendSession() should extend access session duration" name="JITAccessService extendSession() should extend access session duration" time="0.005">
+      <failure>Error: expect(received).toBeGreaterThan(expected)
+
+Expected: &gt; 1766366100393
+Received:   1766366100393
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/jitAccessService.test.ts:163:50)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
-    <testcase classname="JITAccessService getActiveSessions() should return active sessions for user" name="JITAccessService getActiveSessions() should return active sessions for user" time="0.003">
-      <failure>TypeError: jitAccessService_1.default.getActiveSessions is not a function
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/jitAccessService.test.ts:187:45)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    <testcase classname="JITAccessService getUserActiveSessions() should return active sessions for user" name="JITAccessService getUserActiveSessions() should return active sessions for user" time="0.004">
     </testcase>
-    <testcase classname="JITAccessService checkAccessExpiry() should automatically expire sessions after duration" name="JITAccessService checkAccessExpiry() should automatically expire sessions after duration" time="0.003">
-      <failure>TypeError: jitAccessService_1.default.checkAccessExpiry is not a function
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/jitAccessService.test.ts:218:30)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    <testcase classname="JITAccessService revokeSession() should revoke session when expired" name="JITAccessService revokeSession() should revoke session when expired" time="0.003">
     </testcase>
   </testsuite>
-  <testsuite name="HomomorphicAIService" errors="0" failures="7" skipped="0" timestamp="2025-12-21T23:52:59" time="2.233" tests="8">
-    <testcase classname="HomomorphicAIService initialize() should initialize SEAL library" name="HomomorphicAIService initialize() should initialize SEAL library" time="0.233">
+  <testsuite name="HomomorphicAIService" errors="0" failures="7" skipped="0" timestamp="2025-12-22T00:14:59" time="0.451" tests="8">
+    <testcase classname="HomomorphicAIService initialize() should initialize SEAL library" name="HomomorphicAIService initialize() should initialize SEAL library" time="0.102">
     </testcase>
     <testcase classname="HomomorphicAIService generateKeys() should generate keys for BFV scheme" name="HomomorphicAIService generateKeys() should generate keys for BFV scheme" time="0.004">
       <failure>Error: Failed to generate encryption keys
@@ -189,7 +85,7 @@
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/homomorphicAIService.test.ts:126:20)</failure>
     </testcase>
-    <testcase classname="HomomorphicAIService encryptData() should encrypt data using CKKS scheme" name="HomomorphicAIService encryptData() should encrypt data using CKKS scheme" time="0.004">
+    <testcase classname="HomomorphicAIService encryptData() should encrypt data using CKKS scheme" name="HomomorphicAIService encryptData() should encrypt data using CKKS scheme" time="0.003">
       <failure>Error: Failed to generate encryption keys
     at HomomorphicAIService.generateKeys (/home/user/ComplyEasyAI/server/src/services/advanced/homomorphicAIService.ts:128:13)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
@@ -201,11 +97,11 @@
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/homomorphicAIService.test.ts:150:20)</failure>
     </testcase>
-    <testcase classname="HomomorphicAIService encryptedLinearRegression() should perform linear regression on encrypted data" name="HomomorphicAIService encryptedLinearRegression() should perform linear regression on encrypted data" time="0.008">
+    <testcase classname="HomomorphicAIService encryptedLinearRegression() should perform linear regression on encrypted data" name="HomomorphicAIService encryptedLinearRegression() should perform linear regression on encrypted data" time="0.003">
       <failure>Error: Failed to generate encryption keys
     at HomomorphicAIService.generateKeys (/home/user/ComplyEasyAI/server/src/services/advanced/homomorphicAIService.ts:128:13)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/homomorphicAIService.test.ts:175:20)</failure>
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/homomorphicAIService.test.ts:174:20)</failure>
     </testcase>
     <testcase classname="HomomorphicAIService encryptedStatistics() should compute statistics on encrypted data" name="HomomorphicAIService encryptedStatistics() should compute statistics on encrypted data" time="0.003">
       <failure>Error: Failed to generate encryption keys
@@ -214,14 +110,14 @@
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/homomorphicAIService.test.ts:201:20)</failure>
     </testcase>
   </testsuite>
-  <testsuite name="BYOKService" errors="0" failures="8" skipped="0" timestamp="2025-12-21T23:52:59" time="2.22" tests="8">
-    <testcase classname="BYOKService generateDataKey() should generate data key using AWS KMS" name="BYOKService generateDataKey() should generate data key using AWS KMS" time="0.234">
+  <testsuite name="BYOKService" errors="0" failures="7" skipped="0" timestamp="2025-12-22T00:14:59" time="0.451" tests="8">
+    <testcase classname="BYOKService generateDataKey() should generate data key using AWS KMS" name="BYOKService generateDataKey() should generate data key using AWS KMS" time="0.108">
       <failure>Error: Failed to generate data encryption key
     at BYOKService.generateDataKey (/home/user/ComplyEasyAI/server/src/services/advanced/byokService.ts:113:13)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/byokService.test.ts:64:22)</failure>
     </testcase>
-    <testcase classname="BYOKService generateDataKey() should generate data key using Azure Key Vault" name="BYOKService generateDataKey() should generate data key using Azure Key Vault" time="0.004">
+    <testcase classname="BYOKService generateDataKey() should generate data key using Azure Key Vault" name="BYOKService generateDataKey() should generate data key using Azure Key Vault" time="0.005">
       <failure>Error: Failed to generate data encryption key
     at BYOKService.generateDataKey (/home/user/ComplyEasyAI/server/src/services/advanced/byokService.ts:113:13)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
@@ -254,126 +150,28 @@
     <testcase classname="BYOKService rotateKey() should rotate encryption key" name="BYOKService rotateKey() should rotate encryption key" time="0.003">
       <failure>Error: Key rotation failed
     at BYOKService.rotateKey (/home/user/ComplyEasyAI/server/src/services/advanced/byokService.ts:504:13)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/byokService.test.ts:173:40)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/byokService.test.ts:189:22)</failure>
     </testcase>
-    <testcase classname="BYOKService validateKeyAccess() should validate key access for AWS KMS" name="BYOKService validateKeyAccess() should validate key access for AWS KMS" time="0.003">
-      <failure>TypeError: byokService_1.default.validateKeyAccess is not a function
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/byokService.test.ts:188:40)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
+    <testcase classname="BYOKService verifyKeyAccess() should verify key access for AWS KMS" name="BYOKService verifyKeyAccess() should verify key access for AWS KMS" time="0.004">
     </testcase>
   </testsuite>
-  <testsuite name="ZeroKnowledgeService" errors="0" failures="3" skipped="0" timestamp="2025-12-21T23:53:01" time="0.241" tests="6">
-    <testcase classname="ZeroKnowledgeService generateComplianceProof() should generate compliance proof" name="ZeroKnowledgeService generateComplianceProof() should generate compliance proof" time="0.005">
-    </testcase>
-    <testcase classname="ZeroKnowledgeService generateComplianceProof() should handle insufficient compliance threshold" name="ZeroKnowledgeService generateComplianceProof() should handle insufficient compliance threshold" time="0.003">
-    </testcase>
-    <testcase classname="ZeroKnowledgeService verifyComplianceProof() should verify compliance proof" name="ZeroKnowledgeService verifyComplianceProof() should verify compliance proof" time="0.004">
-    </testcase>
-    <testcase classname="ZeroKnowledgeService generateOwnershipProof() should generate ownership proof" name="ZeroKnowledgeService generateOwnershipProof() should generate ownership proof" time="0.003">
-      <failure>Error: Failed to generate zero-knowledge ownership proof
-    at ZeroKnowledgeService.generateOwnershipProof (/home/user/ComplyEasyAI/server/src/services/advanced/zeroKnowledgeService.ts:152:13)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/zeroKnowledgeService.test.ts:130:49)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-    <testcase classname="ZeroKnowledgeService generateCredentialProof() should generate credential proof" name="ZeroKnowledgeService generateCredentialProof() should generate credential proof" time="0.004">
-      <failure>Error: Failed to generate zero-knowledge credential proof
-    at ZeroKnowledgeService.generateCredentialProof (/home/user/ComplyEasyAI/server/src/services/advanced/zeroKnowledgeService.ts:213:13)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/zeroKnowledgeService.test.ts:147:49)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-    <testcase classname="ZeroKnowledgeService verifyProof() should verify generic proof" name="ZeroKnowledgeService verifyProof() should verify generic proof" time="0.003">
-      <failure>TypeError: zeroKnowledgeService_1.default.verifyProof is not a function
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/zeroKnowledgeService.test.ts:167:49)
-    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
-    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
-    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
-    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
-    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
-    </testcase>
-  </testsuite>
-  <testsuite name="BlockchainService" errors="0" failures="6" skipped="0" timestamp="2025-12-21T23:53:01" time="0.267" tests="8">
+  <testsuite name="BlockchainService" errors="0" failures="6" skipped="0" timestamp="2025-12-22T00:15:00" time="0.264" tests="8">
     <testcase classname="BlockchainService initialize() should initialize blockchain providers successfully" name="BlockchainService initialize() should initialize blockchain providers successfully" time="0.004">
     </testcase>
     <testcase classname="BlockchainService initialize() should handle initialization errors gracefully" name="BlockchainService initialize() should handle initialization errors gracefully" time="0.003">
     </testcase>
-    <testcase classname="BlockchainService recordAuditLog() should record audit log on blockchain" name="BlockchainService recordAuditLog() should record audit log on blockchain" time="0.004">
+    <testcase classname="BlockchainService recordAuditLog() should record audit log on blockchain" name="BlockchainService recordAuditLog() should record audit log on blockchain" time="0.003">
       <failure>Error: Blockchain audit log recording failed
     at BlockchainService.recordAuditLog (/home/user/ComplyEasyAI/server/src/services/advanced/blockchainService.ts:162:13)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:73:22)</failure>
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:96:22)</failure>
     </testcase>
     <testcase classname="BlockchainService recordAuditLog() should create correct data hash" name="BlockchainService recordAuditLog() should create correct data hash" time="0.003">
       <failure>Error: Blockchain audit log recording failed
     at BlockchainService.recordAuditLog (/home/user/ComplyEasyAI/server/src/services/advanced/blockchainService.ts:162:13)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:90:22)</failure>
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:113:22)</failure>
     </testcase>
     <testcase classname="BlockchainService verifyAuditLog() should verify audit log on blockchain" name="BlockchainService verifyAuditLog() should verify audit log on blockchain" time="0.005">
       <failure>Error: expect(received).toHaveProperty(path)
@@ -382,19 +180,19 @@ Expected path: &quot;verified&quot;
 Received path: []
 
 Received value: {&quot;exists&quot;: false}
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:107:22)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:130:22)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
     <testcase classname="BlockchainService recordComplianceProof() should record compliance proof on blockchain" name="BlockchainService recordComplianceProof() should record compliance proof on blockchain" time="0.003">
       <failure>Error: Blockchain compliance proof recording failed
     at BlockchainService.recordComplianceProof (/home/user/ComplyEasyAI/server/src/services/advanced/blockchainService.ts:397:13)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:124:46)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:147:46)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
     <testcase classname="BlockchainService issueComplianceCertificate() should issue compliance certificate" name="BlockchainService issueComplianceCertificate() should issue compliance certificate" time="0.003">
       <failure>Error: Certificate issuance failed
     at BlockchainService.issueComplianceCertificate (/home/user/ComplyEasyAI/server/src/services/advanced/blockchainService.ts:468:13)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:136:46)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:162:46)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
     <testcase classname="BlockchainService verifyComplianceCertificate() should verify compliance certificate" name="BlockchainService verifyComplianceCertificate() should verify compliance certificate" time="0.004">
@@ -404,223 +202,76 @@ Expected path: &quot;framework&quot;
 Received path: []
 
 Received value: {&quot;valid&quot;: false}
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:159:22)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/blockchainService.test.ts:182:22)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)</failure>
     </testcase>
   </testsuite>
-  <testsuite name="RiskManagementService" errors="0" failures="11" skipped="0" timestamp="2025-12-21T23:52:59" time="3.179" tests="11">
-    <testcase classname="RiskManagementService createRiskAssessment() should create a new risk assessment" name="RiskManagementService createRiskAssessment() should create a new risk assessment" time="0.783">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskAssessment.create()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:27:52
-
-  24   methodology?: string;
-  25   userId: string;
-  26 }) {
-→ 27   const assessment = await prisma.riskAssessment.create(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.createRiskAssessment (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:27:24)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:50:22)</failure>
+  <testsuite name="ComplianceAsCodeService" errors="0" failures="5" skipped="0" timestamp="2025-12-22T00:15:00" time="0.238" tests="7">
+    <testcase classname="ComplianceAsCodeService createPolicy() should create a new compliance policy" name="ComplianceAsCodeService createPolicy() should create a new compliance policy" time="0.004">
+      <failure>Error: Failed to create compliance policy
+    at ComplianceAsCodeService.createPolicy (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:121:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:63:22)</failure>
     </testcase>
-    <testcase classname="RiskManagementService addRiskToAssessment() should add a risk item to an assessment" name="RiskManagementService addRiskToAssessment() should add a risk item to an assessment" time="0.061">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskItem.create()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:71:40
-
-  68 
-  69 const severity = this.calculateRiskSeverity(riskScore);
-  70 
-→ 71 const risk = await prisma.riskItem.create(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.addRiskToAssessment (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:71:18)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:80:22)</failure>
+    <testcase classname="ComplianceAsCodeService evaluatePolicy() should evaluate policy and return allowed result" name="ComplianceAsCodeService evaluatePolicy() should evaluate policy and return allowed result" time="0.004">
+      <failure>Error: Policy evaluation failed
+    at ComplianceAsCodeService.evaluatePolicy (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:221:13)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:82:52)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="RiskManagementService getRiskRegister() should return all risks for an organization" name="RiskManagementService getRiskRegister() should return all risks for an organization" time="0.059">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskItem.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
-
-  274     category?: string;
-  275   }
-  276 ) {
-→ 277   const risks = await prisma.riskItem.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:108:22)</failure>
+    <testcase classname="ComplianceAsCodeService evaluatePolicy() should detect policy violations" name="ComplianceAsCodeService evaluatePolicy() should detect policy violations" time="0.003">
     </testcase>
-    <testcase classname="RiskManagementService getRiskRegister() should filter risks by severity" name="RiskManagementService getRiskRegister() should filter risks by severity" time="0.032">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskItem.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
-
-  274     category?: string;
-  275   }
-  276 ) {
-→ 277   const risks = await prisma.riskItem.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:122:22)</failure>
+    <testcase classname="ComplianceAsCodeService evaluateMultiplePolicies() should evaluate multiple policies" name="ComplianceAsCodeService evaluateMultiplePolicies() should evaluate multiple policies" time="0.009">
+      <failure>Error: Batch policy evaluation failed
+    at ComplianceAsCodeService.evaluateMultiplePolicies (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:260:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:128:22)</failure>
     </testcase>
-    <testcase classname="RiskManagementService getRiskRegister() should filter risks by status" name="RiskManagementService getRiskRegister() should filter risks by status" time="0.038">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskItem.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
-
-  274     category?: string;
-  275   }
-  276 ) {
-→ 277   const risks = await prisma.riskItem.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:139:7)</failure>
+    <testcase classname="ComplianceAsCodeService generateComplianceReport() should generate compliance report" name="ComplianceAsCodeService generateComplianceReport() should generate compliance report" time="0.004">
+      <failure>Error: Compliance report generation failed
+    at ComplianceAsCodeService.generateComplianceReport (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:304:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:142:22)</failure>
     </testcase>
-    <testcase classname="RiskManagementService getRiskRegister() should filter risks by category" name="RiskManagementService getRiskRegister() should filter risks by category" time="0.033">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskItem.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
-
-  274     category?: string;
-  275   }
-  276 ) {
-→ 277   const risks = await prisma.riskItem.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:153:7)</failure>
+    <testcase classname="ComplianceAsCodeService setupCIIntegration() should set up CI integration" name="ComplianceAsCodeService setupCIIntegration() should set up CI integration" time="0.003">
     </testcase>
-    <testcase classname="RiskManagementService updateRiskRemediation() should update a risk remediation plan" name="RiskManagementService updateRiskRemediation() should update a risk remediation plan" time="0.033">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskItem.update()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:154:40
-
-  151   userId: string,
-  152   organizationId: string
-  153 ) {
-→ 154   const risk = await prisma.riskItem.update(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.updateRiskRemediation (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:154:18)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:174:22)</failure>
-    </testcase>
-    <testcase classname="RiskManagementService getRiskDashboard() should return comprehensive risk dashboard data" name="RiskManagementService getRiskDashboard() should return comprehensive risk dashboard data" time="0.032">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskItem.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:298:41
-
-  295  * Get risk dashboard
-  296  */
-  297 async getRiskDashboard(organizationId: string) {
-→ 298   const risks = await prisma.riskItem.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.getRiskDashboard (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:298:19)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:206:25)</failure>
-    </testcase>
-    <testcase classname="RiskManagementService getRiskHeatMap() should return risk heat map data" name="RiskManagementService getRiskHeatMap() should return risk heat map data" time="0.033">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskItem.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:378:41
-
-  375  * Get risk heat map data
-  376  */
-  377 async getRiskHeatMap(organizationId: string) {
-→ 378   const risks = await prisma.riskItem.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.getRiskHeatMap (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:378:19)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:225:23)</failure>
-    </testcase>
-    <testcase classname="RiskManagementService resolveRisk() should resolve a risk item" name="RiskManagementService resolveRisk() should resolve a risk item" time="0.04">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskItem.update()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:240:40
-
-  237   userId: string,
-  238   organizationId: string
-  239 ) {
-→ 240   const risk = await prisma.riskItem.update(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.resolveRisk (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:240:18)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:240:22)</failure>
-    </testcase>
-    <testcase classname="RiskManagementService getRiskAnalytics() should return risk analytics over time" name="RiskManagementService getRiskAnalytics() should return risk analytics over time" time="0.034">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.riskItem.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:424:41
-
-  421   };
-  422 }
-  423 
-→ 424 const risks = await prisma.riskItem.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at RiskManagementService.getRiskAnalytics (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:424:19)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:266:25)</failure>
+    <testcase classname="ComplianceAsCodeService generateComplianceReport() - drift detection should detect compliance drift in report" name="ComplianceAsCodeService generateComplianceReport() - drift detection should detect compliance drift in report" time="0.003">
+      <failure>Error: Compliance report generation failed
+    at ComplianceAsCodeService.generateComplianceReport (/home/user/ComplyEasyAI/server/src/services/advanced/complianceAsCodeService.ts:304:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/complianceAsCodeService.test.ts:177:22)</failure>
     </testcase>
   </testsuite>
-  <testsuite name="IssueManagementService" errors="0" failures="12" skipped="0" timestamp="2025-12-21T23:52:59" time="3.195" tests="12">
-    <testcase classname="IssueManagementService createIssue() should create a new issue" name="IssueManagementService createIssue() should create a new issue" time="0.754">
+  <testsuite name="ZeroKnowledgeService" errors="0" failures="0" skipped="0" timestamp="2025-12-22T00:15:00" time="0.196" tests="6">
+    <testcase classname="ZeroKnowledgeService generateComplianceProof() should generate compliance proof" name="ZeroKnowledgeService generateComplianceProof() should generate compliance proof" time="0.006">
+    </testcase>
+    <testcase classname="ZeroKnowledgeService generateComplianceProof() should handle insufficient compliance threshold" name="ZeroKnowledgeService generateComplianceProof() should handle insufficient compliance threshold" time="0.003">
+    </testcase>
+    <testcase classname="ZeroKnowledgeService verifyComplianceProof() should verify compliance proof" name="ZeroKnowledgeService verifyComplianceProof() should verify compliance proof" time="0.004">
+    </testcase>
+    <testcase classname="ZeroKnowledgeService generateOwnershipProof() should generate ownership proof" name="ZeroKnowledgeService generateOwnershipProof() should generate ownership proof" time="0.004">
+    </testcase>
+    <testcase classname="ZeroKnowledgeService generateCredentialProof() should generate credential proof" name="ZeroKnowledgeService generateCredentialProof() should generate credential proof" time="0.003">
+    </testcase>
+    <testcase classname="ZeroKnowledgeService verifyOwnershipProof() should verify ownership proof" name="ZeroKnowledgeService verifyOwnershipProof() should verify ownership proof" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="IssueManagementService" errors="0" failures="12" skipped="0" timestamp="2025-12-22T00:14:58" time="2.732" tests="12">
+    <testcase classname="IssueManagementService createIssue() should create a new issue" name="IssueManagementService createIssue() should create a new issue" time="0.251">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.create()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:32:38
@@ -639,7 +290,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.createIssue (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:32:19)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:38:22)</failure>
     </testcase>
-    <testcase classname="IssueManagementService createIssue() should set SLA target based on priority" name="IssueManagementService createIssue() should set SLA target based on priority" time="0.062">
+    <testcase classname="IssueManagementService createIssue() should set SLA target based on priority" name="IssueManagementService createIssue() should set SLA target based on priority" time="0.068">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.create()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:32:38
@@ -658,7 +309,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.createIssue (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:32:19)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:65:7)</failure>
     </testcase>
-    <testcase classname="IssueManagementService updateIssueStatus() should update an existing issue status" name="IssueManagementService updateIssueStatus() should update an existing issue status" time="0.037">
+    <testcase classname="IssueManagementService updateIssueStatus() should update an existing issue status" name="IssueManagementService updateIssueStatus() should update an existing issue status" time="0.042">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.findUnique()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:91:38
@@ -677,7 +328,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.updateIssueStatus (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:91:19)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:87:22)</failure>
     </testcase>
-    <testcase classname="IssueManagementService assignIssue() should assign issue to a user" name="IssueManagementService assignIssue() should assign issue to a user" time="0.038">
+    <testcase classname="IssueManagementService assignIssue() should assign issue to a user" name="IssueManagementService assignIssue() should assign issue to a user" time="0.039">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.update()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:149:38
@@ -696,7 +347,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.assignIssue (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:149:19)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:108:22)</failure>
     </testcase>
-    <testcase classname="IssueManagementService addComment() should add a comment to an issue" name="IssueManagementService addComment() should add a comment to an issue" time="0.062">
+    <testcase classname="IssueManagementService addComment() should add a comment to an issue" name="IssueManagementService addComment() should add a comment to an issue" time="0.041">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issueComment.create()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:192:47
@@ -715,7 +366,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.addComment (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:192:21)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:137:22)</failure>
     </testcase>
-    <testcase classname="IssueManagementService updateRemediationPlan() should update remediation plan for an issue" name="IssueManagementService updateRemediationPlan() should update remediation plan for an issue" time="0.033">
+    <testcase classname="IssueManagementService updateRemediationPlan() should update remediation plan for an issue" name="IssueManagementService updateRemediationPlan() should update remediation plan for an issue" time="0.064">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.update()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:249:38
@@ -734,7 +385,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.updateRemediationPlan (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:249:19)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:156:22)</failure>
     </testcase>
-    <testcase classname="IssueManagementService getIssueDashboard() should return issue dashboard metrics" name="IssueManagementService getIssueDashboard() should return issue dashboard metrics" time="0.033">
+    <testcase classname="IssueManagementService getIssueDashboard() should return issue dashboard metrics" name="IssueManagementService getIssueDashboard() should return issue dashboard metrics" time="0.064">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.findMany()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:309:39
@@ -753,7 +404,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.getIssueDashboard (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:309:20)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:184:25)</failure>
     </testcase>
-    <testcase classname="IssueManagementService getIssuesByOrganization() should return all issues for organization" name="IssueManagementService getIssuesByOrganization() should return all issues for organization" time="0.032">
+    <testcase classname="IssueManagementService getIssuesByOrganization() should return all issues for organization" name="IssueManagementService getIssuesByOrganization() should return all issues for organization" time="0.037">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.findMany()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:31
@@ -772,7 +423,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.getIssuesByOrganization (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:12)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:197:22)</failure>
     </testcase>
-    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by status" name="IssueManagementService getIssuesByOrganization() should filter by status" time="0.035">
+    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by status" name="IssueManagementService getIssuesByOrganization() should filter by status" time="0.045">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.findMany()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:31
@@ -791,7 +442,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.getIssuesByOrganization (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:12)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:205:7)</failure>
     </testcase>
-    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by priority" name="IssueManagementService getIssuesByOrganization() should filter by priority" time="0.033">
+    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by priority" name="IssueManagementService getIssuesByOrganization() should filter by priority" time="0.038">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.findMany()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:31
@@ -810,7 +461,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.getIssuesByOrganization (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:12)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:221:7)</failure>
     </testcase>
-    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by assignee" name="IssueManagementService getIssuesByOrganization() should filter by assignee" time="0.033">
+    <testcase classname="IssueManagementService getIssuesByOrganization() should filter by assignee" name="IssueManagementService getIssuesByOrganization() should filter by assignee" time="0.036">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.findMany()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:31
@@ -829,7 +480,7 @@ Please make sure your database server is running at `localhost:5432`.
     at IssueManagementService.getIssuesByOrganization (/home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:285:12)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:237:7)</failure>
     </testcase>
-    <testcase classname="IssueManagementService getOverdueIssues() should return all overdue issues for organization" name="IssueManagementService getOverdueIssues() should return all overdue issues for organization" time="0.033">
+    <testcase classname="IssueManagementService getOverdueIssues() should return all overdue issues for organization" name="IssueManagementService getOverdueIssues() should return all overdue issues for organization" time="0.039">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.issue.findMany()` invocation in
 /home/user/ComplyEasyAI/server/src/services/issueManagementService.ts:395:31
@@ -849,8 +500,219 @@ Please make sure your database server is running at `localhost:5432`.
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/issueManagementService.test.ts:261:22)</failure>
     </testcase>
   </testsuite>
-  <testsuite name="VendorRiskService" errors="0" failures="16" skipped="0" timestamp="2025-12-21T23:52:59" time="3.34" tests="16">
-    <testcase classname="VendorRiskService createVendor() should create a new vendor" name="VendorRiskService createVendor() should create a new vendor" time="0.8">
+  <testsuite name="RiskManagementService" errors="0" failures="11" skipped="0" timestamp="2025-12-22T00:14:58" time="2.731" tests="11">
+    <testcase classname="RiskManagementService createRiskAssessment() should create a new risk assessment" name="RiskManagementService createRiskAssessment() should create a new risk assessment" time="0.259">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskAssessment.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:27:52
+
+  24   methodology?: string;
+  25   userId: string;
+  26 }) {
+→ 27   const assessment = await prisma.riskAssessment.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.createRiskAssessment (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:27:24)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:50:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService addRiskToAssessment() should add a risk item to an assessment" name="RiskManagementService addRiskToAssessment() should add a risk item to an assessment" time="0.07">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.create()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:71:40
+
+  68 
+  69 const severity = this.calculateRiskSeverity(riskScore);
+  70 
+→ 71 const risk = await prisma.riskItem.create(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.addRiskToAssessment (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:71:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:80:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskRegister() should return all risks for an organization" name="RiskManagementService getRiskRegister() should return all risks for an organization" time="0.067">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
+
+  274     category?: string;
+  275   }
+  276 ) {
+→ 277   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:108:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskRegister() should filter risks by severity" name="RiskManagementService getRiskRegister() should filter risks by severity" time="0.042">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
+
+  274     category?: string;
+  275   }
+  276 ) {
+→ 277   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:122:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskRegister() should filter risks by status" name="RiskManagementService getRiskRegister() should filter risks by status" time="0.037">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
+
+  274     category?: string;
+  275   }
+  276 ) {
+→ 277   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:139:7)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskRegister() should filter risks by category" name="RiskManagementService getRiskRegister() should filter risks by category" time="0.039">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:41
+
+  274     category?: string;
+  275   }
+  276 ) {
+→ 277   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskRegister (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:277:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:153:7)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService updateRiskRemediation() should update a risk remediation plan" name="RiskManagementService updateRiskRemediation() should update a risk remediation plan" time="0.042">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.update()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:154:40
+
+  151   userId: string,
+  152   organizationId: string
+  153 ) {
+→ 154   const risk = await prisma.riskItem.update(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.updateRiskRemediation (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:154:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:174:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskDashboard() should return comprehensive risk dashboard data" name="RiskManagementService getRiskDashboard() should return comprehensive risk dashboard data" time="0.036">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:298:41
+
+  295  * Get risk dashboard
+  296  */
+  297 async getRiskDashboard(organizationId: string) {
+→ 298   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskDashboard (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:298:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:206:25)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskHeatMap() should return risk heat map data" name="RiskManagementService getRiskHeatMap() should return risk heat map data" time="0.043">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:378:41
+
+  375  * Get risk heat map data
+  376  */
+  377 async getRiskHeatMap(organizationId: string) {
+→ 378   const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskHeatMap (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:378:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:225:23)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService resolveRisk() should resolve a risk item" name="RiskManagementService resolveRisk() should resolve a risk item" time="0.068">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.update()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:240:40
+
+  237   userId: string,
+  238   organizationId: string
+  239 ) {
+→ 240   const risk = await prisma.riskItem.update(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.resolveRisk (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:240:18)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:240:22)</failure>
+    </testcase>
+    <testcase classname="RiskManagementService getRiskAnalytics() should return risk analytics over time" name="RiskManagementService getRiskAnalytics() should return risk analytics over time" time="0.038">
+      <failure>PrismaClientInitializationError: 
+Invalid `prisma.riskItem.findMany()` invocation in
+/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:424:41
+
+  421   };
+  422 }
+  423 
+→ 424 const risks = await prisma.riskItem.findMany(
+Can&apos;t reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
+    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
+    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
+    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
+    at RiskManagementService.getRiskAnalytics (/home/user/ComplyEasyAI/server/src/services/riskManagementService.ts:424:19)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/riskManagementService.test.ts:266:25)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="VendorRiskService" errors="0" failures="16" skipped="0" timestamp="2025-12-22T00:14:58" time="2.875" tests="16">
+    <testcase classname="VendorRiskService createVendor() should create a new vendor" name="VendorRiskService createVendor() should create a new vendor" time="0.258">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendor.create()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:30:40
@@ -869,7 +731,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.createVendor (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:30:20)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:38:22)</failure>
     </testcase>
-    <testcase classname="VendorRiskService createVendor() should calculate initial risk score based on data access" name="VendorRiskService createVendor() should calculate initial risk score based on data access" time="0.04">
+    <testcase classname="VendorRiskService createVendor() should calculate initial risk score based on data access" name="VendorRiskService createVendor() should calculate initial risk score based on data access" time="0.068">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendor.create()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:30:40
@@ -888,7 +750,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.createVendor (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:30:20)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:62:7)</failure>
     </testcase>
-    <testcase classname="VendorRiskService createVendorAssessment() should create a vendor security assessment" name="VendorRiskService createVendorAssessment() should create a vendor security assessment" time="0.036">
+    <testcase classname="VendorRiskService createVendorAssessment() should create a vendor security assessment" name="VendorRiskService createVendorAssessment() should create a vendor security assessment" time="0.046">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendorAssessment.create()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:80:54
@@ -907,7 +769,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.createVendorAssessment (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:80:24)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:89:22)</failure>
     </testcase>
-    <testcase classname="VendorRiskService completeVendorAssessment() should complete vendor assessment and update risk score" name="VendorRiskService completeVendorAssessment() should complete vendor assessment and update risk score" time="0.058">
+    <testcase classname="VendorRiskService completeVendorAssessment() should complete vendor assessment and update risk score" name="VendorRiskService completeVendorAssessment() should complete vendor assessment and update risk score" time="0.04">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendorAssessment.update()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:118:54
@@ -926,7 +788,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.completeVendorAssessment (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:118:24)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:124:22)</failure>
     </testcase>
-    <testcase classname="VendorRiskService createVendorReview() should schedule a vendor review" name="VendorRiskService createVendorReview() should schedule a vendor review" time="0.049">
+    <testcase classname="VendorRiskService createVendorReview() should schedule a vendor review" name="VendorRiskService createVendorReview() should schedule a vendor review" time="0.04">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendorReview.create()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:168:46
@@ -945,7 +807,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.createVendorReview (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:168:20)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:155:22)</failure>
     </testcase>
-    <testcase classname="VendorRiskService createVendorMonitor() should create a continuous monitor for vendor" name="VendorRiskService createVendorMonitor() should create a continuous monitor for vendor" time="0.037">
+    <testcase classname="VendorRiskService createVendorMonitor() should create a continuous monitor for vendor" name="VendorRiskService createVendorMonitor() should create a continuous monitor for vendor" time="0.06">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendorMonitor.create()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:252:48
@@ -964,7 +826,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.createVendorMonitor (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:252:21)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:183:22)</failure>
     </testcase>
-    <testcase classname="VendorRiskService updateVendorMonitorResults() should update monitor results" name="VendorRiskService updateVendorMonitorResults() should update monitor results" time="0.033">
+    <testcase classname="VendorRiskService updateVendorMonitorResults() should update monitor results" name="VendorRiskService updateVendorMonitorResults() should update monitor results" time="0.065">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendorMonitor.update()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:289:48
@@ -983,7 +845,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.updateVendorMonitorResults (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:289:21)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:216:22)</failure>
     </testcase>
-    <testcase classname="VendorRiskService updateVendorMonitorResults() should log alert for failing monitor status" name="VendorRiskService updateVendorMonitorResults() should log alert for failing monitor status" time="0.03">
+    <testcase classname="VendorRiskService updateVendorMonitorResults() should log alert for failing monitor status" name="VendorRiskService updateVendorMonitorResults() should log alert for failing monitor status" time="0.04">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendorMonitor.update()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:289:48
@@ -1002,7 +864,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.updateVendorMonitorResults (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:289:21)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:245:7)</failure>
     </testcase>
-    <testcase classname="VendorRiskService getVendorScorecard() should return comprehensive vendor scorecard" name="VendorRiskService getVendorScorecard() should return comprehensive vendor scorecard" time="0.034">
+    <testcase classname="VendorRiskService getVendorScorecard() should return comprehensive vendor scorecard" name="VendorRiskService getVendorScorecard() should return comprehensive vendor scorecard" time="0.042">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendor.findUnique()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:40
@@ -1021,7 +883,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.getVendorScorecard (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:20)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:277:25)</failure>
     </testcase>
-    <testcase classname="VendorRiskService getVendorScorecard() should throw error for non-existent vendor" name="VendorRiskService getVendorScorecard() should throw error for non-existent vendor" time="0.045">
+    <testcase classname="VendorRiskService getVendorScorecard() should throw error for non-existent vendor" name="VendorRiskService getVendorScorecard() should throw error for non-existent vendor" time="0.051">
       <failure>Error: expect(received).rejects.toThrow(expected)
 
 Expected substring: &quot;Vendor not found&quot;
@@ -1066,7 +928,7 @@ Please make sure your database server is running at `localhost:5432`.&quot;
     at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
     at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VendorRiskService getVendorRiskDashboard() should return vendor risk dashboard metrics" name="VendorRiskService getVendorRiskDashboard() should return vendor risk dashboard metrics" time="0.031">
+    <testcase classname="VendorRiskService getVendorRiskDashboard() should return vendor risk dashboard metrics" name="VendorRiskService getVendorRiskDashboard() should return vendor risk dashboard metrics" time="0.035">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendor.findMany()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:388:41
@@ -1085,7 +947,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.getVendorRiskDashboard (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:388:21)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:315:25)</failure>
     </testcase>
-    <testcase classname="VendorRiskService getVendorsByOrganization() should return all vendors for organization" name="VendorRiskService getVendorsByOrganization() should return all vendors for organization" time="0.032">
+    <testcase classname="VendorRiskService getVendorsByOrganization() should return all vendors for organization" name="VendorRiskService getVendorsByOrganization() should return all vendors for organization" time="0.04">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendor.findMany()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:32
@@ -1104,7 +966,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.getVendorsByOrganization (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:12)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:330:22)</failure>
     </testcase>
-    <testcase classname="VendorRiskService getVendorsByOrganization() should filter by risk level" name="VendorRiskService getVendorsByOrganization() should filter by risk level" time="0.03">
+    <testcase classname="VendorRiskService getVendorsByOrganization() should filter by risk level" name="VendorRiskService getVendorsByOrganization() should filter by risk level" time="0.039">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendor.findMany()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:32
@@ -1123,7 +985,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.getVendorsByOrganization (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:12)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:338:7)</failure>
     </testcase>
-    <testcase classname="VendorRiskService getVendorsByOrganization() should filter by data access" name="VendorRiskService getVendorsByOrganization() should filter by data access" time="0.031">
+    <testcase classname="VendorRiskService getVendorsByOrganization() should filter by data access" name="VendorRiskService getVendorsByOrganization() should filter by data access" time="0.033">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendor.findMany()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:32
@@ -1142,7 +1004,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.getVendorsByOrganization (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:469:12)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:354:7)</failure>
     </testcase>
-    <testcase classname="VendorRiskService calculateComplianceScore() should calculate compliance score based on certifications" name="VendorRiskService calculateComplianceScore() should calculate compliance score based on certifications" time="0.03">
+    <testcase classname="VendorRiskService calculateComplianceScore() should calculate compliance score based on certifications" name="VendorRiskService calculateComplianceScore() should calculate compliance score based on certifications" time="0.032">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendor.findUnique()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:40
@@ -1161,7 +1023,7 @@ Please make sure your database server is running at `localhost:5432`.
     at VendorRiskService.getVendorScorecard (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:20)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:386:25)</failure>
     </testcase>
-    <testcase classname="VendorRiskService calculateComplianceScore() should return partial score for some certifications" name="VendorRiskService calculateComplianceScore() should return partial score for some certifications" time="0.03">
+    <testcase classname="VendorRiskService calculateComplianceScore() should return partial score for some certifications" name="VendorRiskService calculateComplianceScore() should return partial score for some certifications" time="0.04">
       <failure>PrismaClientInitializationError: 
 Invalid `prisma.vendor.findUnique()` invocation in
 /home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:40
@@ -1179,260 +1041,6 @@ Please make sure your database server is running at `localhost:5432`.
     at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
     at VendorRiskService.getVendorScorecard (/home/user/ComplyEasyAI/server/src/services/vendorRiskService.ts:320:20)
     at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/vendorRiskService.test.ts:408:25)</failure>
-    </testcase>
-  </testsuite>
-  <testsuite name="AuditLogger" errors="0" failures="16" skipped="0" timestamp="2025-12-21T23:52:59" time="3.497" tests="18">
-    <testcase classname="AuditLogger log() should create an audit log entry successfully" name="AuditLogger log() should create an audit log entry successfully" time="0.798">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledTimes(expected)
-
-Expected number of calls: 1
-Received number of calls: 0
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:48:42)</failure>
-    </testcase>
-    <testcase classname="AuditLogger log() should include optional metadata in audit log" name="AuditLogger log() should include optional metadata in audit log" time="0.057">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
-
-Expected: {&quot;data&quot;: ObjectContaining {&quot;metadata&quot;: {&quot;format&quot;: &quot;csv&quot;, &quot;records&quot;: 100}}}
-
-Number of calls: 0
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:76:42)</failure>
-    </testcase>
-    <testcase classname="AuditLogger log() should include IP address and user agent when provided" name="AuditLogger log() should include IP address and user agent when provided" time="0.037">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledWith(...expected)
-
-Expected: {&quot;data&quot;: ObjectContaining {&quot;ipAddress&quot;: &quot;192.168.1.1&quot;, &quot;userAgent&quot;: &quot;Mozilla/5.0&quot;}}
-
-Number of calls: 0
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:97:42)</failure>
-    </testcase>
-    <testcase classname="AuditLogger log() should handle database errors gracefully" name="AuditLogger log() should handle database errors gracefully" time="0.04">
-    </testcase>
-    <testcase classname="AuditLogger log() should generate unique hashes for different entries" name="AuditLogger log() should generate unique hashes for different entries" time="0.07">
-      <failure>Error: expect(received).not.toBe(expected) // Object.is equality
-
-Expected: not undefined
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:149:29)</failure>
-    </testcase>
-    <testcase classname="AuditLogger logBatch() should create multiple audit log entries in batch" name="AuditLogger logBatch() should create multiple audit log entries in batch" time="0.032">
-      <failure>Error: expect(jest.fn()).toHaveBeenCalledTimes(expected)
-
-Expected number of calls: 1
-Received number of calls: 0
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:183:46)</failure>
-    </testcase>
-    <testcase classname="AuditLogger logBatch() should handle batch errors gracefully" name="AuditLogger logBatch() should handle batch errors gracefully" time="0.052">
-    </testcase>
-    <testcase classname="AuditLogger query() should query audit logs with filters" name="AuditLogger query() should query audit logs with filters" time="0.042">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:145:23
-
-  142 }
-  143 
-  144 const [logs, total] = await Promise.all([
-→ 145   prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at async Promise.all (index 0)
-    at Function.query (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:144:27)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:221:22)</failure>
-    </testcase>
-    <testcase classname="AuditLogger query() should support date range filtering" name="AuditLogger query() should support date range filtering" time="0.039">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:145:23
-
-  142 }
-  143 
-  144 const [logs, total] = await Promise.all([
-→ 145   prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at async Promise.all (index 0)
-    at Function.query (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:144:27)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:247:7)</failure>
-    </testcase>
-    <testcase classname="AuditLogger query() should support pagination" name="AuditLogger query() should support pagination" time="0.034">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:145:23
-
-  142 }
-  143 
-  144 const [logs, total] = await Promise.all([
-→ 145   prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at async Promise.all (index 0)
-    at Function.query (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:144:27)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:269:22)</failure>
-    </testcase>
-    <testcase classname="AuditLogger getStatistics() should calculate audit log statistics" name="AuditLogger getStatistics() should calculate audit log statistics" time="0.032">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:40
-
-  186   };
-  187 }
-  188 
-→ 189 const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.getStatistics (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:18)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:295:21)</failure>
-    </testcase>
-    <testcase classname="AuditLogger getStatistics() should support time range for statistics" name="AuditLogger getStatistics() should support time range for statistics" time="0.035">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:40
-
-  186   };
-  187 }
-  188 
-→ 189 const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.getStatistics (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:18)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:312:7)</failure>
-    </testcase>
-    <testcase classname="AuditLogger getStatistics() should handle null userId and resourceType" name="AuditLogger getStatistics() should handle null userId and resourceType" time="0.031">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:40
-
-  186   };
-  187 }
-  188 
-→ 189 const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.getStatistics (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:189:18)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:333:21)</failure>
-    </testcase>
-    <testcase classname="AuditLogger cleanup() should delete old audit logs based on retention period" name="AuditLogger cleanup() should delete old audit logs based on retention period" time="0.032">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.deleteMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:248:42
-
-  245   where.organizationId = organizationId;
-  246 }
-  247 
-→ 248 const result = await prisma.auditLog.deleteMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.cleanup (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:248:20)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:345:28)</failure>
-    </testcase>
-    <testcase classname="AuditLogger cleanup() should support organization-specific cleanup" name="AuditLogger cleanup() should support organization-specific cleanup" time="0.054">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.deleteMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:248:42
-
-  245   where.organizationId = organizationId;
-  246 }
-  247 
-→ 248 const result = await prisma.auditLog.deleteMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.cleanup (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:248:20)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:358:7)</failure>
-    </testcase>
-    <testcase classname="AuditLogger export() should export audit logs as JSON" name="AuditLogger export() should export audit logs as JSON" time="0.036">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:40
-
-  266   endDate: Date;
-  267   format?: &apos;json&apos; | &apos;csv&apos;;
-  268 }) {
-→ 269   const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.export (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:18)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:376:22)</failure>
-    </testcase>
-    <testcase classname="AuditLogger export() should export audit logs as CSV" name="AuditLogger export() should export audit logs as CSV" time="0.038">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:40
-
-  266   endDate: Date;
-  267   format?: &apos;json&apos; | &apos;csv&apos;;
-  268 }) {
-→ 269   const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.export (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:18)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:397:22)</failure>
-    </testcase>
-    <testcase classname="AuditLogger export() should handle missing user data in CSV export" name="AuditLogger export() should handle missing user data in CSV export" time="0.038">
-      <failure>PrismaClientInitializationError: 
-Invalid `prisma.auditLog.findMany()` invocation in
-/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:40
-
-  266   endDate: Date;
-  267   format?: &apos;json&apos; | &apos;csv&apos;;
-  268 }) {
-→ 269   const logs = await prisma.auditLog.findMany(
-Can&apos;t reach database server at `localhost:5432`
-
-Please make sure your database server is running at `localhost:5432`.
-    at $n.handleRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:7615)
-    at $n.handleAndLogRequestError (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6623)
-    at $n.request (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:121:6307)
-    at l (/home/user/ComplyEasyAI/server/node_modules/@prisma/client/runtime/library.js:130:9633)
-    at Function.export (/home/user/ComplyEasyAI/server/src/utils/auditLogger.ts:269:18)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/utils/auditLogger.test.ts:423:22)</failure>
     </testcase>
   </testsuite>
 </testsuites>
