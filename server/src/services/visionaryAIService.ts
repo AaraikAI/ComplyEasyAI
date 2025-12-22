@@ -234,7 +234,7 @@ export class VisionaryAIService {
     }
 
     // Use AI to generate comprehensive policy
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const prompt = `You are a compliance policy expert. Generate a comprehensive, enterprise-grade policy based on the following requirements:
 

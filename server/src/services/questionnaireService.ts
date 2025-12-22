@@ -223,7 +223,7 @@ export class QuestionnaireService {
     evidence: Record<string, unknown>;
   }> {
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
       // Build context from organization data
       const context = this.buildOrganizationContext(organization);

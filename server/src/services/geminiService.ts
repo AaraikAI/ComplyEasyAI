@@ -46,8 +46,9 @@ class GeminiService {
       const { redactedText, map } = redactPII(options.prompt);
       logger.info(`[AI Request] User: ${userId}, Redacted PII tokens: ${map.size}`);
 
+      // Use available model - gemini-2.0-flash is stable and available
       const model = genAI.getGenerativeModel({
-        model: options.model || 'gemini-1.5-flash',
+        model: options.model || 'gemini-2.0-flash',
       });
 
       const result = await model.generateContent({
@@ -70,11 +71,19 @@ class GeminiService {
     } catch (error: any) {
       logger.error('[Gemini API Error]', error);
 
-      if (error.message?.includes('quota')) {
-        throw new Error('AI service quota exceeded. Please try again later.');
+      if (error.message?.includes('quota') || error.message?.includes('429')) {
+        throw new Error('AI service quota exceeded. Please check your Google AI Studio quota or upgrade your plan.');
       }
 
-      throw new Error('Failed to generate AI response');
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        throw new Error('AI model not available. Please check your API key and model configuration.');
+      }
+
+      if (error.message?.includes('401') || error.message?.includes('403')) {
+        throw new Error('AI API authentication failed. Please check your API key.');
+      }
+
+      throw new Error(`Failed to generate AI response: ${error.message || 'Unknown error'}`);
     }
   }
 
