@@ -27,7 +27,7 @@ try {
     const vulnCount = Object.keys(auditData.vulnerabilities).length;
     console.log(`   Found ${vulnCount} vulnerabilities`);
     
-    Object.entries(auditData.vulnerabilities).forEach(([pkg, vuln]: [string, any]) => {
+    Object.entries(auditData.vulnerabilities).forEach(([pkg, vuln]) => {
       if (vuln.severity === 'high' || vuln.severity === 'critical') {
         auditResults.dependencyVulnerabilities.push({
           package: pkg,
