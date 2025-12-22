@@ -5,6 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import monitoring from '../config/monitoring';
+import performanceMonitor from '../config/performanceMonitoring';
 import logger from '../config/logger';
 
 /**
@@ -20,10 +21,12 @@ export function monitoringMiddleware(req: Request, res: Response, next: NextFunc
 
   // Add request context
   if (transaction) {
-    transaction.setData('method', req.method);
-    transaction.setData('path', req.path);
-    transaction.setData('query', req.query);
-    transaction.setData('ip', req.ip);
+    if (typeof transaction.setData === 'function') {
+      transaction.setData('method', req.method);
+      transaction.setData('path', req.path);
+      transaction.setData('query', req.query);
+      transaction.setData('ip', req.ip);
+    }
   }
 
   // Add breadcrumb
@@ -33,13 +36,23 @@ export function monitoringMiddleware(req: Request, res: Response, next: NextFunc
     {
       method: req.method,
       path: req.path,
-      statusCode: res.statusCode,
     }
   );
 
   // Track response
   res.on('finish', () => {
     const duration = Date.now() - startTime;
+
+    // Record performance metric
+    performanceMonitor.recordMetric({
+      endpoint: req.path,
+      method: req.method,
+      responseTime: duration,
+      statusCode: res.statusCode,
+      timestamp: new Date(),
+      userId: (req as any).user?.id,
+      organizationId: (req as any).user?.organizationId,
+    });
 
     // Log slow requests
     if (duration > 1000) {

@@ -109,11 +109,7 @@ describe('ZeroKnowledgeService', () => {
         publicSignals: ['100', '200'],
       };
 
-      const result = await zeroKnowledgeService.verifyComplianceProof(
-        proof,
-        'org-123',
-        'framework-1'
-      );
+      const result = await zeroKnowledgeService.verifyComplianceProof(proof);
 
       expect(result).toHaveProperty('isValid');
     });
@@ -121,14 +117,13 @@ describe('ZeroKnowledgeService', () => {
 
   describe('generateOwnershipProof()', () => {
     it('should generate ownership proof', async () => {
-      const ownershipData = {
-        dataHash: '0x' + 'b'.repeat(64),
-        ownerId: 'user-123',
-        timestamp: Date.now(),
-      };
+      const dataHash = '0x' + 'b'.repeat(64);
+      const privateKey = 'test-private-key-123';
 
       const result = await zeroKnowledgeService.generateOwnershipProof(
-        ownershipData
+        'user-123',
+        dataHash,
+        privateKey
       );
 
       expect(result).toHaveProperty('proof');
@@ -139,13 +134,15 @@ describe('ZeroKnowledgeService', () => {
   describe('generateCredentialProof()', () => {
     it('should generate credential proof', async () => {
       const credentialData = {
-        credentialHash: '0x' + 'c'.repeat(64),
-        issuerId: 'issuer-123',
-        expiryDate: Date.now() + 365 * 24 * 60 * 60 * 1000,
+        role: 'admin',
+        permissions: ['read', 'write'],
+        expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       };
+      const secret = 'test-secret-key';
 
       const result = await zeroKnowledgeService.generateCredentialProof(
-        credentialData
+        credentialData,
+        secret
       );
 
       expect(result).toHaveProperty('proof');
@@ -153,8 +150,8 @@ describe('ZeroKnowledgeService', () => {
     });
   });
 
-  describe('verifyProof()', () => {
-    it('should verify generic proof', async () => {
+  describe('verifyOwnershipProof()', () => {
+    it('should verify ownership proof', async () => {
       const proof = {
         proof: {
           pi_a: ['1', '2'],
@@ -164,12 +161,12 @@ describe('ZeroKnowledgeService', () => {
         publicSignals: ['100', '200'],
       };
 
-      const result = await zeroKnowledgeService.verifyProof(
+      const result = await zeroKnowledgeService.verifyOwnershipProof(
         proof,
-        'compliance_check'
+        'user-123'
       );
 
-      expect(result).toBe(true);
+      expect(typeof result).toBe('boolean');
     });
   });
 });

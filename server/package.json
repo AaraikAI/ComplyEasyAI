@@ -16,6 +16,7 @@
     "test:e2e": "NODE_OPTIONS=--max-old-space-size=4096 jest --testPathPattern=__tests__/e2e",
     "test:all": "NODE_OPTIONS=--max-old-space-size=4096 jest --testPathPattern='__tests__/(unit|integration|e2e)'",
     "test:single": "NODE_OPTIONS=--max-old-space-size=4096 jest --runInBand",
+    "test:performance": "NODE_OPTIONS=--max-old-space-size=4096 jest --testPathPattern=__tests__/performance",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
@@ -27,7 +28,10 @@
     "security:audit:fix": "npm audit fix",
     "security:check": "node scripts/security-audit.js",
     "performance:load": "node scripts/load-test.js",
-    "performance:profile": "node scripts/profile-queries.js"
+    "performance:profile": "node scripts/profile-queries.js",
+    "performance:test": "ts-node scripts/performance-test.ts",
+    "performance:optimize": "ts-node scripts/optimize-endpoints.ts",
+    "test:coverage:check": "npm run test:coverage && node -e \"const fs=require('fs');const cov=JSON.parse(fs.readFileSync('coverage/coverage-summary.json'));const total=cov.total.lines.pct;console.log('Coverage:',total+'%');process.exit(total>=80?0:1);\""
   },
   "dependencies": {
     "@aws-sdk/client-kms": "^3.699.0",
