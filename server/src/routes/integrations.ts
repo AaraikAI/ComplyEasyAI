@@ -162,6 +162,31 @@ router.delete(
 );
 
 // ============================================================================
+// AZURE
+// ============================================================================
+
+router.post(
+  '/azure/connect',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(integrationsController.connectAzure)
+);
+
+router.post(
+  '/azure/sync',
+  authenticate,
+  authorize('admin', 'editor'),
+  asyncHandler(integrationsController.syncAzureData)
+);
+
+router.delete(
+  '/azure',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(integrationsController.disconnectAzure)
+);
+
+// ============================================================================
 // GENERAL
 // ============================================================================
 
@@ -177,6 +202,22 @@ router.get(
   '/:provider',
   authenticate,
   asyncHandler(integrationsController.getIntegrationStatus)
+);
+
+// Generic connect endpoint for API key, PAT, username/password, etc.
+router.post(
+  '/:provider/connect',
+  authenticate,
+  authorize('admin', 'editor'),
+  asyncHandler(integrationsController.connectProvider)
+);
+
+// Generic authorize endpoint for unsupported providers (must come after specific routes)
+router.get(
+  '/:provider/authorize',
+  authenticate,
+  authorize('admin', 'editor'),
+  asyncHandler(integrationsController.authorizeProvider)
 );
 
 export default router;

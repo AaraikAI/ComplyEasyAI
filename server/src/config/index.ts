@@ -105,9 +105,9 @@ const config: Config = {
     publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     priceIds: {
-      basic: process.env.STRIPE_BASIC_PRICE_ID || '',
-      pro: process.env.STRIPE_PRO_PRICE_ID || '',
-      enterprise: process.env.STRIPE_ENTERPRISE_PRICE_ID || '',
+      basic: process.env.STRIPE_BASIC_PRICE_ID || 'Contact Us',
+      pro: process.env.STRIPE_PRO_PRICE_ID || 'Contact Us',
+      enterprise: process.env.STRIPE_ENTERPRISE_PRICE_ID || 'Contact Us',
     },
   },
   aws: {
@@ -185,6 +185,8 @@ export const validateConfig = (): void => {
   // Email Service (required for magic links)
   if (!process.env.SENDGRID_API_KEY) {
     errors.push('SENDGRID_API_KEY is required for email functionality');
+  } else if (!process.env.SENDGRID_API_KEY.startsWith('SG.')) {
+    errors.push('SENDGRID_API_KEY must start with "SG." - Please check your SendGrid API key');
   }
 
   if (!process.env.SENDGRID_FROM_EMAIL) {

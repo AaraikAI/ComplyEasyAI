@@ -1,11 +1,30 @@
-import React, { useState } from 'react';
-import { MOCK_AUDIT_LOGS } from '../constants';
-import { ShieldCheck, Search, Filter, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AuditLog } from '../types';
+import { api } from '../services/api';
+import { ShieldCheck, Search, Filter, Download, Loader2 } from 'lucide-react';
 
 export const AuditTrail: React.FC = () => {
   const [filterText, setFilterText] = useState('');
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredLogs = MOCK_AUDIT_LOGS.filter(log => 
+  useEffect(() => {
+    const loadAuditLogs = async () => {
+      try {
+        setIsLoading(true);
+        const logs = await api.audit.list();
+        setAuditLogs(logs);
+      } catch (error) {
+        console.error('Failed to load audit logs:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAuditLogs();
+  }, []);
+
+  const filteredLogs = auditLogs.filter(log => 
     log.action.toLowerCase().includes(filterText.toLowerCase()) ||
     log.user.toLowerCase().includes(filterText.toLowerCase()) ||
     log.hash.toLowerCase().includes(filterText.toLowerCase())
@@ -36,9 +55,15 @@ export const AuditTrail: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+      {isLoading ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 flex items-center justify-center">
+          <Loader2 className="animate-spin text-brand-600 mr-3" size={24} />
+          <span className="text-gray-600">Loading audit logs...</span>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
             <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="px-6 py-4 font-medium">Timestamp</th>
@@ -84,6 +109,7 @@ export const AuditTrail: React.FC = () => {
             <span className="text-xs text-gray-400">Showing recent activity. Older logs archived on-chain.</span>
         </div>
       </div>
+      )}
     </div>
   );
 };

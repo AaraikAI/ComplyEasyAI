@@ -71,8 +71,15 @@ class GeminiService {
     } catch (error: any) {
       logger.error('[Gemini API Error]', error);
 
-      if (error.message?.includes('quota') || error.message?.includes('429')) {
-        throw new Error('AI service quota exceeded. Please check your Google AI Studio quota or upgrade your plan.');
+      if (error.message?.includes('quota') || error.message?.includes('429') || error.code === 429) {
+        const quotaError = error.message || 'Quota exceeded';
+        logger.error('[Gemini Quota Error]', {
+          error: quotaError,
+          code: error.code,
+          status: error.status,
+          userId,
+        });
+        throw new Error('AI service quota exceeded. Please check your Google AI Studio quota (https://makersuite.google.com/app/apikey) or enable billing in Google Cloud Console for higher limits.');
       }
 
       if (error.message?.includes('404') || error.message?.includes('not found')) {

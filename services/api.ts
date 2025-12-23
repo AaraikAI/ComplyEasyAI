@@ -1,4 +1,4 @@
-import { User, RiskItem, ComplianceFramework, AuditLog } from '../types';
+import { User, RiskItem, ComplianceFramework, AuditLog, Integration } from '../types';
 
 // Backend API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -40,22 +40,54 @@ async function fetchAPI<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      clearAuthToken();
-      window.location.href = '/';
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearAuthToken();
+        window.location.href = '/';
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      const error = await response.json().catch(() => ({}));
+      const errorMessage = error.error || error.message || `HTTP ${response.status}: ${response.statusText}`;
+      
+      // For 501 (Not Implemented), include the full error object
+      if (response.status === 501) {
+        throw { message: errorMessage, status: 501, ...error };
+      }
+      
+      // Log detailed error for debugging
+      if (import.meta.env.DEV) {
+        console.error('API Error:', {
+          endpoint,
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          url: `${API_BASE_URL}${endpoint}`,
+        });
+      }
+      
+      throw new Error(errorMessage);
     }
 
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
+    return response.json();
+  } catch (error: any) {
+    // Handle network errors
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.error('Network error - Backend may be down:', {
+        endpoint,
+        url: `${API_BASE_URL}${endpoint}`,
+        apiBaseUrl: API_BASE_URL,
+      });
+      throw new Error(`Cannot connect to backend server. Please ensure the backend is running on ${API_BASE_URL.replace('/api', '')}`);
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 export const api = {
@@ -186,6 +218,60 @@ export const api = {
       return fetchAPI<ComplianceFramework>(`/frameworks/${id}`);
     },
 
+    exportControl: async (frameworkId: string, controlId: string) => {
+      return fetchAPI(`/frameworks/${frameworkId}/controls/${controlId}/export`);
+    },
+
+    createControl: async (frameworkId: string, control: { name: string; description?: string; status?: string }) => {
+      return fetchAPI(`/frameworks/${frameworkId}/controls`, {
+        method: 'POST',
+        body: JSON.stringify(control),
+      });
+    },
+
+    updateControl: async (frameworkId: string, controlId: string, updates: { status?: string; description?: string; evidence?: string }) => {
+      return fetchAPI(`/frameworks/${frameworkId}/controls/${controlId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    uploadEvidence: async (frameworkId: string, controlId: string, formData: FormData) => {
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/frameworks/${frameworkId}/controls/${controlId}/evidence`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || error.message || `HTTP ${response.status}`);
+      }
+
+      return response.json();
+    },
+
+    smartUpload: async (frameworkId: string, formData: FormData) => {
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/frameworks/${frameworkId}/smart-upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || error.message || `HTTP ${response.status}`);
+      }
+
+      return response.json();
+    },
+
     create: async (framework: Partial<ComplianceFramework>) => {
       return fetchAPI<ComplianceFramework>('/frameworks', {
         method: 'POST',
@@ -311,6 +397,110 @@ export const api = {
 
     getSubscription: async () => {
       return fetchAPI('/billing/subscription');
+    },
+  },
+
+  // --- Integrations ---
+  integrations: {
+    list: async () => {
+      const response = await fetchAPI<{ integrations: Integration[] }>('/integrations');
+      return response.integrations || [];
+    },
+
+    getStatus: async (provider: string) => {
+      return fetchAPI<Integration>(`/integrations/${provider}`);
+    },
+
+    authorize: async (provider: string) => {
+      return fetchAPI<{ authUrl: string }>(`/integrations/${provider}/authorize`);
+    },
+
+    sync: async (provider: string) => {
+      return fetchAPI(`/integrations/${provider}/sync`, {
+        method: 'POST',
+      });
+    },
+
+    disconnect: async (provider: string) => {
+      return fetchAPI(`/integrations/${provider}`, {
+        method: 'DELETE',
+      });
+    },
+
+    connectAWS: async (credentials: { accessKeyId: string; secretAccessKey: string; region: string }) => {
+      return fetchAPI('/integrations/aws/connect', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+    },
+
+    connectAzure: async (credentials: { subscriptionId: string; clientId: string; clientSecret: string; tenantId: string }) => {
+      return fetchAPI('/integrations/azure/connect', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+    },
+
+    connectWithApiKey: async (provider: string, credentials: { apiKey: string; baseUrl?: string }) => {
+      return fetchAPI(`/integrations/${provider}/connect`, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'api-key', ...credentials }),
+      });
+    },
+
+    connectWithApiKeySecret: async (provider: string, credentials: { apiKey: string; apiSecret: string; baseUrl?: string }) => {
+      return fetchAPI(`/integrations/${provider}/connect`, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'api-key-secret', ...credentials }),
+      });
+    },
+
+    connectWithUsernamePassword: async (provider: string, credentials: { username: string; password: string; baseUrl?: string; apiKey?: string }) => {
+      return fetchAPI(`/integrations/${provider}/connect`, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'username-password', ...credentials }),
+      });
+    },
+
+    connectWithServiceAccount: async (provider: string, credentials: { serviceAccountJson: any }) => {
+      return fetchAPI(`/integrations/${provider}/connect`, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'service-account', ...credentials }),
+      });
+    },
+
+    connectWithPat: async (provider: string, credentials: { token: string; baseUrl?: string }) => {
+      return fetchAPI(`/integrations/${provider}/connect`, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'pat', ...credentials }),
+      });
+    },
+  },
+
+  // --- Team Management ---
+  team: {
+    list: async () => {
+      return fetchAPI<User[]>('/team');
+    },
+
+    invite: async (name: string, email: string, role?: string) => {
+      return fetchAPI<User>('/team/invite', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, role }),
+      });
+    },
+
+    updateRole: async (userId: string, role: string) => {
+      return fetchAPI<User>(`/team/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role }),
+      });
+    },
+
+    remove: async (userId: string) => {
+      return fetchAPI(`/team/${userId}`, {
+        method: 'DELETE',
+      });
     },
   },
 };

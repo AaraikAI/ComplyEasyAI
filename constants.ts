@@ -128,7 +128,7 @@ export const MOCK_INTEGRATIONS: Integration[] = [
 export const PRICING_TIERS = [
   {
     name: 'Basic',
-    price: '$75',
+    price: '$150',
     period: '/mo',
     features: ['Core reports', '5 Frameworks', '20 Integrations', 'Email Support'],
     target: 'Small Teams',
@@ -136,16 +136,16 @@ export const PRICING_TIERS = [
   },
   {
     name: 'Pro',
-    price: '$200',
-    period: '/mo',
+    price: 'Contact Us',
+    //period: '/mo',
     features: ['Predictive AI', 'Vendor Management', '50+ Integrations', 'Priority Support'],
     target: 'Mid-SMBs',
     recommended: true,
   },
   {
     name: 'Enterprise',
-    price: '$500',
-    period: '/mo',
+    price: 'Contact Us',
+    //period: '/mo',
     features: ['Custom AI Agents', 'Unlimited Integrations', 'Dedicated Support', 'White-label'],
     target: 'Large SMBs/MSPs',
     recommended: false,

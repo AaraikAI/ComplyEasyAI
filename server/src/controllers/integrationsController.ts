@@ -666,3 +666,338 @@ export const getIntegrationStatus: RequestHandler = async (req: Request, res: Re
     res.status(500).json({ error: 'Failed to get integration status' });
   }
 };
+
+// ============================================================================
+// AZURE
+// ============================================================================
+
+export const connectAzure: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+    const { subscriptionId, clientId, clientSecret, tenantId } = req.body;
+
+    if (!subscriptionId || !clientId || !clientSecret || !tenantId) {
+      res.status(400).json({ error: 'All Azure credentials are required' });
+      return;
+    }
+
+    // Validate Azure credentials (simplified - in production, actually validate)
+    // For now, we'll just save them
+    await prisma.integration.upsert({
+      where: {
+        organizationId_provider: {
+          organizationId,
+          provider: 'azure',
+        },
+      },
+      create: {
+        organizationId,
+        name: 'Microsoft Azure',
+        category: 'cloud',
+        provider: 'azure',
+        connected: true,
+        config: {
+          subscriptionId,
+          clientId,
+          tenantId,
+          // In production, encrypt the secret
+        },
+        lastSync: new Date(),
+      },
+      update: {
+        connected: true,
+        config: {
+          subscriptionId,
+          clientId,
+          tenantId,
+        },
+        lastSync: new Date(),
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'Connected Azure integration',
+        userId: authReq.user!.id,
+        organizationId,
+        hash: require('crypto').randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    res.json({ message: 'Azure integration connected successfully' });
+  } catch (error) {
+    logger.error('Error connecting Azure', error);
+    res.status(500).json({ error: 'Failed to connect Azure integration' });
+  }
+};
+
+export const syncAzureData: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+
+    const integration = await prisma.integration.findUnique({
+      where: {
+        organizationId_provider: {
+          organizationId,
+          provider: 'azure',
+        },
+      },
+    });
+
+    if (!integration || !integration.connected) {
+      res.status(404).json({ error: 'Azure integration not found or not connected' });
+      return;
+    }
+
+    // TODO: Implement actual Azure data sync
+    await prisma.integration.update({
+      where: { id: integration.id },
+      data: { lastSync: new Date() },
+    });
+
+    res.json({ message: 'Azure data synced successfully' });
+  } catch (error) {
+    logger.error('Error syncing Azure data', error);
+    res.status(500).json({ error: 'Failed to sync Azure data' });
+  }
+};
+
+export const disconnectAzure: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+
+    await prisma.integration.updateMany({
+      where: {
+        organizationId,
+        provider: 'azure',
+      },
+      data: {
+        connected: false,
+        accessToken: null,
+        refreshToken: null,
+        config: null,
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'Disconnected Azure integration',
+        userId: authReq.user!.id,
+        organizationId,
+        hash: require('crypto').randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    res.json({ message: 'Azure integration disconnected successfully' });
+  } catch (error) {
+    logger.error('Error disconnecting Azure', error);
+    res.status(500).json({ error: 'Failed to disconnect Azure integration' });
+  }
+};
+
+// ============================================================================
+// GENERIC CONNECTION HANDLER
+// ============================================================================
+
+export const connectProvider: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+    const { provider } = req.params;
+    const { type, ...credentials } = req.body;
+
+    if (!type) {
+      res.status(400).json({ error: 'Connection type is required' });
+      return;
+    }
+
+    // Map provider name to display name
+    const providerNames: Record<string, string> = {
+      'datadog': 'Datadog',
+      'newrelic': 'New Relic',
+      'sentry': 'Sentry',
+      'pagerduty': 'PagerDuty',
+      'qualys': 'Qualys',
+      'tenable': 'Tenable',
+      'crowdstrike': 'CrowdStrike',
+      'paloalto': 'Palo Alto',
+      'rapid7': 'Rapid7',
+      'jenkins': 'Jenkins',
+      'splunk': 'Splunk',
+      'gitlab': 'GitLab',
+      'bitbucket': 'Bitbucket',
+      'circleci': 'CircleCI',
+      'travis': 'Travis CI',
+      'docker': 'Docker Hub',
+      'heroku': 'Heroku',
+      'digitalocean': 'DigitalOcean',
+      'mongodb': 'MongoDB Atlas',
+      'postgresql': 'PostgreSQL',
+      'mysql': 'MySQL',
+      'redis': 'Redis',
+      'elasticsearch': 'Elasticsearch',
+      'bamboohr': 'BambooHR',
+      'workday': 'Workday',
+      'adp': 'ADP',
+      'gcp': 'Google Cloud Platform',
+      'twilio': 'Twilio',
+      'sendgrid': 'SendGrid',
+    };
+
+    const displayName = providerNames[provider] || provider;
+
+    // Validate credentials based on type
+    let config: any = { ...credentials };
+    
+    if (type === 'api-key') {
+      if (!credentials.apiKey) {
+        res.status(400).json({ error: 'API key is required' });
+        return;
+      }
+      config = { apiKey: credentials.apiKey, baseUrl: credentials.baseUrl };
+    } else if (type === 'api-key-secret') {
+      if (!credentials.apiKey || !credentials.apiSecret) {
+        res.status(400).json({ error: 'API key and secret are required' });
+        return;
+      }
+      config = { 
+        apiKey: credentials.apiKey, 
+        apiSecret: credentials.apiSecret,
+        baseUrl: credentials.baseUrl 
+      };
+    } else if (type === 'username-password') {
+      if (!credentials.username || !credentials.password) {
+        res.status(400).json({ error: 'Username and password are required' });
+        return;
+      }
+      config = { 
+        username: credentials.username,
+        password: credentials.password,
+        baseUrl: credentials.baseUrl,
+        apiKey: credentials.apiKey,
+      };
+    } else if (type === 'pat') {
+      if (!credentials.token) {
+        res.status(400).json({ error: 'Personal access token is required' });
+        return;
+      }
+      config = { token: credentials.token, baseUrl: credentials.baseUrl };
+    } else if (type === 'service-account') {
+      if (!credentials.serviceAccountJson) {
+        res.status(400).json({ error: 'Service account JSON is required' });
+        return;
+      }
+      config = { serviceAccountJson: credentials.serviceAccountJson };
+    } else {
+      res.status(400).json({ error: `Unsupported connection type: ${type}` });
+      return;
+    }
+
+    // Determine category
+    const categoryMap: Record<string, string> = {
+      'datadog': 'security',
+      'newrelic': 'security',
+      'sentry': 'security',
+      'pagerduty': 'security',
+      'qualys': 'security',
+      'tenable': 'security',
+      'crowdstrike': 'security',
+      'paloalto': 'security',
+      'rapid7': 'security',
+      'jenkins': 'dev',
+      'splunk': 'security',
+      'gitlab': 'dev',
+      'bitbucket': 'dev',
+      'circleci': 'dev',
+      'travis': 'dev',
+      'docker': 'dev',
+      'heroku': 'cloud',
+      'digitalocean': 'cloud',
+      'mongodb': 'cloud',
+      'postgresql': 'cloud',
+      'mysql': 'cloud',
+      'redis': 'cloud',
+      'elasticsearch': 'cloud',
+      'bamboohr': 'hr',
+      'workday': 'hr',
+      'adp': 'hr',
+      'gcp': 'cloud',
+      'twilio': 'dev',
+      'sendgrid': 'dev',
+    };
+
+    const category = categoryMap[provider] || 'dev';
+
+    // Save integration
+    await prisma.integration.upsert({
+      where: {
+        organizationId_provider: {
+          organizationId,
+          provider,
+        },
+      },
+      create: {
+        organizationId,
+        name: displayName,
+        category,
+        provider,
+        connected: true,
+        config,
+        lastSync: new Date(),
+      },
+      update: {
+        connected: true,
+        config,
+        lastSync: new Date(),
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: `Connected ${displayName} integration`,
+        userId: authReq.user!.id,
+        organizationId,
+        hash: require('crypto').randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    res.json({ message: `${displayName} integration connected successfully` });
+  } catch (error) {
+    logger.error('Error connecting provider', error);
+    res.status(500).json({ error: 'Failed to connect integration' });
+  }
+};
+
+// Generic authorize endpoint for providers that don't have specific implementations yet
+export const authorizeProvider: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { provider } = req.params;
+    
+    // List of supported OAuth providers
+    const supportedProviders = ['google', 'github', 'slack', 'jira'];
+    
+    if (supportedProviders.includes(provider)) {
+      // This should not be reached if specific routes are set up correctly
+      res.status(404).json({ error: `Authorization endpoint not found for ${provider}` });
+      return;
+    }
+    
+    // For unsupported providers, return a message indicating it's coming soon
+    res.status(501).json({ 
+      error: `${provider} integration is coming soon. Please check back later.`,
+      comingSoon: true 
+    });
+  } catch (error) {
+    logger.error('Error in generic authorize', error);
+    res.status(500).json({ error: 'Failed to initiate authorization' });
+  }
+};

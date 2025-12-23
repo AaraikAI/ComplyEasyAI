@@ -11,27 +11,71 @@ export const generateComplianceReport = async (
   context: string
 ): Promise<string> => {
   try {
+    // Check if user is authenticated
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      return "Please log in to generate reports. Click the login button to get started.";
+    }
+
     const response: any = await api.ai.generateReport(framework, companyName, context);
     return response.report || "Failed to generate report.";
-  } catch (error) {
+  } catch (error: any) {
     console.error("AI Error:", error);
-    return "An error occurred while generating the report.";
+    const errorMessage = error?.message || 'Unknown error';
+    
+    if (errorMessage.includes('401') || errorMessage.includes('Authentication required') || errorMessage.includes('Invalid token')) {
+      return "Please log in to generate reports. Your session may have expired.";
+    }
+    if (errorMessage.includes('quota') || errorMessage.includes('429')) {
+      return "AI service quota exceeded. Please check your Google AI Studio quota (https://makersuite.google.com/app/apikey) or enable billing in Google Cloud Console for higher limits. The quota usually resets daily for free tier accounts.";
+    }
+    if (errorMessage.includes('Cannot connect') || errorMessage.includes('Network error') || errorMessage.includes('fetch')) {
+      return "Cannot connect to the backend server. Please ensure the server is running on port 3001.";
+    }
+    
+    return errorMessage || "An error occurred while generating the report.";
   }
 };
 
 export const chatWithComplianceBot = async (message: string): Promise<string> => {
   try {
+    // Check if user is authenticated
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      console.error('No auth token found');
+      return "Please log in to use the AI assistant. Click the login button to get started.";
+    }
+
     const response: any = await api.ai.chat(message);
     return response.response || "Error.";
   } catch (e: any) {
     console.error('Chat error:', e);
-    if (e?.message?.includes('401') || e?.message?.includes('No token')) {
-      return "Please log in to use the AI assistant.";
+    const errorMessage = e?.message || 'Unknown error';
+    
+    // Log full error details in development
+    if (import.meta.env.DEV) {
+      console.error('Full error details:', {
+        message: errorMessage,
+        error: e,
+        token: localStorage.getItem('authToken') ? 'Present' : 'Missing',
+      });
     }
-    if (e?.message?.includes('quota') || e?.message?.includes('429')) {
-      return "AI service quota exceeded. Please check your Google AI Studio quota.";
+    
+    if (errorMessage.includes('401') || errorMessage.includes('Authentication required') || errorMessage.includes('Invalid token') || errorMessage.includes('No token')) {
+      return "Please log in to use the AI assistant. Your session may have expired.";
     }
-    return e?.message || "Error. Please try again.";
+    if (errorMessage.includes('quota') || errorMessage.includes('429')) {
+      return "AI service quota exceeded. Please check your Google AI Studio quota (https://makersuite.google.com/app/apikey) or enable billing in Google Cloud Console for higher limits. The quota usually resets daily for free tier accounts.";
+    }
+    if (errorMessage.includes('Cannot connect') || errorMessage.includes('Network error') || errorMessage.includes('fetch')) {
+      return "Cannot connect to the backend server. Please ensure the server is running on port 3001.";
+    }
+    if (errorMessage.includes('Failed to get chat response')) {
+      return `The AI service encountered an error: ${errorMessage}. Please check your API configuration or try again.`;
+    }
+    
+    // Return the actual error message instead of generic "Error"
+    return errorMessage || "Error. Please try again.";
   }
 };
 
@@ -48,13 +92,29 @@ export const generateRemediationPlan = async (risk: string): Promise<string> => 
 
 export const generatePolicy = async (type: string, company: string, tone: string): Promise<string> => {
   try {
+    // Check if user is authenticated
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      return "Please log in to generate policies. Click the login button to get started.";
+    }
+
     const response: any = await api.ai.generatePolicy(type, company, tone);
     return response.policy || "Error.";
   } catch (e: any) {
     console.error('Policy generation error:', e);
-    return e?.message?.includes('quota') 
-      ? "AI service quota exceeded. Please check your Google AI Studio quota."
-      : e?.message || "Error generating policy. Please try again.";
+    const errorMessage = e?.message || 'Unknown error';
+    
+    if (errorMessage.includes('401') || errorMessage.includes('Authentication required') || errorMessage.includes('Invalid token')) {
+      return "Please log in to generate policies. Your session may have expired.";
+    }
+    if (errorMessage.includes('quota') || errorMessage.includes('429')) {
+      return "AI service quota exceeded. Please check your Google AI Studio quota (https://makersuite.google.com/app/apikey) or enable billing in Google Cloud Console for higher limits. The quota usually resets daily for free tier accounts.";
+    }
+    if (errorMessage.includes('Cannot connect') || errorMessage.includes('Network error') || errorMessage.includes('fetch')) {
+      return "Cannot connect to the backend server. Please ensure the server is running on port 3001.";
+    }
+    
+    return errorMessage || "Error generating policy. Please try again.";
   }
 };
 

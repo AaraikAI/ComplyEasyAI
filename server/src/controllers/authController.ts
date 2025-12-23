@@ -60,7 +60,19 @@ class AuthController {
       });
 
       // Send magic link email
-      await emailService.sendMagicLink(email, token);
+      try {
+        const emailSent = await emailService.sendMagicLink(email, token);
+        if (!emailSent) {
+          logger.warn(`Failed to send magic link email to ${email}, but continuing with token generation`);
+          // In development, we still return the token even if email fails
+        }
+      } catch (error: any) {
+        logger.error(`Failed to send magic link email to ${email}:`, error.message);
+        // In development mode, we still return the token for testing
+        if (process.env.NODE_ENV !== 'development') {
+          throw new AppError(`Failed to send email: ${error.message}`, 500);
+        }
+      }
 
       // In development, also return the token for testing (remove in production!)
       const response: any = {
