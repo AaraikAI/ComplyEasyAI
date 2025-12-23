@@ -2,7 +2,15 @@ import sgMail from '@sendgrid/mail';
 import config from '../config';
 import logger from '../config/logger';
 
-sgMail.setApiKey(config.sendgrid.apiKey);
+// Validate and set SendGrid API key
+if (!config.sendgrid.apiKey) {
+  logger.error('SENDGRID_API_KEY is not configured');
+} else if (!config.sendgrid.apiKey.startsWith('SG.')) {
+  logger.error(`Invalid SendGrid API key format. Key should start with "SG." but got: ${config.sendgrid.apiKey.substring(0, 10)}...`);
+  logger.error('Please check your SENDGRID_API_KEY in the .env file. SendGrid API keys start with "SG."');
+} else {
+  sgMail.setApiKey(config.sendgrid.apiKey);
+}
 
 export interface EmailOptions {
   to: string;
@@ -14,6 +22,22 @@ export interface EmailOptions {
 class EmailService {
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
+      // Check if SendGrid is configured
+      if (!config.sendgrid.apiKey) {
+        logger.error('SENDGRID_API_KEY is not configured. Cannot send email.');
+        throw new Error('Email service is not configured. Please set SENDGRID_API_KEY in your .env file.');
+      }
+
+      if (!config.sendgrid.apiKey.startsWith('SG.')) {
+        logger.error(`Invalid SendGrid API key format. Key should start with "SG."`);
+        throw new Error('Invalid SendGrid API key format. Please check your SENDGRID_API_KEY in the .env file.');
+      }
+
+      if (!config.sendgrid.fromEmail) {
+        logger.error('SENDGRID_FROM_EMAIL is not configured.');
+        throw new Error('Email sender is not configured. Please set SENDGRID_FROM_EMAIL in your .env file.');
+      }
+
       const msg = {
         to: options.to,
         from: {
@@ -26,11 +50,28 @@ class EmailService {
       };
 
       await sgMail.send(msg);
-      logger.info(`Email sent to ${options.to}`);
+      logger.info(`Email sent successfully to ${options.to}`);
       return true;
-    } catch (error) {
-      logger.error('Failed to send email', error);
-      return false;
+    } catch (error: any) {
+      logger.error('Failed to send email', {
+        error: error.message,
+        code: error.code,
+        response: error.response?.body,
+        to: options.to,
+      });
+      
+      // Provide more specific error messages
+      if (error.code === 401 || error.message?.includes('Unauthorized')) {
+        throw new Error('SendGrid API key is invalid. Please check your SENDGRID_API_KEY in the .env file.');
+      }
+      if (error.message?.includes('Forbidden') || error.code === 403) {
+        throw new Error('SendGrid API key does not have permission to send emails. Please verify your API key permissions.');
+      }
+      if (error.message?.includes('sender')) {
+        throw new Error(`SendGrid sender email "${config.sendgrid.fromEmail}" is not verified. Please verify it in SendGrid dashboard.`);
+      }
+      
+      throw error;
     }
   }
 

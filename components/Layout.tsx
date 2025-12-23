@@ -1,11 +1,11 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ViewState } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { MOCK_RISKS } from '../constants';
+import { api } from '../services/api';
 import { 
   LayoutDashboard, FileText, ShieldCheck, Settings, LogOut, Menu, X,
-  Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare
+  Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare, Layers
 } from 'lucide-react';
 import { ComplianceChat } from './ComplianceChat';
 
@@ -21,25 +21,45 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   // Calculate notifications
-  const notifications = useMemo(() => {
-    if (!user) return [];
-    const tasks = MOCK_RISKS.filter(r => r.assignedTo === user.name).map(r => ({
-      id: r.id,
-      title: 'Risk Assigned to You',
-      desc: r.description,
-      time: r.detectedAt,
-      type: 'task'
-    }));
-    
-    const system = [
-      { id: 'sys1', title: 'Audit Preparedness', desc: 'SOC 2 Audit is in 20 days.', time: '1 day ago', type: 'alert' }
-    ];
-    return [...tasks, ...system];
+  const [notifications, setNotifications] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const loadNotifications = async () => {
+      if (!user) {
+        setNotifications([]);
+        return;
+      }
+
+      try {
+        // Load risks assigned to user
+        const risks = await api.risks.list({ assignedTo: user.name });
+        const taskNotifications = risks.map(r => ({
+          id: r.id,
+          title: 'Risk Assigned to You',
+          desc: r.description,
+          time: r.detectedAt,
+          type: 'task'
+        }));
+        
+        // System notifications (can be enhanced with real data)
+        const system = [
+          { id: 'sys1', title: 'Audit Preparedness', desc: 'SOC 2 Audit is in 20 days.', time: '1 day ago', type: 'alert' }
+        ];
+        
+        setNotifications([...taskNotifications, ...system]);
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+        setNotifications([]);
+      }
+    };
+
+    loadNotifications();
   }, [user]);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'editor', 'viewer'], relatedViews: ['risks'] },
     { id: 'my-tasks', label: 'My Tasks', icon: CheckSquare, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'integrations', label: 'Integrations', icon: Layers, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'frameworks', label: 'Frameworks', icon: ShieldCheck, roles: ['admin', 'editor'], relatedViews: ['framework-details'] },
     { id: 'reports', label: 'Report Generator', icon: FileText, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'audit', label: 'Audit Trail', icon: Activity, roles: ['admin', 'editor'], relatedViews: [] },

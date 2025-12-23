@@ -21,20 +21,20 @@ describe('PaymentModal Component', () => {
   });
 
   it('renders correctly', () => {
-    render(<PaymentModal plan="Pro" price="$200" onClose={mockClose} onSuccess={mockSuccess} />);
+    render(<PaymentModal plan="Pro" price="Contact Us" onClose={mockClose} onSuccess={mockSuccess} />);
     expect(screen.getByText('Secure Checkout')).toBeInTheDocument();
-    expect(screen.getByText(/Pay \$200/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pay \Contact Us/i)).toBeInTheDocument();
   });
 
   it('formats card input', () => {
-    render(<PaymentModal plan="Pro" price="$200" onClose={mockClose} onSuccess={mockSuccess} />);
+    render(<PaymentModal plan="Pro" price="Contact Us" onClose={mockClose} onSuccess={mockSuccess} />);
     const input = screen.getByPlaceholderText('0000 0000 0000 0000');
     fireEvent.change(input, { target: { value: '1234567812345678' } });
     expect(input).toHaveValue('1234 5678 1234 5678');
   });
 
   it('submits payment successfully', async () => {
-    render(<PaymentModal plan="Pro" price="$200" onClose={mockClose} onSuccess={mockSuccess} />);
+    render(<PaymentModal plan="Pro" price="Contact Us" onClose={mockClose} onSuccess={mockSuccess} />);
     
     // Fill form
     const cardInput = screen.getByPlaceholderText('0000 0000 0000 0000');
@@ -45,7 +45,7 @@ describe('PaymentModal Component', () => {
     fireEvent.change(expiryInput, { target: { value: '12/30' } });
     fireEvent.change(cvcInput, { target: { value: '123' } });
 
-    const submitButton = screen.getByText(/Pay \$200/i);
+    const submitButton = screen.getByText(/Pay \Contact Us/i);
     fireEvent.click(submitButton);
 
     // Wait for success state

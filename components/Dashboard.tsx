@@ -28,10 +28,35 @@ const data = [
 ];
 
 export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavigate }) => {
-  // Calculate average score - handle empty frameworks gracefully
-  const avgScore = frameworks.length > 0 
-    ? Math.round(frameworks.reduce((acc, fw) => acc + fw.progress, 0) / frameworks.length)
-    : 0;
+  // Calculate compliance score dynamically based on actual control statuses
+  const calculateComplianceScore = () => {
+    if (frameworks.length === 0) return 0;
+
+    let totalControls = 0;
+    let compliantControls = 0;
+
+    frameworks.forEach((fw: any) => {
+      // If framework has controls array, calculate from actual control statuses
+      if (fw.controls && Array.isArray(fw.controls)) {
+        const frameworkControls = fw.controls.length;
+        const compliant = fw.controls.filter((c: any) => 
+          c.status === 'Implemented' || c.status === 'Compliant'
+        ).length;
+        totalControls += frameworkControls;
+        compliantControls += compliant;
+      } else {
+        // Fallback to progress percentage if controls not available
+        totalControls += 100;
+        compliantControls += fw.progress || 0;
+      }
+    });
+
+    return totalControls > 0 
+      ? Math.round((compliantControls / totalControls) * 100)
+      : 0;
+  };
+
+  const avgScore = calculateComplianceScore();
     
   const activeCount = frameworks.length;
   const criticalRiskCount = risks.filter(r => r.severity === 'High' && r.status !== 'Resolved').length;

@@ -1,16 +1,22 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Integration, Role } from '../types';
-import { MOCK_USERS, MOCK_INTEGRATIONS } from '../constants';
 import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { Save, User as UserIcon, Users, CreditCard, Layers, Power, Plus, X, Trash2, CheckCircle, RefreshCw, Upload } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
 
-export const Settings: React.FC = () => {
+interface SettingsProps {
+  onNavigateToIntegrations?: () => void;
+}
+
+export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) => {
+  const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'integrations' | 'billing'>('profile');
   
   // --- Team State ---
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [newMember, setNewMember] = useState({ name: '', email: '', role: 'viewer' as Role });
 
@@ -18,38 +24,85 @@ export const Settings: React.FC = () => {
   const [currentPlan, setCurrentPlan] = useState('Pro');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('Pro');
-  const [selectedPrice, setSelectedPrice] = useState('$200');
+  const [selectedPrice, setSelectedPrice] = useState('Contact Us');
 
   // --- Profile State ---
-  const [profileName, setProfileName] = useState('Sarah Connor');
-  const [profileEmail, setProfileEmail] = useState('sarah@complyeasy.ai');
+  const [profileName, setProfileName] = useState(currentUser?.name || '');
+  const [profileEmail, setProfileEmail] = useState(currentUser?.email || '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // --- Integrations State ---
-  const [integrations, setIntegrations] = useState<Integration[]>(MOCK_INTEGRATIONS);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [isLoadingIntegrations, setIsLoadingIntegrations] = useState(true);
+
+  // Load team members
+  useEffect(() => {
+    const loadTeamMembers = async () => {
+      try {
+        setIsLoadingUsers(true);
+        const teamMembers = await api.team.list();
+        setUsers(teamMembers);
+      } catch (error) {
+        console.error('Failed to load team members:', error);
+        // Fallback to current user if API fails
+        if (currentUser) {
+          setUsers([currentUser]);
+        }
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+
+    if (activeTab === 'team') {
+      loadTeamMembers();
+    }
+  }, [activeTab, currentUser]);
+
+  // Load integrations
+  useEffect(() => {
+    const loadIntegrations = async () => {
+      try {
+        setIsLoadingIntegrations(true);
+        const connectedIntegrations = await api.integrations.list();
+        // Ensure it's always an array
+        const integrationsArray = Array.isArray(connectedIntegrations) ? connectedIntegrations : [];
+        setIntegrations(integrationsArray);
+      } catch (error) {
+        console.error('Failed to load integrations:', error);
+        setIntegrations([]);
+      } finally {
+        setIsLoadingIntegrations(false);
+      }
+    };
+
+    if (activeTab === 'integrations') {
+      loadIntegrations();
+    }
+  }, [activeTab]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newUser: User = {
-      id: Date.now().toString(),
-      name: newMember.name,
-      email: newMember.email,
-      role: newMember.role,
-      avatar: newMember.name.substring(0, 2).toUpperCase(),
-      organizationId: 'org1'
-    };
-    // API call to invite/register new team member
-    await api.auth.register(newMember.name, newMember.email);
-    setUsers([...users, newUser]);
-    setShowInviteModal(false);
-    setNewMember({ name: '', email: '', role: 'viewer' });
+    try {
+      // API call to invite new team member
+      await api.team.invite(newMember.name, newMember.email, newMember.role);
+      
+      // Reload team members
+      const teamMembers = await api.team.list();
+      setUsers(teamMembers);
+      
+      setShowInviteModal(false);
+      setNewMember({ name: '', email: '', role: 'viewer' });
+    } catch (error: any) {
+      console.error('Failed to invite team member:', error);
+      alert(error.message || 'Failed to invite team member. Please try again.');
+    }
   };
 
   const openUpgrade = (plan: string) => {
     const priceMap: Record<string, string> = {
-      'Basic': '$75',
-      'Pro': '$200',
-      'Enterprise': '$500'
+      'Basic': 'Contact Us',
+      'Pro': 'Contact Us',
+      'Enterprise': 'Contact Us'
     };
     setSelectedPlan(plan);
     setSelectedPrice(priceMap[plan] || '$0');
@@ -66,11 +119,6 @@ export const Settings: React.FC = () => {
     setTimeout(() => setIsSavingProfile(false), 1000);
   };
 
-  const toggleIntegration = (id: string) => {
-    setIntegrations(prev => prev.map(int => 
-      int.id === id ? { ...int, connected: !int.connected, lastSync: !int.connected ? 'Just now' : int.lastSync } : int
-    ));
-  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[600px] flex flex-col md:flex-row overflow-hidden relative animate-fadeIn">
@@ -108,7 +156,7 @@ export const Settings: React.FC = () => {
                         <p className="text-brand-400 text-sm font-medium mb-1 uppercase tracking-wider">Current Subscription</p>
                         <h2 className="text-4xl font-bold mb-2">{currentPlan} Plan</h2>
                         <p className="text-slate-400 text-lg">
-                          {currentPlan === 'Basic' ? '$75' : currentPlan === 'Pro' ? '$200' : '$500'} / month
+                          {currentPlan === 'Basic' ? 'Contact Us' : currentPlan === 'Pro' ? 'Contact Us' : 'Contact Us'} / month
                         </p>
                       </div>
                       <span className="bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center shadow-sm">
@@ -123,9 +171,9 @@ export const Settings: React.FC = () => {
              <h4 className="font-bold text-gray-900 mb-4 text-lg">Available Plans</h4>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                {[
-                 { name: 'Basic', price: '$75', features: ['5 Frameworks', 'Email Support'] }, 
-                 { name: 'Pro', price: '$200', features: ['50+ Integrations', 'Predictive AI', 'Priority Support'] }, 
-                 { name: 'Enterprise', price: '$500', features: ['Unlimited', 'Dedicated Agent', 'SLA'] }
+                 { name: 'Basic', price: 'Contact Us', features: ['5 Frameworks', 'Email Support'] }, 
+                 { name: 'Pro', price: 'Contact Us', features: ['50+ Integrations', 'Predictive AI', 'Priority Support'] }, 
+                 { name: 'Enterprise', price: 'Contact Us', features: ['Unlimited', 'Dedicated Agent', 'SLA'] }
                ].map(plan => (
                  <div key={plan.name} className={`border rounded-xl p-5 flex flex-col transition-all hover:shadow-md ${currentPlan === plan.name ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500' : 'border-gray-200'}`}>
                     <div className="flex justify-between items-center mb-2">
@@ -228,29 +276,57 @@ export const Settings: React.FC = () => {
               </button>
             </div>
             
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-              {users.map((u, idx) => (
-                <div key={u.id} className={`p-4 flex justify-between items-center ${idx !== users.length - 1 ? 'border-b border-gray-100' : ''} hover:bg-gray-50 transition-colors`}>
-                  <div className="flex items-center space-x-3">
-                     <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-sm font-bold text-gray-600">
-                        {u.avatar}
-                     </div>
-                     <div>
-                        <p className="font-medium text-gray-900">{u.name}</p>
-                        <p className="text-xs text-gray-500">{u.email}</p>
-                     </div>
+            {isLoadingUsers ? (
+              <div className="bg-white border border-gray-200 rounded-xl p-12 flex items-center justify-center">
+                <RefreshCw className="animate-spin text-brand-600 mr-3" size={24} />
+                <span className="text-gray-600">Loading team members...</span>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                {users.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    <p>No team members found.</p>
                   </div>
-                  <div className="flex items-center space-x-4">
-                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                        {u.role}
-                     </span>
-                     <button className="text-gray-400 hover:text-red-500 transition-colors" title="Remove User">
-                        <Trash2 size={16} />
-                     </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ) : (
+                  users.map((u, idx) => (
+                    <div key={u.id} className={`p-4 flex justify-between items-center ${idx !== users.length - 1 ? 'border-b border-gray-100' : ''} hover:bg-gray-50 transition-colors`}>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-sm font-bold text-gray-600">
+                          {u.avatar}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{u.name}</p>
+                          <p className="text-xs text-gray-500">{u.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                          {u.role}
+                        </span>
+                        <button 
+                          onClick={async () => {
+                            if (confirm(`Remove ${u.name} from the team?`)) {
+                              try {
+                                await api.team.remove(u.id);
+                                const updated = await api.team.list();
+                                setUsers(updated);
+                              } catch (error) {
+                                console.error('Failed to remove team member:', error);
+                                alert('Failed to remove team member');
+                              }
+                            }
+                          }}
+                          className="text-gray-400 hover:text-red-500 transition-colors" 
+                          title="Remove User"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -262,43 +338,95 @@ export const Settings: React.FC = () => {
                    <h3 className="font-bold text-xl text-gray-900">Active Integrations</h3>
                    <p className="text-sm text-gray-500">Connect your stack to automate compliance collection.</p>
                  </div>
-                 <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 shadow-sm font-medium">
+                 <button 
+                   onClick={() => onNavigateToIntegrations?.()}
+                   className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 shadow-sm font-medium transition-colors"
+                 >
                     View Catalog
                  </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                 {integrations.map(int => (
+              {isLoadingIntegrations ? (
+                <div className="bg-white border border-gray-200 rounded-xl p-12 flex items-center justify-center">
+                  <RefreshCw className="animate-spin text-brand-600 mr-3" size={24} />
+                  <span className="text-gray-600">Loading integrations...</span>
+                </div>
+              ) : integrations.length === 0 ? (
+                <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
+                  <p className="text-gray-500 mb-4">No integrations connected yet.</p>
+                  <button
+                    onClick={() => onNavigateToIntegrations?.()}
+                    className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 transition-colors"
+                  >
+                    Browse Catalog
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {integrations.map(int => (
                     <div key={int.id} className="flex items-center justify-between p-5 border border-gray-200 rounded-xl bg-white hover:border-brand-200 transition-colors shadow-sm">
-                       <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center text-gray-500 border border-gray-100">
-                             {/* Basic Icon Logic */}
-                             {int.name === 'AWS' && <div className="font-bold text-orange-500">AWS</div>}
-                             {int.name === 'GitHub' && <div className="font-bold text-slate-800">GH</div>}
-                             {int.name === 'Google Workspace' && <div className="font-bold text-blue-500">GW</div>}
-                             {int.name === 'Slack' && <div className="font-bold text-purple-500">SL</div>}
-                             {int.name === 'Jira' && <div className="font-bold text-blue-600">JR</div>}
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center text-gray-500 border border-gray-100">
+                          {/* Basic Icon Logic */}
+                          {int.name === 'AWS' && <div className="font-bold text-orange-500">AWS</div>}
+                          {int.name === 'GitHub' && <div className="font-bold text-slate-800">GH</div>}
+                          {int.name === 'Google Workspace' && <div className="font-bold text-blue-500">GW</div>}
+                          {int.name === 'Slack' && <div className="font-bold text-purple-500">SL</div>}
+                          {int.name === 'Jira' && <div className="font-bold text-blue-600">JR</div>}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-gray-900">{int.name}</h4>
+                          <div className="flex items-center space-x-2 text-sm">
+                            <span className="text-gray-500">{int.category}</span>
+                            <span className="text-gray-300">•</span>
+                            <span className={`flex items-center ${int.connected ? 'text-green-600' : 'text-gray-400'}`}>
+                              {int.connected ? <CheckCircle size={12} className="mr-1"/> : <Power size={12} className="mr-1"/>}
+                              {int.connected ? `Synced ${int.lastSync}` : 'Disconnected'}
+                            </span>
                           </div>
-                          <div>
-                             <h4 className="font-bold text-gray-900">{int.name}</h4>
-                             <div className="flex items-center space-x-2 text-sm">
-                                <span className="text-gray-500">{int.category}</span>
-                                <span className="text-gray-300">•</span>
-                                <span className={`flex items-center ${int.connected ? 'text-green-600' : 'text-gray-400'}`}>
-                                   {int.connected ? <CheckCircle size={12} className="mr-1"/> : <Power size={12} className="mr-1"/>}
-                                   {int.connected ? `Synced ${int.lastSync}` : 'Disconnected'}
-                                </span>
-                             </div>
-                          </div>
-                       </div>
-                       
-                       <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" className="sr-only peer" checked={int.connected} onChange={() => toggleIntegration(int.id)} />
-                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
-                       </label>
+                        </div>
+                      </div>
+                      
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={int.connected} 
+                          onChange={async () => {
+                            try {
+                              const providerMap: Record<string, string> = {
+                                'AWS': 'aws',
+                                'Google Workspace': 'google',
+                                'GitHub': 'github',
+                                'Slack': 'slack',
+                                'Jira': 'jira',
+                              };
+                              const provider = providerMap[int.name] || int.id.toLowerCase();
+                              
+                              if (int.connected) {
+                                await api.integrations.disconnect(provider);
+                              } else {
+                                const response: any = await api.integrations.authorize(provider);
+                                if (response.authUrl) {
+                                  window.open(response.authUrl, '_blank');
+                                }
+                              }
+                              
+                              // Reload integrations
+                              const updated = await api.integrations.list();
+                              setIntegrations(updated);
+                            } catch (error) {
+                              console.error('Failed to toggle integration:', error);
+                              alert('Failed to toggle integration. Please try again.');
+                            }
+                          }} 
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                      </label>
                     </div>
-                 ))}
-              </div>
+                  ))}
+                </div>
+              )}
            </div>
         )}
       </div>

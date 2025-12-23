@@ -22,8 +22,21 @@ class AIController {
       );
 
       res.json({ report });
-    } catch (error) {
-      logger.error('Generate report error', error);
+    } catch (error: any) {
+      logger.error('Generate report error', {
+        error: error.message,
+        stack: error.stack,
+        userId: (req as AuthRequest).user?.id,
+      });
+
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      if (error.message && !error.message.includes('Failed to generate report')) {
+        throw new AppError(error.message, 500);
+      }
+
       throw new AppError('Failed to generate report', 500);
     }
   };
@@ -32,10 +45,28 @@ class AIController {
     try {
       const authReq = req as AuthRequest;
       const { type, company, tone } = req.body;
+
+      if (!type || !company || !tone) {
+        throw new AppError('Type, company, and tone are required', 400);
+      }
+
       const policy = await geminiService.generatePolicy(type, company, tone, authReq.user!.id);
       res.json({ policy });
-    } catch (error) {
-      logger.error('Generate policy error', error);
+    } catch (error: any) {
+      logger.error('Generate policy error', {
+        error: error.message,
+        stack: error.stack,
+        userId: (req as AuthRequest).user?.id,
+      });
+
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      if (error.message && !error.message.includes('Failed to generate policy')) {
+        throw new AppError(error.message, 500);
+      }
+
       throw new AppError('Failed to generate policy', 500);
     }
   };
@@ -128,10 +159,30 @@ class AIController {
     try {
       const authReq = req as AuthRequest;
       const { message } = req.body;
+
+      if (!message) {
+        throw new AppError('Message is required', 400);
+      }
+
       const response = await geminiService.chatWithBot(message, authReq.user!.id);
       res.json({ response });
-    } catch (error) {
-      logger.error('Chat error', error);
+    } catch (error: any) {
+      logger.error('Chat error', {
+        error: error.message,
+        stack: error.stack,
+        userId: (req as AuthRequest).user?.id,
+      });
+
+      // Preserve original error message if it's an AppError or has a meaningful message
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      // If it's an error from Gemini service, preserve the message
+      if (error.message && !error.message.includes('Failed to get chat response')) {
+        throw new AppError(error.message, 500);
+      }
+
       throw new AppError('Failed to get chat response', 500);
     }
   };

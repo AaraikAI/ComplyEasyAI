@@ -63,6 +63,15 @@ export interface ComplianceFramework {
   nextAuditDate: string;
   region?: string;
   organizationId?: string;
+  controls?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    status: string;
+    evidence?: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
 }
 
 // Database Schema: AuditLog
@@ -97,6 +106,7 @@ export type ViewState =
   | 'landing' 
   | 'dashboard' 
   | 'my-tasks'
+  | 'integrations'
   | 'reports' 
   | 'frameworks' 
   | 'framework-details' 

@@ -11,6 +11,7 @@ import { Frameworks } from './components/Frameworks';
 import { FrameworkDetails } from './components/FrameworkDetails';
 import { RiskManagement } from './components/RiskManagement';
 import { MyTasks } from './components/MyTasks';
+import { Integrations } from './components/Integrations';
 import { Settings } from './components/Settings';
 import { PolicyGenerator } from './components/AIFeatures/PolicyGenerator';
 import { ContractAnalyzer } from './components/AIFeatures/ContractAnalyzer';
@@ -84,13 +85,19 @@ const MainApp: React.FC = () => {
         return (
           <FrameworkDetails 
             framework={frameworks.find(f => f.id === selectedFrameworkId)} 
-            onBack={() => setCurrentView('frameworks')} 
+            onBack={() => {
+              loadData(); // Refresh data when going back
+              setCurrentView('frameworks');
+            }}
+            onDataChanged={loadData} // Refresh when controls are created/updated
           />
         );
       case 'risks':
         return <RiskManagement onBack={() => { loadData(); setCurrentView('dashboard'); }} />;
       case 'my-tasks':
         return <MyTasks />;
+      case 'integrations':
+        return <Integrations />;
       case 'ai-policy':
         return <PolicyGenerator onBack={() => setCurrentView('dashboard')} />;
       case 'ai-contract':
@@ -109,7 +116,7 @@ const MainApp: React.FC = () => {
         return <BCPGenerator onBack={() => setCurrentView('dashboard')} />;
       case 'settings':
         if (user?.role !== 'admin') return <div>Access Denied</div>;
-        return <Settings />;
+        return <Settings onNavigateToIntegrations={() => setCurrentView('integrations')} />;
       default:
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }

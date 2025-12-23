@@ -21,6 +21,7 @@ import frameworksRoutes from './routes/frameworks';
 import aiRoutes from './routes/ai';
 import billingRoutes from './routes/billing';
 import integrationsRoutes from './routes/integrations';
+import teamRoutes from './routes/team';
 
 // Enterprise Module Routes
 import personnelRoutes from './routes/personnel';
@@ -157,6 +158,7 @@ app.use('/api/frameworks', apiLimiter, frameworksRoutes);
 app.use('/api/ai', aiRoutes); // Has its own rate limiter
 app.use('/api/billing', billingRoutes);
 app.use('/api/integrations', apiLimiter, integrationsRoutes);
+app.use('/api/team', apiLimiter, teamRoutes);
 
 // Enterprise Module routes
 app.use('/api/personnel', apiLimiter, personnelRoutes);
