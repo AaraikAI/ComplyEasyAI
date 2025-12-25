@@ -431,18 +431,199 @@ class ACOSService {
    * Get all active control loops for an organization
    */
   async getActiveControlLoops(organizationId: string): Promise<ControlLoop[]> {
-    // In production, this would query a dedicated table
-    // For now, return empty array (can be enhanced)
-    return [];
+    try {
+      // Query from dedicated ControlLoop table
+      const loops = await prisma.controlLoop.findMany({
+        where: {
+          organizationId,
+          status: 'active',
+        },
+        include: {
+          control: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      });
+
+      return loops.map((loop: any) => ({
+        id: loop.id,
+        controlId: loop.controlId,
+        observeAgent: loop.observeAgent,
+        actAgent: loop.actAgent,
+        verifyAgent: loop.verifyAgent,
+        confidence: loop.confidence,
+        status: loop.status as 'active' | 'paused' | 'error',
+        lastObserved: loop.lastObserved,
+        lastActed: loop.lastActed,
+        lastVerified: loop.lastVerified,
+        cycleCount: loop.cycleCount,
+      }));
+    } catch (error) {
+      logger.error('[aCOS] Error getting active control loops', error);
+      return [];
+    }
   }
 
   /**
    * Get compliance goals for an organization
    */
   async getComplianceGoals(organizationId: string): Promise<ComplianceGoal[]> {
-    // In production, this would query a dedicated table
-    // For now, return empty array (can be enhanced)
-    return [];
+    try {
+      // Query from dedicated ComplianceGoal table
+      const goals = await prisma.complianceGoal.findMany({
+        where: {
+          organizationId,
+          status: 'active',
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return goals.map((goal: any) => ({
+        id: goal.id,
+        goalType: goal.goalType as 'maintain' | 'achieve' | 'improve',
+        frameworks: goal.frameworks,
+        riskTolerance: goal.riskTolerance as 'low' | 'medium' | 'high',
+        horizon: goal.horizon,
+        autoActionPolicy: goal.autoActionPolicy as 'conservative' | 'moderate' | 'aggressive',
+        targetScore: goal.targetScore,
+        createdAt: goal.createdAt,
+        updatedAt: goal.updatedAt,
+      }));
+    } catch (error) {
+      logger.error('[aCOS] Error getting compliance goals', error);
+      return [];
+    }
+  }
+
+  /**
+   * Update a control loop's status and metrics
+   */
+  async updateControlLoop(
+    loopId: string,
+    organizationId: string,
+    updates: {
+      status?: 'active' | 'paused' | 'error';
+      confidence?: number;
+      lastObserved?: Date;
+      lastActed?: Date;
+      lastVerified?: Date;
+      cycleCount?: number;
+    }
+  ): Promise<ControlLoop | null> {
+    try {
+      const updated = await prisma.controlLoop.update({
+        where: { id: loopId },
+        data: {
+          ...updates,
+          updatedAt: new Date(),
+        },
+      });
+
+      logger.info(`[aCOS] Control loop updated: ${loopId}`);
+
+      return {
+        id: updated.id,
+        controlId: updated.controlId,
+        observeAgent: updated.observeAgent,
+        actAgent: updated.actAgent,
+        verifyAgent: updated.verifyAgent,
+        confidence: updated.confidence,
+        status: updated.status as 'active' | 'paused' | 'error',
+        lastObserved: updated.lastObserved,
+        lastActed: updated.lastActed,
+        lastVerified: updated.lastVerified,
+        cycleCount: updated.cycleCount,
+      };
+    } catch (error) {
+      logger.error('[aCOS] Error updating control loop', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get compliance debt for an organization
+   */
+  async getComplianceDebts(organizationId: string): Promise<ComplianceDebt[]> {
+    try {
+      const debts = await prisma.complianceDebt.findMany({
+        where: {
+          organizationId,
+          resolvedAt: null,
+        },
+        orderBy: [
+          { severity: 'desc' },
+          { accumulatedAt: 'desc' },
+        ],
+      });
+
+      return debts.map((debt: any) => ({
+        id: debt.id,
+        organizationId: debt.organizationId,
+        frameworkId: debt.frameworkId,
+        debtType: debt.debtType as 'technical' | 'process' | 'documentation' | 'evidence',
+        severity: debt.severity as 'low' | 'medium' | 'high' | 'critical',
+        description: debt.description,
+        estimatedRemediationHours: debt.estimatedRemediationHours,
+        accumulatedAt: debt.accumulatedAt,
+        resolvedAt: debt.resolvedAt,
+      }));
+    } catch (error) {
+      logger.error('[aCOS] Error getting compliance debts', error);
+      return [];
+    }
+  }
+
+  /**
+   * Resolve compliance debt
+   */
+  async resolveComplianceDebt(debtId: string, userId: string): Promise<boolean> {
+    try {
+      await prisma.complianceDebt.update({
+        where: { id: debtId },
+        data: {
+          resolvedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+
+      logger.info(`[aCOS] Compliance debt resolved: ${debtId}`);
+      return true;
+    } catch (error) {
+      logger.error('[aCOS] Error resolving compliance debt', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get change impacts for an organization
+   */
+  async getChangeImpacts(organizationId: string): Promise<ChangeImpact[]> {
+    try {
+      const impacts = await prisma.changeImpact.findMany({
+        where: { organizationId },
+        orderBy: { forecastedAt: 'desc' },
+        take: 50,
+      });
+
+      return impacts.map((impact: any) => ({
+        id: impact.id,
+        organizationId: impact.organizationId,
+        changeType: impact.changeType as 'control' | 'policy' | 'framework' | 'integration',
+        changeId: impact.changeId,
+        affectedControls: impact.affectedControls,
+        affectedFrameworks: impact.affectedFrameworks,
+        impactScore: impact.impactScore,
+        riskIncrease: impact.riskIncrease,
+        estimatedComplianceChange: impact.estimatedComplianceChange,
+        forecastedAt: impact.forecastedAt,
+      }));
+    } catch (error) {
+      logger.error('[aCOS] Error getting change impacts', error);
+      return [];
+    }
   }
 }
 

@@ -53,7 +53,40 @@ router.post('/multimodal/analyze-video', upload.single('video'), asyncHandler(ac
 
 // Physical AI
 router.post('/physical-ai/register-device', authorize('admin'), asyncHandler(acosController.registerDevice));
+router.get('/physical-ai/devices', asyncHandler(acosController.getDevices));
 router.post('/physical-ai/devices/:deviceId/compliance-check', authorize('admin'), asyncHandler(acosController.performEdgeComplianceCheck));
+
+// VR Collaborative Review
+router.post('/vr/sessions', authorize('admin', 'editor'), asyncHandler(acosController.createVRSession));
+router.get('/vr/sessions', asyncHandler(acosController.getActiveVRSessions));
+router.post('/vr/sessions/:sessionId/join', asyncHandler(acosController.joinVRSession));
+router.post('/vr/sessions/:sessionId/start', authorize('admin', 'editor'), asyncHandler(acosController.startVRSession));
+router.post('/vr/sessions/:sessionId/end', authorize('admin', 'editor'), asyncHandler(acosController.endVRSession));
+router.post('/vr/sessions/:sessionId/annotations', asyncHandler(acosController.addVRAnnotation));
+router.post('/vr/training/scenarios', authorize('admin'), asyncHandler(acosController.createVRTrainingScenario));
+router.post('/vr/training/scenarios/:scenarioId/start', asyncHandler(acosController.startVRTraining));
+
+// Swarm Task Allocation
+router.post('/swarm-tasks/agents', authorize('admin'), asyncHandler(acosController.registerSwarmAgent));
+router.get('/swarm-tasks/agents', asyncHandler(acosController.getSwarmAgents));
+router.post('/swarm-tasks', authorize('admin', 'editor'), asyncHandler(acosController.submitSwarmTask));
+router.get('/swarm-tasks', asyncHandler(acosController.getActiveSwarmTasks));
+router.get('/swarm-tasks/:taskId', asyncHandler(acosController.getSwarmTaskStatus));
+router.post('/swarm-tasks/:taskId/cancel', authorize('admin'), asyncHandler(acosController.cancelSwarmTask));
+router.get('/swarm-tasks/metrics', asyncHandler(acosController.getSwarmMetrics));
+
+// Federated Swarm Extended
+router.get('/swarm/federation-status', asyncHandler(acosController.getFederationStatus));
+router.post('/swarm/participate', authorize('admin'), asyncHandler(acosController.participateInSwarm));
+
+// Regulatory Intelligence Fabric Extended
+router.get('/rif/changes', asyncHandler(acosController.getRegulatoryChanges));
+router.post('/rif/monitor-feeds', authorize('admin'), asyncHandler(acosController.monitorRegulatoryFeeds));
+
+// aCOS Extended
+router.get('/control-loops', asyncHandler(acosController.getControlLoops));
+router.get('/compliance-debts', asyncHandler(acosController.getComplianceDebts));
+router.get('/change-impacts', asyncHandler(acosController.getChangeImpacts));
 
 export default router;
 

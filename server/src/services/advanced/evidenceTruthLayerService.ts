@@ -173,9 +173,69 @@ class EvidenceTruthLayerService {
     evidenceId: string,
     organizationId: string
   ): Promise<EvidenceAnalysis['physicalAttestation']> {
-    // In production, this would query IoT sensors, edge devices, etc.
-    // For now, return undefined (no physical attestation available)
-    return undefined;
+    try {
+      // Query IoT devices for physical attestation data
+      const attestationLogs = await prisma.auditLog.findMany({
+        where: {
+          action: 'physical_ai.sensor_attestation',
+          organizationId,
+          timestamp: {
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+          },
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 5,
+      });
+
+      if (attestationLogs.length === 0) {
+        // Check for any IoT devices that can provide attestation
+        const devices = await prisma.ioTDevice.findMany({
+          where: {
+            organizationId,
+            complianceStatus: 'compliant',
+          },
+          take: 3,
+        });
+
+        if (devices.length > 0) {
+          // Generate attestation from available devices
+          const device = devices[0];
+          const sensorData = device.sensorData as any;
+
+          return {
+            sensorId: device.deviceId,
+            timestamp: device.lastSeen,
+            location: device.location,
+            deviceType: device.deviceType,
+            environmentalData: {
+              temperature: sensorData?.temperature,
+              humidity: sensorData?.humidity,
+              accessEvents: sensorData?.accessEvents || [],
+            },
+            integrityScore: device.complianceStatus === 'compliant' ? 0.9 : 0.5,
+          };
+        }
+
+        return undefined;
+      }
+
+      // Parse the most recent attestation
+      const latestAttestation = attestationLogs[0];
+      const attestationData = JSON.parse(latestAttestation.details || '{}');
+
+      return {
+        sensorId: attestationData.deviceId,
+        timestamp: new Date(attestationData.timestamp),
+        location: attestationData.location,
+        dataHash: attestationData.dataHash,
+        signature: attestationData.signature,
+        chainOfCustody: attestationData.chainOfCustody,
+        integrityScore: 0.95,
+      };
+    } catch (error) {
+      logger.error('[Evidence Truth Layer] Error getting physical attestation', error);
+      return undefined;
+    }
   }
 
   /**
