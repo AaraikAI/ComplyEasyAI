@@ -19,6 +19,7 @@ router.get('/:frameworkId/controls/:controlId/export', authorize('admin', 'edito
 // Control management
 router.post('/:frameworkId/controls', authorize('admin', 'editor'), asyncHandler(frameworksController.createControl.bind(frameworksController)));
 router.patch('/:frameworkId/controls/:controlId', authorize('admin', 'editor'), asyncHandler(frameworksController.updateControl.bind(frameworksController)));
+router.delete('/:frameworkId/controls/:controlId', authorize('admin', 'editor'), asyncHandler(frameworksController.deleteControl.bind(frameworksController)));
 
 // Evidence upload
 router.post('/:frameworkId/controls/:controlId/evidence', authorize('admin', 'editor'), upload.single('file'), asyncHandler(frameworksController.uploadEvidence.bind(frameworksController)));

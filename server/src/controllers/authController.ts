@@ -234,9 +234,99 @@ class AuthController {
     }
   }
 
+  async login(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        throw new AppError('Email and password are required', 400);
+      }
+
+      // Find user
+      const user = await prisma.user.findUnique({
+        where: { email },
+        include: { organization: true },
+      });
+
+      if (!user) {
+        throw new AppError('Invalid email or password', 401);
+      }
+
+      // Check if user has a password set
+      if (!user.passwordHash) {
+        throw new AppError('Password not set. Please use magic link login or set a password first.', 401);
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+      if (!isValidPassword) {
+        throw new AppError('Invalid email or password', 401);
+      }
+
+      // Check if 2FA is enabled
+      if (user.twoFactorEnabled && !user.twoFactorVerified) {
+        // Return user ID for 2FA verification
+        res.json({
+          requires2FA: true,
+          userId: user.id,
+          message: 'Two-factor authentication required',
+        });
+        return;
+      }
+
+      // Update last login
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() },
+      });
+
+      // Generate JWT tokens
+      const accessToken = generateToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        organizationId: user.organizationId,
+      });
+
+      const refreshToken = generateRefreshToken(user.id);
+
+      // Log authentication
+      await prisma.auditLog.create({
+        data: {
+          action: 'Password Login Success',
+          userId: user.id,
+          organizationId: user.organizationId,
+          hash: uuidv4(),
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        },
+      });
+
+      res.json({
+        accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          avatar: user.avatar,
+          organization: {
+            id: user.organization.id,
+            name: user.organization.name,
+          },
+        },
+      });
+    } catch (error) {
+      logger.error('Login error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to login', 500);
+    }
+  }
+
   async register(req: Request, res: Response): Promise<void> {
     try {
-      const { email, name, organizationName } = req.body;
+      const { email, name, organizationName, password } = req.body;
 
       if (!email || !name) {
         throw new AppError('Email and name are required', 400);
@@ -259,6 +349,9 @@ class AuthController {
         },
       });
 
+      // Hash password if provided
+      const passwordHash = password ? await bcrypt.hash(password, 10) : null;
+
       // Create user
       const user = await prisma.user.create({
         data: {
@@ -266,6 +359,7 @@ class AuthController {
           name,
           role: 'admin',
           organizationId: organization.id,
+          passwordHash,
         },
       });
 
@@ -387,6 +481,163 @@ class AuthController {
       logger.error('Complete 2FA login error', error);
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to complete 2FA login', 500);
+    }
+  }
+
+  async updateProfile(req: Request, res: Response): Promise<void> {
+    try {
+      const authReq = req as any;
+      const userId = authReq.user!.id;
+      const organizationId = authReq.user!.organizationId;
+      const { name, email } = req.body;
+
+      if (!name || name.trim().length === 0) {
+        throw new AppError('Name is required', 400);
+      }
+
+      if (name.length > 100) {
+        throw new AppError('Name is too long. Maximum 100 characters.', 400);
+      }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !emailRegex.test(email)) {
+        throw new AppError('Invalid email format', 400);
+      }
+
+      // Check for duplicate email (if changed)
+      const currentUser = await prisma.user.findUnique({ where: { id: userId } });
+      const emailChanged = email !== currentUser?.email;
+      
+      if (emailChanged) {
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+          throw new AppError('Email already in use', 409);
+        }
+      }
+
+      // If email changed, send confirmation emails
+      if (emailChanged && currentUser?.email) {
+        try {
+          const emailService = (await import('../services/emailService')).default;
+          
+          // Send email to old address
+          await emailService.sendEmail(
+            currentUser.email,
+            'Email Change Notification',
+            `Your email address for ComplyEasy AI has been changed from ${currentUser.email} to ${email}. If you did not make this change, please contact support immediately.`
+          );
+          
+          // Send confirmation email to new address
+          await emailService.sendEmail(
+            email,
+            'Email Change Confirmation',
+            `Your email address for ComplyEasy AI has been successfully changed to ${email}. Please verify this is correct.`
+          );
+        } catch (emailError) {
+          logger.warn('Failed to send email confirmation, but profile was updated', emailError);
+          // Continue with update even if email fails
+        }
+      }
+
+      // Update user
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name: name.trim(),
+          email: email.trim(),
+          emailVerified: emailChanged ? false : currentUser?.emailVerified, // Reset verification if email changed
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          avatar: true,
+          organizationId: true,
+        },
+      });
+
+      // Log audit
+      await prisma.auditLog.create({
+        data: {
+          action: emailChanged ? `Profile Updated - Email Changed from ${currentUser?.email} to ${email}` : 'Profile Updated',
+          details: `Name: ${name}, Email: ${email}`,
+          userId,
+          organizationId,
+          hash: uuidv4(),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
+      res.json(updatedUser);
+      logger.info(`User profile updated: ${userId}`);
+    } catch (error) {
+      logger.error('Update profile error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update profile', 500);
+    }
+  }
+
+  async changePassword(req: Request, res: Response): Promise<void> {
+    try {
+      const authReq = req as any;
+      const userId = authReq.user!.id;
+      const organizationId = authReq.user!.organizationId;
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        throw new AppError('Current password and new password are required', 400);
+      }
+
+      if (newPassword.length < 8) {
+        throw new AppError('New password must be at least 8 characters', 400);
+      }
+
+      // Get user with password hash
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { passwordHash: true, twoFactorEnabled: true },
+      });
+
+      if (!user || !user.passwordHash) {
+        throw new AppError('Password change not available for this account', 400);
+      }
+
+      // Verify current password
+      const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isValid) {
+        throw new AppError('Current password is incorrect', 401);
+      }
+
+      // Hash new password
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+      // Update password
+      await prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash: newPasswordHash },
+      });
+
+      // Log audit
+      await prisma.auditLog.create({
+        data: {
+          action: 'Password Changed',
+          userId,
+          organizationId,
+          hash: uuidv4(),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
+      res.json({ message: 'Password changed successfully' });
+      logger.info(`Password changed for user: ${userId}`);
+    } catch (error) {
+      logger.error('Change password error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to change password', 500);
     }
   }
 

@@ -34,8 +34,18 @@ class BillingController {
 
       const priceId = priceIdMap[plan];
 
-      if (!priceId) {
-        throw new AppError('Price configuration missing', 500);
+      // Check if priceId is valid (not 'Contact Us' placeholder)
+      if (!priceId || priceId === 'Contact Us' || !priceId.startsWith('price_')) {
+        // If Stripe is not configured, return a message instead of error
+        if (!config.stripe.secretKey || config.stripe.secretKey === '') {
+          throw new AppError('Stripe is not configured. Please contact support to upgrade your plan.', 503);
+        }
+        throw new AppError(`Price ID for ${plan} plan is not configured. Please contact support.`, 503);
+      }
+
+      // Check if Stripe service is available
+      if (!config.stripe.secretKey || config.stripe.secretKey === '') {
+        throw new AppError('Stripe is not configured. Please contact support to upgrade your plan.', 503);
       }
 
       const checkoutUrl = await stripeService.createCheckoutSession({

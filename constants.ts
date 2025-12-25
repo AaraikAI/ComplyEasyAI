@@ -48,11 +48,83 @@ export const INITIAL_FRAMEWORKS: ComplianceFramework[] = [
 ];
 
 export const AVAILABLE_FRAMEWORKS = [
-  { name: FrameworkType.HIPAA, region: 'US', description: 'Healthcare data protection' },
-  { name: FrameworkType.ISO27001, region: 'Global', description: 'Information security management' },
-  { name: FrameworkType.PCI_DSS, region: 'Global', description: 'Payment card industry security' },
-  { name: FrameworkType.CCPA, region: 'US-CA', description: 'California consumer privacy' },
-  { name: FrameworkType.NIST, region: 'US', description: 'Federal information systems security' },
+  // Core Frameworks
+  { name: FrameworkType.SOC2, region: 'Global', description: 'Service Organization Control 2 - Trust services criteria' },
+  { name: FrameworkType.GDPR, region: 'EU', description: 'General Data Protection Regulation - EU data privacy' },
+  { name: FrameworkType.HIPAA, region: 'US', description: 'Health Insurance Portability and Accountability Act - Healthcare data protection' },
+  { name: FrameworkType.ISO27001, region: 'Global', description: 'ISO/IEC 27001 - Information security management system' },
+  { name: FrameworkType.PCI_DSS, region: 'Global', description: 'Payment Card Industry Data Security Standard' },
+  { name: FrameworkType.CCPA, region: 'US-CA', description: 'California Consumer Privacy Act' },
+  { name: FrameworkType.NIST, region: 'US', description: 'NIST 800-53 - Federal information systems security' },
+  
+  // Additional Compliance Frameworks
+  { name: 'ISO 27017', region: 'Global', description: 'Cloud security controls and guidelines' },
+  { name: 'ISO 27018', region: 'Global', description: 'Protection of personally identifiable information in public clouds' },
+  { name: 'ISO 27701', region: 'Global', description: 'Privacy Information Management System (PIMS)' },
+  { name: 'ISO 22301', region: 'Global', description: 'Business Continuity Management System' },
+  { name: 'ISO 9001', region: 'Global', description: 'Quality Management System' },
+  { name: 'ISO 14001', region: 'Global', description: 'Environmental Management System' },
+  { name: 'ISO 45001', region: 'Global', description: 'Occupational Health and Safety Management' },
+  
+  // US-Specific Frameworks
+  { name: 'FISMA', region: 'US', description: 'Federal Information Security Management Act' },
+  { name: 'FedRAMP', region: 'US', description: 'Federal Risk and Authorization Management Program' },
+  { name: 'CMMC', region: 'US', description: 'Cybersecurity Maturity Model Certification' },
+  { name: 'NYDFS', region: 'US-NY', description: 'New York Department of Financial Services Cybersecurity Regulation' },
+  { name: 'GLBA', region: 'US', description: 'Gramm-Leach-Bliley Act - Financial privacy' },
+  { name: 'SOX', region: 'US', description: 'Sarbanes-Oxley Act - Financial reporting controls' },
+  { name: 'FERPA', region: 'US', description: 'Family Educational Rights and Privacy Act' },
+  { name: 'COPPA', region: 'US', description: 'Children\'s Online Privacy Protection Act' },
+  
+  // EU/International Frameworks
+  { name: 'ePrivacy Directive', region: 'EU', description: 'EU ePrivacy Directive - Electronic communications privacy' },
+  { name: 'PIPEDA', region: 'CA', description: 'Personal Information Protection and Electronic Documents Act (Canada)' },
+  { name: 'LGPD', region: 'BR', description: 'Lei Geral de Proteção de Dados (Brazil GDPR)' },
+  { name: 'PDPA (Singapore)', region: 'SG', description: 'Personal Data Protection Act (Singapore)' },
+  { name: 'PDPA (Malaysia)', region: 'MY', description: 'Personal Data Protection Act (Malaysia)' },
+  { name: 'PIPL (China)', region: 'CN', description: 'Personal Information Protection Law (China)' },
+  { name: 'APPI', region: 'JP', description: 'Act on the Protection of Personal Information (Japan)' },
+  { name: 'POPIA', region: 'ZA', description: 'Protection of Personal Information Act (South Africa)' },
+  
+  // Industry-Specific Frameworks
+  { name: 'HITRUST CSF', region: 'US', description: 'Health Information Trust Alliance Common Security Framework' },
+  { name: 'HITECH', region: 'US', description: 'Health Information Technology for Economic and Clinical Health Act' },
+  { name: '21 CFR Part 11', region: 'US', description: 'FDA Electronic Records and Signatures' },
+  { name: 'GxP', region: 'Global', description: 'Good Practice Guidelines for Life Sciences' },
+  { name: 'IEC 62443', region: 'Global', description: 'Industrial Automation and Control Systems Security' },
+  { name: 'NERC CIP', region: 'US', description: 'North American Electric Reliability Corporation Critical Infrastructure Protection' },
+  { name: 'CJIS', region: 'US', description: 'Criminal Justice Information Services Security Policy' },
+  
+  // Cloud & Technology Frameworks
+  { name: 'CSA CCM', region: 'Global', description: 'Cloud Security Alliance Cloud Controls Matrix' },
+  { name: 'CIS Controls', region: 'Global', description: 'Center for Internet Security Critical Security Controls' },
+  { name: 'OWASP Top 10', region: 'Global', description: 'Open Web Application Security Project Top 10 Risks' },
+  { name: 'ASVS', region: 'Global', description: 'Application Security Verification Standard' },
+  
+  // Financial Frameworks
+  { name: 'Basel III', region: 'Global', description: 'International banking regulations' },
+  { name: 'MiFID II', region: 'EU', description: 'Markets in Financial Instruments Directive II' },
+  { name: 'PSD2', region: 'EU', description: 'Payment Services Directive 2' },
+  { name: 'PCI DSS v4.0', region: 'Global', description: 'Payment Card Industry Data Security Standard v4.0' },
+  
+  // Data Protection & Privacy (removed duplicate PIPL - already listed above)
+  { name: 'PDPB', region: 'IN', description: 'Personal Data Protection Bill (India)' },
+  { name: 'Privacy Shield', region: 'US-EU', description: 'EU-US Privacy Shield Framework' },
+  
+  // Security Standards
+  { name: 'NIST CSF', region: 'US', description: 'NIST Cybersecurity Framework' },
+  { name: 'NIST 800-171', region: 'US', description: 'Protecting Controlled Unclassified Information' },
+  { name: 'NIST 800-63', region: 'US', description: 'Digital Identity Guidelines' },
+  { name: 'ENISA', region: 'EU', description: 'European Union Agency for Cybersecurity Guidelines' },
+  
+  // Quality & Process Frameworks
+  { name: 'ITIL', region: 'Global', description: 'IT Infrastructure Library - IT service management' },
+  { name: 'COBIT', region: 'Global', description: 'Control Objectives for Information and Related Technologies' },
+  { name: 'CMMI', region: 'Global', description: 'Capability Maturity Model Integration' },
+  
+  // Regional Compliance
+  { name: 'APEC CBPR', region: 'APAC', description: 'Asia-Pacific Economic Cooperation Cross-Border Privacy Rules' },
+  { name: 'Adequacy Decision', region: 'EU', description: 'EU Adequacy Decision for data transfers' },
 ];
 
 export const MOCK_RISKS: RiskItem[] = [

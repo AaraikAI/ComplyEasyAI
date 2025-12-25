@@ -2,17 +2,59 @@
 import React, { useState } from 'react';
 import { AVAILABLE_FRAMEWORKS } from '../constants';
 import { ComplianceFramework, ComplianceStatus } from '../types';
-import { CheckCircle, AlertTriangle, Clock, ArrowRight, Plus, X, Search } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Clock, ArrowRight, Plus, X, Search, Trash2 } from 'lucide-react';
+import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface FrameworksProps {
   activeFrameworks: ComplianceFramework[];
   onAddFramework: (name: string, region?: string) => void;
   onSelectFramework: (id: string) => void;
+  onFrameworkDeleted?: () => void;
 }
 
-export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddFramework, onSelectFramework }) => {
+export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddFramework, onSelectFramework, onFrameworkDeleted }) => {
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deletingFramework, setDeletingFramework] = useState<string | null>(null);
+
+  const handleDeleteFramework = async (frameworkId: string, frameworkName: string) => {
+    if (!confirm(`Are you sure you want to delete "${frameworkName}"? This will also delete all associated controls and evidence. This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeletingFramework(frameworkId);
+      await api.frameworks.delete(frameworkId);
+      if (onFrameworkDeleted) {
+        onFrameworkDeleted();
+      }
+    } catch (error: any) {
+      console.error('Failed to delete framework:', error);
+      alert(`Failed to delete framework: ${error.message || 'Unknown error'}`);
+    } finally {
+      setDeletingFramework(null);
+    }
+  };
+
+  const formatAuditDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const auditDate = new Date(date);
+    auditDate.setHours(0, 0, 0, 0);
+    
+    const daysDiff = Math.ceil((auditDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+    
+    if (daysDiff < 0) {
+      return `Overdue (${Math.abs(daysDiff)} days)`;
+    } else if (daysDiff === 0) {
+      return 'Today';
+    } else {
+      return `${daysDiff} days`;
+    }
+  };
 
   const availableToAdd = AVAILABLE_FRAMEWORKS.filter(
     af => !activeFrameworks.find(active => active.name === af.name)
@@ -67,13 +109,35 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
               </div>
 
               <div className="flex justify-between items-center text-sm text-gray-500 pt-4 border-t border-gray-50">
-                <span>Audit Due: {fw.nextAuditDate}</span>
-                <button 
-                  onClick={() => onSelectFramework(fw.id)}
-                  className="text-brand-600 hover:text-brand-800 font-medium flex items-center"
-                >
-                  Manage <ArrowRight size={16} className="ml-1" />
-                </button>
+                <span className={(() => {
+                  const days = Math.ceil((new Date(fw.nextAuditDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                  if (days < 0) return 'text-red-600 font-medium';
+                  if (days === 0) return 'text-yellow-600 font-medium';
+                  return 'text-gray-500';
+                })()}>
+                  Audit Due: {formatAuditDate(fw.nextAuditDate)}
+                </span>
+                <div className="flex items-center space-x-2">
+                  {user?.role === 'admin' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteFramework(fw.id, fw.name);
+                      }}
+                      disabled={deletingFramework === fw.id}
+                      className="p-1.5 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                      title="Delete Framework"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => onSelectFramework(fw.id)}
+                    className="text-brand-600 hover:text-brand-800 font-medium flex items-center"
+                  >
+                    Manage <ArrowRight size={16} className="ml-1" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>

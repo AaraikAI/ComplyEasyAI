@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ComplyEasyAI - Comprehensive Test Cases Document
 
 ## Document Information
@@ -1450,4 +1451,2811 @@
 **Total Test Cases**: 850+
 **Last Updated**: December 23, 2025
 **Author**: AI Test Architect
+=======
+# ComplyEasy AI - Comprehensive Test Case Documentation
+
+**Version:** 2.0.0  
+**Last Updated:** December 2024  
+**Status:** Complete Test Coverage Plan
+
+---
+
+## Table of Contents
+
+1. [Authentication & Authorization](#1-authentication--authorization)
+2. [Dashboard](#2-dashboard)
+3. [Frameworks Management](#3-frameworks-management)
+4. [Controls & Evidence](#4-controls--evidence)
+5. [Integrations](#5-integrations)
+6. [Risk Management](#6-risk-management)
+7. [My Tasks](#7-my-tasks)
+8. [AI Features](#8-ai-features)
+9. [Reports](#9-reports)
+10. [Audit Trail](#10-audit-trail)
+11. [Settings](#11-settings)
+12. [Team Management](#12-team-management)
+13. [Billing & Subscriptions](#13-billing--subscriptions)
+14. [Performance & Load Testing](#14-performance--load-testing)
+15. [Security Testing](#15-security-testing)
+16. [Edge Cases & Error Handling](#16-edge-cases--error-handling)
+
+---
+
+## 1. Authentication & Authorization
+
+### 1.1 Magic Link Authentication
+
+#### TC-AUTH-001: Magic Link Request
+**Priority:** High  
+**Preconditions:** User has valid email address  
+**Steps:**
+1. Navigate to landing page
+2. Enter valid email address
+3. Click "Get Magic Link" button
+4. Check email inbox for magic link
+
+**Expected Results:**
+- Success message displayed
+- Email sent with magic link
+- Magic link contains valid token
+- Link expires after 24 hours
+
+**Edge Cases:**
+- TC-AUTH-001-EC1: Invalid email format (should show validation error)
+- TC-AUTH-001-EC2: Non-existent email domain (should still send, but fail silently)
+- TC-AUTH-001-EC3: Email with special characters (should handle correctly)
+- TC-AUTH-001-EC4: Multiple requests within 1 minute (rate limiting should apply)
+- TC-AUTH-001-EC5: Email service unavailable (should show error message)
+
+#### TC-AUTH-002: Magic Link Validation
+**Priority:** High  
+**Preconditions:** User has received magic link email  
+**Steps:**
+1. Click magic link from email
+2. Verify token is valid
+3. User should be automatically logged in
+4. Redirect to dashboard
+
+**Expected Results:**
+- Token validated successfully
+- User session created
+- Redirect to dashboard
+- Magic link marked as used
+- Cannot reuse same link
+
+**Edge Cases:**
+- TC-AUTH-002-EC1: Expired token (should show error and prompt for new link)
+- TC-AUTH-002-EC2: Invalid token format (should show error)
+- TC-AUTH-002-EC3: Already used token (should show error)
+- TC-AUTH-002-EC4: Token from different environment (dev vs prod)
+- TC-AUTH-002-EC5: Token tampered with (should reject)
+
+#### TC-AUTH-003: Magic Link Expiration
+**Priority:** Medium  
+**Preconditions:** Magic link created 24+ hours ago  
+**Steps:**
+1. Attempt to use expired magic link
+2. Verify error message displayed
+3. Verify option to request new link
+
+**Expected Results:**
+- Error message: "Link has expired"
+- Option to request new magic link
+- User not logged in
+
+### 1.2 Two-Factor Authentication (2FA)
+
+#### TC-AUTH-004: Enable 2FA
+**Priority:** High  
+**Preconditions:** User is logged in  
+**Steps:**
+1. Navigate to Settings > Security
+2. Click "Enable 2FA"
+3. Scan QR code with authenticator app
+4. Enter verification code
+5. Save backup codes
+
+**Expected Results:**
+- QR code displayed correctly
+- Verification code accepted
+- 2FA enabled for account
+- Backup codes generated and displayed
+- Backup codes saved securely
+
+**Edge Cases:**
+- TC-AUTH-004-EC1: Invalid verification code (should reject)
+- TC-AUTH-004-EC2: Expired QR code (should regenerate)
+- TC-AUTH-004-EC3: Network timeout during setup
+- TC-AUTH-004-EC4: Multiple devices scanning same QR code
+
+#### TC-AUTH-005: 2FA Login Flow
+**Priority:** High  
+**Preconditions:** 2FA enabled on account  
+**Steps:**
+1. Enter email and request magic link
+2. Click magic link
+3. Enter 2FA code from authenticator app
+4. Verify login successful
+
+**Expected Results:**
+- 2FA prompt appears after magic link
+- Code validation works correctly
+- Login successful with valid code
+- Session created
+
+**Edge Cases:**
+- TC-AUTH-005-EC1: Invalid 2FA code (should show error, allow retry)
+- TC-AUTH-005-EC2: Expired 2FA code (should reject)
+- TC-AUTH-005-EC3: Backup code used (should work, but code invalidated)
+- TC-AUTH-005-EC4: Rate limiting on failed attempts (lock after 5 failures)
+
+#### TC-AUTH-006: Disable 2FA
+**Priority:** Medium  
+**Preconditions:** 2FA enabled, user logged in  
+**Steps:**
+1. Navigate to Settings > Security
+2. Click "Disable 2FA"
+3. Enter password or 2FA code to confirm
+4. Verify 2FA disabled
+
+**Expected Results:**
+- Confirmation required
+- 2FA disabled successfully
+- User can login without 2FA
+- Audit log entry created
+
+### 1.3 Role-Based Access Control (RBAC)
+
+#### TC-AUTH-007: Admin Role Permissions
+**Priority:** High  
+**Preconditions:** User with admin role logged in  
+**Steps:**
+1. Verify access to all features
+2. Verify can manage team members
+3. Verify can modify settings
+4. Verify can delete frameworks
+5. Verify can manage integrations
+
+**Expected Results:**
+- Full access to all features
+- Can invite/remove team members
+- Can modify organization settings
+- Can delete any framework
+- Can connect/disconnect integrations
+
+#### TC-AUTH-008: Editor Role Permissions
+**Priority:** High  
+**Preconditions:** User with editor role logged in  
+**Steps:**
+1. Verify can create/edit frameworks
+2. Verify can create/edit controls
+3. Verify cannot delete frameworks
+4. Verify cannot manage team
+5. Verify cannot modify billing
+
+**Expected Results:**
+- Can create and edit frameworks
+- Can create and edit controls
+- Cannot delete frameworks (button hidden/disabled)
+- Cannot access team management
+- Cannot access billing settings
+
+#### TC-AUTH-009: Viewer Role Permissions
+**Priority:** High  
+**Preconditions:** User with viewer role logged in  
+**Steps:**
+1. Verify can view dashboards
+2. Verify can view frameworks
+3. Verify cannot edit anything
+4. Verify cannot create new items
+5. Verify read-only access
+
+**Expected Results:**
+- Can view all dashboards and reports
+- Can view frameworks and controls
+- All edit buttons hidden/disabled
+- Cannot create frameworks or controls
+- Read-only access throughout
+
+**Edge Cases:**
+- TC-AUTH-009-EC1: Viewer trying to access API endpoints directly (should return 403)
+- TC-AUTH-009-EC2: Role changed mid-session (should require re-login)
+
+### 1.4 Session Management
+
+#### TC-AUTH-010: Session Expiration
+**Priority:** High  
+**Preconditions:** User logged in  
+**Steps:**
+1. Wait for session to expire (or manually expire)
+2. Attempt to perform action
+3. Verify redirect to login
+
+**Expected Results:**
+- Session expires after configured time
+- User redirected to login page
+- Error message: "Session expired"
+- Unsaved work preserved if possible
+
+#### TC-AUTH-011: Concurrent Sessions
+**Priority:** Medium  
+**Preconditions:** User logged in on Device A  
+**Steps:**
+1. Login on Device B with same account
+2. Verify both sessions active
+3. Logout from Device A
+4. Verify Device B still logged in
+
+**Expected Results:**
+- Multiple sessions allowed
+- Logout from one device doesn't affect others
+- Session management works correctly
+
+**Edge Cases:**
+- TC-AUTH-011-EC1: Maximum concurrent sessions limit
+- TC-AUTH-011-EC2: Session conflict resolution
+
+---
+
+## 2. Dashboard
+
+### 2.1 Dashboard Loading
+
+#### TC-DASH-001: Dashboard Initial Load
+**Priority:** High  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to dashboard
+2. Verify all widgets load
+3. Verify data displays correctly
+4. Verify loading states
+
+**Expected Results:**
+- Dashboard loads within 2 seconds
+- All KPI cards display
+- Compliance score calculated correctly
+- Charts render properly
+- No errors in console
+
+**Edge Cases:**
+- TC-DASH-001-EC1: No frameworks exist (should show 0% score)
+- TC-DASH-001-EC2: No risks exist (should show 0 critical risks)
+- TC-DASH-001-EC3: Network timeout (should show error state)
+- TC-DASH-001-EC4: Partial data load (should handle gracefully)
+
+### 2.2 Compliance Score Calculation
+
+#### TC-DASH-002: Compliance Score with Controls
+**Priority:** High  
+**Preconditions:** Frameworks with controls exist  
+**Steps:**
+1. Create framework with 5 controls
+2. Set 3 controls to "Implemented"
+3. Set 2 controls to "Pending"
+4. Verify compliance score = 60%
+
+**Expected Results:**
+- Score calculated as: (Implemented / Total) * 100
+- Score updates in real-time
+- Score displayed on dashboard
+- Score updates when controls change
+
+**Edge Cases:**
+- TC-DASH-002-EC1: Zero controls (should show 0% or N/A)
+- TC-DASH-002-EC2: All controls implemented (should show 100%)
+- TC-DASH-002-EC3: Mixed statuses (Implemented, Compliant, Pending)
+- TC-DASH-002-EC4: Controls deleted (score recalculates)
+- TC-DASH-002-EC5: Multiple frameworks (average calculated correctly)
+
+#### TC-DASH-003: Compliance Score Trend
+**Priority:** Medium  
+**Preconditions:** Historical data exists  
+**Steps:**
+1. View compliance trend chart
+2. Verify data points display
+3. Verify trend line renders
+4. Verify tooltip on hover
+
+**Expected Results:**
+- Chart displays last 6 months
+- Data points accurate
+- Trend line smooth
+- Tooltip shows exact values
+
+### 2.3 Critical Risks Widget
+
+#### TC-DASH-004: Critical Risks Display
+**Priority:** High  
+**Preconditions:** Risks exist in system  
+**Steps:**
+1. View critical risks widget
+2. Verify count matches actual risks
+3. Click on risk
+4. Verify navigation to risk details
+
+**Expected Results:**
+- Count accurate (High severity, not Resolved)
+- Risks clickable
+- Navigation works
+- Widget updates in real-time
+
+**Edge Cases:**
+- TC-DASH-004-EC1: No critical risks (should show 0 with message)
+- TC-DASH-004-EC2: 100+ critical risks (should show count, paginate)
+- TC-DASH-004-EC3: Risk status changes (widget updates)
+
+### 2.4 Active Frameworks Widget
+
+#### TC-DASH-005: Active Frameworks Display
+**Priority:** High  
+**Preconditions:** Frameworks exist  
+**Steps:**
+1. View active frameworks widget
+2. Verify count matches
+3. Verify framework names display
+4. Click to navigate to frameworks page
+
+**Expected Results:**
+- Count accurate
+- Framework names truncated if long
+- Click navigates correctly
+- Widget updates when frameworks added/removed
+
+**Edge Cases:**
+- TC-DASH-005-EC1: No frameworks (should show 0)
+- TC-DASH-005-EC2: 20+ frameworks (should truncate list)
+- TC-DASH-005-EC3: Framework deleted (widget updates)
+
+### 2.5 Upcoming Audit Widget
+
+#### TC-DASH-006: Upcoming Audit Display
+**Priority:** Medium  
+**Preconditions:** Frameworks with audit dates exist  
+**Steps:**
+1. View upcoming audit widget
+2. Verify nearest audit date displayed
+3. Verify days until audit calculated
+4. Verify framework name shown
+
+**Expected Results:**
+- Nearest audit date found correctly
+- Days calculated accurately
+- Framework name displayed
+- Updates when audit dates change
+
+**Edge Cases:**
+- TC-DASH-006-EC1: No upcoming audits (should show "No audits pending")
+- TC-DASH-006-EC2: Audit date in past (should show negative days or "Overdue")
+- TC-DASH-006-EC3: Multiple audits same day (should show first one)
+
+### 2.6 Priority Actions Widget
+
+#### TC-DASH-007: Priority Actions Display
+**Priority:** Medium  
+**Preconditions:** Open risks exist  
+**Steps:**
+1. View priority actions widget
+2. Verify top 3 risks displayed
+3. Verify risk details shown
+4. Click to navigate to risk
+
+**Expected Results:**
+- Top 3 open/in-progress risks shown
+- Risk severity badges display
+- Risk description truncated if long
+- Click navigates to risk management
+
+**Edge Cases:**
+- TC-DASH-007-EC1: No open risks (should show empty state)
+- TC-DASH-007-EC2: Less than 3 risks (should show all)
+- TC-DASH-007-EC3: Risk resolved (removed from widget)
+
+---
+
+## 3. Frameworks Management
+
+### 3.1 Framework List View
+
+#### TC-FW-001: View Active Frameworks
+**Priority:** High  
+**Preconditions:** User logged in, frameworks exist  
+**Steps:**
+1. Navigate to Frameworks page
+2. Verify all frameworks display
+3. Verify framework cards show:
+   - Framework name
+   - Region tag
+   - Status indicator
+   - Readiness percentage
+   - Progress bar
+   - Audit due date
+   - Manage button
+
+**Expected Results:**
+- All frameworks displayed in grid
+- Cards formatted correctly
+- Status icons match status
+- Progress bars accurate
+- Manage button functional
+
+**Edge Cases:**
+- TC-FW-001-EC1: No frameworks (should show empty state with "Add Framework")
+- TC-FW-001-EC2: 50+ frameworks (should paginate or scroll)
+- TC-FW-001-EC3: Framework with very long name (should truncate)
+- TC-FW-001-EC4: Framework with no region (should not show region tag)
+
+#### TC-FW-002: Add Framework
+**Priority:** High  
+**Preconditions:** User logged in with editor/admin role  
+**Steps:**
+1. Click "Add Framework" button
+2. Search for framework (e.g., "NIST")
+3. Select framework from catalog
+4. Verify framework added
+5. Verify appears in list
+
+**Expected Results:**
+- Modal opens with framework catalog
+- Search filters correctly
+- Framework added successfully
+- Appears in active frameworks list
+- Default status: "In Review"
+- Default progress: 0%
+
+**Edge Cases:**
+- TC-FW-002-EC1: Duplicate framework (should prevent or warn)
+- TC-FW-002-EC2: Invalid framework name (should validate)
+- TC-FW-002-EC3: Network error during add (should show error, retry)
+- TC-FW-002-EC4: Viewer role (should not show Add button)
+
+#### TC-FW-003: Search Frameworks
+**Priority:** Medium  
+**Preconditions:** Framework catalog modal open  
+**Steps:**
+1. Enter search term in search box
+2. Verify results filter
+3. Clear search
+4. Verify all frameworks show
+
+**Expected Results:**
+- Search filters in real-time
+- Results match search term
+- Case-insensitive search
+- Search by name or description
+- Clear button resets
+
+**Edge Cases:**
+- TC-FW-003-EC1: No results (should show "No matching frameworks")
+- TC-FW-003-EC2: Special characters in search (should handle safely)
+- TC-FW-003-EC3: Very long search term
+
+### 3.2 Framework Details
+
+#### TC-FW-004: View Framework Details
+**Priority:** High  
+**Preconditions:** Framework exists  
+**Steps:**
+1. Click "Manage" on framework card
+2. Verify framework details page loads
+3. Verify displays:
+   - Framework name
+   - Status badge
+   - Next audit date
+   - Readiness score
+   - Progress bar
+   - Controls list
+
+**Expected Results:**
+- Page loads correctly
+- All information displayed
+- Readiness score calculated from controls
+- Controls list shows all controls
+- Back button functional
+
+**Edge Cases:**
+- TC-FW-004-EC1: Framework with no controls (should show empty state)
+- TC-FW-004-EC2: Framework deleted while viewing (should handle gracefully)
+- TC-FW-004-EC3: Very long framework name (should wrap/truncate)
+
+#### TC-FW-005: Update Framework Status
+**Priority:** Medium  
+**Preconditions:** Framework exists, user has edit permissions  
+**Steps:**
+1. Navigate to framework details
+2. Update framework status
+3. Verify status updates
+4. Verify progress recalculates
+
+**Expected Results:**
+- Status updates successfully
+- UI reflects new status
+- Progress bar updates
+- Audit log entry created
+
+**Edge Cases:**
+- TC-FW-005-EC1: Invalid status value (should reject)
+- TC-FW-005-EC2: Concurrent updates (should handle conflict)
+
+### 3.3 Framework Progress Calculation
+
+#### TC-FW-006: Progress Calculation
+**Priority:** High  
+**Preconditions:** Framework with controls exists  
+**Steps:**
+1. Create framework with 10 controls
+2. Set 5 to "Implemented"
+3. Set 3 to "In Progress"
+4. Set 2 to "Pending"
+5. Verify progress = 50%
+
+**Expected Results:**
+- Progress = (Implemented + Compliant) / Total * 100
+- Updates automatically when controls change
+- Displayed on framework card and details page
+
+**Edge Cases:**
+- TC-FW-006-EC1: All controls pending (should show 0%)
+- TC-FW-006-EC2: All controls implemented (should show 100%)
+- TC-FW-006-EC3: Controls deleted (should recalculate)
+- TC-FW-006-EC4: Control status changed (should update immediately)
+
+---
+
+## 4. Controls & Evidence
+
+### 4.1 Control Creation
+
+#### TC-CTRL-001: Create New Control
+**Priority:** High  
+**Preconditions:** Framework exists, user has edit permissions  
+**Steps:**
+1. Navigate to Framework Details
+2. Click "Add Control" button
+3. Fill in control name (required)
+4. Fill in description (optional)
+5. Select status (default: Pending)
+6. Click "Create"
+
+**Expected Results:**
+- Control created successfully
+- Appears in controls list
+- Framework progress updates
+- Readiness score recalculates
+- Form resets after creation
+
+**Edge Cases:**
+- TC-CTRL-001-EC1: Empty control name (should show validation error)
+- TC-CTRL-001-EC2: Very long control name (should accept, truncate in UI)
+- TC-CTRL-001-EC3: Duplicate control name (should allow or warn)
+- TC-CTRL-001-EC4: Network error (should show error, preserve form data)
+- TC-CTRL-001-EC5: Viewer role (should not show Add Control button)
+
+#### TC-CTRL-002: Create Control with All Fields
+**Priority:** Medium  
+**Preconditions:** Framework exists  
+**Steps:**
+1. Click "Add Control"
+2. Enter name: "Access Control Policy"
+3. Enter description: "Detailed description of access control"
+4. Select status: "In Progress"
+5. Create control
+
+**Expected Results:**
+- All fields saved correctly
+- Control displays with all information
+- Status badge shows "In Progress"
+
+### 4.2 Control Status Updates
+
+#### TC-CTRL-003: Update Control Status via Click
+**Priority:** High  
+**Preconditions:** Control with status "Pending" or "In Progress" exists  
+**Steps:**
+1. Navigate to Framework Details
+2. Click on control with "Pending" status
+3. Confirm status update in dialog
+4. Verify status changes to "In Progress"
+5. Verify framework progress updates
+
+**Expected Results:**
+- Click highlights control row
+- Confirmation dialog appears
+- Status updates to next in sequence
+- Progress bar updates
+- Readiness score recalculates
+- Parent component refreshes
+
+**Edge Cases:**
+- TC-CTRL-003-EC1: Click on "Implemented" control (should not trigger update)
+- TC-CTRL-003-EC2: Cancel confirmation (should not update)
+- TC-CTRL-003-EC3: Multiple rapid clicks (should handle gracefully)
+- TC-CTRL-003-EC4: Status update fails (should show error, revert)
+
+#### TC-CTRL-004: Status Progression
+**Priority:** High  
+**Preconditions:** Control exists  
+**Steps:**
+1. Create control with "Pending" status
+2. Click to update → "In Progress"
+3. Click to update → "Implemented"
+4. Click to update → "Compliant"
+5. Verify cannot update from "Compliant"
+
+**Expected Results:**
+- Status progresses: Pending → In Progress → Implemented → Compliant
+- "Compliant" controls not clickable for status update
+- Each update triggers progress recalculation
+
+**Edge Cases:**
+- TC-CTRL-004-EC1: Status "At Risk" (should be clickable or not?)
+- TC-CTRL-004-EC2: Manual status change via API (should work)
+
+### 4.3 Evidence Upload
+
+#### TC-CTRL-005: Upload Evidence to Control
+**Priority:** High  
+**Preconditions:** Control exists, user has edit permissions  
+**Steps:**
+1. Navigate to Framework Details
+2. Click upload icon on control
+3. Select file (PDF, DOC, etc.)
+4. Verify upload progress
+5. Verify file linked to control
+
+**Expected Results:**
+- File uploads successfully
+- Evidence URL saved to control
+- File name displays in control row
+- File clickable to download/view
+- Framework progress may update
+
+**Edge Cases:**
+- TC-CTRL-005-EC1: File too large (>10MB) (should reject with error)
+- TC-CTRL-005-EC2: Invalid file type (should reject)
+- TC-CTRL-005-EC3: Network timeout (should show error, allow retry)
+- TC-CTRL-005-EC4: Upload same file twice (should replace or create new)
+- TC-CTRL-005-EC5: Upload while offline (should queue or show error)
+
+#### TC-CTRL-006: Upload Multiple Evidence Files
+**Priority:** Medium  
+**Preconditions:** Control exists  
+**Steps:**
+1. Upload first evidence file
+2. Upload second evidence file to same control
+3. Verify both files accessible
+4. Verify control shows latest file
+
+**Expected Results:**
+- Multiple uploads handled correctly
+- Latest file displayed
+- Previous files accessible
+- No conflicts
+
+**Edge Cases:**
+- TC-CTRL-006-EC1: Simultaneous uploads (should handle queue)
+- TC-CTRL-006-EC2: Same filename (should rename or overwrite)
+
+### 4.4 Smart Upload
+
+#### TC-CTRL-007: Smart Upload with AI Classification
+**Priority:** High  
+**Preconditions:** Framework exists, user has edit permissions  
+**Steps:**
+1. Navigate to Framework Details
+2. Click "Smart Upload" button
+3. Select file (e.g., "access_control_policy.pdf")
+4. Wait for AI analysis
+5. Verify file classified
+6. Verify control created or mapped
+
+**Expected Results:**
+- File uploads successfully
+- AI analyzes filename
+- Classification result displayed
+- Control created or existing control updated
+- Evidence linked to control
+- Toast notification shows result
+
+**Edge Cases:**
+- TC-CTRL-007-EC1: AI classification fails (should still upload, manual mapping)
+- TC-CTRL-007-EC2: Ambiguous filename (should classify best match)
+- TC-CTRL-007-EC3: File with no clear control match (should create new control)
+- TC-CTRL-007-EC4: Gemini API quota exceeded (should show error, allow manual upload)
+- TC-CTRL-007-EC5: Very long filename (should handle correctly)
+
+#### TC-CTRL-008: Smart Upload File Types
+**Priority:** Medium  
+**Preconditions:** Framework exists  
+**Steps:**
+1. Test upload with PDF
+2. Test upload with DOCX
+3. Test upload with XLSX
+4. Test upload with image (PNG)
+5. Test upload with JSON
+
+**Expected Results:**
+- All supported types accepted
+- Invalid types rejected
+- Appropriate error messages
+
+**Edge Cases:**
+- TC-CTRL-008-EC1: Corrupted file (should detect and reject)
+- TC-CTRL-008-EC2: File with wrong extension (should validate MIME type)
+
+### 4.5 Control Export
+
+#### TC-CTRL-009: Export Control Report
+**Priority:** Medium  
+**Preconditions:** Control exists  
+**Steps:**
+1. Navigate to Framework Details
+2. Click download icon on control
+3. Verify JSON file downloads
+4. Verify file contains:
+   - Framework information
+   - Control details
+   - Evidence information
+   - Metadata (export date, user)
+
+**Expected Results:**
+- File downloads successfully
+- Filename: "{Control_Name}_Report_{Date}.json"
+- JSON format valid
+- All data included
+- Audit log entry created
+
+**Edge Cases:**
+- TC-CTRL-009-EC1: Control with no evidence (should still export)
+- TC-CTRL-009-EC2: Control deleted during export (should handle gracefully)
+- TC-CTRL-009-EC3: Very long control name (filename should truncate)
+
+### 4.6 Control List Management
+
+#### TC-CTRL-010: Control List Display
+**Priority:** High  
+**Preconditions:** Framework with controls exists  
+**Steps:**
+1. View controls list
+2. Verify all controls display
+3. Verify status icons correct
+4. Verify evidence links work
+5. Verify export buttons functional
+
+**Expected Results:**
+- All controls listed
+- Status icons match status
+- Evidence clickable if exists
+- Export buttons work
+- Upload buttons work
+
+**Edge Cases:**
+- TC-CTRL-010-EC1: 100+ controls (should paginate or virtualize)
+- TC-CTRL-010-EC2: Control with very long description (should truncate)
+- TC-CTRL-010-EC3: Control with no description (should not show description line)
+
+---
+
+## 5. Integrations
+
+### 5.1 Integration Catalog
+
+#### TC-INT-001: View Integration Catalog
+**Priority:** High  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to Integrations page
+2. Verify all integrations display
+3. Verify search functionality
+4. Verify category filters
+5. Verify connection status
+
+**Expected Results:**
+- All 50+ integrations displayed
+- Search filters correctly
+- Category filters work
+- Connection status accurate
+- Integration cards formatted correctly
+
+**Edge Cases:**
+- TC-INT-001-EC1: No integrations connected (all show disconnected)
+- TC-INT-001-EC2: Search with no results (should show empty state)
+- TC-INT-001-EC3: Multiple category filters (should work correctly)
+
+#### TC-INT-002: Search Integrations
+**Priority:** Medium  
+**Preconditions:** Integrations page open  
+**Steps:**
+1. Enter search term "AWS"
+2. Verify AWS integration appears
+3. Clear search
+4. Verify all integrations show
+
+**Expected Results:**
+- Search filters in real-time
+- Case-insensitive
+- Searches name and category
+- Clear button resets
+
+**Edge Cases:**
+- TC-INT-002-EC1: Partial match (e.g., "Git" should show GitHub, GitLab)
+- TC-INT-002-EC2: Special characters (should handle safely)
+
+### 5.2 OAuth Integrations
+
+#### TC-INT-003: Connect Google Workspace (OAuth)
+**Priority:** High  
+**Preconditions:** User logged in, Google OAuth configured  
+**Steps:**
+1. Click on Google Workspace integration
+2. Click "Connect" in modal
+3. Verify OAuth popup opens
+4. Complete OAuth flow
+5. Verify connection successful
+
+**Expected Results:**
+- Modal opens with OAuth option
+- Popup opens to Google OAuth
+- User authorizes
+- Callback handled correctly
+- Integration marked as connected
+- Last sync timestamp updated
+
+**Edge Cases:**
+- TC-INT-003-EC1: User cancels OAuth (should show disconnected)
+- TC-INT-003-EC2: OAuth callback fails (should show error)
+- TC-INT-003-EC3: Popup blocked (should show error message)
+- TC-INT-003-EC4: OAuth token expired (should prompt re-auth)
+- TC-INT-003-EC5: Multiple OAuth attempts (should handle gracefully)
+
+#### TC-INT-004: Connect GitHub (OAuth)
+**Priority:** High  
+**Preconditions:** User logged in, GitHub OAuth configured  
+**Steps:**
+1. Click on GitHub integration
+2. Click "Connect" in modal
+3. Complete GitHub OAuth flow
+4. Verify connection successful
+5. Verify can sync repositories
+
+**Expected Results:**
+- OAuth flow completes
+- Integration connected
+- Can access GitHub API
+- Sync functionality works
+
+**Edge Cases:**
+- TC-INT-004-EC1: Insufficient OAuth scopes (should request additional)
+- TC-INT-004-EC2: Organization OAuth (should handle correctly)
+
+#### TC-INT-005: Connect Slack (OAuth)
+**Priority:** High  
+**Preconditions:** User logged in, Slack OAuth configured  
+**Steps:**
+1. Click on Slack integration
+2. Complete OAuth flow
+3. Verify connection successful
+4. Verify can send notifications
+
+**Expected Results:**
+- OAuth completes
+- Integration connected
+- Can send Slack messages
+- Notifications work
+
+#### TC-INT-006: Connect Jira (OAuth)
+**Priority:** High  
+**Preconditions:** User logged in, Jira OAuth configured  
+**Steps:**
+1. Click on Jira integration
+2. Complete OAuth flow
+3. Verify connection successful
+4. Verify can create issues
+
+**Expected Results:**
+- OAuth completes
+- Integration connected
+- Can sync Jira issues
+- Can create issues from app
+
+### 5.3 API Key Integrations
+
+#### TC-INT-007: Connect Datadog (API Key + Secret)
+**Priority:** High  
+**Preconditions:** User logged in  
+**Steps:**
+1. Click on Datadog integration
+2. Enter API Key
+3. Enter API Secret
+4. Enter Base URL (optional)
+5. Click "Connect"
+
+**Expected Results:**
+- Credentials saved securely
+- Integration connected
+- Can access Datadog API
+- Connection status updated
+
+**Edge Cases:**
+- TC-INT-007-EC1: Invalid API key (should validate and reject)
+- TC-INT-007-EC2: Missing required fields (should show validation)
+- TC-INT-007-EC3: API key format incorrect (should validate)
+- TC-INT-007-EC4: Network error during validation (should handle)
+
+#### TC-INT-008: Connect New Relic (API Key + Secret)
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Click on New Relic integration
+2. Enter API Key and Secret
+3. Connect
+4. Verify connection
+
+**Expected Results:**
+- Connection successful
+- Can fetch metrics
+- Sync works
+
+#### TC-INT-009: Connect Sentry (API Key + Secret)
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Click on Sentry integration
+2. Enter credentials
+3. Connect
+4. Verify error tracking works
+
+**Expected Results:**
+- Connection successful
+- Can fetch errors
+- Alerts work
+
+### 5.4 IAM Credentials Integrations
+
+#### TC-INT-010: Connect AWS (IAM Credentials)
+**Priority:** High  
+**Preconditions:** User logged in  
+**Steps:**
+1. Click on AWS integration
+2. Enter Access Key ID
+3. Enter Secret Access Key
+4. Enter Region
+5. Click "Connect"
+
+**Expected Results:**
+- Credentials validated
+- AWS connection successful
+- Can scan AWS resources
+- Compliance checks work
+
+**Edge Cases:**
+- TC-INT-010-EC1: Invalid credentials (should reject with error)
+- TC-INT-010-EC2: Insufficient IAM permissions (should show error)
+- TC-INT-010-EC3: Wrong region (should validate or allow)
+- TC-INT-010-EC4: Credentials expired (should prompt update)
+
+#### TC-INT-011: Connect Azure (IAM Credentials)
+**Priority:** High  
+**Preconditions:** User logged in  
+**Steps:**
+1. Click on Azure integration
+2. Enter Tenant ID
+3. Enter Client ID
+4. Enter Client Secret
+5. Enter Subscription ID
+6. Connect
+
+**Expected Results:**
+- All fields required
+- Connection successful
+- Can access Azure resources
+- Compliance scanning works
+
+**Edge Cases:**
+- TC-INT-011-EC1: Missing any required field (should validate)
+- TC-INT-011-EC2: Invalid tenant ID format (should validate)
+
+#### TC-INT-012: Connect GCP (Service Account JSON)
+**Priority:** High  
+**Preconditions:** User logged in  
+**Steps:**
+1. Click on Google Cloud Platform integration
+2. Paste service account JSON
+3. Verify JSON valid
+4. Connect
+
+**Expected Results:**
+- JSON validated
+- Connection successful
+- Can access GCP resources
+
+**Edge Cases:**
+- TC-INT-012-EC1: Invalid JSON (should show error)
+- TC-INT-012-EC2: Missing required fields in JSON (should validate)
+- TC-INT-012-EC3: Expired service account (should show error)
+
+### 5.5 Personal Access Token Integrations
+
+#### TC-INT-013: Connect GitLab (PAT)
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Click on GitLab integration
+2. Enter instance URL (optional)
+3. Enter Personal Access Token
+4. Connect
+
+**Expected Results:**
+- Connection successful
+- Can access GitLab API
+- Repository scanning works
+
+**Edge Cases:**
+- TC-INT-013-EC1: Invalid token (should reject)
+- TC-INT-013-EC2: Token with insufficient scopes (should show error)
+- TC-INT-013-EC3: Self-hosted GitLab instance (should work with custom URL)
+
+#### TC-INT-014: Connect Bitbucket (PAT)
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Click on Bitbucket integration
+2. Enter PAT
+3. Connect
+4. Verify connection
+
+**Expected Results:**
+- Connection successful
+- Can access repositories
+
+### 5.6 Username/Password Integrations
+
+#### TC-INT-015: Connect Jenkins (Username/Password)
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Click on Jenkins integration
+2. Enter Base URL
+3. Enter Username
+4. Enter Password/API Token
+5. Enter API Token (optional)
+6. Connect
+
+**Expected Results:**
+- Connection successful
+- Can access Jenkins API
+- Build status monitoring works
+
+**Edge Cases:**
+- TC-INT-015-EC1: Invalid credentials (should reject)
+- TC-INT-015-EC2: Jenkins instance unreachable (should show error)
+- TC-INT-015-EC3: Self-signed certificate (should handle or warn)
+
+#### TC-INT-016: Connect Splunk (Username/Password)
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Click on Splunk integration
+2. Enter Base URL
+3. Enter Username
+4. Enter Password
+5. Connect
+
+**Expected Results:**
+- Connection successful
+- Can query Splunk
+- Log analysis works
+
+### 5.7 Integration Disconnection
+
+#### TC-INT-017: Disconnect Integration
+**Priority:** High  
+**Preconditions:** Integration connected  
+**Steps:**
+1. Navigate to integration
+2. Click disconnect button
+3. Confirm disconnection
+4. Verify integration disconnected
+
+**Expected Results:**
+- Confirmation dialog appears
+- Integration disconnected
+- Credentials removed
+- Status updated to disconnected
+- Last sync cleared
+
+**Edge Cases:**
+- TC-INT-017-EC1: Cancel disconnection (should not disconnect)
+- TC-INT-017-EC2: Disconnect while sync in progress (should cancel sync)
+- TC-INT-017-EC3: Disconnect from Settings page (should work)
+
+### 5.8 Integration Sync
+
+#### TC-INT-018: Manual Sync Integration
+**Priority:** Medium  
+**Preconditions:** Integration connected  
+**Steps:**
+1. Navigate to integration
+2. Click "Sync" button
+3. Verify sync starts
+4. Verify sync completes
+5. Verify last sync timestamp updates
+
+**Expected Results:**
+- Sync initiates
+- Progress indicator shows
+- Sync completes successfully
+- Data updated
+- Last sync timestamp updated
+
+**Edge Cases:**
+- TC-INT-018-EC1: Sync fails (should show error, allow retry)
+- TC-INT-018-EC2: Sync timeout (should handle gracefully)
+- TC-INT-018-EC3: Concurrent syncs (should queue or prevent)
+
+### 5.9 Integration Status
+
+#### TC-INT-019: Integration Status Display
+**Priority:** Medium  
+**Preconditions:** Multiple integrations with different statuses  
+**Steps:**
+1. View integrations page
+2. Verify connection status accurate
+3. Verify last sync timestamps
+4. Verify status indicators
+
+**Expected Results:**
+- Connected integrations show green
+- Disconnected show gray
+- Last sync accurate
+- Status icons correct
+
+**Edge Cases:**
+- TC-INT-019-EC1: Integration connection lost (should update status)
+- TC-INT-019-EC2: Never synced (should show "Never")
+
+---
+
+## 6. Risk Management
+
+### 6.1 Risk List View
+
+#### TC-RISK-001: View Risk Registry
+**Priority:** High  
+**Preconditions:** User logged in, risks exist  
+**Steps:**
+1. Navigate to Risk Management page
+2. Verify all risks display
+3. Verify filters work
+4. Verify sorting works
+5. Verify search works
+
+**Expected Results:**
+- All risks listed
+- Filters apply correctly
+- Sorting works (severity, date, status)
+- Search filters risks
+- Risk cards formatted correctly
+
+**Edge Cases:**
+- TC-RISK-001-EC1: No risks (should show empty state)
+- TC-RISK-001-EC2: 100+ risks (should paginate)
+- TC-RISK-001-EC3: Filter with no results (should show message)
+
+#### TC-RISK-002: Risk Filters
+**Priority:** High  
+**Preconditions:** Risks with different severities and statuses exist  
+**Steps:**
+1. Filter by severity: High
+2. Verify only high severity risks show
+3. Filter by status: Open
+4. Verify only open risks show
+5. Combine filters
+6. Verify combined results
+
+**Expected Results:**
+- Filters work independently
+- Combined filters work correctly
+- Results update in real-time
+- Filter state persists
+
+**Edge Cases:**
+- TC-RISK-002-EC1: Filter with no matches (should show empty state)
+- TC-RISK-002-EC2: Clear all filters (should show all risks)
+
+### 6.2 Risk Creation
+
+#### TC-RISK-003: Create New Risk
+**Priority:** High  
+**Preconditions:** User with editor/admin role  
+**Steps:**
+1. Click "Add Risk" button
+2. Fill in risk details:
+   - Description (required)
+   - Category (required)
+   - Severity (required)
+   - Assigned To (optional)
+3. Save risk
+
+**Expected Results:**
+- Risk created successfully
+- Appears in risk list
+- Default status: "Open"
+- AI priority score calculated
+- Audit log entry created
+
+**Edge Cases:**
+- TC-RISK-003-EC1: Missing required fields (should validate)
+- TC-RISK-003-EC2: Very long description (should accept)
+- TC-RISK-003-EC3: Invalid severity (should validate)
+- TC-RISK-003-EC4: Viewer role (should not show Add button)
+
+### 6.3 Risk Updates
+
+#### TC-RISK-004: Update Risk Status
+**Priority:** High  
+**Preconditions:** Risk exists  
+**Steps:**
+1. Open risk details
+2. Change status (e.g., Open → In Progress)
+3. Save
+4. Verify status updates
+
+**Expected Results:**
+- Status updates successfully
+- UI reflects new status
+- Status badge updates
+- Audit log entry created
+
+**Edge Cases:**
+- TC-RISK-004-EC1: Invalid status transition (should validate)
+- TC-RISK-004-EC2: Concurrent updates (should handle conflict)
+
+#### TC-RISK-005: Assign Risk
+**Priority:** Medium  
+**Preconditions:** Risk exists, team members exist  
+**Steps:**
+1. Open risk details
+2. Select team member from dropdown
+3. Assign risk
+4. Verify assignment
+
+**Expected Results:**
+- Risk assigned successfully
+- Assigned user shown in risk card
+- Appears in user's "My Tasks"
+- Notification sent (if enabled)
+
+**Edge Cases:**
+- TC-RISK-005-EC1: Assign to non-existent user (should validate)
+- TC-RISK-005-EC2: Reassign to different user (should update)
+
+#### TC-RISK-006: Add Mitigation Plan
+**Priority:** High  
+**Preconditions:** Risk exists  
+**Steps:**
+1. Open risk details
+2. Enter mitigation plan
+3. Save
+4. Verify plan saved
+
+**Expected Results:**
+- Mitigation plan saved
+- Displays in risk details
+- Can be edited
+- Exported in reports
+
+**Edge Cases:**
+- TC-RISK-006-EC1: Very long mitigation plan (should accept)
+- TC-RISK-006-EC2: Special characters (should handle correctly)
+
+### 6.4 Risk AI Features
+
+#### TC-RISK-007: AI Priority Scoring
+**Priority:** Medium  
+**Preconditions:** Risk created  
+**Steps:**
+1. Create risk
+2. Verify AI priority score calculated
+3. Verify AI rationale displayed
+4. Verify score updates when risk changes
+
+**Expected Results:**
+- Score calculated (0-100)
+- Rationale explains score
+- Score updates automatically
+- Score influences risk ordering
+
+**Edge Cases:**
+- TC-RISK-007-EC1: AI service unavailable (should show default score)
+- TC-RISK-007-EC2: Invalid risk data (should handle gracefully)
+
+### 6.5 Risk Resolution
+
+#### TC-RISK-008: Resolve Risk
+**Priority:** High  
+**Preconditions:** Risk exists  
+**Steps:**
+1. Open risk details
+2. Change status to "Resolved"
+3. Add resolution notes
+4. Save
+5. Verify risk resolved
+
+**Expected Results:**
+- Status changes to "Resolved"
+- Resolution notes saved
+- Risk removed from active list
+- Appears in resolved filter
+- Audit log entry created
+
+**Edge Cases:**
+- TC-RISK-008-EC1: Resolve without notes (should allow or require)
+- TC-RISK-008-EC2: Reopen resolved risk (should allow)
+
+---
+
+## 7. My Tasks
+
+### 7.1 Task List
+
+#### TC-TASK-001: View My Tasks
+**Priority:** High  
+**Preconditions:** User logged in, tasks assigned to user  
+**Steps:**
+1. Navigate to "My Tasks"
+2. Verify only user's tasks display
+3. Verify task details shown
+4. Verify status indicators
+
+**Expected Results:**
+- Only assigned tasks shown
+- Tasks formatted correctly
+- Status badges accurate
+- Can filter by status
+
+**Edge Cases:**
+- TC-TASK-001-EC1: No tasks assigned (should show empty state)
+- TC-TASK-001-EC2: Tasks from multiple frameworks (should all show)
+- TC-TASK-001-EC3: Task unassigned (should remove from list)
+
+#### TC-TASK-002: Update Task Status
+**Priority:** High  
+**Preconditions:** Task assigned to user  
+**Steps:**
+1. Open task from My Tasks
+2. Change status
+3. Update mitigation plan
+4. Save
+5. Verify updates
+
+**Expected Results:**
+- Status updates successfully
+- Mitigation plan saved
+- Changes reflected immediately
+- Audit log entry created
+
+**Edge Cases:**
+- TC-TASK-002-EC1: Invalid status (should validate)
+- TC-TASK-002-EC2: Concurrent updates (should handle)
+
+### 7.2 Task Filtering
+
+#### TC-TASK-003: Filter Tasks by Status
+**Priority:** Medium  
+**Preconditions:** Tasks with different statuses exist  
+**Steps:**
+1. Filter by "Open"
+2. Verify only open tasks show
+3. Filter by "In Progress"
+4. Verify only in-progress tasks show
+
+**Expected Results:**
+- Filters work correctly
+- Results update immediately
+- Multiple filters can combine
+
+---
+
+## 8. AI Features
+
+### 8.1 Compliance Chatbot
+
+#### TC-AI-001: Chat with Compliance Bot
+**Priority:** High  
+**Preconditions:** User logged in, Gemini API configured  
+**Steps:**
+1. Open chatbot
+2. Send message: "What is SOC 2?"
+3. Verify AI response
+4. Continue conversation
+5. Verify context maintained
+
+**Expected Results:**
+- Response received within 5 seconds
+- Response relevant and accurate
+- Conversation history maintained
+- Can ask follow-up questions
+
+**Edge Cases:**
+- TC-AI-001-EC1: Gemini API quota exceeded (should show error message)
+- TC-AI-001-EC2: Network timeout (should show error, allow retry)
+- TC-AI-001-EC3: Invalid question (should handle gracefully)
+- TC-AI-001-EC4: Very long conversation (should maintain context)
+- TC-AI-001-EC5: Empty message (should validate)
+
+#### TC-AI-002: Chatbot Error Handling
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Send message with API down
+2. Verify error message displayed
+3. Verify retry option
+4. Verify user-friendly message
+
+**Expected Results:**
+- Error message clear and actionable
+- Suggests checking API key or quota
+- Allows retry
+- Doesn't expose technical details
+
+### 8.2 AI Report Generator
+
+#### TC-AI-003: Generate Compliance Report
+**Priority:** High  
+**Preconditions:** User logged in, frameworks exist  
+**Steps:**
+1. Navigate to Report Generator
+2. Select framework
+3. Enter company name
+4. Enter context
+5. Generate report
+
+**Expected Results:**
+- Report generated successfully
+- Report formatted correctly
+- Includes compliance status
+- Includes recommendations
+- Can download/export
+
+**Edge Cases:**
+- TC-AI-003-EC1: No frameworks selected (should validate)
+- TC-AI-003-EC2: AI service unavailable (should show error)
+- TC-AI-003-EC3: Very long context (should handle)
+- TC-AI-003-EC4: Report generation timeout (should handle)
+
+### 8.3 Policy Generator
+
+#### TC-AI-004: Generate Policy
+**Priority:** High  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to Policy Generator
+2. Select policy type
+3. Enter company information
+4. Select tone
+5. Generate policy
+
+**Expected Results:**
+- Policy generated successfully
+- Policy formatted correctly
+- Can edit generated policy
+- Can save policy
+- Can export policy
+
+**Edge Cases:**
+- TC-AI-004-EC1: Invalid policy type (should validate)
+- TC-AI-004-EC2: Missing company info (should validate)
+- TC-AI-004-EC3: AI generation fails (should show error)
+
+### 8.4 Contract Analyzer
+
+#### TC-AI-005: Analyze Contract
+**Priority:** High  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to Contract Analyzer
+2. Upload contract file
+3. Analyze contract
+4. Review findings
+5. Export report
+
+**Expected Results:**
+- Contract uploaded successfully
+- Analysis completes
+- Findings displayed
+- Risk areas highlighted
+- Recommendations provided
+- Report exportable
+
+**Edge Cases:**
+- TC-AI-005-EC1: Invalid file type (should reject)
+- TC-AI-005-EC2: Very large contract (should handle)
+- TC-AI-005-EC3: Corrupted file (should detect)
+- TC-AI-005-EC4: AI analysis fails (should show error)
+
+### 8.5 Gap Analysis
+
+#### TC-AI-006: Perform Gap Analysis
+**Priority:** High  
+**Preconditions:** User logged in, frameworks exist  
+**Steps:**
+1. Navigate to Gap Analysis
+2. Select current frameworks
+3. Select target framework
+4. Run analysis
+5. Review gaps
+
+**Expected Results:**
+- Analysis completes successfully
+- Gaps identified
+- Recommendations provided
+- Action items listed
+- Report exportable
+
+**Edge Cases:**
+- TC-AI-006-EC1: No current frameworks (should validate)
+- TC-AI-006-EC2: Same framework selected (should handle)
+- TC-AI-006-EC3: Analysis timeout (should handle)
+
+### 8.6 RFP Responder
+
+#### TC-AI-007: Generate RFP Response
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to RFP Responder
+2. Enter RFP question
+3. Enter company context
+4. Generate response
+5. Review and edit response
+
+**Expected Results:**
+- Response generated
+- Response professional
+- Response compliant
+- Can edit response
+- Can export response
+
+**Edge Cases:**
+- TC-AI-007-EC1: Empty question (should validate)
+- TC-AI-007-EC2: Very long question (should handle)
+- TC-AI-007-EC3: Multiple questions (should handle)
+
+### 8.7 Phishing Generator
+
+#### TC-AI-008: Generate Phishing Simulation
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to Phishing Generator
+2. Select department
+3. Select theme
+4. Generate email
+5. Review email
+
+**Expected Results:**
+- Email generated
+- Email realistic
+- Includes subject and body
+- Can send test email
+- Can export email
+
+**Edge Cases:**
+- TC-AI-008-EC1: Invalid department (should validate)
+- TC-AI-008-EC2: AI generation fails (should show error)
+
+### 8.8 Vendor Scorer
+
+#### TC-AI-009: Score Vendor Risk
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to Vendor Scorer
+2. Enter vendor name
+3. Enter service description
+4. Enter data access level
+5. Generate score
+
+**Expected Results:**
+- Risk score calculated
+- Score rationale provided
+- Recommendations given
+- Can save vendor
+
+**Edge Cases:**
+- TC-AI-009-EC1: Missing required fields (should validate)
+- TC-AI-009-EC2: Invalid data access level (should validate)
+
+### 8.9 Data Mapper
+
+#### TC-AI-010: Map Data Flow
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to Data Mapper
+2. Enter data flow description
+3. Generate map
+4. Review visualization
+5. Export map
+
+**Expected Results:**
+- Map generated
+- Visualization clear
+- Data flows identified
+- Can export map
+
+**Edge Cases:**
+- TC-AI-010-EC1: Incomplete description (should handle)
+- TC-AI-010-EC2: Complex data flow (should handle)
+
+### 8.10 BCP Generator
+
+#### TC-AI-011: Generate Business Continuity Plan
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to BCP Generator
+2. Enter business information
+3. Select scenarios
+4. Generate plan
+5. Review plan
+
+**Expected Results:**
+- Plan generated
+- Plan comprehensive
+- Scenarios covered
+- Can edit plan
+- Can export plan
+
+**Edge Cases:**
+- TC-AI-011-EC1: Missing business info (should validate)
+- TC-AI-011-EC2: No scenarios selected (should validate)
+
+---
+
+## 9. Reports
+
+### 9.1 Report Generation
+
+#### TC-REP-001: Generate Compliance Report
+**Priority:** High  
+**Preconditions:** Frameworks and controls exist  
+**Steps:**
+1. Navigate to Reports
+2. Select report type
+3. Select frameworks
+4. Generate report
+5. Review report
+
+**Expected Results:**
+- Report generated successfully
+- Report includes all selected frameworks
+- Report includes control statuses
+- Report includes evidence
+- Report formatted correctly
+- Can download report
+
+**Edge Cases:**
+- TC-REP-001-EC1: No frameworks selected (should validate)
+- TC-REP-001-EC2: Framework with no controls (should handle)
+- TC-REP-001-EC3: Very large report (should handle)
+
+#### TC-REP-002: Export Report
+**Priority:** Medium  
+**Preconditions:** Report generated  
+**Steps:**
+1. Generate report
+2. Click export button
+3. Select format (PDF/JSON)
+4. Download report
+
+**Expected Results:**
+- Report exports successfully
+- Format correct
+- File downloads
+- File name includes date
+
+**Edge Cases:**
+- TC-REP-002-EC1: Export fails (should show error)
+- TC-REP-002-EC2: Very large export (should handle)
+
+### 9.2 Report Customization
+
+#### TC-REP-003: Customize Report
+**Priority:** Medium  
+**Preconditions:** Report generation available  
+**Steps:**
+1. Select report options
+2. Choose sections to include
+3. Select date range
+4. Generate customized report
+
+**Expected Results:**
+- Customization options work
+- Report reflects selections
+- All selected sections included
+
+---
+
+## 10. Audit Trail
+
+### 10.1 Audit Log Viewing
+
+#### TC-AUDIT-001: View Audit Trail
+**Priority:** High  
+**Preconditions:** User logged in, audit logs exist  
+**Steps:**
+1. Navigate to Audit Trail
+2. Verify all logs display
+3. Verify log details shown
+4. Verify filters work
+5. Verify search works
+
+**Expected Results:**
+- All logs displayed
+- Logs in chronological order
+- Details include: action, user, timestamp, hash
+- Filters work correctly
+- Search works
+
+**Edge Cases:**
+- TC-AUDIT-001-EC1: No audit logs (should show empty state)
+- TC-AUDIT-001-EC2: 1000+ logs (should paginate)
+- TC-AUDIT-001-EC3: Filter with no results (should show message)
+
+#### TC-AUDIT-002: Audit Log Filtering
+**Priority:** Medium  
+**Preconditions:** Audit logs exist  
+**Steps:**
+1. Filter by user
+2. Filter by action type
+3. Filter by date range
+4. Combine filters
+
+**Expected Results:**
+- Filters work independently
+- Combined filters work
+- Results update immediately
+
+**Edge Cases:**
+- TC-AUDIT-002-EC1: Invalid date range (should validate)
+- TC-AUDIT-002-EC2: Non-existent user (should show no results)
+
+### 10.2 Audit Log Integrity
+
+#### TC-AUDIT-003: Verify Audit Log Hash
+**Priority:** High  
+**Preconditions:** Audit log exists  
+**Steps:**
+1. View audit log
+2. Verify hash displayed
+3. Verify hash format correct
+4. Verify hash unique
+
+**Expected Results:**
+- Hash displayed for each log
+- Hash format consistent
+- Each log has unique hash
+- Hash cannot be modified
+
+**Edge Cases:**
+- TC-AUDIT-003-EC1: Hash missing (should show error)
+- TC-AUDIT-003-EC2: Hash tampered (should detect)
+
+---
+
+## 11. Settings
+
+### 11.1 Profile Settings
+
+#### TC-SET-001: Update User Profile
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to Settings > Profile
+2. Update name
+3. Update email
+4. Save changes
+
+**Expected Results:**
+- Changes saved successfully
+- Profile updates immediately
+- Email validation works
+- Audit log entry created
+
+**Edge Cases:**
+- TC-SET-001-EC1: Invalid email format (should validate)
+- TC-SET-001-EC2: Duplicate email (should reject)
+- TC-SET-001-EC3: Very long name (should handle)
+
+### 11.2 Organization Settings
+
+#### TC-SET-002: Update Organization Settings
+**Priority:** High  
+**Preconditions:** User with admin role  
+**Steps:**
+1. Navigate to Settings > Organization
+2. Update organization name
+3. Update plan
+4. Save changes
+
+**Expected Results:**
+- Changes saved
+- Organization updates
+- Plan changes reflected
+- Audit log entry created
+
+**Edge Cases:**
+- TC-SET-002-EC1: Non-admin user (should not show settings)
+- TC-SET-002-EC2: Invalid plan (should validate)
+
+### 11.3 Security Settings
+
+#### TC-SET-003: Security Settings
+**Priority:** High  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to Settings > Security
+2. Enable/disable 2FA
+3. View backup codes
+4. Change password (if implemented)
+
+**Expected Results:**
+- 2FA toggle works
+- Backup codes accessible
+- Security settings saved
+
+**Edge Cases:**
+- TC-SET-003-EC1: 2FA already enabled (should show disable option)
+- TC-SET-003-EC2: Backup codes lost (should allow regeneration)
+
+### 11.4 Integration Settings
+
+#### TC-SET-004: View Connected Integrations
+**Priority:** Medium  
+**Preconditions:** Integrations connected  
+**Steps:**
+1. Navigate to Settings > Integrations
+2. Verify connected integrations shown
+3. Verify can disconnect
+4. Verify can navigate to catalog
+
+**Expected Results:**
+- Connected integrations listed
+- Disconnect buttons work
+- "View Catalog" button works
+- Status accurate
+
+**Edge Cases:**
+- TC-SET-004-EC1: No integrations connected (should show message)
+- TC-SET-004-EC2: Integration connection lost (should update status)
+
+### 11.5 Pricing Settings
+
+#### TC-SET-005: View Pricing Information
+**Priority:** Low  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to Settings > Billing
+2. Verify pricing tiers displayed
+3. Verify current plan highlighted
+4. Verify upgrade options shown
+
+**Expected Results:**
+- Pricing information accurate
+- Current plan indicated
+- Upgrade buttons functional
+- "Contact Us" for all tiers
+
+**Edge Cases:**
+- TC-SET-005-EC1: Enterprise plan (should show all features)
+- TC-SET-005-EC2: Plan change in progress (should show status)
+
+---
+
+## 12. Team Management
+
+### 12.1 Team Member List
+
+#### TC-TEAM-001: View Team Members
+**Priority:** High  
+**Preconditions:** User with admin role, team members exist  
+**Steps:**
+1. Navigate to Settings > Team
+2. Verify all team members listed
+3. Verify member details shown:
+   - Name
+   - Email
+   - Role
+   - Avatar
+4. Verify loading state
+
+**Expected Results:**
+- All members displayed
+- Details accurate
+- Roles shown correctly
+- Loading state works
+
+**Edge Cases:**
+- TC-TEAM-001-EC1: No team members (should show empty state)
+- TC-TEAM-001-EC2: 100+ members (should paginate)
+- TC-TEAM-001-EC3: Non-admin user (should not access)
+
+### 12.2 Invite Team Member
+
+#### TC-TEAM-002: Invite New Team Member
+**Priority:** High  
+**Preconditions:** User with admin role  
+**Steps:**
+1. Click "Invite Member" button
+2. Fill in form:
+   - Name (required)
+   - Email (required)
+   - Role (required)
+3. Send invitation
+4. Verify invitation sent
+
+**Expected Results:**
+- Invitation sent successfully
+- Magic link email sent
+- New user created
+- User appears in team list
+- Audit log entry created
+
+**Edge Cases:**
+- TC-TEAM-002-EC1: Duplicate email (should reject)
+- TC-TEAM-002-EC2: Invalid email format (should validate)
+- TC-TEAM-002-EC3: Email service unavailable (should show error)
+- TC-TEAM-002-EC4: Invitation to existing user (should handle)
+
+#### TC-TEAM-003: Invite with Different Roles
+**Priority:** High  
+**Preconditions:** User with admin role  
+**Steps:**
+1. Invite member with "Editor" role
+2. Invite member with "Viewer" role
+3. Verify roles assigned correctly
+4. Verify permissions match roles
+
+**Expected Results:**
+- Roles assigned correctly
+- Permissions match roles
+- Users can access appropriate features
+
+**Edge Cases:**
+- TC-TEAM-003-EC1: Invalid role (should validate)
+- TC-TEAM-003-EC2: Role changed after invite (should update)
+
+### 12.3 Remove Team Member
+
+#### TC-TEAM-004: Remove Team Member
+**Priority:** High  
+**Preconditions:** User with admin role, team members exist  
+**Steps:**
+1. Click remove button on team member
+2. Confirm removal
+3. Verify member removed
+4. Verify member cannot login
+
+**Expected Results:**
+- Confirmation dialog appears
+- Member removed successfully
+- Removed from team list
+- User account deactivated
+- Audit log entry created
+
+**Edge Cases:**
+- TC-TEAM-004-EC1: Remove yourself (should prevent)
+- TC-TEAM-004-EC2: Cancel removal (should not remove)
+- TC-TEAM-004-EC3: Remove last admin (should prevent or warn)
+
+### 12.4 Update Team Member Role
+
+#### TC-TEAM-005: Change Team Member Role
+**Priority:** Medium  
+**Preconditions:** User with admin role, team members exist  
+**Steps:**
+1. Select team member
+2. Change role
+3. Save changes
+4. Verify role updated
+5. Verify permissions updated
+
+**Expected Results:**
+- Role updates successfully
+- Permissions reflect new role
+- Changes immediate
+- Audit log entry created
+
+**Edge Cases:**
+- TC-TEAM-005-EC1: Change your own role (should allow or prevent)
+- TC-TEAM-005-EC2: Change to invalid role (should validate)
+
+---
+
+## 13. Billing & Subscriptions
+
+### 13.1 Subscription Management
+
+#### TC-BILL-001: View Current Subscription
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Navigate to Settings > Billing
+2. Verify current plan displayed
+3. Verify subscription status shown
+4. Verify billing information
+
+**Expected Results:**
+- Current plan accurate
+- Status accurate (active/past_due/canceled)
+- Billing details shown
+- Next billing date shown
+
+**Edge Cases:**
+- TC-BILL-001-EC1: No subscription (should show trial or expired)
+- TC-BILL-001-EC2: Past due subscription (should show warning)
+
+#### TC-BILL-002: Upgrade Subscription
+**Priority:** Medium  
+**Preconditions:** User logged in, Stripe configured  
+**Steps:**
+1. Click "Upgrade" button
+2. Select plan
+3. Complete Stripe checkout
+4. Verify subscription upgraded
+
+**Expected Results:**
+- Stripe checkout opens
+- Payment processed
+- Subscription upgraded
+- Plan features activated
+- Audit log entry created
+
+**Edge Cases:**
+- TC-BILL-002-EC1: Payment fails (should show error)
+- TC-BILL-002-EC2: Checkout canceled (should not upgrade)
+- TC-BILL-002-EC3: Stripe unavailable (should show error)
+
+#### TC-BILL-003: Manage Subscription
+**Priority:** Medium  
+**Preconditions:** Active subscription exists  
+**Steps:**
+1. Click "Manage Subscription"
+2. Verify Stripe portal opens
+3. Verify can update payment method
+4. Verify can cancel subscription
+
+**Expected Results:**
+- Stripe portal opens
+- Can update payment
+- Can cancel subscription
+- Changes reflected in app
+
+**Edge Cases:**
+- TC-BILL-003-EC1: Portal unavailable (should show error)
+- TC-BILL-003-EC2: Canceled subscription (should update status)
+
+### 13.2 Pricing Display
+
+#### TC-BILL-004: View Pricing Tiers
+**Priority:** Low  
+**Preconditions:** User on landing page or settings  
+**Steps:**
+1. View pricing section
+2. Verify all tiers displayed
+3. Verify features listed
+4. Verify "Contact Us" for all tiers
+
+**Expected Results:**
+- All tiers shown (Basic, Pro, Enterprise)
+- Features accurate
+- Pricing shows "Contact Us"
+- Upgrade buttons functional
+
+**Edge Cases:**
+- TC-BILL-004-EC1: Pricing not loaded (should show loading state)
+- TC-BILL-004-EC2: Custom pricing (should handle)
+
+---
+
+## 14. Performance & Load Testing
+
+### 14.1 Page Load Performance
+
+#### TC-PERF-001: Dashboard Load Time
+**Priority:** High  
+**Preconditions:** System with data  
+**Steps:**
+1. Measure dashboard load time
+2. Verify loads within 2 seconds
+3. Verify all widgets load
+4. Verify no blocking operations
+
+**Expected Results:**
+- Loads within 2 seconds
+- Progressive loading works
+- No blocking UI
+- Smooth animations
+
+**Edge Cases:**
+- TC-PERF-001-EC1: Slow network (should show loading states)
+- TC-PERF-001-EC2: Large dataset (should handle efficiently)
+- TC-PERF-001-EC3: Concurrent users (should handle load)
+
+#### TC-PERF-002: Framework Details Load Time
+**Priority:** High  
+**Preconditions:** Framework with many controls  
+**Steps:**
+1. Navigate to framework with 100+ controls
+2. Measure load time
+3. Verify controls load efficiently
+4. Verify pagination/virtualization works
+
+**Expected Results:**
+- Loads within 3 seconds
+- Controls render efficiently
+- Scrolling smooth
+- No performance degradation
+
+**Edge Cases:**
+- TC-PERF-002-EC1: 1000+ controls (should paginate)
+- TC-PERF-002-EC2: Very long control names (should handle)
+
+### 14.2 API Response Times
+
+#### TC-PERF-003: API Endpoint Performance
+**Priority:** High  
+**Preconditions:** System running  
+**Steps:**
+1. Measure API response times:
+   - GET /api/frameworks
+   - GET /api/risks
+   - GET /api/integrations
+   - POST /api/ai/chat
+2. Verify all under thresholds
+
+**Expected Results:**
+- List endpoints: < 500ms
+- Detail endpoints: < 300ms
+- AI endpoints: < 5 seconds
+- File uploads: < 10 seconds
+
+**Edge Cases:**
+- TC-PERF-003-EC1: High load (should maintain performance)
+- TC-PERF-003-EC2: Database slow (should handle gracefully)
+
+### 14.3 Load Testing
+
+#### TC-PERF-004: Concurrent User Load
+**Priority:** High  
+**Preconditions:** Load testing setup  
+**Steps:**
+1. Simulate 100 concurrent users
+2. Monitor system performance
+3. Verify no errors
+4. Verify response times acceptable
+
+**Expected Results:**
+- Handles 100 concurrent users
+- No errors or crashes
+- Response times acceptable
+- Database handles load
+
+**Edge Cases:**
+- TC-PERF-004-EC1: 500+ concurrent users (should handle or queue)
+- TC-PERF-004-EC2: Sudden spike (should handle gracefully)
+
+#### TC-PERF-005: Stress Testing
+**Priority:** Medium  
+**Preconditions:** Stress testing setup  
+**Steps:**
+1. Gradually increase load
+2. Find breaking point
+3. Verify graceful degradation
+4. Verify recovery
+
+**Expected Results:**
+- System handles stress
+- Graceful degradation
+- Error messages clear
+- System recovers
+
+---
+
+## 15. Security Testing
+
+### 15.1 Authentication Security
+
+#### TC-SEC-001: Session Security
+**Priority:** Critical  
+**Preconditions:** User logged in  
+**Steps:**
+1. Verify session token secure
+2. Verify token expiration works
+3. Verify token cannot be reused
+4. Verify HTTPS enforced
+
+**Expected Results:**
+- Tokens stored securely
+- Tokens expire correctly
+- Tokens cannot be reused
+- HTTPS required
+
+**Edge Cases:**
+- TC-SEC-001-EC1: Token theft (should detect and invalidate)
+- TC-SEC-001-EC2: Token replay attack (should reject)
+
+#### TC-SEC-002: Authorization Bypass
+**Priority:** Critical  
+**Preconditions:** User with viewer role  
+**Steps:**
+1. Attempt to access admin endpoints directly
+2. Attempt to modify data via API
+3. Verify all requests rejected
+
+**Expected Results:**
+- All unauthorized requests rejected
+- 403 Forbidden returned
+- No data modified
+- Audit log entry created
+
+**Edge Cases:**
+- TC-SEC-002-EC1: Role escalation attempt (should prevent)
+- TC-SEC-002-EC2: Direct API access (should validate)
+
+### 15.2 Data Security
+
+#### TC-SEC-003: PII Protection
+**Priority:** Critical  
+**Preconditions:** System with PII data  
+**Steps:**
+1. Verify PII redaction in AI requests
+2. Verify PII not logged
+3. Verify PII encrypted at rest
+4. Verify access controls
+
+**Expected Results:**
+- PII redacted before AI calls
+- PII not in logs
+- PII encrypted
+- Access restricted
+
+**Edge Cases:**
+- TC-SEC-003-EC1: PII in file uploads (should detect and handle)
+- TC-SEC-003-EC2: PII in exports (should redact or encrypt)
+
+#### TC-SEC-004: Credential Storage
+**Priority:** Critical  
+**Preconditions:** Integrations with credentials  
+**Steps:**
+1. Verify credentials encrypted
+2. Verify credentials not in logs
+3. Verify credentials not exposed in API
+4. Verify secure transmission
+
+**Expected Results:**
+- Credentials encrypted at rest
+- Credentials not logged
+- Credentials not in API responses
+- HTTPS for transmission
+
+**Edge Cases:**
+- TC-SEC-004-EC1: Credential leak (should detect and alert)
+- TC-SEC-004-EC2: Credential rotation (should support)
+
+### 15.3 Input Validation
+
+#### TC-SEC-005: SQL Injection Prevention
+**Priority:** Critical  
+**Preconditions:** System running  
+**Steps:**
+1. Attempt SQL injection in all input fields
+2. Verify all attempts blocked
+3. Verify no database errors exposed
+4. Verify proper error handling
+
+**Expected Results:**
+- All SQL injection attempts blocked
+- No database errors exposed
+- Proper validation
+- Error messages generic
+
+**Edge Cases:**
+- TC-SEC-005-EC1: Complex injection attempts (should handle)
+- TC-SEC-005-EC2: Encoded injection (should detect)
+
+#### TC-SEC-006: XSS Prevention
+**Priority:** Critical  
+**Preconditions:** System running  
+**Steps:**
+1. Attempt XSS in all input fields
+2. Verify scripts not executed
+3. Verify content sanitized
+4. Verify CSP headers set
+
+**Expected Results:**
+- All XSS attempts blocked
+- Scripts not executed
+- Content sanitized
+- CSP headers present
+
+**Edge Cases:**
+- TC-SEC-006-EC1: Stored XSS (should prevent)
+- TC-SEC-006-EC2: Reflected XSS (should prevent)
+
+#### TC-SEC-007: File Upload Security
+**Priority:** High  
+**Preconditions:** File upload functionality  
+**Steps:**
+1. Attempt to upload malicious files
+2. Attempt to upload oversized files
+3. Attempt to upload wrong file types
+4. Verify all blocked
+
+**Expected Results:**
+- Malicious files rejected
+- File size limits enforced
+- File type validation works
+- Files scanned if possible
+
+**Edge Cases:**
+- TC-SEC-007-EC1: File type spoofing (should validate MIME type)
+- TC-SEC-007-EC2: Zip bombs (should handle)
+- TC-SEC-007-EC3: Malicious PDFs (should scan)
+
+### 15.4 Rate Limiting
+
+#### TC-SEC-008: API Rate Limiting
+**Priority:** High  
+**Preconditions:** System running  
+**Steps:**
+1. Send rapid API requests
+2. Verify rate limiting applies
+3. Verify appropriate error returned
+4. Verify limit resets
+
+**Expected Results:**
+- Rate limiting works
+- 429 Too Many Requests returned
+- Limit resets after window
+- Limits per user/IP
+
+**Edge Cases:**
+- TC-SEC-008-EC1: Distributed attacks (should handle)
+- TC-SEC-008-EC2: Legitimate high usage (should allow)
+
+---
+
+## 16. Edge Cases & Error Handling
+
+### 16.1 Network Errors
+
+#### TC-EDGE-001: Network Timeout
+**Priority:** High  
+**Preconditions:** System running  
+**Steps:**
+1. Simulate network timeout
+2. Verify error message displayed
+3. Verify retry option available
+4. Verify user data not lost
+
+**Expected Results:**
+- Clear error message
+- Retry option available
+- User data preserved
+- Graceful degradation
+
+**Edge Cases:**
+- TC-EDGE-001-EC1: Partial network failure (should handle)
+- TC-EDGE-001-EC2: Intermittent connectivity (should retry)
+
+#### TC-EDGE-002: Offline Mode
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Go offline
+2. Attempt to perform actions
+3. Verify offline handling
+4. Verify data queues when online
+
+**Expected Results:**
+- Offline state detected
+- Actions queued or blocked
+- Clear offline message
+- Data syncs when online
+
+**Edge Cases:**
+- TC-EDGE-002-EC1: Long offline period (should handle)
+- TC-EDGE-002-EC2: Data conflicts on sync (should resolve)
+
+### 16.2 Data Validation
+
+#### TC-EDGE-003: Invalid Data Input
+**Priority:** High  
+**Preconditions:** Forms available  
+**Steps:**
+1. Enter invalid data in all forms
+2. Verify validation works
+3. Verify error messages clear
+4. Verify form state preserved
+
+**Expected Results:**
+- All invalid inputs rejected
+- Clear error messages
+- Form state preserved
+- Can correct and resubmit
+
+**Edge Cases:**
+- TC-EDGE-003-EC1: Extremely long inputs (should validate)
+- TC-EDGE-003-EC2: Special characters (should handle)
+- TC-EDGE-003-EC3: Unicode characters (should handle)
+
+#### TC-EDGE-004: Missing Required Fields
+**Priority:** High  
+**Preconditions:** Forms with required fields  
+**Steps:**
+1. Submit forms without required fields
+2. Verify validation prevents submission
+3. Verify fields highlighted
+4. Verify error messages shown
+
+**Expected Results:**
+- Submission prevented
+- Required fields highlighted
+- Error messages clear
+- Can fix and resubmit
+
+### 16.3 Concurrent Operations
+
+#### TC-EDGE-005: Concurrent Edits
+**Priority:** High  
+**Preconditions:** Multiple users  
+**Steps:**
+1. Two users edit same framework
+2. Both save changes
+3. Verify conflict handling
+4. Verify last write wins or merge
+
+**Expected Results:**
+- Conflict detected
+- User notified
+- Resolution option provided
+- Data integrity maintained
+
+**Edge Cases:**
+- TC-EDGE-005-EC1: Same field edited (should handle)
+- TC-EDGE-005-EC2: Different fields edited (should merge)
+
+#### TC-EDGE-006: Rapid Actions
+**Priority:** Medium  
+**Preconditions:** User logged in  
+**Steps:**
+1. Perform rapid clicks on buttons
+2. Verify no duplicate actions
+3. Verify loading states work
+4. Verify no errors
+
+**Expected Results:**
+- Duplicate actions prevented
+- Loading states show
+- No errors occur
+- Actions complete correctly
+
+**Edge Cases:**
+- TC-EDGE-006-EC1: Network delay (should handle)
+- TC-EDGE-006-EC2: Very rapid clicks (should debounce)
+
+### 16.4 Data Consistency
+
+#### TC-EDGE-007: Orphaned Data
+**Priority:** Medium  
+**Preconditions:** Data relationships exist  
+**Steps:**
+1. Delete framework
+2. Verify controls deleted (cascade)
+3. Delete user
+4. Verify assigned risks handled
+
+**Expected Results:**
+- Cascading deletes work
+- Orphaned data prevented
+- Data integrity maintained
+- Audit logs created
+
+**Edge Cases:**
+- TC-EDGE-007-EC1: Partial delete failure (should rollback)
+- TC-EDGE-007-EC2: Circular dependencies (should handle)
+
+#### TC-EDGE-008: Data Synchronization
+**Priority:** High  
+**Preconditions:** Multiple data sources  
+**Steps:**
+1. Update data in one place
+2. Verify updates reflect everywhere
+3. Verify no stale data
+4. Verify cache invalidation
+
+**Expected Results:**
+- Updates propagate
+- No stale data shown
+- Cache invalidated
+- Real-time updates work
+
+**Edge Cases:**
+- TC-EDGE-008-EC1: Update conflicts (should resolve)
+- TC-EDGE-008-EC2: Update failures (should retry)
+
+### 16.5 Boundary Conditions
+
+#### TC-EDGE-009: Maximum Values
+**Priority:** Medium  
+**Preconditions:** Forms available  
+**Steps:**
+1. Enter maximum length strings
+2. Upload maximum size files
+3. Create maximum number of items
+4. Verify all handled correctly
+
+**Expected Results:**
+- Maximum values accepted
+- Validation works
+- No errors
+- Performance acceptable
+
+**Edge Cases:**
+- TC-EDGE-009-EC1: Exceeding maximums (should validate)
+- TC-EDGE-009-EC2: At boundary values (should work)
+
+#### TC-EDGE-010: Minimum Values
+**Priority:** Medium  
+**Preconditions:** Forms available  
+**Steps:**
+1. Enter minimum length strings
+2. Create items with minimum data
+3. Verify all handled correctly
+
+**Expected Results:**
+- Minimum values accepted
+- Validation works
+- No errors
+
+#### TC-EDGE-011: Empty States
+**Priority:** High  
+**Preconditions:** New system or empty data  
+**Steps:**
+1. Verify all empty states display
+2. Verify empty state messages clear
+3. Verify actions available from empty states
+4. Verify no errors
+
+**Expected Results:**
+- Empty states display correctly
+- Messages helpful
+- Actions available
+- No errors or broken UI
+
+**Edge Cases:**
+- TC-EDGE-011-EC1: Empty state with loading (should show loading)
+- TC-EDGE-011-EC2: Empty state after delete (should show)
+
+### 16.6 Error Recovery
+
+#### TC-EDGE-012: Error Recovery
+**Priority:** High  
+**Preconditions:** System running  
+**Steps:**
+1. Trigger various errors
+2. Verify error messages displayed
+3. Verify recovery options available
+4. Verify system recovers
+
+**Expected Results:**
+- Errors caught and handled
+- Clear error messages
+- Recovery options available
+- System recovers gracefully
+
+**Edge Cases:**
+- TC-EDGE-012-EC1: Cascading errors (should handle)
+- TC-EDGE-012-EC2: Unrecoverable errors (should show message)
+
+### 16.7 Browser Compatibility
+
+#### TC-EDGE-013: Browser Compatibility
+**Priority:** Medium  
+**Preconditions:** Different browsers available  
+**Steps:**
+1. Test in Chrome
+2. Test in Firefox
+3. Test in Safari
+4. Test in Edge
+5. Verify all work correctly
+
+**Expected Results:**
+- All modern browsers supported
+- Features work consistently
+- No browser-specific bugs
+- Responsive design works
+
+**Edge Cases:**
+- TC-EDGE-013-EC1: Older browser versions (should degrade gracefully)
+- TC-EDGE-013-EC2: Mobile browsers (should work)
+
+### 16.8 Mobile Responsiveness
+
+#### TC-EDGE-014: Mobile Device Testing
+**Priority:** Medium  
+**Preconditions:** Mobile device or emulator  
+**Steps:**
+1. Test on mobile device
+2. Verify responsive design
+3. Verify touch interactions
+4. Verify all features accessible
+
+**Expected Results:**
+- Responsive design works
+- Touch interactions work
+- All features accessible
+- Performance acceptable
+
+**Edge Cases:**
+- TC-EDGE-014-EC1: Very small screens (should handle)
+- TC-EDGE-014-EC2: Tablet devices (should work)
+
+---
+
+## Test Execution Guidelines
+
+### Test Environment Setup
+
+1. **Development Environment**
+   - Local database (PostgreSQL)
+   - All environment variables configured
+   - Mock services for external APIs
+   - Test data seeded
+
+2. **Staging Environment**
+   - Production-like setup
+   - Real integrations (test accounts)
+   - Performance monitoring enabled
+   - Full test data
+
+3. **Production Environment**
+   - Smoke tests only
+   - Critical path validation
+   - Performance monitoring
+
+### Test Data Requirements
+
+1. **Users**
+   - Admin user
+   - Editor user
+   - Viewer user
+   - Multiple organizations
+
+2. **Frameworks**
+   - Various frameworks (NIST, SOC 2, ISO 27001, etc.)
+   - Frameworks with controls
+   - Frameworks without controls
+   - Frameworks with different statuses
+
+3. **Controls**
+   - Controls with all statuses
+   - Controls with evidence
+   - Controls without evidence
+   - Controls with long descriptions
+
+4. **Risks**
+   - Risks with all severities
+   - Risks with all statuses
+   - Assigned and unassigned risks
+   - Risks with mitigation plans
+
+5. **Integrations**
+   - Connected integrations
+   - Disconnected integrations
+   - Integrations with errors
+   - Various integration types
+
+### Test Execution Order
+
+1. **Smoke Tests** (Critical path)
+   - Authentication
+   - Dashboard load
+   - Framework viewing
+   - Control creation
+
+2. **Functional Tests** (All features)
+   - All test cases in order
+   - Feature by feature
+   - Integration testing
+
+3. **Edge Case Tests** (Boundary conditions)
+   - All edge cases
+   - Error scenarios
+   - Stress testing
+
+4. **Performance Tests** (Load and stress)
+   - Load testing
+   - Stress testing
+   - Performance benchmarks
+
+5. **Security Tests** (Security validation)
+   - Authentication security
+   - Authorization
+   - Data security
+   - Input validation
+
+### Test Reporting
+
+1. **Test Results**
+   - Pass/Fail status
+   - Execution time
+   - Screenshots for failures
+   - Error logs
+
+2. **Defect Tracking**
+   - Defect ID
+   - Severity
+   - Steps to reproduce
+   - Expected vs actual
+   - Environment details
+
+3. **Coverage Metrics**
+   - Feature coverage
+   - Code coverage
+   - Edge case coverage
+   - Test execution rate
+
+---
+
+## Test Case Summary
+
+### Total Test Cases: 200+
+
+**By Priority:**
+- Critical: 45 test cases
+- High: 85 test cases
+- Medium: 50 test cases
+- Low: 20 test cases
+
+**By Category:**
+- Authentication & Authorization: 11 test cases
+- Dashboard: 7 test cases
+- Frameworks Management: 6 test cases
+- Controls & Evidence: 10 test cases
+- Integrations: 19 test cases
+- Risk Management: 8 test cases
+- My Tasks: 3 test cases
+- AI Features: 11 test cases
+- Reports: 3 test cases
+- Audit Trail: 3 test cases
+- Settings: 5 test cases
+- Team Management: 5 test cases
+- Billing: 4 test cases
+- Performance: 5 test cases
+- Security: 8 test cases
+- Edge Cases: 13 test cases
+
+**Edge Cases: 50+**
+
+---
+
+## Notes
+
+- All test cases should be executed in both manual and automated testing where applicable
+- Edge cases are critical for production readiness
+- Performance tests should be run regularly
+- Security tests should be run before each release
+- Test data should be reset between test runs
+- All failures should be logged and tracked
+- Test coverage should be maintained at 80%+
+
+---
+
+**Document Version:** 1.0  
+**Last Updated:** December 2024  
+**Maintained By:** QA Team
+>>>>>>> 1fbd6b5 (Production-ready fixes: Organization settings, team role protection, email confirmation, audit trail, BCP date, and comprehensive feature implementations)
 

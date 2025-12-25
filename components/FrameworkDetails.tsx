@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ComplianceFramework, ComplianceStatus, ViewState } from '../types';
-import { ArrowLeft, CheckCircle, Circle, FileText, Upload, AlertTriangle, Loader2, Download, Plus, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Circle, FileText, Upload, AlertTriangle, Loader2, Download, Plus, X, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface FrameworkControl {
   id: string;
@@ -20,6 +21,7 @@ interface FrameworkDetailsProps {
 }
 
 export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, onBack, onDataChanged }) => {
+  const { user } = useAuth();
   const [controls, setControls] = useState<FrameworkControl[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [readinessScore, setReadinessScore] = useState(0);
@@ -28,6 +30,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
   const [exportingControl, setExportingControl] = useState<string | null>(null);
   const [showAddControl, setShowAddControl] = useState(false);
   const [uploadingControl, setUploadingControl] = useState<string | null>(null);
+  const [deletingControl, setDeletingControl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const smartUploadRef = useRef<HTMLInputElement>(null);
 
@@ -147,7 +150,18 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     if (!framework?.id || !newControl.name.trim()) return;
 
     try {
-      await api.frameworks.createControl(framework.id, newControl);
+      // Prepare control data - only include description if it's not empty
+      const controlData: { name: string; description?: string; status: string } = {
+        name: newControl.name.trim(),
+        status: newControl.status || 'Pending',
+      };
+      
+      // Only include description if it has a value
+      if (newControl.description && newControl.description.trim()) {
+        controlData.description = newControl.description.trim();
+      }
+
+      await api.frameworks.createControl(framework.id, controlData);
       setNewControl({ name: '', description: '', status: 'Pending' });
       setShowAddControl(false);
       await loadFrameworkDetails();
@@ -157,7 +171,8 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       }
     } catch (error: any) {
       console.error('Failed to create control:', error);
-      alert(`Failed to create control: ${error.message || 'Unknown error'}`);
+      const errorMessage = error.message || error.error || 'Unknown error';
+      alert(`Failed to create control: ${errorMessage}`);
     }
   };
 
@@ -178,8 +193,8 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
   };
 
   const handleControlClick = (control: FrameworkControl) => {
-    // Only allow status updates for Pending and In Progress controls
-    if (control.status === 'Pending' || control.status === 'In Progress') {
+    // Allow status updates for all controls except "Compliant" (final state)
+    if (control.status !== 'Compliant') {
       const statusOptions = ['Pending', 'In Progress', 'Implemented', 'Compliant', 'At Risk'];
       const currentIndex = statusOptions.indexOf(control.status);
       const nextStatus = statusOptions[currentIndex + 1] || statusOptions[0];
@@ -187,6 +202,33 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       if (confirm(`Update "${control.name}" status from "${control.status}" to "${nextStatus}"?`)) {
         handleUpdateControlStatus(control, nextStatus);
       }
+    } else {
+      // For Compliant controls, allow going back to Implemented if needed
+      if (confirm(`Update "${control.name}" status from "Compliant" to "Implemented"?`)) {
+        handleUpdateControlStatus(control, 'Implemented');
+      }
+    }
+  };
+
+  const handleDeleteControl = async (control: FrameworkControl) => {
+    if (!framework?.id) return;
+    
+    if (!confirm(`Are you sure you want to delete control "${control.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeletingControl(control.id);
+      await api.frameworks.deleteControl(framework.id, control.id);
+      await loadFrameworkDetails();
+      if (onDataChanged) {
+        onDataChanged();
+      }
+    } catch (error: any) {
+      console.error('Failed to delete control:', error);
+      alert(`Failed to delete control: ${error.message || 'Unknown error'}`);
+    } finally {
+      setDeletingControl(null);
     }
   };
 
@@ -407,15 +449,11 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
               <div 
                 key={control.id} 
                 className={`p-4 transition-colors flex items-center justify-between group ${
-                  (control.status === 'Pending' || control.status === 'In Progress')
+                  control.status !== 'Compliant'
                     ? 'hover:bg-brand-50 cursor-pointer border-l-4 border-transparent hover:border-brand-500'
-                    : 'hover:bg-gray-50'
+                    : 'hover:bg-gray-50 cursor-pointer'
                 }`}
-                onClick={() => {
-                  if (control.status === 'Pending' || control.status === 'In Progress') {
-                    handleControlClick(control);
-                  }
-                }}
+                onClick={() => handleControlClick(control)}
               >
                 <div className="flex items-start space-x-4 flex-1">
                   <div className={`mt-1 ${getStatusColor(control.status)}`}>
@@ -446,13 +484,30 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                       }`}>
                         {control.status}
                       </span>
-                      {(control.status === 'Pending' || control.status === 'In Progress') && (
+                      {control.status !== 'Compliant' && (
                         <span className="text-xs text-gray-500 italic">Click to update status</span>
+                      )}
+                      {control.status === 'Compliant' && (
+                        <span className="text-xs text-green-600 italic">✓ Fully compliant</span>
                       )}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                  {(user?.role === 'admin' || user?.role === 'editor') && (
+                    <button 
+                      onClick={() => handleDeleteControl(control)}
+                      disabled={deletingControl === control.id}
+                      className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Delete Control"
+                    >
+                      {deletingControl === control.id ? (
+                        <Loader2 className="animate-spin" size={18} />
+                      ) : (
+                        <Trash2 size={18} />
+                      )}
+                    </button>
+                  )}
                   <button 
                     onClick={() => handleExportControl(control)}
                     disabled={exportingControl === control.id}

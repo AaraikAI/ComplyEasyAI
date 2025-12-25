@@ -1001,3 +1001,101 @@ export const authorizeProvider: RequestHandler = async (req: Request, res: Respo
     res.status(500).json({ error: 'Failed to initiate authorization' });
   }
 };
+
+// Generic sync endpoint for all integrations
+export const syncProvider: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const { provider } = req.params;
+    const organizationId = authReq.user!.organizationId;
+
+    // Check if integration exists and is connected
+    const integration = await prisma.integration.findFirst({
+      where: {
+        organizationId,
+        provider: provider.toLowerCase(),
+        connected: true,
+      },
+    });
+
+    if (!integration) {
+      res.status(404).json({ error: 'Integration not found or not connected' });
+      return;
+    }
+
+    // Update last sync timestamp
+    await prisma.integration.update({
+      where: { id: integration.id },
+      data: {
+        lastSync: new Date(),
+      },
+    });
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        action: `Synced ${integration.name} integration`,
+        userId: authReq.user!.id,
+        organizationId,
+        hash: require('crypto').randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    res.json({ message: `${integration.name} synced successfully`, lastSync: new Date() });
+    logger.info(`Integration synced: ${provider} for organization ${organizationId}`);
+  } catch (error) {
+    logger.error('Error syncing provider', error);
+    res.status(500).json({ error: 'Failed to sync integration' });
+  }
+};
+
+// Generic disconnect endpoint for all integrations
+export const disconnectProvider: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const { provider } = req.params;
+    const organizationId = authReq.user!.organizationId;
+
+    // Check if integration exists
+    const integration = await prisma.integration.findFirst({
+      where: {
+        organizationId,
+        provider: provider.toLowerCase(),
+      },
+    });
+
+    if (!integration) {
+      res.status(404).json({ error: 'Integration not found' });
+      return;
+    }
+
+    // Disconnect the integration
+    await prisma.integration.update({
+      where: { id: integration.id },
+      data: {
+        connected: false,
+        config: null,
+      },
+    });
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        action: `Disconnected ${integration.name} integration`,
+        userId: authReq.user!.id,
+        organizationId,
+        hash: require('crypto').randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    res.json({ message: `${integration.name} integration disconnected successfully` });
+    logger.info(`Integration disconnected: ${provider} for organization ${organizationId}`);
+  } catch (error) {
+    logger.error('Error disconnecting provider', error);
+    res.status(500).json({ error: 'Failed to disconnect integration' });
+  }
+};

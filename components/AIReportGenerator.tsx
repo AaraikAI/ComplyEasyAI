@@ -1,14 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateComplianceReport } from '../services/geminiService';
 import { FileText, Loader2, Download, RefreshCw, Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { api } from '../services/api';
+import { ComplianceFramework } from '../types';
 
 export const AIReportGenerator: React.FC = () => {
+  const [frameworks, setFrameworks] = useState<ComplianceFramework[]>([]);
   const [framework, setFramework] = useState('SOC 2');
   const [companyName, setCompanyName] = useState('Acme Corp');
   const [context, setContext] = useState('');
   const [report, setReport] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingFrameworks, setLoadingFrameworks] = useState(true);
+
+  useEffect(() => {
+    const loadFrameworks = async () => {
+      try {
+        setLoadingFrameworks(true);
+        const allFrameworks = await api.frameworks.list();
+        setFrameworks(allFrameworks);
+        if (allFrameworks.length > 0 && !allFrameworks.find(f => f.name === framework)) {
+          setFramework(allFrameworks[0].name);
+        }
+      } catch (error) {
+        console.error('Failed to load frameworks:', error);
+        // Fallback to default frameworks
+        setFrameworks([
+          { id: '1', name: 'SOC 2 Type II', status: 'In Review' as any, progress: 0, nextAuditDate: new Date().toISOString() },
+          { id: '2', name: 'GDPR', status: 'In Review' as any, progress: 0, nextAuditDate: new Date().toISOString() },
+          { id: '3', name: 'HIPAA', status: 'In Review' as any, progress: 0, nextAuditDate: new Date().toISOString() },
+          { id: '4', name: 'ISO 27001', status: 'In Review' as any, progress: 0, nextAuditDate: new Date().toISOString() },
+        ]);
+      } finally {
+        setLoadingFrameworks(false);
+      }
+    };
+    loadFrameworks();
+  }, []);
 
   const handleGenerate = async () => {
     if (!context) return;
@@ -31,16 +60,31 @@ export const AIReportGenerator: React.FC = () => {
         <div className="space-y-6 flex-1">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Target Framework</label>
-            <select 
-              value={framework}
-              onChange={(e) => setFramework(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-            >
-              <option value="SOC 2">SOC 2 Type II</option>
-              <option value="GDPR">GDPR</option>
-              <option value="HIPAA">HIPAA</option>
-              <option value="ISO 27001">ISO 27001</option>
-            </select>
+            {loadingFrameworks ? (
+              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 flex items-center">
+                <Loader2 className="animate-spin mr-2" size={16} />
+                <span className="text-gray-500">Loading frameworks...</span>
+              </div>
+            ) : (
+              <select 
+                value={framework}
+                onChange={(e) => setFramework(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+              >
+                {frameworks.length > 0 ? (
+                  frameworks.map(fw => (
+                    <option key={fw.id} value={fw.name}>{fw.name}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="SOC 2">SOC 2 Type II</option>
+                    <option value="GDPR">GDPR</option>
+                    <option value="HIPAA">HIPAA</option>
+                    <option value="ISO 27001">ISO 27001</option>
+                  </>
+                )}
+              </select>
+            )}
           </div>
 
           <div>

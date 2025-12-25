@@ -6,13 +6,16 @@ import {
 } from 'lucide-react';
 import { PRICING_TIERS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
 
 export const LandingPage: React.FC = () => {
   const { verifyMagicLink, register, loginWithMagicLink } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authStep, setAuthStep] = useState<'email' | 'magic-link-sent' | 'register'>('email');
+  const [authStep, setAuthStep] = useState<'email' | 'magic-link-sent' | 'register' | 'password-login'>('email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginMethod, setLoginMethod] = useState<'magic-link' | 'password'>('magic-link');
   const [loading, setLoading] = useState(false);
   const [mockToken, setMockToken] = useState<string | null>(null);
 
@@ -58,7 +61,7 @@ export const LandingPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await register(name, email);
+      await api.auth.register(name, email, undefined, password || undefined);
       // After registration, request magic link for login
       const response: any = await loginWithMagicLink(email);
       // In development, backend returns the token directly for testing
@@ -406,28 +409,103 @@ export const LandingPage: React.FC = () => {
                </div>
 
                {authStep === 'email' && (
-                  <form onSubmit={handleLoginSubmit}>
+                  <div>
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h3>
-                    <p className="text-gray-500 mb-6">Enter your email to sign in via Magic Link.</p>
+                    <p className="text-gray-500 mb-4">Sign in to your account</p>
                     
-                    <div className="space-y-4">
-                      <input 
-                        required
-                        type="email" 
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        placeholder="name@company.com"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
-                      />
-                      <button 
-                        disabled={loading}
-                        className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex justify-center items-center"
+                    {/* Login Method Toggle */}
+                    <div className="flex space-x-2 mb-4 p-1 bg-gray-100 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => setLoginMethod('magic-link')}
+                        className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                          loginMethod === 'magic-link'
+                            ? 'bg-white text-brand-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
                       >
-                         {loading ? <Loader2 className="animate-spin" /> : 'Send Magic Link'}
+                        Magic Link
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLoginMethod('password')}
+                        className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                          loginMethod === 'password'
+                            ? 'bg-white text-brand-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        Password
                       </button>
                     </div>
-                    <p className="mt-6 text-xs text-gray-400">Secure passwordless authentication via Auth0/SSO.</p>
-                  </form>
+
+                    {loginMethod === 'magic-link' ? (
+                      <form onSubmit={handleLoginSubmit}>
+                        <div className="space-y-4">
+                          <input 
+                            required
+                            type="email" 
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            placeholder="name@company.com"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                          />
+                          <button 
+                            disabled={loading}
+                            className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex justify-center items-center"
+                          >
+                             {loading ? <Loader2 className="animate-spin" /> : 'Send Magic Link'}
+                          </button>
+                        </div>
+                        <p className="mt-4 text-xs text-gray-400">Secure passwordless authentication</p>
+                      </form>
+                    ) : (
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        setLoading(true);
+                        try {
+                          await api.auth.login(email, password);
+                          // Login successful - AuthContext will handle redirect
+                          window.location.reload();
+                        } catch (error: any) {
+                          console.error('Login error:', error);
+                          alert(error.message || 'Login failed. Please check your credentials.');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}>
+                        <div className="space-y-4">
+                          <input 
+                            required
+                            type="email" 
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            placeholder="name@company.com"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                          />
+                          <input 
+                            required
+                            type="password" 
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="Password"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                          />
+                          <button 
+                            disabled={loading}
+                            className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex justify-center items-center"
+                          >
+                             {loading ? <Loader2 className="animate-spin" /> : 'Sign In'}
+                          </button>
+                        </div>
+                        <p className="mt-4 text-xs text-gray-400">
+                          <button type="button" className="text-brand-600 hover:underline">
+                            Forgot password?
+                          </button>
+                        </p>
+                      </form>
+                    )}
+                  </div>
                )}
 
                {authStep === 'magic-link-sent' && (
@@ -444,16 +522,35 @@ export const LandingPage: React.FC = () => {
                )}
 
                {authStep === 'register' && (
-                  <form onSubmit={handleRegister}>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    setLoading(true);
+                    try {
+                      await register(name, email);
+                      // After registration, request magic link for login
+                      const response: any = await loginWithMagicLink(email);
+                      if (response?.devToken) {
+                        setMockToken(response.devToken);
+                      }
+                      setAuthStep('magic-link-sent');
+                    } catch (error: any) {
+                      console.error('Registration error:', error);
+                      alert(error.message || 'Registration failed. Please try again.');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}>
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h3>
                     <p className="text-gray-500 mb-6">Looks like you're new here!</p>
                     
                     <div className="space-y-4">
                       <input 
-                        disabled
+                        required
                         type="email" 
                         value={email}
-                        className="w-full px-4 py-3 border border-gray-200 bg-gray-50 rounded-xl text-gray-500"
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="name@company.com"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
                       />
                       <input 
                         required
@@ -463,6 +560,13 @@ export const LandingPage: React.FC = () => {
                         placeholder="Full Name"
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
                       />
+                      <input 
+                        type="password" 
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        placeholder="Password (optional - can set later)"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                      />
                       <button 
                         disabled={loading}
                         className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex justify-center items-center"
@@ -470,6 +574,9 @@ export const LandingPage: React.FC = () => {
                          {loading ? <Loader2 className="animate-spin" /> : 'Create Account'}
                       </button>
                     </div>
+                    <p className="mt-4 text-xs text-gray-400">
+                      By creating an account, you'll receive a magic link via email. Password is optional.
+                    </p>
                   </form>
                )}
             </div>

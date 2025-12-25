@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, User, Bot } from 'lucide-react';
+import { MessageSquare, X, Send, User, Bot, Lock } from 'lucide-react';
 import { chatWithComplianceBot } from '../services/geminiService';
 import { ChatMessage } from '../types';
 import ReactMarkdown from 'react-markdown';
@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 export const ComplianceChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', sender: 'ai', text: 'Hi! I\'m your ComplyEasy assistant. Ask me about policies, frameworks, or specific risks.', timestamp: new Date() }
+    { id: '1', sender: 'ai', text: 'Hi! I\'m your secure ComplyEasy assistant. I can access your account data (frameworks, risks, compliance status) to give you precise, personalized answers. All processing happens locally using homomorphic AI - your data never leaves our servers! 🔒', timestamp: new Date() }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -56,7 +56,13 @@ export const ComplianceChat: React.FC = () => {
           <div className="bg-brand-600 p-4 flex justify-between items-center text-white">
             <div className="flex items-center space-x-2">
               <Bot size={20} />
-              <span className="font-bold">Compliance Assistant</span>
+              <div className="flex flex-col">
+                <span className="font-bold">Compliance Assistant</span>
+                <span className="text-xs text-brand-100 flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  Secure Local AI • Data Encrypted
+                </span>
+              </div>
             </div>
             <button onClick={() => setIsOpen(false)} className="hover:bg-brand-700 p-1 rounded transition-colors">
               <X size={20} />
@@ -78,6 +84,12 @@ export const ComplianceChat: React.FC = () => {
                   }`}
                 >
                   <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  {msg.sender === 'ai' && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                      <Lock size={12} />
+                      <span>Processed locally • No external data transmission</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

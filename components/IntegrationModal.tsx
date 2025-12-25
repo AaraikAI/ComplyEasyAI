@@ -259,8 +259,86 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
     }
   };
 
+  // Validation helpers
+  const validateApiKey = (key: string): string | null => {
+    if (!key || key.trim().length === 0) {
+      return 'API key is required';
+    }
+    if (key.length < 10) {
+      return 'API key appears to be too short';
+    }
+    return null;
+  };
+
+  const validateAwsCredentials = (accessKey: string, secretKey: string): string | null => {
+    if (!accessKey || !secretKey) {
+      return 'Access Key ID and Secret Access Key are required';
+    }
+    // AWS Access Key ID format: AKIA followed by 16 alphanumeric characters
+    if (!/^AKIA[0-9A-Z]{16}$/.test(accessKey)) {
+      return 'Invalid AWS Access Key ID format. Should start with AKIA and be 20 characters long.';
+    }
+    // AWS Secret Access Key is typically 40 characters
+    if (secretKey.length < 20) {
+      return 'Secret Access Key appears to be invalid';
+    }
+    return null;
+  };
+
+  const validateAzureCredentials = (tenantId: string, clientId: string, clientSecret: string, subscriptionId: string): string | null => {
+    if (!tenantId || !clientId || !clientSecret || !subscriptionId) {
+      return 'All Azure credentials are required (Tenant ID, Client ID, Client Secret, Subscription ID)';
+    }
+    // Azure Tenant ID and Client ID are GUIDs
+    const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!guidPattern.test(tenantId)) {
+      return 'Invalid Tenant ID format. Should be a GUID (e.g., 12345678-1234-1234-1234-123456789012)';
+    }
+    if (!guidPattern.test(clientId)) {
+      return 'Invalid Client ID format. Should be a GUID';
+    }
+    if (clientSecret.length < 10) {
+      return 'Client Secret appears to be invalid';
+    }
+    if (subscriptionId.length < 10) {
+      return 'Subscription ID appears to be invalid';
+    }
+    return null;
+  };
+
+  const validateGcpServiceAccount = (jsonString: string): string | null => {
+    if (!jsonString || jsonString.trim().length === 0) {
+      return 'Service Account JSON is required';
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch {
+      return 'Invalid JSON format. Please provide a valid service account JSON.';
+    }
+    // Check for required fields in GCP service account
+    const requiredFields = ['type', 'project_id', 'private_key_id', 'private_key', 'client_email'];
+    const missingFields = requiredFields.filter(field => !parsed[field]);
+    if (missingFields.length > 0) {
+      return `Missing required fields in service account JSON: ${missingFields.join(', ')}`;
+    }
+    if (parsed.type !== 'service_account') {
+      return 'Invalid service account type. Expected "service_account".';
+    }
+    return null;
+  };
+
   const handleApiKeyConnect = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate API key
+    const validationError = validateApiKey(apiKey);
+    if (validationError) {
+      setError(validationError);
+      setStatus('error');
+      return;
+    }
+
     setIsConnecting(true);
     setError(null);
     setStatus('connecting');
@@ -278,7 +356,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         onClose();
       }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Failed to connect. Please check your API key.');
+      setError(err.message || 'Failed to connect. Please check your API key and try again.');
       setIsConnecting(false);
       setStatus('error');
     }
@@ -286,6 +364,20 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
 
   const handleApiKeySecretConnect = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate API key and secret
+    const keyError = validateApiKey(apiKey);
+    if (keyError) {
+      setError(keyError);
+      setStatus('error');
+      return;
+    }
+    if (!apiSecret || apiSecret.trim().length === 0) {
+      setError('API Secret is required');
+      setStatus('error');
+      return;
+    }
+
     setIsConnecting(true);
     setError(null);
     setStatus('connecting');
@@ -304,7 +396,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         onClose();
       }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Failed to connect. Please check your credentials.');
+      setError(err.message || 'Failed to connect. Please check your API key and secret.');
       setIsConnecting(false);
       setStatus('error');
     }
@@ -312,6 +404,19 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
 
   const handleUsernamePasswordConnect = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate username and password
+    if (!username || username.trim().length === 0) {
+      setError('Username is required');
+      setStatus('error');
+      return;
+    }
+    if (!password || password.trim().length === 0) {
+      setError('Password is required');
+      setStatus('error');
+      return;
+    }
+
     setIsConnecting(true);
     setError(null);
     setStatus('connecting');
@@ -331,7 +436,14 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         onClose();
       }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Failed to connect. Please check your credentials.');
+      const errorMsg = err.message || 'Failed to connect';
+      if (errorMsg.includes('unreachable') || errorMsg.includes('network') || errorMsg.includes('ECONNREFUSED')) {
+        setError('Cannot reach the service. Please check the base URL and network connection.');
+      } else if (errorMsg.includes('certificate') || errorMsg.includes('SSL')) {
+        setError('SSL certificate error. If using a self-signed certificate, please contact support.');
+      } else {
+        setError(errorMsg);
+      }
       setIsConnecting(false);
       setStatus('error');
     }
@@ -339,12 +451,30 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
 
   const handleIamConnect = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const provider = getProviderId();
+    let validationError: string | null = null;
+
+    if (provider === 'aws') {
+      validationError = validateAwsCredentials(accessKeyId, secretAccessKey);
+      if (!region || region.trim().length === 0) {
+        validationError = 'AWS region is required';
+      }
+    } else if (provider === 'azure') {
+      validationError = validateAzureCredentials(username, accessKeyId, secretAccessKey, subscriptionId);
+    }
+
+    if (validationError) {
+      setError(validationError);
+      setStatus('error');
+      return;
+    }
+
     setIsConnecting(true);
     setError(null);
     setStatus('connecting');
 
     try {
-      const provider = getProviderId();
       if (provider === 'aws') {
         await api.integrations.connectAWS({
           accessKeyId,
@@ -366,7 +496,16 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         onClose();
       }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Failed to connect. Please check your credentials.');
+      const errorMsg = err.message || 'Failed to connect';
+      if (errorMsg.includes('Invalid') || errorMsg.includes('invalid')) {
+        setError('Invalid credentials. Please check your Access Key ID, Secret Access Key, and region.');
+      } else if (errorMsg.includes('permission') || errorMsg.includes('denied')) {
+        setError('Insufficient permissions. Please ensure your IAM user has the required permissions.');
+      } else if (errorMsg.includes('expired')) {
+        setError('Credentials have expired. Please update your credentials.');
+      } else {
+        setError(errorMsg);
+      }
       setIsConnecting(false);
       setStatus('error');
     }
@@ -374,6 +513,15 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
 
   const handleServiceAccountConnect = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate service account JSON
+    const validationError = validateGcpServiceAccount(serviceAccountJson);
+    if (validationError) {
+      setError(validationError);
+      setStatus('error');
+      return;
+    }
+
     setIsConnecting(true);
     setError(null);
     setStatus('connecting');
@@ -397,14 +545,41 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         onClose();
       }, 1500);
     } catch (err: any) {
+      const errorMsg = err.message || 'Failed to connect';
+      if (errorMsg.includes('expired') || errorMsg.includes('invalid_grant')) {
+        setError('Service account credentials have expired. Please generate a new service account key.');
+      } else if (errorMsg.includes('permission') || errorMsg.includes('denied')) {
+        setError('Service account does not have required permissions. Please check IAM roles.');
+      } else {
+        setError(errorMsg);
+      }
       setError(err.message || 'Failed to connect. Please check your service account JSON.');
       setIsConnecting(false);
       setStatus('error');
     }
   };
 
+  const validatePat = (token: string): string | null => {
+    if (!token || token.trim().length === 0) {
+      return 'Personal Access Token is required';
+    }
+    if (token.length < 10) {
+      return 'Token appears to be too short';
+    }
+    return null;
+  };
+
   const handlePatConnect = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate PAT
+    const validationError = validatePat(pat);
+    if (validationError) {
+      setError(validationError);
+      setStatus('error');
+      return;
+    }
+
     setIsConnecting(true);
     setError(null);
     setStatus('connecting');
@@ -422,7 +597,14 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         onClose();
       }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Failed to connect. Please check your personal access token.');
+      const errorMsg = err.message || 'Failed to connect';
+      if (errorMsg.includes('Invalid') || errorMsg.includes('invalid') || errorMsg.includes('401') || errorMsg.includes('403')) {
+        setError('Invalid token or insufficient permissions. Please check your Personal Access Token and its scopes.');
+      } else if (errorMsg.includes('unreachable') || errorMsg.includes('network')) {
+        setError('Cannot reach the service. Please check the base URL (for self-hosted instances) and network connection.');
+      } else {
+        setError(errorMsg);
+      }
       setIsConnecting(false);
       setStatus('error');
     }

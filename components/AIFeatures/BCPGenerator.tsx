@@ -3,6 +3,24 @@ import { generateBCP } from '../../services/geminiService';
 import { LifeBuoy, Loader2, ArrowLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
+const DISASTER_SCENARIOS = [
+  'Ransomware Attack',
+  'Office Fire / Flood',
+  'Key Personnel Loss',
+  'Cloud Provider Outage (AWS Down)',
+  'Data Breach (Customer PII)',
+  'Natural Disaster (Earthquake, Hurricane)',
+  'Cyber Attack (DDoS)',
+  'Power Outage',
+  'Network Infrastructure Failure',
+  'Supply Chain Disruption',
+  'Pandemic / Health Crisis',
+  'Regulatory Compliance Failure',
+  'Vendor Service Interruption',
+  'Physical Security Breach',
+  'Data Center Failure',
+];
+
 export const BCPGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [scenario, setScenario] = useState('Ransomware Attack');
   const [result, setResult] = useState('');
@@ -10,9 +28,24 @@ export const BCPGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const handleGenerate = async () => {
     setLoading(true);
-    const text = await generateBCP(scenario);
-    setResult(text);
-    setLoading(false);
+    setResult('');
+    try {
+      const text = await generateBCP(scenario);
+      // Add today's date to the generated document
+      const today = new Date();
+      const formattedDate = today.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      const dateHeader = `**Document Generated:** ${formattedDate}\n\n`;
+      setResult(dateHeader + text);
+    } catch (error) {
+      console.error('Error generating BCP:', error);
+      setResult('Error generating business continuity plan. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -25,15 +58,28 @@ export const BCPGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) => {
          <div className="lg:col-span-1 space-y-4">
              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Disaster Scenario</label>
-                <select value={scenario} onChange={e => setScenario(e.target.value)} className="w-full p-2 border rounded-lg mb-4">
-                   <option>Ransomware Attack</option>
-                   <option>Office Fire / Flood</option>
-                   <option>Key Personnel Loss</option>
-                   <option>Cloud Provider Outage (AWS Down)</option>
-                   <option>Data Breach (Customer PII)</option>
+                <select
+                  value={scenario}
+                  onChange={e => setScenario(e.target.value)}
+                  className="w-full p-2 border rounded-lg mb-4 focus:ring-2 focus:ring-brand-500 outline-none"
+                >
+                  {DISASTER_SCENARIOS.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
                 </select>
-                <button onClick={handleGenerate} disabled={loading} className="w-full bg-brand-600 text-white py-2 rounded-lg hover:bg-brand-700 flex justify-center items-center">
-                   {loading ? <Loader2 className="animate-spin"/> : 'Generate Plan'}
+                <button
+                  onClick={handleGenerate}
+                  disabled={loading}
+                  className="w-full bg-brand-600 text-white py-2 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                >
+                   {loading ? (
+                     <>
+                       <Loader2 className="animate-spin mr-2"/>
+                       Generating...
+                     </>
+                   ) : (
+                     'Generate Plan'
+                   )}
                 </button>
              </div>
          </div>

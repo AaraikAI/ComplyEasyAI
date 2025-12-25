@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Integration } from '../types';
-import { CheckCircle, Power, Search, X } from 'lucide-react';
+import { CheckCircle, Power, Search, X, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import { IntegrationModal } from './IntegrationModal';
 
@@ -154,27 +154,167 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
     setSelectedIntegration(null);
   };
 
-  const handleDisconnect = async () => {
-    if (!selectedIntegration) return;
+  const handleDisconnect = async (integration: Integration) => {
+    if (!confirm(`Are you sure you want to disconnect ${integration.name}?`)) {
+      return;
+    }
     
-    // Reload integrations to get updated status
     try {
+      // Map integration name to provider ID
+      const providerMap: Record<string, string> = {
+        'AWS': 'aws',
+        'Microsoft Azure': 'azure',
+        'Google Cloud Platform': 'gcp',
+        'Google Workspace': 'google',
+        'GitHub': 'github',
+        'GitLab': 'gitlab',
+        'Bitbucket': 'bitbucket',
+        'Slack': 'slack',
+        'Jira': 'jira',
+        'Confluence': 'confluence',
+        'Trello': 'trello',
+        'Asana': 'asana',
+        'Monday.com': 'monday',
+        'Microsoft Teams': 'microsoft-teams',
+        'Discord': 'discord',
+        'Okta': 'okta',
+        'Auth0': 'auth0',
+        'OneLogin': 'onelogin',
+        'BambooHR': 'bamboohr',
+        'Workday': 'workday',
+        'ADP': 'adp',
+        'Splunk': 'splunk',
+        'Datadog': 'datadog',
+        'New Relic': 'newrelic',
+        'Sentry': 'sentry',
+        'PagerDuty': 'pagerduty',
+        'Qualys': 'qualys',
+        'Tenable': 'tenable',
+        'CrowdStrike': 'crowdstrike',
+        'Palo Alto': 'paloalto',
+        'MongoDB Atlas': 'mongodb',
+        'PostgreSQL': 'postgresql',
+        'MySQL': 'mysql',
+        'Redis': 'redis',
+        'Elasticsearch': 'elasticsearch',
+        'Salesforce': 'salesforce',
+        'HubSpot': 'hubspot',
+        'Zendesk': 'zendesk',
+        'Stripe': 'stripe',
+        'PayPal': 'paypal',
+        'Twilio': 'twilio',
+        'SendGrid': 'sendgrid',
+        'Heroku': 'heroku',
+        'DigitalOcean': 'digitalocean',
+        'Jenkins': 'jenkins',
+        'CircleCI': 'circleci',
+        'Travis CI': 'travis',
+        'Docker Hub': 'docker',
+        'Kubernetes': 'kubernetes',
+      };
+      
+      const provider = providerMap[integration.name] || integration.id.toLowerCase().replace(/\s+/g, '-');
+      
+      await api.integrations.disconnect(provider);
+      
+      // Reload integrations to get updated status
       const connectedIntegrations = await api.integrations.list();
+      const integrationsArray = Array.isArray(connectedIntegrations) ? connectedIntegrations : [];
       const connectedMap = new Map(
-        connectedIntegrations.map(int => [int.name.toLowerCase(), int])
+        integrationsArray.map((int: any) => [int.name?.toLowerCase() || int.provider?.toLowerCase() || '', int])
       );
 
       setIntegrations(ALL_INTEGRATIONS.map(int => {
-        const connected = connectedMap.get(int.name.toLowerCase());
+        const connected = connectedMap.get(int.name.toLowerCase()) || connectedMap.get(int.id.toLowerCase());
         return connected 
-          ? { ...int, connected: true, lastSync: connected.lastSync }
+          ? { ...int, connected: true, lastSync: connected.lastSync || 'Never' }
+          : { ...int, connected: false, lastSync: 'Never' };
+      }));
+      
+      setSelectedIntegration(null);
+    } catch (error: any) {
+      console.error('Failed to disconnect integration:', error);
+      alert(`Failed to disconnect: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleSync = async (integration: Integration) => {
+    try {
+      const providerMap: Record<string, string> = {
+        'AWS': 'aws',
+        'Microsoft Azure': 'azure',
+        'Google Cloud Platform': 'gcp',
+        'Google Workspace': 'google',
+        'GitHub': 'github',
+        'GitLab': 'gitlab',
+        'Bitbucket': 'bitbucket',
+        'Slack': 'slack',
+        'Jira': 'jira',
+        'Confluence': 'confluence',
+        'Trello': 'trello',
+        'Asana': 'asana',
+        'Monday.com': 'monday',
+        'Microsoft Teams': 'microsoft-teams',
+        'Discord': 'discord',
+        'Okta': 'okta',
+        'Auth0': 'auth0',
+        'OneLogin': 'onelogin',
+        'BambooHR': 'bamboohr',
+        'Workday': 'workday',
+        'ADP': 'adp',
+        'Splunk': 'splunk',
+        'Datadog': 'datadog',
+        'New Relic': 'newrelic',
+        'Sentry': 'sentry',
+        'PagerDuty': 'pagerduty',
+        'Qualys': 'qualys',
+        'Tenable': 'tenable',
+        'CrowdStrike': 'crowdstrike',
+        'Palo Alto': 'paloalto',
+        'MongoDB Atlas': 'mongodb',
+        'PostgreSQL': 'postgresql',
+        'MySQL': 'mysql',
+        'Redis': 'redis',
+        'Elasticsearch': 'elasticsearch',
+        'Salesforce': 'salesforce',
+        'HubSpot': 'hubspot',
+        'Zendesk': 'zendesk',
+        'Stripe': 'stripe',
+        'PayPal': 'paypal',
+        'Twilio': 'twilio',
+        'SendGrid': 'sendgrid',
+        'Heroku': 'heroku',
+        'DigitalOcean': 'digitalocean',
+        'Jenkins': 'jenkins',
+        'CircleCI': 'circleci',
+        'Travis CI': 'travis',
+        'Docker Hub': 'docker',
+        'Kubernetes': 'kubernetes',
+      };
+      
+      const provider = providerMap[integration.name] || integration.id.toLowerCase().replace(/\s+/g, '-');
+      
+      await api.integrations.sync(provider);
+      
+      // Reload integrations to get updated sync timestamp
+      const connectedIntegrations = await api.integrations.list();
+      const integrationsArray = Array.isArray(connectedIntegrations) ? connectedIntegrations : [];
+      const connectedMap = new Map(
+        integrationsArray.map((int: any) => [int.name?.toLowerCase() || int.provider?.toLowerCase() || '', int])
+      );
+
+      setIntegrations(ALL_INTEGRATIONS.map(int => {
+        const connected = connectedMap.get(int.name.toLowerCase()) || connectedMap.get(int.id.toLowerCase());
+        return connected 
+          ? { ...int, connected: true, lastSync: connected.lastSync || 'Just now' }
           : int;
       }));
-    } catch (error) {
-      console.error('Failed to refresh integrations:', error);
+      
+      alert(`${integration.name} synced successfully!`);
+    } catch (error: any) {
+      console.error('Failed to sync integration:', error);
+      alert(`Failed to sync: ${error.message || 'Unknown error'}`);
     }
-    
-    setSelectedIntegration(null);
   };
 
   const connectedCount = integrations.filter(i => i.connected).length;
@@ -245,16 +385,31 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
                   {int.name.substring(0, 2).toUpperCase()}
                 </div>
               </div>
-              <button
-                onClick={() => handleIntegrationClick(int)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  int.connected
-                    ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                    : 'bg-brand-600 text-white hover:bg-brand-700'
-                }`}
-              >
-                {int.connected ? 'Manage' : 'Connect'}
-              </button>
+              <div className="flex gap-2">
+                {int.connected && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSync(int);
+                    }}
+                    className="px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center"
+                    title="Sync Integration"
+                  >
+                    <RefreshCw size={14} className="mr-1" />
+                    Sync
+                  </button>
+                )}
+                <button
+                  onClick={() => handleIntegrationClick(int)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    int.connected
+                      ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                      : 'bg-brand-600 text-white hover:bg-brand-700'
+                  }`}
+                >
+                  {int.connected ? 'Manage' : 'Connect'}
+                </button>
+              </div>
             </div>
             
             <div>
