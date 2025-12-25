@@ -120,4 +120,5 @@ export type ViewState =
   | 'ai-phishing'
   | 'ai-vendor'
   | 'ai-data-map'
-  | 'ai-bcp';
+  | 'ai-bcp'
+  | 'acos';

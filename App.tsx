@@ -21,6 +21,7 @@ import { PhishingGenerator } from './components/AIFeatures/PhishingGenerator';
 import { VendorScorer } from './components/AIFeatures/VendorScorer';
 import { DataMapper } from './components/AIFeatures/DataMapper';
 import { BCPGenerator } from './components/AIFeatures/BCPGenerator';
+import ACOSDashboard from './components/ACOSDashboard';
 import { api } from './services/api';
 
 const MainApp: React.FC = () => {
@@ -118,6 +119,8 @@ const MainApp: React.FC = () => {
       case 'settings':
         if (user?.role !== 'admin') return <div>Access Denied</div>;
         return <Settings onNavigateToIntegrations={() => setCurrentView('integrations')} />;
+      case 'acos':
+        return <ACOSDashboard onBack={() => setCurrentView('dashboard')} />;
       default:
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }

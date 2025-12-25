@@ -634,6 +634,91 @@ export const api = {
       return fetchAPI<{ enabled: boolean; verified: boolean }>('/2fa/status');
     },
   },
+
+  // --- aCOS v3.0 ---
+  acos: {
+    // Compliance Goals
+    createGoal: async (data: any) => fetchAPI('/acos/goals', { method: 'POST', body: JSON.stringify(data) }),
+    getGoals: async () => fetchAPI('/acos/goals'),
+
+    // Control Loops
+    createControlLoop: async (data: any) => fetchAPI('/acos/control-loops', { method: 'POST', body: JSON.stringify(data) }),
+    executeControlLoop: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}/execute`, { method: 'POST' }),
+
+    // Agentic AI
+    estimateBlastRadius: async (data: any) => fetchAPI('/acos/agentic/estimate-blast-radius', { method: 'POST', body: JSON.stringify(data) }),
+    executeAction: async (data: any) => fetchAPI('/acos/agentic/execute-action', { method: 'POST', body: JSON.stringify(data) }),
+    rollbackAction: async (actionId: string, data: any) => fetchAPI(`/acos/agentic/rollback/${actionId}`, { method: 'POST', body: JSON.stringify(data) }),
+
+    // Evidence Truth Layer
+    analyzeEvidence: async (evidenceId: string, file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return fetchAPI(`/acos/evidence/${evidenceId}/analyze`, {
+        method: 'POST',
+        body: formData,
+        headers: {}, // Let browser set Content-Type with boundary
+      });
+    },
+
+    // Regulatory Intelligence Fabric
+    ingestRegulation: async (data: any) => fetchAPI('/acos/rif/ingest-regulation', { method: 'POST', body: JSON.stringify(data) }),
+    autoUpdateControls: async (regulatoryChangeId: string) => fetchAPI(`/acos/rif/${regulatoryChangeId}/auto-update`, { method: 'POST' }),
+
+    // Temporal Graph Networks
+    predictFutureRisks: async (months: number = 6) => fetchAPI(`/acos/tgn/predict-risks?months=${months}`),
+    predictComplianceTrajectory: async (frameworkId: string, months: number = 6) => fetchAPI(`/acos/tgn/frameworks/${frameworkId}/trajectory?months=${months}`),
+    getEarlyWarnings: async (months: number = 3) => fetchAPI(`/acos/tgn/early-warnings?months=${months}`),
+
+    // Compliance Digital Twin
+    runSimulation: async (data: any) => fetchAPI('/acos/digital-twin/simulate', { method: 'POST', body: JSON.stringify(data) }),
+    runMonteCarlo: async (data: any) => fetchAPI('/acos/digital-twin/monte-carlo', { method: 'POST', body: JSON.stringify(data) }),
+
+    // Red Teaming
+    runRedTeamSimulation: async (data: any) => fetchAPI('/acos/red-team/simulate', { method: 'POST', body: JSON.stringify(data) }),
+    runAutomatedScan: async () => fetchAPI('/acos/red-team/automated-scan', { method: 'POST' }),
+
+    // Federated Swarm
+    contributeToFederation: async (data: any) => fetchAPI('/acos/swarm/contribute', { method: 'POST', body: JSON.stringify(data) }),
+    getSwarmInsights: async (frameworks?: string[]) => {
+      const params = frameworks ? `?frameworks=${frameworks.join(',')}` : '';
+      return fetchAPI(`/acos/swarm/insights${params}`);
+    },
+
+    // Multi-modal Intake
+    transcribeAudio: async (file: File, options?: any) => {
+      const formData = new FormData();
+      formData.append('audio', file);
+      if (options) {
+        Object.keys(options).forEach(key => {
+          formData.append(key, options[key]);
+        });
+      }
+      return fetchAPI('/acos/multimodal/transcribe-audio', {
+        method: 'POST',
+        body: formData,
+        headers: {},
+      });
+    },
+    analyzeVideo: async (file: File, options?: any) => {
+      const formData = new FormData();
+      formData.append('video', file);
+      if (options) {
+        Object.keys(options).forEach(key => {
+          formData.append(key, options[key]);
+        });
+      }
+      return fetchAPI('/acos/multimodal/analyze-video', {
+        method: 'POST',
+        body: formData,
+        headers: {},
+      });
+    },
+
+    // Physical AI
+    registerDevice: async (data: any) => fetchAPI('/acos/physical-ai/register-device', { method: 'POST', body: JSON.stringify(data) }),
+    performEdgeComplianceCheck: async (deviceId: string) => fetchAPI(`/acos/physical-ai/devices/${deviceId}/compliance-check`, { method: 'POST' }),
+  },
 };
 
 // Export helper functions
