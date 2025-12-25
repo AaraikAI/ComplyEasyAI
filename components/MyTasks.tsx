@@ -35,13 +35,42 @@ export const MyTasks: React.FC = () => {
     loadTasks();
   }, [user]);
 
+  // Helper to normalize status from backend format to frontend format
+  const normalizeStatus = (status: string): string => {
+    const statusMap: Record<string, string> = {
+      'Open': 'Open',
+      'In_Progress': 'In Progress',
+      'In Progress': 'In Progress',
+      'Resolved': 'Resolved',
+      'Ignored': 'Ignored',
+      'Accepted': 'Accepted'
+    };
+    return statusMap[status] || status;
+  };
+
   const loadTasks = async () => {
+    if (!user?.id) {
+      setIsLoading(false);
+      setTasks([]);
+      return;
+    }
+    
     setIsLoading(true);
-    const allRisks = await api.risks.list();
-    // Filter tasks assigned to current user
-    const myTasks = allRisks.filter(r => r.assignedTo === user?.name);
-    setTasks(myTasks);
-    setIsLoading(false);
+    try {
+      // Use backend filter to get only risks assigned to current user
+      const myTasks = await api.risks.list({ assignedTo: user.id });
+      // Normalize status values from backend format to frontend format
+      const normalizedTasks = myTasks.map(task => ({
+        ...task,
+        status: normalizeStatus(task.status) as any
+      }));
+      setTasks(normalizedTasks);
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+      setTasks([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filteredTasks = useMemo(() => {
@@ -78,7 +107,8 @@ export const MyTasks: React.FC = () => {
 
   const handleOpenTask = async (task: RiskItem) => {
     setSelectedTask(task);
-    setNewStatus(task.status);
+    // Ensure status is in frontend format
+    setNewStatus(normalizeStatus(task.status) as any);
     setRemediationPlan(task.mitigationPlan || null);
 
     if (!task.mitigationPlan) {
@@ -91,17 +121,37 @@ export const MyTasks: React.FC = () => {
 
   const handleSaveTask = async () => {
     if (selectedTask) {
-      const updatedTask: RiskItem = {
-        ...selectedTask,
-        status: newStatus,
-        mitigationPlan: remediationPlan || undefined
-      };
-      
-      await api.risks.update(updatedTask.id, updatedTask);
-      await api.audit.log(`Task ${updatedTask.id} status updated to ${newStatus}`, user?.name || 'User');
-      
-      setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-      setSelectedTask(null);
+      try {
+        // Map frontend status to backend enum format
+        const statusMap: Record<string, string> = {
+          'Open': 'Open',
+          'In Progress': 'In_Progress',
+          'Resolved': 'Resolved',
+          'Ignored': 'Ignored'
+        };
+        
+        // Only send updatable fields to backend
+        const updateData: any = {
+          status: statusMap[newStatus] || newStatus,
+          mitigationPlan: remediationPlan || undefined
+        };
+        
+        await api.risks.update(selectedTask.id, updateData);
+        
+        // Log audit action (non-blocking)
+        try {
+          await api.audit.log(`Task ${selectedTask.id} status updated to ${newStatus}`, user?.name || 'User');
+        } catch (auditError) {
+          console.warn('Failed to log audit action:', auditError);
+        }
+        
+        // Reload tasks to get fresh data from backend
+        await loadTasks();
+        setSelectedTask(null);
+      } catch (error: any) {
+        console.error('Failed to update task:', error);
+        alert(`Failed to update task: ${error.message || 'Unknown error'}`);
+      }
     }
   };
 

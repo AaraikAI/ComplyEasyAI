@@ -220,4 +220,20 @@ router.get(
   asyncHandler(integrationsController.authorizeProvider)
 );
 
+// Generic sync endpoint for all integrations (must come after specific sync routes)
+router.post(
+  '/:provider/sync',
+  authenticate,
+  authorize('admin', 'editor'),
+  asyncHandler(integrationsController.syncProvider)
+);
+
+// Generic disconnect endpoint for all integrations (must come after specific DELETE routes)
+router.delete(
+  '/:provider',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(integrationsController.disconnectProvider)
+);
+
 export default router;

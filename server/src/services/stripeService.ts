@@ -155,6 +155,19 @@ class StripeService {
     const organizationId = session.metadata?.organizationId;
     if (!organizationId) return;
 
+    // Get organization and user
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      include: {
+        users: {
+          where: { role: 'admin' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!organization) return;
+
     // Update organization with customer ID if not already set
     if (session.customer && typeof session.customer === 'string') {
       await prisma.organization.update({
@@ -166,7 +179,37 @@ class StripeService {
       });
     }
 
-    logger.info(`Checkout completed for organization: ${organizationId}`);
+    // Get plan and amount from session
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+    const amountTotal = session.amount_total ? (session.amount_total / 100).toFixed(2) : '0.00';
+    const currency = session.currency?.toUpperCase() || 'USD';
+    const amount = `${currency} ${amountTotal}`;
+
+    // Determine plan from price ID
+    let plan = 'Basic';
+    if (lineItems.data.length > 0) {
+      const priceId = lineItems.data[0].price?.id;
+      if (priceId === config.stripe.priceIds.pro) {
+        plan = 'Pro';
+      } else if (priceId === config.stripe.priceIds.enterprise) {
+        plan = 'Enterprise';
+      }
+    }
+
+    // Send confirmation email
+    const userEmail = session.customer_email || organization.users[0]?.email;
+    if (userEmail) {
+      try {
+        const emailService = (await import('./emailService')).default;
+        await emailService.sendPaymentConfirmation(userEmail, plan, amount);
+        logger.info(`Payment confirmation email sent to ${userEmail}`);
+      } catch (error) {
+        logger.error('Failed to send payment confirmation email', error);
+        // Don't fail the webhook if email fails
+      }
+    }
+
+    logger.info(`Checkout completed for organization: ${organizationId}, plan: ${plan}`);
   }
 
   private async handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {

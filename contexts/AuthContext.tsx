@@ -19,19 +19,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Initial load - runs only once on mount
   useEffect(() => {
     // Session Check - look for auth token or session token
     const authToken = localStorage.getItem('authToken');
     const storedSession = localStorage.getItem('session_token');
     
     if (authToken || storedSession) {
-      const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
-      if (userData.id) {
-        setUser(userData);
+      try {
+        const userDataStr = localStorage.getItem('user_data');
+        if (userDataStr) {
+          const userData = JSON.parse(userDataStr);
+          if (userData && userData.id) {
+            setUser(userData);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+        // Clear invalid data
+        localStorage.removeItem('user_data');
       }
     }
     setIsLoading(false);
-  }, []);
+  }, []); // Empty dependency array - runs only once on mount
+
+  // Periodic token refresh - runs when user is set and refreshes every 6 hours
+  useEffect(() => {
+    if (!user) {
+      return; // Don't set up refresh if no user
+    }
+
+    // Set up periodic token refresh (every 6 hours)
+    const refreshInterval = setInterval(async () => {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (refreshToken) {
+        try {
+          const newToken = await api.auth.refreshToken();
+          // Token is automatically stored by the API service
+          console.log('Token refreshed successfully');
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          // If refresh fails, user will be logged out on next API call
+        }
+      }
+    }, 6 * 60 * 60 * 1000); // 6 hours
+
+    return () => clearInterval(refreshInterval);
+  }, [user]); // Only runs when user changes
 
   const loginWithMagicLink = async (email: string) => {
     try {

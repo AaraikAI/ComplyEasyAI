@@ -211,6 +211,49 @@ class EmailService {
       html,
     });
   }
+
+  async sendPaymentConfirmation(email: string, plan: string, amount: string): Promise<boolean> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .success-icon { font-size: 48px; margin-bottom: 20px; }
+          .plan-badge { display: inline-block; background: #0284c7; color: white; padding: 8px 16px; border-radius: 20px; font-weight: bold; margin: 10px 0; }
+          .footer { margin-top: 30px; font-size: 12px; color: #666; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="success-icon">✓</div>
+            <h1>Payment Confirmed!</h1>
+          </div>
+          <div class="content">
+            <p>Thank you for your subscription to ComplyEasy AI!</p>
+            <p><strong>Plan:</strong> <span class="plan-badge">${plan}</span></p>
+            <p><strong>Amount:</strong> ${amount}</p>
+            <p>Your subscription is now active. You can access all features of the ${plan} plan immediately.</p>
+            <p>If you have any questions, please don't hesitate to contact our support team.</p>
+            <div class="footer">
+              <p>This is an automated confirmation email from ComplyEasy AI.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: email,
+      subject: `Payment Confirmed - ${plan} Plan - ComplyEasy AI`,
+      html,
+    });
+  }
 }
 
 export default new EmailService();

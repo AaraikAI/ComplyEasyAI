@@ -47,6 +47,7 @@ export const chatWithComplianceBot = async (message: string): Promise<string> =>
     }
 
     const response: any = await api.ai.chat(message);
+    // Response now includes: { response, sources, encrypted }
     return response.response || "Error.";
   } catch (e: any) {
     console.error('Chat error:', e);
@@ -127,12 +128,18 @@ export const analyzeContract = async (text: string): Promise<string> => {
   }
 };
 
-export const performGapAnalysis = async (current: string[], target: string): Promise<string> => {
+export const performGapAnalysis = async (current: string[], target: string | string[]): Promise<string> => {
   try {
-    const response: any = await api.ai.performGapAnalysis(current, target);
+    // Handle both single target and multiple targets
+    const targetStr = Array.isArray(target) ? target.join(', ') : target;
+    const response: any = await api.ai.performGapAnalysis(current, targetStr);
     return response.analysis || "Error.";
-  } catch (e) {
-    return "Error.";
+  } catch (e: any) {
+    const errorMessage = e?.message || 'Gap analysis failed';
+    if (errorMessage.includes('timeout')) {
+      return 'Analysis timeout. The gap analysis is taking too long. Please try with fewer frameworks.';
+    }
+    return errorMessage || "Error.";
   }
 };
 

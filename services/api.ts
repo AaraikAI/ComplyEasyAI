@@ -48,9 +48,46 @@ async function fetchAPI<T>(
 
     if (!response.ok) {
       if (response.status === 401) {
+        // Try to refresh token before redirecting
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          try {
+            const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken }),
+            });
+
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              setAuthToken(refreshData.accessToken);
+              
+              // Retry the original request with new token
+              const retryHeaders: HeadersInit = {
+                'Content-Type': 'application/json',
+                ...options.headers,
+                'Authorization': `Bearer ${refreshData.accessToken}`,
+              };
+              
+              const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
+                ...options,
+                headers: retryHeaders,
+              });
+
+              if (retryResponse.ok) {
+                return retryResponse.json();
+              }
+            }
+          } catch (refreshError) {
+            // Refresh failed, proceed with logout
+            console.error('Token refresh failed:', refreshError);
+          }
+        }
+
+        // If refresh failed or no refresh token, clear auth and redirect
         clearAuthToken();
         window.location.href = '/';
-        throw new Error('Authentication required. Please log in again.');
+        throw new Error('Session expired. Please log in again.');
       }
 
       const error = await response.json().catch(() => ({}));
@@ -92,6 +129,22 @@ async function fetchAPI<T>(
 
 export const api = {
   // --- Auth & User ---
+  user: {
+    updateProfile: async (data: { name: string; email: string }) => {
+      return fetchAPI('/auth/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+
+    changePassword: async (currentPassword: string, newPassword: string) => {
+      return fetchAPI('/auth/password', {
+        method: 'PATCH',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+    },
+  },
+
   auth: {
     requestMagicLink: async (email: string) => {
       // Returns response with devToken in development mode
@@ -128,11 +181,37 @@ export const api = {
       throw new Error('No access token received');
     },
 
-    register: async (name: string, email: string, organizationName?: string) => {
+    register: async (name: string, email: string, organizationName?: string, password?: string) => {
       return fetchAPI('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ name, email, organizationName }),
+        body: JSON.stringify({ name, email, organizationName, password }),
       });
+    },
+
+    login: async (email: string, password: string) => {
+      const response: any = await fetchAPI('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.accessToken) {
+        setAuthToken(response.accessToken);
+        localStorage.setItem('refreshToken', response.refreshToken);
+        
+        const user = {
+          id: response.user.id,
+          name: response.user.name,
+          email: response.user.email,
+          role: response.user.role,
+          avatar: response.user.avatar || response.user.name.substring(0, 2).toUpperCase(),
+          organizationId: response.user.organization?.id || response.user.organizationId,
+        };
+        
+        localStorage.setItem('user_data', JSON.stringify(user));
+        return user;
+      }
+
+      throw new Error('No access token received');
     },
 
     refreshToken: async () => {
@@ -233,6 +312,12 @@ export const api = {
       return fetchAPI(`/frameworks/${frameworkId}/controls/${controlId}`, {
         method: 'PATCH',
         body: JSON.stringify(updates),
+      });
+    },
+
+    deleteControl: async (frameworkId: string, controlId: string) => {
+      return fetchAPI(`/frameworks/${frameworkId}/controls/${controlId}`, {
+        method: 'DELETE',
       });
     },
 
@@ -501,6 +586,52 @@ export const api = {
       return fetchAPI(`/team/${userId}`, {
         method: 'DELETE',
       });
+    },
+  },
+
+  // --- Organization ---
+  organization: {
+    get: async () => {
+      return fetchAPI('/organization');
+    },
+
+    update: async (data: { name?: string; plan?: 'Basic' | 'Pro' | 'Enterprise' }) => {
+      return fetchAPI('/organization', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+    },
+  },
+
+  // --- Two-Factor Authentication ---
+  twoFactor: {
+    setup: async () => {
+      return fetchAPI<{ data?: { secret: string; qrCode: string; qrCodeUrl?: string; backupCodes: string[] }; secret?: string; qrCode?: string; qrCodeUrl?: string; backupCodes?: string[] }>('/2fa/setup', {
+        method: 'POST',
+      });
+    },
+
+    verifyAndEnable: async (token: string) => {
+      return fetchAPI('/2fa/verify-enable', {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      });
+    },
+
+    disable: async () => {
+      return fetchAPI('/2fa/disable', {
+        method: 'POST',
+      });
+    },
+
+    regenerateCodes: async () => {
+      return fetchAPI<{ backupCodes: string[] }>('/2fa/regenerate-codes', {
+        method: 'POST',
+      });
+    },
+
+    getStatus: async () => {
+      return fetchAPI<{ enabled: boolean; verified: boolean }>('/2fa/status');
     },
   },
 };

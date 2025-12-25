@@ -1,6 +1,7 @@
 import { Request, Response, RequestHandler } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import geminiService from '../services/geminiService';
+import secureChatService from '../services/secureChatService';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 
@@ -164,8 +165,19 @@ class AIController {
         throw new AppError('Message is required', 400);
       }
 
-      const response = await geminiService.chatWithBot(message, authReq.user!.id);
-      res.json({ response });
+      // Use secure chat service that processes locally with user's account data
+      // No data is sent to external LLMs - all processing happens on-premise
+      const chatResponse = await secureChatService.chatWithUser(
+        message,
+        authReq.user!.id,
+        authReq.user!.organizationId
+      );
+
+      res.json({
+        response: chatResponse.response,
+        sources: chatResponse.sources,
+        encrypted: chatResponse.encrypted,
+      });
     } catch (error: any) {
       logger.error('Chat error', {
         error: error.message,
@@ -176,11 +188,6 @@ class AIController {
       // Preserve original error message if it's an AppError or has a meaningful message
       if (error instanceof AppError) {
         throw error;
-      }
-
-      // If it's an error from Gemini service, preserve the message
-      if (error.message && !error.message.includes('Failed to get chat response')) {
-        throw new AppError(error.message, 500);
       }
 
       throw new AppError('Failed to get chat response', 500);

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Integration, Role } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Save, User as UserIcon, Users, CreditCard, Layers, Power, Plus, X, Trash2, CheckCircle, RefreshCw, Upload } from 'lucide-react';
+import { Save, User as UserIcon, Users, CreditCard, Layers, Power, Plus, X, Trash2, CheckCircle, RefreshCw, Upload, Lock, Loader2, Shield } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
 
 interface SettingsProps {
@@ -12,7 +12,7 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) => {
   const { user: currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'team' | 'integrations' | 'billing'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'organization' | 'team' | 'integrations' | 'billing'>('profile');
   
   // --- Team State ---
   const [users, setUsers] = useState<User[]>([]);
@@ -34,6 +34,44 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
   // --- Integrations State ---
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [isLoadingIntegrations, setIsLoadingIntegrations] = useState(true);
+
+  // --- 2FA State ---
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [twoFactorVerified, setTwoFactorVerified] = useState(false);
+  const [isLoading2FA, setIsLoading2FA] = useState(false);
+  const [qrCode, setQrCode] = useState<string | null>(null);
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [verificationToken, setVerificationToken] = useState('');
+  const [show2FASetup, setShow2FASetup] = useState(false);
+
+  // --- Password Change State ---
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  // --- Organization State ---
+  const [organizationName, setOrganizationName] = useState('');
+  const [organizationPlan, setOrganizationPlan] = useState<'Basic' | 'Pro' | 'Enterprise'>('Basic');
+  const [isSavingOrganization, setIsSavingOrganization] = useState(false);
+  const [planChangeStatus, setPlanChangeStatus] = useState<string | null>(null);
+
+  // --- Payment Success State ---
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+
+  // Check for payment success in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      setShowPaymentSuccess(true);
+      setActiveTab('billing');
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+      // Hide success message after 5 seconds
+      setTimeout(() => setShowPaymentSuccess(false), 5000);
+    }
+  }, []);
 
   // Load team members
   useEffect(() => {
@@ -80,8 +118,52 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     }
   }, [activeTab]);
 
+  // Load 2FA status
+  useEffect(() => {
+    const load2FAStatus = async () => {
+      try {
+        const status = await api.twoFactor.getStatus();
+        setTwoFactorEnabled(status.enabled);
+        setTwoFactorVerified(status.verified);
+      } catch (error) {
+        console.error('Failed to load 2FA status:', error);
+      }
+    };
+
+    if (activeTab === 'security') {
+      load2FAStatus();
+    }
+  }, [activeTab]);
+
+  // Load organization details
+  useEffect(() => {
+    const loadOrganization = async () => {
+      if (currentUser?.role !== 'admin') return;
+      try {
+        const org = await api.organization.get();
+        setOrganizationName(org.name || '');
+        setOrganizationPlan(org.plan || 'Basic');
+        setCurrentPlan(org.plan || 'Basic'); // Also update current plan for billing tab
+      } catch (error) {
+        console.error('Failed to load organization:', error);
+      }
+    };
+
+    if (activeTab === 'organization') {
+      loadOrganization();
+    }
+  }, [activeTab, currentUser]);
+
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newMember.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
     try {
       // API call to invite new team member
       await api.team.invite(newMember.name, newMember.email, newMember.role);
@@ -92,9 +174,15 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       
       setShowInviteModal(false);
       setNewMember({ name: '', email: '', role: 'viewer' });
+      alert('Invitation sent successfully!');
     } catch (error: any) {
       console.error('Failed to invite team member:', error);
-      alert(error.message || 'Failed to invite team member. Please try again.');
+      const errorMessage = error.message || 'Failed to invite team member. Please try again.';
+      if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
+        alert('This email is already in use. Please use a different email.');
+      } else {
+        alert(errorMessage);
+      }
     }
   };
 
@@ -109,14 +197,77 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     setShowPaymentModal(true);
   };
 
-  const handlePaymentSuccess = () => {
-    setCurrentPlan(selectedPlan);
-    api.billing.createCheckout(selectedPlan as 'Basic' | 'Pro' | 'Enterprise');
+  const handlePaymentSuccess = async () => {
+    // This will be called by PaymentModal when user clicks "Continue to Secure Checkout"
+    // The actual redirect happens in PaymentModal
+    // After successful payment, user returns to /settings?success=true
+    try {
+      setPlanChangeStatus('Creating checkout session...');
+      const response: any = await api.billing.createCheckout(selectedPlan as 'Basic' | 'Pro' | 'Enterprise');
+      if (response.url) {
+        setPlanChangeStatus(`Redirecting to checkout for ${selectedPlan} plan...`);
+        window.location.href = response.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error: any) {
+      console.error('Failed to create checkout:', error);
+      const errorMessage = error.message || 'Failed to create checkout session. Please check your Stripe configuration.';
+      setPlanChangeStatus(`Error: ${errorMessage}`);
+      alert(errorMessage);
+    }
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
+    // Validation
+    if (!profileName || profileName.trim().length === 0) {
+      alert('Name is required');
+      return;
+    }
+
+    if (profileName.length > 100) {
+      alert('Name is too long. Maximum 100 characters.');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!profileEmail || !emailRegex.test(profileEmail)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
     setIsSavingProfile(true);
-    setTimeout(() => setIsSavingProfile(false), 1000);
+    try {
+      // Check for duplicate email (if changed)
+      if (profileEmail !== currentUser?.email) {
+        // In production, this would be checked on backend
+        // For now, we'll let the backend handle it
+      }
+
+      // Update user profile via API
+      const updatedUser = await api.user.updateProfile({
+        name: profileName.trim(),
+        email: profileEmail.trim(),
+      });
+
+      // Update local user data
+      if (updatedUser) {
+        localStorage.setItem('user_data', JSON.stringify(updatedUser));
+      }
+
+      alert('Profile updated successfully!');
+    } catch (error: any) {
+      console.error('Failed to update profile:', error);
+      const errorMessage = error.message || 'Failed to update profile';
+      if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
+        alert('This email is already in use. Please use a different email.');
+      } else {
+        alert(`Failed to update profile: ${errorMessage}`);
+      }
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
 
@@ -127,10 +278,12 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         <nav className="space-y-1">
           {[
             { id: 'profile', label: 'Profile', icon: UserIcon },
+            { id: 'security', label: 'Security', icon: Lock },
+            { id: 'organization', label: 'Organization', icon: Layers, adminOnly: true },
             { id: 'team', label: 'Team Members', icon: Users },
             { id: 'integrations', label: 'Integrations', icon: Layers },
             { id: 'billing', label: 'Billing & Plan', icon: CreditCard },
-          ].map(item => (
+          ].filter(item => !item.adminOnly || currentUser?.role === 'admin').map(item => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id as any)}
@@ -145,6 +298,22 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
 
       <div className="flex-1 p-8 overflow-y-auto bg-white h-[80vh] md:h-auto">
         
+        {/* Payment Success Message */}
+        {showPaymentSuccess && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between animate-fadeIn">
+            <div className="flex items-center">
+              <CheckCircle className="text-green-600 mr-3" size={20} />
+              <div>
+                <p className="font-medium text-green-800">Payment Successful!</p>
+                <p className="text-sm text-green-700">Your subscription has been activated. A confirmation email has been sent.</p>
+              </div>
+            </div>
+            <button onClick={() => setShowPaymentSuccess(false)} className="text-green-600 hover:text-green-800">
+              <X size={18} />
+            </button>
+          </div>
+        )}
+
         {/* --- Billing Tab --- */}
         {activeTab === 'billing' && (
           <div className="animate-fadeIn space-y-6">
@@ -263,6 +432,441 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
           </div>
         )}
 
+        {/* --- Security Tab (2FA) --- */}
+        {activeTab === 'security' && (
+          <div className="animate-fadeIn space-y-6 max-w-2xl">
+            <h3 className="text-xl font-bold text-gray-900">Security Settings</h3>
+            
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="font-bold text-gray-900 flex items-center">
+                    <Shield className="mr-2 text-brand-600" size={20} />
+                    Two-Factor Authentication
+                  </h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Add an extra layer of security to your account
+                  </p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  {twoFactorEnabled ? (
+                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium flex items-center">
+                      <CheckCircle size={14} className="mr-1" />
+                      Enabled
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
+                      Disabled
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {!twoFactorEnabled && !show2FASetup && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Two-factor authentication (2FA) adds an extra layer of security by requiring a verification code from your authenticator app in addition to your password.
+                  </p>
+                  <button
+                    onClick={async () => {
+                      try {
+                        setIsLoading2FA(true);
+                        const response = await api.twoFactor.setup();
+                        // API returns { data: { qrCode, backupCodes, secret } } or { qrCode, backupCodes }
+                        const qrCodeUrl = response.data?.qrCode || response.qrCode || response.data?.qrCodeUrl;
+                        const codes = response.data?.backupCodes || response.backupCodes || [];
+                        if (!qrCodeUrl) {
+                          throw new Error('QR code not received from server');
+                        }
+                        setQrCode(qrCodeUrl);
+                        setBackupCodes(codes);
+                        setShow2FASetup(true);
+                      } catch (error: any) {
+                        console.error('Failed to setup 2FA:', error);
+                        alert(`Failed to setup 2FA: ${error.message || 'Unknown error'}`);
+                      } finally {
+                        setIsLoading2FA(false);
+                      }
+                    }}
+                    disabled={isLoading2FA}
+                    className="w-full bg-brand-600 text-white px-4 py-2.5 rounded-lg hover:bg-brand-700 transition-colors shadow-sm flex items-center justify-center disabled:opacity-50"
+                  >
+                    {isLoading2FA ? (
+                      <>
+                        <Loader2 className="animate-spin mr-2" size={18} />
+                        Setting up...
+                      </>
+                    ) : (
+                      <>
+                        <Shield className="mr-2" size={18} />
+                        Enable Two-Factor Authentication
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {show2FASetup && !twoFactorEnabled && (
+                <div className="space-y-4 pt-4 border-t border-gray-200">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800 font-medium mb-2">Setup Instructions:</p>
+                    <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                      <li>Scan the QR code below with your authenticator app (Google Authenticator, Authy, etc.)</li>
+                      <li>Enter the 6-digit code from your app to verify and enable 2FA</li>
+                      <li>Save your backup codes in a secure location</li>
+                    </ol>
+                  </div>
+
+                  {qrCode && (
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <img src={qrCode} alt="2FA QR Code" className="w-48 h-48" />
+                      </div>
+                      
+                      <div className="w-full">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Enter verification code from your app:
+                        </label>
+                        <input
+                          type="text"
+                          value={verificationToken}
+                          onChange={(e) => setVerificationToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          placeholder="000000"
+                          maxLength={6}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-center text-2xl tracking-widest"
+                        />
+                      </div>
+
+                      <div className="flex space-x-2 w-full">
+                        <button
+                          onClick={async () => {
+                            if (verificationToken.length !== 6) {
+                              alert('Please enter a 6-digit code');
+                              return;
+                            }
+                            try {
+                              setIsLoading2FA(true);
+                              await api.twoFactor.verifyAndEnable(verificationToken);
+                              setTwoFactorEnabled(true);
+                              setTwoFactorVerified(true);
+                              setShow2FASetup(false);
+                              setVerificationToken('');
+                              alert('Two-factor authentication enabled successfully!');
+                            } catch (error: any) {
+                              console.error('Failed to enable 2FA:', error);
+                              alert(`Failed to enable 2FA: ${error.message || 'Invalid code. Please try again.'}`);
+                            } finally {
+                              setIsLoading2FA(false);
+                            }
+                          }}
+                          disabled={isLoading2FA || verificationToken.length !== 6}
+                          className="flex-1 bg-brand-600 text-white px-4 py-2.5 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
+                        >
+                          {isLoading2FA ? 'Verifying...' : 'Verify & Enable'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShow2FASetup(false);
+                            setQrCode(null);
+                            setVerificationToken('');
+                            setBackupCodes([]);
+                          }}
+                          className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+
+                      {backupCodes.length > 0 && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 w-full">
+                          <p className="text-sm font-medium text-yellow-800 mb-2">⚠️ Save these backup codes:</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {backupCodes.map((code, idx) => (
+                              <code key={idx} className="text-xs bg-white px-2 py-1 rounded border border-yellow-300 font-mono">
+                                {code}
+                              </code>
+                            ))}
+                          </div>
+                          <p className="text-xs text-yellow-700 mt-2">
+                            Store these codes securely. You can use them to access your account if you lose your authenticator device.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {twoFactorEnabled && (
+                <div className="space-y-4 pt-4 border-t border-gray-200">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">
+                      ✓ Two-factor authentication is enabled. Your account is protected with an additional security layer.
+                    </p>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Are you sure you want to disable two-factor authentication? This will make your account less secure.')) {
+                          return;
+                        }
+                        try {
+                          setIsLoading2FA(true);
+                          await api.twoFactor.disable();
+                          setTwoFactorEnabled(false);
+                          setTwoFactorVerified(false);
+                          alert('Two-factor authentication has been disabled.');
+                        } catch (error: any) {
+                          console.error('Failed to disable 2FA:', error);
+                          alert(`Failed to disable 2FA: ${error.message || 'Unknown error'}`);
+                        } finally {
+                          setIsLoading2FA(false);
+                        }
+                      }}
+                      disabled={isLoading2FA}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                    >
+                      {isLoading2FA ? 'Disabling...' : 'Disable 2FA'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          setIsLoading2FA(true);
+                          const result = await api.twoFactor.regenerateCodes();
+                          setBackupCodes(result.backupCodes || result.data?.backupCodes || []);
+                          alert('New backup codes generated. Please save them securely.');
+                        } catch (error: any) {
+                          console.error('Failed to regenerate codes:', error);
+                          alert(`Failed to regenerate codes: ${error.message || 'Unknown error'}`);
+                        } finally {
+                          setIsLoading2FA(false);
+                        }
+                      }}
+                      disabled={isLoading2FA}
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                      {isLoading2FA ? 'Generating...' : 'Regenerate Backup Codes'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Password Change Section */}
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mt-6">
+                <h4 className="font-bold text-gray-900 flex items-center mb-4">
+                  <Lock className="mr-2 text-brand-600" size={20} />
+                  Change Password
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => {
+                        setCurrentPassword(e.target.value);
+                        setPasswordError(null);
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                      placeholder="Enter current password"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        setPasswordError(null);
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                      placeholder="Enter new password (min 8 characters)"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        setPasswordError(null);
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                  {passwordError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-sm text-red-800">{passwordError}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={async () => {
+                      if (!currentPassword || !newPassword || !confirmPassword) {
+                        setPasswordError('All fields are required');
+                        return;
+                      }
+
+                      if (newPassword.length < 8) {
+                        setPasswordError('New password must be at least 8 characters');
+                        return;
+                      }
+
+                      if (newPassword !== confirmPassword) {
+                        setPasswordError('New passwords do not match');
+                        return;
+                      }
+
+                      setIsChangingPassword(true);
+                      setPasswordError(null);
+
+                      try {
+                        await api.user.changePassword(currentPassword, newPassword);
+                        setCurrentPassword('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                        alert('Password changed successfully!');
+                      } catch (error: any) {
+                        const errorMessage = error.message || 'Failed to change password';
+                        if (errorMessage.includes('incorrect') || errorMessage.includes('current')) {
+                          setPasswordError('Current password is incorrect');
+                        } else {
+                          setPasswordError(errorMessage);
+                        }
+                      } finally {
+                        setIsChangingPassword(false);
+                      }
+                    }}
+                    disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                    className="w-full bg-brand-600 text-white px-4 py-2.5 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isChangingPassword ? (
+                      <>
+                        <Loader2 className="animate-spin inline mr-2" size={18} />
+                        Changing Password...
+                      </>
+                    ) : (
+                      'Change Password'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- Organization Tab --- */}
+        {activeTab === 'organization' && currentUser?.role === 'admin' && (
+          <div className="animate-fadeIn space-y-6 max-w-2xl">
+            <h3 className="text-xl font-bold text-gray-900">Organization Settings</h3>
+            
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+                  <input
+                    type="text"
+                    value={organizationName}
+                    onChange={(e) => setOrganizationName(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                    placeholder="Enter organization name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Plan</label>
+                  <div className="px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-medium">
+                    {currentPlan}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Upgrade Plan</label>
+                  <select
+                    value={organizationPlan}
+                    onChange={(e) => setOrganizationPlan(e.target.value as 'Basic' | 'Pro' | 'Enterprise')}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                  >
+                    <option value="Basic">Basic</option>
+                    <option value="Pro">Pro</option>
+                    <option value="Enterprise">Enterprise</option>
+                  </select>
+                  {organizationPlan !== currentPlan && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {organizationPlan === 'Enterprise' ? 'Upgrading to Enterprise plan' : 
+                       organizationPlan === 'Pro' && currentPlan === 'Basic' ? 'Upgrading to Pro plan' :
+                       'Changing plan'}
+                    </p>
+                  )}
+                </div>
+                {planChangeStatus && (
+                  <div className={`p-3 rounded-lg ${planChangeStatus.includes('success') || planChangeStatus.includes('Redirecting') ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                    <p className={`text-sm ${planChangeStatus.includes('success') || planChangeStatus.includes('Redirecting') ? 'text-green-800' : 'text-yellow-800'}`}>
+                      {planChangeStatus}
+                    </p>
+                  </div>
+                )}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={async () => {
+                      // Only update name if plan hasn't changed
+                      if (organizationPlan === currentPlan) {
+                        setIsSavingOrganization(true);
+                        setPlanChangeStatus(null);
+                        try {
+                          await api.organization.update({
+                            name: organizationName,
+                          });
+                          setPlanChangeStatus('Organization name updated successfully!');
+                          setTimeout(() => setPlanChangeStatus(null), 5000);
+                        } catch (error: any) {
+                          setPlanChangeStatus(`Failed to update: ${error.message || 'Unknown error'}`);
+                        } finally {
+                          setIsSavingOrganization(false);
+                        }
+                      } else {
+                        // Plan changed - route to checkout
+                        setPlanChangeStatus('Redirecting to secure checkout...');
+                        setSelectedPlan(organizationPlan);
+                        setSelectedPrice('Contact Us');
+                        setShowPaymentModal(true);
+                      }
+                    }}
+                    disabled={isSavingOrganization}
+                    className="flex-1 bg-brand-600 text-white px-4 py-2.5 rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {isSavingOrganization ? (
+                      <>
+                        <Loader2 className="animate-spin mr-2" size={18} />
+                        Saving...
+                      </>
+                    ) : organizationPlan !== currentPlan ? (
+                      <>
+                        <CreditCard size={18} className="mr-2" />
+                        Upgrade to {organizationPlan}
+                      </>
+                    ) : (
+                      <>
+                        <Save size={18} className="mr-2" />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'organization' && currentUser?.role !== 'admin' && (
+          <div className="animate-fadeIn space-y-6">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+              <p className="text-yellow-800">You do not have permission to access organization settings. Admin access required.</p>
+            </div>
+          </div>
+        )}
+
         {/* --- Team Tab --- */}
         {activeTab === 'team' && (
           <div className="animate-fadeIn space-y-6">
@@ -300,27 +904,76 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                          {u.role}
-                        </span>
-                        <button 
-                          onClick={async () => {
-                            if (confirm(`Remove ${u.name} from the team?`)) {
-                              try {
+                        {currentUser?.role === 'admin' ? (
+                          (() => {
+                            // Count admins
+                            const adminCount = users.filter(user => user.role === 'admin').length;
+                            const isOnlyAdmin = u.role === 'admin' && adminCount === 1;
+                            
+                            return (
+                              <select
+                                value={u.role}
+                                onChange={async (e) => {
+                                  const newRole = e.target.value as Role;
+                                  
+                                  // Prevent changing role if only admin
+                                  if (isOnlyAdmin && newRole !== 'admin') {
+                                    alert('Cannot change role: This is the only admin user. Please assign another admin before changing this role.');
+                                    return;
+                                  }
+                                  
+                                  try {
+                                    await api.team.updateRole(u.id, newRole);
+                                    const updated = await api.team.list();
+                                    setUsers(updated);
+                                    alert(`Role updated to ${newRole} successfully!`);
+                                  } catch (error: any) {
+                                    console.error('Failed to update role:', error);
+                                    const errorMsg = error.message || 'Unknown error';
+                                    if (errorMsg.includes('only admin') || errorMsg.includes('last admin')) {
+                                      alert('Cannot change role: This is the only admin user. Please assign another admin before changing this role.');
+                                    } else {
+                                      alert(`Failed to update role: ${errorMsg}`);
+                                    }
+                                  }
+                                }}
+                                disabled={isOnlyAdmin}
+                                className={`px-2.5 py-0.5 rounded-full text-xs font-medium border border-gray-300 focus:ring-2 focus:ring-brand-500 outline-none ${isOnlyAdmin ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
+                                title={isOnlyAdmin ? 'Cannot change role: This is the only admin user' : ''}
+                              >
+                                <option value="admin">Admin</option>
+                                <option value="editor">Editor</option>
+                                <option value="viewer">Viewer</option>
+                              </select>
+                            );
+                          })()
+                        ) : (
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                            {u.role}
+                          </span>
+                        )}
+                        {currentUser?.role === 'admin' && u.id !== currentUser?.id && (
+                          <button 
+                            onClick={async () => {
+                              if (confirm(`Remove ${u.name} from the team?`)) {
+                                try {
                                 await api.team.remove(u.id);
                                 const updated = await api.team.list();
                                 setUsers(updated);
-                              } catch (error) {
-                                console.error('Failed to remove team member:', error);
-                                alert('Failed to remove team member');
+                                alert('Team member removed successfully');
+                                  alert('Team member removed successfully');
+                                } catch (error: any) {
+                                  console.error('Failed to remove team member:', error);
+                                  alert(`Failed to remove team member: ${error.message || 'Unknown error'}`);
+                                }
                               }
-                            }
-                          }}
-                          className="text-gray-400 hover:text-red-500 transition-colors" 
-                          title="Remove User"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                            }}
+                            className="text-gray-400 hover:text-red-500 transition-colors" 
+                            title="Remove User"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))
@@ -394,30 +1047,74 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                           checked={int.connected} 
                           onChange={async () => {
                             try {
+                              // Map integration name to provider ID
                               const providerMap: Record<string, string> = {
                                 'AWS': 'aws',
+                                'Microsoft Azure': 'azure',
+                                'Google Cloud Platform': 'gcp',
                                 'Google Workspace': 'google',
                                 'GitHub': 'github',
+                                'GitLab': 'gitlab',
+                                'Bitbucket': 'bitbucket',
                                 'Slack': 'slack',
                                 'Jira': 'jira',
+                                'Confluence': 'confluence',
+                                'Trello': 'trello',
+                                'Asana': 'asana',
+                                'Monday.com': 'monday',
+                                'Microsoft Teams': 'microsoft-teams',
+                                'Discord': 'discord',
+                                'Okta': 'okta',
+                                'Auth0': 'auth0',
+                                'OneLogin': 'onelogin',
+                                'BambooHR': 'bamboohr',
+                                'Workday': 'workday',
+                                'ADP': 'adp',
+                                'Splunk': 'splunk',
+                                'Datadog': 'datadog',
+                                'New Relic': 'newrelic',
+                                'Sentry': 'sentry',
+                                'PagerDuty': 'pagerduty',
+                                'Qualys': 'qualys',
+                                'Tenable': 'tenable',
+                                'CrowdStrike': 'crowdstrike',
+                                'Palo Alto': 'paloalto',
+                                'MongoDB Atlas': 'mongodb',
+                                'PostgreSQL': 'postgresql',
+                                'MySQL': 'mysql',
+                                'Redis': 'redis',
+                                'Elasticsearch': 'elasticsearch',
+                                'Salesforce': 'salesforce',
+                                'HubSpot': 'hubspot',
+                                'Zendesk': 'zendesk',
+                                'Stripe': 'stripe',
+                                'PayPal': 'paypal',
+                                'Twilio': 'twilio',
+                                'SendGrid': 'sendgrid',
+                                'Heroku': 'heroku',
+                                'DigitalOcean': 'digitalocean',
+                                'Jenkins': 'jenkins',
+                                'CircleCI': 'circleci',
+                                'Travis CI': 'travis',
+                                'Docker Hub': 'docker',
+                                'Kubernetes': 'kubernetes',
                               };
-                              const provider = providerMap[int.name] || int.id.toLowerCase();
+                              
+                              // Get provider from map or use integration ID
+                              const provider = providerMap[int.name] || int.id.toLowerCase().replace(/\s+/g, '-');
                               
                               if (int.connected) {
                                 await api.integrations.disconnect(provider);
+                                // Reload integrations after disconnect
+                                const updated = await api.integrations.list();
+                                setIntegrations(Array.isArray(updated) ? updated : []);
                               } else {
-                                const response: any = await api.integrations.authorize(provider);
-                                if (response.authUrl) {
-                                  window.open(response.authUrl, '_blank');
-                                }
+                                // For connecting, use the IntegrationModal instead
+                                alert('Please use the "View Catalog" button to connect new integrations.');
                               }
-                              
-                              // Reload integrations
-                              const updated = await api.integrations.list();
-                              setIntegrations(updated);
-                            } catch (error) {
+                            } catch (error: any) {
                               console.error('Failed to toggle integration:', error);
-                              alert('Failed to toggle integration. Please try again.');
+                              alert(`Failed to toggle integration: ${error.message || 'Unknown error'}`);
                             }
                           }} 
                         />

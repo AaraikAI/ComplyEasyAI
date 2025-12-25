@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
-import { AIReportGenerator } from './components/AIReportGenerator';
+import { Reports } from './components/Reports';
 import { AuditTrail } from './components/AuditTrail';
 import { Frameworks } from './components/Frameworks';
 import { FrameworkDetails } from './components/FrameworkDetails';
@@ -70,7 +70,7 @@ const MainApp: React.FC = () => {
       case 'dashboard':
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
       case 'reports':
-        return <AIReportGenerator />;
+        return <Reports />;
       case 'audit':
         return <AuditTrail />;
       case 'frameworks':
@@ -79,6 +79,7 @@ const MainApp: React.FC = () => {
             activeFrameworks={frameworks} 
             onAddFramework={handleAddFramework} 
             onSelectFramework={handleSelectFramework}
+            onFrameworkDeleted={loadData}
           />
         );
       case 'framework-details':

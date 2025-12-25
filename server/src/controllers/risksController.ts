@@ -146,12 +146,51 @@ class RisksController {
         throw new AppError('Risk not found', 404);
       }
 
+      // Filter and prepare only updatable fields
+      const allowedFields = [
+        'status',
+        'severity',
+        'description',
+        'category',
+        'likelihood',
+        'impact',
+        'riskScore',
+        'aiPriorityScore',
+        'aiRationale',
+        'mitigationPlan',
+        'remediationOwner',
+        'targetDate',
+        'assignedToId',
+      ];
+
+      const filteredData: any = {};
+      
+      // Only include allowed fields
+      for (const field of allowedFields) {
+        if (updateData[field] !== undefined) {
+          filteredData[field] = updateData[field];
+        }
+      }
+
+      // Handle status mapping (frontend may send "In Progress" but backend expects "In_Progress")
+      if (filteredData.status) {
+        const statusMap: Record<string, string> = {
+          'Open': 'Open',
+          'In Progress': 'In_Progress',
+          'In_Progress': 'In_Progress',
+          'Resolved': 'Resolved',
+          'Ignored': 'Ignored',
+          'Accepted': 'Accepted'
+        };
+        filteredData.status = statusMap[filteredData.status] || filteredData.status;
+      }
+
       // Update risk
       const risk = await prisma.riskItem.update({
         where: { id },
         data: {
-          ...updateData,
-          ...(updateData.status === 'Resolved' && !existingRisk.resolvedAt && {
+          ...filteredData,
+          ...(filteredData.status === 'Resolved' && !existingRisk.resolvedAt && {
             resolvedAt: new Date(),
           }),
         },
@@ -318,23 +357,171 @@ class RisksController {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
 
-      // Simulate automated risk scanning
-      // In production, this would integrate with actual security tools
-      const simulatedRisk = await prisma.riskItem.create({
-        data: {
-          title: 'Publicly accessible database instance without encryption',
-          severity: 'High',
-          description: 'Automated scan detected: Publicly accessible database instance without encryption',
-          category: 'Infrastructure',
-          organizationId,
-        },
+      const newRisks: any[] = [];
+
+      // 1. Scan frameworks for non-compliant controls
+      const frameworks = await prisma.complianceFramework.findMany({
+        where: { organizationId },
+        include: { controls: true },
       });
+
+      for (const framework of frameworks) {
+        // Find controls that are at risk or failed
+        const atRiskControls = framework.controls.filter(
+          (c) => c.status === 'At Risk' || c.status === 'Failed' || c.status === 'Non-Compliant'
+        );
+
+        for (const control of atRiskControls) {
+          // Check if risk already exists for this control
+          const existingRisk = await prisma.riskItem.findFirst({
+            where: {
+              organizationId,
+              description: { contains: control.name },
+              status: { in: ['Open', 'In Progress'] },
+            },
+          });
+
+          if (!existingRisk) {
+            const risk = await prisma.riskItem.create({
+              data: {
+                title: `Non-Compliant Control: ${control.name}`,
+                severity: control.status === 'Failed' ? 'High' : 'Medium',
+                description: `Framework: ${framework.name}\nControl: ${control.name}\nStatus: ${control.status}\n${control.description || ''}`,
+                category: 'Compliance',
+                organizationId,
+                status: 'Open',
+              },
+            });
+            newRisks.push(risk);
+          }
+        }
+
+        // Check for controls without evidence
+        const controlsWithoutEvidence = framework.controls.filter(
+          (c) => !c.evidence && (c.status === 'Implemented' || c.status === 'Compliant')
+        );
+
+        if (controlsWithoutEvidence.length > 0) {
+          const existingRisk = await prisma.riskItem.findFirst({
+            where: {
+              organizationId,
+              description: { contains: `${framework.name} controls without evidence` },
+              status: { in: ['Open', 'In Progress'] },
+            },
+          });
+
+          if (!existingRisk) {
+            const risk = await prisma.riskItem.create({
+              data: {
+                title: `Missing Evidence for ${framework.name} Controls`,
+                severity: 'Medium',
+                description: `${controlsWithoutEvidence.length} controls in ${framework.name} are marked as compliant but lack supporting evidence. Evidence is required for audit purposes.`,
+                category: 'Compliance',
+                organizationId,
+                status: 'Open',
+              },
+            });
+            newRisks.push(risk);
+          }
+        }
+
+        // Check for overdue audit dates
+        const now = new Date();
+        if (new Date(framework.nextAuditDate) < now) {
+          const daysOverdue = Math.floor((now.getTime() - new Date(framework.nextAuditDate).getTime()) / (1000 * 60 * 60 * 24));
+          const existingRisk = await prisma.riskItem.findFirst({
+            where: {
+              organizationId,
+              description: { contains: `${framework.name} audit overdue` },
+              status: { in: ['Open', 'In Progress'] },
+            },
+          });
+
+          if (!existingRisk) {
+            const risk = await prisma.riskItem.create({
+              data: {
+                title: `Overdue Audit: ${framework.name}`,
+                severity: daysOverdue > 30 ? 'High' : 'Medium',
+                description: `The audit for ${framework.name} is ${daysOverdue} days overdue. Scheduled audit date: ${framework.nextAuditDate.toISOString().split('T')[0]}`,
+                category: 'Compliance',
+                organizationId,
+                status: 'Open',
+              },
+            });
+            newRisks.push(risk);
+          }
+        }
+      }
+
+      // 2. Scan integrations for security issues
+      const integrations = await prisma.integration.findMany({
+        where: { organizationId, connected: true },
+      });
+
+      // Check for integrations that haven't synced recently (potential connection issues)
+      const staleIntegrations = integrations.filter((int) => {
+        if (!int.lastSync) return true;
+        const lastSyncDate = new Date(int.lastSync);
+        const daysSinceSync = (Date.now() - lastSyncDate.getTime()) / (1000 * 60 * 60 * 24);
+        return daysSinceSync > 7; // More than 7 days since last sync
+      });
+
+      for (const integration of staleIntegrations) {
+        const existingRisk = await prisma.riskItem.findFirst({
+          where: {
+            organizationId,
+            description: { contains: `${integration.name || integration.provider} integration stale` },
+            status: { in: ['Open', 'In Progress'] },
+          },
+        });
+
+        if (!existingRisk) {
+          const risk = await prisma.riskItem.create({
+            data: {
+              title: `Stale Integration: ${integration.name || integration.provider}`,
+              severity: 'Low',
+              description: `The ${integration.name || integration.provider} integration has not synced in over 7 days. This may indicate connection issues or authentication problems.`,
+              category: 'Integration',
+              organizationId,
+              status: 'Open',
+            },
+          });
+          newRisks.push(risk);
+        }
+      }
+
+      // 3. Check for low compliance scores
+      for (const framework of frameworks) {
+        if (framework.progress < 50 && framework.status !== 'Pending') {
+          const existingRisk = await prisma.riskItem.findFirst({
+            where: {
+              organizationId,
+              description: { contains: `${framework.name} low compliance score` },
+              status: { in: ['Open', 'In Progress'] },
+            },
+          });
+
+          if (!existingRisk) {
+            const risk = await prisma.riskItem.create({
+              data: {
+                title: `Low Compliance Score: ${framework.name}`,
+                severity: framework.progress < 25 ? 'High' : 'Medium',
+                description: `${framework.name} has a compliance readiness score of ${framework.progress}%, which is below acceptable thresholds. Immediate action required.`,
+                category: 'Compliance',
+                organizationId,
+                status: 'Open',
+              },
+            });
+            newRisks.push(risk);
+          }
+        }
+      }
 
       // Log audit
       await prisma.auditLog.create({
         data: {
           action: 'Automated Risk Scan Completed',
-          details: `New risk detected: ${simulatedRisk.id}`,
+          details: `${newRisks.length} new risk(s) detected`,
           userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
@@ -345,10 +532,14 @@ class RisksController {
 
       res.json({
         message: 'Risk scan completed',
-        newRisks: [simulatedRisk],
+        newRisks,
+        totalScanned: {
+          frameworks: frameworks.length,
+          integrations: integrations.length,
+        },
       });
 
-      logger.info(`Risk scan completed for organization: ${organizationId}`);
+      logger.info(`Risk scan completed for organization: ${organizationId}, found ${newRisks.length} new risks`);
     } catch (error) {
       logger.error('Risk scan error', error);
       throw new AppError('Failed to complete risk scan', 500);

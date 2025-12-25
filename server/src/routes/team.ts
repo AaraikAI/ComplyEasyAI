@@ -96,8 +96,26 @@ router.post(
       },
     });
 
-    // TODO: Send invitation email
-    // await emailService.sendInvitationEmail(email, name, token);
+    // Send invitation email (magic link)
+    try {
+      const emailService = (await import('../services/emailService')).default;
+      await emailService.sendMagicLink(email, token);
+    } catch (emailError) {
+      logger.warn('Failed to send invitation email, but user was created', emailError);
+    }
+
+    // Log audit
+    const { randomBytes } = await import('crypto');
+    await prisma.auditLog.create({
+      data: {
+        action: `Team member invited: ${name} (${email}) with role ${role || 'viewer'}`,
+        userId: req.user!.id,
+        organizationId,
+        hash: randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
 
     logger.info(`Team member invited: ${email} to organization ${organizationId}`);
 
@@ -135,6 +153,22 @@ router.patch(
       return;
     }
 
+    // Prevent changing role if this is the only admin
+    if (user.role === 'admin' && role !== 'admin') {
+      // Count admins in the organization
+      const adminCount = await prisma.user.count({
+        where: {
+          organizationId,
+          role: 'admin',
+        },
+      });
+
+      if (adminCount === 1) {
+        res.status(400).json({ error: 'Cannot change role: This is the only admin user. Please assign another admin before changing this role.' });
+        return;
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id },
       data: { role },
@@ -146,6 +180,18 @@ router.patch(
         avatar: true,
         lastLogin: true,
         createdAt: true,
+      },
+    });
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        action: `Team member role updated: ${user.name} (${user.email}) to ${role}`,
+        userId: req.user!.id,
+        organizationId,
+        hash: require('crypto').randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
       },
     });
 
@@ -187,6 +233,18 @@ router.delete(
 
     await prisma.user.delete({
       where: { id },
+    });
+
+    // Log audit
+    await prisma.auditLog.create({
+      data: {
+        action: `Team member removed: ${user.name} (${user.email})`,
+        userId: req.user!.id,
+        organizationId,
+        hash: require('crypto').randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
     });
 
     logger.info(`Team member removed: ${id} from organization ${organizationId}`);

@@ -24,41 +24,76 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
   const [notifications, setNotifications] = useState<any[]>([]);
   
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
     const loadNotifications = async () => {
       if (!user) {
         setNotifications([]);
         return;
       }
 
-      try {
-        // Load risks assigned to user
-        const risks = await api.risks.list({ assignedTo: user.name });
-        const taskNotifications = risks.map(r => ({
-          id: r.id,
-          title: 'Risk Assigned to You',
-          desc: r.description,
-          time: r.detectedAt,
-          type: 'task'
-        }));
-        
-        // System notifications (can be enhanced with real data)
-        const system = [
-          { id: 'sys1', title: 'Audit Preparedness', desc: 'SOC 2 Audit is in 20 days.', time: '1 day ago', type: 'alert' }
-        ];
-        
-        setNotifications([...taskNotifications, ...system]);
-      } catch (error) {
-        console.error('Failed to load notifications:', error);
-        setNotifications([]);
-      }
+      // Debounce to prevent too many requests
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(async () => {
+        try {
+          // Load risks assigned to user (with error handling for rate limits)
+          try {
+            const risks = await api.risks.list({ assignedTo: user.name });
+            if (!isMounted) return;
+            
+            const taskNotifications = risks.map(r => ({
+              id: r.id,
+              title: 'Risk Assigned to You',
+              desc: r.description,
+              time: r.detectedAt,
+              type: 'task'
+            }));
+            
+            // System notifications (can be enhanced with real data)
+            const system = [
+              { id: 'sys1', title: 'Audit Preparedness', desc: 'SOC 2 Audit is in 20 days.', time: '1 day ago', type: 'alert' }
+            ];
+            
+            if (isMounted) {
+              setNotifications([...taskNotifications, ...system]);
+            }
+          } catch (rateLimitError: any) {
+            // If rate limited, just show system notifications
+            if (rateLimitError.message?.includes('429') || rateLimitError.message?.includes('Too Many Requests')) {
+              console.warn('Rate limited on notifications, showing system notifications only');
+              const system = [
+                { id: 'sys1', title: 'Audit Preparedness', desc: 'SOC 2 Audit is in 20 days.', time: '1 day ago', type: 'alert' }
+              ];
+              if (isMounted) {
+                setNotifications(system);
+              }
+            } else {
+              throw rateLimitError;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load notifications:', error);
+          // Set empty array or default notifications
+          if (isMounted) {
+            setNotifications([]);
+          }
+        }
+      }, 500); // 500ms debounce
     };
 
     loadNotifications();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [user]);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'editor', 'viewer'], relatedViews: ['risks'] },
     { id: 'my-tasks', label: 'My Tasks', icon: CheckSquare, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'risks', label: 'Risk Management', icon: ShieldAlert, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'integrations', label: 'Integrations', icon: Layers, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'frameworks', label: 'Frameworks', icon: ShieldCheck, roles: ['admin', 'editor'], relatedViews: ['framework-details'] },
     { id: 'reports', label: 'Report Generator', icon: FileText, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },

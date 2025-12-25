@@ -4,6 +4,7 @@ import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
+import { ComplianceStatus } from '@prisma/client';
 
 class FrameworksController {
   list: RequestHandler = async (req: Request, res: Response): Promise<void> => {
@@ -231,7 +232,7 @@ class FrameworksController {
       const { name, description, status } = req.body;
       const organizationId = authReq.user!.organizationId;
 
-      if (!name) {
+      if (!name || typeof name !== 'string' || !name.trim()) {
         throw new AppError('Control name is required', 400);
       }
 
@@ -244,26 +245,24 @@ class FrameworksController {
         throw new AppError('Framework not found', 404);
       }
 
+      // Prepare control data - only include description if provided
+      const controlData: any = {
+        name: name.trim(),
+        status: (status && typeof status === 'string') ? status : 'Pending',
+        frameworkId,
+      };
+
+      // Only include description if it's provided and not empty
+      if (description && typeof description === 'string' && description.trim()) {
+        controlData.description = description.trim();
+      }
+
       const control = await prisma.frameworkControl.create({
-        data: {
-          name,
-          description,
-          status: status || 'Pending',
-          frameworkId,
-        },
+        data: controlData,
       });
 
-      // Update framework progress
-      const allControls = await prisma.frameworkControl.findMany({
-        where: { frameworkId },
-      });
-      const compliantCount = allControls.filter(c => c.status === 'Implemented' || c.status === 'Compliant').length;
-      const progress = allControls.length > 0 ? Math.round((compliantCount / allControls.length) * 100) : 0;
-
-      await prisma.complianceFramework.update({
-        where: { id: frameworkId },
-        data: { progress },
-      });
+      // Recalculate framework progress
+      await this.recalculateFrameworkProgress(frameworkId, organizationId);
 
       await prisma.auditLog.create({
         data: {
@@ -278,7 +277,7 @@ class FrameworksController {
     } catch (error) {
       logger.error('Create control error', error);
       if (error instanceof AppError) throw error;
-      throw new AppError('Failed to create control', 500);
+      throw new AppError(`Failed to create control: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
   };
 
@@ -303,17 +302,10 @@ class FrameworksController {
         data: updateData,
       });
 
-      // Update framework progress
-      const allControls = await prisma.frameworkControl.findMany({
-        where: { frameworkId },
-      });
-      const compliantCount = allControls.filter(c => c.status === 'Implemented' || c.status === 'Compliant').length;
-      const progress = allControls.length > 0 ? Math.round((compliantCount / allControls.length) * 100) : 0;
-
-      await prisma.complianceFramework.update({
-        where: { id: frameworkId },
-        data: { progress },
-      });
+      // Recalculate framework progress if status changed
+      if (updateData.status) {
+        await this.recalculateFrameworkProgress(frameworkId, organizationId);
+      }
 
       await prisma.auditLog.create({
         data: {
@@ -463,17 +455,8 @@ class FrameworksController {
         });
       }
 
-      // Update framework progress
-      const allControls = await prisma.frameworkControl.findMany({
-        where: { frameworkId },
-      });
-      const compliantCount = allControls.filter(c => c.status === 'Implemented' || c.status === 'Compliant').length;
-      const progress = allControls.length > 0 ? Math.round((compliantCount / allControls.length) * 100) : 0;
-
-      await prisma.complianceFramework.update({
-        where: { id: frameworkId },
-        data: { progress },
-      });
+      // Recalculate framework progress
+      await this.recalculateFrameworkProgress(frameworkId, organizationId);
 
       await prisma.auditLog.create({
         data: {
@@ -499,6 +482,87 @@ class FrameworksController {
       throw new AppError('Failed to process smart upload', 500);
     }
   };
+
+  deleteControl: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { frameworkId, controlId } = req.params;
+      const organizationId = authReq.user!.organizationId;
+
+      // Verify framework belongs to organization
+      const framework = await prisma.complianceFramework.findFirst({
+        where: { id: frameworkId, organizationId },
+      });
+
+      if (!framework) {
+        throw new AppError('Framework not found', 404);
+      }
+
+      // Verify control exists and belongs to framework
+      const control = await prisma.frameworkControl.findFirst({
+        where: { id: controlId, frameworkId },
+      });
+
+      if (!control) {
+        throw new AppError('Control not found', 404);
+      }
+
+      // Delete the control
+      await prisma.frameworkControl.delete({
+        where: { id: controlId },
+      });
+
+      // Recalculate framework progress
+      await this.recalculateFrameworkProgress(frameworkId, organizationId);
+
+      // Log audit
+      await prisma.auditLog.create({
+        data: {
+          action: `Control Deleted: ${control.name} from framework ${framework.name}`,
+          userId: authReq.user!.id,
+          organizationId,
+          hash: uuidv4(),
+        },
+      });
+
+      res.json({ message: 'Control deleted successfully' });
+    } catch (error) {
+      logger.error('Delete control error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to delete control', 500);
+    }
+  };
+
+  private async recalculateFrameworkProgress(frameworkId: string, organizationId: string): Promise<void> {
+    const controls = await prisma.frameworkControl.findMany({
+      where: { frameworkId },
+    });
+
+    if (controls.length === 0) {
+      await prisma.complianceFramework.update({
+        where: { id: frameworkId },
+        data: { progress: 0, status: ComplianceStatus.In_Review },
+      });
+      return;
+    }
+
+    const compliantCount = controls.filter(
+      (c) => c.status === 'Implemented' || c.status === 'Compliant'
+    ).length;
+    const progress = Math.round((compliantCount / controls.length) * 100);
+
+    let status: ComplianceStatus = ComplianceStatus.In_Review;
+    if (progress === 100) {
+      status = ComplianceStatus.Compliant;
+    } else if (controls.some(c => c.status === 'At Risk' || c.status === 'Failed')) {
+      status = ComplianceStatus.At_Risk;
+    }
+
+    await prisma.complianceFramework.update({
+      where: { id: frameworkId },
+      data: { progress, status },
+    });
+  }
 }
 
 export default new FrameworksController();

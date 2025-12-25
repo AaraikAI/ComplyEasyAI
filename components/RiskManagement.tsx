@@ -1,11 +1,11 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { api } from '../services/api';
-import { MOCK_USERS } from '../constants';
 import { generateRemediationPlan, prioritizeRisks } from '../services/geminiService';
-import { RiskItem } from '../types';
+import { RiskItem, User } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import { 
-  ArrowLeft, Filter, CheckSquare, Loader2, Play, CheckCircle, X, SortAsc, SortDesc, BrainCircuit, ListFilter
+  ArrowLeft, Filter, CheckSquare, Loader2, Play, CheckCircle, X, SortAsc, SortDesc, BrainCircuit, ListFilter, Plus
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -17,8 +17,10 @@ type SortField = 'severity' | 'detectedAt' | 'aiScore';
 type SortOrder = 'asc' | 'desc';
 
 export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
+  const { user } = useAuth();
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
   
   const [filterSeverity, setFilterSeverity] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
@@ -35,16 +37,41 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
   const [loadingRemediation, setLoadingRemediation] = useState(false);
   const [assigneeId, setAssigneeId] = useState<string>('');
   const [newStatus, setNewStatus] = useState<'Open' | 'In Progress' | 'Resolved' | 'Ignored'>('Open');
+  
+  const [showAddRiskModal, setShowAddRiskModal] = useState(false);
+  const [newRisk, setNewRisk] = useState({
+    description: '',
+    category: '',
+    severity: 'Medium' as 'High' | 'Medium' | 'Low',
+    assignedToId: '',
+  });
 
   useEffect(() => {
     loadRisks();
+    loadTeamMembers();
   }, []);
 
   const loadRisks = async () => {
     setIsLoadingData(true);
-    const data = await api.risks.list();
-    setRisks(data);
-    setIsLoadingData(false);
+    try {
+      const data = await api.risks.list();
+      setRisks(data);
+    } catch (error) {
+      console.error('Failed to load risks:', error);
+      setRisks([]);
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const loadTeamMembers = async () => {
+    try {
+      const members = await api.team.list();
+      setTeamMembers(members);
+    } catch (error) {
+      console.error('Failed to load team members:', error);
+      setTeamMembers([]);
+    }
   };
 
   const filteredRisks = useMemo(() => {
@@ -105,7 +132,10 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
           // Persist the new risk
           await api.risks.create(newRisk);
           loadRisks();
-          api.audit.log('Risk Assessment Scan Completed', 'System Agent');
+          // Log audit action (non-blocking)
+          api.audit.log('Risk Assessment Scan Completed', 'System Agent').catch((err) => {
+            console.warn('Failed to log audit action:', err);
+          });
         }, 500);
       }
     }, 800);
@@ -135,7 +165,9 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
   const handleOpenRemediation = async (risk: RiskItem) => {
     setSelectedRisk(risk);
-    setAssigneeId(risk.assignedTo || '');
+    // Extract user ID from risk - backend returns assignedTo as object with id
+    const assignedUserId = (risk as any).assignedTo?.id || (risk as any).assignedToId || '';
+    setAssigneeId(assignedUserId);
     setNewStatus(risk.status);
     setRemediationPlan(risk.mitigationPlan || null);
 
@@ -149,20 +181,77 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
   const saveRiskChanges = async () => {
     if (selectedRisk) {
-      const assignee = MOCK_USERS.find(u => u.name === assigneeId);
-      const updatedRisk: RiskItem = {
-        ...selectedRisk,
-        status: newStatus,
-        assignedTo: assigneeId,
-        assignedAvatar: assignee?.avatar,
-        mitigationPlan: remediationPlan || undefined
+      try {
+        // Find the user by ID if assigneeId is provided
+        const assignee = assigneeId ? teamMembers.find(u => u.id === assigneeId) : null;
+        
+        // Prepare update data - backend expects assignedToId (user ID), not assignedTo (name)
+        const updateData: any = {
+          status: newStatus,
+          mitigationPlan: remediationPlan || undefined,
+        };
+        
+        // Only include assignedToId if a user is selected
+        if (assigneeId) {
+          updateData.assignedToId = assigneeId;
+        } else {
+          updateData.assignedToId = null;
+        }
+        
+        await api.risks.update(selectedRisk.id, updateData);
+        
+        // Log audit action (non-blocking - don't fail if audit log fails)
+        try {
+          await api.audit.log(`Risk ${selectedRisk.id} updated to ${newStatus}`, user?.name || 'User');
+        } catch (auditError) {
+          console.warn('Failed to log audit action:', auditError);
+          // Continue even if audit logging fails
+        }
+        
+        // Reload risks to get updated data from backend
+        await loadRisks();
+        setSelectedRisk(null);
+      } catch (error: any) {
+        console.error('Failed to update risk:', error);
+        alert(`Failed to update risk: ${error.message || 'Unknown error'}`);
+      }
+    }
+  };
+
+  const handleCreateRisk = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRisk.description || !newRisk.category) {
+      alert('Description and category are required');
+      return;
+    }
+
+    try {
+      const riskData: any = {
+        description: newRisk.description,
+        category: newRisk.category,
+        severity: newRisk.severity,
       };
+
+      if (newRisk.assignedToId) {
+        riskData.assignedToId = newRisk.assignedToId;
+      }
+
+      const createdRisk = await api.risks.create(riskData);
       
-      await api.risks.update(updatedRisk.id, updatedRisk);
-      await api.audit.log(`Risk ${updatedRisk.id} updated to ${updatedRisk.status}`, 'Admin'); // Use real user in production
+      // Log audit action (non-blocking)
+      try {
+        await api.audit.log(`Risk created: ${createdRisk.description.substring(0, 50)}`, user?.name || 'User');
+      } catch (auditError) {
+        console.warn('Failed to log audit action:', auditError);
+        // Continue even if audit logging fails
+      }
       
-      setRisks(prev => prev.map(r => r.id === updatedRisk.id ? updatedRisk : r));
-      setSelectedRisk(null);
+      setNewRisk({ description: '', category: '', severity: 'Medium', assignedToId: '' });
+      setShowAddRiskModal(false);
+      await loadRisks();
+    } catch (error: any) {
+      console.error('Failed to create risk:', error);
+      alert(`Failed to create risk: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -224,8 +313,8 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                     className="w-full p-2 border border-gray-300 rounded-lg text-sm"
                   >
                     <option value="">Unassigned</option>
-                    {MOCK_USERS.map(u => (
-                      <option key={u.id} value={u.name}>{u.name}</option>
+                    {teamMembers.map(u => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
                     ))}
                   </select>
                 </div>
@@ -276,6 +365,15 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
             </div>
           </div>
           <div className="flex gap-3">
+            {(user?.role === 'admin' || user?.role === 'editor') && (
+              <button 
+                onClick={() => setShowAddRiskModal(true)} 
+                className="bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 shadow-md flex items-center transition-colors"
+              >
+                <Plus className="mr-2" size={16} />
+                Add Risk
+              </button>
+            )}
              <button onClick={handleAIPrioritization} disabled={isPrioritizing} className="bg-purple-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-purple-700 shadow-md flex items-center transition-colors">
               {isPrioritizing ? <Loader2 className="animate-spin mr-2" size={16} /> : <BrainCircuit className="mr-2" size={16} />}
               AI Prioritize
@@ -309,7 +407,15 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                   <tr key={risk.id} className="hover:bg-gray-50 group">
                     <td className="px-6 py-4"><span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${risk.severity === 'High' ? 'bg-red-100 text-red-800' : risk.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>{risk.severity}</span></td>
                     <td className="px-6 py-4"><p className="font-medium text-gray-900 line-clamp-2">{risk.description}</p></td>
-                    <td className="px-6 py-4">{risk.assignedTo || <span className="text-gray-400 italic">Unassigned</span>}</td>
+                    <td className="px-6 py-4">
+                      {(() => {
+                        // Risk from backend may have assignedTo as object or name string
+                        const assignedUser = (risk as any).assignedTo 
+                          ? ((risk as any).assignedTo?.name || (risk as any).assignedTo)
+                          : risk.assignedTo;
+                        return assignedUser || <span className="text-gray-400 italic">Unassigned</span>;
+                      })()}
+                    </td>
                     <td className="px-6 py-4">{risk.aiPriorityScore || '-'}</td>
                     <td className="px-6 py-4">{risk.status}</td>
                     <td className="px-6 py-4 text-right">
@@ -321,6 +427,98 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
           </table>
         </div>
       </div>
+
+      {/* Add Risk Modal */}
+      {showAddRiskModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full animate-scaleIn">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                <Plus className="mr-2 text-brand-600" size={20} /> 
+                Create New Risk
+              </h3>
+              <button onClick={() => setShowAddRiskModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateRisk} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <textarea
+                  value={newRisk.description}
+                  onChange={(e) => setNewRisk({ ...newRisk, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  rows={3}
+                  required
+                  placeholder="Describe the risk..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                  <input
+                    type="text"
+                    value={newRisk.category}
+                    onChange={(e) => setNewRisk({ ...newRisk, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                    required
+                    placeholder="e.g., Infrastructure, Personnel"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Severity *</label>
+                  <select
+                    value={newRisk.severity}
+                    onChange={(e) => setNewRisk({ ...newRisk, severity: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                    required
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Assign To (Optional)</label>
+                <select
+                  value={newRisk.assignedToId}
+                  onChange={(e) => setNewRisk({ ...newRisk, assignedToId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                >
+                  <option value="">Unassigned</option>
+                  {teamMembers.map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddRiskModal(false);
+                    setNewRisk({ description: '', category: '', severity: 'Medium', assignedToId: '' });
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors shadow-lg"
+                >
+                  Create Risk
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

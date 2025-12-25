@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Lock, CheckCircle, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -17,21 +17,24 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, onClose
   const [expiry, setExpiry] = useState('');
   const [cvc, setCvc] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoading(true);
     setStep('processing');
 
     try {
-      // Create Stripe checkout session
-      await api.billing.createCheckout(plan as 'Basic' | 'Pro' | 'Enterprise');
-      setStep('success');
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 2000);
-    } catch (error) {
-      console.error('Payment failed');
+      // Create Stripe checkout session and redirect
+      const response: any = await api.billing.createCheckout(plan as 'Basic' | 'Pro' | 'Enterprise');
+      
+      if (response.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = response.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error: any) {
+      console.error('Payment failed:', error);
+      alert(error.message || 'Failed to create checkout session. Please try again.');
       setLoading(false);
       setStep('form');
     }
@@ -70,74 +73,53 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, onClose
               <p className="text-sm text-gray-500">Upgrading to <strong className="text-gray-800">{plan}</strong> ({price}/mo)</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {step === 'processing' ? (
-                <div className="py-12 flex flex-col items-center">
-                  <Loader2 className="animate-spin text-brand-600 mb-4" size={48} />
-                  <p className="font-medium text-gray-600">Processing secure payment...</p>
+            {step === 'processing' ? (
+              <div className="p-12 flex flex-col items-center">
+                <Loader2 className="animate-spin text-brand-600 mb-4" size={48} />
+                <p className="font-medium text-gray-600">Redirecting to secure checkout...</p>
+              </div>
+            ) : (
+              <div className="p-6 space-y-5">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800">
+                    You will be redirected to Stripe's secure checkout page to complete your payment.
+                  </p>
                 </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">Card Number</label>
-                    <div className="relative">
-                      <input 
-                        required 
-                        type="text" 
-                        maxLength={19}
-                        placeholder="0000 0000 0000 0000"
-                        value={cardNumber}
-                        onChange={e => setCardNumber(formatCard(e.target.value))}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-mono text-gray-700"
-                      />
-                      <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                    </div>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Plan</span>
+                    <span className="font-bold text-gray-900">{plan}</span>
                   </div>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Price</span>
+                    <span className="font-bold text-gray-900">{price}/mo</span>
+                  </div>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">Expiry</label>
-                      <input 
-                        required 
-                        type="text" 
-                        placeholder="MM / YY"
-                        maxLength={5}
-                        value={expiry}
-                        onChange={e => setExpiry(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-mono text-gray-700 text-center"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">CVC</label>
-                      <input 
-                        required 
-                        type="text" 
-                        placeholder="123"
-                        maxLength={3}
-                        value={cvc}
-                        onChange={e => setCvc(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none font-mono text-gray-700 text-center"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-4">
-                    <button 
-                      type="submit" 
-                      className="w-full bg-slate-900 text-white py-4 rounded-lg font-bold text-lg hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 flex items-center justify-center"
-                    >
-                      Pay {price}
-                    </button>
-                    <div className="mt-4 flex justify-center space-x-2 opacity-50 grayscale">
-                       {/* Mock Logos */}
-                       <div className="h-6 w-10 bg-gray-200 rounded"></div>
-                       <div className="h-6 w-10 bg-gray-200 rounded"></div>
-                       <div className="h-6 w-10 bg-gray-200 rounded"></div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </form>
+                <button 
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full bg-slate-900 text-white py-4 rounded-lg font-bold text-lg hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 flex items-center justify-center disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={20} />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2" size={20} />
+                      Continue to Secure Checkout
+                    </>
+                  )}
+                </button>
+                
+                <p className="text-xs text-center text-gray-500">
+                  Powered by Stripe. Your payment information is secure and encrypted.
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>
