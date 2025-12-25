@@ -74,6 +74,15 @@ interface Config {
   logging: {
     level: string;
   };
+  mqtt: {
+    brokerUrl: string;
+    username?: string;
+    password?: string;
+    clientId: string;
+  };
+  openai: {
+    apiKey: string;
+  };
 }
 
 const config: Config = {
@@ -145,6 +154,15 @@ const config: Config = {
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',
+  },
+  mqtt: {
+    brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',
+    username: process.env.MQTT_USERNAME,
+    password: process.env.MQTT_PASSWORD,
+    clientId: process.env.MQTT_CLIENT_ID || `complyeasy-${Date.now()}`,
+  },
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || '',
   },
 };
 

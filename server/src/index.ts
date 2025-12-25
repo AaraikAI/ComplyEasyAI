@@ -30,6 +30,13 @@ import personnelRoutes from './routes/personnel';
 import vendorRoutes from './routes/vendors';
 import enterpriseRoutes from './routes/enterprise';
 
+// aCOS v3.0 Routes
+import acosRoutes from './routes/acos';
+
+// aCOS v3.0 Services
+import mqttService from './services/advanced/mqttService';
+import config from './config';
+
 const app = express();
 
 // Initialize monitoring (Sentry, APM)
@@ -169,6 +176,9 @@ app.use('/api/personnel', apiLimiter, personnelRoutes);
 app.use('/api/vendors', apiLimiter, vendorRoutes);
 app.use('/api/enterprise', apiLimiter, enterpriseRoutes);
 
+// aCOS v3.0 routes
+app.use('/api/acos', apiLimiter, acosRoutes);
+
 // 404 handler
 app.use(notFound);
 
@@ -192,6 +202,22 @@ testConnection().then((connected) => {
 }).catch((error) => {
   logger.warn('⚠️  Database connection test failed:', error.message);
 });
+
+// Initialize MQTT connection (optional)
+if (config.mqtt.brokerUrl && config.mqtt.brokerUrl !== 'mqtt://localhost:1883') {
+  mqttService.connect({
+    brokerUrl: config.mqtt.brokerUrl,
+    username: config.mqtt.username,
+    password: config.mqtt.password,
+    clientId: config.mqtt.clientId,
+  }).then(() => {
+    logger.info('✓ MQTT broker connected');
+  }).catch((error) => {
+    logger.warn('⚠️  MQTT connection failed (optional):', error.message);
+  });
+} else {
+  logger.info('ℹ️  MQTT not configured (set MQTT_BROKER_URL to enable)');
+}
 
 // Start server
 httpServer.listen(config.server.port, () => {
@@ -246,6 +272,9 @@ const gracefulShutdown = async (signal: string) => {
     }
 
     try {
+      // Disconnect MQTT
+      mqttService.disconnect();
+      
       await prisma.$disconnect();
       logger.info('Database connection closed');
       process.exit(0);

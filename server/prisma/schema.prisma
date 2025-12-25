@@ -34,6 +34,20 @@ model Organization {
   trustCertificates    TrustCertificate[]
   users                User[]
   vendors              Vendor[]
+  complianceGoals      ComplianceGoal[]
+  controlLoops         ControlLoop[]
+  complianceDebts      ComplianceDebt[]
+  changeImpacts        ChangeImpact[]
+  agenticActions       AgenticAction[]
+  evidenceAnalyses     EvidenceAnalysis[]
+  regulatoryChanges    RegulatoryChange[]
+  riskPredictions      RiskPrediction[]
+  complianceTrajectories ComplianceTrajectory[]
+  simulationScenarios  SimulationScenario[]
+  simulationResults    SimulationResult[]
+  redTeamResults       RedTeamResult[]
+  swarmInsights        SwarmInsight[]
+  iotDevices           IoTDevice[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -252,6 +266,8 @@ model ComplianceFramework {
   organizationId String
   organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   controls       FrameworkControl[]
+  complianceDebts ComplianceDebt[]
+  complianceTrajectories ComplianceTrajectory[]
 
   @@index([organizationId])
   @@index([status])
@@ -268,6 +284,7 @@ model FrameworkControl {
   frameworkId    String
   mappedControls Json?
   framework      ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  controlLoops   ControlLoop[]
 
   @@index([frameworkId])
 }
@@ -297,6 +314,7 @@ model RiskItem {
   assessment       RiskAssessment? @relation("AssessmentRisks", fields: [assessmentId], references: [id])
   assignedTo       User?           @relation(fields: [assignedToId], references: [id])
   organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  riskPredictions  RiskPrediction[]
 
   @@index([organizationId])
   @@index([status])
@@ -699,4 +717,309 @@ enum MonitorStatus {
   Failing
   Warning
   Unknown
+}
+
+// aCOS v3.0 Models
+model ComplianceGoal {
+  id              String   @id @default(uuid())
+  organizationId  String
+  goalType        String
+  frameworks      String[]
+  riskTolerance   String
+  horizon         Int
+  autoActionPolicy String
+  targetScore     Int?
+  status          String   @default("active")
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model ControlLoop {
+  id            String   @id @default(uuid())
+  organizationId String
+  controlId     String
+  observeAgent String
+  actAgent     String
+  verifyAgent  String
+  confidence   Float    @default(0.5)
+  status       String   @default("active")
+  lastObserved DateTime @default(now())
+  lastActed    DateTime @default(now())
+  lastVerified DateTime @default(now())
+  cycleCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  control      FrameworkControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([controlId])
+  @@index([status])
+}
+
+model ComplianceDebt {
+  id                      String    @id @default(uuid())
+  organizationId          String
+  frameworkId             String
+  debtType                String
+  severity                String
+  description             String
+  estimatedRemediationHours Int
+  accumulatedAt           DateTime  @default(now())
+  resolvedAt             DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  framework               ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([frameworkId])
+  @@index([severity])
+}
+
+model ChangeImpact {
+  id                      String    @id @default(uuid())
+  organizationId          String
+  changeType              String
+  changeId                String
+  affectedControls        String[]
+  affectedFrameworks      String[]
+  impactScore             Int
+  riskIncrease            Float
+  estimatedComplianceChange Float
+  forecastedAt            DateTime  @default(now())
+  createdAt               DateTime  @default(now())
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([changeType])
+}
+
+model AgenticAction {
+  id              String    @id @default(uuid())
+  organizationId  String
+  actionType      String
+  targetId        String
+  parameters      Json
+  blastRadius     Json
+  requiresApproval Boolean  @default(false)
+  status          String    @default("pending")
+  rollbackData    Json?
+  executedAt      DateTime?
+  rolledBackAt    DateTime?
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([actionType])
+}
+
+model EvidenceAnalysis {
+  id                  String    @id @default(uuid())
+  evidenceId          String
+  organizationId      String
+  deepfakeScore       Float
+  cryptographicHash   String
+  physicalAttestation Json?
+  humanLiveness       Json?
+  overallConfidence   Float
+  verificationStatus  String
+  analyzedAt          DateTime  @default(now())
+  createdAt           DateTime  @default(now())
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([evidenceId])
+  @@index([organizationId])
+  @@index([verificationStatus])
+}
+
+model RegulatoryChange {
+  id                    String    @id @default(uuid())
+  organizationId        String
+  regulationName        String
+  jurisdiction          String
+  effectiveDate         DateTime
+  changeType            String
+  affectedFrameworks    String[]
+  extractedRequirements String[]
+  autoGeneratedControls Json?
+  status                String    @default("pending")
+  regulationText        String?   @db.Text
+  source                String?
+  createdBy             String
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([jurisdiction])
+  @@index([status])
+}
+
+model RiskPrediction {
+  id                  String    @id @default(uuid())
+  organizationId      String
+  riskId             String?
+  riskType           String
+  predictedProbability Float
+  predictedSeverity  String
+  predictedDate       DateTime
+  confidence         Float
+  factors            String[]
+  timeHorizonMonths  Int
+  createdAt          DateTime  @default(now())
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  risk               RiskItem? @relation(fields: [riskId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([predictedDate])
+  @@index([predictedSeverity])
+}
+
+model ComplianceTrajectory {
+  id                String    @id @default(uuid())
+  organizationId    String
+  frameworkId       String
+  currentScore      Int
+  predictedScores   Json
+  trend             String
+  timeHorizonMonths Int
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  framework         ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([frameworkId])
+}
+
+model SimulationScenario {
+  id              String    @id @default(uuid())
+  organizationId  String
+  name            String
+  description     String
+  scenarioType    String
+  parameters      Json
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  results         SimulationResult[]
+
+  @@index([organizationId])
+  @@index([scenarioType])
+}
+
+model SimulationResult {
+  id                    String    @id @default(uuid())
+  scenarioId            String
+  organizationId        String
+  baselineScore         Int
+  simulatedScore        Int
+  scoreChange           Int
+  affectedControls      Int
+  affectedFrameworks    Int
+  riskChanges           Json
+  confidence            Float
+  recommendations       String[]
+  createdAt             DateTime  @default(now())
+  scenario              SimulationScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([scenarioId])
+  @@index([organizationId])
+}
+
+model RedTeamResult {
+  id                        String    @id @default(uuid())
+  organizationId            String
+  scenarioId                String
+  success                   Boolean
+  attackPath                String[]
+  vulnerabilitiesFound      Json
+  remediationRecommendations String[]
+  executionTime             Int
+  createdBy                 String
+  createdAt                 DateTime  @default(now())
+  organization              Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model SwarmInsight {
+  id                    String    @id @default(uuid())
+  organizationId        String
+  insightType           String
+  description           String    @db.Text
+  confidence            Float
+  sourceCount           Int
+  applicableFrameworks  String[]
+  recommendations       String[]
+  createdAt             DateTime  @default(now())
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([insightType])
+}
+
+model IoTDevice {
+  id                String    @id @default(uuid())
+  organizationId    String
+  deviceId          String
+  deviceType        String
+  location          String
+  complianceStatus  String    @default("unknown")
+  lastSeen          DateTime  @default(now())
+  sensorData        Json?
+  mqttTopic         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  complianceChecks  EdgeComplianceCheck[]
+
+  @@unique([deviceId, organizationId])
+  @@index([organizationId])
+  @@index([complianceStatus])
+}
+
+model EdgeComplianceCheck {
+  id              String    @id @default(uuid())
+  deviceId        String
+  organizationId  String
+  checkType       String
+  status          String
+  details         String
+  timestamp       DateTime  @default(now())
+  device          IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([organizationId])
+  @@index([timestamp])
+}
+
+model TranscriptionResult {
+  id              String    @id @default(uuid())
+  organizationId  String
+  evidenceId      String?
+  text            String    @db.Text
+  confidence      Float
+  language        String
+  duration        Int?
+  segments        Json?
+  sourceType      String
+  createdAt       DateTime  @default(now())
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([evidenceId])
+  @@index([sourceType])
 }

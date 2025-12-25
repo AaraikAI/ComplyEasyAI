@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { 
   LayoutDashboard, FileText, ShieldCheck, Settings, LogOut, Menu, X,
-  Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare, Layers
+  Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare, Layers, Brain
 } from 'lucide-react';
 import { ComplianceChat } from './ComplianceChat';
 
@@ -98,6 +98,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     { id: 'frameworks', label: 'Frameworks', icon: ShieldCheck, roles: ['admin', 'editor'], relatedViews: ['framework-details'] },
     { id: 'reports', label: 'Report Generator', icon: FileText, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'audit', label: 'Audit Trail', icon: Activity, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'acos', label: 'aCOS v3.0', icon: Brain, roles: ['admin', 'editor'], relatedViews: [] },
   ];
 
   const aiTools = [
