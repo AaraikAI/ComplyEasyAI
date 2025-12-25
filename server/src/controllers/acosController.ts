@@ -10,6 +10,8 @@ import redTeamService from '../services/advanced/redTeamService';
 import federatedSwarmService from '../services/advanced/federatedSwarmService';
 import multimodalIntakeService from '../services/advanced/multimodalIntakeService';
 import physicalAIService from '../services/advanced/physicalAIService';
+import vrCollaborativeReviewService from '../services/advanced/vrCollaborativeReviewService';
+import swarmTaskAllocationService from '../services/advanced/swarmTaskAllocationService';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 
@@ -389,6 +391,323 @@ class ACOSController {
     } catch (error) {
       logger.error('Perform edge compliance check error', error);
       throw new AppError('Failed to perform edge compliance check', 500);
+    }
+  };
+
+  getDevices: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const devices = await physicalAIService.getDevices(authReq.user!.organizationId);
+      res.json(devices);
+    } catch (error) {
+      logger.error('Get devices error', error);
+      throw new AppError('Failed to get devices', 500);
+    }
+  };
+
+  // VR Collaborative Review
+  createVRSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const session = await vrCollaborativeReviewService.createSession(
+        authReq.user!.organizationId,
+        req.body,
+        authReq.user!.id
+      );
+      res.json(session);
+    } catch (error) {
+      logger.error('Create VR session error', error);
+      throw new AppError('Failed to create VR session', 500);
+    }
+  };
+
+  joinVRSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { sessionId } = req.params;
+      const role = req.body.role || 'reviewer';
+      const result = await vrCollaborativeReviewService.joinSession(
+        sessionId,
+        authReq.user!.id,
+        role
+      );
+      res.json(result);
+    } catch (error) {
+      logger.error('Join VR session error', error);
+      throw new AppError('Failed to join VR session', 500);
+    }
+  };
+
+  startVRSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { sessionId } = req.params;
+      const session = await vrCollaborativeReviewService.startSession(
+        sessionId,
+        authReq.user!.id
+      );
+      res.json(session);
+    } catch (error) {
+      logger.error('Start VR session error', error);
+      throw new AppError('Failed to start VR session', 500);
+    }
+  };
+
+  endVRSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { sessionId } = req.params;
+      const result = await vrCollaborativeReviewService.endSession(
+        sessionId,
+        authReq.user!.id
+      );
+      res.json(result);
+    } catch (error) {
+      logger.error('End VR session error', error);
+      throw new AppError('Failed to end VR session', 500);
+    }
+  };
+
+  addVRAnnotation: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { sessionId } = req.params;
+      const annotation = await vrCollaborativeReviewService.addAnnotation(
+        sessionId,
+        authReq.user!.id,
+        req.body
+      );
+      res.json(annotation);
+    } catch (error) {
+      logger.error('Add VR annotation error', error);
+      throw new AppError('Failed to add VR annotation', 500);
+    }
+  };
+
+  getActiveVRSessions: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const sessions = await vrCollaborativeReviewService.getActiveSessions(
+        authReq.user!.organizationId
+      );
+      res.json(sessions);
+    } catch (error) {
+      logger.error('Get active VR sessions error', error);
+      throw new AppError('Failed to get active VR sessions', 500);
+    }
+  };
+
+  createVRTrainingScenario: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const scenario = await vrCollaborativeReviewService.createTrainingScenario(
+        authReq.user!.organizationId,
+        req.body,
+        authReq.user!.id
+      );
+      res.json(scenario);
+    } catch (error) {
+      logger.error('Create VR training scenario error', error);
+      throw new AppError('Failed to create VR training scenario', 500);
+    }
+  };
+
+  startVRTraining: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { scenarioId } = req.params;
+      const result = await vrCollaborativeReviewService.startTrainingSession(
+        scenarioId,
+        authReq.user!.organizationId,
+        authReq.user!.id
+      );
+      res.json(result);
+    } catch (error) {
+      logger.error('Start VR training error', error);
+      throw new AppError('Failed to start VR training', 500);
+    }
+  };
+
+  // Swarm Task Allocation
+  registerSwarmAgent: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const agent = await swarmTaskAllocationService.registerAgent(
+        authReq.user!.organizationId,
+        req.body
+      );
+      res.json(agent);
+    } catch (error) {
+      logger.error('Register swarm agent error', error);
+      throw new AppError('Failed to register swarm agent', 500);
+    }
+  };
+
+  submitSwarmTask: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const task = await swarmTaskAllocationService.submitTask(
+        authReq.user!.organizationId,
+        req.body,
+        authReq.user!.id
+      );
+      res.json(task);
+    } catch (error) {
+      logger.error('Submit swarm task error', error);
+      throw new AppError('Failed to submit swarm task', 500);
+    }
+  };
+
+  getSwarmTaskStatus: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { taskId } = req.params;
+      const task = swarmTaskAllocationService.getTaskStatus(taskId);
+      if (!task) {
+        throw new AppError('Task not found', 404);
+      }
+      res.json(task);
+    } catch (error) {
+      logger.error('Get swarm task status error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to get swarm task status', 500);
+    }
+  };
+
+  getActiveSwarmTasks: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const tasks = swarmTaskAllocationService.getActiveTasks(authReq.user!.organizationId);
+      res.json(tasks);
+    } catch (error) {
+      logger.error('Get active swarm tasks error', error);
+      throw new AppError('Failed to get active swarm tasks', 500);
+    }
+  };
+
+  cancelSwarmTask: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { taskId } = req.params;
+      const task = await swarmTaskAllocationService.cancelTask(
+        taskId,
+        req.body.reason || 'Cancelled by user',
+        authReq.user!.id
+      );
+      res.json(task);
+    } catch (error) {
+      logger.error('Cancel swarm task error', error);
+      throw new AppError('Failed to cancel swarm task', 500);
+    }
+  };
+
+  getSwarmMetrics: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const metrics = swarmTaskAllocationService.getSwarmMetrics(authReq.user!.organizationId);
+      res.json(metrics);
+    } catch (error) {
+      logger.error('Get swarm metrics error', error);
+      throw new AppError('Failed to get swarm metrics', 500);
+    }
+  };
+
+  getSwarmAgents: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const agents = swarmTaskAllocationService.getAgents();
+      res.json(agents);
+    } catch (error) {
+      logger.error('Get swarm agents error', error);
+      throw new AppError('Failed to get swarm agents', 500);
+    }
+  };
+
+  // Federation Status
+  getFederationStatus: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const status = await federatedSwarmService.getFederationStatus(authReq.user!.organizationId);
+      res.json(status);
+    } catch (error) {
+      logger.error('Get federation status error', error);
+      throw new AppError('Failed to get federation status', 500);
+    }
+  };
+
+  participateInSwarm: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { taskType } = req.body;
+      const result = await federatedSwarmService.participateInSwarm(
+        authReq.user!.organizationId,
+        taskType
+      );
+      res.json(result);
+    } catch (error) {
+      logger.error('Participate in swarm error', error);
+      throw new AppError('Failed to participate in swarm', 500);
+    }
+  };
+
+  // Regulatory Feeds
+  monitorRegulatoryFeeds: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const changes = await regulatoryIntelligenceFabricService.monitorRegulatoryFeeds(
+        authReq.user!.organizationId
+      );
+      res.json(changes);
+    } catch (error) {
+      logger.error('Monitor regulatory feeds error', error);
+      throw new AppError('Failed to monitor regulatory feeds', 500);
+    }
+  };
+
+  getRegulatoryChanges: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const status = req.query.status as string | undefined;
+      const changes = await regulatoryIntelligenceFabricService.getRegulatoryChanges(
+        authReq.user!.organizationId,
+        status
+      );
+      res.json(changes);
+    } catch (error) {
+      logger.error('Get regulatory changes error', error);
+      throw new AppError('Failed to get regulatory changes', 500);
+    }
+  };
+
+  // aCOS Extended
+  getControlLoops: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const loops = await acosService.getActiveControlLoops(authReq.user!.organizationId);
+      res.json(loops);
+    } catch (error) {
+      logger.error('Get control loops error', error);
+      throw new AppError('Failed to get control loops', 500);
+    }
+  };
+
+  getComplianceDebts: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const debts = await acosService.getComplianceDebts(authReq.user!.organizationId);
+      res.json(debts);
+    } catch (error) {
+      logger.error('Get compliance debts error', error);
+      throw new AppError('Failed to get compliance debts', 500);
+    }
+  };
+
+  getChangeImpacts: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const impacts = await acosService.getChangeImpacts(authReq.user!.organizationId);
+      res.json(impacts);
+    } catch (error) {
+      logger.error('Get change impacts error', error);
+      throw new AppError('Failed to get change impacts', 500);
     }
   };
 }
