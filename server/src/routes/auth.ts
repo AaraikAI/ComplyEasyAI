@@ -15,7 +15,10 @@ router.post('/logout', asyncHandler(authController.logout.bind(authController)))
 
 // User profile update (requires authentication)
 import { authenticate } from '../middleware/auth';
+import multer from 'multer';
+const upload = multer({ storage: multer.memoryStorage() });
 router.patch('/profile', authenticate, asyncHandler(authController.updateProfile.bind(authController)));
+router.post('/profile/avatar', authenticate, upload.single('avatar'), asyncHandler(authController.uploadAvatar.bind(authController)));
 router.patch('/password', authenticate, asyncHandler(authController.changePassword.bind(authController)));
 
 export default router;

@@ -36,6 +36,7 @@ model Organization {
   vendors              Vendor[]
   complianceGoals      ComplianceGoal[]
   controlLoops         ControlLoop[]
+  controlLoopHistory   ControlLoopHistory[]
   complianceDebts      ComplianceDebt[]
   changeImpacts        ChangeImpact[]
   agenticActions       AgenticAction[]
@@ -48,6 +49,8 @@ model Organization {
   redTeamResults       RedTeamResult[]
   swarmInsights        SwarmInsight[]
   iotDevices           IoTDevice[]
+  edgeComplianceChecks EdgeComplianceCheck[]
+  transcriptionResults TranscriptionResult[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -721,14 +724,16 @@ enum MonitorStatus {
 
 // aCOS v3.0 Models
 model ComplianceGoal {
-  id              String   @id @default(uuid())
+  id              String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
   organizationId  String
+  name            String?
   goalType        String
   frameworks      String[]
   riskTolerance   String
   horizon         Int
   autoActionPolicy String
   targetScore     Int?
+  deadline        DateTime?
   status          String   @default("active")
   createdBy       String
   createdAt       DateTime @default(now())
@@ -740,7 +745,7 @@ model ComplianceGoal {
 }
 
 model ControlLoop {
-  id            String   @id @default(uuid())
+  id            String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
   organizationId String
   controlId     String
   observeAgent String
@@ -766,20 +771,25 @@ model ComplianceDebt {
   id                      String    @id @default(uuid())
   organizationId          String
   frameworkId             String
+  controlId               String?   // Link to control
   debtType                String
   severity                String
   description             String
   estimatedRemediationHours Int
+  deadline                DateTime? // Optional deadline
   accumulatedAt           DateTime  @default(now())
   resolvedAt             DateTime?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
   organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   framework               ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  control                 FrameworkControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([frameworkId])
   @@index([severity])
+  @@index([controlId])
+  @@index([deadline])
 }
 
 model ChangeImpact {
@@ -789,15 +799,21 @@ model ChangeImpact {
   changeId                String
   affectedControls        String[]
   affectedFrameworks      String[]
+  downstreamDependencies  String[]  @default([])
   impactScore             Int
   riskIncrease            Float
   estimatedComplianceChange Float
+  severity                String?
+  estimatedResolutionDays Int?
+  resolvedAt              DateTime?
   forecastedAt            DateTime  @default(now())
   createdAt               DateTime  @default(now())
   organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([changeType])
+  @@index([severity])
+  @@index([resolvedAt])
 }
 
 model AgenticAction {
@@ -991,7 +1007,7 @@ model IoTDevice {
 }
 
 model EdgeComplianceCheck {
-  id              String    @id @default(uuid())
+  id              String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
   deviceId        String
   organizationId  String
   checkType       String
@@ -1007,7 +1023,7 @@ model EdgeComplianceCheck {
 }
 
 model TranscriptionResult {
-  id              String    @id @default(uuid())
+  id              String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
   organizationId  String
   evidenceId      String?
   text            String    @db.Text

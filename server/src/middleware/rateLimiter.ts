@@ -8,8 +8,11 @@ export const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip rate limiting for health checks and static assets
-    return req.path === '/health' || req.path.startsWith('/static');
+    // Skip rate limiting for health checks, static assets, and TGN predictions (they're expensive but needed)
+    return req.path === '/health' || 
+           req.path.startsWith('/static') ||
+           req.path.includes('/tgn/predict-risks') ||
+           req.path.includes('/tgn/early-warnings');
   },
 });
 

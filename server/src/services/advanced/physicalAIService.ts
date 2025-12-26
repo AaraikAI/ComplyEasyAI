@@ -143,7 +143,7 @@ class PhysicalAIService {
   }
 
   /**
-   * Register IoT device
+   * Register IoT device (enhanced with all features)
    */
   async registerDevice(
     organizationId: string,
@@ -154,11 +154,23 @@ class PhysicalAIService {
       mqttTopic?: string;
       firmware?: string;
       capabilities?: string[];
+      authentication?: {
+        type: 'certificate' | 'api_key' | 'oauth';
+        credentials?: any;
+      };
+      certificates?: Array<{
+        type: string;
+        issuer: string;
+        validFrom: Date;
+        validUntil: Date;
+        fingerprint: string;
+      }>;
+      metadata?: Record<string, any>;
     },
     userId: string
   ): Promise<IoTDevice> {
     try {
-      // Check if device already exists
+      // Check if device already exists (duplicate rejection)
       const existingDevice = await prisma.ioTDevice.findFirst({
         where: {
           deviceId: device.deviceId,
@@ -167,24 +179,42 @@ class PhysicalAIService {
       });
 
       if (existingDevice) {
-        throw new Error('Device already registered');
+        throw new Error(`Device ${device.deviceId} already registered`);
       }
+
+      // Validate device certificate if provided
+      if (device.certificates && device.certificates.length > 0) {
+        const certValidation = await this.validateDeviceCertificates(device.certificates);
+        if (!certValidation.valid) {
+          throw new Error(`Certificate validation failed: ${certValidation.error}`);
+        }
+      }
+
+      // Generate UUID for the device
+      const deviceUuid = crypto.randomUUID();
+
+      // Prepare sensor data with authentication and metadata
+      const sensorData: any = {
+        firmware: device.firmware,
+        capabilities: device.capabilities || [],
+        registeredBy: userId,
+        registeredAt: new Date(),
+        authentication: device.authentication,
+        certificates: device.certificates,
+        metadata: device.metadata || {},
+      };
 
       // Store device in database
       const dbDevice = await prisma.ioTDevice.create({
         data: {
+          id: deviceUuid,
           organizationId,
           deviceId: device.deviceId,
           deviceType: device.deviceType,
           location: device.location,
           mqttTopic: device.mqttTopic || `devices/${device.deviceId}/data`,
           complianceStatus: 'unknown',
-          sensorData: {
-            firmware: device.firmware,
-            capabilities: device.capabilities || [],
-            registeredBy: userId,
-            registeredAt: new Date(),
-          },
+          sensorData,
         },
       });
 
@@ -200,8 +230,8 @@ class PhysicalAIService {
       }
 
       // Perform initial compliance check
-      const complianceChecks = await this.performEdgeComplianceCheck(device.deviceId, organizationId);
-      const overallStatus = this.calculateOverallComplianceStatus(complianceChecks);
+      const complianceResult = await this.performEdgeComplianceCheck(device.deviceId, organizationId);
+      const overallStatus = this.calculateOverallComplianceStatus(complianceResult.checks);
 
       // Update device with compliance status
       await prisma.ioTDevice.update({
@@ -235,10 +265,155 @@ class PhysicalAIService {
         complianceStatus: overallStatus as any,
         lastSeen: dbDevice.lastSeen,
         sensorData: dbDevice.sensorData as any,
-        complianceScore: this.calculateComplianceScore(complianceChecks),
+        complianceScore: complianceResult.overallScore,
+        certificates: device.certificates,
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[Physical AI] Error registering device', error);
+      if (error.message?.includes('already registered')) {
+        throw error; // Re-throw duplicate error
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Validate device certificates
+   */
+  private async validateDeviceCertificates(
+    certificates: Array<{
+      type: string;
+      issuer: string;
+      validFrom: Date;
+      validUntil: Date;
+      fingerprint: string;
+    }>
+  ): Promise<{ valid: boolean; error?: string }> {
+    try {
+      const now = new Date();
+
+      for (const cert of certificates) {
+        const validFrom = new Date(cert.validFrom);
+        const validUntil = new Date(cert.validUntil);
+
+        if (validFrom > now) {
+          return { valid: false, error: `Certificate not yet valid: ${cert.type}` };
+        }
+
+        if (validUntil < now) {
+          return { valid: false, error: `Certificate expired: ${cert.type}` };
+        }
+
+        // Check fingerprint format (should be hex string)
+        if (!/^[0-9a-f]{40,64}$/i.test(cert.fingerprint)) {
+          return { valid: false, error: `Invalid certificate fingerprint format: ${cert.type}` };
+        }
+      }
+
+      return { valid: true };
+    } catch (error: any) {
+      return { valid: false, error: error.message || 'Certificate validation error' };
+    }
+  }
+
+  /**
+   * Bulk register devices
+   */
+  async bulkRegisterDevices(
+    organizationId: string,
+    devices: Array<{
+      deviceId: string;
+      deviceType: string;
+      location: string;
+      mqttTopic?: string;
+      firmware?: string;
+      capabilities?: string[];
+      authentication?: any;
+      certificates?: any[];
+      metadata?: Record<string, any>;
+    }>,
+    userId: string
+  ): Promise<{
+    successful: IoTDevice[];
+    failed: Array<{ deviceId: string; error: string }>;
+  }> {
+    try {
+      const successful: IoTDevice[] = [];
+      const failed: Array<{ deviceId: string; error: string }> = [];
+
+      for (const device of devices) {
+        try {
+          const registered = await this.registerDevice(organizationId, device, userId);
+          successful.push(registered);
+        } catch (error: any) {
+          failed.push({
+            deviceId: device.deviceId,
+            error: error.message || 'Unknown error',
+          });
+        }
+      }
+
+      logger.info(`[Physical AI] Bulk registration: ${successful.length} successful, ${failed.length} failed`);
+
+      return { successful, failed };
+    } catch (error) {
+      logger.error('[Physical AI] Error in bulk device registration', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Deregister device
+   */
+  async deregisterDevice(
+    deviceId: string,
+    organizationId: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      const device = await prisma.ioTDevice.findFirst({
+        where: {
+          deviceId,
+          organizationId,
+        },
+      });
+
+      if (!device) {
+        throw new Error('Device not found');
+      }
+
+      // Unsubscribe from MQTT if subscribed
+      if (device.mqttTopic && mqttService.getConnectionStatus()) {
+        try {
+          mqttService.unsubscribe(device.mqttTopic);
+        } catch (mqttError) {
+          logger.warn('[Physical AI] Error unsubscribing from MQTT', mqttError);
+        }
+      }
+
+      // Delete device
+      await prisma.ioTDevice.delete({
+        where: { id: device.id },
+      });
+
+      // Log deregistration
+      await prisma.auditLog.create({
+        data: {
+          action: 'physical_ai.device_deregistered',
+          details: JSON.stringify({
+            deviceId,
+            deviceType: device.deviceType,
+            location: device.location,
+          }),
+          userId,
+          organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      logger.info(`[Physical AI] Device deregistered: ${deviceId}`);
+    } catch (error) {
+      logger.error('[Physical AI] Error deregistering device', error);
       throw error;
     }
   }
@@ -278,12 +453,16 @@ class PhysicalAIService {
   }
 
   /**
-   * Perform comprehensive edge compliance check
+   * Perform comprehensive edge compliance check (enhanced with overall score and recommendations)
    */
   async performEdgeComplianceCheck(
     deviceId: string,
     organizationId: string
-  ): Promise<EdgeComplianceCheck[]> {
+  ): Promise<{
+    checks: EdgeComplianceCheck[];
+    overallScore: number; // 0-100
+    recommendations: string[];
+  }> {
     try {
       // Get device from database
       const device = await prisma.ioTDevice.findFirst({
@@ -360,9 +539,19 @@ class PhysicalAIService {
         },
       });
 
-      logger.info(`[Physical AI] Compliance check completed for ${deviceId}: ${overallStatus}`);
+      // Calculate overall compliance score
+      const overallScore = this.calculateComplianceScore(checks);
 
-      return checks;
+      // Generate recommendations
+      const recommendations = this.generateComplianceRecommendations(checks);
+
+      logger.info(`[Physical AI] Compliance check completed for ${deviceId}: ${overallStatus}, score: ${overallScore}/100`);
+
+      return {
+        checks,
+        overallScore,
+        recommendations,
+      };
     } catch (error) {
       logger.error('[Physical AI] Error performing edge compliance check', error);
       throw error;
@@ -1023,6 +1212,588 @@ class PhysicalAIService {
     } catch (error) {
       logger.error('[Physical AI] Error getting devices', error);
       return [];
+    }
+  }
+
+  /**
+   * Generate compliance recommendations
+   */
+  private generateComplianceRecommendations(checks: EdgeComplianceCheck[]): string[] {
+    const recommendations: string[] = [];
+
+    const failedChecks = checks.filter(c => c.status === 'fail');
+    const warningChecks = checks.filter(c => c.status === 'warning');
+
+    if (failedChecks.length > 0) {
+      recommendations.push(`URGENT: Address ${failedChecks.length} failed compliance checks`);
+      
+      for (const check of failedChecks) {
+        if (check.remediation) {
+          recommendations.push(`[${check.checkType}] ${check.remediation}`);
+        }
+      }
+    }
+
+    if (warningChecks.length > 0) {
+      recommendations.push(`Review ${warningChecks.length} compliance warnings`);
+      
+      for (const check of warningChecks.slice(0, 5)) { // Limit to top 5
+        if (check.remediation) {
+          recommendations.push(`[${check.checkType}] ${check.remediation}`);
+        }
+      }
+    }
+
+    if (failedChecks.length === 0 && warningChecks.length === 0) {
+      recommendations.push('All compliance checks passed. Maintain current security posture.');
+    }
+
+    return recommendations;
+  }
+
+  /**
+   * Monitor device heartbeat
+   */
+  async monitorDeviceHeartbeat(
+    deviceId: string,
+    organizationId: string
+  ): Promise<{ online: boolean; lastHeartbeat: Date; latency?: number }> {
+    try {
+      const device = await prisma.ioTDevice.findFirst({
+        where: {
+          deviceId,
+          organizationId,
+        },
+      });
+
+      if (!device) {
+        throw new Error('Device not found');
+      }
+
+      const now = new Date();
+      const timeSinceLastSeen = now.getTime() - device.lastSeen.getTime();
+      const heartbeatThreshold = 5 * 60 * 1000; // 5 minutes
+
+      const online = timeSinceLastSeen < heartbeatThreshold;
+
+      // Update health status
+      this.updateDeviceHealth(deviceId, online ? 'online' : 'offline');
+
+      return {
+        online,
+        lastHeartbeat: device.lastSeen,
+        latency: online ? timeSinceLastSeen : undefined,
+      };
+    } catch (error) {
+      logger.error('[Physical AI] Error monitoring device heartbeat', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Detect offline devices
+   */
+  async detectOfflineDevices(organizationId: string): Promise<Array<{
+    deviceId: string;
+    lastSeen: Date;
+    offlineSince: Date;
+  }>> {
+    try {
+      const devices = await prisma.ioTDevice.findMany({
+        where: { organizationId },
+      });
+
+      const now = new Date();
+      const offlineThreshold = 5 * 60 * 1000; // 5 minutes
+      const offlineDevices: Array<{
+        deviceId: string;
+        lastSeen: Date;
+        offlineSince: Date;
+      }> = [];
+
+      for (const device of devices) {
+        const timeSinceLastSeen = now.getTime() - device.lastSeen.getTime();
+        if (timeSinceLastSeen > offlineThreshold) {
+          offlineDevices.push({
+            deviceId: device.deviceId,
+            lastSeen: device.lastSeen,
+            offlineSince: new Date(device.lastSeen.getTime() + offlineThreshold),
+          });
+
+          // Update device status
+          this.updateDeviceHealth(device.deviceId, 'offline');
+
+          // Generate alert
+          await this.alertOnDeviceFailure(device.deviceId, organizationId, 'offline');
+        }
+      }
+
+      return offlineDevices;
+    } catch (error) {
+      logger.error('[Physical AI] Error detecting offline devices', error);
+      return [];
+    }
+  }
+
+  /**
+   * Alert on device failure
+   */
+  private async alertOnDeviceFailure(
+    deviceId: string,
+    organizationId: string,
+    failureType: 'offline' | 'error' | 'anomaly'
+  ): Promise<void> {
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: 'physical_ai.device_failure_alert',
+          details: JSON.stringify({
+            deviceId,
+            failureType,
+            timestamp: new Date(),
+          }),
+          userId: 'system',
+          organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      logger.warn(`[Physical AI] Device failure alert: ${deviceId} - ${failureType}`);
+    } catch (error) {
+      logger.error('[Physical AI] Error creating device failure alert', error);
+    }
+  }
+
+  /**
+   * Monitor battery level
+   */
+  async monitorBatteryLevel(
+    deviceId: string,
+    organizationId: string
+  ): Promise<{ level: number; status: 'good' | 'low' | 'critical' }> {
+    try {
+      const device = await prisma.ioTDevice.findFirst({
+        where: {
+          deviceId,
+          organizationId,
+        },
+      });
+
+      if (!device) {
+        throw new Error('Device not found');
+      }
+
+      const sensorData = device.sensorData as any;
+      const batteryLevel = sensorData?.battery?.level || sensorData?.power?.batteryLevel || 100;
+
+      let status: 'good' | 'low' | 'critical' = 'good';
+      if (batteryLevel < 20) {
+        status = 'critical';
+      } else if (batteryLevel < 50) {
+        status = 'low';
+      }
+
+      return { level: batteryLevel, status };
+    } catch (error) {
+      logger.error('[Physical AI] Error monitoring battery level', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Monitor connectivity
+   */
+  async monitorConnectivity(
+    deviceId: string,
+    organizationId: string
+  ): Promise<{
+    connected: boolean;
+    connectionQuality: 'excellent' | 'good' | 'fair' | 'poor';
+    latency?: number;
+    signalStrength?: number;
+  }> {
+    try {
+      const device = await prisma.ioTDevice.findFirst({
+        where: {
+          deviceId,
+          organizationId,
+        },
+      });
+
+      if (!device) {
+        throw new Error('Device not found');
+      }
+
+      const sensorData = device.sensorData as any;
+      const networkInfo = sensorData?.network || {};
+      
+      const connected = networkInfo.connected !== false;
+      const latency = networkInfo.latency || Math.random() * 100; // Simulated
+      const signalStrength = networkInfo.signalStrength || (80 + Math.random() * 20); // Simulated
+
+      let connectionQuality: 'excellent' | 'good' | 'fair' | 'poor' = 'good';
+      if (latency < 50 && signalStrength > 80) {
+        connectionQuality = 'excellent';
+      } else if (latency < 100 && signalStrength > 60) {
+        connectionQuality = 'good';
+      } else if (latency < 200 && signalStrength > 40) {
+        connectionQuality = 'fair';
+      } else {
+        connectionQuality = 'poor';
+      }
+
+      return {
+        connected,
+        connectionQuality,
+        latency,
+        signalStrength,
+      };
+    } catch (error) {
+      logger.error('[Physical AI] Error monitoring connectivity', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Track firmware version
+   */
+  async trackFirmwareVersion(
+    deviceId: string,
+    organizationId: string
+  ): Promise<{
+    currentVersion: string;
+    latestVersion?: string;
+    updateAvailable: boolean;
+    lastChecked: Date;
+  }> {
+    try {
+      const device = await prisma.ioTDevice.findFirst({
+        where: {
+          deviceId,
+          organizationId,
+        },
+      });
+
+      if (!device) {
+        throw new Error('Device not found');
+      }
+
+      const sensorData = device.sensorData as any;
+      const currentVersion = sensorData?.firmware?.version || 'unknown';
+      const latestVersion = sensorData?.firmware?.latestVersion;
+
+      return {
+        currentVersion,
+        latestVersion,
+        updateAvailable: latestVersion && latestVersion !== currentVersion,
+        lastChecked: new Date(),
+      };
+    } catch (error) {
+      logger.error('[Physical AI] Error tracking firmware version', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get health dashboard
+   */
+  async getHealthDashboard(organizationId: string): Promise<{
+    totalDevices: number;
+    onlineDevices: number;
+    offlineDevices: number;
+    devicesByStatus: Record<string, number>;
+    averageComplianceScore: number;
+    devicesNeedingAttention: number;
+    recentAlerts: number;
+  }> {
+    try {
+      const devices = await prisma.ioTDevice.findMany({
+        where: { organizationId },
+        include: {
+          complianceChecks: {
+            orderBy: { timestamp: 'desc' },
+            take: 1,
+          },
+        },
+      });
+
+      const now = new Date();
+      const offlineThreshold = 5 * 60 * 1000;
+
+      let onlineDevices = 0;
+      let offlineDevices = 0;
+      let totalComplianceScore = 0;
+      let devicesWithScore = 0;
+      let devicesNeedingAttention = 0;
+
+      const devicesByStatus: Record<string, number> = {};
+
+      for (const device of devices) {
+        const timeSinceLastSeen = now.getTime() - device.lastSeen.getTime();
+        if (timeSinceLastSeen < offlineThreshold) {
+          onlineDevices++;
+        } else {
+          offlineDevices++;
+        }
+
+        devicesByStatus[device.complianceStatus] = (devicesByStatus[device.complianceStatus] || 0) + 1;
+
+        if (device.complianceChecks.length > 0) {
+          const score = this.calculateComplianceScore(device.complianceChecks);
+          totalComplianceScore += score;
+          devicesWithScore++;
+          
+          if (score < 70) {
+            devicesNeedingAttention++;
+          }
+        }
+      }
+
+      // Get recent alerts
+      const recentAlerts = await prisma.auditLog.count({
+        where: {
+          organizationId,
+          action: 'physical_ai.device_failure_alert',
+          timestamp: {
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+          },
+        },
+      });
+
+      return {
+        totalDevices: devices.length,
+        onlineDevices,
+        offlineDevices,
+        devicesByStatus,
+        averageComplianceScore: devicesWithScore > 0 ? Math.round(totalComplianceScore / devicesWithScore) : 0,
+        devicesNeedingAttention,
+        recentAlerts,
+      };
+    } catch (error) {
+      logger.error('[Physical AI] Error getting health dashboard', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get health history
+   */
+  async getHealthHistory(
+    deviceId: string,
+    organizationId: string,
+    days: number = 30
+  ): Promise<Array<{
+    timestamp: Date;
+    status: 'online' | 'offline' | 'degraded';
+    complianceScore?: number;
+    batteryLevel?: number;
+    connectionQuality?: string;
+  }>> {
+    try {
+      const device = await prisma.ioTDevice.findFirst({
+        where: {
+          deviceId,
+          organizationId,
+        },
+        include: {
+          complianceChecks: {
+            where: {
+              timestamp: {
+                gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000),
+              },
+            },
+            orderBy: { timestamp: 'asc' },
+          },
+        },
+      });
+
+      if (!device) {
+        throw new Error('Device not found');
+      }
+
+      const history: Array<{
+        timestamp: Date;
+        status: 'online' | 'offline' | 'degraded';
+        complianceScore?: number;
+        batteryLevel?: number;
+        connectionQuality?: string;
+      }> = [];
+
+      // Group compliance checks by day
+      const checksByDay = new Map<string, EdgeComplianceCheck[]>();
+      for (const check of device.complianceChecks) {
+        const dayKey = check.timestamp.toISOString().split('T')[0];
+        if (!checksByDay.has(dayKey)) {
+          checksByDay.set(dayKey, []);
+        }
+        checksByDay.get(dayKey)!.push(check as any);
+      }
+
+      for (let i = 0; i < days; i++) {
+        const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+        const dayKey = date.toISOString().split('T')[0];
+        const checks = checksByDay.get(dayKey) || [];
+
+        const sensorData = device.sensorData as any;
+        const batteryLevel = sensorData?.battery?.level;
+        const connectionQuality = sensorData?.network?.connectionQuality;
+
+        history.push({
+          timestamp: date,
+          status: device.lastSeen.getTime() > date.getTime() ? 'online' : 'offline',
+          complianceScore: checks.length > 0 ? this.calculateComplianceScore(checks) : undefined,
+          batteryLevel,
+          connectionQuality,
+        });
+      }
+
+      return history.reverse(); // Oldest first
+    } catch (error) {
+      logger.error('[Physical AI] Error getting health history', error);
+      return [];
+    }
+  }
+
+  /**
+   * Predictive maintenance
+   */
+  async performPredictiveMaintenance(
+    deviceId: string,
+    organizationId: string
+  ): Promise<Array<{
+    issue: string;
+    probability: number;
+    estimatedDaysUntilFailure: number;
+    recommendation: string;
+  }>> {
+    try {
+      const device = await prisma.ioTDevice.findFirst({
+        where: {
+          deviceId,
+          organizationId,
+        },
+      });
+
+      if (!device) {
+        throw new Error('Device not found');
+      }
+
+      const sensorData = device.sensorData as any;
+      const issues: Array<{
+        issue: string;
+        probability: number;
+        estimatedDaysUntilFailure: number;
+        recommendation: string;
+      }> = [];
+
+      // Check battery level
+      const batteryLevel = sensorData?.battery?.level || 100;
+      if (batteryLevel < 30) {
+        issues.push({
+          issue: 'Low Battery',
+          probability: 0.8,
+          estimatedDaysUntilFailure: Math.max(1, Math.round(batteryLevel / 2)),
+          recommendation: 'Replace or recharge battery soon',
+        });
+      }
+
+      // Check firmware age
+      const firmwareVersion = sensorData?.firmware?.version;
+      if (firmwareVersion) {
+        // Simulate firmware age check
+        issues.push({
+          issue: 'Firmware Update Available',
+          probability: 0.6,
+          estimatedDaysUntilFailure: 90,
+          recommendation: 'Update firmware to latest version for security patches',
+        });
+      }
+
+      // Check error rate
+      const errorRate = sensorData?.errorRate || 0;
+      if (errorRate > 0.05) {
+        issues.push({
+          issue: 'High Error Rate',
+          probability: 0.7,
+          estimatedDaysUntilFailure: 30,
+          recommendation: 'Investigate device errors, may indicate hardware failure',
+        });
+      }
+
+      return issues;
+    } catch (error) {
+      logger.error('[Physical AI] Error performing predictive maintenance', error);
+      return [];
+    }
+  }
+
+  /**
+   * Bulk health check
+   */
+  async bulkHealthCheck(organizationId: string): Promise<Array<{
+    deviceId: string;
+    status: 'online' | 'offline' | 'degraded';
+    complianceScore?: number;
+    batteryLevel?: number;
+    issues: string[];
+  }>> {
+    try {
+      const devices = await prisma.ioTDevice.findMany({
+        where: { organizationId },
+        include: {
+          complianceChecks: {
+            orderBy: { timestamp: 'desc' },
+            take: 12,
+          },
+        },
+      });
+
+      const results: Array<{
+        deviceId: string;
+        status: 'online' | 'offline' | 'degraded';
+        complianceScore?: number;
+        batteryLevel?: number;
+        issues: string[];
+      }> = [];
+
+      const now = new Date();
+      const offlineThreshold = 5 * 60 * 1000;
+
+      for (const device of devices) {
+        const timeSinceLastSeen = now.getTime() - device.lastSeen.getTime();
+        const status: 'online' | 'offline' | 'degraded' = 
+          timeSinceLastSeen < offlineThreshold ? 'online' :
+          timeSinceLastSeen < 30 * 60 * 1000 ? 'degraded' : 'offline';
+
+        const sensorData = device.sensorData as any;
+        const batteryLevel = sensorData?.battery?.level;
+        const complianceScore = device.complianceChecks.length > 0 ?
+          this.calculateComplianceScore(device.complianceChecks) : undefined;
+
+        const issues: string[] = [];
+        if (status === 'offline') {
+          issues.push('Device offline');
+        }
+        if (batteryLevel && batteryLevel < 20) {
+          issues.push('Low battery');
+        }
+        if (complianceScore && complianceScore < 70) {
+          issues.push('Low compliance score');
+        }
+
+        results.push({
+          deviceId: device.deviceId,
+          status,
+          complianceScore,
+          batteryLevel,
+          issues,
+        });
+      }
+
+      return results;
+    } catch (error) {
+      logger.error('[Physical AI] Error performing bulk health check', error);
+      throw error;
     }
   }
 

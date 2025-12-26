@@ -380,9 +380,34 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                 {profileName.substring(0, 2).toUpperCase()}
               </div>
               <div>
-                 <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                 <label className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">
                    <Upload size={16} /> <span>Change Avatar</span>
-                 </button>
+                   <input
+                     type="file"
+                     accept="image/jpeg,image/jpg,image/png,image/gif"
+                     className="hidden"
+                     onChange={async (e) => {
+                       const file = e.target.files?.[0];
+                       if (file) {
+                         if (file.size > 1024 * 1024) {
+                           alert('File size must be less than 1MB');
+                           return;
+                         }
+                         try {
+                           const result = await api.auth.uploadAvatar(file);
+                           // Update local state to show new avatar
+                           if (result.user) {
+                             // Reload user data
+                             window.location.reload(); // Simple refresh to update avatar
+                           }
+                         } catch (error: any) {
+                           console.error('Avatar upload error:', error);
+                           alert(error.message || 'Failed to upload avatar');
+                         }
+                       }
+                     }}
+                   />
+                 </label>
                  <p className="text-xs text-gray-500 mt-2">JPG, GIF or PNG. Max 1MB.</p>
               </div>
             </div>

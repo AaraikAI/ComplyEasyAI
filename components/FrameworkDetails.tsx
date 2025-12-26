@@ -47,6 +47,30 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     }
   }, [framework]);
 
+  // Check if we need to scroll to a specific control (from Red Team navigation)
+  useEffect(() => {
+    const controlId = sessionStorage.getItem('navigateToControl');
+    if (controlId && controls.length > 0) {
+      const control = controls.find(c => c.id === controlId);
+      if (control) {
+        // Clear the navigation flag
+        sessionStorage.removeItem('navigateToControl');
+        sessionStorage.removeItem('navigateToControlName');
+        // Scroll to the control after a brief delay
+        setTimeout(() => {
+          const controlElement = document.getElementById(`control-${controlId}`);
+          if (controlElement) {
+            controlElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            controlElement.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+            setTimeout(() => {
+              controlElement.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
+            }, 3000);
+          }
+        }, 500);
+      }
+    }
+  }, [controls]);
+
   const loadFrameworkDetails = async () => {
     if (!framework?.id) return;
     
@@ -447,7 +471,8 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
           ) : (
             controls.map((control) => (
               <div 
-                key={control.id} 
+                key={control.id}
+                id={`control-${control.id}`}
                 className={`p-4 transition-colors flex items-center justify-between group ${
                   control.status !== 'Compliant'
                     ? 'hover:bg-brand-50 cursor-pointer border-l-4 border-transparent hover:border-brand-500'

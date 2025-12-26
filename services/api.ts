@@ -130,6 +130,15 @@ async function fetchAPI<T>(
 export const api = {
   // --- Auth & User ---
   user: {
+    uploadAvatar: async (file: File) => {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      return fetchAPI<{ user: User; avatarUrl: string }>('/auth/profile/avatar', {
+        method: 'POST',
+        body: formData,
+        headers: {}, // Let browser set Content-Type with boundary
+      });
+    },
     updateProfile: async (data: { name: string; email: string }) => {
       return fetchAPI('/auth/profile', {
         method: 'PATCH',
@@ -639,16 +648,61 @@ export const api = {
   acos: {
     // Compliance Goals
     createGoal: async (data: any) => fetchAPI('/acos/goals', { method: 'POST', body: JSON.stringify(data) }),
-    getGoals: async () => fetchAPI('/acos/goals'),
+    getGoals: async (params?: { status?: string; framework?: string }) => {
+      const query = params ? new URLSearchParams(params as any).toString() : '';
+      return fetchAPI(`/acos/goals${query ? `?${query}` : ''}`);
+    },
+    getGoal: async (goalId: string) => fetchAPI(`/acos/goals/${goalId}`),
+    updateGoal: async (goalId: string, data: any) => fetchAPI(`/acos/goals/${goalId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteGoal: async (goalId: string) => fetchAPI(`/acos/goals/${goalId}`, { method: 'DELETE' }),
+    restoreGoal: async (goalId: string) => fetchAPI(`/acos/goals/${goalId}/restore`, { method: 'POST' }),
 
     // Control Loops
+    getControlLoops: async () => fetchAPI('/acos/control-loops'),
+    getControlLoop: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}`),
+    getControlLoopHistory: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}/history`),
     createControlLoop: async (data: any) => fetchAPI('/acos/control-loops', { method: 'POST', body: JSON.stringify(data) }),
+    updateControlLoop: async (loopId: string, data: any) => fetchAPI(`/acos/control-loops/${loopId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    pauseControlLoop: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}/pause`, { method: 'POST' }),
+    resumeControlLoop: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}/resume`, { method: 'POST' }),
+    deleteControlLoop: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}`, { method: 'DELETE' }),
     executeControlLoop: async (loopId: string) => fetchAPI(`/acos/control-loops/${loopId}/execute`, { method: 'POST' }),
+
+    // Compliance Debt Management
+    getComplianceDebts: async (filters?: any) => {
+      const query = filters ? new URLSearchParams(filters as any).toString() : '';
+      return fetchAPI(`/acos/compliance-debts${query ? `?${query}` : ''}`);
+    },
+    trackComplianceDebt: async (data: any) => fetchAPI('/acos/compliance-debts', { method: 'POST', body: JSON.stringify(data) }),
+    calculateDebtFromGapAnalysis: async (frameworkId: string) => fetchAPI('/acos/compliance-debts/calculate-from-gap', { method: 'POST', body: JSON.stringify({ frameworkId }) }),
+    resolveComplianceDebt: async (debtId: string) => fetchAPI(`/acos/compliance-debts/${debtId}/resolve`, { method: 'POST' }),
+    exportDebtReport: async (format: 'csv' | 'json' = 'json') => fetchAPI(`/acos/compliance-debts/export?format=${format}`),
+
+    // Change Impact Analysis
+    getChangeImpacts: async (pending?: boolean) => fetchAPI(`/acos/change-impacts${pending ? '?pending=true' : ''}`),
+    forecastChangeImpact: async (data: any) => fetchAPI('/acos/change-impacts/forecast', { method: 'POST', body: JSON.stringify(data) }),
+    resolveChangeImpact: async (impactId: string) => fetchAPI(`/acos/change-impacts/${impactId}/resolve`, { method: 'POST' }),
 
     // Agentic AI
     estimateBlastRadius: async (data: any) => fetchAPI('/acos/agentic/estimate-blast-radius', { method: 'POST', body: JSON.stringify(data) }),
     executeAction: async (data: any) => fetchAPI('/acos/agentic/execute-action', { method: 'POST', body: JSON.stringify(data) }),
-    rollbackAction: async (actionId: string, data: any) => fetchAPI(`/acos/agentic/rollback/${actionId}`, { method: 'POST', body: JSON.stringify(data) }),
+    rollbackAction: async (actionId: string) => fetchAPI(`/acos/agentic/rollback/${actionId}`, { method: 'POST' }),
+    rollbackMultipleActions: async (actionIds: string[]) => fetchAPI('/acos/agentic/rollback-multiple', { method: 'POST', body: JSON.stringify({ actionIds }) }),
+
+    // Compliance Debt Management
+    getComplianceDebts: async (filters?: any) => {
+      const query = filters ? new URLSearchParams(filters as any).toString() : '';
+      return fetchAPI(`/acos/compliance-debts${query ? `?${query}` : ''}`);
+    },
+    trackComplianceDebt: async (data: any) => fetchAPI('/acos/compliance-debts', { method: 'POST', body: JSON.stringify(data) }),
+    calculateDebtFromGapAnalysis: async (frameworkId: string) => fetchAPI('/acos/compliance-debts/calculate-from-gap', { method: 'POST', body: JSON.stringify({ frameworkId }) }),
+    resolveComplianceDebt: async (debtId: string) => fetchAPI(`/acos/compliance-debts/${debtId}/resolve`, { method: 'POST' }),
+    exportDebtReport: async (format: 'csv' | 'json' = 'json') => fetchAPI(`/acos/compliance-debts/export?format=${format}`),
+
+    // Change Impact Analysis
+    getChangeImpacts: async (pending?: boolean) => fetchAPI(`/acos/change-impacts${pending ? '?pending=true' : ''}`),
+    forecastChangeImpact: async (data: any) => fetchAPI('/acos/change-impacts/forecast', { method: 'POST', body: JSON.stringify(data) }),
+    resolveChangeImpact: async (impactId: string) => fetchAPI(`/acos/change-impacts/${impactId}/resolve`, { method: 'POST' }),
 
     // Evidence Truth Layer
     analyzeEvidence: async (evidenceId: string, file: File) => {
@@ -717,6 +771,7 @@ export const api = {
 
     // Physical AI
     registerDevice: async (data: any) => fetchAPI('/acos/physical-ai/register-device', { method: 'POST', body: JSON.stringify(data) }),
+    getDevices: async () => fetchAPI('/acos/physical-ai/devices'),
     performEdgeComplianceCheck: async (deviceId: string) => fetchAPI(`/acos/physical-ai/devices/${deviceId}/compliance-check`, { method: 'POST' }),
   },
 };

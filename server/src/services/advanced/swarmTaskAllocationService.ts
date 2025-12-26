@@ -41,6 +41,8 @@ export interface SwarmTask {
   maxRetries: number;
   result?: TaskResult;
   metrics: TaskMetrics;
+  checkpoints?: TaskCheckpoint[];
+  timeoutAt?: Date;
 }
 
 export type TaskType =
@@ -139,6 +141,15 @@ export interface TaskMetrics {
   qualityScore?: number;
 }
 
+export interface TaskCheckpoint {
+  id: string;
+  timestamp: Date;
+  agentId: string;
+  progress: number;
+  state: any;
+  description: string;
+}
+
 // Agent Types
 export interface SwarmAgent {
   id: string;
@@ -220,6 +231,9 @@ class SwarmTaskAllocationService extends EventEmitter {
   private config: SwarmConfig;
   private healthCheckInterval: NodeJS.Timeout | null = null;
   private taskProcessorInterval: NodeJS.Timeout | null = null;
+  private timeoutCheckInterval: NodeJS.Timeout | null = null;
+  private historicalMetrics: Map<string, HistoricalMetric[]> = new Map(); // organizationId -> metrics
+  private metricAlerts: Map<string, MetricAlert[]> = new Map(); // organizationId -> alerts
 
   constructor() {
     super();
@@ -249,6 +263,12 @@ class SwarmTaskAllocationService extends EventEmitter {
       this.taskProcessorInterval = setInterval(
         () => this.processTaskQueue(),
         1000
+      );
+
+      // Start timeout checker
+      this.timeoutCheckInterval = setInterval(
+        () => this.checkTaskTimeouts(),
+        5000 // Check every 5 seconds
       );
 
       logger.info('[Swarm Tasks] Task allocation service initialized');
@@ -328,6 +348,152 @@ class SwarmTaskAllocationService extends EventEmitter {
   }
 
   /**
+   * Get agent by ID
+   */
+  getAgentById(agentId: string): SwarmAgent | null {
+    return this.agents.get(agentId) || null;
+  }
+
+  /**
+   * Update agent status
+   */
+  async updateAgentStatus(
+    agentId: string,
+    status: AgentStatus,
+    organizationId: string
+  ): Promise<SwarmAgent> {
+    try {
+      const agent = this.agents.get(agentId);
+      if (!agent) {
+        throw new Error('Agent not found');
+      }
+
+      const oldStatus = agent.status;
+      agent.status = status;
+      agent.lastHeartbeat = new Date();
+
+      // If agent went offline, reassign tasks
+      if (status === 'offline' && oldStatus !== 'offline') {
+        await this.reassignTasksFromAgent(agentId);
+      }
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'swarm.agent_status_updated',
+          details: JSON.stringify({
+            agentId,
+            oldStatus,
+            newStatus: status,
+          }),
+          userId: 'system',
+          organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      logger.info(`[Swarm Tasks] Agent ${agentId} status updated: ${oldStatus} -> ${status}`);
+
+      return agent;
+    } catch (error) {
+      logger.error('[Swarm Tasks] Error updating agent status', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Deactivate agent
+   */
+  async deactivateAgent(
+    agentId: string,
+    organizationId: string
+  ): Promise<SwarmAgent> {
+    try {
+      const agent = await this.updateAgentStatus(agentId, 'offline', organizationId);
+      
+      await prisma.auditLog.create({
+        data: {
+          action: 'swarm.agent_deactivated',
+          details: JSON.stringify({ agentId }),
+          userId: 'system',
+          organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      return agent;
+    } catch (error) {
+      logger.error('[Swarm Tasks] Error deactivating agent', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reactivate agent
+   */
+  async reactivateAgent(
+    agentId: string,
+    organizationId: string
+  ): Promise<SwarmAgent> {
+    try {
+      const agent = this.agents.get(agentId);
+      if (!agent) {
+        throw new Error('Agent not found');
+      }
+
+      // Set to available if load allows
+      const newStatus: AgentStatus = agent.currentLoad < agent.maxLoad ? 'available' : 'busy';
+      const reactivated = await this.updateAgentStatus(agentId, newStatus, organizationId);
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'swarm.agent_reactivated',
+          details: JSON.stringify({ agentId, status: newStatus }),
+          userId: 'system',
+          organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      logger.info(`[Swarm Tasks] Agent ${agentId} reactivated with status: ${newStatus}`);
+
+      return reactivated;
+    } catch (error) {
+      logger.error('[Swarm Tasks] Error reactivating agent', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get agent workload
+   */
+  getAgentWorkload(agentId: string): {
+    currentLoad: number;
+    maxLoad: number;
+    utilization: number;
+    assignedTasks: number;
+  } {
+    const agent = this.agents.get(agentId);
+    if (!agent) {
+      throw new Error('Agent not found');
+    }
+
+    // Count assigned tasks
+    let assignedTasks = 0;
+    for (const [, task] of this.activeTasks) {
+      if (task.assignedAgents.some(a => a.agentId === agentId && a.status !== 'completed' && a.status !== 'failed')) {
+        assignedTasks++;
+      }
+    }
+
+    return {
+      currentLoad: agent.currentLoad,
+      maxLoad: agent.maxLoad,
+      utilization: agent.maxLoad > 0 ? agent.currentLoad / agent.maxLoad : 0,
+      assignedTasks,
+    };
+  }
+
+  /**
    * Submit a new task to the swarm
    */
   async submitTask(
@@ -381,6 +547,17 @@ class SwarmTaskAllocationService extends EventEmitter {
         },
       };
 
+      // Validate task
+      const validation = this.validateTask(swarmTask);
+      if (!validation.valid) {
+        throw new Error(`Task validation failed: ${validation.error}`);
+      }
+
+      // Set timeout if maxExecutionTime is specified
+      if (swarmTask.constraints.maxExecutionTime) {
+        swarmTask.timeoutAt = new Date(Date.now() + swarmTask.constraints.maxExecutionTime);
+      }
+
       // Check if dependencies are satisfied
       const dependenciesSatisfied = await this.checkDependencies(swarmTask.dependencies);
 
@@ -415,6 +592,136 @@ class SwarmTaskAllocationService extends EventEmitter {
       logger.error('[Swarm Tasks] Error submitting task', error);
       throw error;
     }
+  }
+
+  /**
+   * Validate task before submission
+   */
+  private validateTask(task: SwarmTask): { valid: boolean; error?: string } {
+    // Check required fields
+    if (!task.taskType) {
+      return { valid: false, error: 'Task type is required' };
+    }
+
+    if (!task.priority) {
+      return { valid: false, error: 'Task priority is required' };
+    }
+
+    if (!task.payload) {
+      return { valid: false, error: 'Task payload is required' };
+    }
+
+    // Check deadline is in future
+    if (task.deadline && task.deadline < new Date()) {
+      return { valid: false, error: 'Deadline must be in the future' };
+    }
+
+    // Check constraints
+    if (task.constraints.minAgents > task.constraints.maxAgents) {
+      return { valid: false, error: 'minAgents cannot exceed maxAgents' };
+    }
+
+    if (task.constraints.minAgents < 1) {
+      return { valid: false, error: 'minAgents must be at least 1' };
+    }
+
+    // Check dependencies don't include self
+    if (task.dependencies.includes(task.id)) {
+      return { valid: false, error: 'Task cannot depend on itself' };
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Bulk submit tasks
+   */
+  async bulkSubmitTasks(
+    organizationId: string,
+    tasks: Array<{
+      taskType: TaskType;
+      priority: TaskPriority;
+      payload: TaskPayload;
+      constraints?: Partial<TaskConstraints>;
+      dependencies?: string[];
+      deadline?: Date;
+    }>,
+    userId: string
+  ): Promise<{
+    successful: SwarmTask[];
+    failed: Array<{ task: any; error: string }>;
+  }> {
+    try {
+      const successful: SwarmTask[] = [];
+      const failed: Array<{ task: any; error: string }> = [];
+
+      for (const task of tasks) {
+        try {
+          const submitted = await this.submitTask(organizationId, task, userId);
+          successful.push(submitted);
+        } catch (error: any) {
+          failed.push({
+            task,
+            error: error.message || 'Unknown error',
+          });
+        }
+      }
+
+      logger.info(`[Swarm Tasks] Bulk submission: ${successful.length} successful, ${failed.length} failed`);
+
+      return { successful, failed };
+    } catch (error) {
+      logger.error('[Swarm Tasks] Error in bulk task submission', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all tasks (queued, active, completed)
+   */
+  getAllTasks(organizationId: string): {
+    queued: SwarmTask[];
+    active: SwarmTask[];
+    completed: SwarmTask[];
+    failed: SwarmTask[];
+    cancelled: SwarmTask[];
+  } {
+    const queued: SwarmTask[] = [];
+    const active: SwarmTask[] = [];
+    const completed: SwarmTask[] = [];
+    const failed: SwarmTask[] = [];
+    const cancelled: SwarmTask[] = [];
+
+    // From queues
+    for (const [, queue] of this.taskQueue) {
+      queued.push(...queue.filter(t => t.organizationId === organizationId));
+    }
+
+    // From active tasks
+    for (const [, task] of this.activeTasks) {
+      if (task.organizationId === organizationId) {
+        if (task.status === 'in_progress' || task.status === 'assigned') {
+          active.push(task);
+        } else if (task.status === 'queued' || task.status === 'pending') {
+          queued.push(task);
+        }
+      }
+    }
+
+    // From completed tasks
+    for (const [, task] of this.completedTasks) {
+      if (task.organizationId === organizationId) {
+        if (task.status === 'completed') {
+          completed.push(task);
+        } else if (task.status === 'failed') {
+          failed.push(task);
+        } else if (task.status === 'cancelled') {
+          cancelled.push(task);
+        }
+      }
+    }
+
+    return { queued, active, completed, failed, cancelled };
   }
 
   /**
@@ -621,6 +928,24 @@ class SwarmTaskAllocationService extends EventEmitter {
         task.status = 'in_progress';
         task.startedAt = task.startedAt || new Date();
         task.metrics.assignmentTime = Date.now() - task.createdAt.getTime();
+      }
+
+      // Create checkpoint for partial completion
+      if (progress.partialResult || progress.percentComplete > 0) {
+        if (!task.checkpoints) {
+          task.checkpoints = [];
+        }
+
+        const checkpoint: TaskCheckpoint = {
+          id: `checkpoint_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+          timestamp: new Date(),
+          agentId,
+          progress: progress.percentComplete,
+          state: progress.partialResult,
+          description: progress.currentStep || `Progress: ${progress.percentComplete}%`,
+        };
+
+        task.checkpoints.push(checkpoint);
       }
 
       // Update agent heartbeat
@@ -839,30 +1164,290 @@ class SwarmTaskAllocationService extends EventEmitter {
   }
 
   /**
-   * Get swarm metrics
+   * Get swarm metrics (enhanced)
    */
   getSwarmMetrics(organizationId: string): SwarmMetrics {
     const agents = Array.from(this.agents.values());
     const activeTasks = this.getActiveTasks(organizationId);
+    const allTasks = this.getAllTasks(organizationId);
 
     let queuedCount = 0;
     for (const [, queue] of this.taskQueue) {
       queuedCount += queue.filter(t => t.organizationId === organizationId).length;
     }
 
-    return {
+    const completedTasks = allTasks.completed;
+    const failedTasks = allTasks.failed;
+    const totalCompleted = completedTasks.length + failedTasks.length;
+
+    const metrics: SwarmMetrics = {
       totalAgents: agents.length,
       availableAgents: agents.filter(a => a.status === 'available').length,
       busyAgents: agents.filter(a => a.status === 'busy').length,
       offlineAgents: agents.filter(a => a.status === 'offline').length,
       queuedTasks: queuedCount,
       activeTasks: activeTasks.length,
-      completedTasks: Array.from(this.completedTasks.values())
-        .filter(t => t.organizationId === organizationId).length,
+      completedTasks: completedTasks.length,
       averageTaskDuration: this.calculateAverageTaskDuration(organizationId),
       taskSuccessRate: this.calculateTaskSuccessRate(organizationId),
       agentUtilization: this.calculateAgentUtilization(),
+      taskCompletionRate: this.calculateTaskCompletionRate(organizationId),
+      queueDepth: queuedCount,
+      failureRate: totalCompleted > 0 ? failedTasks.length / totalCompleted : 0,
+      historicalMetrics: this.historicalMetrics.get(organizationId) || [],
     };
+
+    // Store historical metric
+    this.storeHistoricalMetric(organizationId, metrics);
+
+    // Check for metric alerts
+    this.checkMetricAlerts(organizationId, metrics);
+
+    return metrics;
+  }
+
+  /**
+   * Calculate task completion rate
+   */
+  private calculateTaskCompletionRate(organizationId: string): number {
+    const allTasks = this.getAllTasks(organizationId);
+    const total = allTasks.completed.length + allTasks.failed.length + allTasks.active.length + allTasks.queued.length;
+
+    if (total === 0) return 0;
+
+    return allTasks.completed.length / total;
+  }
+
+  /**
+   * Store historical metric
+   */
+  private storeHistoricalMetric(organizationId: string, metrics: SwarmMetrics): void {
+    const history = this.historicalMetrics.get(organizationId) || [];
+    
+    // Keep last 1000 metrics (approximately 16 hours at 1-minute intervals)
+    if (history.length >= 1000) {
+      history.shift();
+    }
+
+    history.push({
+      timestamp: new Date(),
+      metrics: {
+        totalAgents: metrics.totalAgents,
+        availableAgents: metrics.availableAgents,
+        busyAgents: metrics.busyAgents,
+        offlineAgents: metrics.offlineAgents,
+        queuedTasks: metrics.queuedTasks,
+        activeTasks: metrics.activeTasks,
+        completedTasks: metrics.completedTasks,
+        averageTaskDuration: metrics.averageTaskDuration,
+        taskSuccessRate: metrics.taskSuccessRate,
+        agentUtilization: metrics.agentUtilization,
+        taskCompletionRate: metrics.taskCompletionRate,
+        queueDepth: metrics.queueDepth,
+        failureRate: metrics.failureRate,
+      },
+    });
+
+    this.historicalMetrics.set(organizationId, history);
+  }
+
+  /**
+   * Check for metric alerts
+   */
+  private checkMetricAlerts(organizationId: string, metrics: SwarmMetrics): void {
+    const alerts = this.metricAlerts.get(organizationId) || [];
+    const thresholds = {
+      agentUtilization: 0.9, // 90%
+      queueDepth: 100,
+      failureRate: 0.2, // 20%
+      offlineAgents: metrics.totalAgents * 0.5, // 50% of agents
+    };
+
+    // Check agent utilization
+    if (metrics.agentUtilization > thresholds.agentUtilization) {
+      this.createAlert(organizationId, {
+        type: 'threshold_exceeded',
+        severity: 'high',
+        message: `Agent utilization (${(metrics.agentUtilization * 100).toFixed(1)}%) exceeds threshold (${(thresholds.agentUtilization * 100)}%)`,
+      });
+    }
+
+    // Check queue depth
+    if (metrics.queueDepth > thresholds.queueDepth) {
+      this.createAlert(organizationId, {
+        type: 'queue_overflow',
+        severity: 'critical',
+        message: `Queue depth (${metrics.queueDepth}) exceeds threshold (${thresholds.queueDepth})`,
+      });
+    }
+
+    // Check failure rate
+    if (metrics.failureRate > thresholds.failureRate) {
+      this.createAlert(organizationId, {
+        type: 'threshold_exceeded',
+        severity: 'high',
+        message: `Task failure rate (${(metrics.failureRate * 100).toFixed(1)}%) exceeds threshold (${(thresholds.failureRate * 100)}%)`,
+      });
+    }
+
+    // Check offline agents
+    if (metrics.offlineAgents > thresholds.offlineAgents) {
+      this.createAlert(organizationId, {
+        type: 'agent_offline',
+        severity: 'critical',
+        message: `${metrics.offlineAgents} agents offline (${((metrics.offlineAgents / metrics.totalAgents) * 100).toFixed(1)}% of total)`,
+      });
+    }
+  }
+
+  /**
+   * Create metric alert
+   */
+  private createAlert(organizationId: string, alert: Omit<MetricAlert, 'id' | 'timestamp' | 'resolved'>): void {
+    const alerts = this.metricAlerts.get(organizationId) || [];
+    
+    // Check if similar alert already exists
+    const existingAlert = alerts.find(a => 
+      a.type === alert.type && 
+      !a.resolved &&
+      (Date.now() - a.timestamp.getTime()) < 5 * 60 * 1000 // Within 5 minutes
+    );
+
+    if (existingAlert) {
+      return; // Don't create duplicate alert
+    }
+
+    const newAlert: MetricAlert = {
+      id: `alert_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+      ...alert,
+      timestamp: new Date(),
+      resolved: false,
+    };
+
+    alerts.push(newAlert);
+    
+    // Keep last 100 alerts
+    if (alerts.length > 100) {
+      alerts.shift();
+    }
+
+    this.metricAlerts.set(organizationId, alerts);
+
+    // Emit alert event
+    this.emit('metricAlert', { organizationId, alert: newAlert });
+
+    logger.warn(`[Swarm Tasks] Metric alert: ${newAlert.message}`);
+  }
+
+  /**
+   * Get historical metrics
+   */
+  getHistoricalMetrics(
+    organizationId: string,
+    startDate?: Date,
+    endDate?: Date
+  ): HistoricalMetric[] {
+    const history = this.historicalMetrics.get(organizationId) || [];
+
+    if (!startDate && !endDate) {
+      return history.slice(-100); // Return last 100 metrics
+    }
+
+    return history.filter(m => {
+      if (startDate && m.timestamp < startDate) return false;
+      if (endDate && m.timestamp > endDate) return false;
+      return true;
+    });
+  }
+
+  /**
+   * Get metric alerts
+   */
+  getMetricAlerts(
+    organizationId: string,
+    resolved?: boolean
+  ): MetricAlert[] {
+    const alerts = this.metricAlerts.get(organizationId) || [];
+
+    if (resolved === undefined) {
+      return alerts;
+    }
+
+    return alerts.filter(a => a.resolved === resolved);
+  }
+
+  /**
+   * Resolve metric alert
+   */
+  async resolveMetricAlert(
+    organizationId: string,
+    alertId: string,
+    userId: string
+  ): Promise<void> {
+    const alerts = this.metricAlerts.get(organizationId) || [];
+    const alert = alerts.find(a => a.id === alertId);
+
+    if (alert) {
+      alert.resolved = true;
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'swarm.metric_alert_resolved',
+          details: JSON.stringify({ alertId, alertType: alert.type }),
+          userId,
+          organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+    }
+  }
+
+  /**
+   * Export metrics
+   */
+  exportMetrics(
+    organizationId: string,
+    format: 'json' | 'csv' = 'json',
+    startDate?: Date,
+    endDate?: Date
+  ): any {
+    try {
+      const metrics = this.getSwarmMetrics(organizationId);
+      const history = this.getHistoricalMetrics(organizationId, startDate, endDate);
+
+      if (format === 'csv') {
+        const csvRows = [
+          ['Timestamp', 'Total Agents', 'Available', 'Busy', 'Offline', 'Queued Tasks', 'Active Tasks', 'Completed', 'Utilization', 'Success Rate', 'Failure Rate'],
+          ...history.map(m => [
+            m.timestamp.toISOString(),
+            m.metrics.totalAgents.toString(),
+            m.metrics.availableAgents.toString(),
+            m.metrics.busyAgents.toString(),
+            m.metrics.offlineAgents.toString(),
+            m.metrics.queuedTasks.toString(),
+            m.metrics.activeTasks.toString(),
+            m.metrics.completedTasks.toString(),
+            m.metrics.agentUtilization.toFixed(2),
+            m.metrics.taskSuccessRate.toFixed(2),
+            m.metrics.failureRate.toFixed(2),
+          ]),
+        ];
+
+        return {
+          format: 'csv',
+          content: csvRows.map(row => row.join(',')).join('\n'),
+          filename: `swarm-metrics-${organizationId}-${new Date().toISOString().split('T')[0]}.csv`,
+        };
+      }
+
+      return {
+        current: metrics,
+        history,
+      };
+    } catch (error) {
+      logger.error('[Swarm Tasks] Error exporting metrics', error);
+      throw error;
+    }
   }
 
   /**
@@ -910,13 +1495,135 @@ class SwarmTaskAllocationService extends EventEmitter {
           task.retryCount += 1;
           task.status = 'queued';
           task.assignedAgents = task.assignedAgents.filter(a => a.agentId !== agentId);
+          task.metrics.failureCount += 1;
+
+          // Restore from checkpoint if available
+          if (task.checkpoints && task.checkpoints.length > 0) {
+            const lastCheckpoint = task.checkpoints[task.checkpoints.length - 1];
+            logger.info(`[Swarm Tasks] Task ${taskId} will resume from checkpoint at ${lastCheckpoint.progress}%`);
+          }
 
           this.activeTasks.delete(taskId);
           this.taskQueue.get(task.priority)?.push(task);
 
-          logger.info(`[Swarm Tasks] Task ${taskId} requeued after agent failure`);
+          logger.info(`[Swarm Tasks] Task ${taskId} requeued after agent failure (retry ${task.retryCount}/${task.maxRetries})`);
+        } else {
+          // Max retries exceeded, mark as failed
+          task.status = 'failed';
+          task.completedAt = new Date();
+          this.activeTasks.delete(taskId);
+          this.completedTasks.set(taskId, task);
+
+          logger.warn(`[Swarm Tasks] Task ${taskId} failed after ${task.maxRetries} retries`);
         }
       }
+    }
+  }
+
+  /**
+   * Check for task timeouts
+   */
+  private checkTaskTimeouts(): void {
+    const now = new Date();
+
+    for (const [taskId, task] of this.activeTasks) {
+      // Check deadline
+      if (task.deadline && task.deadline < now) {
+        logger.warn(`[Swarm Tasks] Task ${taskId} exceeded deadline`);
+        this.handleTaskTimeout(taskId, 'deadline');
+        continue;
+      }
+
+      // Check execution timeout
+      if (task.timeoutAt && task.timeoutAt < now) {
+        logger.warn(`[Swarm Tasks] Task ${taskId} exceeded execution timeout`);
+        this.handleTaskTimeout(taskId, 'execution_timeout');
+        continue;
+      }
+
+      // Check max execution time
+      if (task.startedAt && task.constraints.maxExecutionTime) {
+        const elapsed = Date.now() - task.startedAt.getTime();
+        if (elapsed > task.constraints.maxExecutionTime) {
+          logger.warn(`[Swarm Tasks] Task ${taskId} exceeded max execution time`);
+          this.handleTaskTimeout(taskId, 'max_execution_time');
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle task timeout
+   */
+  private async handleTaskTimeout(taskId: string, timeoutType: string): Promise<void> {
+    try {
+      const task = this.activeTasks.get(taskId);
+      if (!task) {
+        return;
+      }
+
+      // Cancel or retry based on configuration
+      if (task.retryCount < task.maxRetries) {
+        task.retryCount += 1;
+        task.status = 'queued';
+        task.startedAt = undefined;
+        task.timeoutAt = task.constraints.maxExecutionTime ?
+          new Date(Date.now() + task.constraints.maxExecutionTime) : undefined;
+
+        // Clear agent assignments
+        for (const assignment of task.assignedAgents) {
+          const agent = this.agents.get(assignment.agentId);
+          if (agent) {
+            agent.currentLoad = Math.max(0, agent.currentLoad - 1);
+            if (agent.currentLoad < agent.maxLoad) {
+              agent.status = 'available';
+            }
+          }
+        }
+        task.assignedAgents = [];
+
+        this.activeTasks.delete(taskId);
+        this.taskQueue.get(task.priority)?.push(task);
+
+        logger.info(`[Swarm Tasks] Task ${taskId} requeued after ${timeoutType} (retry ${task.retryCount}/${task.maxRetries})`);
+      } else {
+        // Max retries exceeded, mark as failed
+        task.status = 'failed';
+        task.completedAt = new Date();
+        task.metrics.failureCount += 1;
+
+        // Free up agents
+        for (const assignment of task.assignedAgents) {
+          const agent = this.agents.get(assignment.agentId);
+          if (agent) {
+            agent.currentLoad = Math.max(0, agent.currentLoad - 1);
+            if (agent.currentLoad < agent.maxLoad) {
+              agent.status = 'available';
+            }
+          }
+        }
+
+        this.activeTasks.delete(taskId);
+        this.completedTasks.set(taskId, task);
+
+        await prisma.auditLog.create({
+          data: {
+            action: 'swarm.task_timeout',
+            details: JSON.stringify({
+              taskId,
+              timeoutType,
+              retryCount: task.retryCount,
+            }),
+            userId: 'system',
+            organizationId: task.organizationId,
+            hash: crypto.randomBytes(16).toString('hex'),
+          },
+        });
+
+        logger.warn(`[Swarm Tasks] Task ${taskId} failed due to ${timeoutType} after ${task.maxRetries} retries`);
+      }
+    } catch (error) {
+      logger.error('[Swarm Tasks] Error handling task timeout', error);
     }
   }
 
@@ -1033,6 +1740,54 @@ class SwarmTaskAllocationService extends EventEmitter {
   }
 
   /**
+   * Get real-time dashboard data
+   */
+  getDashboard(organizationId: string): {
+    metrics: SwarmMetrics;
+    recentTasks: SwarmTask[];
+    topAgents: Array<{
+      agent: SwarmAgent;
+      workload: ReturnType<typeof this.getAgentWorkload>;
+    }>;
+    alerts: MetricAlert[];
+  } {
+    const metrics = this.getSwarmMetrics(organizationId);
+    const allTasks = this.getAllTasks(organizationId);
+    
+    // Get recent tasks (last 20)
+    const recentTasks = [
+      ...allTasks.active,
+      ...allTasks.queued,
+      ...allTasks.completed.slice(-10),
+      ...allTasks.failed.slice(-5),
+    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 20);
+
+    // Get top agents by performance
+    const agents = Array.from(this.agents.values());
+    const topAgents = agents
+      .map(agent => ({
+        agent,
+        workload: this.getAgentWorkload(agent.id),
+      }))
+      .sort((a, b) => {
+        // Sort by utilization and performance
+        const scoreA = a.agent.performance.reliability * a.agent.performance.averageQuality;
+        const scoreB = b.agent.performance.reliability * b.agent.performance.averageQuality;
+        return scoreB - scoreA;
+      })
+      .slice(0, 10);
+
+    const alerts = this.getMetricAlerts(organizationId, false).slice(0, 10);
+
+    return {
+      metrics,
+      recentTasks,
+      topAgents,
+      alerts,
+    };
+  }
+
+  /**
    * Shutdown the service
    */
   shutdown(): void {
@@ -1041,6 +1796,9 @@ class SwarmTaskAllocationService extends EventEmitter {
     }
     if (this.taskProcessorInterval) {
       clearInterval(this.taskProcessorInterval);
+    }
+    if (this.timeoutCheckInterval) {
+      clearInterval(this.timeoutCheckInterval);
     }
     logger.info('[Swarm Tasks] Service shutdown');
   }
@@ -1057,6 +1815,24 @@ interface SwarmMetrics {
   averageTaskDuration: number;
   taskSuccessRate: number;
   agentUtilization: number;
+  taskCompletionRate: number;
+  queueDepth: number;
+  failureRate: number;
+  historicalMetrics?: HistoricalMetric[];
+}
+
+export interface HistoricalMetric {
+  timestamp: Date;
+  metrics: Omit<SwarmMetrics, 'historicalMetrics'>;
+}
+
+export interface MetricAlert {
+  id: string;
+  type: 'threshold_exceeded' | 'anomaly_detected' | 'agent_offline' | 'queue_overflow';
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  message: string;
+  timestamp: Date;
+  resolved: boolean;
 }
 
 export default new SwarmTaskAllocationService();

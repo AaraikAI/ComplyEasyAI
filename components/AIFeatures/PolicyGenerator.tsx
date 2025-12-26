@@ -1,14 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generatePolicy } from '../../services/geminiService';
 import { FileText, Loader2, Save, ArrowLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 export const PolicyGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const [type, setType] = useState('Data Retention');
+  // Check for preselected policy type from sessionStorage (e.g., from Red Team)
+  const preselectedType = typeof window !== 'undefined' ? sessionStorage.getItem('preselectedPolicyType') : null;
+  const [type, setType] = useState(preselectedType || 'Data Retention');
   const [company, setCompany] = useState('My Company');
   const [tone, setTone] = useState('Strict');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Clear preselected type after using it
+  useEffect(() => {
+    if (preselectedType && typeof window !== 'undefined') {
+      sessionStorage.removeItem('preselectedPolicyType');
+    }
+  }, [preselectedType]);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -31,6 +40,8 @@ export const PolicyGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               <label className="block text-sm font-medium text-gray-700 mb-1">Policy Type</label>
               <select value={type} onChange={(e) => setType(e.target.value)} className="w-full p-2 border rounded-lg">
                 <option>Data Retention</option>
+                <option>Information Security</option>
+                <option>Data Privacy</option>
                 <option>Access Control</option>
                 <option>Incident Response</option>
                 <option>Acceptable Use</option>
