@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AVAILABLE_FRAMEWORKS } from '../constants';
 import { ComplianceFramework, ComplianceStatus } from '../types';
 import { CheckCircle, AlertTriangle, Clock, ArrowRight, Plus, X, Search, Trash2 } from 'lucide-react';
@@ -18,6 +18,44 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingFramework, setDeletingFramework] = useState<string | null>(null);
+
+  // Check if we need to navigate to a specific control (from Red Team)
+  useEffect(() => {
+    const controlId = sessionStorage.getItem('navigateToControl');
+    const controlName = sessionStorage.getItem('navigateToControlName');
+    if (controlId && controlName && activeFrameworks.length > 0) {
+      // Find the framework that contains this control
+      const findFrameworkWithControl = async () => {
+        for (const fw of activeFrameworks) {
+          try {
+            const fwData: any = await api.frameworks.getById(fw.id);
+            const control = fwData.controls?.find((c: any) => c.id === controlId);
+            if (control) {
+              // Found the framework, navigate to it
+              sessionStorage.removeItem('navigateToControl');
+              sessionStorage.removeItem('navigateToControlName');
+              onSelectFramework(fw.id);
+              // Scroll to control after a brief delay
+              setTimeout(() => {
+                const controlElement = document.getElementById(`control-${controlId}`);
+                if (controlElement) {
+                  controlElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  controlElement.classList.add('ring-2', 'ring-blue-500');
+                  setTimeout(() => {
+                    controlElement.classList.remove('ring-2', 'ring-blue-500');
+                  }, 3000);
+                }
+              }, 500);
+              break;
+            }
+          } catch (error) {
+            console.error('Error checking framework:', error);
+          }
+        }
+      };
+      findFrameworkWithControl();
+    }
+  }, [activeFrameworks, onSelectFramework]);
 
   const handleDeleteFramework = async (frameworkId: string, frameworkName: string) => {
     if (!confirm(`Are you sure you want to delete "${frameworkName}"? This will also delete all associated controls and evidence. This action cannot be undone.`)) {

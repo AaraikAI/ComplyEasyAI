@@ -237,8 +237,68 @@ export const Reports: React.FC = () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else {
-        // PDF export - simplified (in production, use a library like jsPDF or pdfmake)
-        setError('PDF export requires additional setup. JSON export is available.');
+        // PDF export using browser print API
+        try {
+          const printWindow = window.open('', '_blank');
+          if (!printWindow) {
+            setError('Please allow popups to download PDF');
+            return;
+          }
+
+          const pdfContent = `
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>Compliance Report - ${new Date().toLocaleDateString()}</title>
+                <style>
+                  body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; }
+                  h1 { color: #1f2937; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; }
+                  h2 { color: #374151; margin-top: 30px; }
+                  .meta { color: #6b7280; font-size: 14px; margin-bottom: 30px; }
+                  .section { margin-bottom: 25px; }
+                  pre { background: #f3f4f6; padding: 15px; border-radius: 5px; overflow-x: auto; }
+                  @media print {
+                    body { padding: 20px; }
+                    @page { margin: 2cm; }
+                  }
+                </style>
+              </head>
+              <body>
+                <h1>Compliance Report</h1>
+                <div class="meta">
+                  <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                  <p><strong>Date Range:</strong> ${reportOptions.startDate} to ${reportOptions.endDate}</p>
+                  <p><strong>Frameworks:</strong> ${selectedFrameworks.map(id => {
+                    const fw = frameworks.find(f => f.id === id);
+                    return fw ? fw.name : '';
+                  }).filter(Boolean).join(', ')}</p>
+                </div>
+                <div class="section">
+                  ${report.split('\n').map(line => {
+                    if (line.startsWith('#')) {
+                      const level = line.match(/^#+/)?.[0].length || 1;
+                      const text = line.replace(/^#+\s*/, '');
+                      return `<h${Math.min(level, 6)}>${text}</h${Math.min(level, 6)}>`;
+                    }
+                    return `<p>${line}</p>`;
+                  }).join('\n')}
+                </div>
+              </body>
+            </html>
+          `;
+
+          printWindow.document.write(pdfContent);
+          printWindow.document.close();
+          
+          // Wait for content to load, then trigger print
+          setTimeout(() => {
+            printWindow.print();
+            // Optionally close after print
+            // printWindow.close();
+          }, 250);
+        } catch (err: any) {
+          setError(`PDF export failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
       }
     } catch (err: any) {
       setError(`Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`);

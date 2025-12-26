@@ -120,7 +120,7 @@ const MainApp: React.FC = () => {
         if (user?.role !== 'admin') return <div>Access Denied</div>;
         return <Settings onNavigateToIntegrations={() => setCurrentView('integrations')} />;
       case 'acos':
-        return <ACOSDashboard onBack={() => setCurrentView('dashboard')} />;
+        return <ACOSDashboard onBack={() => setCurrentView('dashboard')} onNavigate={setCurrentView} />;
       default:
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }

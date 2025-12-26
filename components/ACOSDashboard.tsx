@@ -17,10 +17,12 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  BarChart3
+  BarChart3,
+  Target
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { GoalModal } from './GoalModal';
 
 interface ComplianceGoal {
   id: string;
@@ -49,13 +51,16 @@ interface EarlyWarning {
   recommendedAction: string;
 }
 
-const ACOSDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) => void }> = ({ onBack, onNavigate }) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot'>('overview');
   const [goals, setGoals] = useState<ComplianceGoal[]>([]);
   const [loops, setLoops] = useState<ControlLoop[]>([]);
   const [warnings, setWarnings] = useState<EarlyWarning[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<any>(null);
+  const [goalFilters, setGoalFilters] = useState<{ status?: string; framework?: string }>({});
 
   useEffect(() => {
     loadData();
@@ -64,12 +69,14 @@ const ACOSDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [goalsData, warningsData] = await Promise.all([
-        api.acos.getGoals(),
-        api.acos.getEarlyWarnings(3),
+      const [goalsData, warningsData, loopsData] = await Promise.all([
+        api.acos.getGoals().catch(() => []),
+        api.acos.getEarlyWarnings(3).catch(() => []),
+        api.acos.getControlLoops().catch(() => []),
       ]);
       setGoals(goalsData || []);
       setWarnings(warningsData || []);
+      setLoops(loopsData || []);
     } catch (error) {
       console.error('Error loading aCOS data:', error);
     } finally {
@@ -77,23 +84,18 @@ const ACOSDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
   };
 
-  const handleCreateGoal = async () => {
-    const goalData = {
-      goalType: 'maintain',
-      frameworks: [],
-      riskTolerance: 'medium',
-      horizon: 90,
-      autoActionPolicy: 'moderate',
-      targetScore: 85,
-    };
+  const handleCreateGoal = () => {
+    setEditingGoal(null);
+    setShowGoalModal(true);
+  };
 
-    try {
-      await api.acos.createGoal(goalData);
-      loadData();
-    } catch (error) {
-      console.error('Error creating goal:', error);
-      alert('Failed to create compliance goal');
-    }
+  const handleEditGoal = (goal: any) => {
+    setEditingGoal(goal);
+    setShowGoalModal(true);
+  };
+
+  const handleGoalSuccess = async () => {
+    await loadData(); // Reload all data
   };
 
   return (
@@ -253,11 +255,45 @@ const ACOSDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         )}
 
         {activeTab === 'goals' && (
-          <GoalsTab goals={goals} onCreateGoal={handleCreateGoal} onRefresh={loadData} />
+          <GoalsTab 
+            goals={goals} 
+            onCreateGoal={handleCreateGoal}
+            onEditGoal={handleEditGoal}
+            filters={goalFilters}
+            onFiltersChange={setGoalFilters}
+            onRefresh={async () => {
+              // Refresh goals with filters
+              try {
+                const goalsData = await api.acos.getGoals(goalFilters);
+                if (goalsData && Array.isArray(goalsData)) {
+                  setGoals(goalsData);
+                }
+              } catch (err) {
+                console.error('Error refreshing goals:', err);
+              }
+              // Also refresh other data
+              loadData();
+            }} 
+          />
         )}
 
+        {/* Goal Modal */}
+        <GoalModal
+          isOpen={showGoalModal}
+          onClose={() => {
+            setShowGoalModal(false);
+            setEditingGoal(null);
+          }}
+          onSuccess={handleGoalSuccess}
+          goal={editingGoal}
+        />
+
         {activeTab === 'loops' && (
-          <ControlLoopsTab loops={loops} onRefresh={loadData} />
+          <ControlLoopsTab loops={loops} onRefresh={() => {
+            loadData();
+            // Also refresh loops specifically
+            api.acos.getControlLoops().then(l => setLoops(l || [])).catch(() => {});
+          }} setLoops={setLoops} />
         )}
 
         {activeTab === 'predictions' && (
@@ -269,7 +305,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         )}
 
         {activeTab === 'redteam' && (
-          <RedTeamTab />
+          <RedTeamTab onNavigate={onNavigate} />
         )}
 
         {activeTab === 'swarm' && (
@@ -313,19 +349,53 @@ const GoalsTab: React.FC<{ goals: ComplianceGoal[]; onCreateGoal: () => void; on
           {goals.map((goal) => (
             <div key={goal.id} className="bg-white p-6 rounded-lg shadow border border-gray-200">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">{goal.goalType.charAt(0).toUpperCase() + goal.goalType.slice(1)} Compliance Goal</h3>
+                <div className="flex-1">
+                  <h3 className="font-semibold">
+                    {(goal as any).name || `${goal.goalType.charAt(0).toUpperCase() + goal.goalType.slice(1)} Compliance Goal`}
+                  </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Frameworks: {goal.frameworks.length} • Horizon: {goal.horizon} days • Risk Tolerance: {goal.riskTolerance}
+                    Frameworks: {goal.frameworks.length > 0 ? goal.frameworks.join(', ') : 'None'} • Horizon: {goal.horizon} days • Risk Tolerance: {goal.riskTolerance}
                   </p>
+                  {(goal as any).deadline && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Deadline: {new Date((goal as any).deadline).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  goal.status === 'active' ? 'bg-green-100 text-green-800' :
-                  goal.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {goal.status}
-                </span>
+                <div className="flex items-center space-x-3">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    goal.status === 'active' ? 'bg-green-100 text-green-800' :
+                    goal.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                    goal.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {goal.status}
+                  </span>
+                  {onEditGoal && (
+                    <button
+                      onClick={() => onEditGoal(goal)}
+                      className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {goal.status === 'archived' ? (
+                    <button
+                      onClick={() => handleRestoreGoal(goal.id)}
+                      className="px-3 py-1 text-sm text-green-600 hover:text-green-800"
+                    >
+                      Restore
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleDeleteGoal(goal.id)}
+                      disabled={deletingGoal === goal.id}
+                      className="px-3 py-1 text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                    >
+                      {deletingGoal === goal.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  )}
+                </div>
               </div>
               {goal.targetScore && (
                 <div className="mt-4">
@@ -349,31 +419,399 @@ const GoalsTab: React.FC<{ goals: ComplianceGoal[]; onCreateGoal: () => void; on
   );
 };
 
-const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void }> = ({ loops, onRefresh }) => {
+const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; setLoops: (loops: ControlLoop[]) => void }> = ({ loops, onRefresh, setLoops }) => {
+  const [loading, setLoading] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [selectedControlId, setSelectedControlId] = useState('');
+  const [availableControls, setAvailableControls] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadLoops();
+    loadControls();
+  }, []);
+
+  const loadLoops = async () => {
+    setLoading(true);
+    try {
+      const data = await api.acos.getControlLoops();
+      console.log('Loaded control loops:', data);
+      if (data && Array.isArray(data)) {
+        setLoops(data);
+        // Also update parent state via onRefresh
+        if (onRefresh) {
+          onRefresh();
+        }
+      } else {
+        setLoops([]);
+      }
+    } catch (error) {
+      console.error('Error loading control loops:', error);
+      setLoops([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadControls = async () => {
+    try {
+      const frameworks = await api.frameworks.list();
+      const controls: any[] = [];
+      frameworks.forEach(fw => {
+        if (fw.controls) {
+          fw.controls.forEach((ctrl: any) => {
+            controls.push({
+              id: ctrl.id,
+              name: ctrl.name,
+              frameworkName: fw.name,
+            });
+          });
+        }
+      });
+      setAvailableControls(controls);
+    } catch (error) {
+      console.error('Error loading controls:', error);
+    }
+  };
+
+  const handleCreateLoop = async () => {
+    if (!selectedControlId) {
+      alert('Please select a control');
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await api.acos.createControlLoop({ 
+        controlId: selectedControlId,
+        triggerType: triggerType,
+      });
+      console.log('Control loop created:', result);
+      
+      // If the API returns the created loop, add it to the list immediately
+      if (result && result.id) {
+        setLoops(prevLoops => [...prevLoops, result]);
+        // Also update parent state
+        if (onRefresh) {
+          onRefresh();
+        }
+      }
+      
+      setShowCreate(false);
+      setSelectedControlId('');
+      
+      // Wait a brief moment for the database to persist, then refresh
+      setTimeout(async () => {
+        try {
+          const loopsData = await api.acos.getControlLoops();
+          console.log('Refreshed loops after creation:', loopsData);
+          if (loopsData && Array.isArray(loopsData)) {
+            setLoops(loopsData);
+            // Update parent state
+            if (onRefresh) {
+              onRefresh();
+            }
+          }
+        } catch (err) {
+          console.error('Error loading loops:', err);
+          // If reload fails but we have the result, keep it
+          if (result && result.id) {
+            // Already added above
+          }
+        }
+      }, 500);
+      
+      alert('Control loop created successfully');
+    } catch (error: any) {
+      console.error('Error creating control loop:', error);
+      alert(`Failed to create control loop: ${error.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [executionResult, setExecutionResult] = useState<any>(null);
+  const [executingLoopId, setExecutingLoopId] = useState<string | null>(null);
+
+  const handleExecuteLoop = async (loopId: string) => {
+    setLoading(true);
+    setExecutingLoopId(loopId);
+    setExecutionResult(null);
+    try {
+      const result = await api.acos.executeControlLoop(loopId);
+      setExecutionResult(result);
+      // Refresh loops to get updated cycle count and confidence
+      await loadLoops();
+    } catch (error) {
+      console.error('Error executing control loop:', error);
+      alert('Failed to execute control loop');
+    } finally {
+      setLoading(false);
+      setExecutingLoopId(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Control Loops</h2>
-      {loops.length === 0 ? (
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Control Loops</h2>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          + Create Control Loop
+        </button>
+      </div>
+
+      {showCreate && (
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <h3 className="font-semibold mb-4">Create New Control Loop</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Control</label>
+              <select
+                value={selectedControlId}
+                onChange={(e) => setSelectedControlId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="">-- Select a Control --</option>
+                {availableControls.map((ctrl) => (
+                  <option key={ctrl.id} value={ctrl.id}>
+                    {ctrl.name} ({ctrl.frameworkName})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Trigger Type</label>
+              <select
+                value={triggerType}
+                onChange={(e) => setTriggerType(e.target.value as any)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="manual">Manual</option>
+                <option value="schedule">Schedule</option>
+                <option value="threshold">Threshold</option>
+                <option value="event">Event</option>
+              </select>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCreateLoop}
+                disabled={loading || !selectedControlId}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? 'Creating...' : 'Create'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreate(false);
+                  setSelectedControlId('');
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading && loops.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <Zap className="mx-auto text-gray-400 mb-4 animate-spin" size={48} />
+          <p className="text-gray-600">Loading control loops...</p>
+        </div>
+      ) : loops.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Zap className="mx-auto text-gray-400 mb-4" size={48} />
           <p className="text-gray-600">No active control loops</p>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Create Your First Control Loop
+          </button>
         </div>
       ) : (
         <div className="space-y-4">
-          {loops.map((loop) => (
-            <div key={loop.id} className="bg-white p-6 rounded-lg shadow border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">Control Loop: {loop.controlId.substring(0, 8)}...</h3>
-                  <p className="text-sm text-gray-600 mt-1">Cycles: {loop.cycleCount}</p>
+          {loops.map((loop) => {
+            const control = availableControls.find(c => c.id === loop.controlId);
+            return (
+              <div key={loop.id} className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">
+                      {control ? `${control.name} (${control.frameworkName})` : `Control: ${loop.controlId.substring(0, 8)}...`}
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Cycles: {loop.cycleCount} • Status: {loop.status}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600">Confidence</p>
+                      <p className="text-lg font-semibold">{Math.round(loop.confidence * 100)}%</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const historyData = await api.acos.getControlLoopHistory(loop.id);
+                            setHistory(historyData);
+                            setShowHistory(showHistory === loop.id ? null : loop.id);
+                          } catch (error) {
+                            alert('Failed to load history');
+                          }
+                        }}
+                        className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
+                        title="View History"
+                      >
+                        <History size={16} />
+                      </button>
+                      {loop.status === 'paused' ? (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await api.acos.resumeControlLoop(loop.id);
+                              await loadLoops();
+                            } catch (error) {
+                              alert('Failed to resume control loop');
+                            }
+                          }}
+                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          title="Resume"
+                        >
+                          <Play size={16} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await api.acos.pauseControlLoop(loop.id);
+                              await loadLoops();
+                            } catch (error) {
+                              alert('Failed to pause control loop');
+                            }
+                          }}
+                          className="px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700"
+                          title="Pause"
+                        >
+                          <Pause size={16} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleExecuteLoop(loop.id)}
+                        disabled={(loading && executingLoopId !== loop.id) || loop.status === 'paused'}
+                        className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
+                        title="Execute"
+                      >
+                        {loading && executingLoopId === loop.id ? 'Executing...' : 'Execute'}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (confirm('Are you sure you want to delete this control loop?')) {
+                            try {
+                              await api.acos.deleteControlLoop(loop.id);
+                              await loadLoops();
+                            } catch (error) {
+                              alert('Failed to delete control loop');
+                            }
+                          }
+                        }}
+                        className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Confidence</p>
-                  <p className="text-lg font-semibold">{Math.round(loop.confidence * 100)}%</p>
-                </div>
+                {/* Show execution result for this loop */}
+                {executionResult && executingLoopId === loop.id && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2">Execution Details</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="font-medium">Cycle Count:</span> {executionResult.cycleCount}
+                        </div>
+                        <div>
+                          <span className="font-medium">Confidence:</span> {Math.round(executionResult.confidence * 100)}%
+                        </div>
+                        <div>
+                          <span className="font-medium">Action Taken:</span> {executionResult.acted ? 'Yes' : 'No'}
+                        </div>
+                        <div>
+                          <span className="font-medium">Verified:</span> {executionResult.verified ? 'Yes' : 'No'}
+                        </div>
+                      </div>
+                      {executionResult.observed && (
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <p className="font-medium text-blue-900">Observed:</p>
+                          <p className="text-gray-700">Control: {executionResult.observed.controlName || executionResult.observed.controlId}</p>
+                          <p className="text-gray-700">Status: {executionResult.observed.currentStatus}</p>
+                          <p className="text-gray-700">Framework: {executionResult.observed.frameworkName || executionResult.observed.frameworkStatus}</p>
+                        </div>
+                      )}
+                      {executionResult.predicted && (
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <p className="font-medium text-blue-900">Predicted:</p>
+                          <p className="text-gray-700">Risk Level: {executionResult.predicted.riskLevel}</p>
+                          <p className="text-gray-700">Needs Action: {executionResult.predicted.needsAction ? 'Yes' : 'No'}</p>
+                        </div>
+                      )}
+                      {executionResult.learned && executionResult.learned.insights && (
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <p className="font-medium text-blue-900">Insights:</p>
+                          <ul className="list-disc list-inside text-gray-700">
+                            {executionResult.learned.insights.map((insight: string, idx: number) => (
+                              <li key={idx}>{insight}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {executionResult.scoreChange !== undefined && executionResult.scoreChange !== 0 && (
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <p className="font-medium text-blue-900">
+                            Score Change: {executionResult.scoreChange > 0 ? '+' : ''}{executionResult.scoreChange}%
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Show history if expanded */}
+                {showHistory === loop.id && history.length > 0 && (
+                  <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-2">Execution History</h4>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {history.map((h: any, idx: number) => (
+                        <div key={idx} className="p-2 bg-white rounded text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium capitalize">{h.executionPhase}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-gray-600">{h.durationMs}ms</span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(h.timestamp).toLocaleString()}
+                              </span>
+                              {h.success ? (
+                                <CheckCircle className="text-green-600" size={14} />
+                              ) : (
+                                <AlertTriangle className="text-red-600" size={14} />
+                              )}
+                            </div>
+                          </div>
+                          {h.error && (
+                            <p className="text-xs text-red-600 mt-1">Error: {h.error}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -421,18 +859,44 @@ const PredictionsTab: React.FC = () => {
         <div className="space-y-4">
           {predictions.map((pred, idx) => (
             <div key={idx} className="bg-white p-6 rounded-lg shadow border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">{pred.riskType}</h3>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">{pred.riskType || 'Unknown Risk'}</h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Predicted: {new Date(pred.predictedDate).toLocaleDateString()}
+                    Predicted Date: {pred.predictedDate ? new Date(pred.predictedDate).toLocaleDateString() : 'N/A'}
                   </p>
+                  {pred.predictedSeverity && (
+                    <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-medium ${
+                      pred.predictedSeverity === 'Critical' ? 'bg-red-100 text-red-800' :
+                      pred.predictedSeverity === 'High' ? 'bg-orange-100 text-orange-800' :
+                      pred.predictedSeverity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {pred.predictedSeverity} Severity
+                    </span>
+                  )}
                 </div>
-                <div className="text-right">
+                <div className="text-right ml-4">
                   <p className="text-sm text-gray-600">Probability</p>
-                  <p className="text-lg font-semibold">{Math.round(pred.predictedProbability * 100)}%</p>
+                  <p className="text-2xl font-semibold">{Math.round((pred.predictedProbability || 0) * 100)}%</p>
+                  {pred.confidence && (
+                    <p className="text-xs text-gray-500 mt-1">Confidence: {Math.round(pred.confidence * 100)}%</p>
+                  )}
                 </div>
               </div>
+              {pred.factors && pred.factors.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Contributing Factors:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                    {pred.factors.map((factor: string, fIdx: number) => (
+                      <li key={fIdx}>{factor}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {pred.riskId && (
+                <p className="text-xs text-gray-400 mt-2">Risk ID: {pred.riskId}</p>
+              )}
             </div>
           ))}
         </div>
@@ -449,10 +913,11 @@ const SimulationsTab: React.FC = () => {
 
   const handleRunSimulation = async () => {
     setLoading(true);
+    setResult(null); // Clear previous result
     try {
       const data = await api.acos.runSimulation({
-        name: 'Test Simulation',
-        description: 'Testing compliance impact',
+        name: `Simulation - ${scenarioType}`,
+        description: `Testing compliance impact for ${scenarioType}`,
         scenarioType,
         parameters,
       });
@@ -483,6 +948,14 @@ const SimulationsTab: React.FC = () => {
               <option value="policy_update">Policy Update</option>
               <option value="risk_event">Risk Event</option>
               <option value="framework_addition">Framework Addition</option>
+              <option value="control_removal">Control Removal</option>
+              <option value="control_modification">Control Modification</option>
+              <option value="evidence_update">Evidence Update</option>
+              <option value="audit_schedule">Audit Schedule Change</option>
+              <option value="compliance_debt">Compliance Debt Accumulation</option>
+              <option value="integration_change">Integration Change</option>
+              <option value="user_role_change">User Role Change</option>
+              <option value="framework_status_change">Framework Status Change</option>
             </select>
           </div>
           <button
@@ -494,11 +967,64 @@ const SimulationsTab: React.FC = () => {
           </button>
         </div>
         {result && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-semibold mb-2">Simulation Result</h3>
-            <p>Baseline Score: {result.baselineScore}%</p>
-            <p>Simulated Score: {result.simulatedScore}%</p>
-            <p>Score Change: {result.scoreChange > 0 ? '+' : ''}{result.scoreChange}%</p>
+          <div className="mt-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="font-semibold text-lg mb-4">Simulation Result</h3>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-white p-3 rounded">
+                <p className="text-sm text-gray-600">Baseline Score</p>
+                <p className="text-2xl font-bold">{result.baselineScore}%</p>
+              </div>
+              <div className="bg-white p-3 rounded">
+                <p className="text-sm text-gray-600">Simulated Score</p>
+                <p className="text-2xl font-bold">{result.simulatedScore}%</p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-1">Score Change</p>
+              <p className={`text-xl font-semibold ${result.scoreChange > 0 ? 'text-green-600' : result.scoreChange < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                {result.scoreChange > 0 ? '+' : ''}{result.scoreChange}%
+              </p>
+            </div>
+            {result.affectedControls !== undefined && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-1">Affected Controls</p>
+                <p className="text-lg font-semibold">{result.affectedControls}</p>
+              </div>
+            )}
+            {result.affectedFrameworks !== undefined && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-1">Affected Frameworks</p>
+                <p className="text-lg font-semibold">{result.affectedFrameworks}</p>
+              </div>
+            )}
+            {result.confidence !== undefined && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-1">Confidence</p>
+                <p className="text-lg font-semibold">{Math.round(result.confidence * 100)}%</p>
+              </div>
+            )}
+            {result.recommendations && result.recommendations.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-300">
+                <p className="text-sm font-medium text-gray-700 mb-2">Recommendations:</p>
+                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                  {result.recommendations.map((rec: string, idx: number) => (
+                    <li key={idx}>{rec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {result.riskChanges && Array.isArray(result.riskChanges) && result.riskChanges.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-300">
+                <p className="text-sm font-medium text-gray-700 mb-2">Risk Changes:</p>
+                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                  {result.riskChanges.map((risk: any, idx: number) => (
+                    <li key={idx}>
+                      {risk.riskType || risk.type}: {risk.change || risk.description || 'Risk change detected'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -506,7 +1032,7 @@ const SimulationsTab: React.FC = () => {
   );
 };
 
-const RedTeamTab: React.FC = () => {
+const RedTeamTab: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<any[]>([]);
 
@@ -540,7 +1066,40 @@ const RedTeamTab: React.FC = () => {
           {results.map((result, idx) => (
             <div key={idx} className="bg-white p-6 rounded-lg shadow border border-gray-200">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">Scenario: {result.scenarioId}</h3>
+                <div className="flex items-center space-x-3">
+                  <h3 className="font-semibold">Scenario: {result.scenarioId?.replace(/redteam_\d+_/, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || `Scenario ${idx + 1}`}</h3>
+                  {/* Add action buttons for specific scenarios */}
+                  {(result.scenarioId?.includes('control_bypass') || result.scenarioId?.includes('control_bypass_test')) && (
+                    <button
+                      onClick={() => {
+                        // Navigate to frameworks to view controls
+                        if (onNavigate) {
+                          onNavigate('frameworks');
+                        } else {
+                          window.location.hash = '#frameworks';
+                        }
+                      }}
+                      className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                    >
+                      View Controls
+                    </button>
+                  )}
+                  {(result.scenarioId?.includes('policy_violation') || result.scenarioId?.includes('policy_violation_test')) && (
+                    <button
+                      onClick={() => {
+                        // Navigate to Policy Generator
+                        if (onNavigate) {
+                          onNavigate('ai-policy');
+                        } else {
+                          window.location.hash = '#ai-policy';
+                        }
+                      }}
+                      className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                    >
+                      Generate Policies
+                    </button>
+                  )}
+                </div>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                   result.success ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                 }`}>
@@ -548,15 +1107,62 @@ const RedTeamTab: React.FC = () => {
                 </span>
               </div>
               {result.vulnerabilitiesFound && result.vulnerabilitiesFound.length > 0 && (
-                <div className="mt-4">
+                <div className="mt-4 space-y-3">
                   <p className="font-medium mb-2">Vulnerabilities:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    {result.vulnerabilitiesFound.map((vuln: any, vIdx: number) => (
-                      <li key={vIdx} className="text-sm text-gray-700">
-                        {vuln.type}: {vuln.description}
-                      </li>
-                    ))}
-                  </ul>
+                  {result.vulnerabilitiesFound.map((vuln: any, vIdx: number) => (
+                    <div key={vIdx} className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 rounded">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">{vuln.type}: {vuln.description}</p>
+                          {vuln.affectedControls && vuln.affectedControls.length > 0 && (
+                            <p className="text-xs text-gray-600 mt-1">Affected Controls: {vuln.affectedControls.length}</p>
+                          )}
+                        </div>
+                        <div className="flex space-x-2 ml-4">
+                          {vuln.type === 'Missing Evidence' && vuln.affectedControls && vuln.affectedControls.length > 0 && (
+                            <button
+                              onClick={() => {
+                                // Extract control name from description
+                                const controlMatch = vuln.description.match(/"([^"]+)"/);
+                                const controlName = controlMatch ? controlMatch[1] : 'Control';
+                                const controlId = vuln.affectedControls[0];
+                                // Store control ID for navigation
+                                sessionStorage.setItem('navigateToControl', controlId);
+                                sessionStorage.setItem('navigateToControlName', controlName);
+                                // Navigate to frameworks page
+                                if (onNavigate) {
+                                  onNavigate('frameworks');
+                                } else {
+                                  window.location.hash = '#frameworks';
+                                }
+                              }}
+                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                            >
+                              Upload Evidence: {vuln.description.match(/"([^"]+)"/)?.[1] || 'Control'}
+                            </button>
+                          )}
+                          {vuln.type === 'Missing Policy' && (
+                            <button
+                              onClick={() => {
+                                // Extract policy type from description
+                                const policyType = vuln.description.replace('Missing ', '').replace(' policy', '');
+                                // Navigate to Policy Generator with preselected type
+                                sessionStorage.setItem('preselectedPolicyType', policyType);
+                                if (onNavigate) {
+                                  onNavigate('ai-policy');
+                                } else {
+                                  window.location.hash = '#ai-policy';
+                                }
+                              }}
+                              className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                            >
+                              Generate: {vuln.description.replace('Missing ', '').replace(' policy', '')}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -570,11 +1176,13 @@ const RedTeamTab: React.FC = () => {
 const SwarmTab: React.FC = () => {
   const [insights, setInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>([]);
+  const [availableFrameworks, setAvailableFrameworks] = useState<string[]>([]);
 
   const loadInsights = async () => {
     setLoading(true);
     try {
-      const data = await api.acos.getSwarmInsights();
+      const data = await api.acos.getSwarmInsights(selectedFrameworks.length > 0 ? selectedFrameworks : undefined);
       setInsights(data || []);
     } catch (error) {
       console.error('Error loading swarm insights:', error);
@@ -583,13 +1191,30 @@ const SwarmTab: React.FC = () => {
     }
   };
 
+  const loadFrameworks = async () => {
+    try {
+      const frameworks = await api.frameworks.list();
+      setAvailableFrameworks(frameworks.map((f: any) => f.name));
+    } catch (error) {
+      console.error('Error loading frameworks:', error);
+    }
+  };
+
   useEffect(() => {
     loadInsights();
-  }, []);
+    loadFrameworks();
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      loadInsights();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [selectedFrameworks]);
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Federated Swarm Insights</h2>
         <button
           onClick={loadInsights}
@@ -599,6 +1224,60 @@ const SwarmTab: React.FC = () => {
           {loading ? 'Loading...' : 'Refresh'}
         </button>
       </div>
+
+      {/* Framework Filter */}
+      {availableFrameworks.length > 0 && (
+        <div className="mb-4 bg-white p-4 rounded-lg shadow border border-gray-200">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Filter by Frameworks (optional)
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {availableFrameworks.map((framework) => (
+              <label key={framework} className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedFrameworks.includes(framework)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedFrameworks([...selectedFrameworks, framework]);
+                    } else {
+                      setSelectedFrameworks(selectedFrameworks.filter(f => f !== framework));
+                    }
+                  }}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">{framework}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Stats Summary */}
+      {insights.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+            <p className="text-sm text-gray-600">Total Insights</p>
+            <p className="text-2xl font-bold">{insights.length}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+            <p className="text-sm text-gray-600">Avg Confidence</p>
+            <p className="text-2xl font-bold">
+              {Math.round((insights.reduce((sum, i) => sum + (i.confidence || 0), 0) / insights.length) * 100)}%
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+            <p className="text-sm text-gray-600">Total Sources</p>
+            <p className="text-2xl font-bold">
+              {insights.reduce((sum, i) => sum + (i.sourceCount || 0), 0)}
+            </p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+            <p className="text-sm text-gray-600">Last Updated</p>
+            <p className="text-sm font-semibold">{new Date().toLocaleTimeString()}</p>
+          </div>
+        </div>
+      )}
       {insights.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Brain className="mx-auto text-gray-400 mb-4" size={48} />
@@ -647,15 +1326,41 @@ const IoTTab: React.FC = () => {
     mqttTopic: '',
   });
 
+  const [loading, setLoading] = useState(false);
+
+  const loadDevices = async () => {
+    setLoading(true);
+    try {
+      const data = await api.acos.getDevices();
+      setDevices(data || []);
+    } catch (error) {
+      console.error('Error loading devices:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDevices();
+  }, []);
+
   const handleRegisterDevice = async () => {
+    if (!deviceForm.deviceId || !deviceForm.deviceType || !deviceForm.location) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    setLoading(true);
     try {
       await api.acos.registerDevice(deviceForm);
       setShowRegister(false);
       setDeviceForm({ deviceId: '', deviceType: '', location: '', mqttTopic: '' });
-      // Reload devices
-    } catch (error) {
+      await loadDevices(); // Reload devices
+      alert('Device registered successfully');
+    } catch (error: any) {
       console.error('Error registering device:', error);
-      alert('Failed to register device');
+      alert(`Failed to register device: ${error.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -765,8 +1470,6 @@ const IoTTab: React.FC = () => {
   );
 };
 
-// Add Target icon import
-import { Target } from 'lucide-react';
-
 export default ACOSDashboard;
+
 

@@ -641,6 +641,73 @@ class AuthController {
     }
   }
 
+  async uploadAvatar(req: Request, res: Response): Promise<void> {
+    try {
+      const authReq = req as any;
+      const userId = authReq.user!.id;
+      const organizationId = authReq.user!.organizationId;
+
+      // File should be in req.file (from multer middleware)
+      const file = (req as any).file;
+      if (!file) {
+        throw new AppError('No file uploaded', 400);
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(file.mimetype)) {
+        throw new AppError('Invalid file type. Only JPG, PNG, and GIF are allowed.', 400);
+      }
+
+      // Validate file size (max 1MB)
+      if (file.size > 1024 * 1024) {
+        throw new AppError('File size must be less than 1MB', 400);
+      }
+
+      // Upload to S3
+      const s3Service = (await import('../services/s3Service')).default;
+      const uploadResult = await s3Service.uploadFile({
+        file,
+        userId,
+        organizationId,
+        folder: 'avatars',
+      });
+
+      // Update user with avatar URL
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { avatar: uploadResult.url },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          avatar: true,
+          organizationId: true,
+        },
+      });
+
+      // Log audit
+      await prisma.auditLog.create({
+        data: {
+          action: 'Avatar Uploaded',
+          userId,
+          organizationId,
+          hash: uuidv4(),
+          ipAddress: req.ip || undefined,
+          userAgent: req.headers['user-agent'] || undefined,
+        },
+      });
+
+      res.json({ user: updatedUser, avatarUrl: uploadResult.url });
+      logger.info(`Avatar uploaded for user: ${userId}`);
+    } catch (error) {
+      logger.error('Upload avatar error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to upload avatar', 500);
+    }
+  }
+
   async logout(req: Request, res: Response): Promise<void> {
     try {
       // In a more complex setup, you might invalidate the refresh token here

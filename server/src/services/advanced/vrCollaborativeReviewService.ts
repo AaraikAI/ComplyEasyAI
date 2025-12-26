@@ -19,29 +19,44 @@ export interface VRSession {
   id: string;
   organizationId: string;
   sessionName: string;
+  description?: string;
   sessionType: 'review' | 'training' | 'simulation' | 'audit';
   status: 'pending' | 'active' | 'paused' | 'completed';
   hostUserId: string;
   participants: VRParticipant[];
+  maxParticipants?: number;
+  scheduledTime?: Date;
   environment: VREnvironment;
   complianceData: VRComplianceData;
   startedAt?: Date;
   endedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  permissions?: {
+    canJoin: string[]; // user IDs or roles
+    canEdit: string[];
+    canRecord: string[];
+  };
+  recording?: VRRecording;
 }
 
 export interface VRParticipant {
   id: string;
   userId: string;
   userName: string;
-  role: 'host' | 'reviewer' | 'observer' | 'trainee';
+  role: 'host' | 'reviewer' | 'observer' | 'trainee' | 'presenter';
   avatarConfig: AvatarConfig;
   position: Vector3D;
   rotation: Vector3D;
   isActive: boolean;
   joinedAt: Date;
   lastActiveAt: Date;
+  isSpeaking?: boolean;
+  isFollowing?: string; // userId being followed
+  isBeingFollowed?: string[]; // userIds following this participant
+  pointerPosition?: Vector3D;
+  screenSharing?: boolean;
+  sharedView?: any;
 }
 
 export interface AvatarConfig {
@@ -60,6 +75,7 @@ export interface Vector3D {
 
 export interface VREnvironment {
   template: 'boardroom' | 'command_center' | 'audit_room' | 'training_lab' | 'data_visualization' | 'custom';
+  theme?: 'default' | 'dark' | 'light' | 'colorful' | 'minimal' | 'futuristic';
   customSettings?: {
     skybox?: string;
     lighting?: string;
@@ -68,6 +84,13 @@ export interface VREnvironment {
   };
   interactiveObjects: VRInteractiveObject[];
   spatialAnchors: SpatialAnchor[];
+  relationshipMappings?: RelationshipMapping[];
+  frameworkClusters?: FrameworkCluster[];
+  performanceMetrics?: {
+    fps: number;
+    renderTime: number;
+    lastUpdated: Date;
+  };
 }
 
 export interface VRProp {
@@ -170,10 +193,19 @@ export interface VRAnnotation {
   content: string;
   position: Vector3D;
   attachedTo?: string;
-  type: 'note' | 'question' | 'action_item' | 'approval' | 'concern';
+  type: 'note' | 'question' | 'action_item' | 'approval' | 'concern' | 'voice';
   visibility: 'public' | 'private' | 'team';
   createdAt: Date;
+  updatedAt?: Date;
   resolved: boolean;
+  voiceNoteUrl?: string;
+  voiceNoteDuration?: number;
+  history?: Array<{
+    timestamp: Date;
+    action: 'created' | 'edited' | 'deleted';
+    userId: string;
+    changes?: any;
+  }>;
 }
 
 export interface VRRecording {
@@ -200,6 +232,64 @@ export interface VRTrainingScenario {
   objectives: string[];
   scenes: VRTrainingScene[];
   assessmentCriteria: VRAssessmentCriteria[];
+}
+
+export interface RelationshipMapping {
+  fromId: string;
+  toId: string;
+  relationshipType: 'depends_on' | 'implements' | 'mitigates' | 'relates_to';
+  lineColor: string;
+  lineWidth: number;
+  position: Vector3D[];
+}
+
+export interface FrameworkCluster {
+  clusterId: string;
+  frameworkIds: string[];
+  centerPosition: Vector3D;
+  radius: number;
+  color: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sessionId: string;
+  userId: string;
+  userName: string;
+  message: string;
+  timestamp: Date;
+  type: 'text' | 'system';
+}
+
+export interface VoiceChatState {
+  enabled: boolean;
+  participants: Array<{
+    userId: string;
+    isMuted: boolean;
+    volume: number;
+  }>;
+}
+
+export interface TrainingProgress {
+  sessionId: string;
+  userId: string;
+  scenarioId: string;
+  currentScene: string;
+  completedTasks: string[];
+  score: number;
+  startedAt: Date;
+  lastUpdated: Date;
+}
+
+export interface TrainingCertificate {
+  id: string;
+  userId: string;
+  scenarioId: string;
+  scenarioName: string;
+  score: number;
+  passed: boolean;
+  completedAt: Date;
+  certificateUrl?: string;
 }
 
 export interface VRTrainingScene {
@@ -232,19 +322,31 @@ export interface VRAssessmentCriteria {
 class VRCollaborativeReviewService {
   private activeSessions: Map<string, VRSession> = new Map();
   private sessionParticipants: Map<string, Map<string, VRParticipant>> = new Map();
+  private sessionChats: Map<string, ChatMessage[]> = new Map();
+  private voiceChatStates: Map<string, VoiceChatState> = new Map();
+  private trainingProgress: Map<string, TrainingProgress> = new Map();
+  private annotations: Map<string, VRAnnotation[]> = new Map();
 
   /**
-   * Create a new VR review session
+   * Create a new VR review session (enhanced)
    */
   async createSession(
     organizationId: string,
     config: {
       sessionName: string;
+      description?: string;
       sessionType: 'review' | 'training' | 'simulation' | 'audit';
       environment: VREnvironment['template'];
       frameworkIds?: string[];
       controlIds?: string[];
       invitedUsers?: string[];
+      scheduledTime?: Date;
+      maxParticipants?: number;
+      permissions?: {
+        canJoin?: string[];
+        canEdit?: string[];
+        canRecord?: string[];
+      };
     },
     hostUserId: string
   ): Promise<VRSession> {
@@ -287,12 +389,20 @@ class VRCollaborativeReviewService {
         id: sessionId,
         organizationId,
         sessionName: config.sessionName,
+        description: config.description,
         sessionType: config.sessionType,
         status: 'pending',
         hostUserId,
         participants: [hostParticipant],
+        maxParticipants: config.maxParticipants,
+        scheduledTime: config.scheduledTime,
         environment,
         complianceData,
+        permissions: config.permissions || {
+          canJoin: ['*'],
+          canEdit: ['host', 'reviewer'],
+          canRecord: ['host'],
+        },
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -300,6 +410,12 @@ class VRCollaborativeReviewService {
       // Store session in memory and database
       this.activeSessions.set(sessionId, session);
       this.sessionParticipants.set(sessionId, new Map([[hostUserId, hostParticipant]]));
+      this.sessionChats.set(sessionId, []);
+      this.voiceChatStates.set(sessionId, {
+        enabled: true,
+        participants: [{ userId: hostUserId, isMuted: false, volume: 1.0 }],
+      });
+      this.annotations.set(sessionId, []);
 
       // Store in database
       await prisma.auditLog.create({
@@ -332,7 +448,7 @@ class VRCollaborativeReviewService {
   }
 
   /**
-   * Join an existing VR session
+   * Join an existing VR session (enhanced with max participants check)
    */
   async joinSession(
     sessionId: string,
@@ -351,6 +467,20 @@ class VRCollaborativeReviewService {
 
       if (session.status === 'completed') {
         throw new Error('Session has already ended');
+      }
+
+      // Check max participants
+      if (session.maxParticipants && session.participants.length >= session.maxParticipants) {
+        throw new Error(`Session is full (max ${session.maxParticipants} participants)`);
+      }
+
+      // Check permissions
+      if (session.permissions?.canJoin && !session.permissions.canJoin.includes('*')) {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        const userRole = user?.role || 'viewer';
+        if (!session.permissions.canJoin.includes(userId) && !session.permissions.canJoin.includes(userRole)) {
+          throw new Error('You do not have permission to join this session');
+        }
       }
 
       // Get user info
@@ -379,6 +509,12 @@ class VRCollaborativeReviewService {
       session.participants.push(participant);
       this.sessionParticipants.get(sessionId)?.set(userId, participant);
 
+      // Add to voice chat
+      const voiceChat = this.voiceChatStates.get(sessionId);
+      if (voiceChat) {
+        voiceChat.participants.push({ userId, isMuted: false, volume: 1.0 });
+      }
+
       // Log join event
       await prisma.auditLog.create({
         data: {
@@ -403,6 +539,57 @@ class VRCollaborativeReviewService {
       };
     } catch (error) {
       logger.error('[VR Review] Error joining session', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Leave a VR session
+   */
+  async leaveSession(sessionId: string, userId: string): Promise<void> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      // Remove participant
+      session.participants = session.participants.filter(p => p.userId !== userId);
+      this.sessionParticipants.get(sessionId)?.delete(userId);
+
+      // Remove from voice chat
+      const voiceChat = this.voiceChatStates.get(sessionId);
+      if (voiceChat) {
+        voiceChat.participants = voiceChat.participants.filter(p => p.userId !== userId);
+      }
+
+      // Stop following if this user was being followed
+      session.participants.forEach(p => {
+        if (p.isFollowing === userId) {
+          p.isFollowing = undefined;
+        }
+        if (p.isBeingFollowed?.includes(userId)) {
+          p.isBeingFollowed = p.isBeingFollowed.filter(id => id !== userId);
+        }
+      });
+
+      // Log leave event
+      await prisma.auditLog.create({
+        data: {
+          action: 'vr_session.participant_left',
+          details: JSON.stringify({
+            sessionId,
+            userId,
+          }),
+          userId,
+          organizationId: session.organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      logger.info(`[VR Review] User ${userId} left session ${sessionId}`);
+    } catch (error) {
+      logger.error('[VR Review] Error leaving session', error);
       throw error;
     }
   }
@@ -485,9 +672,12 @@ class VRCollaborativeReviewService {
         },
       });
 
-      // Clean up memory
+      // Clean up memory (session cleanup)
       this.activeSessions.delete(sessionId);
       this.sessionParticipants.delete(sessionId);
+      this.sessionChats.delete(sessionId);
+      this.voiceChatStates.delete(sessionId);
+      this.annotations.delete(sessionId);
 
       logger.info(`[VR Review] Session ended: ${sessionId}`);
 
@@ -537,7 +727,18 @@ class VRCollaborativeReviewService {
         resolved: false,
       };
 
-      // Store annotation
+      // Store annotation in memory and database
+      const sessionAnnotations = this.annotations.get(sessionId) || [];
+      sessionAnnotations.push(vrAnnotation);
+      this.annotations.set(sessionId, sessionAnnotations);
+
+      // Add history entry
+      vrAnnotation.history = [{
+        timestamp: new Date(),
+        action: 'created',
+        userId,
+      }];
+
       await prisma.auditLog.create({
         data: {
           action: 'vr_session.annotation_added',
@@ -743,6 +944,19 @@ class VRCollaborativeReviewService {
         hints: ['Look for the glowing objects', 'Use your controllers to interact'],
       };
 
+      // Initialize training progress
+      const progress: TrainingProgress = {
+        sessionId,
+        userId,
+        scenarioId,
+        currentScene: currentScene.id,
+        completedTasks: [],
+        score: 0,
+        startedAt: new Date(),
+        lastUpdated: new Date(),
+      };
+      this.trainingProgress.set(`${sessionId}_${userId}`, progress);
+
       return {
         sessionId,
         scenario: mockScenario,
@@ -751,6 +965,220 @@ class VRCollaborativeReviewService {
     } catch (error) {
       logger.error('[VR Review] Error starting training session', error);
       throw error;
+    }
+  }
+
+  /**
+   * Track training progress
+   */
+  async trackTrainingProgress(
+    sessionId: string,
+    userId: string,
+    taskId: string,
+    completed: boolean
+  ): Promise<TrainingProgress> {
+    try {
+      const progressKey = `${sessionId}_${userId}`;
+      let progress = this.trainingProgress.get(progressKey);
+
+      if (!progress) {
+        throw new Error('Training progress not found');
+      }
+
+      if (completed && !progress.completedTasks.includes(taskId)) {
+        progress.completedTasks.push(taskId);
+        progress.score += 10; // Award points
+      }
+
+      progress.lastUpdated = new Date();
+
+      this.trainingProgress.set(progressKey, progress);
+
+      return progress;
+    } catch (error) {
+      logger.error('[VR Review] Error tracking training progress', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Evaluate training performance
+   */
+  async evaluateTrainingPerformance(
+    sessionId: string,
+    userId: string
+  ): Promise<{
+    score: number;
+    passed: boolean;
+    criteriaResults: Array<{
+      criteriaId: string;
+      name: string;
+      score: number;
+      passed: boolean;
+    }>;
+  }> {
+    try {
+      const progressKey = `${sessionId}_${userId}`;
+      const progress = this.trainingProgress.get(progressKey);
+
+      if (!progress) {
+        throw new Error('Training progress not found');
+      }
+
+      // Get scenario assessment criteria
+      const auditLog = await prisma.auditLog.findFirst({
+        where: {
+          action: 'vr_training.scenario_created',
+          details: {
+            contains: progress.scenarioId,
+          },
+        },
+      });
+
+      const scenarioData = auditLog ? JSON.parse(auditLog.details || '{}') : {};
+      const criteria = scenarioData.assessmentCriteria || [];
+
+      // Calculate criteria results
+      const criteriaResults = criteria.map((c: VRAssessmentCriteria) => {
+        const criteriaScore = Math.min(100, (progress.score / criteria.length) * 10);
+        return {
+          criteriaId: c.criteriaId,
+          name: c.name,
+          score: criteriaScore,
+          passed: criteriaScore >= c.passingScore,
+        };
+      });
+
+      const overallPassed = criteriaResults.every(c => c.passed);
+
+      return {
+        score: progress.score,
+        passed: overallPassed,
+        criteriaResults,
+      };
+    } catch (error) {
+      logger.error('[VR Review] Error evaluating training performance', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Complete training and generate certificate
+   */
+  async completeTraining(
+    sessionId: string,
+    userId: string
+  ): Promise<TrainingCertificate> {
+    try {
+      const progressKey = `${sessionId}_${userId}`;
+      const progress = this.trainingProgress.get(progressKey);
+
+      if (!progress) {
+        throw new Error('Training progress not found');
+      }
+
+      // Evaluate performance
+      const evaluation = await this.evaluateTrainingPerformance(sessionId, userId);
+
+      // Get scenario details
+      const auditLog = await prisma.auditLog.findFirst({
+        where: {
+          action: 'vr_training.scenario_created',
+          details: {
+            contains: progress.scenarioId,
+          },
+        },
+      });
+
+      const scenarioData = auditLog ? JSON.parse(auditLog.details || '{}') : {};
+
+      const certificate: TrainingCertificate = {
+        id: `cert_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+        userId,
+        scenarioId: progress.scenarioId,
+        scenarioName: scenarioData.name || 'Training Scenario',
+        score: evaluation.score,
+        passed: evaluation.passed,
+        completedAt: new Date(),
+      };
+
+      // Store certificate
+      await prisma.auditLog.create({
+        data: {
+          action: 'vr_training.completed',
+          details: JSON.stringify(certificate),
+          userId,
+          organizationId: progress.sessionId.split('_')[0], // Extract org ID if available
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      // Store training history
+      await prisma.auditLog.create({
+        data: {
+          action: 'vr_training.history',
+          details: JSON.stringify({
+            sessionId: progress.sessionId,
+            scenarioId: progress.scenarioId,
+            userId,
+            score: evaluation.score,
+            passed: evaluation.passed,
+            completedAt: new Date(),
+          }),
+          userId,
+          organizationId: progress.sessionId.split('_')[0],
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      logger.info(`[VR Review] Training completed: ${sessionId}, user: ${userId}, score: ${evaluation.score}`);
+
+      return certificate;
+    } catch (error) {
+      logger.error('[VR Review] Error completing training', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get training history
+   */
+  async getTrainingHistory(
+    userId: string,
+    organizationId: string
+  ): Promise<Array<{
+    sessionId: string;
+    scenarioId: string;
+    scenarioName: string;
+    score: number;
+    passed: boolean;
+    completedAt: Date;
+  }>> {
+    try {
+      const historyLogs = await prisma.auditLog.findMany({
+        where: {
+          action: 'vr_training.history',
+          userId,
+          organizationId,
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 50,
+      });
+
+      return historyLogs.map(log => {
+        const details = JSON.parse(log.details || '{}');
+        return {
+          sessionId: details.sessionId,
+          scenarioId: details.scenarioId,
+          scenarioName: details.scenarioName || 'Training Scenario',
+          score: details.score || 0,
+          passed: details.passed || false,
+          completedAt: new Date(details.completedAt || log.timestamp),
+        };
+      });
+    } catch (error) {
+      logger.error('[VR Review] Error getting training history', error);
+      return [];
     }
   }
 
@@ -817,10 +1245,263 @@ class VRCollaborativeReviewService {
   }
 
   /**
-   * Get session details
+   * Get session details (enhanced)
    */
   async getSessionDetails(sessionId: string): Promise<VRSession | null> {
-    return this.activeSessions.get(sessionId) || null;
+    const session = this.activeSessions.get(sessionId);
+    if (!session) {
+      return null;
+    }
+
+    // Update environment performance metrics
+    if (session.environment) {
+      session.environment.performanceMetrics = {
+        fps: 60 + Math.random() * 10, // Simulated 60+ FPS
+        renderTime: 16 + Math.random() * 4, // ~16ms render time
+        lastUpdated: new Date(),
+      };
+    }
+
+    return session;
+  }
+
+  /**
+   * Edit annotation
+   */
+  async editAnnotation(
+    sessionId: string,
+    annotationId: string,
+    userId: string,
+    updates: {
+      content?: string;
+      position?: Vector3D;
+      visibility?: VRAnnotation['visibility'];
+    }
+  ): Promise<VRAnnotation> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      const annotations = this.annotations.get(sessionId) || [];
+      const annotation = annotations.find(a => a.id === annotationId);
+
+      if (!annotation) {
+        throw new Error('Annotation not found');
+      }
+
+      if (annotation.authorId !== userId && !session.permissions?.canEdit?.includes(userId)) {
+        throw new Error('You do not have permission to edit this annotation');
+      }
+
+      // Update annotation
+      if (updates.content !== undefined) annotation.content = updates.content;
+      if (updates.position) annotation.position = updates.position;
+      if (updates.visibility) annotation.visibility = updates.visibility;
+      annotation.updatedAt = new Date();
+
+      // Add history entry
+      if (!annotation.history) annotation.history = [];
+      annotation.history.push({
+        timestamp: new Date(),
+        action: 'edited',
+        userId,
+        changes: updates,
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'vr_session.annotation_edited',
+          details: JSON.stringify({ annotationId, updates }),
+          userId,
+          organizationId: session.organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      return annotation;
+    } catch (error) {
+      logger.error('[VR Review] Error editing annotation', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete annotation
+   */
+  async deleteAnnotation(
+    sessionId: string,
+    annotationId: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      const annotations = this.annotations.get(sessionId) || [];
+      const annotation = annotations.find(a => a.id === annotationId);
+
+      if (!annotation) {
+        throw new Error('Annotation not found');
+      }
+
+      if (annotation.authorId !== userId && !session.permissions?.canEdit?.includes(userId)) {
+        throw new Error('You do not have permission to delete this annotation');
+      }
+
+      // Remove annotation
+      const updatedAnnotations = annotations.filter(a => a.id !== annotationId);
+      this.annotations.set(sessionId, updatedAnnotations);
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'vr_session.annotation_deleted',
+          details: JSON.stringify({ annotationId }),
+          userId,
+          organizationId: session.organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+    } catch (error) {
+      logger.error('[VR Review] Error deleting annotation', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get annotation history
+   */
+  async getAnnotationHistory(
+    sessionId: string,
+    annotationId: string
+  ): Promise<VRAnnotation['history']> {
+    const annotations = this.annotations.get(sessionId) || [];
+    const annotation = annotations.find(a => a.id === annotationId);
+    return annotation?.history || [];
+  }
+
+  /**
+   * Export annotations
+   */
+  async exportAnnotations(
+    sessionId: string,
+    format: 'json' | 'csv' = 'json',
+    filters?: {
+      type?: VRAnnotation['type'];
+      authorId?: string;
+      visibility?: VRAnnotation['visibility'];
+    }
+  ): Promise<any> {
+    try {
+      let annotations = this.annotations.get(sessionId) || [];
+
+      // Apply filters
+      if (filters?.type) {
+        annotations = annotations.filter(a => a.type === filters.type);
+      }
+      if (filters?.authorId) {
+        annotations = annotations.filter(a => a.authorId === filters.authorId);
+      }
+      if (filters?.visibility) {
+        annotations = annotations.filter(a => a.visibility === filters.visibility);
+      }
+
+      if (format === 'csv') {
+        const csvRows = [
+          ['ID', 'Author', 'Type', 'Content', 'Position', 'Created At', 'Resolved'],
+          ...annotations.map(a => [
+            a.id,
+            a.authorName,
+            a.type,
+            a.content.substring(0, 100),
+            `${a.position.x},${a.position.y},${a.position.z}`,
+            a.createdAt.toISOString(),
+            a.resolved.toString(),
+          ]),
+        ];
+
+        return {
+          format: 'csv',
+          content: csvRows.map(row => row.join(',')).join('\n'),
+          filename: `vr-annotations-${sessionId}-${new Date().toISOString().split('T')[0]}.csv`,
+        };
+      }
+
+      return annotations;
+    } catch (error) {
+      logger.error('[VR Review] Error exporting annotations', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add voice annotation
+   */
+  async addVoiceAnnotation(
+    sessionId: string,
+    userId: string,
+    annotation: {
+      voiceNoteUrl: string;
+      voiceNoteDuration: number;
+      position: Vector3D;
+      attachedTo?: string;
+      visibility: VRAnnotation['visibility'];
+    }
+  ): Promise<VRAnnotation> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+
+      const vrAnnotation: VRAnnotation = {
+        id: `annotation_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+        sessionId,
+        authorId: userId,
+        authorName: user?.name || 'Anonymous',
+        content: '[Voice Note]',
+        position: annotation.position,
+        attachedTo: annotation.attachedTo,
+        type: 'voice',
+        visibility: annotation.visibility,
+        voiceNoteUrl: annotation.voiceNoteUrl,
+        voiceNoteDuration: annotation.voiceNoteDuration,
+        createdAt: new Date(),
+        resolved: false,
+        history: [{
+          timestamp: new Date(),
+          action: 'created',
+          userId,
+        }],
+      };
+
+      const sessionAnnotations = this.annotations.get(sessionId) || [];
+      sessionAnnotations.push(vrAnnotation);
+      this.annotations.set(sessionId, sessionAnnotations);
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'vr_session.voice_annotation_added',
+          details: JSON.stringify(vrAnnotation),
+          userId,
+          organizationId: session.organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      return vrAnnotation;
+    } catch (error) {
+      logger.error('[VR Review] Error adding voice annotation', error);
+      throw error;
+    }
   }
 
   // Private helper methods
@@ -916,6 +1597,358 @@ class VRCollaborativeReviewService {
     };
   }
 
+  /**
+   * Send text chat message
+   */
+  async sendChatMessage(
+    sessionId: string,
+    userId: string,
+    message: string
+  ): Promise<ChatMessage> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+
+      const chatMessage: ChatMessage = {
+        id: `chat_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+        sessionId,
+        userId,
+        userName: user?.name || 'Anonymous',
+        message,
+        timestamp: new Date(),
+        type: 'text',
+      };
+
+      const chatHistory = this.sessionChats.get(sessionId) || [];
+      chatHistory.push(chatMessage);
+      this.sessionChats.set(sessionId, chatHistory);
+
+      return chatMessage;
+    } catch (error) {
+      logger.error('[VR Review] Error sending chat message', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get chat history
+   */
+  async getChatHistory(sessionId: string, limit: number = 100): Promise<ChatMessage[]> {
+    const chatHistory = this.sessionChats.get(sessionId) || [];
+    return chatHistory.slice(-limit);
+  }
+
+  /**
+   * Enable/disable voice chat
+   */
+  async toggleVoiceChat(
+    sessionId: string,
+    userId: string,
+    enabled: boolean
+  ): Promise<VoiceChatState> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      if (session.hostUserId !== userId && !session.permissions?.canEdit?.includes(userId)) {
+        throw new Error('Only host or authorized users can toggle voice chat');
+      }
+
+      const voiceChat = this.voiceChatStates.get(sessionId) || {
+        enabled: true,
+        participants: [],
+      };
+
+      voiceChat.enabled = enabled;
+      this.voiceChatStates.set(sessionId, voiceChat);
+
+      return voiceChat;
+    } catch (error) {
+      logger.error('[VR Review] Error toggling voice chat', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mute/unmute participant in voice chat
+   */
+  async muteParticipant(
+    sessionId: string,
+    targetUserId: string,
+    muted: boolean,
+    requestedBy: string
+  ): Promise<void> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      // Only host or the participant themselves can mute
+      if (session.hostUserId !== requestedBy && targetUserId !== requestedBy) {
+        throw new Error('You do not have permission to mute this participant');
+      }
+
+      const voiceChat = this.voiceChatStates.get(sessionId);
+      if (voiceChat) {
+        const participant = voiceChat.participants.find(p => p.userId === targetUserId);
+        if (participant) {
+          participant.isMuted = muted;
+        }
+      }
+    } catch (error) {
+      logger.error('[VR Review] Error muting participant', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enable pointer/laser for participant
+   */
+  async updatePointer(
+    sessionId: string,
+    userId: string,
+    position: Vector3D
+  ): Promise<void> {
+    try {
+      const participantMap = this.sessionParticipants.get(sessionId);
+      if (!participantMap) {
+        return;
+      }
+
+      const participant = participantMap.get(userId);
+      if (participant) {
+        participant.pointerPosition = position;
+        participant.lastActiveAt = new Date();
+      }
+    } catch (error) {
+      logger.error('[VR Review] Error updating pointer', error);
+    }
+  }
+
+  /**
+   * Enable screen sharing
+   */
+  async enableScreenSharing(
+    sessionId: string,
+    userId: string,
+    sharedView: any
+  ): Promise<void> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      const participantMap = this.sessionParticipants.get(sessionId);
+      const participant = participantMap?.get(userId);
+
+      if (participant) {
+        participant.screenSharing = true;
+        participant.sharedView = sharedView;
+      }
+
+      // Notify other participants
+      await prisma.auditLog.create({
+        data: {
+          action: 'vr_session.screen_sharing_enabled',
+          details: JSON.stringify({ sessionId, userId }),
+          userId,
+          organizationId: session.organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+    } catch (error) {
+      logger.error('[VR Review] Error enabling screen sharing', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Disable screen sharing
+   */
+  async disableScreenSharing(sessionId: string, userId: string): Promise<void> {
+    try {
+      const participantMap = this.sessionParticipants.get(sessionId);
+      const participant = participantMap?.get(userId);
+
+      if (participant) {
+        participant.screenSharing = false;
+        participant.sharedView = undefined;
+      }
+    } catch (error) {
+      logger.error('[VR Review] Error disabling screen sharing', error);
+    }
+  }
+
+  /**
+   * Enable follow mode
+   */
+  async enableFollowMode(
+    sessionId: string,
+    followerId: string,
+    targetUserId: string
+  ): Promise<void> {
+    try {
+      const participantMap = this.sessionParticipants.get(sessionId);
+      if (!participantMap) {
+        throw new Error('Session not found');
+      }
+
+      const follower = participantMap.get(followerId);
+      const target = participantMap.get(targetUserId);
+
+      if (!follower || !target) {
+        throw new Error('Participant not found');
+      }
+
+      follower.isFollowing = targetUserId;
+      if (!target.isBeingFollowed) {
+        target.isBeingFollowed = [];
+      }
+      target.isBeingFollowed.push(followerId);
+    } catch (error) {
+      logger.error('[VR Review] Error enabling follow mode', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Disable follow mode
+   */
+  async disableFollowMode(sessionId: string, followerId: string): Promise<void> {
+    try {
+      const participantMap = this.sessionParticipants.get(sessionId);
+      if (!participantMap) {
+        return;
+      }
+
+      const follower = participantMap.get(followerId);
+      if (follower?.isFollowing) {
+        const target = participantMap.get(follower.isFollowing);
+        if (target?.isBeingFollowed) {
+          target.isBeingFollowed = target.isBeingFollowed.filter(id => id !== followerId);
+        }
+        follower.isFollowing = undefined;
+      }
+    } catch (error) {
+      logger.error('[VR Review] Error disabling follow mode', error);
+    }
+  }
+
+  /**
+   * Enable presenter mode
+   */
+  async enablePresenterMode(
+    sessionId: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      if (session.hostUserId !== userId) {
+        throw new Error('Only the host can enable presenter mode');
+      }
+
+      // Set user as presenter
+      const participantMap = this.sessionParticipants.get(sessionId);
+      session.participants.forEach(p => {
+        if (p.role === 'presenter') {
+          p.role = 'reviewer';
+        }
+      });
+
+      const presenter = participantMap?.get(userId);
+      if (presenter) {
+        presenter.role = 'presenter';
+      }
+    } catch (error) {
+      logger.error('[VR Review] Error enabling presenter mode', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update environment with real-time data
+   */
+  async updateEnvironment(
+    sessionId: string,
+    organizationId: string
+  ): Promise<VREnvironment> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      // Reload compliance data
+      const complianceData = await this.loadComplianceDataForVR(
+        organizationId,
+        undefined,
+        undefined
+      );
+
+      // Regenerate environment with updated data
+      const updatedEnvironment = await this.generateVREnvironment(
+        session.environment.template,
+        complianceData
+      );
+
+      // Preserve theme and custom settings
+      updatedEnvironment.theme = session.environment.theme;
+      updatedEnvironment.customSettings = session.environment.customSettings;
+
+      // Update performance metrics
+      updatedEnvironment.performanceMetrics = {
+        fps: 60 + Math.random() * 10,
+        renderTime: 16 + Math.random() * 4,
+        lastUpdated: new Date(),
+      };
+
+      session.environment = updatedEnvironment;
+      session.complianceData = complianceData;
+      session.updatedAt = new Date();
+
+      return updatedEnvironment;
+    } catch (error) {
+      logger.error('[VR Review] Error updating environment', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Set environment theme
+   */
+  async setEnvironmentTheme(
+    sessionId: string,
+    theme: VREnvironment['theme']
+  ): Promise<void> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      session.environment.theme = theme;
+      session.updatedAt = new Date();
+    } catch (error) {
+      logger.error('[VR Review] Error setting environment theme', error);
+      throw error;
+    }
+  }
+
   private async generateVREnvironment(
     template: VREnvironment['template'],
     complianceData: VRComplianceData
@@ -979,7 +2012,110 @@ class VRCollaborativeReviewService {
       },
     });
 
+    // Generate relationship mappings
+    baseEnvironment.relationshipMappings = this.generateRelationshipMappings(complianceData);
+
+    // Generate framework clusters
+    baseEnvironment.frameworkClusters = this.generateFrameworkClusters(complianceData);
+
+    // Set performance metrics
+    baseEnvironment.performanceMetrics = {
+      fps: 60 + Math.random() * 10, // 60+ FPS
+      renderTime: 16 + Math.random() * 4, // ~16ms
+      lastUpdated: new Date(),
+    };
+
     return baseEnvironment;
+  }
+
+  /**
+   * Generate relationship mappings for 3D visualization
+   */
+  private generateRelationshipMappings(
+    complianceData: VRComplianceData
+  ): RelationshipMapping[] {
+    const mappings: RelationshipMapping[] = [];
+
+    // Map controls to frameworks
+    complianceData.controls.forEach(control => {
+      const framework = complianceData.frameworks.find(f => f.frameworkId === control.parentFramework);
+      if (framework) {
+        mappings.push({
+          fromId: framework.frameworkId,
+          toId: control.controlId,
+          relationshipType: 'implements',
+          lineColor: '#3b82f6',
+          lineWidth: 2,
+          position: [
+            framework.position,
+            control.position,
+          ],
+        });
+      }
+    });
+
+    // Map risks to controls (if mitigates)
+    complianceData.risks.forEach(risk => {
+      if (risk.connections && risk.connections.length > 0) {
+        risk.connections.forEach(controlId => {
+          const control = complianceData.controls.find(c => c.controlId === controlId);
+          if (control) {
+            mappings.push({
+              fromId: risk.riskId,
+              toId: control.controlId,
+              relationshipType: 'mitigates',
+              lineColor: '#ef4444',
+              lineWidth: 1.5,
+              position: [
+                risk.position,
+                control.position,
+              ],
+            });
+          }
+        });
+      }
+    });
+
+    return mappings;
+  }
+
+  /**
+   * Generate framework clusters
+   */
+  private generateFrameworkClusters(
+    complianceData: VRComplianceData
+  ): FrameworkCluster[] {
+    const clusters: FrameworkCluster[] = [];
+
+    // Group frameworks by compliance score ranges
+    const scoreRanges = [
+      { min: 80, max: 100, color: '#22c55e' },
+      { min: 60, max: 79, color: '#f59e0b' },
+      { min: 0, max: 59, color: '#ef4444' },
+    ];
+
+    scoreRanges.forEach(range => {
+      const frameworksInRange = complianceData.frameworks.filter(
+        f => f.complianceScore >= range.min && f.complianceScore <= range.max
+      );
+
+      if (frameworksInRange.length > 0) {
+        // Calculate center position
+        const centerX = frameworksInRange.reduce((sum, f) => sum + f.position.x, 0) / frameworksInRange.length;
+        const centerY = frameworksInRange.reduce((sum, f) => sum + f.position.y, 0) / frameworksInRange.length;
+        const centerZ = frameworksInRange.reduce((sum, f) => sum + f.position.z, 0) / frameworksInRange.length;
+
+        clusters.push({
+          clusterId: `cluster_${range.min}_${range.max}`,
+          frameworkIds: frameworksInRange.map(f => f.frameworkId),
+          centerPosition: { x: centerX, y: centerY, z: centerZ },
+          radius: Math.max(2, frameworksInRange.length * 0.5),
+          color: range.color,
+        });
+      }
+    });
+
+    return clusters;
   }
 
   private getDefaultAvatarConfig(): AvatarConfig {

@@ -396,6 +396,37 @@ class MLModelsService {
   }
 
   /**
+   * Detect human liveness in media
+   */
+  async detectLiveness(
+    mediaBuffer: Buffer,
+    mediaType: 'image' | 'video'
+  ): Promise<{ detected: boolean; confidence: number }> {
+    await this.initialize();
+
+    try {
+      // In production, would use liveness detection models
+      // For now, simulate based on file characteristics
+      const hasContent = mediaBuffer.length > 1000;
+      
+      // Simulate liveness detection
+      const detected = hasContent;
+      const confidence = hasContent ? 0.7 : 0.3;
+
+      return {
+        detected,
+        confidence,
+      };
+    } catch (error) {
+      logger.error('[ML Models] Error detecting liveness', error);
+      return {
+        detected: false,
+        confidence: 0.0,
+      };
+    }
+  }
+
+  /**
    * Extract features from media for deepfake detection
    */
   private extractMediaFeatures(
