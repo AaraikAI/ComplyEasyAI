@@ -20,7 +20,13 @@ router.post('/goals/:goalId/restore', authorize('admin', 'editor'), asyncHandler
 
 // Control Loops
 router.post('/control-loops', authorize('admin', 'editor'), asyncHandler(acosController.createControlLoop));
+router.get('/control-loops/:loopId', asyncHandler(acosController.getControlLoop));
+router.get('/control-loops/:loopId/history', asyncHandler(acosController.getControlLoopHistory));
 router.post('/control-loops/:loopId/execute', authorize('admin', 'editor'), asyncHandler(acosController.executeControlLoop));
+router.post('/control-loops/:loopId/pause', authorize('admin', 'editor'), asyncHandler(acosController.pauseControlLoop));
+router.post('/control-loops/:loopId/resume', authorize('admin', 'editor'), asyncHandler(acosController.resumeControlLoop));
+router.patch('/control-loops/:loopId', authorize('admin', 'editor'), asyncHandler(acosController.updateControlLoop));
+router.delete('/control-loops/:loopId', authorize('admin', 'editor'), asyncHandler(acosController.deleteControlLoop));
 
 // Agentic AI
 router.post('/agentic/estimate-blast-radius', authorize('admin', 'editor'), asyncHandler(acosController.estimateBlastRadius));
@@ -191,6 +197,14 @@ router.get('/compliance-debts/export', authorize('admin', 'editor'), asyncHandle
 router.get('/change-impacts', asyncHandler(acosController.getChangeImpacts));
 router.post('/change-impacts/forecast', authorize('admin', 'editor'), asyncHandler(acosController.forecastChangeImpact));
 router.post('/change-impacts/:impactId/resolve', authorize('admin', 'editor'), asyncHandler(acosController.resolveChangeImpact));
+
+// NeuroSymbolic AI
+router.post('/neuro-symbolic/hybrid-reasoning', authorize('admin', 'editor'), asyncHandler(acosController.performHybridReasoning));
+router.post('/neuro-symbolic/infer-rules', authorize('admin', 'editor'), asyncHandler(acosController.inferRulesFromPatterns));
+router.post('/neuro-symbolic/causal-reasoning', authorize('admin', 'editor'), asyncHandler(acosController.performCausalReasoning));
+router.post('/neuro-symbolic/explainable-decision', authorize('admin', 'editor'), asyncHandler(acosController.generateExplainableDecision));
+router.get('/neuro-symbolic/reasoning-history', asyncHandler(acosController.getReasoningHistory));
+router.post('/neuro-symbolic/inferences/:inferenceId/validate', authorize('admin', 'editor'), asyncHandler(acosController.validateInferredRule));
 
 export default router;
 

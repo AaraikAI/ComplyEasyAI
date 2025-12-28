@@ -6,7 +6,11 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
 // Mock Google APIs
-const mockOAuth2Client = jest.fn();
+const mockOAuth2Client = jest.fn().mockImplementation(() => ({
+  generateAuthUrl: jest.fn().mockReturnValue('https://accounts.google.com/o/oauth2/auth?state=test-state'),
+  getToken: jest.fn(),
+  setCredentials: jest.fn(),
+}));
 const mockListProjects = jest.fn();
 
 jest.mock('googleapis', () => ({
@@ -22,7 +26,7 @@ jest.mock('googleapis', () => ({
   },
 }));
 
-jest.mock('../../../config/logger', () => ({
+jest.mock('../../../../config/logger', () => ({
   __esModule: true,
   default: {
     info: jest.fn(),
@@ -30,7 +34,7 @@ jest.mock('../../../config/logger', () => ({
   },
 }));
 
-jest.mock('../../../config/database', () => ({
+jest.mock('../../../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
 }));

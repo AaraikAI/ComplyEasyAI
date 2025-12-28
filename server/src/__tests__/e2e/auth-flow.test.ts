@@ -11,6 +11,7 @@ import { prismaMock } from '../mocks/prisma';
 jest.mock('../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
+  testConnection: jest.fn().mockResolvedValue(true),
 }));
 
 jest.mock('../../config/logger', () => ({

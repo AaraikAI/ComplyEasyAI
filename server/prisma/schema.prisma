@@ -288,6 +288,7 @@ model FrameworkControl {
   mappedControls Json?
   framework      ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
   controlLoops   ControlLoop[]
+  complianceDebts ComplianceDebt[] @relation("ComplianceDebtControl")
 
   @@index([frameworkId])
 }
@@ -757,14 +758,41 @@ model ControlLoop {
   lastActed    DateTime @default(now())
   lastVerified DateTime @default(now())
   cycleCount   Int      @default(0)
+  triggerType   String?  @default("manual")
+  triggerConfig Json?
+  timeoutSeconds Int?    @default(300)
+  parentLoopId  String?
+  configuration Json?
+  lastError      String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   control      FrameworkControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  history      ControlLoopHistory[]
 
   @@index([organizationId])
   @@index([controlId])
   @@index([status])
+  @@index([triggerType])
+  @@index([parentLoopId])
+}
+
+model ControlLoopHistory {
+  id            String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  loopId        String
+  organizationId String
+  executionPhase String
+  phaseResult   Json
+  durationMs    Int
+  success       Boolean  @default(true)
+  error         String?
+  timestamp     DateTime @default(now())
+  loop          ControlLoop @relation(fields: [loopId], references: [id], onDelete: Cascade)
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([loopId])
+  @@index([organizationId])
+  @@index([timestamp])
 }
 
 model ComplianceDebt {
@@ -783,7 +811,7 @@ model ComplianceDebt {
   updatedAt               DateTime  @updatedAt
   organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   framework               ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  control                 FrameworkControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
+  control                 FrameworkControl? @relation("ComplianceDebtControl", fields: [controlId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([frameworkId])

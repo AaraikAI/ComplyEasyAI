@@ -44,7 +44,9 @@ interface UploadResult {
 class S3Service {
   private readonly ALLOWED_MIME_TYPES = [
     'application/pdf',
+    'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'image/jpeg',
     'image/png',
@@ -52,12 +54,31 @@ class S3Service {
     'text/plain',
     'text/csv',
     'application/json',
+    'audio/mpeg',
+    'audio/mp3',
+    'audio/wav',
+    'audio/x-m4a',
+    'video/mp4',
+    'video/quicktime',
+    'video/x-msvideo',
+    'video/x-matroska',
   ];
 
-  private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  private readonly MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
   async uploadFile(options: UploadOptions): Promise<UploadResult> {
     try {
+      // Validate AWS configuration
+      if (!config.aws.s3Bucket) {
+        logger.error('S3 bucket not configured');
+        throw new Error('File storage is not configured. Please contact your administrator.');
+      }
+
+      if (!config.aws.accessKeyId || !config.aws.secretAccessKey) {
+        logger.error('AWS credentials not configured');
+        throw new Error('File storage credentials are not configured. Please contact your administrator.');
+      }
+
       // Validate file
       this.validateFile(options.file);
 
@@ -65,6 +86,8 @@ class S3Service {
       const filename = `${uuidv4()}.${fileExtension}`;
       const folder = options.folder || 'uploads';
       const s3Key = `${options.organizationId}/${folder}/${filename}`;
+
+      logger.info(`Uploading file to S3: bucket=${config.aws.s3Bucket}, key=${s3Key}`);
 
       // Upload to S3
       const uploadParams: AWS.S3.PutObjectRequest = {
@@ -110,9 +133,27 @@ class S3Service {
         size: fileRecord.size,
         mimeType: fileRecord.mimeType,
       };
-    } catch (error) {
-      logger.error('File upload failed', error);
-      throw new Error('Failed to upload file');
+    } catch (error: any) {
+      logger.error('File upload failed', { error: error.message, stack: error.stack });
+      
+      // Provide more specific error messages
+      if (error.message && error.message.includes('not configured')) {
+        throw error; // Re-throw configuration errors as-is
+      }
+      
+      if (error.code === 'NoSuchBucket') {
+        throw new Error(`S3 bucket "${config.aws.s3Bucket}" does not exist. Please contact your administrator.`);
+      }
+      
+      if (error.code === 'InvalidAccessKeyId' || error.code === 'SignatureDoesNotMatch') {
+        throw new Error('Invalid AWS credentials. Please contact your administrator.');
+      }
+      
+      if (error.message) {
+        throw new Error(`Upload failed: ${error.message}`);
+      }
+      
+      throw new Error('Failed to upload file. Please try again or contact support.');
     }
   }
 
@@ -200,12 +241,13 @@ class S3Service {
   private validateFile(file: MulterFile): void {
     // Check file size
     if (file.size > this.MAX_FILE_SIZE) {
-      throw new Error(`File size exceeds maximum allowed size of ${this.MAX_FILE_SIZE / 1024 / 1024}MB`);
+      const maxSizeMB = this.MAX_FILE_SIZE / 1024 / 1024;
+      throw new Error(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size of ${maxSizeMB}MB`);
     }
 
     // Check MIME type
     if (!this.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      throw new Error('File type not allowed');
+      throw new Error(`File type "${file.mimetype}" is not allowed. Allowed types: PDF, Word, Excel, Images, Text, CSV, JSON, Audio, Video`);
     }
 
     // Check for malicious file extensions
@@ -214,7 +256,7 @@ class S3Service {
 
     for (const ext of dangerousExtensions) {
       if (filename.endsWith(ext)) {
-        throw new Error('Potentially dangerous file type');
+        throw new Error(`Potentially dangerous file type: ${ext}. Executable files are not allowed.`);
       }
     }
   }

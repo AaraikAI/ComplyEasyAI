@@ -29,7 +29,7 @@ jest.mock('../../../config/database', () => ({
   default: prismaMock,
 }));
 
-jest.mock('../../middleware/auth', () => ({
+jest.mock('../../../middleware/auth', () => ({
   generateToken: jest.fn().mockReturnValue('access-token'),
   generateRefreshToken: jest.fn().mockReturnValue('refresh-token'),
   verifyRefreshToken: jest.fn().mockReturnValue({ userId: 'user-123' }),
@@ -254,7 +254,7 @@ describe('AuthController', () => {
     it('should reject invalid refresh token', async () => {
       mockRequest.body = { refreshToken: 'invalid-token' };
 
-      const { verifyRefreshToken } = require('../../middleware/auth');
+      const { verifyRefreshToken } = require('../../../middleware/auth');
       verifyRefreshToken.mockReturnValue(null);
 
       await expect(

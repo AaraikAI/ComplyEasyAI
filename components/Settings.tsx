@@ -62,6 +62,46 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
 
   // Check for payment success in URL
   useEffect(() => {
+    // Check if there's a tab to navigate to from chatbot
+    const checkTab = () => {
+      const settingsTab = sessionStorage.getItem('settingsActiveTab');
+      if (settingsTab && ['profile', 'security', 'organization', 'team', 'integrations', 'billing'].includes(settingsTab)) {
+        setActiveTab(settingsTab as any);
+        sessionStorage.removeItem('settingsActiveTab'); // Clear after use
+      }
+    };
+    
+    // Check immediately
+    checkTab();
+    
+    // Also check after a short delay to handle navigation timing
+    const timeoutId = setTimeout(checkTab, 100);
+    
+    // Listen for custom event from chatbot
+    const handleTabChange = (event: CustomEvent) => {
+      const tab = event.detail?.tab;
+      if (tab && ['profile', 'security', 'organization', 'team', 'integrations', 'billing'].includes(tab)) {
+        setActiveTab(tab as any);
+        sessionStorage.removeItem('settingsActiveTab');
+      }
+    };
+    
+    // Listen for storage events (in case navigation happens in same tab)
+    const handleStorageChange = () => {
+      checkTab();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('settingsTabChange', handleTabChange as EventListener);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('settingsTabChange', handleTabChange as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
       setShowPaymentSuccess(true);

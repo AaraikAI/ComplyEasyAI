@@ -51,12 +51,18 @@ describe('Gemini AI Service', () => {
   });
 
   it('generateComplianceReport handles API failure gracefully', async () => {
+    // Set auth token first
+    localStorage.setItem('authToken', 'test-token');
+    
     // Mock API failure
     const { api } = await import('../api');
     vi.mocked(api.ai.generateReport).mockRejectedValueOnce(new Error('API Error'));
     
     const result = await generateComplianceReport('SOC2', 'Acme', 'Context');
     expect(result).toBe('An error occurred while generating the report.');
+    
+    // Cleanup
+    localStorage.removeItem('authToken');
   });
 
   it('prioritizeRisks parses JSON response correctly', async () => {

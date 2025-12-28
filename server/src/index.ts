@@ -194,14 +194,16 @@ const httpServer = createServer(app);
 // Initialize WebSocket
 websocketService.initialize(httpServer);
 
-// Test database connection before starting server
-testConnection().then((connected) => {
-  if (!connected) {
-    logger.warn('⚠️  Starting server without database connection - some features may not work');
-  }
-}).catch((error) => {
-  logger.warn('⚠️  Database connection test failed:', error.message);
-});
+// Test database connection before starting server (skip in test environment)
+if (process.env.NODE_ENV !== 'test') {
+  testConnection().then((connected) => {
+    if (!connected) {
+      logger.warn('⚠️  Starting server without database connection - some features may not work');
+    }
+  }).catch((error) => {
+    logger.warn('⚠️  Database connection test failed:', error.message);
+  });
+}
 
 // Initialize MQTT connection (optional)
 if (config.mqtt.brokerUrl && config.mqtt.brokerUrl !== 'mqtt://localhost:1883') {

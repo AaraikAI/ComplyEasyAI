@@ -773,6 +773,14 @@ export const api = {
     registerDevice: async (data: any) => fetchAPI('/acos/physical-ai/register-device', { method: 'POST', body: JSON.stringify(data) }),
     getDevices: async () => fetchAPI('/acos/physical-ai/devices'),
     performEdgeComplianceCheck: async (deviceId: string) => fetchAPI(`/acos/physical-ai/devices/${deviceId}/compliance-check`, { method: 'POST' }),
+
+    // NeuroSymbolic AI
+    performHybridReasoning: async (query: string, context?: any) => fetchAPI('/acos/neuro-symbolic/hybrid-reasoning', { method: 'POST', body: JSON.stringify({ query, context }) }),
+    inferRulesFromPatterns: async (patterns: any[]) => fetchAPI('/acos/neuro-symbolic/infer-rules', { method: 'POST', body: JSON.stringify({ patterns }) }),
+    performCausalReasoning: async (violation: any) => fetchAPI('/acos/neuro-symbolic/causal-reasoning', { method: 'POST', body: JSON.stringify({ violation }) }),
+    generateExplainableDecision: async (decision: any) => fetchAPI('/acos/neuro-symbolic/explainable-decision', { method: 'POST', body: JSON.stringify({ decision }) }),
+    getReasoningHistory: async (limit?: number) => fetchAPI(`/acos/neuro-symbolic/reasoning-history${limit ? `?limit=${limit}` : ''}`),
+    validateInferredRule: async (inferenceId: string, validated: boolean) => fetchAPI(`/acos/neuro-symbolic/inferences/${inferenceId}/validate`, { method: 'POST', body: JSON.stringify({ validated }) }),
   },
 };
 

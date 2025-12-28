@@ -30,6 +30,19 @@ jest.mock('qrcode', () => ({
   },
 }));
 
+// Mock bcryptjs
+const mockBcryptCompare = jest.fn();
+const mockBcryptHash = jest.fn();
+jest.mock('bcryptjs', () => ({
+  __esModule: true,
+  default: {
+    compare: mockBcryptCompare,
+    hash: mockBcryptHash,
+  },
+  compare: mockBcryptCompare,
+  hash: mockBcryptHash,
+}));
+
 jest.mock('../../../config/logger', () => ({
   __esModule: true,
   default: {
@@ -180,33 +193,59 @@ describe('TwoFactorService', () => {
       const userId = 'user-123';
       const token = '123456';
 
+      mockTotpVerify.mockReturnValue(true);
       prismaMock.user.findUnique.mockResolvedValue({
         id: userId,
-        twoFactorSecret: 'encrypted-secret',
+        twoFactorSecret: '0000000000000000:encrypted',
         twoFactorEnabled: true,
+        twoFactorVerified: true,
       } as any);
 
-      const result = await twoFactorService.verifyToken(userId, token);
+      // Mock crypto for decryptSecret
+      const crypto = require('crypto');
+      const originalScryptSync = crypto.scryptSync;
+      const originalCreateDecipheriv = crypto.createDecipheriv;
+      crypto.scryptSync = jest.fn().mockReturnValue(Buffer.alloc(32, 0));
+      const mockDecipher = {
+        update: jest.fn().mockReturnValue(Buffer.from('MYSECRETBASE32')),
+        final: jest.fn().mockReturnValue(Buffer.alloc(0)),
+      };
+      crypto.createDecipheriv = jest.fn().mockReturnValue(mockDecipher);
 
-      expect(result).toBe(true);
-      expect(mockTotpVerify).toHaveBeenCalled();
+      try {
+        const result = await twoFactorService.verifyToken(userId, token);
+        expect(result).toBe(true);
+        expect(mockTotpVerify).toHaveBeenCalled();
+      } finally {
+        crypto.scryptSync = originalScryptSync;
+        crypto.createDecipheriv = originalCreateDecipheriv;
+      }
     });
 
     it('should verify backup code', async () => {
       const userId = 'user-123';
       const backupCode = 'BACKUP123';
 
+      // Mock verifyTwoFactorToken to return false (so it tries backup code)
+      mockTotpVerify.mockReturnValue(false);
       prismaMock.user.findUnique.mockResolvedValue({
         id: userId,
+        twoFactorSecret: 'encrypted-secret',
         twoFactorEnabled: true,
       } as any);
-
-      prismaMock.twoFactorBackupCode.findFirst.mockResolvedValue({
-        id: 'code-123',
-        code: 'hashed-code',
-        used: false,
-      } as any);
-
+      
+      // Mock verifyBackupCode - uses findMany, not findFirst
+      prismaMock.twoFactorBackupCode.findMany.mockResolvedValue([
+        {
+          id: 'code-123',
+          code: 'hashed-code',
+          used: false,
+        } as any,
+      ]);
+      
+      // Mock bcrypt.compare
+      mockBcryptCompare.mockResolvedValue(true);
+      
       prismaMock.twoFactorBackupCode.update.mockResolvedValue({} as any);
 
       const result = await twoFactorService.verifyToken(userId, backupCode);
@@ -222,7 +261,8 @@ describe('TwoFactorService', () => {
       } as any);
 
       mockTotpVerify.mockReturnValue(false);
-      prismaMock.twoFactorBackupCode.findFirst.mockResolvedValue(null);
+      // Mock verifyBackupCode to return empty array (no matching codes)
+      prismaMock.twoFactorBackupCode.findMany.mockResolvedValue([]);
 
       const result = await twoFactorService.verifyToken('user-123', 'invalid');
 
@@ -233,6 +273,16 @@ describe('TwoFactorService', () => {
   describe('disableTwoFactor()', () => {
     it('should disable 2FA for user', async () => {
       const userId = 'user-123';
+      const token = '123456';
+
+      // Mock verifyTwoFactorToken to return true
+      mockTotpVerify.mockReturnValue(true);
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: userId,
+        twoFactorSecret: '0000000000000000:encrypted',
+        twoFactorEnabled: true,
+        twoFactorVerified: true,
+      } as any);
 
       prismaMock.user.update.mockResolvedValue({
         id: userId,
@@ -242,17 +292,35 @@ describe('TwoFactorService', () => {
 
       prismaMock.twoFactorBackupCode.deleteMany.mockResolvedValue({ count: 8 } as any);
 
-      await twoFactorService.disableTwoFactor(userId);
+      // Mock crypto for decryptSecret
+      const crypto = require('crypto');
+      const originalScryptSync = crypto.scryptSync;
+      const originalCreateDecipheriv = crypto.createDecipheriv;
+      crypto.scryptSync = jest.fn().mockReturnValue(Buffer.alloc(32, 0));
+      const mockDecipher = {
+        update: jest.fn().mockReturnValue(Buffer.from('MYSECRETBASE32')),
+        final: jest.fn().mockReturnValue(Buffer.alloc(0)),
+      };
+      crypto.createDecipheriv = jest.fn().mockReturnValue(mockDecipher);
 
-      expect(prismaMock.user.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            twoFactorEnabled: false,
-            twoFactorSecret: null,
-          }),
-        })
-      );
-      expect(prismaMock.twoFactorBackupCode.deleteMany).toHaveBeenCalled();
+      try {
+        const result = await twoFactorService.disableTwoFactor(userId, token);
+
+        expect(result).toBe(true);
+        expect(prismaMock.user.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({ id: userId }),
+            data: expect.objectContaining({
+              twoFactorEnabled: false,
+              twoFactorSecret: null,
+            }),
+          })
+        );
+        expect(prismaMock.twoFactorBackupCode.deleteMany).toHaveBeenCalled();
+      } finally {
+        crypto.scryptSync = originalScryptSync;
+        crypto.createDecipheriv = originalCreateDecipheriv;
+      }
     });
   });
 

@@ -102,7 +102,7 @@ describe('VendorRiskService', () => {
       expect(result.assessmentType).toBe('Security');
       expect(AuditLogger.log).toHaveBeenCalledWith(
         expect.objectContaining({
-          action: 'vendor.assessment_created',
+          action: 'vendor.assessment.created',
         })
       );
     });

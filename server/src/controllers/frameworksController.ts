@@ -330,12 +330,15 @@ class FrameworksController {
       const { frameworkId, controlId } = req.params;
       const organizationId = authReq.user!.organizationId;
 
+      logger.info(`Upload evidence request: frameworkId=${frameworkId}, controlId=${controlId}, organizationId=${organizationId}`);
+
       // Verify framework belongs to organization
       const framework = await prisma.complianceFramework.findFirst({
         where: { id: frameworkId, organizationId },
       });
 
       if (!framework) {
+        logger.warn(`Framework not found: ${frameworkId} for organization ${organizationId}`);
         throw new AppError('Framework not found', 404);
       }
 
@@ -344,53 +347,73 @@ class FrameworksController {
       });
 
       if (!control) {
+        logger.warn(`Control not found: ${controlId} for framework ${frameworkId}`);
         throw new AppError('Control not found', 404);
       }
 
       // File should be in req.file (from multer middleware)
       const file = (req as any).file;
       if (!file) {
-        throw new AppError('No file uploaded', 400);
+        logger.warn('No file uploaded in request');
+        throw new AppError('No file uploaded. Please select a file to upload.', 400);
       }
 
+      logger.info(`File received: ${file.originalname}, size: ${file.size}, type: ${file.mimetype}`);
+
       // Upload to S3
-      const s3Service = (await import('../services/s3Service')).default;
-      const uploadResult = await s3Service.uploadFile({
-        file,
-        userId: authReq.user!.id,
-        organizationId,
-        folder: `frameworks/${frameworkId}/controls/${controlId}`,
-      });
-
-      // Update control with evidence
-      const updatedControl = await prisma.frameworkControl.update({
-        where: { id: controlId },
-        data: {
-          evidence: uploadResult.url,
-        },
-      });
-
-      await prisma.auditLog.create({
-        data: {
-          action: `Evidence uploaded for control: ${control.name} (${framework.name})`,
+      let uploadResult;
+      try {
+        const s3Service = (await import('../services/s3Service')).default;
+        uploadResult = await s3Service.uploadFile({
+          file,
           userId: authReq.user!.id,
           organizationId,
-          hash: uuidv4(),
-        },
-      });
+          folder: `frameworks/${frameworkId}/controls/${controlId}`,
+        });
+        logger.info(`File uploaded to S3: ${uploadResult.url}`);
+      } catch (s3Error: any) {
+        logger.error('S3 upload error', s3Error);
+        const errorMessage = s3Error.message || 'Failed to upload file to storage';
+        throw new AppError(`File storage error: ${errorMessage}. Please check your storage configuration.`, 500);
+      }
 
-      res.json({
-        control: updatedControl,
-        file: {
-          id: uploadResult.id,
-          url: uploadResult.url,
-          filename: uploadResult.filename,
-        },
-      });
+      // Update control with evidence
+      try {
+        const updatedControl = await prisma.frameworkControl.update({
+          where: { id: controlId },
+          data: {
+            evidence: uploadResult.url,
+          },
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            action: `Evidence uploaded for control: ${control.name} (${framework.name})`,
+            userId: authReq.user!.id,
+            organizationId,
+            hash: uuidv4(),
+          },
+        });
+
+        logger.info(`Evidence updated for control: ${controlId}`);
+
+        res.json({
+          control: updatedControl,
+          file: {
+            id: uploadResult.id,
+            url: uploadResult.url,
+            filename: uploadResult.filename,
+          },
+        });
+      } catch (dbError: any) {
+        logger.error('Database update error', dbError);
+        throw new AppError(`Failed to update control with evidence: ${dbError.message}`, 500);
+      }
     } catch (error) {
       logger.error('Upload evidence error', error);
       if (error instanceof AppError) throw error;
-      throw new AppError('Failed to upload evidence', 500);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new AppError(`Failed to upload evidence: ${errorMessage}`, 500);
     }
   };
 

@@ -285,6 +285,26 @@ class TwoFactorService {
   }
 
   /**
+   * Verify token (wrapper that tries both TOTP and backup code)
+   */
+  async verifyToken(userId: string, token: string): Promise<boolean> {
+    try {
+      // Try TOTP token first
+      const totpVerified = await this.verifyTwoFactorToken(userId, token);
+      if (totpVerified) {
+        return true;
+      }
+
+      // Try backup code
+      const backupVerified = await this.verifyBackupCode(userId, token);
+      return backupVerified;
+    } catch (error) {
+      logger.error('Error verifying token', error);
+      return false;
+    }
+  }
+
+  /**
    * Check if user has 2FA enabled
    */
   async isTwoFactorEnabled(userId: string): Promise<boolean> {

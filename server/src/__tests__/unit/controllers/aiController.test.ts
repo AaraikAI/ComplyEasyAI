@@ -15,7 +15,6 @@ const mockGeneratePhishingSimulation = jest.fn();
 const mockScoreVendorRisk = jest.fn();
 const mockGenerateDataMap = jest.fn();
 const mockGenerateBCP = jest.fn();
-const mockChatWithBot = jest.fn();
 
 jest.mock('../../../services/geminiService', () => ({
   __esModule: true,
@@ -29,7 +28,16 @@ jest.mock('../../../services/geminiService', () => ({
     scoreVendorRisk: mockScoreVendorRisk,
     generateDataMap: mockGenerateDataMap,
     generateBCP: mockGenerateBCP,
-    chatWithBot: mockChatWithBot,
+  },
+}));
+
+// Mock Secure Chat Service
+const mockChatWithUser = jest.fn();
+
+jest.mock('../../../services/secureChatService', () => ({
+  __esModule: true,
+  default: {
+    chatWithUser: mockChatWithUser,
   },
 }));
 
@@ -166,11 +174,15 @@ describe('AIController', () => {
         message: 'What is SOC 2?',
       };
 
-      mockChatWithBot.mockResolvedValue('SOC 2 is a compliance framework...');
+      mockChatWithUser.mockResolvedValue({
+        response: 'SOC 2 is a compliance framework...',
+        sources: [],
+        encrypted: true,
+      });
 
       await aiController.chat(mockRequest as Request, mockResponse as Response);
 
-      expect(mockChatWithBot).toHaveBeenCalledWith('What is SOC 2?', 'user-123');
+      expect(mockChatWithUser).toHaveBeenCalledWith('What is SOC 2?', 'user-123', 'org-123');
       expect(mockResponse.json).toHaveBeenCalled();
     });
   });

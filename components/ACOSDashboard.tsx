@@ -18,7 +18,13 @@ import {
   CheckCircle,
   Clock,
   BarChart3,
-  Target
+  Target,
+  Pause,
+  Play,
+  History,
+  Trash2,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -53,7 +59,7 @@ interface EarlyWarning {
 
 const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) => void }> = ({ onBack, onNavigate }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot' | 'neuroSymbolic'>('overview');
   const [goals, setGoals] = useState<ComplianceGoal[]>([]);
   const [loops, setLoops] = useState<ControlLoop[]>([]);
   const [warnings, setWarnings] = useState<EarlyWarning[]>([]);
@@ -64,6 +70,44 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
 
   useEffect(() => {
     loadData();
+    
+    // Check if there's a tab to navigate to from chatbot
+    const checkTab = () => {
+      const acosTab = sessionStorage.getItem('acosActiveTab');
+      if (acosTab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic'].includes(acosTab)) {
+        setActiveTab(acosTab as any);
+        sessionStorage.removeItem('acosActiveTab'); // Clear after use
+      }
+    };
+    
+    // Check immediately
+    checkTab();
+    
+    // Also check after a short delay to handle navigation timing
+    const timeoutId = setTimeout(checkTab, 100);
+    
+    // Listen for custom event from chatbot
+    const handleTabChange = (event: CustomEvent) => {
+      const tab = event.detail?.tab;
+      if (tab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic'].includes(tab)) {
+        setActiveTab(tab as any);
+        sessionStorage.removeItem('acosActiveTab');
+      }
+    };
+    
+    // Listen for storage events (in case navigation happens in same tab)
+    const handleStorageChange = () => {
+      checkTab();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('acosTabChange', handleTabChange as EventListener);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('acosTabChange', handleTabChange as EventListener);
+    };
   }, []);
 
   const loadData = async () => {
@@ -92,6 +136,34 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
   const handleEditGoal = (goal: any) => {
     setEditingGoal(goal);
     setShowGoalModal(true);
+  };
+
+  const [deletingGoal, setDeletingGoal] = useState<string | null>(null);
+
+  const handleDeleteGoal = async (goalId: string) => {
+    if (!confirm('Are you sure you want to delete this goal?')) {
+      return;
+    }
+    setDeletingGoal(goalId);
+    try {
+      await api.acos.deleteGoal(goalId);
+      await loadData();
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      alert('Failed to delete goal');
+    } finally {
+      setDeletingGoal(null);
+    }
+  };
+
+  const handleRestoreGoal = async (goalId: string) => {
+    try {
+      await api.acos.restoreGoal(goalId);
+      await loadData();
+    } catch (error) {
+      console.error('Error restoring goal:', error);
+      alert('Failed to restore goal');
+    }
   };
 
   const handleGoalSuccess = async () => {
@@ -125,6 +197,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
             { id: 'redteam', label: 'Red Team', icon: Shield },
             { id: 'swarm', label: 'Swarm', icon: Brain },
             { id: 'iot', label: 'IoT Devices', icon: Cpu },
+            { id: 'neuroSymbolic', label: 'NeuroSymbolic AI', icon: Sparkles },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -259,6 +332,9 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
             goals={goals} 
             onCreateGoal={handleCreateGoal}
             onEditGoal={handleEditGoal}
+            onDeleteGoal={handleDeleteGoal}
+            onRestoreGoal={handleRestoreGoal}
+            deletingGoal={deletingGoal}
             filters={goalFilters}
             onFiltersChange={setGoalFilters}
             onRefresh={async () => {
@@ -315,13 +391,27 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
         {activeTab === 'iot' && (
           <IoTTab />
         )}
+
+        {activeTab === 'neuroSymbolic' && (
+          <NeuroSymbolicTab />
+        )}
       </div>
     </div>
   );
 };
 
 // Sub-components
-const GoalsTab: React.FC<{ goals: ComplianceGoal[]; onCreateGoal: () => void; onRefresh: () => void }> = ({ goals, onCreateGoal, onRefresh }) => {
+const GoalsTab: React.FC<{ 
+  goals: ComplianceGoal[]; 
+  onCreateGoal: () => void; 
+  onEditGoal?: (goal: any) => void;
+  onDeleteGoal?: (goalId: string) => void;
+  onRestoreGoal?: (goalId: string) => void;
+  deletingGoal?: string | null;
+  filters?: { status?: string; framework?: string };
+  onFiltersChange?: (filters: { status?: string; framework?: string }) => void;
+  onRefresh: () => void;
+}> = ({ goals, onCreateGoal, onEditGoal, onDeleteGoal, onRestoreGoal, deletingGoal, filters, onFiltersChange, onRefresh }) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -380,20 +470,24 @@ const GoalsTab: React.FC<{ goals: ComplianceGoal[]; onCreateGoal: () => void; on
                     </button>
                   )}
                   {goal.status === 'archived' ? (
-                    <button
-                      onClick={() => handleRestoreGoal(goal.id)}
-                      className="px-3 py-1 text-sm text-green-600 hover:text-green-800"
-                    >
-                      Restore
-                    </button>
+                    onRestoreGoal && (
+                      <button
+                        onClick={() => onRestoreGoal(goal.id)}
+                        className="px-3 py-1 text-sm text-green-600 hover:text-green-800"
+                      >
+                        Restore
+                      </button>
+                    )
                   ) : (
-                    <button
-                      onClick={() => handleDeleteGoal(goal.id)}
-                      disabled={deletingGoal === goal.id}
-                      className="px-3 py-1 text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
-                    >
-                      {deletingGoal === goal.id ? 'Deleting...' : 'Delete'}
-                    </button>
+                    onDeleteGoal && (
+                      <button
+                        onClick={() => onDeleteGoal(goal.id)}
+                        disabled={deletingGoal === goal.id}
+                        className="px-3 py-1 text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+                      >
+                        {deletingGoal === goal.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    )
                   )}
                 </div>
               </div>
@@ -424,6 +518,11 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
   const [showCreate, setShowCreate] = useState(false);
   const [selectedControlId, setSelectedControlId] = useState('');
   const [availableControls, setAvailableControls] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState<string | null>(null);
+  const [executionResult, setExecutionResult] = useState<any>(null);
+  const [executingLoopId, setExecutingLoopId] = useState<string | null>(null);
+  const [triggerType, setTriggerType] = useState<'manual' | 'schedule' | 'threshold' | 'event'>('manual');
 
   useEffect(() => {
     loadLoops();
@@ -527,9 +626,6 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
       setLoading(false);
     }
   };
-
-  const [executionResult, setExecutionResult] = useState<any>(null);
-  const [executingLoopId, setExecutingLoopId] = useState<string | null>(null);
 
   const handleExecuteLoop = async (loopId: string) => {
     setLoading(true);
@@ -1464,6 +1560,388 @@ const IoTTab: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const NeuroSymbolicTab: React.FC = () => {
+  const [query, setQuery] = useState('');
+  const [reasoningResult, setReasoningResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [reasoningHistory, setReasoningHistory] = useState<any[]>([]);
+  const [activeView, setActiveView] = useState<'reasoning' | 'causal' | 'rules' | 'history'>('reasoning');
+  const [violationData, setViolationData] = useState({
+    controlId: '',
+    frameworkId: '',
+    violationType: '',
+  });
+  const [causalResult, setCausalResult] = useState<any>(null);
+  const [patterns, setPatterns] = useState([{ condition: '', outcome: '', frequency: 0 }]);
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadHistory = async () => {
+    try {
+      const history = await api.acos.getReasoningHistory(20);
+      setReasoningHistory(history.history || []);
+    } catch (error) {
+      console.error('Error loading reasoning history:', error);
+    }
+  };
+
+  const handleHybridReasoning = async () => {
+    if (!query.trim()) {
+      alert('Please enter a query');
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await api.acos.performHybridReasoning(query, {});
+      setReasoningResult(result);
+      await loadHistory();
+    } catch (error: any) {
+      console.error('Error performing hybrid reasoning:', error);
+      alert(`Failed to perform reasoning: ${error.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCausalReasoning = async () => {
+    if (!violationData.controlId || !violationData.frameworkId) {
+      alert('Please fill in control ID and framework ID');
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await api.acos.performCausalReasoning(violationData);
+      setCausalResult(result);
+    } catch (error: any) {
+      console.error('Error performing causal reasoning:', error);
+      alert(`Failed to perform causal reasoning: ${error.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInferRules = async () => {
+    const validPatterns = patterns.filter(p => p.condition && p.outcome && p.frequency > 0);
+    if (validPatterns.length === 0) {
+      alert('Please add at least one pattern with condition, outcome, and frequency');
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await api.acos.inferRulesFromPatterns(validPatterns);
+      alert(`Inferred ${result.inferences?.length || 0} new rules from patterns`);
+      await loadHistory();
+    } catch (error: any) {
+      console.error('Error inferring rules:', error);
+      alert(`Failed to infer rules: ${error.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Tabs for different views */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {[
+            { id: 'reasoning', label: 'Hybrid Reasoning' },
+            { id: 'causal', label: 'Causal Reasoning' },
+            { id: 'rules', label: 'Rule Inference' },
+            { id: 'history', label: 'History' },
+          ].map((view) => (
+            <button
+              key={view.id}
+              onClick={() => setActiveView(view.id as any)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeView === view.id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {view.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Hybrid Reasoning View */}
+      {activeView === 'reasoning' && (
+        <div className="space-y-4">
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4">Hybrid Neural-Symbolic Reasoning</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Combine neural network predictions with symbolic rule-based reasoning for explainable AI decisions.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Query</label>
+                <textarea
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  rows={4}
+                  placeholder="e.g., What actions should be taken for a high-risk non-compliant control?"
+                />
+              </div>
+              <button
+                onClick={handleHybridReasoning}
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? (
+                  <span className="flex items-center">
+                    <Loader2 className="animate-spin mr-2" size={16} />
+                    Reasoning...
+                  </span>
+                ) : (
+                  'Perform Hybrid Reasoning'
+                )}
+              </button>
+            </div>
+
+            {reasoningResult && (
+              <div className="mt-6 space-y-4">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-2">Hybrid Result</h4>
+                  <p className="text-blue-800">{reasoningResult.hybridResult?.finalDecision || 'N/A'}</p>
+                  <p className="text-sm text-blue-700 mt-2">
+                    Confidence: {(reasoningResult.hybridResult?.confidence * 100 || 0).toFixed(0)}%
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold mb-2">Explanation</h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {reasoningResult.hybridResult?.explanation || 'No explanation available'}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <h4 className="font-semibold text-purple-900 mb-2">Neural Prediction</h4>
+                    <p className="text-purple-800 text-sm">{reasoningResult.neuralPrediction?.result || 'N/A'}</p>
+                    <p className="text-xs text-purple-700 mt-1">
+                      Confidence: {(reasoningResult.neuralPrediction?.confidence * 100 || 0).toFixed(0)}%
+                    </p>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h4 className="font-semibold text-green-900 mb-2">Symbolic Reasoning</h4>
+                    <p className="text-green-800 text-sm">{reasoningResult.symbolicReasoning?.conclusion || 'N/A'}</p>
+                    <p className="text-xs text-green-700 mt-1">
+                      Confidence: {(reasoningResult.symbolicReasoning?.confidence * 100 || 0).toFixed(0)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Causal Reasoning View */}
+      {activeView === 'causal' && (
+        <div className="space-y-4">
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4">Causal Reasoning for Compliance Violations</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Identify root causes and causal chains for compliance violations using neural-symbolic reasoning.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Control ID</label>
+                <input
+                  type="text"
+                  value={violationData.controlId}
+                  onChange={(e) => setViolationData({ ...violationData, controlId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="control-id-123"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Framework ID</label>
+                <input
+                  type="text"
+                  value={violationData.frameworkId}
+                  onChange={(e) => setViolationData({ ...violationData, frameworkId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="framework-id-456"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Violation Type</label>
+                <input
+                  type="text"
+                  value={violationData.violationType}
+                  onChange={(e) => setViolationData({ ...violationData, violationType: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Non-Compliant, Missing Evidence, etc."
+                />
+              </div>
+              <button
+                onClick={handleCausalReasoning}
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? (
+                  <span className="flex items-center">
+                    <Loader2 className="animate-spin mr-2" size={16} />
+                    Analyzing...
+                  </span>
+                ) : (
+                  'Analyze Causal Chain'
+                )}
+              </button>
+            </div>
+
+            {causalResult && (
+              <div className="mt-6 space-y-4">
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                  <h4 className="font-semibold text-red-900 mb-2">Root Causes</h4>
+                  <ul className="list-disc list-inside text-red-800 space-y-1">
+                    {causalResult.rootCauses?.map((cause: string, i: number) => (
+                      <li key={i}>{cause}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <h4 className="font-semibold text-yellow-900 mb-2">Causal Chain</h4>
+                  <ul className="list-disc list-inside text-yellow-800 space-y-1">
+                    {causalResult.causalChain?.map((step: string, i: number) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h4 className="font-semibold text-green-900 mb-2">Recommendations</h4>
+                  <ul className="list-disc list-inside text-green-800 space-y-1">
+                    {causalResult.recommendations?.map((rec: string, i: number) => (
+                      <li key={i}>{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Rule Inference View */}
+      {activeView === 'rules' && (
+        <div className="space-y-4">
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4">Infer Rules from Patterns</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Automatically infer new compliance rules from observed patterns in your data.
+            </p>
+            <div className="space-y-4">
+              {patterns.map((pattern, index) => (
+                <div key={index} className="border border-gray-200 p-4 rounded-lg space-y-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+                    <input
+                      type="text"
+                      value={pattern.condition}
+                      onChange={(e) => {
+                        const newPatterns = [...patterns];
+                        newPatterns[index].condition = e.target.value;
+                        setPatterns(newPatterns);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      placeholder="control.status == 'Non-Compliant'"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Outcome</label>
+                    <input
+                      type="text"
+                      value={pattern.outcome}
+                      onChange={(e) => {
+                        const newPatterns = [...patterns];
+                        newPatterns[index].outcome = e.target.value;
+                        setPatterns(newPatterns);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      placeholder="create_remediation_plan"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                    <input
+                      type="number"
+                      value={pattern.frequency}
+                      onChange={(e) => {
+                        const newPatterns = [...patterns];
+                        newPatterns[index].frequency = parseInt(e.target.value) || 0;
+                        setPatterns(newPatterns);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
+              ))}
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setPatterns([...patterns, { condition: '', outcome: '', frequency: 0 }])}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  + Add Pattern
+                </button>
+                <button
+                  onClick={handleInferRules}
+                  disabled={loading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <span className="flex items-center">
+                      <Loader2 className="animate-spin mr-2" size={16} />
+                      Inferring...
+                    </span>
+                  ) : (
+                    'Infer Rules'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History View */}
+      {activeView === 'history' && (
+        <div className="space-y-4">
+          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4">Reasoning History</h3>
+            {reasoningHistory.length === 0 ? (
+              <p className="text-gray-500">No reasoning history available</p>
+            ) : (
+              <div className="space-y-4">
+                {reasoningHistory.map((item: any) => (
+                  <div key={item.id} className="border border-gray-200 p-4 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="font-medium">{item.query}</p>
+                      <span className="text-xs text-gray-500">
+                        {new Date(item.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Result: {item.hybridResult?.finalDecision || 'N/A'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Confidence: {(item.hybridResult?.confidence * 100 || 0).toFixed(0)}%
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

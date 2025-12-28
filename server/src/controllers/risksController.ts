@@ -109,10 +109,15 @@ class RisksController {
         },
       });
 
-      // Log audit
+      // Log audit with risk description and user name
+      const riskDescription = description.length > 50 
+        ? description.substring(0, 50) + '...' 
+        : description;
+      const userName = authReq.user!.name || authReq.user!.email || 'User';
+      
       await prisma.auditLog.create({
         data: {
-          action: `Risk Created: ${description.substring(0, 50)}`,
+          action: `Risk "${riskDescription}" created (by ${userName})`,
           userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
@@ -206,10 +211,22 @@ class RisksController {
         },
       });
 
-      // Log audit
+      // Log audit with risk description and status change
+      const riskDescription = risk.description 
+        ? (risk.description.length > 50 
+            ? risk.description.substring(0, 50) + '...' 
+            : risk.description)
+        : `Risk ${risk.id}`;
+      
+      // Include status change in audit message if status was updated
+      const statusChange = updateData.status && updateData.status !== existingRisk.status
+        ? ` updated to ${updateData.status}`
+        : '';
+      
+      const userName = authReq.user!.name || authReq.user!.email || 'User';
       await prisma.auditLog.create({
         data: {
-          action: `Risk Updated: ${risk.description.substring(0, 50)}`,
+          action: `Risk "${riskDescription}"${statusChange} (by ${userName})`,
           details: JSON.stringify(updateData),
           userId: authReq.user!.id,
           organizationId,

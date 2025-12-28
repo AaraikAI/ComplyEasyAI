@@ -297,7 +297,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
           </div>
         </main>
         
-        <ComplianceChat />
+        <ComplianceChat onNavigate={onNavigate} currentView={currentView} />
       </div>
     </div>
   );

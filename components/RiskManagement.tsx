@@ -200,13 +200,8 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         
         await api.risks.update(selectedRisk.id, updateData);
         
-        // Log audit action (non-blocking - don't fail if audit log fails)
-        try {
-          await api.audit.log(`Risk ${selectedRisk.id} updated to ${newStatus}`, user?.name || 'User');
-        } catch (auditError) {
-          console.warn('Failed to log audit action:', auditError);
-          // Continue even if audit logging fails
-        }
+        // Note: Audit logging is handled by the backend to prevent duplicate entries
+        // The backend automatically creates audit log entries for risk updates
         
         // Reload risks to get updated data from backend
         await loadRisks();
@@ -238,14 +233,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
       const createdRisk = await api.risks.create(riskData);
       
-      // Log audit action (non-blocking)
-      try {
-        await api.audit.log(`Risk created: ${createdRisk.description.substring(0, 50)}`, user?.name || 'User');
-      } catch (auditError) {
-        console.warn('Failed to log audit action:', auditError);
-        // Continue even if audit logging fails
-      }
-      
+      // Note: Audit logging is handled by the backend to prevent duplicate entries
       setNewRisk({ description: '', category: '', severity: 'Medium', assignedToId: '' });
       setShowAddRiskModal(false);
       await loadRisks();

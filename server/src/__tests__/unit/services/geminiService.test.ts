@@ -34,7 +34,7 @@ jest.mock('../../../config', () => ({
   },
 }));
 
-jest.mock('../../utils/piiRedaction', () => ({
+jest.mock('../../../utils/piiRedaction', () => ({
   redactPII: jest.fn().mockReturnValue({
     redactedText: 'redacted prompt',
     map: new Map(),
