@@ -22,7 +22,7 @@ jest.mock('@google/generative-ai', () => ({
   })),
 }));
 
-jest.mock('../../utils/auditLogger', () => ({
+jest.mock('../../../utils/auditLogger', () => ({
   AuditLogger: {
     log: jest.fn().mockResolvedValue({}),
   },

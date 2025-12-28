@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { AVAILABLE_FRAMEWORKS } from '../constants';
 import { ComplianceFramework, ComplianceStatus } from '../types';
-import { CheckCircle, AlertTriangle, Clock, ArrowRight, Plus, X, Search, Trash2 } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Clock, ArrowRight, Plus, X, Search, Trash2, Download } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -94,6 +94,59 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
     }
   };
 
+  const handleExportControlReport = async () => {
+    try {
+      // Generate CSV report with all frameworks and their controls
+      const csvRows: string[] = [];
+      
+      // Header row
+      csvRows.push('Framework,Control ID,Control Name,Status,Progress,Next Audit Date,Region');
+      
+      // Data rows
+      for (const fw of activeFrameworks) {
+        try {
+          const fwData: any = await api.frameworks.getById(fw.id);
+          const controls = fwData.controls || [];
+          
+          if (controls.length === 0) {
+            // If no controls, still add framework info
+            csvRows.push(`"${fw.name}","","","${fw.status}","${fw.progress}%","${fw.nextAuditDate}","${fw.region || ''}"`);
+          } else {
+            // Add each control as a row
+            controls.forEach((control: any) => {
+              csvRows.push(
+                `"${fw.name}","${control.id || ''}","${(control.name || '').replace(/"/g, '""')}","${control.status || ''}","${fw.progress}%","${fw.nextAuditDate}","${fw.region || ''}"`
+              );
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching framework ${fw.id}:`, error);
+          // Add framework row even if controls can't be fetched
+          csvRows.push(`"${fw.name}","","Error loading controls","${fw.status}","${fw.progress}%","${fw.nextAuditDate}","${fw.region || ''}"`);
+        }
+      }
+      
+      // Create and download CSV file
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `control-report-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Failed to export control report:', error);
+      alert(`Failed to export control report: ${error.message || 'Unknown error'}`);
+    }
+  };
+
   const availableToAdd = AVAILABLE_FRAMEWORKS.filter(
     af => !activeFrameworks.find(active => active.name === af.name)
   );
@@ -110,13 +163,23 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
            <h2 className="text-lg font-bold text-gray-900">Active Frameworks</h2>
            <p className="text-sm text-gray-500">Monitor and manage your compliance standards.</p>
         </div>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors shadow-sm"
-        >
-          <Plus size={18} />
-          <span>Add Framework</span>
-        </button>
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={handleExportControlReport}
+            className="flex items-center space-x-2 bg-white text-brand-600 border border-brand-200 px-4 py-2 rounded-lg hover:bg-brand-50 transition-colors shadow-sm"
+            title="Export Control Report"
+          >
+            <Download size={18} />
+            <span>Export</span>
+          </button>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors shadow-sm"
+          >
+            <Plus size={18} />
+            <span>Add Framework</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

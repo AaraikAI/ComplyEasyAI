@@ -138,12 +138,8 @@ export const MyTasks: React.FC = () => {
         
         await api.risks.update(selectedTask.id, updateData);
         
-        // Log audit action (non-blocking)
-        try {
-          await api.audit.log(`Task ${selectedTask.id} status updated to ${newStatus}`, user?.name || 'User');
-        } catch (auditError) {
-          console.warn('Failed to log audit action:', auditError);
-        }
+        // Note: Audit logging is handled by the backend to prevent duplicate entries
+        // The backend automatically creates audit log entries for risk/task updates
         
         // Reload tasks to get fresh data from backend
         await loadTasks();

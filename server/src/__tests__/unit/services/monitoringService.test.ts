@@ -10,7 +10,7 @@ jest.mock('../../../config/database', () => ({
   default: prismaMock,
 }));
 
-jest.mock('../../utils/auditLogger', () => ({
+jest.mock('../../../utils/auditLogger', () => ({
   AuditLogger: {
     log: jest.fn().mockResolvedValue({}),
   },

@@ -169,7 +169,7 @@ describe('IssueManagementService', () => {
       expect(result).toBeDefined();
       expect(AuditLogger.log).toHaveBeenCalledWith(
         expect.objectContaining({
-          action: 'issue.remediation_updated',
+          action: 'issue.remediation_plan_updated',
         })
       );
     });

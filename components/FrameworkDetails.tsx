@@ -28,11 +28,19 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
   const [analyzingFile, setAnalyzingFile] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [exportingControl, setExportingControl] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [showAddControl, setShowAddControl] = useState(false);
   const [uploadingControl, setUploadingControl] = useState<string | null>(null);
   const [deletingControl, setDeletingControl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const smartUploadRef = useRef<HTMLInputElement>(null);
+
+  // Helper to set file input ref for a control
+  const setFileInputRef = (controlId: string) => (element: HTMLInputElement | null) => {
+    if (element) {
+      fileInputRefs.current[controlId] = element;
+    }
+  };
 
   // New control form state
   const [newControl, setNewControl] = useState({
@@ -142,7 +150,25 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
 
   const handleUploadEvidence = async (controlId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !framework?.id) return;
+    if (!file || !framework?.id) {
+      // Reset the input if no file selected
+      const input = fileInputRefs.current[controlId];
+      if (input) {
+        input.value = '';
+      }
+      return;
+    }
+
+    // Validate file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      alert(`File size exceeds the maximum limit of 50MB. Please select a smaller file.`);
+      const input = fileInputRefs.current[controlId];
+      if (input) {
+        input.value = '';
+      }
+      return;
+    }
 
     try {
       setUploadingControl(controlId);
@@ -150,7 +176,10 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       const formData = new FormData();
       formData.append('file', file);
 
-      await api.frameworks.uploadEvidence(framework.id, controlId, formData);
+      const result = await api.frameworks.uploadEvidence(framework.id, controlId, formData);
+
+      // Show success message
+      console.log('Evidence uploaded successfully:', result);
 
       // Reload controls to show updated evidence
       await loadFrameworkDetails();
@@ -158,13 +187,24 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       if (onDataChanged) {
         onDataChanged();
       }
+
+      // Show success notification
+      const control = controls.find(c => c.id === controlId);
+      if (control) {
+        setUploadSuccess(`Evidence uploaded successfully for "${control.name}"`);
+        setTimeout(() => {
+          setUploadSuccess(null);
+        }, 5000);
+      }
     } catch (error: any) {
       console.error('Evidence upload failed:', error);
-      alert(`Failed to upload evidence: ${error.message || 'Unknown error'}`);
+      const errorMessage = error.message || error.error || 'Unknown error';
+      alert(`Failed to upload evidence: ${errorMessage}\n\nPlease ensure:\n- You have the necessary permissions (admin/editor role)\n- The file format is supported\n- The file size is under 50MB`);
     } finally {
       setUploadingControl(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      const input = fileInputRefs.current[controlId];
+      if (input) {
+        input.value = '';
       }
     }
   };
@@ -368,6 +408,19 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         </div>
       )}
 
+      {/* Upload Success Toast */}
+      {uploadSuccess && (
+        <div className="p-4 rounded-lg flex items-center justify-between animate-fadeIn bg-green-50 border border-green-200 text-green-800">
+          <span className="font-medium flex items-center">
+            <CheckCircle size={16} className="mr-2" />
+            {uploadSuccess}
+          </span>
+          <button onClick={() => setUploadSuccess(null)} className="hover:opacity-70">
+            <X size={16}/>
+          </button>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
           <h3 className="font-semibold text-gray-800">Controls & Evidence</h3>
@@ -533,33 +586,42 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                       )}
                     </button>
                   )}
-                  <button 
-                    onClick={() => handleExportControl(control)}
-                    disabled={exportingControl === control.id}
-                    className="p-2 text-gray-400 hover:text-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Export Control Report"
-                  >
-                    {exportingControl === control.id ? (
-                      <Loader2 className="animate-spin" size={18} />
-                    ) : (
-                      <Download size={18} />
-                    )}
-                  </button>
-                  <label className="p-2 text-gray-400 hover:text-brand-600 transition-colors cursor-pointer">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      onChange={(e) => handleUploadEvidence(control.id, e)}
-                      className="hidden"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.json,.png,.jpg,.jpeg"
-                      disabled={uploadingControl === control.id}
-                    />
-                    {uploadingControl === control.id ? (
-                      <Loader2 className="animate-spin" size={18} />
-                    ) : (
-                      <Upload size={18} />
-                    )}
-                  </label>
+                  <div className="flex flex-col items-center">
+                    <button 
+                      onClick={() => handleExportControl(control)}
+                      disabled={exportingControl === control.id}
+                      className="p-2 text-gray-400 hover:text-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Export Control Report"
+                    >
+                      {exportingControl === control.id ? (
+                        <Loader2 className="animate-spin" size={18} />
+                      ) : (
+                        <Download size={18} />
+                      )}
+                    </button>
+                    <span className="text-xs text-gray-500 mt-1">Export</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <label 
+                      className="p-2 text-gray-400 hover:text-brand-600 transition-colors cursor-pointer flex flex-col items-center"
+                      title="Upload Evidence"
+                    >
+                      <input
+                        ref={setFileInputRef(control.id)}
+                        type="file"
+                        onChange={(e) => handleUploadEvidence(control.id, e)}
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.json,.png,.jpg,.jpeg,.mp4,.mp3,.wav,.m4a"
+                        disabled={uploadingControl === control.id}
+                      />
+                      {uploadingControl === control.id ? (
+                        <Loader2 className="animate-spin" size={18} />
+                      ) : (
+                        <Upload size={18} />
+                      )}
+                    </label>
+                    <span className="text-xs text-gray-500 mt-1">Upload</span>
+                  </div>
                 </div>
               </div>
             ))

@@ -85,6 +85,8 @@ class ACOSService {
       horizon: number;
       autoActionPolicy: 'conservative' | 'moderate' | 'aggressive';
       targetScore?: number;
+      name?: string;
+      deadline?: string;
     },
     userId: string
   ): Promise<ComplianceGoal> {
@@ -116,23 +118,43 @@ class ACOSService {
         throw new Error('At least one framework must be selected');
       }
 
+      // Build data object conditionally to handle cases where columns might not exist
+      const goalData: any = {
+        id: goalId,
+        organizationId,
+        goalType: goal.goalType,
+        frameworks: goal.frameworks || [],
+        riskTolerance: goal.riskTolerance,
+        horizon: goal.horizon,
+        autoActionPolicy: goal.autoActionPolicy,
+        targetScore: goal.targetScore || null,
+        status: 'active',
+        createdBy: userId,
+      };
+
+      // Only include name and deadline if they're provided (and column exists in DB)
+      // If the column doesn't exist, Prisma will throw an error which we'll catch
+      if (goal.name !== undefined) {
+        goalData.name = goal.name || null;
+      }
+      if (goal.deadline !== undefined) {
+        goalData.deadline = goal.deadline ? new Date(goal.deadline) : null;
+      }
+
       // Create goal in database table
-      const createdGoal = await prisma.complianceGoal.create({
-        data: {
-          id: goalId,
-          organizationId,
-          name: goal.name || null,
-          goalType: goal.goalType,
-          frameworks: goal.frameworks || [],
-          riskTolerance: goal.riskTolerance,
-          horizon: goal.horizon,
-          autoActionPolicy: goal.autoActionPolicy,
-          targetScore: goal.targetScore || null,
-          deadline: goal.deadline ? new Date(goal.deadline) : null,
-          status: 'active',
-          createdBy: userId,
-        },
-      });
+      let createdGoal;
+      try {
+        createdGoal = await prisma.complianceGoal.create({
+          data: goalData,
+        });
+      } catch (error: any) {
+        // If error is about unknown argument (column doesn't exist), provide helpful message
+        if (error.message && error.message.includes('Unknown argument')) {
+          logger.error('[aCOS] Database schema mismatch - name/deadline columns may not exist. Run migration: add_goal_name_deadline.sql');
+          throw new Error('Database schema is out of date. Please run the migration to add name and deadline columns to ComplianceGoal table. See: server/prisma/migrations/add_goal_name_deadline.sql');
+        }
+        throw error;
+      }
 
       // Also log in audit log
       await prisma.auditLog.create({
@@ -180,7 +202,14 @@ class ACOSService {
   async createControlLoop(
     organizationId: string,
     controlId: string,
-    userId: string
+    userId: string,
+    config?: {
+      triggerType?: string;
+      triggerConfig?: any;
+      timeoutSeconds?: number;
+      parentLoopId?: string;
+      configuration?: any;
+    }
   ): Promise<ControlLoop> {
     try {
       // Verify control exists
@@ -257,6 +286,12 @@ class ACOSService {
         verifyAgent: createdLoop.verifyAgent,
         confidence: createdLoop.confidence,
         status: createdLoop.status as 'active' | 'paused' | 'error',
+        triggerType: createdLoop.triggerType || 'manual',
+        triggerConfig: createdLoop.triggerConfig,
+        timeoutSeconds: createdLoop.timeoutSeconds || 300,
+        parentLoopId: createdLoop.parentLoopId,
+        configuration: createdLoop.configuration,
+        lastError: createdLoop.lastError,
         lastObserved: createdLoop.lastObserved,
         lastActed: createdLoop.lastActed,
         lastVerified: createdLoop.lastVerified,
@@ -295,9 +330,12 @@ class ACOSService {
     scoreChange?: number;
   }> {
     try {
-      // Get loop from database
-      const loop = await prisma.controlLoop.findUnique({
-        where: { id: loopId },
+      // Get loop from database (verify it belongs to organization)
+      const loop = await prisma.controlLoop.findFirst({
+        where: { 
+          id: loopId,
+          organizationId,
+        },
         include: {
           control: {
             include: { framework: true },
@@ -311,7 +349,12 @@ class ACOSService {
 
       const control = loop.control;
       if (!control) {
-        throw new Error('Control not found');
+        throw new Error('Control not found for this loop');
+      }
+
+      // Verify framework exists
+      if (!control.framework) {
+        throw new Error('Framework not found for control');
       }
 
       // Check if loop is paused
@@ -320,7 +363,7 @@ class ACOSService {
       }
 
       // Check for timeout
-      const timeoutMs = ((loop as any).timeoutSeconds || 300) * 1000;
+      const timeoutMs = (loop.timeoutSeconds || 300) * 1000;
       const startTime = Date.now();
 
       // Track execution phases
@@ -1228,8 +1271,6 @@ class ACOSService {
         },
         include: {
           control: true,
-          parentLoop: true,
-          childLoops: true,
         },
       });
 
@@ -1245,12 +1286,12 @@ class ACOSService {
         verifyAgent: loop.verifyAgent,
         confidence: loop.confidence || 0.5,
         status: (loop.status || 'active') as 'active' | 'paused' | 'error',
-        triggerType: (loop as any).triggerType || 'manual',
-        triggerConfig: (loop as any).triggerConfig,
-        timeoutSeconds: (loop as any).timeoutSeconds || 300,
-        parentLoopId: (loop as any).parentLoopId,
-        configuration: (loop as any).configuration,
-        lastError: (loop as any).lastError,
+        triggerType: loop.triggerType || 'manual',
+        triggerConfig: loop.triggerConfig,
+        timeoutSeconds: loop.timeoutSeconds || 300,
+        parentLoopId: loop.parentLoopId,
+        configuration: loop.configuration,
+        lastError: loop.lastError,
         lastObserved: loop.lastObserved || loop.createdAt,
         lastActed: loop.lastActed || loop.createdAt,
         lastVerified: loop.lastVerified || loop.createdAt,
@@ -1357,12 +1398,12 @@ class ACOSService {
         verifyAgent: updatedLoop.verifyAgent,
         confidence: updatedLoop.confidence || 0.5,
         status: (updatedLoop.status || 'active') as 'active' | 'paused' | 'error',
-        triggerType: (updatedLoop as any).triggerType || 'manual',
-        triggerConfig: (updatedLoop as any).triggerConfig,
-        timeoutSeconds: (updatedLoop as any).timeoutSeconds || 300,
-        parentLoopId: (updatedLoop as any).parentLoopId,
-        configuration: (updatedLoop as any).configuration,
-        lastError: (updatedLoop as any).lastError,
+        triggerType: updatedLoop.triggerType || 'manual',
+        triggerConfig: updatedLoop.triggerConfig,
+        timeoutSeconds: updatedLoop.timeoutSeconds || 300,
+        parentLoopId: updatedLoop.parentLoopId,
+        configuration: updatedLoop.configuration,
+        lastError: updatedLoop.lastError,
         lastObserved: updatedLoop.lastObserved || updatedLoop.createdAt,
         lastActed: updatedLoop.lastActed || updatedLoop.createdAt,
         lastVerified: updatedLoop.lastVerified || updatedLoop.createdAt,
@@ -1418,12 +1459,12 @@ class ACOSService {
         verifyAgent: updatedLoop.verifyAgent,
         confidence: updatedLoop.confidence || 0.5,
         status: 'paused',
-        triggerType: (updatedLoop as any).triggerType || 'manual',
-        triggerConfig: (updatedLoop as any).triggerConfig,
-        timeoutSeconds: (updatedLoop as any).timeoutSeconds || 300,
-        parentLoopId: (updatedLoop as any).parentLoopId,
-        configuration: (updatedLoop as any).configuration,
-        lastError: (updatedLoop as any).lastError,
+        triggerType: updatedLoop.triggerType || 'manual',
+        triggerConfig: updatedLoop.triggerConfig,
+        timeoutSeconds: updatedLoop.timeoutSeconds || 300,
+        parentLoopId: updatedLoop.parentLoopId,
+        configuration: updatedLoop.configuration,
+        lastError: updatedLoop.lastError,
         lastObserved: updatedLoop.lastObserved || updatedLoop.createdAt,
         lastActed: updatedLoop.lastActed || updatedLoop.createdAt,
         lastVerified: updatedLoop.lastVerified || updatedLoop.createdAt,
@@ -1479,12 +1520,12 @@ class ACOSService {
         verifyAgent: updatedLoop.verifyAgent,
         confidence: updatedLoop.confidence || 0.5,
         status: 'active',
-        triggerType: (updatedLoop as any).triggerType || 'manual',
-        triggerConfig: (updatedLoop as any).triggerConfig,
-        timeoutSeconds: (updatedLoop as any).timeoutSeconds || 300,
-        parentLoopId: (updatedLoop as any).parentLoopId,
-        configuration: (updatedLoop as any).configuration,
-        lastError: (updatedLoop as any).lastError,
+        triggerType: updatedLoop.triggerType || 'manual',
+        triggerConfig: updatedLoop.triggerConfig,
+        timeoutSeconds: updatedLoop.timeoutSeconds || 300,
+        parentLoopId: updatedLoop.parentLoopId,
+        configuration: updatedLoop.configuration,
+        lastError: updatedLoop.lastError,
         lastObserved: updatedLoop.lastObserved || updatedLoop.createdAt,
         lastActed: updatedLoop.lastActed || updatedLoop.createdAt,
         lastVerified: updatedLoop.lastVerified || updatedLoop.createdAt,
@@ -1506,8 +1547,13 @@ class ACOSService {
           id: loopId,
           organizationId,
         },
-        include: {
-          childLoops: true,
+      });
+
+      // Check for child loops (loops that have this loop as parent)
+      const childLoops = await prisma.controlLoop.findMany({
+        where: {
+          parentLoopId: loopId,
+          organizationId,
         },
       });
 
@@ -1516,7 +1562,7 @@ class ACOSService {
       }
 
       // Check for child loops
-      if ((loop as any).childLoops && (loop as any).childLoops.length > 0) {
+      if (childLoops && childLoops.length > 0) {
         throw new Error('Cannot delete control loop with child loops. Delete child loops first.');
       }
 
@@ -2176,6 +2222,36 @@ class ACOSService {
     } catch (error) {
       logger.error('[aCOS] Error getting change impacts', error);
       return [];
+    }
+  }
+
+  /**
+   * Record control loop execution history
+   */
+  private async recordLoopHistory(
+    loopId: string,
+    organizationId: string,
+    executionPhase: 'sense' | 'analyze' | 'plan' | 'act' | 'verify' | 'learn',
+    phaseResult: any,
+    durationMs: number,
+    success: boolean,
+    error?: string | null
+  ): Promise<void> {
+    try {
+      await prisma.controlLoopHistory.create({
+        data: {
+          loopId,
+          organizationId,
+          executionPhase,
+          phaseResult,
+          durationMs,
+          success,
+          error: error || null,
+        },
+      });
+    } catch (error) {
+      // Log but don't throw - history recording shouldn't break execution
+      logger.warn('[aCOS] Failed to record loop history', error);
     }
   }
 }

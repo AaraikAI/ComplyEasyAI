@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { 
   ArrowRight, CheckCircle, Lock, Shield, Zap, Globe, X, Mail, Loader2, BarChart, Users, Server,
-  ShieldCheck, EyeOff, Key, GitMerge, BrainCircuit, Timer 
+  ShieldCheck, EyeOff, Key, GitMerge, BrainCircuit, Timer, Target, RefreshCw, TrendingUp,
+  AlertTriangle, FileCheck, Network, Mic, Video, Radio, Cpu, Eye, Layers, Workflow, Sparkles
 } from 'lucide-react';
 import { PRICING_TIERS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
@@ -163,7 +164,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center max-w-3xl mx-auto animate-fadeIn">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-50 text-brand-700 text-xs font-semibold uppercase tracking-wide mb-6">
-              <Zap size={14} className="mr-1" /> New: AI Agentic Workflows
+              <Zap size={14} className="mr-1" /> New: aCOS v3.0 - Autonomous Compliance Operating System
             </div>
             <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-8 leading-tight">
               Compliance that <br/>
@@ -194,6 +195,7 @@ export const LandingPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
+              // Core Platform Features
               { 
                 icon: Zap, 
                 title: 'AI Automation', 
@@ -224,7 +226,73 @@ export const LandingPage: React.FC = () => {
                 title: '100+ Integrations', 
                 desc: 'Seamlessly connect with AWS, Google Workspace, GitHub, Jira, Slack, and more to unify your data.'
               },
-              // New Visionary Features
+              // aCOS v3.0 Features
+              {
+                icon: Target,
+                title: 'Autonomous Compliance Operating System (aCOS™)',
+                desc: 'Closed-loop control systems with Observe → Predict → Act → Verify → Learn cycles. Autonomous compliance goals, control loops, debt tracking, and change impact analysis.'
+              },
+              {
+                icon: RefreshCw,
+                title: 'Agentic AI with Rollback & Blast-Radius',
+                desc: 'Safe autonomous execution with blast-radius estimation, automatic rollback on failure, checkpoint creation, and human-in-the-loop approvals.'
+              },
+              {
+                icon: TrendingUp,
+                title: 'Temporal Graph Networks (TGN)',
+                desc: '6-12 month predictive risk forecasting, compliance trajectory modeling, and early warning system with <10% false positive rate.'
+              },
+              {
+                icon: Layers,
+                title: 'Compliance Digital Twin & Simulation',
+                desc: 'What-if scenario modeling, Monte Carlo analysis (10k iterations), policy/control failure simulations, and multi-scenario comparisons.'
+              },
+              {
+                icon: FileCheck,
+                title: 'Evidence Truth Layer™',
+                desc: 'Deepfake detection (image/video/audio), cryptographic attestation, physical IoT attestation, human liveness detection, and overall confidence scoring.'
+              },
+              {
+                icon: Network,
+                title: 'Regulatory Intelligence Fabric (RIF)',
+                desc: 'Automated regulation ingestion (URL/PDF/text), change detection, conflict resolution, auto-update controls, and feed monitoring with deduplication.'
+              },
+              {
+                icon: AlertTriangle,
+                title: 'Red Teaming & Adversarial Simulations',
+                desc: 'Automated security testing, social engineering scenarios, data exfiltration simulation, insider threat testing, and compliance gap scanning.'
+              },
+              {
+                icon: Workflow,
+                title: 'Federated Swarm Intelligence',
+                desc: 'Cross-tenant learning with differential privacy, industry insights, peer benchmarking, federated model management, and secure aggregation.'
+              },
+              {
+                icon: Mic,
+                title: 'Multi-modal Intake',
+                desc: 'Audio transcription (MP3/WAV/M4A) with >95% accuracy, video analysis, speaker diarization, word-level timestamps, and compliance-relevant content detection.'
+              },
+              {
+                icon: Radio,
+                title: 'Physical AI/IoT Integration',
+                desc: 'IoT device registration, edge compliance checks (12+ checks), MQTT sensor data processing, device health monitoring, and predictive maintenance.'
+              },
+              {
+                icon: Eye,
+                title: 'VR-based Collaborative Review',
+                desc: '3D compliance visualization, multi-user VR sessions, real-time collaboration, annotations, training scenarios, and 60+ FPS rendering.'
+              },
+              {
+                icon: Cpu,
+                title: 'Swarm-based Task Allocation',
+                desc: 'Dynamic multi-agent task distribution, capability matching, load balancing, priority-based allocation, and real-time metrics dashboard.'
+              },
+              {
+                icon: Sparkles,
+                title: 'NeuroSymbolic AI',
+                desc: 'Hybrid neural-symbolic reasoning combines deep learning with rule-based logic for explainable AI decisions, causal reasoning, automated rule inference, and compliance justification.'
+              },
+              // Security & Privacy Features
               {
                 icon: ShieldCheck,
                 title: 'Zero-Knowledge Proofs',

@@ -12,6 +12,7 @@ import multimodalIntakeService from '../services/advanced/multimodalIntakeServic
 import physicalAIService from '../services/advanced/physicalAIService';
 import vrCollaborativeReviewService from '../services/advanced/vrCollaborativeReviewService';
 import swarmTaskAllocationService from '../services/advanced/swarmTaskAllocationService';
+import neuroSymbolicAIService from '../services/advanced/neuroSymbolicAIService';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 
@@ -144,9 +145,83 @@ class ACOSController {
         authReq.user!.organizationId
       );
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Execute control loop error', error);
-      throw new AppError('Failed to execute control loop', 500);
+      const errorMessage = error?.message || 'Unknown error';
+      if (error instanceof AppError) throw error;
+      throw new AppError(`Failed to execute control loop: ${errorMessage}`, 500);
+    }
+  };
+
+  getControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { loopId } = req.params;
+      const loop = await acosService.getControlLoopById(loopId, authReq.user!.organizationId);
+      res.json(loop);
+    } catch (error: any) {
+      logger.error('Get control loop error', error);
+      throw new AppError(`Failed to get control loop: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  getControlLoopHistory: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { loopId } = req.params;
+      const history = await acosService.getControlLoopHistory(loopId, authReq.user!.organizationId);
+      res.json(history);
+    } catch (error: any) {
+      logger.error('Get control loop history error', error);
+      throw new AppError(`Failed to get control loop history: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  pauseControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { loopId } = req.params;
+      const loop = await acosService.pauseControlLoop(loopId, authReq.user!.organizationId, authReq.user!.id);
+      res.json(loop);
+    } catch (error: any) {
+      logger.error('Pause control loop error', error);
+      throw new AppError(`Failed to pause control loop: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  resumeControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { loopId } = req.params;
+      const loop = await acosService.resumeControlLoop(loopId, authReq.user!.organizationId, authReq.user!.id);
+      res.json(loop);
+    } catch (error: any) {
+      logger.error('Resume control loop error', error);
+      throw new AppError(`Failed to resume control loop: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  updateControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { loopId } = req.params;
+      const loop = await acosService.updateControlLoop(loopId, authReq.user!.organizationId, req.body, authReq.user!.id);
+      res.json(loop);
+    } catch (error: any) {
+      logger.error('Update control loop error', error);
+      throw new AppError(`Failed to update control loop: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  deleteControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { loopId } = req.params;
+      await acosService.deleteControlLoop(loopId, authReq.user!.organizationId, authReq.user!.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      logger.error('Delete control loop error', error);
+      throw new AppError(`Failed to delete control loop: ${error.message || 'Unknown error'}`, 500);
     }
   };
 
@@ -2549,6 +2624,97 @@ class ACOSController {
     } catch (error: any) {
       logger.error('Resolve change impact error', error);
       throw new AppError(`Failed to resolve impact: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  // NeuroSymbolic AI
+  performHybridReasoning: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const reasoning = await neuroSymbolicAIService.performHybridReasoning(
+        authReq.user!.organizationId,
+        req.body.query,
+        req.body.context
+      );
+      res.json(reasoning);
+    } catch (error: any) {
+      logger.error('Hybrid reasoning error', error);
+      throw new AppError(`Failed to perform hybrid reasoning: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  inferRulesFromPatterns: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const inferences = await neuroSymbolicAIService.inferRulesFromPatterns(
+        authReq.user!.organizationId,
+        req.body.patterns
+      );
+      res.json({ inferences });
+    } catch (error: any) {
+      logger.error('Rule inference error', error);
+      throw new AppError(`Failed to infer rules: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  performCausalReasoning: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const reasoning = await neuroSymbolicAIService.performCausalReasoning(
+        authReq.user!.organizationId,
+        req.body.violation
+      );
+      res.json(reasoning);
+    } catch (error: any) {
+      logger.error('Causal reasoning error', error);
+      throw new AppError(`Failed to perform causal reasoning: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  generateExplainableDecision: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const decision = await neuroSymbolicAIService.generateExplainableDecision(
+        authReq.user!.organizationId,
+        req.body.decision
+      );
+      res.json(decision);
+    } catch (error: any) {
+      logger.error('Explainable decision error', error);
+      throw new AppError(`Failed to generate explainable decision: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  getReasoningHistory: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const history = await neuroSymbolicAIService.getReasoningHistory(
+        authReq.user!.organizationId,
+        limit
+      );
+      res.json({ history });
+    } catch (error: any) {
+      logger.error('Get reasoning history error', error);
+      throw new AppError(`Failed to get reasoning history: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
+  validateInferredRule: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { inferenceId } = req.params;
+      const validated = req.body.validated === true;
+      const rule = await neuroSymbolicAIService.validateInferredRule(
+        inferenceId,
+        authReq.user!.organizationId,
+        authReq.user!.id,
+        validated
+      );
+      res.json(rule);
+    } catch (error: any) {
+      logger.error('Validate inferred rule error', error);
+      throw new AppError(`Failed to validate rule: ${error.message || 'Unknown error'}`, 500);
     }
   };
 }

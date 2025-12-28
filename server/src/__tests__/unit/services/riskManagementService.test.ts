@@ -66,7 +66,7 @@ describe('RiskManagementService', () => {
       expect(prismaMock.riskAssessment.create).toHaveBeenCalledTimes(1);
       expect(AuditLogger.log).toHaveBeenCalledWith(
         expect.objectContaining({
-          action: 'risk.assessment_created',
+          action: 'risk_assessment.created',
           resourceType: 'RiskAssessment',
         })
       );
@@ -191,7 +191,7 @@ describe('RiskManagementService', () => {
       expect(result).toBeDefined();
       expect(AuditLogger.log).toHaveBeenCalledWith(
         expect.objectContaining({
-          action: 'risk.remediation_updated',
+          action: 'risk.remediation_plan_updated',
         })
       );
     });
