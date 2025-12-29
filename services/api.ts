@@ -767,6 +767,20 @@ export const api = {
     getReasoningHistory: async (limit?: number) => fetchAPI(`/acos/neuro-symbolic/reasoning-history${limit ? `?limit=${limit}` : ''}`),
     validateInferredRule: async (inferenceId: string, validated: boolean) => fetchAPI(`/acos/neuro-symbolic/inferences/${inferenceId}/validate`, { method: 'POST', body: JSON.stringify({ validated }) }),
 
+    // Homomorphic AI
+    generateHomomorphicKeys: async (scheme: 'BFV' | 'CKKS' = 'CKKS', securityLevel: 128 | 192 | 256 = 128) => 
+      fetchAPI('/acos/homomorphic/keys/generate', { method: 'POST', body: JSON.stringify({ scheme, securityLevel }) }),
+    encryptData: async (data: number[], publicKey: string, scheme: 'BFV' | 'CKKS' = 'CKKS') => 
+      fetchAPI('/acos/homomorphic/encrypt', { method: 'POST', body: JSON.stringify({ data, publicKey, scheme }) }),
+    decryptData: async (encryptedData: any, secretKey: string) => 
+      fetchAPI('/acos/homomorphic/decrypt', { method: 'POST', body: JSON.stringify({ encryptedData, secretKey }) }),
+    performEncryptedLinearRegression: async (encryptedFeatures: any, weights: number[], publicKey: string, relinKeys: string) => 
+      fetchAPI('/acos/homomorphic/linear-regression', { method: 'POST', body: JSON.stringify({ encryptedFeatures, weights, publicKey, relinKeys }) }),
+    computeEncryptedStatistics: async (encryptedData: any, galoisKeys: string, relinKeys: string) => 
+      fetchAPI('/acos/homomorphic/statistics', { method: 'POST', body: JSON.stringify({ encryptedData, galoisKeys, relinKeys }) }),
+    performEncryptedNeuralNetwork: async (encryptedInput: any, modelWeights: any, keys: any) => 
+      fetchAPI('/acos/homomorphic/neural-network', { method: 'POST', body: JSON.stringify({ encryptedInput, modelWeights, keys }) }),
+
     // VR Collaborative Review
     getActiveVRSessions: async () => fetchAPI('/acos/vr/sessions'),
     createVRSession: async (data: any) => fetchAPI('/acos/vr/sessions', { method: 'POST', body: JSON.stringify(data) }),
@@ -777,6 +791,95 @@ export const api = {
     requestJITAccess: async (data: any) => fetchAPI('/acos/jit/request', { method: 'POST', body: JSON.stringify(data) }),
     getJITAccessSessions: async () => fetchAPI('/acos/jit/sessions'),
     revokeJITSession: async (sessionId: string, reason?: string) => fetchAPI(`/acos/jit/sessions/${sessionId}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  },
+
+  // Security Features
+  security: {
+    // Zero Trust Security
+    verifyDeviceTrust: async (deviceId: string, fingerprint: string, metadata?: any) => 
+      fetchAPI('/security/zero-trust/verify-device', { method: 'POST', body: JSON.stringify({ deviceId, fingerprint, metadata }) }),
+    evaluateAccessRequest: async (resourceId: string, deviceId: string, action: string, context?: any) => 
+      fetchAPI('/security/zero-trust/evaluate-access', { method: 'POST', body: JSON.stringify({ resourceId, deviceId, action, context }) }),
+    createZeroTrustPolicy: async (policy: any) => 
+      fetchAPI('/security/zero-trust/policies', { method: 'POST', body: JSON.stringify(policy) }),
+    getZeroTrustPolicies: async () => fetchAPI('/security/zero-trust/policies'),
+    getZeroTrustPolicy: async (policyId: string) => fetchAPI(`/security/zero-trust/policies/${policyId}`),
+    updateZeroTrustPolicy: async (policyId: string, updates: any) => 
+      fetchAPI(`/security/zero-trust/policies/${policyId}`, { method: 'PATCH', body: JSON.stringify(updates) }),
+    deleteZeroTrustPolicy: async (policyId: string) => 
+      fetchAPI(`/security/zero-trust/policies/${policyId}`, { method: 'DELETE' }),
+    getDeviceTrusts: async () => fetchAPI('/security/zero-trust/devices'),
+    getDeviceTrust: async (deviceId: string) => fetchAPI(`/security/zero-trust/devices/${deviceId}`),
+    createNetworkSegment: async (segment: any) => 
+      fetchAPI('/security/zero-trust/network-segments', { method: 'POST', body: JSON.stringify(segment) }),
+    getNetworkSegments: async () => fetchAPI('/security/zero-trust/network-segments'),
+    continuousVerification: async (deviceId: string) => 
+      fetchAPI('/security/zero-trust/continuous-verify', { method: 'POST', body: JSON.stringify({ deviceId }) }),
+
+    // Zero-Knowledge Proofs
+    generateComplianceProof: async (frameworkId: string, privateData: any) => 
+      fetchAPI('/security/zkp/compliance-proof/generate', { method: 'POST', body: JSON.stringify({ frameworkId, privateData }) }),
+    verifyComplianceProof: async (proof: any) => 
+      fetchAPI('/security/zkp/compliance-proof/verify', { method: 'POST', body: JSON.stringify({ proof }) }),
+    generateCredentialProof: async (credential: any, secret: string) => 
+      fetchAPI('/security/zkp/credential-proof/generate', { method: 'POST', body: JSON.stringify({ credential, secret }) }),
+    verifyCredentialProof: async (proof: any, requiredLevel?: number) => 
+      fetchAPI('/security/zkp/credential-proof/verify', { method: 'POST', body: JSON.stringify({ proof, requiredLevel }) }),
+    generateOwnershipProof: async (dataHash: string, secret: string) => 
+      fetchAPI('/security/zkp/ownership-proof/generate', { method: 'POST', body: JSON.stringify({ dataHash, secret }) }),
+    verifyOwnershipProof: async (proof: any, dataHash: string) => 
+      fetchAPI('/security/zkp/ownership-proof/verify', { method: 'POST', body: JSON.stringify({ proof, dataHash }) }),
+    getZKProofs: async () => fetchAPI('/security/zkp/proofs'),
+    getZKProof: async (proofId: string) => fetchAPI(`/security/zkp/proofs/${proofId}`),
+
+    // BYOK Encryption
+    generateBYOKKey: async (provider: 'aws_kms' | 'azure_kv', options: any) => 
+      fetchAPI('/security/byok/keys/generate', { method: 'POST', body: JSON.stringify({ provider, ...options }) }),
+    importBYOKKey: async (provider: 'aws_kms' | 'azure_kv', keyId: string, options: any) => 
+      fetchAPI('/security/byok/keys/import', { method: 'POST', body: JSON.stringify({ provider, keyId, ...options }) }),
+    getBYOKKeys: async () => fetchAPI('/security/byok/keys'),
+    getBYOKKey: async (keyId: string) => fetchAPI(`/security/byok/keys/${keyId}`),
+    rotateBYOKKey: async (keyId: string, oldConfig: any, newConfig: any, encryptedData?: any[]) => 
+      fetchAPI(`/security/byok/keys/${keyId}/rotate`, { method: 'POST', body: JSON.stringify({ oldConfig, newConfig, encryptedData }) }),
+    deleteBYOKKey: async (keyId: string, config: any) => 
+      fetchAPI(`/security/byok/keys/${keyId}`, { method: 'DELETE', body: JSON.stringify(config) }),
+    encryptWithBYOK: async (data: string, config: any) => 
+      fetchAPI('/security/byok/encrypt', { method: 'POST', body: JSON.stringify({ data, config }) }),
+    decryptWithBYOK: async (encryptedPayload: any, config: any) => 
+      fetchAPI('/security/byok/decrypt', { method: 'POST', body: JSON.stringify({ encryptedPayload, config }) }),
+    getBYOKConfig: async () => fetchAPI('/security/byok/config'),
+    updateBYOKConfig: async (config: any) => 
+      fetchAPI('/security/byok/config', { method: 'POST', body: JSON.stringify(config) }),
+
+    // Compliance-as-Code
+    createCompliancePolicy: async (policy: any) => 
+      fetchAPI('/security/compliance-as-code/policies', { method: 'POST', body: JSON.stringify(policy) }),
+    getCompliancePolicies: async (framework?: string) => 
+      fetchAPI(`/security/compliance-as-code/policies${framework ? `?framework=${framework}` : ''}`),
+    getCompliancePolicy: async (policyId: string) => 
+      fetchAPI(`/security/compliance-as-code/policies/${policyId}`),
+    updateCompliancePolicy: async (policyId: string, updates: any) => 
+      fetchAPI(`/security/compliance-as-code/policies/${policyId}`, { method: 'PATCH', body: JSON.stringify(updates) }),
+    deleteCompliancePolicy: async (policyId: string) => 
+      fetchAPI(`/security/compliance-as-code/policies/${policyId}`, { method: 'DELETE' }),
+    evaluateCompliancePolicy: async (policyId: string, input: any) => 
+      fetchAPI(`/security/compliance-as-code/policies/${policyId}/evaluate`, { method: 'POST', body: JSON.stringify({ input }) }),
+    evaluateCompliancePoliciesBatch: async (policyIds: string[], input: any) => 
+      fetchAPI('/security/compliance-as-code/policies/evaluate-batch', { method: 'POST', body: JSON.stringify({ policyIds, input }) }),
+    generateComplianceReport: async (framework: string) => 
+      fetchAPI('/security/compliance-as-code/reports/generate', { method: 'POST', body: JSON.stringify({ framework }) }),
+    getComplianceReports: async () => fetchAPI('/security/compliance-as-code/reports'),
+    getComplianceReport: async (reportId: string) => 
+      fetchAPI(`/security/compliance-as-code/reports/${reportId}`),
+    handleCICDWebhook: async (provider: string, event: string, payload: any) => 
+      fetchAPI('/security/compliance-as-code/ci-cd/webhook', { method: 'POST', body: JSON.stringify({ provider, event, payload }) }),
+    getCICDIntegrations: async () => fetchAPI('/security/compliance-as-code/ci-cd/integrations'),
+    createCICDIntegration: async (integration: any) => 
+      fetchAPI('/security/compliance-as-code/ci-cd/integrations', { method: 'POST', body: JSON.stringify(integration) }),
+    deleteCICDIntegration: async (integrationId: string) => 
+      fetchAPI(`/security/compliance-as-code/ci-cd/integrations/${integrationId}`, { method: 'DELETE' }),
+    detectDrift: async (policyId: string) => 
+      fetchAPI('/security/compliance-as-code/drift/detect', { method: 'POST', body: JSON.stringify({ policyId }) }),
   },
 };
 

@@ -26,7 +26,8 @@ import {
   Sparkles,
   Loader2,
   Video,
-  Timer
+  Timer,
+  Lock
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -62,7 +63,7 @@ interface EarlyWarning {
 
 const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) => void }> = ({ onBack, onNavigate }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot' | 'neuroSymbolic' | 'vr' | 'jit'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot' | 'neuroSymbolic' | 'vr' | 'jit' | 'homomorphic'>('overview');
   const [goals, setGoals] = useState<ComplianceGoal[]>([]);
   const [loops, setLoops] = useState<ControlLoop[]>([]);
   const [warnings, setWarnings] = useState<EarlyWarning[]>([]);
@@ -77,7 +78,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
     // Check if there's a tab to navigate to from chatbot
     const checkTab = () => {
       const acosTab = sessionStorage.getItem('acosActiveTab');
-      if (acosTab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic', 'vr', 'jit'].includes(acosTab)) {
+      if (acosTab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic', 'vr', 'jit', 'homomorphic'].includes(acosTab)) {
         setActiveTab(acosTab as any);
         sessionStorage.removeItem('acosActiveTab'); // Clear after use
       }
@@ -92,7 +93,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
     // Listen for custom event from chatbot
     const handleTabChange = (event: CustomEvent) => {
       const tab = event.detail?.tab;
-      if (tab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic', 'vr', 'jit'].includes(tab)) {
+      if (tab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic', 'vr', 'jit', 'homomorphic'].includes(tab)) {
         setActiveTab(tab as any);
         sessionStorage.removeItem('acosActiveTab');
       }
@@ -203,6 +204,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
             { id: 'neuroSymbolic', label: 'NeuroSymbolic AI', icon: Sparkles },
             { id: 'vr', label: 'VR Collaborations', icon: Video },
             { id: 'jit', label: 'JIT Access', icon: Timer },
+            { id: 'homomorphic', label: 'Homomorphic AI', icon: Lock },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -407,6 +409,10 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
 
         {activeTab === 'jit' && (
           <JITAccessTab />
+        )}
+
+        {activeTab === 'homomorphic' && (
+          <HomomorphicAITab />
         )}
       </div>
     </div>
@@ -2226,12 +2232,18 @@ const JITAccessTab: React.FC = () => {
     e.preventDefault();
     setRequesting(true);
     try {
-      await api.acos.requestJITAccess({
+      const response = await api.acos.requestJITAccess({
         privilege: formData.privilege,
         reason: formData.reason,
         justification: formData.justification,
         duration: formData.duration,
       });
+      
+      // Immediately add the new request/session to the list
+      if (response) {
+        setSessions((prev) => [response, ...prev]);
+      }
+      
       setShowRequestModal(false);
       setFormData({
         privilege: 'admin',
@@ -2239,7 +2251,12 @@ const JITAccessTab: React.FC = () => {
         justification: '',
         duration: 30,
       });
-      loadSessions();
+      
+      // Reload sessions after a short delay to ensure backend has processed it
+      setTimeout(() => {
+        loadSessions();
+      }, 500);
+      
       alert('JIT access requested successfully!');
     } catch (error: any) {
       console.error('Error requesting JIT access:', error);
@@ -2283,27 +2300,69 @@ const JITAccessTab: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {sessions.map((session) => (
-              <div key={session.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium capitalize">{session.privilege?.replace('_', ' ') || 'Admin Access'}</h3>
-                    <p className="text-sm text-gray-600 mt-1 capitalize">{session.reason?.replace('_', ' ') || 'N/A'}</p>
-                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        session.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {session.active ? 'Active' : 'Expired'}
-                      </span>
-                      <span>Expires: {session.endTime ? new Date(session.endTime).toLocaleString() : 'N/A'}</span>
-                      {session.actionsPerformed && session.actionsPerformed.length > 0 && (
-                        <span>Actions: {session.actionsPerformed.length}</span>
-                      )}
+            {sessions.map((session: any) => {
+              // Handle both JITSession and JITAccessRequest types
+              const isSession = 'startTime' in session;
+              const isRequest = 'requestedPrivilege' in session;
+              
+              const privilege = isSession ? session.privilege : (isRequest ? session.requestedPrivilege : 'admin');
+              const reason = isRequest ? session.reason : (session.reason || 'N/A');
+              const status = isSession ? (session.active ? 'active' : 'expired') : (session.status || 'pending');
+              const expiresAt = isSession ? session.endTime : (isRequest ? session.expiresAt : null);
+              const sessionId = isSession ? session.id : (isRequest ? session.id : session.id);
+              
+              return (
+                <div key={sessionId} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-medium capitalize">{privilege?.replace(/_/g, ' ') || 'Admin Access'}</h3>
+                      <p className="text-sm text-gray-600 mt-1 capitalize">{reason?.replace(/_/g, ' ') || 'N/A'}</p>
+                      <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          status === 'active' || status === 'approved' 
+                            ? 'bg-green-100 text-green-800' 
+                            : status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {status === 'active' ? 'Active' : status === 'approved' ? 'Approved' : status === 'pending' ? 'Pending' : 'Expired'}
+                        </span>
+                        {expiresAt && (
+                          <span>Expires: {new Date(expiresAt).toLocaleString()}</span>
+                        )}
+                        {isSession && session.actionsPerformed && session.actionsPerformed.length > 0 && (
+                          <span>Actions: {session.actionsPerformed.length}</span>
+                        )}
+                        {isRequest && session.justification && (
+                          <span className="text-xs text-gray-400 truncate max-w-xs" title={session.justification}>
+                            {session.justification.substring(0, 50)}...
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    {isSession && status === 'active' && (
+                      <button
+                        onClick={() => {
+                          if (confirm('Are you sure you want to revoke this JIT access session?')) {
+                            api.acos.revokeJITSession(sessionId, 'User initiated revocation')
+                              .then(() => {
+                                loadSessions();
+                              })
+                              .catch((err) => {
+                                console.error('Error revoking session:', err);
+                                alert('Failed to revoke session');
+                              });
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 ml-4"
+                      >
+                        Revoke
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -2404,6 +2463,68 @@ const JITAccessTab: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const HomomorphicAITab: React.FC = () => {
+  const [showFullView, setShowFullView] = useState(false);
+
+  if (showFullView) {
+    // Import and use the full HomomorphicAI component
+    const { HomomorphicAI } = require('../AIFeatures/HomomorphicAI');
+    return <HomomorphicAI onBack={() => setShowFullView(false)} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold flex items-center">
+              <Lock className="mr-2 text-blue-500" size={24} />
+              Homomorphic AI
+            </h2>
+            <p className="text-gray-600 mt-1">
+              Privacy-preserving machine learning on encrypted data
+            </p>
+          </div>
+          <button
+            onClick={() => setShowFullView(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Open Full Interface
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-2">Key Generation</h3>
+            <p className="text-sm text-gray-600">
+              Generate encryption keys for BFV (integer) or CKKS (floating point) schemes
+            </p>
+          </div>
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-2">Encryption/Decryption</h3>
+            <p className="text-sm text-gray-600">
+              Encrypt and decrypt data while preserving privacy
+            </p>
+          </div>
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-2">ML Operations</h3>
+            <p className="text-sm text-gray-600">
+              Perform linear regression, statistics, and neural network inference on encrypted data
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> Homomorphic encryption allows you to perform computations on encrypted data without ever decrypting it. 
+            This ensures complete privacy while enabling AI/ML operations.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
