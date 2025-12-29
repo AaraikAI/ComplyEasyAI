@@ -35,7 +35,6 @@ import acosRoutes from './routes/acos';
 
 // aCOS v3.0 Services
 import mqttService from './services/advanced/mqttService';
-import config from './config';
 
 const app = express();
 

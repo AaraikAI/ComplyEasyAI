@@ -172,7 +172,6 @@ class RegulatoryIntelligenceFabricService {
       );
 
       // Generate unique ID
-      const crypto = await import('crypto');
       const regulatoryChangeId = crypto.randomUUID();
 
       // Store in database
