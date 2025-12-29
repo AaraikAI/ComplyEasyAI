@@ -374,6 +374,85 @@ class JITAccessService {
   }
 
   /**
+   * Get all user sessions and requests (for display purposes)
+   */
+  async getUserSessionsAndRequests(userId: string): Promise<Array<JITSession | JITAccessRequest>> {
+    const results: Array<JITSession | JITAccessRequest> = [];
+
+    // Get active sessions
+    for (const session of this.activeSessions.values()) {
+      if (session.userId === userId && session.active) {
+        results.push(session);
+      }
+    }
+
+    // Get pending/approved requests from audit logs
+    try {
+      const auditLogs = await prisma.auditLog.findMany({
+        where: {
+          userId,
+          action: {
+            startsWith: 'JIT Access Request:',
+          },
+        },
+        orderBy: {
+          timestamp: 'desc',
+        },
+        take: 50,
+      });
+
+      for (const log of auditLogs) {
+        try {
+          const details = JSON.parse(log.details || '{}');
+          const request: JITAccessRequest = {
+            id: details.requestId || log.id,
+            userId: log.userId || userId,
+            organizationId: log.organizationId || '',
+            requestedPrivilege: details.privilege || 'admin',
+            reason: details.reason || 'incident_response',
+            justification: details.justification || '',
+            duration: details.duration || 30,
+            status: details.status || 'pending',
+            createdAt: log.timestamp,
+            approvedAt: details.approvedAt ? new Date(details.approvedAt) : undefined,
+            expiresAt: details.expiresAt ? new Date(details.expiresAt) : undefined,
+          };
+
+          // Only include if not already in active sessions
+          const hasActiveSession = results.some(
+            (r) => {
+              if ('requestId' in r) {
+                // This is a session, check if it matches this request
+                return (r as JITSession).requestId === request.id;
+              }
+              return false;
+            }
+          );
+
+          // Include pending requests and approved requests that don't have active sessions
+          if (!hasActiveSession && (request.status === 'pending' || request.status === 'approved')) {
+            results.push(request);
+          }
+        } catch (parseError) {
+          // Skip invalid log entries
+          continue;
+        }
+      }
+    } catch (error) {
+      logger.error('Error fetching requests from audit logs', error);
+    }
+
+    // Sort by creation time (newest first)
+    results.sort((a, b) => {
+      const aTime = 'createdAt' in a ? a.createdAt.getTime() : ('startTime' in a ? a.startTime.getTime() : 0);
+      const bTime = 'createdAt' in b ? b.createdAt.getTime() : ('startTime' in b ? b.startTime.getTime() : 0);
+      return bTime - aTime;
+    });
+
+    return results;
+  }
+
+  /**
    * Check if user has specific privilege (including JIT)
    */
   async hasPrivilege(userId: string, privilege: PrivilegeLevel): Promise<boolean> {

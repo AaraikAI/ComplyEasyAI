@@ -33,6 +33,9 @@ import enterpriseRoutes from './routes/enterprise';
 // aCOS Routes
 import acosRoutes from './routes/acos';
 
+// Security Routes
+import securityRoutes from './routes/security';
+
 // aCOS Services
 import mqttService from './services/advanced/mqttService';
 
@@ -177,6 +180,9 @@ app.use('/api/enterprise', apiLimiter, enterpriseRoutes);
 
 // aCOS routes
 app.use('/api/acos', apiLimiter, acosRoutes);
+
+// Security routes (Zero Trust, ZKP, BYOK, Compliance-as-Code)
+app.use('/api/security', apiLimiter, securityRoutes);
 
 // 404 handler
 app.use(notFound);

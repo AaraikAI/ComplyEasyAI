@@ -14,6 +14,7 @@ import vrCollaborativeReviewService from '../services/advanced/vrCollaborativeRe
 import swarmTaskAllocationService from '../services/advanced/swarmTaskAllocationService';
 import neuroSymbolicAIService from '../services/advanced/neuroSymbolicAIService';
 import jitAccessService from '../services/advanced/jitAccessService';
+import homomorphicAIService from '../services/advanced/homomorphicAIService';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 
@@ -2744,7 +2745,8 @@ class ACOSController {
   getJITAccessSessions: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const sessions = await jitAccessService.getUserActiveSessions(authReq.user!.id);
+      // Get both active sessions and pending/approved requests
+      const sessions = await jitAccessService.getUserSessionsAndRequests(authReq.user!.id);
       res.json(sessions);
     } catch (error) {
       logger.error('Get JIT access sessions error', error);
@@ -2763,6 +2765,160 @@ class ACOSController {
     } catch (error: any) {
       logger.error('Revoke JIT session error', error);
       throw new AppError(error.message || 'Failed to revoke JIT session', 500);
+    }
+  };
+
+  // Homomorphic AI
+  generateHomomorphicKeys: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { scheme = 'CKKS', securityLevel = 128 } = req.body;
+      
+      if (!['BFV', 'CKKS'].includes(scheme)) {
+        throw new AppError('Invalid scheme. Must be BFV or CKKS', 400);
+      }
+      if (![128, 192, 256].includes(securityLevel)) {
+        throw new AppError('Invalid security level. Must be 128, 192, or 256', 400);
+      }
+
+      const keys = await homomorphicAIService.generateKeys(scheme as 'BFV' | 'CKKS', securityLevel as 128 | 192 | 256);
+      
+      // Store keys securely (in production, use proper key management)
+      logger.info(`Generated ${scheme} homomorphic keys for user ${authReq.user!.id}`);
+      
+      res.json(keys);
+    } catch (error: any) {
+      logger.error('Generate homomorphic keys error', error);
+      throw new AppError(error.message || 'Failed to generate homomorphic keys', 500);
+    }
+  };
+
+  encryptData: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { data, publicKey, scheme = 'CKKS' } = req.body;
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new AppError('Data must be a non-empty array of numbers', 400);
+      }
+      if (!publicKey || typeof publicKey !== 'string') {
+        throw new AppError('Public key is required', 400);
+      }
+      if (!['BFV', 'CKKS'].includes(scheme)) {
+        throw new AppError('Invalid scheme. Must be BFV or CKKS', 400);
+      }
+
+      const encrypted = await homomorphicAIService.encryptData(
+        data,
+        publicKey,
+        scheme as 'BFV' | 'CKKS'
+      );
+      
+      res.json(encrypted);
+    } catch (error: any) {
+      logger.error('Encrypt data error', error);
+      throw new AppError(error.message || 'Failed to encrypt data', 500);
+    }
+  };
+
+  decryptData: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { encryptedData, secretKey } = req.body;
+      
+      if (!encryptedData || !encryptedData.ciphertext) {
+        throw new AppError('Encrypted data is required', 400);
+      }
+      if (!secretKey || typeof secretKey !== 'string') {
+        throw new AppError('Secret key is required', 400);
+      }
+
+      const decrypted = await homomorphicAIService.decryptData(encryptedData, secretKey);
+      
+      res.json({ data: decrypted });
+    } catch (error: any) {
+      logger.error('Decrypt data error', error);
+      throw new AppError(error.message || 'Failed to decrypt data', 500);
+    }
+  };
+
+  performEncryptedLinearRegression: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { encryptedFeatures, weights, publicKey, relinKeys } = req.body;
+      
+      if (!encryptedFeatures || !encryptedFeatures.ciphertext) {
+        throw new AppError('Encrypted features are required', 400);
+      }
+      if (!Array.isArray(weights) || weights.length === 0) {
+        throw new AppError('Weights must be a non-empty array', 400);
+      }
+      if (!publicKey || !relinKeys) {
+        throw new AppError('Public key and relinearization keys are required', 400);
+      }
+
+      const result = await homomorphicAIService.encryptedLinearRegression(
+        encryptedFeatures,
+        weights,
+        publicKey,
+        relinKeys
+      );
+      
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Encrypted linear regression error', error);
+      throw new AppError(error.message || 'Failed to perform encrypted linear regression', 500);
+    }
+  };
+
+  computeEncryptedStatistics: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { encryptedData, galoisKeys, relinKeys } = req.body;
+      
+      if (!encryptedData || !encryptedData.ciphertext) {
+        throw new AppError('Encrypted data is required', 400);
+      }
+      if (!galoisKeys || !relinKeys) {
+        throw new AppError('Galois keys and relinearization keys are required', 400);
+      }
+
+      const result = await homomorphicAIService.encryptedStatistics(
+        encryptedData,
+        galoisKeys,
+        relinKeys
+      );
+      
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Encrypted statistics error', error);
+      throw new AppError(error.message || 'Failed to compute encrypted statistics', 500);
+    }
+  };
+
+  performEncryptedNeuralNetwork: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { encryptedInput, modelWeights, keys } = req.body;
+      
+      if (!encryptedInput || !encryptedInput.ciphertext) {
+        throw new AppError('Encrypted input is required', 400);
+      }
+      if (!modelWeights || !modelWeights.layer1 || !modelWeights.layer2) {
+        throw new AppError('Model weights with layer1 and layer2 are required', 400);
+      }
+      if (!keys || !keys.publicKey || !keys.relinKeys) {
+        throw new AppError('Keys with publicKey and relinKeys are required', 400);
+      }
+
+      const result = await homomorphicAIService.encryptedNeuralNetworkInference(
+        authReq.user!.organizationId,
+        encryptedInput,
+        modelWeights,
+        keys
+      );
+      
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Encrypted neural network error', error);
+      throw new AppError(error.message || 'Failed to perform encrypted neural network inference', 500);
     }
   };
 }

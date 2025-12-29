@@ -211,5 +211,13 @@ router.post('/neuro-symbolic/explainable-decision', authorize('admin', 'editor')
 router.get('/neuro-symbolic/reasoning-history', asyncHandler(acosController.getReasoningHistory));
 router.post('/neuro-symbolic/inferences/:inferenceId/validate', authorize('admin', 'editor'), asyncHandler(acosController.validateInferredRule));
 
+// Homomorphic AI
+router.post('/homomorphic/keys/generate', authorize('admin', 'editor'), asyncHandler(acosController.generateHomomorphicKeys));
+router.post('/homomorphic/encrypt', authorize('admin', 'editor'), asyncHandler(acosController.encryptData));
+router.post('/homomorphic/decrypt', authorize('admin', 'editor'), asyncHandler(acosController.decryptData));
+router.post('/homomorphic/linear-regression', authorize('admin', 'editor'), asyncHandler(acosController.performEncryptedLinearRegression));
+router.post('/homomorphic/statistics', authorize('admin', 'editor'), asyncHandler(acosController.computeEncryptedStatistics));
+router.post('/homomorphic/neural-network', authorize('admin', 'editor'), asyncHandler(acosController.performEncryptedNeuralNetwork));
+
 export default router;
 

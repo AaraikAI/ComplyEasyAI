@@ -16,6 +16,8 @@ import { Settings } from './components/Settings';
 // Lazy load AI features for code splitting and bundle optimization
 import { lazy, Suspense } from 'react';
 import ACOSDashboard from './components/ACOSDashboard';
+import SecurityFeatures from './components/SecurityFeatures';
+import RealTimeAnalytics from './components/RealTimeAnalytics';
 
 const PolicyGenerator = lazy(() => import('./components/AIFeatures/PolicyGenerator').then(m => ({ default: m.PolicyGenerator })));
 const ContractAnalyzer = lazy(() => import('./components/AIFeatures/ContractAnalyzer').then(m => ({ default: m.ContractAnalyzer })));
@@ -156,6 +158,10 @@ const MainApp: React.FC = () => {
         return <Settings onNavigateToIntegrations={() => setCurrentView('integrations')} />;
       case 'acos':
         return <ACOSDashboard onBack={() => setCurrentView('dashboard')} onNavigate={setCurrentView} />;
+      case 'security':
+        return <SecurityFeatures onBack={() => setCurrentView('dashboard')} />;
+      case 'analytics':
+        return <RealTimeAnalytics onBack={() => setCurrentView('dashboard')} />;
       default:
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }
