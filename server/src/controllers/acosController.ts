@@ -13,6 +13,7 @@ import physicalAIService from '../services/advanced/physicalAIService';
 import vrCollaborativeReviewService from '../services/advanced/vrCollaborativeReviewService';
 import swarmTaskAllocationService from '../services/advanced/swarmTaskAllocationService';
 import neuroSymbolicAIService from '../services/advanced/neuroSymbolicAIService';
+import jitAccessService from '../services/advanced/jitAccessService';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 
