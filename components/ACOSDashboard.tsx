@@ -59,7 +59,7 @@ interface EarlyWarning {
 
 const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) => void }> = ({ onBack, onNavigate }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot' | 'neuroSymbolic'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot' | 'neuroSymbolic' | 'vr' | 'jit'>('overview');
   const [goals, setGoals] = useState<ComplianceGoal[]>([]);
   const [loops, setLoops] = useState<ControlLoop[]>([]);
   const [warnings, setWarnings] = useState<EarlyWarning[]>([]);
@@ -74,7 +74,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
     // Check if there's a tab to navigate to from chatbot
     const checkTab = () => {
       const acosTab = sessionStorage.getItem('acosActiveTab');
-      if (acosTab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic'].includes(acosTab)) {
+      if (acosTab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic', 'vr', 'jit'].includes(acosTab)) {
         setActiveTab(acosTab as any);
         sessionStorage.removeItem('acosActiveTab'); // Clear after use
       }
@@ -89,7 +89,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
     // Listen for custom event from chatbot
     const handleTabChange = (event: CustomEvent) => {
       const tab = event.detail?.tab;
-      if (tab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic'].includes(tab)) {
+      if (tab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic', 'vr', 'jit'].includes(tab)) {
         setActiveTab(tab as any);
         sessionStorage.removeItem('acosActiveTab');
       }
@@ -198,6 +198,8 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
             { id: 'swarm', label: 'Swarm', icon: Brain },
             { id: 'iot', label: 'IoT Devices', icon: Cpu },
             { id: 'neuroSymbolic', label: 'NeuroSymbolic AI', icon: Sparkles },
+            { id: 'vr', label: 'VR Collaborations', icon: Video },
+            { id: 'jit', label: 'JIT Access', icon: Timer },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -394,6 +396,14 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
 
         {activeTab === 'neuroSymbolic' && (
           <NeuroSymbolicTab />
+        )}
+
+        {activeTab === 'vr' && (
+          <VRCollaborationsTab />
+        )}
+
+        {activeTab === 'jit' && (
+          <JITAccessTab />
         )}
       </div>
     </div>
@@ -1944,6 +1954,142 @@ const NeuroSymbolicTab: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// VR Collaborations Tab
+const VRCollaborationsTab: React.FC = () => {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const loadSessions = async () => {
+    setLoading(true);
+    try {
+      const data = await api.acos.getActiveVRSessions();
+      setSessions(data || []);
+    } catch (error) {
+      console.error('Error loading VR sessions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <Video className="mr-2" size={24} />
+          VR Collaborative Review Sessions
+        </h2>
+        <p className="text-gray-600 mb-4">
+          3D compliance visualization, multi-user VR sessions, real-time collaboration, annotations, and training scenarios.
+        </p>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="animate-spin text-blue-600" size={24} />
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Video className="mx-auto mb-4 text-gray-400" size={48} />
+            <p>No VR sessions available</p>
+            <p className="text-sm mt-2">Create a new VR session to start collaborative compliance reviews</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {sessions.map((session) => (
+              <div key={session.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium">{session.sessionName}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{session.description}</p>
+                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                      <span>Type: {session.sessionType}</span>
+                      <span>Status: {session.status}</span>
+                      <span>Participants: {session.participants?.length || 0}</span>
+                    </div>
+                  </div>
+                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Join Session
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// JIT Access Tab
+const JITAccessTab: React.FC = () => {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const loadSessions = async () => {
+    setLoading(true);
+    try {
+      // TODO: Add API endpoint for JIT access sessions
+      // const data = await api.acos.getJITAccessSessions();
+      // setSessions(data || []);
+      setSessions([]);
+    } catch (error) {
+      console.error('Error loading JIT access sessions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <Timer className="mr-2" size={24} />
+          Just-In-Time Admin Access
+        </h2>
+        <p className="text-gray-600 mb-4">
+          Grant temporary, time-bound privileged access that automatically expires after the task is done. Eliminate dormant admin accounts.
+        </p>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="animate-spin text-blue-600" size={24} />
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Timer className="mx-auto mb-4 text-gray-400" size={48} />
+            <p>No active JIT access sessions</p>
+            <p className="text-sm mt-2">Request temporary admin access when needed</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {sessions.map((session) => (
+              <div key={session.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium">{session.privilege}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{session.reason}</p>
+                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                      <span>Status: {session.status}</span>
+                      <span>Expires: {session.expiresAt ? new Date(session.expiresAt).toLocaleString() : 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

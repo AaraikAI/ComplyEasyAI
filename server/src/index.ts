@@ -30,10 +30,10 @@ import personnelRoutes from './routes/personnel';
 import vendorRoutes from './routes/vendors';
 import enterpriseRoutes from './routes/enterprise';
 
-// aCOS v3.0 Routes
+// aCOS Routes
 import acosRoutes from './routes/acos';
 
-// aCOS v3.0 Services
+// aCOS Services
 import mqttService from './services/advanced/mqttService';
 
 const app = express();
@@ -175,7 +175,7 @@ app.use('/api/personnel', apiLimiter, personnelRoutes);
 app.use('/api/vendors', apiLimiter, vendorRoutes);
 app.use('/api/enterprise', apiLimiter, enterpriseRoutes);
 
-// aCOS v3.0 routes
+// aCOS routes
 app.use('/api/acos', apiLimiter, acosRoutes);
 
 // 404 handler
