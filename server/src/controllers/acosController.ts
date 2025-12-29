@@ -2718,6 +2718,53 @@ class ACOSController {
       throw new AppError(`Failed to validate rule: ${error.message || 'Unknown error'}`, 500);
     }
   };
+
+  // JIT Access
+  requestJITAccess: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { privilege, reason, justification, duration } = req.body;
+      
+      const request = await jitAccessService.requestAccess(
+        authReq.user!.id,
+        authReq.user!.organizationId,
+        privilege,
+        reason,
+        justification,
+        duration || 30
+      );
+      
+      res.json(request);
+    } catch (error: any) {
+      logger.error('Request JIT access error', error);
+      throw new AppError(error.message || 'Failed to request JIT access', 500);
+    }
+  };
+
+  getJITAccessSessions: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const sessions = await jitAccessService.getUserActiveSessions(authReq.user!.id);
+      res.json(sessions);
+    } catch (error) {
+      logger.error('Get JIT access sessions error', error);
+      throw new AppError('Failed to get JIT access sessions', 500);
+    }
+  };
+
+  revokeJITSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { sessionId } = req.params;
+      const { reason } = req.body;
+      
+      await jitAccessService.revokeSession(sessionId, reason || 'Manual revocation');
+      res.json({ success: true });
+    } catch (error: any) {
+      logger.error('Revoke JIT session error', error);
+      throw new AppError(error.message || 'Failed to revoke JIT session', 500);
+    }
+  };
 }
 
 export default new ACOSController();
