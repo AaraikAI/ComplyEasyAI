@@ -2,6 +2,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Settings } from '../Settings';
+import { AuthProvider } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 
 
@@ -27,13 +28,21 @@ vi.mock('../PaymentModal', () => ({
 
 describe('Settings Component', () => {
   it('renders profile tab by default', () => {
-    render(<Settings />);
+    render(
+      <AuthProvider>
+        <Settings />
+      </AuthProvider>
+    );
     expect(screen.getByText('My Profile')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Sarah Connor')).toBeInTheDocument();
   });
 
   it('switches tabs correctly', () => {
-    render(<Settings />);
+    render(
+      <AuthProvider>
+        <Settings />
+      </AuthProvider>
+    );
     fireEvent.click(screen.getByText('Team Members'));
     expect(screen.getByText('Invite Member')).toBeInTheDocument();
 
@@ -42,7 +51,11 @@ describe('Settings Component', () => {
   });
 
   it('handles team member invitation', async () => {
-    render(<Settings />);
+    render(
+      <AuthProvider>
+        <Settings />
+      </AuthProvider>
+    );
     fireEvent.click(screen.getByText('Team Members'));
     fireEvent.click(screen.getByText('Invite Member'));
 
@@ -57,7 +70,11 @@ describe('Settings Component', () => {
   });
 
   it('billing upgrade flow', async () => {
-    render(<Settings />);
+    render(
+      <AuthProvider>
+        <Settings />
+      </AuthProvider>
+    );
     fireEvent.click(screen.getByText('Billing & Plan'));
     
     // Upgrade to Enterprise

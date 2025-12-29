@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { RiskManagement } from '../RiskManagement';
+import { AuthProvider } from '../../contexts/AuthContext';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock the API service - define inline to avoid hoisting issues
@@ -45,7 +46,11 @@ describe('RiskManagement Component', () => {
   });
 
   it('renders risk table with mock data', async () => {
-    render(<RiskManagement onBack={vi.fn()} />);
+    render(
+      <AuthProvider>
+        <RiskManagement onBack={vi.fn()} />
+      </AuthProvider>
+    );
     
     // Wait for data to load
     await waitFor(() => {
@@ -63,7 +68,11 @@ describe('RiskManagement Component', () => {
   });
 
   it('displays risks sorted by severity', async () => {
-    render(<RiskManagement onBack={vi.fn()} />);
+    render(
+      <AuthProvider>
+        <RiskManagement onBack={vi.fn()} />
+      </AuthProvider>
+    );
 
     // Wait for component to load
     await screen.findByText('Risk Management');
@@ -85,7 +94,11 @@ describe('RiskManagement Component', () => {
   });
 
   it('opens remediation modal on manage click', async () => {
-    render(<RiskManagement onBack={vi.fn()} />);
+    render(
+      <AuthProvider>
+        <RiskManagement onBack={vi.fn()} />
+      </AuthProvider>
+    );
 
     // Wait for component and data to load
     await screen.findByText('Risk Management');

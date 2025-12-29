@@ -57,8 +57,6 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
       'github': 'oauth',
       'slack': 'oauth',
       'jira': 'oauth',
-      'gitlab': 'oauth',
-      'bitbucket': 'oauth',
       'microsoft-teams': 'oauth',
       'okta': 'oauth',
       'auth0': 'oauth',
@@ -66,7 +64,6 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
       'salesforce': 'oauth',
       'hubspot': 'oauth',
       'zendesk': 'oauth',
-      'stripe': 'oauth',
       'paypal': 'oauth',
       'discord': 'oauth',
       'trello': 'oauth',
@@ -86,7 +83,6 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
       'pagerduty': 'api-key-secret',
       'twilio': 'api-key-secret',
       'sendgrid': 'api-key-secret',
-      'stripe': 'api-key-secret',
       
       // API Key only
       'qualys': 'api-key',
@@ -102,7 +98,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
       'workday': 'api-key-url',
       'adp': 'api-key-url',
       
-      // Personal Access Token
+      // Personal Access Token (GitLab and Bitbucket use PAT, not OAuth)
       'gitlab': 'pat',
       'bitbucket': 'pat',
       'circleci': 'pat',
