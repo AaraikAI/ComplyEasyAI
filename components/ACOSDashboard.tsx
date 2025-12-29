@@ -31,6 +31,7 @@ import {
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { GoalModal } from './GoalModal';
+import { Plus, X } from 'lucide-react';
 
 interface ComplianceGoal {
   id: string;
@@ -1962,8 +1963,18 @@ const NeuroSymbolicTab: React.FC = () => {
 
 // VR Collaborations Tab
 const VRCollaborationsTab: React.FC = () => {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    sessionName: '',
+    description: '',
+    sessionType: 'review' as 'review' | 'training' | 'simulation' | 'audit',
+    environment: 'compliance_landscape' as string,
+    maxParticipants: 10,
+  });
 
   useEffect(() => {
     loadSessions();
@@ -1981,16 +1992,55 @@ const VRCollaborationsTab: React.FC = () => {
     }
   };
 
+  const handleCreateSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      await api.acos.createVRSession({
+        sessionName: formData.sessionName,
+        description: formData.description,
+        sessionType: formData.sessionType,
+        environment: formData.environment,
+        maxParticipants: formData.maxParticipants,
+      });
+      setShowCreateModal(false);
+      setFormData({
+        sessionName: '',
+        description: '',
+        sessionType: 'review',
+        environment: 'compliance_landscape',
+        maxParticipants: 10,
+      });
+      loadSessions();
+    } catch (error) {
+      console.error('Error creating VR session:', error);
+      alert('Failed to create VR session. Please try again.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-        <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <Video className="mr-2" size={24} />
-          VR Collaborative Review Sessions
-        </h2>
-        <p className="text-gray-600 mb-4">
-          3D compliance visualization, multi-user VR sessions, real-time collaboration, annotations, and training scenarios.
-        </p>
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h2 className="text-xl font-semibold mb-2 flex items-center">
+              <Video className="mr-2" size={24} />
+              VR Collaborative Review Sessions
+            </h2>
+            <p className="text-gray-600">
+              3D compliance visualization, multi-user VR sessions, real-time collaboration, annotations, and training scenarios.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+          >
+            <Plus size={18} />
+            <span>Create Session</span>
+          </button>
+        </div>
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -2016,7 +2066,17 @@ const VRCollaborationsTab: React.FC = () => {
                       <span>Participants: {session.participants?.length || 0}</span>
                     </div>
                   </div>
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  <button 
+                    onClick={() => {
+                      api.acos.joinVRSession(session.id).then(() => {
+                        alert('Joining VR session...');
+                      }).catch(err => {
+                        console.error('Error joining session:', err);
+                        alert('Failed to join session');
+                      });
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
                     Join Session
                   </button>
                 </div>
@@ -2025,14 +2085,125 @@ const VRCollaborationsTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Create VR Session Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Create VR Session</h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateSession} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Session Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.sessionName}
+                  onChange={(e) => setFormData({ ...formData, sessionName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Session Type *
+                </label>
+                <select
+                  value={formData.sessionType}
+                  onChange={(e) => setFormData({ ...formData, sessionType: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="review">Review</option>
+                  <option value="training">Training</option>
+                  <option value="simulation">Simulation</option>
+                  <option value="audit">Audit</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Environment Template
+                </label>
+                <select
+                  value={formData.environment}
+                  onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="compliance_landscape">Compliance Landscape</option>
+                  <option value="control_network">Control Network</option>
+                  <option value="risk_matrix">Risk Matrix</option>
+                  <option value="framework_cluster">Framework Cluster</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Max Participants
+                </label>
+                <input
+                  type="number"
+                  value={formData.maxParticipants}
+                  onChange={(e) => setFormData({ ...formData, maxParticipants: parseInt(e.target.value) || 10 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min={1}
+                  max={50}
+                />
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {creating ? 'Creating...' : 'Create Session'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // JIT Access Tab
 const JITAccessTab: React.FC = () => {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [formData, setFormData] = useState({
+    privilege: 'admin' as 'admin' | 'compliance_admin' | 'security_admin' | 'super_admin',
+    reason: 'emergency_fix' as 'incident_response' | 'compliance_audit' | 'security_investigation' | 'emergency_fix' | 'scheduled_maintenance' | 'data_access_request',
+    justification: '',
+    duration: 30,
+  });
 
   useEffect(() => {
     loadSessions();
@@ -2041,27 +2212,64 @@ const JITAccessTab: React.FC = () => {
   const loadSessions = async () => {
     setLoading(true);
     try {
-      // TODO: Add API endpoint for JIT access sessions
-      // const data = await api.acos.getJITAccessSessions();
-      // setSessions(data || []);
-      setSessions([]);
+      const data = await api.acos.getJITAccessSessions();
+      setSessions(data || []);
     } catch (error) {
       console.error('Error loading JIT access sessions:', error);
+      setSessions([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestAccess = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRequesting(true);
+    try {
+      await api.acos.requestJITAccess({
+        privilege: formData.privilege,
+        reason: formData.reason,
+        justification: formData.justification,
+        duration: formData.duration,
+      });
+      setShowRequestModal(false);
+      setFormData({
+        privilege: 'admin',
+        reason: 'emergency_fix',
+        justification: '',
+        duration: 30,
+      });
+      loadSessions();
+      alert('JIT access requested successfully!');
+    } catch (error: any) {
+      console.error('Error requesting JIT access:', error);
+      alert(error.message || 'Failed to request JIT access. Please try again.');
+    } finally {
+      setRequesting(false);
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-        <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <Timer className="mr-2" size={24} />
-          Just-In-Time Admin Access
-        </h2>
-        <p className="text-gray-600 mb-4">
-          Grant temporary, time-bound privileged access that automatically expires after the task is done. Eliminate dormant admin accounts.
-        </p>
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h2 className="text-xl font-semibold mb-2 flex items-center">
+              <Timer className="mr-2" size={24} />
+              Just-In-Time Admin Access
+            </h2>
+            <p className="text-gray-600">
+              Grant temporary, time-bound privileged access that automatically expires after the task is done. Eliminate dormant admin accounts.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowRequestModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+          >
+            <Plus size={18} />
+            <span>Request Access</span>
+          </button>
+        </div>
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -2079,11 +2287,18 @@ const JITAccessTab: React.FC = () => {
               <div key={session.id} className="border border-gray-200 rounded-lg p-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium">{session.privilege}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{session.reason}</p>
+                    <h3 className="font-medium capitalize">{session.privilege?.replace('_', ' ') || 'Admin Access'}</h3>
+                    <p className="text-sm text-gray-600 mt-1 capitalize">{session.reason?.replace('_', ' ') || 'N/A'}</p>
                     <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                      <span>Status: {session.status}</span>
-                      <span>Expires: {session.expiresAt ? new Date(session.expiresAt).toLocaleString() : 'N/A'}</span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        session.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {session.active ? 'Active' : 'Expired'}
+                      </span>
+                      <span>Expires: {session.endTime ? new Date(session.endTime).toLocaleString() : 'N/A'}</span>
+                      {session.actionsPerformed && session.actionsPerformed.length > 0 && (
+                        <span>Actions: {session.actionsPerformed.length}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2092,6 +2307,103 @@ const JITAccessTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Request JIT Access Modal */}
+      {showRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Request JIT Access</h3>
+              <button
+                onClick={() => setShowRequestModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleRequestAccess} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Privilege Level *
+                </label>
+                <select
+                  value={formData.privilege}
+                  onChange={(e) => setFormData({ ...formData, privilege: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="admin">Admin</option>
+                  <option value="compliance_admin">Compliance Admin</option>
+                  <option value="security_admin">Security Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Reason *
+                </label>
+                <select
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="incident_response">Incident Response</option>
+                  <option value="compliance_audit">Compliance Audit</option>
+                  <option value="security_investigation">Security Investigation</option>
+                  <option value="emergency_fix">Emergency Fix</option>
+                  <option value="scheduled_maintenance">Scheduled Maintenance</option>
+                  <option value="data_access_request">Data Access Request</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Justification *
+                </label>
+                <textarea
+                  value={formData.justification}
+                  onChange={(e) => setFormData({ ...formData, justification: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                  placeholder="Explain why you need temporary admin access..."
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration (minutes) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min={5}
+                  max={480}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Maximum duration depends on privilege level</p>
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowRequestModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={requesting}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {requesting ? 'Requesting...' : 'Request Access'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

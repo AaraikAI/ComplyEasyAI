@@ -772,6 +772,11 @@ export const api = {
     createVRSession: async (data: any) => fetchAPI('/acos/vr/sessions', { method: 'POST', body: JSON.stringify(data) }),
     getVRSessionDetails: async (sessionId: string) => fetchAPI(`/acos/vr/sessions/${sessionId}`),
     joinVRSession: async (sessionId: string) => fetchAPI(`/acos/vr/sessions/${sessionId}/join`, { method: 'POST' }),
+
+    // JIT Access
+    requestJITAccess: async (data: any) => fetchAPI('/acos/jit/request', { method: 'POST', body: JSON.stringify(data) }),
+    getJITAccessSessions: async () => fetchAPI('/acos/jit/sessions'),
+    revokeJITSession: async (sessionId: string, reason?: string) => fetchAPI(`/acos/jit/sessions/${sessionId}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) }),
   },
 };
 
