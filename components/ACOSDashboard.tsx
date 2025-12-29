@@ -175,7 +175,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">aCOS Dashboard</h1>
-          <p className="text-gray-600 mt-1">Autonomous Compliance Operating System v3.0</p>
+          <p className="text-gray-600 mt-1">Autonomous Compliance Operating System</p>
         </div>
         <button
           onClick={onBack}

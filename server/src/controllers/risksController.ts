@@ -394,7 +394,7 @@ class RisksController {
             where: {
               organizationId,
               description: { contains: control.name },
-              status: { in: ['Open', 'In Progress'] },
+              status: { in: ['Open', 'In_Progress'] },
             },
           });
 
@@ -423,7 +423,7 @@ class RisksController {
             where: {
               organizationId,
               description: { contains: `${framework.name} controls without evidence` },
-              status: { in: ['Open', 'In Progress'] },
+              status: { in: ['Open', 'In_Progress'] },
             },
           });
 
@@ -450,7 +450,7 @@ class RisksController {
             where: {
               organizationId,
               description: { contains: `${framework.name} audit overdue` },
-              status: { in: ['Open', 'In Progress'] },
+              status: { in: ['Open', 'In_Progress'] },
             },
           });
 
@@ -488,7 +488,7 @@ class RisksController {
           where: {
             organizationId,
             description: { contains: `${integration.name || integration.provider} integration stale` },
-            status: { in: ['Open', 'In Progress'] },
+            status: { in: ['Open', 'In_Progress'] },
           },
         });
 
@@ -514,7 +514,7 @@ class RisksController {
             where: {
               organizationId,
               description: { contains: `${framework.name} low compliance score` },
-              status: { in: ['Open', 'In Progress'] },
+              status: { in: ['Open', 'In_Progress'] },
             },
           });
 

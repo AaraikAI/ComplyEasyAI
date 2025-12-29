@@ -1040,6 +1040,7 @@ model EdgeComplianceCheck {
   organizationId  String
   checkType       String
   status          String
+  severity        String?   @default("medium")
   details         String
   timestamp       DateTime  @default(now())
   device          IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
