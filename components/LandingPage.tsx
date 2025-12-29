@@ -164,7 +164,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center max-w-3xl mx-auto animate-fadeIn">
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-brand-50 text-brand-700 text-xs font-semibold uppercase tracking-wide mb-6">
-              <Zap size={14} className="mr-1" /> New: aCOS v3.0 - Autonomous Compliance Operating System
+              <Zap size={14} className="mr-1" /> New: aCOS - Autonomous Compliance Operating System
             </div>
             <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-8 leading-tight">
               Compliance that <br/>
@@ -226,7 +226,7 @@ export const LandingPage: React.FC = () => {
                 title: '100+ Integrations', 
                 desc: 'Seamlessly connect with AWS, Google Workspace, GitHub, Jira, Slack, and more to unify your data.'
               },
-              // aCOS v3.0 Features
+              // aCOS Features
               {
                 icon: Target,
                 title: 'Autonomous Compliance Operating System (aCOS™)',

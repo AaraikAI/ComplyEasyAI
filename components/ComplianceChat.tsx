@@ -151,9 +151,11 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
           'swarm': 'Swarm',
           'iot': 'IoT Devices',
           'neuroSymbolic': 'NeuroSymbolic AI',
+          'vr': 'VR Collaborations',
+          'jit': 'JIT Access',
         };
         
-        return `✅ Navigating to aCOS v3.0 > ${tabNames[acosTab] || acosTab}...`;
+        return `✅ Navigating to aCOS > ${tabNames[acosTab] || acosTab}...`;
       }
 
       // Handle Settings sub-tabs
@@ -187,7 +189,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
         'dashboard': 'Dashboard',
         'risks': 'Risk Management',
         'frameworks': 'Frameworks',
-        'acos': 'aCOS v3.0',
+        'acos': 'aCOS',
         'audit': 'Audit Trail',
         'reports': 'Reports',
         'my-tasks': 'My Tasks',
