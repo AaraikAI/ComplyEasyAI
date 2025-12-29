@@ -24,7 +24,9 @@ import {
   History,
   Trash2,
   Sparkles,
-  Loader2
+  Loader2,
+  Video,
+  Timer
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
