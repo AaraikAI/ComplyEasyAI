@@ -2,6 +2,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AIReportGenerator } from '../AIReportGenerator';
+import { AuthProvider } from '../../contexts/AuthContext';
 import { generateComplianceReport } from '../../services/geminiService';
 
 
@@ -14,13 +15,21 @@ vi.mock('../../services/geminiService', () => ({
 
 describe('AIReportGenerator', () => {
   it('renders form inputs', () => {
-    render(<AIReportGenerator />);
+    render(
+      <AuthProvider>
+        <AIReportGenerator />
+      </AuthProvider>
+    );
     expect(screen.getByText('Report Configuration')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Acme Corp')).toBeInTheDocument();
   });
 
   it('disables generate button if context empty', () => {
-    render(<AIReportGenerator />);
+    render(
+      <AuthProvider>
+        <AIReportGenerator />
+      </AuthProvider>
+    );
     const btn = screen.getByText('Generate Report');
     // Initially disabled or check logic? The component disables if !context
     // context starts empty
@@ -30,7 +39,11 @@ describe('AIReportGenerator', () => {
   it('triggers generation', async () => {
     const mockReport = '## Executive Summary\nLooks good.';
     (generateComplianceReport as ReturnType<typeof vi.fn>).mockResolvedValue(mockReport);
-    render(<AIReportGenerator />);
+    render(
+      <AuthProvider>
+        <AIReportGenerator />
+      </AuthProvider>
+    );
 
     const contextArea = screen.getByPlaceholderText(/E.g., We have migrated/i);
     fireEvent.change(contextArea, { target: { value: 'My context data' } });
