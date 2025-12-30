@@ -36,6 +36,36 @@ const SecurityFeatures: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  useEffect(() => {
+    // Check if there's a tab to navigate to from chatbot
+    const checkTab = () => {
+      const securityTab = sessionStorage.getItem('securityActiveTab');
+      if (securityTab && ['zero-trust', 'zkp', 'byok', 'compliance-as-code'].includes(securityTab)) {
+        setActiveTab(securityTab as any);
+        sessionStorage.removeItem('securityActiveTab');
+      }
+    };
+    
+    checkTab();
+    const timeoutId = setTimeout(checkTab, 100);
+    
+    // Listen for custom event from chatbot
+    const handleTabChange = (event: CustomEvent) => {
+      const tab = event.detail?.tab;
+      if (tab && ['zero-trust', 'zkp', 'byok', 'compliance-as-code'].includes(tab)) {
+        setActiveTab(tab as any);
+        sessionStorage.removeItem('securityActiveTab');
+      }
+    };
+    
+    window.addEventListener('securityTabChange', handleTabChange as EventListener);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('securityTabChange', handleTabChange as EventListener);
+    };
+  }, []);
+
   const tabs = [
     { id: 'zero-trust', label: 'Zero Trust', icon: Shield },
     { id: 'zkp', label: 'Zero-Knowledge Proofs', icon: Key },
@@ -114,6 +144,12 @@ const ZeroTrustTab: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const [deviceForm, setDeviceForm] = useState({
+    deviceId: '',
+    deviceType: 'laptop',
+    macAddress: '',
+    ipAddress: '',
+  });
   const [policyForm, setPolicyForm] = useState({
     name: '',
     description: '',
@@ -153,6 +189,32 @@ const ZeroTrustTab: React.FC = () => {
       alert('Zero Trust policy created successfully!');
     } catch (error: any) {
       alert(error.message || 'Failed to create policy');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyDevice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const result = await api.security.verifyDeviceTrust({
+        deviceId: deviceForm.deviceId || `device-${Date.now()}`,
+        deviceType: deviceForm.deviceType,
+        macAddress: deviceForm.macAddress,
+        ipAddress: deviceForm.ipAddress,
+      });
+      setShowDeviceModal(false);
+      setDeviceForm({ deviceId: '', deviceType: 'laptop', macAddress: '', ipAddress: '' });
+      // Optimistically add the device to the list
+      if (result && result.deviceId) {
+        setDevices([result, ...devices]);
+      }
+      // Reload data to ensure consistency
+      await loadData();
+      alert(`Device verified successfully! Trust Score: ${result.trustScore}%`);
+    } catch (error: any) {
+      alert(error.message || 'Failed to verify device');
     } finally {
       setLoading(false);
     }
@@ -308,6 +370,77 @@ const ZeroTrustTab: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Verify Device Modal */}
+      {showDeviceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+            <h3 className="text-xl font-bold mb-4">Verify Device</h3>
+            <form onSubmit={handleVerifyDevice} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Device ID</label>
+                <input
+                  type="text"
+                  value={deviceForm.deviceId}
+                  onChange={(e) => setDeviceForm({ ...deviceForm, deviceId: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  placeholder="Leave empty for auto-generation"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Device Type</label>
+                <select
+                  value={deviceForm.deviceType}
+                  onChange={(e) => setDeviceForm({ ...deviceForm, deviceType: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                >
+                  <option value="laptop">Laptop</option>
+                  <option value="desktop">Desktop</option>
+                  <option value="mobile">Mobile</option>
+                  <option value="server">Server</option>
+                  <option value="iot">IoT Device</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">MAC Address (optional)</label>
+                <input
+                  type="text"
+                  value={deviceForm.macAddress}
+                  onChange={(e) => setDeviceForm({ ...deviceForm, macAddress: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  placeholder="00:11:22:33:44:55"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">IP Address (optional)</label>
+                <input
+                  type="text"
+                  value={deviceForm.ipAddress}
+                  onChange={(e) => setDeviceForm({ ...deviceForm, ipAddress: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  placeholder="192.168.1.1"
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowDeviceModal(false)}
+                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
+                >
+                  {loading ? 'Verifying...' : 'Verify Device'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -322,6 +455,18 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
     controlsImplemented: 0,
     totalControls: 0,
     evidenceHash: '',
+  });
+  const [credentialForm, setCredentialForm] = useState({
+    credentialType: '',
+    credentialHash: '',
+    issuer: '',
+    expirationDate: '',
+  });
+  const [ownershipForm, setOwnershipForm] = useState({
+    assetId: '',
+    assetType: '',
+    ownershipHash: '',
+    timestamp: '',
   });
   const [generatedProof, setGeneratedProof] = useState<any>(null);
 
@@ -455,6 +600,204 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
           )}
         </div>
       )}
+
+      {activeOperation === 'credential' && (
+        <div className="border border-slate-200 rounded-lg p-6">
+          <h3 className="font-semibold mb-4">Generate Credential Proof</h3>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            try {
+              const proof = await api.security.generateCredentialProof({
+                type: credentialForm.credentialType,
+                hash: credentialForm.credentialHash,
+                issuer: credentialForm.issuer,
+                expirationDate: credentialForm.expirationDate,
+              }, 'user-secret-key');
+              setGeneratedProof(proof);
+              loadProofs();
+              alert('Credential proof generated successfully!');
+            } catch (error: any) {
+              alert(error.message || 'Failed to generate proof');
+            } finally {
+              setLoading(false);
+            }
+          }} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Credential Type</label>
+              <select
+                value={credentialForm.credentialType}
+                onChange={(e) => setCredentialForm({ ...credentialForm, credentialType: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                required
+              >
+                <option value="">Select type</option>
+                <option value="certificate">Certificate</option>
+                <option value="license">License</option>
+                <option value="diploma">Diploma</option>
+                <option value="badge">Badge</option>
+                <option value="membership">Membership</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Credential Hash</label>
+              <input
+                type="text"
+                value={credentialForm.credentialHash}
+                onChange={(e) => setCredentialForm({ ...credentialForm, credentialHash: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-sm"
+                placeholder="SHA256 hash of credential"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Issuer</label>
+              <input
+                type="text"
+                value={credentialForm.issuer}
+                onChange={(e) => setCredentialForm({ ...credentialForm, issuer: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                placeholder="Issuing organization"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Expiration Date</label>
+              <input
+                type="date"
+                value={credentialForm.expirationDate}
+                onChange={(e) => setCredentialForm({ ...credentialForm, expirationDate: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
+            >
+              {loading ? 'Generating...' : 'Generate Proof'}
+            </button>
+          </form>
+
+          {generatedProof && (
+            <div className="mt-6 p-4 bg-slate-50 rounded-lg">
+              <h4 className="font-medium mb-2">Generated Credential Proof</h4>
+              <div className="space-y-2 text-sm">
+                <p><strong>Proof ID:</strong> {generatedProof.proofId || generatedProof.id}</p>
+                <p><strong>Credential Type:</strong> {generatedProof.credentialType || credentialForm.credentialType}</p>
+                <p><strong>Issuer:</strong> {generatedProof.issuer || credentialForm.issuer}</p>
+                <p><strong>Valid:</strong> {generatedProof.isValid !== false ? 'Yes' : 'No'}</p>
+                {generatedProof.proof && (
+                  <textarea
+                    value={JSON.stringify(generatedProof.proof, null, 2)}
+                    readOnly
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs"
+                    rows={8}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeOperation === 'ownership' && (
+        <div className="border border-slate-200 rounded-lg p-6">
+          <h3 className="font-semibold mb-4">Generate Ownership Proof</h3>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            try {
+              const proof = await api.security.generateOwnershipProof(
+                ownershipForm.ownershipHash,
+                'user-secret-key'
+              );
+              setGeneratedProof(proof);
+              loadProofs();
+              alert('Ownership proof generated successfully!');
+            } catch (error: any) {
+              alert(error.message || 'Failed to generate proof');
+            } finally {
+              setLoading(false);
+            }
+          }} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Asset Type</label>
+              <select
+                value={ownershipForm.assetType}
+                onChange={(e) => setOwnershipForm({ ...ownershipForm, assetType: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                required
+              >
+                <option value="">Select type</option>
+                <option value="data">Data</option>
+                <option value="document">Document</option>
+                <option value="intellectual_property">Intellectual Property</option>
+                <option value="digital_asset">Digital Asset</option>
+                <option value="compliance_evidence">Compliance Evidence</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Asset ID</label>
+              <input
+                type="text"
+                value={ownershipForm.assetId}
+                onChange={(e) => setOwnershipForm({ ...ownershipForm, assetId: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                placeholder="Unique asset identifier"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Ownership Hash</label>
+              <input
+                type="text"
+                value={ownershipForm.ownershipHash}
+                onChange={(e) => setOwnershipForm({ ...ownershipForm, ownershipHash: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-sm"
+                placeholder="SHA256 hash proving ownership"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Timestamp</label>
+              <input
+                type="datetime-local"
+                value={ownershipForm.timestamp}
+                onChange={(e) => setOwnershipForm({ ...ownershipForm, timestamp: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
+            >
+              {loading ? 'Generating...' : 'Generate Proof'}
+            </button>
+          </form>
+
+          {generatedProof && (
+            <div className="mt-6 p-4 bg-slate-50 rounded-lg">
+              <h4 className="font-medium mb-2">Generated Ownership Proof</h4>
+              <div className="space-y-2 text-sm">
+                <p><strong>Proof ID:</strong> {generatedProof.proofId || generatedProof.id}</p>
+                <p><strong>Asset ID:</strong> {generatedProof.assetId || ownershipForm.assetId}</p>
+                <p><strong>Asset Type:</strong> {generatedProof.assetType || ownershipForm.assetType}</p>
+                <p><strong>Owner Verified:</strong> {generatedProof.isValid !== false ? 'Yes' : 'No'}</p>
+                {generatedProof.proof && (
+                  <textarea
+                    value={JSON.stringify(generatedProof.proof, null, 2)}
+                    readOnly
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs"
+                    rows={8}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -465,7 +808,7 @@ const BYOKTab: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [keyForm, setKeyForm] = useState({
-    provider: 'aws_kms' as 'aws_kms' | 'azure_kv',
+    provider: 'aws_kms' as 'aws_kms' | 'azure_kv' | 'gcp_kms' | 'hashicorp_vault' | 'local',
     region: '',
     vaultUrl: '',
     keyName: '',
@@ -492,7 +835,7 @@ const BYOKTab: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.security.generateBYOKKey(keyForm.provider, {
+      const result = await api.security.generateBYOKKey(keyForm.provider, {
         region: keyForm.region,
         vaultUrl: keyForm.vaultUrl,
         keyName: keyForm.keyName,
@@ -500,7 +843,20 @@ const BYOKTab: React.FC = () => {
       });
       setShowKeyModal(false);
       setKeyForm({ provider: 'aws_kms', region: '', vaultUrl: '', keyName: '', description: '' });
-      loadKeys();
+      // Optimistically add the key to the list
+      if (result && result.keyId) {
+        const newKey = {
+          id: result.keyId,
+          keyId: result.keyId,
+          provider: keyForm.provider,
+          region: result.region || keyForm.region || 'N/A',
+          vaultUrl: result.vaultUrl || keyForm.vaultUrl || '',
+          createdAt: new Date().toISOString(),
+        };
+        setKeys([...keys, newKey]);
+      }
+      // Reload keys from server
+      await loadKeys();
       alert('Key generated successfully!');
     } catch (error: any) {
       alert(error.message || 'Failed to generate key');
@@ -572,6 +928,9 @@ const BYOKTab: React.FC = () => {
                 >
                   <option value="aws_kms">AWS KMS</option>
                   <option value="azure_kv">Azure Key Vault</option>
+                  <option value="gcp_kms">Google Cloud KMS</option>
+                  <option value="hashicorp_vault">HashiCorp Vault</option>
+                  <option value="local">Local Key Management</option>
                 </select>
               </div>
               {keyForm.provider === 'aws_kms' && (
@@ -683,10 +1042,15 @@ const ComplianceAsCodeTab: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.security.createCompliancePolicy(policyForm);
+      const created = await api.security.createCompliancePolicy(policyForm);
       setShowPolicyModal(false);
       setPolicyForm({ name: '', framework: 'SOC2', rego: '', severity: 'high', tags: [] });
-      loadData();
+      // Optimistically add the policy to the list
+      if (created && created.id) {
+        setPolicies([created, ...policies]);
+      }
+      // Reload data to ensure consistency
+      await loadData();
       alert('Policy created successfully!');
     } catch (error: any) {
       alert(error.message || 'Failed to create policy');

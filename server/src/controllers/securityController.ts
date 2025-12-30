@@ -11,6 +11,8 @@ import byokService from '../services/advanced/byokService';
 import complianceAsCodeService from '../services/advanced/complianceAsCodeService';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
+import prisma from '../config/database';
+import crypto from 'crypto';
 
 class SecurityController {
   // ==================== Zero Trust Security ====================
@@ -18,18 +20,34 @@ class SecurityController {
   verifyDeviceTrust: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { deviceId, fingerprint, metadata } = req.body;
+      const { deviceId, deviceType, macAddress, ipAddress, fingerprint, metadata } = req.body;
 
-      if (!deviceId || !fingerprint) {
-        throw new AppError('Device ID and fingerprint are required', 400);
+      if (!deviceId) {
+        throw new AppError('Device ID is required', 400);
       }
 
       await zeroTrustService.initialize(authReq.user!.organizationId);
 
+      // Generate fingerprint from device info if not provided
+      const deviceFingerprint = fingerprint || zeroTrustService.generateDeviceFingerprint({
+        deviceId,
+        deviceType,
+        macAddress,
+        ipAddress,
+      });
+
+      const deviceMetadata = {
+        ...metadata,
+        deviceType,
+        macAddress,
+        ipAddress,
+        userAgent: req.headers['user-agent'],
+      };
+
       const deviceTrust = await zeroTrustService.verifyDeviceTrust(
         deviceId,
-        fingerprint,
-        metadata || {},
+        deviceFingerprint,
+        deviceMetadata,
         authReq.user!.organizationId
       );
 
@@ -140,8 +158,9 @@ class SecurityController {
   getDeviceTrusts: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      // Implementation would fetch from database
-      res.json([]);
+      await zeroTrustService.initialize(authReq.user!.organizationId);
+      const devices = await zeroTrustService.getAllDeviceTrusts(authReq.user!.organizationId);
+      res.json(devices);
     } catch (error: any) {
       logger.error('Get device trusts error', error);
       throw new AppError('Failed to get device trusts', 500);
@@ -249,8 +268,46 @@ class SecurityController {
         throw new AppError('Credential and secret are required', 400);
       }
 
-      const proof = await zeroKnowledgeService.generateCredentialProof(credential, secret);
-      res.json(proof);
+      // Handle frontend format: { type, hash, issuer, expirationDate }
+      // Convert to service format: { role, permissions, expiryDate }
+      const credentialData = {
+        role: credential.type || credential.role || 'user',
+        permissions: credential.permissions || ['read'],
+        expiryDate: credential.expirationDate 
+          ? new Date(credential.expirationDate) 
+          : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Default 1 year
+      };
+
+      const authReq = req as AuthRequest;
+      const proof = await zeroKnowledgeService.generateCredentialProof(credentialData, secret);
+      
+      const proofId = crypto.randomBytes(16).toString('hex');
+      
+      // Store proof in auditLog
+      await prisma.auditLog.create({
+        data: {
+          action: 'ZK Proof Generated: credential_verification',
+          organizationId: authReq.user!.organizationId,
+          hash: proofId,
+          details: JSON.stringify({
+            proofId,
+            proofType: 'credential_verification',
+            credentialType: credential.type || credential.role,
+            issuer: credential.issuer,
+            publicSignals: proof.publicSignals,
+          }),
+        },
+      });
+      
+      // Return proof with metadata
+      res.json({
+        proofId,
+        proof,
+        credentialType: credential.type || credential.role,
+        issuer: credential.issuer,
+        isValid: true,
+        timestamp: new Date(),
+      });
     } catch (error: any) {
       logger.error('Generate credential proof error', error);
       throw new AppError(error.message || 'Failed to generate credential proof', 500);
@@ -288,7 +345,30 @@ class SecurityController {
         dataHash,
         secret
       );
-      res.json(proof);
+      
+      const proofId = crypto.randomBytes(16).toString('hex');
+      
+      // Store proof in auditLog
+      await prisma.auditLog.create({
+        data: {
+          action: 'ZK Proof Generated: data_ownership',
+          organizationId: authReq.user!.organizationId,
+          hash: proofId,
+          details: JSON.stringify({
+            proofId,
+            proofType: 'data_ownership',
+            dataHash,
+            publicSignals: proof.publicSignals,
+          }),
+        },
+      });
+      
+      res.json({
+        ...proof,
+        proofId,
+        dataHash,
+        timestamp: new Date(),
+      });
     } catch (error: any) {
       logger.error('Generate ownership proof error', error);
       throw new AppError(error.message || 'Failed to generate ownership proof', 500);
@@ -313,8 +393,8 @@ class SecurityController {
   getZKProofs: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      // Implementation would fetch proofs from database
-      res.json([]);
+      const proofs = await zeroKnowledgeService.getAllProofs(authReq.user!.organizationId);
+      res.json(proofs);
     } catch (error: any) {
       logger.error('Get ZK proofs error', error);
       throw new AppError('Failed to get ZK proofs', 500);
@@ -362,11 +442,45 @@ class SecurityController {
           keyName,
           authReq.user!.organizationId
         );
+      } else if (provider === 'gcp_kms' || provider === 'hashicorp_vault' || provider === 'local') {
+        // For other providers, return a mock key ID in development
+        // In production, these would need proper implementation
+        if (process.env.NODE_ENV === 'development') {
+          keyId = `mock-${provider}-${Date.now()}`;
+          logger.info(`Mock ${provider} key created: ${keyId} for org ${authReq.user!.organizationId}`);
+        } else {
+          throw new AppError(`${provider} provider is not yet fully implemented. Please use AWS KMS or Azure Key Vault.`, 400);
+        }
       } else {
-        throw new AppError('Invalid provider. Must be aws_kms or azure_kv', 400);
+        throw new AppError('Invalid provider. Supported: aws_kms, azure_kv, gcp_kms, hashicorp_vault, local', 400);
       }
 
-      res.json({ keyId, provider, region, vaultUrl });
+      // Store key in auditLog for retrieval
+      await prisma.auditLog.create({
+        data: {
+          action: `BYOK Key Created: ${provider}`,
+          organizationId: authReq.user!.organizationId,
+          hash: keyId,
+          details: JSON.stringify({
+            keyId,
+            provider,
+            region: region || null,
+            vaultUrl: vaultUrl || null,
+            keyName: keyName || null,
+            description: description || null,
+          }),
+        },
+      });
+
+      // Return key information with all details
+      res.json({ 
+        keyId, 
+        provider, 
+        region: region || null, 
+        vaultUrl: vaultUrl || null,
+        keyName: keyName || null,
+        description: description || null,
+      });
     } catch (error: any) {
       logger.error('Generate BYOK key error', error);
       throw new AppError(error.message || 'Failed to generate BYOK key', 500);
@@ -405,11 +519,79 @@ class SecurityController {
   getBYOKKeys: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      // Implementation would fetch keys from database
-      res.json([]);
+      
+      if (!authReq.user || !authReq.user.organizationId) {
+        throw new AppError('User not authenticated', 401);
+      }
+
+      // Fetch keys from auditLog
+      const logs = await prisma.auditLog.findMany({
+        where: {
+          organizationId: authReq.user.organizationId,
+          action: {
+            contains: 'BYOK Key',
+          },
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 100,
+      });
+
+      const keys = logs.map(log => {
+        try {
+          if (!log.details) {
+            // If no details, return basic info from log
+            return {
+              id: log.id,
+              keyId: log.hash,
+              provider: 'unknown',
+              region: '',
+              vaultUrl: '',
+              keyName: '',
+              description: '',
+              createdAt: log.timestamp,
+            };
+          }
+          
+          let details: any;
+          try {
+            details = typeof log.details === 'string' 
+              ? JSON.parse(log.details) 
+              : log.details;
+          } catch (parseError: any) {
+            logger.warn('Failed to parse BYOK key details', { logId: log.id, error: parseError.message });
+            details = {};
+          }
+            
+          return {
+            id: log.id,
+            keyId: details.keyId || log.hash,
+            provider: details.provider || 'unknown',
+            region: details.region || '',
+            vaultUrl: details.vaultUrl || '',
+            keyName: details.keyName || '',
+            description: details.description || '',
+            createdAt: log.timestamp,
+          };
+        } catch (e: any) {
+          logger.error('Error processing BYOK key', { error: e.message, logId: log.id });
+          // Return basic info if processing fails
+          return {
+            id: log.id,
+            keyId: log.hash,
+            provider: 'unknown',
+            region: '',
+            vaultUrl: '',
+            keyName: '',
+            description: '',
+            createdAt: log.timestamp,
+          };
+        }
+      });
+
+      res.json(keys);
     } catch (error: any) {
-      logger.error('Get BYOK keys error', error);
-      throw new AppError('Failed to get BYOK keys', 500);
+      logger.error('Get BYOK keys error', { error: error.message, stack: error.stack });
+      throw new AppError(error.message || 'Failed to get BYOK keys', 500);
     }
   };
 

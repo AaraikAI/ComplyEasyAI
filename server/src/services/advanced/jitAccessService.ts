@@ -94,12 +94,16 @@ class JITAccessService {
       // Validate request
       const policy = await this.getAccessPolicy(privilege);
 
+      if (!policy) {
+        throw new Error(`No access policy found for privilege level: ${privilege}`);
+      }
+
       if (!policy.allowedReasons.includes(reason)) {
-        throw new Error(`Reason '${reason}' not allowed for privilege '${privilege}'`);
+        throw new Error(`Reason '${reason}' not allowed for privilege '${privilege}'. Allowed reasons: ${policy.allowedReasons.join(', ')}`);
       }
 
       if (durationMinutes > policy.maxDuration) {
-        throw new Error(`Duration exceeds maximum of ${policy.maxDuration} minutes`);
+        throw new Error(`Duration ${durationMinutes} minutes exceeds maximum of ${policy.maxDuration} minutes for privilege '${privilege}'`);
       }
 
       // Create access request
@@ -131,9 +135,15 @@ class JITAccessService {
       logger.info(`JIT access requested: ${userId} -> ${privilege} (${durationMinutes}min)`);
 
       return request;
-    } catch (error) {
-      logger.error('Error requesting JIT access', error);
-      throw new Error('JIT access request failed');
+    } catch (error: any) {
+      logger.error('Error requesting JIT access', {
+        error: error.message || error,
+        stack: error.stack,
+        userId,
+        privilege,
+        reason,
+      });
+      throw new Error(error.message || 'JIT access request failed');
     }
   }
 
@@ -387,55 +397,103 @@ class JITAccessService {
     }
 
     // Get pending/approved requests from audit logs
+    // We need to get both original requests and updates, then find the latest status for each request
     try {
       const auditLogs = await prisma.auditLog.findMany({
         where: {
           userId,
-          action: {
-            startsWith: 'JIT Access Request:',
-          },
+          OR: [
+            {
+              action: {
+                startsWith: 'JIT Access Request:',
+              },
+            },
+            {
+              action: {
+                startsWith: 'JIT Access Request Updated:',
+              },
+            },
+          ],
         },
         orderBy: {
           timestamp: 'desc',
         },
-        take: 50,
+        take: 100, // Get more entries to find all requests and their updates
       });
+
+      // Group logs by requestId to find the latest status for each request
+      const requestMap = new Map<string, any>();
 
       for (const log of auditLogs) {
         try {
           const details = JSON.parse(log.details || '{}');
-          const request: JITAccessRequest = {
-            id: details.requestId || log.id,
-            userId: log.userId || userId,
-            organizationId: log.organizationId || '',
-            requestedPrivilege: details.privilege || 'admin',
-            reason: details.reason || 'incident_response',
-            justification: details.justification || '',
-            duration: details.duration || 30,
-            status: details.status || 'pending',
-            createdAt: log.timestamp,
-            approvedAt: details.approvedAt ? new Date(details.approvedAt) : undefined,
-            expiresAt: details.expiresAt ? new Date(details.expiresAt) : undefined,
-          };
-
-          // Only include if not already in active sessions
-          const hasActiveSession = results.some(
-            (r) => {
-              if ('requestId' in r) {
-                // This is a session, check if it matches this request
-                return (r as JITSession).requestId === request.id;
-              }
-              return false;
+          const requestId = details.requestId || log.id;
+          
+          // Only process if we haven't seen a more recent entry for this request
+          if (!requestMap.has(requestId) || log.timestamp > requestMap.get(requestId).timestamp) {
+            let status = details.status || 'pending';
+            let expiresAt = details.expiresAt ? new Date(details.expiresAt) : undefined;
+            
+            // Check if request has expired
+            if (expiresAt && expiresAt < new Date() && (status === 'approved' || status === 'pending')) {
+              status = 'expired';
+              // Update the status in the audit log (async, don't wait)
+              this.updateAccessRequestStatus(requestId, 'expired', log.organizationId).catch(err => {
+                logger.error('Error updating expired request status', err);
+              });
             }
-          );
-
-          // Include pending requests and approved requests that don't have active sessions
-          if (!hasActiveSession && (request.status === 'pending' || request.status === 'approved')) {
-            results.push(request);
+            
+            requestMap.set(requestId, {
+              id: requestId,
+              userId: log.userId || userId,
+              organizationId: log.organizationId || '',
+              requestedPrivilege: details.privilege || 'admin',
+              reason: details.reason || 'incident_response',
+              justification: details.justification || '',
+              duration: details.duration || 30,
+              status: status,
+              createdAt: log.timestamp,
+              approvedAt: details.approvedAt ? new Date(details.approvedAt) : undefined,
+              expiresAt: expiresAt,
+              timestamp: log.timestamp,
+            });
           }
         } catch (parseError) {
           // Skip invalid log entries
           continue;
+        }
+      }
+
+      // Convert map values to array and add to results
+      for (const requestData of requestMap.values()) {
+        const request: JITAccessRequest = {
+          id: requestData.id,
+          userId: requestData.userId,
+          organizationId: requestData.organizationId,
+          requestedPrivilege: requestData.requestedPrivilege,
+          reason: requestData.reason,
+          justification: requestData.justification,
+          duration: requestData.duration,
+          status: requestData.status,
+          createdAt: requestData.createdAt,
+          approvedAt: requestData.approvedAt,
+          expiresAt: requestData.expiresAt,
+        };
+
+        // Only include if not already in active sessions
+        const hasActiveSession = results.some(
+          (r) => {
+            if ('requestId' in r) {
+              // This is a session, check if it matches this request
+              return (r as JITSession).requestId === request.id;
+            }
+            return false;
+          }
+        );
+
+        // Include all requests (pending, approved, expired, revoked) that don't have active sessions
+        if (!hasActiveSession) {
+          results.push(request);
         }
       }
     } catch (error) {
@@ -572,7 +630,12 @@ class JITAccessService {
       },
     };
 
-    return policies[privilege];
+    const policy = policies[privilege];
+    if (!policy) {
+      logger.error(`No access policy found for privilege level: ${privilege}`);
+      throw new Error(`Invalid privilege level: ${privilege}`);
+    }
+    return policy;
   }
 
   /**
@@ -624,20 +687,152 @@ class JITAccessService {
   }
 
   /**
-   * Get access request by ID
+   * Get access request by ID (finds the most recent entry including updates)
    */
   private async getAccessRequest(requestId: string): Promise<JITAccessRequest | null> {
-    // In production, retrieve from database
-    // For now, return mock data
-    return null;
+    try {
+      // Search for both original requests and updates
+      const logs = await prisma.auditLog.findMany({
+        where: {
+          OR: [
+            {
+              action: {
+                startsWith: 'JIT Access Request:',
+              },
+            },
+            {
+              action: {
+                startsWith: 'JIT Access Request Updated:',
+              },
+            },
+          ],
+          details: {
+            contains: requestId,
+          },
+        },
+        orderBy: {
+          timestamp: 'desc',
+        },
+        take: 10, // Get recent entries to find the latest status
+      });
+
+      if (logs.length === 0) return null;
+
+      // Find the log entry with the matching requestId
+      for (const log of logs) {
+        try {
+          const details = JSON.parse(log.details || '{}');
+          if (details.requestId === requestId) {
+            return {
+              id: details.requestId || log.id,
+              userId: log.userId || '',
+              organizationId: log.organizationId || '',
+              requestedPrivilege: details.privilege || 'admin',
+              reason: details.reason || 'incident_response',
+              justification: details.justification || '',
+              duration: details.duration || 30,
+              status: details.status || 'pending',
+              createdAt: log.timestamp,
+              approvedAt: details.approvedAt ? new Date(details.approvedAt) : undefined,
+              expiresAt: details.expiresAt ? new Date(details.expiresAt) : undefined,
+              approvedBy: details.approvedBy,
+            };
+          }
+        } catch (parseError) {
+          continue;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Error getting access request', error);
+      return null;
+    }
   }
 
   /**
    * Update access request
    */
   private async updateAccessRequest(request: JITAccessRequest): Promise<void> {
-    // In production, update in database
-    logger.info(`Updated access request: ${request.id} - ${request.status}`);
+    try {
+      // Get the original request to preserve all original data if needed
+      const originalRequest = await this.getAccessRequest(request.id);
+      
+      // Use original request data if available, otherwise use the passed request
+      const baseRequest = originalRequest || request;
+
+      // Update the details with new status and other fields
+      const updatedDetails = {
+        requestId: request.id,
+        privilege: request.requestedPrivilege,
+        reason: request.reason,
+        justification: request.justification,
+        duration: request.duration,
+        status: request.status,
+        approvedBy: request.approvedBy || baseRequest.approvedBy,
+        approvedAt: request.approvedAt ? request.approvedAt.toISOString() : (baseRequest.approvedAt ? baseRequest.approvedAt.toISOString() : undefined),
+        expiresAt: request.expiresAt ? request.expiresAt.toISOString() : (baseRequest.expiresAt ? baseRequest.expiresAt.toISOString() : undefined),
+      };
+
+      // Create a new audit log entry for the update
+      await prisma.auditLog.create({
+        data: {
+          action: `JIT Access Request Updated: ${request.requestedPrivilege}`,
+          userId: request.userId,
+          organizationId: request.organizationId,
+          hash: crypto.randomBytes(32).toString('hex'),
+          details: JSON.stringify(updatedDetails),
+        },
+      });
+
+      logger.info(`Updated access request: ${request.id} - ${request.status}`);
+    } catch (error) {
+      logger.error('Error updating access request', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update access request status only
+   */
+  private async updateAccessRequestStatus(requestId: string, status: string, organizationId: string): Promise<void> {
+    try {
+      const request = await this.getAccessRequest(requestId);
+      if (request) {
+        request.status = status as any;
+        await this.updateAccessRequest(request);
+      }
+    } catch (error) {
+      logger.error('Error updating access request status', error);
+    }
+  }
+
+  /**
+   * Cancel access request
+   */
+  async cancelAccessRequest(requestId: string, userId: string): Promise<void> {
+    try {
+      const request = await this.getAccessRequest(requestId);
+      if (!request) {
+        throw new Error('Access request not found');
+      }
+
+      if (request.userId !== userId) {
+        throw new Error('Unauthorized to cancel this request');
+      }
+
+      if (request.status !== 'pending') {
+        throw new Error(`Cannot cancel request with status: ${request.status}`);
+      }
+
+      request.status = 'revoked';
+      await this.updateAccessRequest(request);
+
+      logger.info(`JIT access request cancelled: ${requestId} by ${userId}`);
+    } catch (error) {
+      logger.error('Error cancelling access request', error);
+      throw error;
+    }
   }
 
   /**

@@ -117,18 +117,37 @@ class ZeroTrustService {
       }
 
       // Calculate trust score
-      const trustScore = await this.calculateDeviceTrustScore(
-        deviceId,
-        fingerprint,
-        metadata,
-        organizationId
-      );
+      let trustScore: number;
+      try {
+        trustScore = await this.calculateDeviceTrustScore(
+          deviceId,
+          fingerprint,
+          metadata,
+          organizationId
+        );
+      } catch (error: any) {
+        logger.error('Error calculating trust score', error);
+        // Default to moderate trust score on error
+        trustScore = 60;
+      }
 
       const isTrusted = trustScore >= 70; // 70% threshold
 
+      // Detect device type from metadata (including deviceType field if present)
+      let detectedDeviceType: DeviceTrust['deviceType'];
+      try {
+        detectedDeviceType = this.detectDeviceType({ 
+          ...metadata, 
+          deviceType: (metadata as any).deviceType || undefined 
+        });
+      } catch (error: any) {
+        logger.error('Error detecting device type', error);
+        detectedDeviceType = 'browser'; // Default fallback
+      }
+
       const deviceTrust: DeviceTrust = {
         deviceId,
-        deviceType: this.detectDeviceType(metadata),
+        deviceType: detectedDeviceType,
         fingerprint,
         trustScore,
         lastVerified: new Date(),
@@ -139,16 +158,39 @@ class ZeroTrustService {
       // Cache the result
       this.deviceTrustCache.set(deviceId, deviceTrust);
 
-      // Store in database
-      await this.storeDeviceTrust(deviceId, deviceTrust, organizationId);
+      // Store in database (don't fail verification if storage fails)
+      try {
+        await this.storeDeviceTrust(deviceId, deviceTrust, organizationId);
+      } catch (error: any) {
+        logger.error('Error storing device trust (non-fatal)', error);
+        // Continue - verification succeeded even if storage failed
+      }
 
       logger.info(`Device trust verified: ${deviceId} - Score: ${trustScore}% - Trusted: ${isTrusted}`);
 
       return deviceTrust;
-    } catch (error) {
-      logger.error('Error verifying device trust', error);
-      throw new Error('Device trust verification failed');
+    } catch (error: any) {
+      logger.error('Error verifying device trust', {
+        error: error.message || error,
+        stack: error.stack,
+        deviceId,
+        organizationId,
+      });
+      throw new Error(`Device trust verification failed: ${error.message || error}`);
     }
+  }
+
+  /**
+   * Generate device fingerprint from device information
+   */
+  generateDeviceFingerprint(deviceInfo: {
+    deviceId: string;
+    deviceType?: string;
+    macAddress?: string;
+    ipAddress?: string;
+  }): string {
+    const data = `${deviceInfo.deviceId}-${deviceInfo.deviceType || 'unknown'}-${deviceInfo.macAddress || ''}-${deviceInfo.ipAddress || ''}`;
+    return crypto.createHash('sha256').update(data).digest('hex');
   }
 
   /**
@@ -162,25 +204,35 @@ class ZeroTrustService {
   ): Promise<number> {
     let score = 0;
 
-    // Check if device is known (30 points)
-    const knownDevice = await prisma.deviceTrust.findFirst({
-      where: {
-        deviceId,
-        organizationId,
-        isTrusted: true,
-      },
-    });
-    if (knownDevice) score += 30;
+    try {
+      // Check if device is known (30 points)
+      const knownDevice = await prisma.deviceTrust.findFirst({
+        where: {
+          deviceId,
+          organizationId,
+          isTrusted: true,
+        },
+      });
+      if (knownDevice) score += 30;
+    } catch (error: any) {
+      logger.error('Error checking known device', error);
+      // Continue with score calculation
+    }
 
-    // Check fingerprint consistency (20 points)
-    const fingerprintMatch = await prisma.deviceTrust.findFirst({
-      where: {
-        deviceId,
-        fingerprint,
-        organizationId,
-      },
-    });
-    if (fingerprintMatch) score += 20;
+    try {
+      // Check fingerprint consistency (20 points)
+      const fingerprintMatch = await prisma.deviceTrust.findFirst({
+        where: {
+          deviceId,
+          fingerprint,
+          organizationId,
+        },
+      });
+      if (fingerprintMatch) score += 20;
+    } catch (error: any) {
+      logger.error('Error checking fingerprint consistency', error);
+      // Continue with score calculation
+    }
 
     // Check location (20 points)
     if (metadata.location) {
@@ -195,7 +247,7 @@ class ZeroTrustService {
     }
 
     // Check device metadata consistency (15 points)
-    const metadataConsistency = this.checkMetadataConsistency(deviceId, metadata, organizationId);
+    const metadataConsistency = await this.checkMetadataConsistency(deviceId, metadata, organizationId);
     score += metadataConsistency * 15;
 
     return Math.min(100, score);
@@ -204,7 +256,16 @@ class ZeroTrustService {
   /**
    * Detect device type from metadata
    */
-  private detectDeviceType(metadata: DeviceTrust['metadata']): DeviceTrust['deviceType'] {
+  private detectDeviceType(metadata: DeviceTrust['metadata'] & { deviceType?: string }): DeviceTrust['deviceType'] {
+    // First check if deviceType is explicitly provided
+    if (metadata.deviceType) {
+      const type = metadata.deviceType.toLowerCase();
+      if (type === 'laptop' || type === 'desktop') return 'browser';
+      if (type === 'mobile') return 'mobile';
+      if (type === 'server') return 'server';
+      if (type === 'iot') return 'iot';
+    }
+    // Fallback to userAgent detection
     if (metadata.userAgent?.includes('Mobile')) return 'mobile';
     if (metadata.userAgent?.includes('Server')) return 'server';
     if (metadata.userAgent?.includes('IoT')) return 'iot';
@@ -246,28 +307,41 @@ class ZeroTrustService {
     metadata: DeviceTrust['metadata'],
     organizationId: string
   ): Promise<number> {
-    const previous = await prisma.deviceTrust.findFirst({
-      where: { deviceId, organizationId },
-      orderBy: { lastVerified: 'desc' },
-    });
+    try {
+      const previous = await prisma.deviceTrust.findFirst({
+        where: { deviceId, organizationId },
+        orderBy: { lastVerified: 'desc' },
+      });
 
-    if (!previous) return 0.5; // New device, moderate trust
+      if (!previous) return 0.5; // New device, moderate trust
 
-    // Compare metadata
-    let matches = 0;
-    let total = 0;
+      // Compare metadata
+      let matches = 0;
+      let total = 0;
 
-    if (metadata.os && previous.metadata?.os) {
-      total++;
-      if (metadata.os === previous.metadata.os) matches++;
+      const prevMetadata = previous.metadata as any;
+
+      if (metadata.os && prevMetadata?.os) {
+        total++;
+        if (metadata.os === prevMetadata.os) matches++;
+      }
+
+      if (metadata.browser && prevMetadata?.browser) {
+        total++;
+        if (metadata.browser === prevMetadata.browser) matches++;
+      }
+
+      // Check MAC address if available
+      if (metadata.macAddress && prevMetadata?.macAddress) {
+        total++;
+        if (metadata.macAddress === prevMetadata.macAddress) matches++;
+      }
+
+      return total > 0 ? matches / total : 0.5;
+    } catch (error: any) {
+      logger.error('Error checking metadata consistency', error);
+      return 0.5; // Default moderate trust on error
     }
-
-    if (metadata.browser && previous.metadata?.browser) {
-      total++;
-      if (metadata.browser === previous.metadata.browser) matches++;
-    }
-
-    return total > 0 ? matches / total : 0.5;
   }
 
   /**
@@ -544,11 +618,12 @@ class ZeroTrustService {
           },
         },
         update: {
+          deviceType: deviceTrust.deviceType,
           fingerprint: deviceTrust.fingerprint,
           trustScore: deviceTrust.trustScore,
           isTrusted: deviceTrust.isTrusted,
           lastVerified: deviceTrust.lastVerified,
-          metadata: JSON.stringify(deviceTrust.metadata),
+          metadata: deviceTrust.metadata as any, // Prisma handles JSON automatically
         },
         create: {
           deviceId,
@@ -558,11 +633,18 @@ class ZeroTrustService {
           trustScore: deviceTrust.trustScore,
           isTrusted: deviceTrust.isTrusted,
           lastVerified: deviceTrust.lastVerified,
-          metadata: JSON.stringify(deviceTrust.metadata),
+          metadata: deviceTrust.metadata as any, // Prisma handles JSON automatically
         },
       });
-    } catch (error) {
-      logger.error('Error storing device trust', error);
+    } catch (error: any) {
+      logger.error('Error storing device trust', {
+        error: error.message || error,
+        deviceId,
+        organizationId,
+        code: error.code,
+      });
+      // Don't throw - allow verification to succeed even if storage fails
+      // In production, you might want to throw here
     }
   }
 
@@ -611,6 +693,31 @@ class ZeroTrustService {
     }
 
     return null;
+  }
+
+  /**
+   * Get all device trusts for an organization
+   */
+  async getAllDeviceTrusts(organizationId: string): Promise<DeviceTrust[]> {
+    try {
+      const storedDevices = await prisma.deviceTrust.findMany({
+        where: { organizationId },
+        orderBy: { lastVerified: 'desc' },
+      });
+
+      return storedDevices.map(stored => ({
+        deviceId: stored.deviceId,
+        deviceType: stored.deviceType as any,
+        fingerprint: stored.fingerprint,
+        trustScore: stored.trustScore,
+        lastVerified: stored.lastVerified,
+        isTrusted: stored.isTrusted,
+        metadata: (stored.metadata as any) || {},
+      }));
+    } catch (error) {
+      logger.error('Error getting all device trusts', error);
+      return [];
+    }
   }
 
   /**

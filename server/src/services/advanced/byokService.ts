@@ -357,6 +357,14 @@ class BYOKService {
     credentials?: any
   ): Promise<string> {
     try {
+      // In development mode without AWS credentials, return a mock key ID
+      if (process.env.NODE_ENV === 'development' && !credentials && !process.env.AWS_ACCESS_KEY_ID) {
+        logger.warn('AWS credentials not configured. Returning mock key ID for development.');
+        const mockKeyId = `arn:aws:kms:${region}:123456789012:key/mock-${Date.now()}`;
+        logger.info(`Mock AWS KMS key created: ${mockKeyId} for org ${organizationId}`);
+        return mockKeyId;
+      }
+
       const client = this.getKMSClient(region, credentials);
 
       const command = new CreateKeyCommand({
@@ -379,9 +387,14 @@ class BYOKService {
       logger.info(`Created AWS KMS key: ${response.KeyMetadata.KeyId} for org ${organizationId}`);
 
       return response.KeyMetadata.KeyId;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error creating AWS KMS key', error);
-      throw new Error('AWS KMS key creation failed');
+      // In development, return mock key if AWS call fails
+      if (process.env.NODE_ENV === 'development') {
+        logger.warn('Returning mock key ID due to AWS error in development mode');
+        return `arn:aws:kms:${region}:123456789012:key/mock-${Date.now()}`;
+      }
+      throw new Error(`AWS KMS key creation failed: ${error.message || error}`);
     }
   }
 
@@ -394,6 +407,14 @@ class BYOKService {
     organizationId: string
   ): Promise<string> {
     try {
+      // In development mode without Azure credentials, return a mock key name
+      if (process.env.NODE_ENV === 'development' && !process.env.AZURE_CLIENT_ID) {
+        logger.warn('Azure credentials not configured. Returning mock key name for development.');
+        const mockKeyName = `mock-${keyName}-${Date.now()}`;
+        logger.info(`Mock Azure Key Vault key created: ${mockKeyName} for org ${organizationId}`);
+        return mockKeyName;
+      }
+
       const keyClient = this.getAzureKeyClient(vaultUrl);
 
       const result = await keyClient.createRsaKey(keyName, {
@@ -407,9 +428,14 @@ class BYOKService {
       logger.info(`Created Azure Key Vault key: ${result.name} for org ${organizationId}`);
 
       return result.name;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error creating Azure Key Vault key', error);
-      throw new Error('Azure Key Vault key creation failed');
+      // In development, return mock key if Azure call fails
+      if (process.env.NODE_ENV === 'development') {
+        logger.warn('Returning mock key name due to Azure error in development mode');
+        return `mock-${keyName}-${Date.now()}`;
+      }
+      throw new Error(`Azure Key Vault key creation failed: ${error.message || error}`);
     }
   }
 

@@ -100,11 +100,27 @@ class ComplianceAsCodeService {
         ...policy,
       };
 
-      // Validate Rego syntax
-      await this.validateRegoSyntax(policy.rego);
+      // Validate Rego syntax (skip in development if OPA not available)
+      try {
+        await this.validateRegoSyntax(policy.rego);
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          logger.warn('Rego syntax validation skipped in development mode', error);
+        } else {
+          throw error;
+        }
+      }
 
-      // Save policy to OPA
-      await this.uploadPolicyToOPA(policyId, policy.rego);
+      // Save policy to OPA (skip in development if OPA not available)
+      try {
+        await this.uploadPolicyToOPA(policyId, policy.rego);
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          logger.warn('OPA upload skipped in development mode', error);
+        } else {
+          throw error;
+        }
+      }
 
       // Store policy metadata in database
       await this.storePolicyMetadata(organizationId, fullPolicy);
@@ -563,20 +579,70 @@ allow {
    */
   async getPoliciesByFramework(
     organizationId: string,
-    framework: string
+    framework?: string
   ): Promise<Policy[]> {
-    // In production, retrieve from database
-    // For now, return mock policies
-    return [
-      {
-        id: 'policy-1',
-        name: 'Encryption at Rest',
-        framework,
-        rego: '',
-        severity: 'critical',
-        tags: ['encryption', 'data-protection'],
-      },
-    ];
+    try {
+      // Fetch policies from auditLog
+      const whereClause: any = {
+        organizationId,
+        action: {
+          startsWith: 'Policy Created:',
+        },
+      };
+
+      const logs = await prisma.auditLog.findMany({
+        where: whereClause,
+        orderBy: { timestamp: 'desc' },
+        take: 100,
+      });
+
+      const policies: Policy[] = [];
+
+      for (const log of logs) {
+        try {
+          if (!log.details) continue;
+
+          const details = typeof log.details === 'string' 
+            ? JSON.parse(log.details) 
+            : log.details;
+
+          // Filter by framework if provided
+          if (framework && details.framework !== framework) {
+            continue;
+          }
+
+          // Extract policy name from action (format: "Policy Created: {name}") or use stored name
+          const policyName = details.name || log.action.replace('Policy Created: ', '');
+
+          // Use rego from details if available, otherwise try to read from file
+          let rego = details.rego || '';
+          if (!rego) {
+            const policyFile = path.join(this.policiesPath, `${details.policyId}.rego`);
+            if (fs.existsSync(policyFile)) {
+              rego = fs.readFileSync(policyFile, 'utf-8');
+            }
+          }
+
+          policies.push({
+            id: details.policyId,
+            name: policyName,
+            framework: details.framework || 'SOC2',
+            rego: rego,
+            severity: details.severity || 'high',
+            tags: details.tags || [],
+          });
+        } catch (e: any) {
+          logger.error('Error parsing policy from auditLog', { error: e.message, logId: log.id });
+          // Skip invalid entries
+          continue;
+        }
+      }
+
+      return policies;
+    } catch (error) {
+      logger.error('Error getting policies by framework', error);
+      return [];
+    }
   }
 
   /**
@@ -728,12 +794,14 @@ allow {
         data: {
           action: `Policy Created: ${policy.name}`,
           organizationId,
-          hash: crypto.randomBytes(32).toString('hex'),
+          hash: policy.id, // Use policy ID as hash for easier retrieval
           details: JSON.stringify({
             policyId: policy.id,
+            name: policy.name,
             framework: policy.framework,
             severity: policy.severity,
             tags: policy.tags,
+            rego: policy.rego, // Store rego code in details for quick access
           }),
         },
       });

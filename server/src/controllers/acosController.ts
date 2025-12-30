@@ -2726,6 +2726,13 @@ class ACOSController {
       const authReq = req as AuthRequest;
       const { privilege, reason, justification, duration } = req.body;
       
+      logger.info('JIT Access request received', {
+        userId: authReq.user!.id,
+        privilege,
+        reason,
+        duration,
+      });
+      
       const request = await jitAccessService.requestAccess(
         authReq.user!.id,
         authReq.user!.organizationId,
@@ -2737,7 +2744,11 @@ class ACOSController {
       
       res.json(request);
     } catch (error: any) {
-      logger.error('Request JIT access error', error);
+      logger.error('Request JIT access error', {
+        error: error.message || error,
+        stack: error.stack,
+        body: req.body,
+      });
       throw new AppError(error.message || 'Failed to request JIT access', 500);
     }
   };
@@ -2768,6 +2779,19 @@ class ACOSController {
     }
   };
 
+  cancelJITAccessRequest: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { requestId } = req.params;
+      
+      await jitAccessService.cancelAccessRequest(requestId, authReq.user!.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      logger.error('Cancel JIT access request error', error);
+      throw new AppError(error.message || 'Failed to cancel JIT access request', 500);
+    }
+  };
+
   // Homomorphic AI
   generateHomomorphicKeys: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -2795,7 +2819,7 @@ class ACOSController {
 
   encryptData: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { data, publicKey, scheme = 'CKKS' } = req.body;
+      const { data, publicKey, scheme = 'CKKS', parameters } = req.body;
       
       if (!Array.isArray(data) || data.length === 0) {
         throw new AppError('Data must be a non-empty array of numbers', 400);
@@ -2810,7 +2834,8 @@ class ACOSController {
       const encrypted = await homomorphicAIService.encryptData(
         data,
         publicKey,
-        scheme as 'BFV' | 'CKKS'
+        scheme as 'BFV' | 'CKKS',
+        parameters
       );
       
       res.json(encrypted);
