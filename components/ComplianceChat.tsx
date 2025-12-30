@@ -18,7 +18,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
     { 
       id: '1', 
       sender: 'ai', 
-      text: 'Hi! I\'m your ComplyEasy AI assistant. I can help you:\n\n🔹 **Navigate** to any section:\n   - Main sections: dashboard, risks, frameworks, aCOS, audit, reports, tasks, integrations, settings\n   - aCOS tabs: goals, control loops, predictions, simulations, red team, swarm, IoT, neuroSymbolic\n   - Settings tabs: profile, security, organization, team, billing\n   - AI Tools: policy generator, contract analyzer, gap analysis, RFP responder, phishing sim, vendor risk, GDPR mapper, BCP generator\n🔹 **Create** items (risks, goals, control loops, etc.)\n🔹 **Run** operations (simulations, scans, etc.)\n🔹 **Edit** items (update status, modify details, etc.)\n\nJust tell me what you need! For example:\n- "Go to dashboard" or "Open policy generator"\n- "Create a risk for missing encryption"\n- "Run a compliance scan"\n- "Update risk status to Resolved"\n\n*Note: Delete operations are not available via chat for security.*', 
+      text: 'Hi! I\'m your ComplyEasy AI assistant. I can help you:\n\n🔹 **Navigate** to any section:\n   - Main sections: dashboard, risks, frameworks, aCOS, audit, reports, tasks, integrations, settings\n   - aCOS tabs: overview, goals, control loops, predictions, simulations, red team, swarm, IoT devices, neuroSymbolic AI, VR collaborations, JIT access, homomorphic AI\n   - Security Features: zero trust, zero-knowledge proofs, BYOK encryption, compliance-as-code\n   - Real Time Analytics: live metrics, charts, and trends\n   - Settings tabs: profile, security, organization, team, billing\n   - AI Tools: policy generator, contract analyzer, gap analysis, RFP responder, phishing sim, vendor risk, GDPR mapper, BCP generator\n🔹 **Create** items (risks, goals, control loops, etc.)\n🔹 **Run** operations (simulations, scans, etc.)\n🔹 **Edit** items (update status, modify details, etc.)\n\nJust tell me what you need! For example:\n- "Go to dashboard" or "Open policy generator"\n- "Go to aCOS overview" or "Open homomorphic AI"\n- "Go to security features" or "Open zero trust"\n- "Go to real time analytics"\n- "Create a risk for missing encryption"\n- "Run a compliance scan"\n- "Update risk status to Resolved"\n\n*Note: Delete operations are not available via chat for security.*', 
       timestamp: new Date() 
     }
   ]);
@@ -52,6 +52,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+risks?/i, view: 'risks' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+framework/i, view: 'frameworks' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+acos/i, view: 'acos' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:acos\s+)?overview/i, view: 'acos-overview' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:acos\s+)?goals?/i, view: 'acos-goals' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:acos\s+)?(?:control\s+)?loops?/i, view: 'acos-loops' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:acos\s+)?predictions?/i, view: 'acos-predictions' },
@@ -60,6 +61,17 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:acos\s+)?swarm/i, view: 'acos-swarm' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:acos\s+)?iot/i, view: 'acos-iot' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:acos\s+)?(?:neuro\s*)?symbolic/i, view: 'acos-neuroSymbolic' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:acos\s+)?(?:vr|virtual\s+reality|collaborations?)/i, view: 'acos-vr' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:acos\s+)?(?:jit|just\s+in\s+time|temporary\s+access)/i, view: 'acos-jit' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:acos\s+)?(?:homomorphic|homomorphic\s+ai|encryption)/i, view: 'acos-homomorphic' },
+      // Security Features navigation
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:security|security\s+features?)/i, view: 'security' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:security\s+)?(?:zero\s+)?trust/i, view: 'security-zero-trust' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:security\s+)?(?:zero\s*)?knowledge\s+proofs?|zkp/i, view: 'security-zkp' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:security\s+)?(?:byok|bring\s+your\s+own\s+key|encryption)/i, view: 'security-byok' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:security\s+)?(?:compliance\s+as\s+code|cac)/i, view: 'security-compliance-as-code' },
+      // Real Time Analytics navigation
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:real\s*time\s+)?analytics?/i, view: 'analytics' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+audit/i, view: 'audit' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+reports?/i, view: 'reports' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+tasks?/i, view: 'my-tasks' },
@@ -143,6 +155,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
         }, 0);
         
         const tabNames: Record<string, string> = {
+          'overview': 'Overview',
           'goals': 'Goals',
           'loops': 'Control Loops',
           'predictions': 'Predictions',
@@ -153,9 +166,42 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
           'neuroSymbolic': 'NeuroSymbolic AI',
           'vr': 'VR Collaborations',
           'jit': 'JIT Access',
+          'homomorphic': 'Homomorphic AI',
         };
         
         return `✅ Navigating to aCOS > ${tabNames[acosTab] || acosTab}...`;
+      }
+
+      // Handle Security Features sub-tabs
+      if (view.startsWith('security-')) {
+        const securityTab = view.replace('security-', '');
+        // Set sessionStorage for Security Features tab navigation
+        sessionStorage.setItem('securityActiveTab', securityTab);
+        // Dispatch custom event
+        window.dispatchEvent(new CustomEvent('securityTabChange', { detail: { tab: securityTab } }));
+        // Navigate to security features
+        setTimeout(() => {
+          onNavigate('security');
+          // Dispatch again after navigation
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('securityTabChange', { detail: { tab: securityTab } }));
+          }, 100);
+        }, 0);
+        
+        const tabNames: Record<string, string> = {
+          'zero-trust': 'Zero Trust',
+          'zkp': 'Zero-Knowledge Proofs',
+          'byok': 'BYOK Encryption',
+          'compliance-as-code': 'Compliance-as-Code',
+        };
+        
+        return `✅ Navigating to Security Features > ${tabNames[securityTab] || securityTab}...`;
+      }
+
+      // Handle Real Time Analytics
+      if (view === 'analytics') {
+        onNavigate('analytics');
+        return '✅ Navigating to Real Time Analytics...';
       }
 
       // Handle Settings sub-tabs

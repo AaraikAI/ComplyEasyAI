@@ -770,8 +770,8 @@ export const api = {
     // Homomorphic AI
     generateHomomorphicKeys: async (scheme: 'BFV' | 'CKKS' = 'CKKS', securityLevel: 128 | 192 | 256 = 128) => 
       fetchAPI('/acos/homomorphic/keys/generate', { method: 'POST', body: JSON.stringify({ scheme, securityLevel }) }),
-    encryptData: async (data: number[], publicKey: string, scheme: 'BFV' | 'CKKS' = 'CKKS') => 
-      fetchAPI('/acos/homomorphic/encrypt', { method: 'POST', body: JSON.stringify({ data, publicKey, scheme }) }),
+    encryptData: async (data: number[], publicKey: string, scheme: 'BFV' | 'CKKS' = 'CKKS', parameters?: any) => 
+      fetchAPI('/acos/homomorphic/encrypt', { method: 'POST', body: JSON.stringify({ data, publicKey, scheme, parameters }) }),
     decryptData: async (encryptedData: any, secretKey: string) => 
       fetchAPI('/acos/homomorphic/decrypt', { method: 'POST', body: JSON.stringify({ encryptedData, secretKey }) }),
     performEncryptedLinearRegression: async (encryptedFeatures: any, weights: number[], publicKey: string, relinKeys: string) => 
@@ -791,13 +791,14 @@ export const api = {
     requestJITAccess: async (data: any) => fetchAPI('/acos/jit/request', { method: 'POST', body: JSON.stringify(data) }),
     getJITAccessSessions: async () => fetchAPI('/acos/jit/sessions'),
     revokeJITSession: async (sessionId: string, reason?: string) => fetchAPI(`/acos/jit/sessions/${sessionId}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) }),
+    cancelJITAccessRequest: async (requestId: string) => fetchAPI(`/acos/jit/requests/${requestId}/cancel`, { method: 'POST' }),
   },
 
   // Security Features
   security: {
     // Zero Trust Security
-    verifyDeviceTrust: async (deviceId: string, fingerprint: string, metadata?: any) => 
-      fetchAPI('/security/zero-trust/verify-device', { method: 'POST', body: JSON.stringify({ deviceId, fingerprint, metadata }) }),
+    verifyDeviceTrust: async (data: { deviceId?: string; deviceType?: string; macAddress?: string; ipAddress?: string }) => 
+      fetchAPI('/security/zero-trust/verify-device', { method: 'POST', body: JSON.stringify(data) }),
     evaluateAccessRequest: async (resourceId: string, deviceId: string, action: string, context?: any) => 
       fetchAPI('/security/zero-trust/evaluate-access', { method: 'POST', body: JSON.stringify({ resourceId, deviceId, action, context }) }),
     createZeroTrustPolicy: async (policy: any) => 

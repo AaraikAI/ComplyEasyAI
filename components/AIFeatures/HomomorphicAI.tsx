@@ -13,6 +13,13 @@ interface HomomorphicKeys {
   secretKey: string;
   relinKeys: string;
   galoisKeys?: string;
+  parameters?: {
+    scheme: 'BFV' | 'CKKS';
+    securityLevel: 128 | 192 | 256;
+    polyModulusDegree: number;
+    coeffModulusBitSizes?: number[];
+    plainModulusBitSize?: number;
+  };
 }
 
 export const HomomorphicAI: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -81,7 +88,14 @@ export const HomomorphicAI: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         throw new Error('Please enter valid numbers separated by commas');
       }
       
-      const result = await api.acos.encryptData(dataArray, keys.publicKey, encryptScheme);
+      // Use parameters from key generation if available
+      const encryptionParams = keys.parameters ? {
+        polyModulusDegree: keys.parameters.polyModulusDegree,
+        coeffModulusBitSizes: keys.parameters.coeffModulusBitSizes,
+        securityLevel: keys.parameters.securityLevel,
+      } : undefined;
+      
+      const result = await api.acos.encryptData(dataArray, keys.publicKey, encryptScheme, encryptionParams);
       setEncryptedResult(result);
       setSuccess('Data encrypted successfully');
     } catch (err: any) {
@@ -132,7 +146,12 @@ export const HomomorphicAI: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
       
       // First encrypt the features
-      const encryptedFeatures = await api.acos.encryptData(featuresArray, keys.publicKey, 'CKKS');
+      const encryptionParams = keys.parameters ? {
+        polyModulusDegree: keys.parameters.polyModulusDegree,
+        coeffModulusBitSizes: keys.parameters.coeffModulusBitSizes,
+        securityLevel: keys.parameters.securityLevel,
+      } : undefined;
+      const encryptedFeatures = await api.acos.encryptData(featuresArray, keys.publicKey, 'CKKS', encryptionParams);
       
       // Then perform regression
       const result = await api.acos.performEncryptedLinearRegression(
@@ -168,7 +187,12 @@ export const HomomorphicAI: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
       
       // First encrypt the data
-      const encryptedData = await api.acos.encryptData(dataArray, keys.publicKey, 'CKKS');
+      const encryptionParams = keys.parameters ? {
+        polyModulusDegree: keys.parameters.polyModulusDegree,
+        coeffModulusBitSizes: keys.parameters.coeffModulusBitSizes,
+        securityLevel: keys.parameters.securityLevel,
+      } : undefined;
+      const encryptedData = await api.acos.encryptData(dataArray, keys.publicKey, 'CKKS', encryptionParams);
       
       // Then compute statistics
       const result = await api.acos.computeEncryptedStatistics(
@@ -208,7 +232,12 @@ export const HomomorphicAI: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
       
       // First encrypt the input
-      const encryptedInput = await api.acos.encryptData(inputArray, keys.publicKey, 'CKKS');
+      const encryptionParams = keys.parameters ? {
+        polyModulusDegree: keys.parameters.polyModulusDegree,
+        coeffModulusBitSizes: keys.parameters.coeffModulusBitSizes,
+        securityLevel: keys.parameters.securityLevel,
+      } : undefined;
+      const encryptedInput = await api.acos.encryptData(inputArray, keys.publicKey, 'CKKS', encryptionParams);
       
       // Then run neural network
       const result = await api.acos.performEncryptedNeuralNetwork(
@@ -274,29 +303,39 @@ export const HomomorphicAI: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="mb-6 flex gap-2 overflow-x-auto">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-brand-600 text-white'
-                    : 'bg-white text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        {/* Main Content Layout with Sidebar */}
+        <div className="flex gap-6">
+          {/* Left Sidebar - Tabs */}
+          <div className="w-64 flex-shrink-0">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 px-2">
+                Operations
+              </h2>
+              <nav className="space-y-1">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-brand-600 text-white shadow-sm'
+                          : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-slate-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
 
-        {/* Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          {/* Right Content Area */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           {/* Key Generation Tab */}
           {activeTab === 'keys' && (
             <div className="space-y-6">
@@ -414,13 +453,21 @@ export const HomomorphicAI: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </select>
               </div>
               
+              {!keys && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Note:</strong> Please generate encryption keys first in the "Key Generation" tab before encrypting data.
+                  </p>
+                </div>
+              )}
+              
               <button
                 onClick={handleEncrypt}
-                disabled={loading || !keys}
+                disabled={loading || !keys || !encryptData.trim()}
                 className="w-full bg-brand-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
-                Encrypt Data
+                {!keys ? 'Generate Keys First' : !encryptData.trim() ? 'Enter Data to Encrypt' : 'Encrypt Data'}
               </button>
               
               {encryptedResult && (
@@ -623,6 +670,8 @@ export const HomomorphicAI: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               )}
             </div>
           )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

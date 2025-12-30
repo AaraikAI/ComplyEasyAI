@@ -33,6 +33,7 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { GoalModal } from './GoalModal';
 import { Plus, X } from 'lucide-react';
+import { HomomorphicAI } from './AIFeatures/HomomorphicAI';
 
 interface ComplianceGoal {
   id: string;
@@ -189,44 +190,163 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'overview', label: 'Overview', icon: BarChart3 },
-            { id: 'goals', label: 'Goals', icon: Target },
-            { id: 'loops', label: 'Control Loops', icon: Zap },
-            { id: 'predictions', label: 'Predictions', icon: TrendingUp },
-            { id: 'simulations', label: 'Simulations', icon: Network },
-            { id: 'redteam', label: 'Red Team', icon: Shield },
-            { id: 'swarm', label: 'Swarm', icon: Brain },
-            { id: 'iot', label: 'IoT Devices', icon: Cpu },
-            { id: 'neuroSymbolic', label: 'NeuroSymbolic AI', icon: Sparkles },
-            { id: 'vr', label: 'VR Collaborations', icon: Video },
-            { id: 'jit', label: 'JIT Access', icon: Timer },
-            { id: 'homomorphic', label: 'Homomorphic AI', icon: Lock },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Icon size={16} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      {/* Main Content Layout with Sidebar */}
+      <div className="flex gap-6">
+        {/* Left Sidebar - Navigation Tabs */}
+        <div className="w-64 flex-shrink-0">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-6">
+            {/* Core Features Section */}
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                Core Features
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'overview', label: 'Overview', icon: BarChart3 },
+                  { id: 'goals', label: 'Goals', icon: Target },
+                  { id: 'loops', label: 'Control Loops', icon: Zap },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
 
-      {/* Tab Content */}
-      <div className="mt-6">
+            {/* Analytics & Intelligence Section */}
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                Analytics & Intelligence
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'predictions', label: 'Predictions', icon: TrendingUp },
+                  { id: 'simulations', label: 'Simulations', icon: Network },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Security & Testing Section */}
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                Security & Testing
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'redteam', label: 'Red Team', icon: Shield },
+                  { id: 'jit', label: 'JIT Access', icon: Timer },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* AI & Advanced Features Section */}
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                AI & Advanced
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'swarm', label: 'Swarm', icon: Brain },
+                  { id: 'neuroSymbolic', label: 'NeuroSymbolic AI', icon: Sparkles },
+                  { id: 'homomorphic', label: 'Homomorphic AI', icon: Lock },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Integration & Devices Section */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                Integration & Devices
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'iot', label: 'IoT Devices', icon: Cpu },
+                  { id: 'vr', label: 'VR Collaborations', icon: Video },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Content Area */}
+        <div className="flex-1 min-w-0">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Stats Grid */}
@@ -414,6 +534,8 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
         {activeTab === 'homomorphic' && (
           <HomomorphicAITab />
         )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2323,9 +2445,13 @@ const JITAccessTab: React.FC = () => {
                             ? 'bg-green-100 text-green-800' 
                             : status === 'pending'
                             ? 'bg-yellow-100 text-yellow-800'
+                            : status === 'revoked'
+                            ? 'bg-red-100 text-red-800'
+                            : status === 'expired'
+                            ? 'bg-gray-100 text-gray-800'
                             : 'bg-gray-100 text-gray-800'
                         }`}>
-                          {status === 'active' ? 'Active' : status === 'approved' ? 'Approved' : status === 'pending' ? 'Pending' : 'Expired'}
+                          {status === 'active' ? 'Active' : status === 'approved' ? 'Approved' : status === 'pending' ? 'Pending' : status === 'revoked' ? 'Cancelled' : status === 'expired' ? 'Expired' : 'Unknown'}
                         </span>
                         {expiresAt && (
                           <span>Expires: {new Date(expiresAt).toLocaleString()}</span>
@@ -2340,25 +2466,65 @@ const JITAccessTab: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    {isSession && status === 'active' && (
+                    <div className="flex gap-2">
+                      {isRequest && status === 'pending' && (
+                        <button
+                          onClick={async () => {
+                            if (confirm('Are you sure you want to cancel this access request?')) {
+                              try {
+                                await api.acos.cancelJITAccessRequest(sessionId);
+                                // Optimistically update the UI
+                                setSessions(prev => prev.map(s => {
+                                  if ((s.id === sessionId || (s as any).requestId === sessionId)) {
+                                    return { ...s, status: 'revoked' };
+                                  }
+                                  return s;
+                                }));
+                                // Reload to ensure consistency
+                                await loadSessions();
+                              } catch (err: any) {
+                                console.error('Error canceling request:', err);
+                                alert(err.message || 'Failed to cancel request');
+                              }
+                            }
+                          }}
+                          className="px-4 py-2 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      {isSession && status === 'active' && (
+                        <button
+                          onClick={() => {
+                            if (confirm('Are you sure you want to revoke this JIT access session?')) {
+                              api.acos.revokeJITSession(sessionId, 'User initiated revocation')
+                                .then(() => {
+                                  loadSessions();
+                                })
+                                .catch((err) => {
+                                  console.error('Error revoking session:', err);
+                                  alert('Failed to revoke session');
+                                });
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                        >
+                          Revoke
+                        </button>
+                      )}
                       <button
                         onClick={() => {
-                          if (confirm('Are you sure you want to revoke this JIT access session?')) {
-                            api.acos.revokeJITSession(sessionId, 'User initiated revocation')
-                              .then(() => {
-                                loadSessions();
-                              })
-                              .catch((err) => {
-                                console.error('Error revoking session:', err);
-                                alert('Failed to revoke session');
-                              });
-                          }
+                          // Show details modal
+                          const details = isRequest 
+                            ? `Request ID: ${sessionId}\nPrivilege: ${privilege}\nReason: ${reason}\nStatus: ${status}\nJustification: ${session.justification || 'N/A'}\nCreated: ${new Date(session.createdAt || Date.now()).toLocaleString()}\n${expiresAt ? `Expires: ${new Date(expiresAt).toLocaleString()}` : ''}`
+                            : `Session ID: ${sessionId}\nPrivilege: ${privilege}\nStatus: ${status}\n${expiresAt ? `Expires: ${new Date(expiresAt).toLocaleString()}` : ''}`;
+                          alert(details);
                         }}
-                        className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 ml-4"
+                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
                       >
-                        Revoke
+                        View Details
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
               );
@@ -2471,8 +2637,7 @@ const HomomorphicAITab: React.FC = () => {
   const [showFullView, setShowFullView] = useState(false);
 
   if (showFullView) {
-    // Import and use the full HomomorphicAI component
-    const { HomomorphicAI } = require('../AIFeatures/HomomorphicAI');
+    // Use the full HomomorphicAI component
     return <HomomorphicAI onBack={() => setShowFullView(false)} />;
   }
 

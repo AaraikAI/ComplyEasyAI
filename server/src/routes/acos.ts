@@ -160,6 +160,7 @@ router.get('/vr/training/history', asyncHandler(acosController.getVRTrainingHist
 router.post('/jit/request', authorize('admin', 'editor'), asyncHandler(acosController.requestJITAccess));
 router.get('/jit/sessions', asyncHandler(acosController.getJITAccessSessions));
 router.post('/jit/sessions/:sessionId/revoke', authorize('admin'), asyncHandler(acosController.revokeJITSession));
+router.post('/jit/requests/:requestId/cancel', asyncHandler(acosController.cancelJITAccessRequest));
 
 // Swarm Task Allocation
 router.post('/swarm-tasks/agents', authorize('admin'), asyncHandler(acosController.registerSwarmAgent));
