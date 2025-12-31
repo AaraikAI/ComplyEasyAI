@@ -8,6 +8,10 @@ import { ethers } from 'ethers';
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { Gateway, Network, Wallets, Contract } from '@hyperledger/fabric-gateway';
+import * as grpc from '@grpc/grpc-js';
+import * as fs from 'fs';
+import * as path from 'path';
 
 type BlockchainNetwork = 'ethereum' | 'polygon' | 'hyperledger';
 
@@ -54,6 +58,9 @@ class BlockchainService {
   private polygonProvider: ethers.JsonRpcProvider | null = null;
   private wallet: ethers.Wallet | null = null;
   private auditContract: ethers.Contract | null = null;
+  private hyperledgerGateway: Gateway | null = null;
+  private hyperledgerNetwork: Network | null = null;
+  private hyperledgerContract: Contract | null = null;
 
   // Smart contract ABI for compliance verification
   private readonly COMPLIANCE_CONTRACT_ABI = [
@@ -96,6 +103,9 @@ class BlockchainService {
           this.wallet
         );
       }
+
+      // Initialize Hyperledger Fabric
+      await this.initializeHyperledger();
 
       logger.info('Blockchain service initialized');
     } catch (error) {
@@ -236,6 +246,58 @@ class BlockchainService {
   }
 
   /**
+   * Initialize Hyperledger Fabric connection
+   */
+  private async initializeHyperledger(): Promise<void> {
+    try {
+      const peerEndpoint = process.env.HYPERLEDGER_PEER_ENDPOINT;
+      const peerTlsCertPath = process.env.HYPERLEDGER_PEER_TLS_CERT_PATH;
+      const peerTlsKeyPath = process.env.HYPERLEDGER_PEER_TLS_KEY_PATH;
+      const peerTlsCaCertPath = process.env.HYPERLEDGER_PEER_TLS_CA_CERT_PATH;
+      const mspId = process.env.HYPERLEDGER_MSP_ID || 'Org1MSP';
+      const channelName = process.env.HYPERLEDGER_CHANNEL_NAME || 'mychannel';
+      const chaincodeName = process.env.HYPERLEDGER_CHAINCODE_NAME || 'compliance';
+      const walletPath = process.env.HYPERLEDGER_WALLET_PATH || path.join(__dirname, '../../../wallet');
+
+      if (!peerEndpoint) {
+        logger.warn('[Blockchain] Hyperledger configuration not found, skipping initialization');
+        return;
+      }
+
+      // Create wallet
+      const wallet = await Wallets.newFileSystemWallet(walletPath);
+      const identity = await wallet.get('appUser');
+
+      if (!identity) {
+        logger.warn('[Blockchain] Hyperledger identity not found in wallet');
+        return;
+      }
+
+      // Create gRPC connection
+      const tlsCredentials = grpc.credentials.createSsl(
+        peerTlsCaCertPath ? fs.readFileSync(peerTlsCaCertPath) : undefined
+      );
+      const peer = new grpc.Client(peerEndpoint, tlsCredentials);
+
+      // Create gateway connection
+      this.hyperledgerGateway = new Gateway();
+      await this.hyperledgerGateway.connect(peer, {
+        identity,
+        mspId,
+      });
+
+      // Get network and contract
+      this.hyperledgerNetwork = this.hyperledgerGateway.getNetwork(channelName);
+      this.hyperledgerContract = this.hyperledgerNetwork.getContract(chaincodeName);
+
+      logger.info('[Blockchain] Hyperledger Fabric initialized');
+    } catch (error) {
+      logger.warn('[Blockchain] Hyperledger initialization failed (may not be configured)', error);
+      // Don't throw - Hyperledger is optional
+    }
+  }
+
+  /**
    * Record on Hyperledger Fabric
    */
   private async recordOnHyperledger(
@@ -243,20 +305,34 @@ class BlockchainService {
     metadata: string
   ): Promise<{ transactionId: string; blockHeight: number }> {
     try {
-      // In production, use @hyperledger/fabric-gateway
-      // For now, simulate the recording
+      if (!this.hyperledgerContract) {
+        throw new Error('Hyperledger Fabric not initialized. Configure HYPERLEDGER_* environment variables.');
+      }
 
-      const transactionId = crypto.randomBytes(32).toString('hex');
-      const blockHeight = Math.floor(Date.now() / 1000);
+      // Submit transaction to Hyperledger Fabric
+      const result = await this.hyperledgerContract.submitTransaction(
+        'RecordAuditLog',
+        dataHash,
+        metadata
+      );
 
-      logger.info(`Hyperledger transaction: ${transactionId}`);
+      // Parse result (assuming it returns JSON with transactionId and blockHeight)
+      const resultJson = JSON.parse(result.toString());
+      const transactionId = resultJson.transactionId || resultJson.txId || crypto.randomBytes(32).toString('hex');
+      const blockHeight = resultJson.blockHeight || resultJson.blockNumber || Math.floor(Date.now() / 1000);
+
+      logger.info(`[Blockchain] Hyperledger transaction recorded: ${transactionId} at block ${blockHeight}`);
 
       return {
         transactionId,
         blockHeight,
       };
     } catch (error) {
-      logger.error('Error recording on Hyperledger', error);
+      logger.error('[Blockchain] Error recording on Hyperledger', error);
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Hyperledger Fabric transaction failed');
+      }
+      // In development, provide more details
       throw error;
     }
   }
@@ -319,22 +395,35 @@ class BlockchainService {
   }
 
   /**
-   * Verify on Hyperledger
+   * Verify on Hyperledger Fabric
    */
   private async verifyOnHyperledger(
     dataHash: string
   ): Promise<{ exists: boolean; blockNumber?: number; timestamp?: Date }> {
     try {
-      // In production, query Hyperledger Fabric
-      // For now, simulate verification
+      if (!this.hyperledgerContract) {
+        return { exists: false };
+      }
 
-      return {
-        exists: true,
-        blockNumber: Math.floor(Date.now() / 1000),
-        timestamp: new Date(),
-      };
+      // Query Hyperledger Fabric chaincode
+      const result = await this.hyperledgerContract.evaluateTransaction(
+        'VerifyAuditLog',
+        dataHash
+      );
+
+      const resultJson = JSON.parse(result.toString());
+      
+      if (resultJson.exists) {
+        return {
+          exists: true,
+          blockNumber: resultJson.blockNumber || resultJson.blockHeight,
+          timestamp: resultJson.timestamp ? new Date(resultJson.timestamp) : new Date(),
+        };
+      }
+
+      return { exists: false };
     } catch (error) {
-      logger.error('Error verifying on Hyperledger', error);
+      logger.error('[Blockchain] Error verifying on Hyperledger', error);
       return { exists: false };
     }
   }

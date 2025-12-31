@@ -832,19 +832,19 @@ class VRCollaborativeReviewService {
         assessmentCriteria: this.generateAssessmentCriteria(config.objectives),
       };
 
-      // Store scenario
-      await prisma.auditLog.create({
+      // Store scenario in database
+      await prisma.vRTrainingScenario.create({
         data: {
-          action: 'vr_training.scenario_created',
-          details: JSON.stringify({
-            scenarioId,
-            name: config.name,
-            framework: config.framework,
-            difficulty: config.difficulty,
-          }),
-          userId,
+          id: scenarioId,
           organizationId,
-          hash: crypto.randomBytes(16).toString('hex'),
+          name: config.name,
+          description: config.description,
+          framework: config.framework,
+          difficulty: config.difficulty,
+          estimatedDuration: scenario.estimatedDuration,
+          objectives: config.objectives,
+          scenarioData: scenario as any,
+          createdBy: userId,
         },
       });
 
@@ -870,56 +870,40 @@ class VRCollaborativeReviewService {
     currentScene: VRTrainingScene;
   }> {
     try {
-      // Get scenario from audit log (would be a dedicated table in production)
-      const auditLog = await prisma.auditLog.findFirst({
+      // Get scenario from database
+      const dbScenario = await prisma.vRTrainingScenario.findUnique({
         where: {
-          action: 'vr_training.scenario_created',
-          details: {
-            contains: scenarioId,
-          },
+          id: scenarioId,
           organizationId,
         },
       });
 
-      if (!auditLog) {
+      if (!dbScenario) {
         throw new Error('Training scenario not found');
       }
 
-      const scenarioData = JSON.parse(auditLog.details || '{}');
+      // Load full scenario data
+      const scenario: VRTrainingScenario = dbScenario.scenarioData as any;
       const sessionId = `training_session_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 
-      // Log training session start
-      await prisma.auditLog.create({
+      // Create training session in database
+      await prisma.vRTrainingSession.create({
         data: {
-          action: 'vr_training.session_started',
-          details: JSON.stringify({
-            sessionId,
-            scenarioId,
-            userId,
-            startedAt: new Date(),
-          }),
-          userId,
+          scenarioId,
           organizationId,
-          hash: crypto.randomBytes(16).toString('hex'),
+          userId,
+          sessionId,
+          status: 'active',
+          currentScene: scenario.scenes[0]?.id || null,
+          completedTasks: [],
+          score: 0,
         },
       });
 
       logger.info(`[VR Review] Training session started: ${sessionId}`);
 
-      // Mock scenario for response (would load full scenario in production)
-      const mockScenario: VRTrainingScenario = {
-        id: scenarioId,
-        name: scenarioData.name || 'Training Scenario',
-        description: 'Compliance training scenario',
-        framework: scenarioData.framework || 'SOC 2',
-        difficulty: scenarioData.difficulty || 'beginner',
-        estimatedDuration: 30,
-        objectives: ['Understand control requirements', 'Review evidence collection'],
-        scenes: [],
-        assessmentCriteria: [],
-      };
-
-      const currentScene: VRTrainingScene = {
+      // Get current scene from scenario
+      const currentScene = scenario.scenes[0] || {
         id: 'scene_1',
         name: 'Introduction',
         description: 'Welcome to the compliance training',
@@ -930,21 +914,12 @@ class VRCollaborativeReviewService {
             { id: 'spawn', name: 'Spawn Point', position: { x: 0, y: 0, z: 0 }, type: 'spawn_point' },
           ],
         },
-        tasks: [
-          {
-            id: 'task_1',
-            description: 'Navigate to the control panel',
-            requiredAction: 'move_to',
-            successFeedback: 'Great job finding the control panel!',
-            failureFeedback: 'Try looking for the glowing panel',
-            points: 10,
-          },
-        ],
+        tasks: [],
         completionConditions: { allTasksComplete: true },
-        hints: ['Look for the glowing objects', 'Use your controllers to interact'],
+        hints: [],
       };
 
-      // Initialize training progress
+      // Initialize training progress in memory (also stored in DB)
       const progress: TrainingProgress = {
         sessionId,
         userId,
@@ -959,7 +934,7 @@ class VRCollaborativeReviewService {
 
       return {
         sessionId,
-        scenario: mockScenario,
+        scenario,
         currentScene,
       };
     } catch (error) {
@@ -1247,19 +1222,84 @@ class VRCollaborativeReviewService {
   /**
    * Get session details (enhanced)
    */
+  /**
+   * Record FPS and performance metrics for a session
+   */
+  async recordPerformanceMetrics(
+    sessionId: string,
+    metrics: {
+      fps: number;
+      renderTime: number;
+      latency?: number;
+    }
+  ): Promise<void> {
+    try {
+      // Find session in database
+      const dbSession = await prisma.vRTrainingSession.findUnique({
+        where: { sessionId },
+      });
+
+      if (dbSession) {
+        // Store performance metrics
+        await prisma.vRSessionPerformance.create({
+          data: {
+            sessionId: dbSession.id,
+            fps: metrics.fps,
+            renderTime: metrics.renderTime,
+            latency: metrics.latency,
+          },
+        });
+      }
+
+      // Also update in-memory session if active
+      const session = this.activeSessions.get(sessionId);
+      if (session && session.environment) {
+        session.environment.performanceMetrics = {
+          fps: metrics.fps,
+          renderTime: metrics.renderTime,
+          lastUpdated: new Date(),
+        };
+      }
+    } catch (error) {
+      logger.error('[VR Review] Error recording performance metrics', error);
+    }
+  }
+
   async getSessionDetails(sessionId: string): Promise<VRSession | null> {
     const session = this.activeSessions.get(sessionId);
     if (!session) {
       return null;
     }
 
-    // Update environment performance metrics
+    // Update environment performance metrics from real session data
     if (session.environment) {
-      session.environment.performanceMetrics = {
-        fps: 60 + Math.random() * 10, // Simulated 60+ FPS
-        renderTime: 16 + Math.random() * 4, // ~16ms render time
-        lastUpdated: new Date(),
-      };
+      // Get latest performance metrics from database
+      // First find the database session record
+      const dbSession = await prisma.vRTrainingSession.findUnique({
+        where: { sessionId },
+      });
+
+      const latestMetrics = dbSession ? await prisma.vRSessionPerformance.findFirst({
+        where: { 
+          sessionId: dbSession.id,
+        },
+        orderBy: { timestamp: 'desc' },
+      }) : null;
+
+      if (latestMetrics) {
+        session.environment.performanceMetrics = {
+          fps: latestMetrics.fps,
+          renderTime: latestMetrics.renderTime,
+          lastUpdated: latestMetrics.timestamp,
+        };
+      } else {
+        // Default metrics if none recorded yet
+        session.environment.performanceMetrics = {
+          fps: 60,
+          renderTime: 16.67,
+          lastUpdated: new Date(),
+        };
+      }
     }
 
     return session;
@@ -2166,57 +2206,348 @@ class VRCollaborativeReviewService {
     };
   }
 
+  /**
+   * Advanced VR scenario generation with adaptive difficulty and personalized content
+   */
   private async generateTrainingScenes(
     organizationId: string,
     framework: string,
     difficulty: VRTrainingScenario['difficulty']
   ): Promise<VRTrainingScene[]> {
-    // Generate training scenes based on framework and difficulty
-    const scenes: VRTrainingScene[] = [
+    // Get organization's compliance data for personalized scenarios
+    const frameworks = await prisma.complianceFramework.findMany({
+      where: { organizationId, name: { contains: framework, mode: 'insensitive' } },
+      include: { controls: { take: 10 } },
+    });
+
+    const controls = frameworks.flatMap(f => f.controls);
+    const risks = await prisma.riskItem.findMany({
+      where: { organizationId },
+      take: 5,
+    });
+
+    // Generate adaptive scenes based on difficulty and organization data
+    const scenes: VRTrainingScene[] = [];
+
+    // Scene 1: Introduction with framework overview
+    scenes.push(this.generateIntroScene(framework, difficulty, controls.length > 0));
+
+    // Scene 2: Control exploration (adaptive based on organization controls)
+    if (controls.length > 0) {
+      scenes.push(this.generateControlExplorationScene(framework, difficulty, controls));
+    }
+
+    // Scene 3: Risk assessment (if risks exist)
+    if (risks.length > 0 && difficulty !== 'beginner') {
+      scenes.push(this.generateRiskAssessmentScene(framework, difficulty, risks));
+    }
+
+    // Scene 4: Evidence collection (intermediate+)
+    if (difficulty !== 'beginner') {
+      scenes.push(this.generateEvidenceCollectionScene(framework, difficulty));
+    }
+
+    // Scene 5: Audit simulation (advanced+)
+    if (difficulty === 'advanced' || difficulty === 'expert') {
+      scenes.push(this.generateAuditSimulationScene(framework, difficulty, controls));
+    }
+
+    // Scene 6: Remediation planning (expert only)
+    if (difficulty === 'expert') {
+      scenes.push(this.generateRemediationScene(framework, controls, risks));
+    }
+
+    return scenes;
+  }
+
+  /**
+   * Generate introduction scene with adaptive content
+   */
+  private generateIntroScene(
+    framework: string,
+    difficulty: VRTrainingScenario['difficulty'],
+    hasControls: boolean
+  ): VRTrainingScene {
+    const tasks: VRTrainingTask[] = [
       {
-        id: 'intro_scene',
-        name: 'Introduction to ' + framework,
-        description: 'Learn the basics of ' + framework + ' compliance',
-        environment: {
-          template: 'training_lab',
-          interactiveObjects: [],
-          spatialAnchors: [],
-        },
-        tasks: [
-          {
-            id: 'task_navigate',
-            description: 'Navigate to the information panel',
-            requiredAction: 'move_to',
-            successFeedback: 'Great! You found the information panel.',
-            failureFeedback: 'Look for the glowing panel ahead.',
-            points: 10,
-          },
-        ],
-        completionConditions: { allTasksComplete: true },
-        hints: ['Use your controllers to move', 'Look for highlighted objects'],
+        id: 'task_navigate',
+        description: 'Navigate to the framework information center',
+        requiredAction: 'move_to',
+        successFeedback: 'Excellent! You found the framework center.',
+        failureFeedback: 'Look for the glowing portal ahead.',
+        points: 10,
+      },
+      {
+        id: 'task_explore',
+        description: 'Explore the framework overview',
+        requiredAction: 'interact',
+        successFeedback: 'Great exploration! You understand the framework basics.',
+        failureFeedback: 'Interact with the information panels.',
+        points: 15,
       },
     ];
 
-    // Add more scenes based on difficulty
+    // Add advanced task for higher difficulties
     if (difficulty !== 'beginner') {
-      scenes.push({
-        id: 'control_review_scene',
-        name: 'Control Review',
-        description: 'Review and assess compliance controls',
-        environment: {
-          template: 'audit_room',
-          interactiveObjects: [],
-          spatialAnchors: [],
-        },
-        tasks: [
+      tasks.push({
+        id: 'task_understand',
+        description: 'Understand key compliance requirements',
+        requiredAction: 'read',
+        successFeedback: 'You have a solid understanding of the requirements.',
+        failureFeedback: 'Read through the compliance requirements carefully.',
+        points: 20,
+      });
+    }
+
+    return {
+      id: 'intro_scene',
+      name: `Introduction to ${framework}`,
+      description: `Learn the fundamentals of ${framework} compliance in an immersive environment`,
+      environment: {
+        template: 'training_lab',
+        theme: difficulty === 'expert' ? 'futuristic' : 'default',
+        interactiveObjects: [
           {
-            id: 'task_review',
-            description: 'Review the control documentation',
-            requiredAction: 'interact',
-            successFeedback: 'Control review complete!',
-            failureFeedback: 'Click on the control panel to review.',
-            points: 20,
+            id: 'info_center',
+            type: 'dashboard',
+            position: { x: 0, y: 1.5, z: -2 },
+            rotation: { x: 0, y: 0, z: 0 },
+            scale: { x: 2, y: 1, z: 0.1 },
+            data: { framework, difficulty },
+            permissions: {
+              canView: ['*'],
+              canEdit: [],
+              canInteract: ['*'],
+            },
           },
+        ],
+        spatialAnchors: [
+          { id: 'spawn', name: 'Spawn Point', position: { x: 0, y: 0, z: 0 }, type: 'spawn_point' },
+          { id: 'info_zone', name: 'Information Zone', position: { x: 0, y: 0, z: -2 }, type: 'presentation_area' },
+        ],
+      },
+      tasks,
+      completionConditions: { allTasksComplete: true },
+      hints: difficulty === 'beginner' 
+        ? ['Use your controllers to move', 'Look for highlighted objects', 'Interact with glowing panels']
+        : ['Navigate efficiently', 'Focus on key requirements', 'Take notes for later scenes'],
+    };
+  }
+
+  /**
+   * Generate control exploration scene with real organization controls
+   */
+  private generateControlExplorationScene(
+    framework: string,
+    difficulty: VRTrainingScenario['difficulty'],
+    controls: any[]
+  ): VRTrainingScene {
+    const controlTasks = controls.slice(0, Math.min(5, controls.length)).map((control, index) => ({
+      id: `control_${control.id}`,
+      description: `Explore control: ${control.name || control.id}`,
+      requiredAction: 'interact',
+      successFeedback: `Control "${control.name || control.id}" reviewed successfully!`,
+      failureFeedback: `Interact with the control panel for "${control.name || control.id}"`,
+      points: 15 + (index * 5),
+    }));
+
+    return {
+      id: 'control_exploration_scene',
+      name: 'Control Exploration',
+      description: 'Explore and understand compliance controls in a 3D environment',
+      environment: {
+        template: 'data_visualization',
+        interactiveObjects: controls.slice(0, 10).map((control, index) => ({
+          id: `control_obj_${control.id}`,
+          type: 'control_panel',
+          position: {
+            x: Math.cos((index / controls.length) * Math.PI * 2) * 3,
+            y: 1.5,
+            z: Math.sin((index / controls.length) * Math.PI * 2) * 3,
+          },
+          rotation: { x: 0, y: (index / controls.length) * 360, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+          data: control,
+          permissions: {
+            canView: ['*'],
+            canEdit: [],
+            canInteract: ['*'],
+          },
+        })),
+        spatialAnchors: [
+          { id: 'center', name: 'Control Center', position: { x: 0, y: 0, z: 0 }, type: 'data_center' },
+        ],
+      },
+      tasks: controlTasks,
+      completionConditions: {
+        minTasksComplete: difficulty === 'beginner' ? 3 : difficulty === 'intermediate' ? 5 : controlTasks.length,
+      },
+      hints: [
+        'Controls are arranged in a circle around you',
+        'Interact with each control to learn about it',
+        'Higher difficulty requires exploring more controls',
+      ],
+    };
+  }
+
+  /**
+   * Generate risk assessment scene
+   */
+  private generateRiskAssessmentScene(
+    framework: string,
+    difficulty: VRTrainingScenario['difficulty'],
+    risks: any[]
+  ): VRTrainingScene {
+    return {
+      id: 'risk_assessment_scene',
+      name: 'Risk Assessment',
+      description: 'Identify and assess compliance risks in an interactive environment',
+      environment: {
+        template: 'command_center',
+        interactiveObjects: risks.slice(0, 5).map((risk, index) => ({
+          id: `risk_obj_${risk.id}`,
+          type: 'data_cube',
+          position: {
+            x: (index - 2) * 2,
+            y: 1.5,
+            z: -3,
+          },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: {
+            x: risk.severity === 'Critical' ? 1.5 : risk.severity === 'High' ? 1.2 : 1,
+            y: risk.severity === 'Critical' ? 1.5 : risk.severity === 'High' ? 1.2 : 1,
+            z: risk.severity === 'Critical' ? 1.5 : risk.severity === 'High' ? 1.2 : 1,
+          },
+          data: risk,
+          permissions: {
+            canView: ['*'],
+            canEdit: [],
+            canInteract: ['*'],
+          },
+        })),
+        spatialAnchors: [],
+      },
+      tasks: [
+        {
+          id: 'task_identify_risks',
+          description: 'Identify all visible risks',
+          requiredAction: 'interact',
+          successFeedback: 'All risks identified!',
+          failureFeedback: 'Interact with each risk cube to identify them.',
+          points: 25,
+        },
+        {
+          id: 'task_assess_severity',
+          description: 'Assess the severity of each risk',
+          requiredAction: 'analyze',
+          successFeedback: 'Risk severity assessment complete!',
+          failureFeedback: 'Analyze each risk to determine its severity.',
+          points: 30,
+        },
+      ],
+      completionConditions: { allTasksComplete: true },
+      hints: [
+        'Larger cubes indicate higher severity risks',
+        'Color coding: Red = Critical, Orange = High, Yellow = Medium',
+        'Interact with each risk to see detailed information',
+      ],
+    };
+  }
+
+  /**
+   * Generate evidence collection scene
+   */
+  private generateEvidenceCollectionScene(
+    framework: string,
+    difficulty: VRTrainingScenario['difficulty']
+  ): VRTrainingScene {
+    return {
+      id: 'evidence_collection_scene',
+      name: 'Evidence Collection',
+      description: 'Learn to collect and organize compliance evidence',
+      environment: {
+        template: 'audit_room',
+        interactiveObjects: [],
+        spatialAnchors: [],
+      },
+      tasks: [
+        {
+          id: 'task_collect_evidence',
+          description: 'Collect evidence for compliance controls',
+          requiredAction: 'collect',
+          successFeedback: 'Evidence collection complete!',
+          failureFeedback: 'Use the evidence collection tool to gather documents.',
+          points: 30,
+        },
+      ],
+      completionConditions: { allTasksComplete: true },
+      hints: ['Look for evidence markers', 'Collect all required evidence types'],
+    };
+  }
+
+  /**
+   * Generate audit simulation scene
+   */
+  private generateAuditSimulationScene(
+    framework: string,
+    difficulty: VRTrainingScenario['difficulty'],
+    controls: any[]
+  ): VRTrainingScene {
+    return {
+      id: 'audit_simulation_scene',
+      name: 'Audit Simulation',
+      description: 'Experience a realistic audit scenario',
+      environment: {
+        template: 'boardroom',
+        interactiveObjects: [],
+        spatialAnchors: [],
+      },
+      tasks: [
+        {
+          id: 'task_audit_prep',
+          description: 'Prepare for the audit',
+          requiredAction: 'prepare',
+          successFeedback: 'Audit preparation complete!',
+          failureFeedback: 'Review all controls and evidence before the audit.',
+          points: 40,
+        },
+      ],
+      completionConditions: { allTasksComplete: true },
+      hints: ['Review all controls', 'Ensure evidence is organized', 'Be ready to answer questions'],
+    };
+  }
+
+  /**
+   * Generate remediation planning scene
+   */
+  private generateRemediationScene(
+    framework: string,
+    controls: any[],
+    risks: any[]
+  ): VRTrainingScene {
+    return {
+      id: 'remediation_scene',
+      name: 'Remediation Planning',
+      description: 'Create remediation plans for non-compliant controls',
+      environment: {
+        template: 'command_center',
+        interactiveObjects: [],
+        spatialAnchors: [],
+      },
+      tasks: [
+        {
+          id: 'task_remediate',
+          description: 'Create remediation plans',
+          requiredAction: 'plan',
+          successFeedback: 'Remediation planning complete!',
+          failureFeedback: 'Create detailed remediation plans for each issue.',
+          points: 50,
+        },
+      ],
+      completionConditions: { allTasksComplete: true },
+      hints: ['Prioritize critical issues', 'Create actionable remediation steps', 'Set realistic timelines'],
+    };
+  }
         ],
         completionConditions: { allTasksComplete: true },
         hints: ['Interact with documents by pointing and clicking'],

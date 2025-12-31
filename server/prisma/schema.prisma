@@ -43,6 +43,12 @@ model Organization {
   evidenceAnalyses     EvidenceAnalysis[]
   regulatoryChanges    RegulatoryChange[]
   riskPredictions      RiskPrediction[]
+  vrTrainingScenarios  VRTrainingScenario[]
+  vrTrainingSessions   VRTrainingSession[]
+  neuroSymbolicReasonings NeuroSymbolicReasoning[]
+  ruleInferences       RuleInference[]
+  federatedSwarmPeers  FederatedSwarmPeer[]
+  federatedSwarmAggregations FederatedSwarmAggregation[]
   complianceTrajectories ComplianceTrajectory[]
   simulationScenarios  SimulationScenario[]
   simulationResults    SimulationResult[]
@@ -91,6 +97,8 @@ model User {
   personnelRecord       Personnel?
   assignedRisks         RiskItem[]
   backupCodes           TwoFactorBackupCode[]
+  notifications         Notification[]
+  notificationPreference NotificationPreference?
   organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([email])
@@ -1195,4 +1203,172 @@ model CompliancePolicy {
   @@index([severity])
   @@index([enabled])
   @@index([version])
+}
+
+// VR Training Scenarios
+model VRTrainingScenario {
+  id              String    @id @default(uuid())
+  organizationId  String
+  name            String
+  description     String
+  framework       String
+  difficulty      String
+  estimatedDuration Int
+  objectives      String[]
+  scenarioData    Json
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sessions        VRTrainingSession[]
+
+  @@index([organizationId])
+  @@index([framework])
+}
+
+model VRTrainingSession {
+  id              String    @id @default(uuid())
+  scenarioId      String
+  organizationId  String
+  userId          String
+  sessionId       String    @unique
+  status          String
+  currentScene    String?
+  completedTasks  String[]
+  score           Int       @default(0)
+  startedAt       DateTime  @default(now())
+  endedAt         DateTime?
+  lastUpdated     DateTime  @updatedAt
+  scenario        VRTrainingScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  performanceMetrics VRSessionPerformance[]
+
+  @@index([scenarioId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model VRSessionPerformance {
+  id              String    @id @default(uuid())
+  sessionId       String
+  fps             Float
+  renderTime      Float
+  latency         Float?
+  timestamp       DateTime  @default(now())
+  session         VRTrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([timestamp])
+}
+
+// NeuroSymbolic AI Reasoning
+model NeuroSymbolicReasoning {
+  id              String    @id @default(uuid())
+  organizationId  String
+  input           Json
+  neuralPrediction Json
+  symbolicRules   Json
+  finalDecision   Json
+  confidence      Float
+  explanation     String?
+  createdAt       DateTime  @default(now())
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inferences      RuleInference[]
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+model RuleInference {
+  id              String    @id @default(uuid())
+  reasoningId     String
+  organizationId  String
+  inferredRule    Json
+  supportingEvidence Json
+  validationStatus String
+  validatedBy     String?
+  validatedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  reasoning       NeuroSymbolicReasoning @relation(fields: [reasoningId], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([reasoningId])
+  @@index([organizationId])
+  @@index([validationStatus])
+}
+
+// Federated Swarm
+model FederatedSwarmPeer {
+  id              String    @id @default(uuid())
+  organizationId  String
+  peerId          String    @unique
+  peerName        String?
+  joinedAt        DateTime  @default(now())
+  lastSeen        DateTime  @default(now())
+  status          String
+  aggregatedMetrics Json?
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([peerId])
+  @@index([status])
+}
+
+model FederatedSwarmAggregation {
+  id              String    @id @default(uuid())
+  organizationId  String
+  aggregationType String
+  aggregatedData  Json
+  participantCount Int
+  timestamp       DateTime  @default(now())
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([aggregationType])
+  @@index([timestamp])
+}
+
+// Notification System
+model Notification {
+  id              String    @id @default(uuid())
+  userId          String
+  organizationId  String
+  type            String
+  category        String
+  title           String
+  message         String    @db.Text
+  channels        String[]
+  templateId      String?
+  metadata        Json?
+  link            String?
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  status          String
+  retryCount      Int       @default(0)
+  createdAt       DateTime  @default(now())
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([readAt])
+}
+
+model NotificationPreference {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  email           Boolean   @default(true)
+  slack           Boolean   @default(true)
+  websocket       Boolean   @default(true)
+  sms             Boolean   @default(false)
+  categories      Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

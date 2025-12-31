@@ -665,12 +665,22 @@ Final Confidence: ${(reasoning.hybridResult.confidence * 100).toFixed(0)}%
   }
 
   /**
-   * Store reasoning result (placeholder - would create table in production)
+   * Store reasoning result in database
    */
   private async storeReasoningResult(reasoning: NeuralSymbolicReasoning): Promise<void> {
     try {
-      // In production, create a NeuroSymbolicReasoning table
-      // For now, log it
+      await prisma.neuroSymbolicReasoning.create({
+        data: {
+          id: reasoning.id,
+          organizationId: reasoning.organizationId,
+          input: reasoning.input as any,
+          neuralPrediction: reasoning.neuralPrediction as any,
+          symbolicRules: reasoning.symbolicRules as any,
+          finalDecision: reasoning.finalDecision as any,
+          confidence: reasoning.confidence,
+          explanation: reasoning.explanation,
+        },
+      });
       logger.info(`[NeuroSymbolic] Stored reasoning result: ${reasoning.id}`);
     } catch (error) {
       logger.error('[NeuroSymbolic] Store reasoning error', error);
@@ -678,11 +688,24 @@ Final Confidence: ${(reasoning.hybridResult.confidence * 100).toFixed(0)}%
   }
 
   /**
-   * Store rule inferences (placeholder - would create table in production)
+   * Store rule inferences in database
    */
   private async storeRuleInferences(inferences: RuleInference[]): Promise<void> {
     try {
-      // In production, create a RuleInference table
+      for (const inference of inferences) {
+        await prisma.ruleInference.create({
+          data: {
+            id: inference.id,
+            reasoningId: inference.reasoningId,
+            organizationId: inference.organizationId,
+            inferredRule: inference.inferredRule as any,
+            supportingEvidence: inference.supportingEvidence as any,
+            validationStatus: inference.validationStatus || 'pending',
+            validatedBy: inference.validatedBy,
+            validatedAt: inference.validatedAt,
+          },
+        });
+      }
       logger.info(`[NeuroSymbolic] Stored ${inferences.length} rule inferences`);
     } catch (error) {
       logger.error('[NeuroSymbolic] Store inferences error', error);
@@ -690,16 +713,62 @@ Final Confidence: ${(reasoning.hybridResult.confidence * 100).toFixed(0)}%
   }
 
   /**
-   * Get reasoning history
+   * Get reasoning history from database
    */
   async getReasoningHistory(
     organizationId: string,
     limit: number = 50
   ): Promise<NeuralSymbolicReasoning[]> {
     try {
-      // In production, query from database
-      // For now, return empty array
-      return [];
+      const dbReasonings = await prisma.neuroSymbolicReasoning.findMany({
+        where: { organizationId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        include: {
+          inferences: true,
+        },
+      });
+
+      return dbReasonings.map(r => {
+        const neuralPred = r.neuralPrediction as any;
+        const symbolicRules = r.symbolicRules as any;
+        const finalDecision = r.finalDecision as any;
+        
+        return {
+          id: r.id,
+          organizationId: r.organizationId,
+          query: (r.input as any)?.query || '',
+          neuralPrediction: {
+            result: neuralPred?.result || neuralPred,
+            confidence: neuralPred?.confidence || r.confidence,
+            model: neuralPred?.model || 'gemini',
+          },
+          symbolicReasoning: {
+            applicableRules: Array.isArray(symbolicRules) ? symbolicRules : [],
+            logicalSteps: (r.input as any)?.logicalSteps || [],
+            conclusion: finalDecision?.conclusion || '',
+            confidence: r.confidence,
+          },
+          hybridResult: {
+            finalDecision: finalDecision?.result || finalDecision,
+            confidence: r.confidence,
+            explanation: r.explanation || '',
+            neuralWeight: finalDecision?.neuralWeight || 0.5,
+            symbolicWeight: finalDecision?.symbolicWeight || 0.5,
+          },
+          createdAt: r.createdAt,
+          inferences: r.inferences.map(i => ({
+          id: i.id,
+          reasoningId: i.reasoningId,
+          organizationId: i.organizationId,
+          inferredRule: i.inferredRule as any,
+          supportingEvidence: i.supportingEvidence as any,
+          validationStatus: i.validationStatus as any,
+          validatedBy: i.validatedBy || undefined,
+          validatedAt: i.validatedAt || undefined,
+        })),
+        };
+      });
     } catch (error) {
       logger.error('[NeuroSymbolic] Get history error', error);
       return [];
@@ -707,7 +776,7 @@ Final Confidence: ${(reasoning.hybridResult.confidence * 100).toFixed(0)}%
   }
 
   /**
-   * Validate inferred rule
+   * Validate inferred rule in database
    */
   async validateInferredRule(
     inferenceId: string,
@@ -716,30 +785,28 @@ Final Confidence: ${(reasoning.hybridResult.confidence * 100).toFixed(0)}%
     validated: boolean
   ): Promise<RuleInference> {
     try {
-      // In production, update RuleInference table
-      // For now, return mock
+      // Update rule inference in database
+      const updated = await prisma.ruleInference.update({
+        where: {
+          id: inferenceId,
+          organizationId,
+        },
+        data: {
+          validationStatus: validated ? 'validated' : 'rejected',
+          validatedBy: userId,
+          validatedAt: new Date(),
+        },
+      });
+
       return {
-        id: inferenceId,
-        organizationId,
-        inferredRule: {
-          id: crypto.randomUUID(),
-          name: 'Validated Rule',
-          condition: 'test',
-          action: 'test',
-          priority: 5,
-          confidence: 0.8,
-          source: 'inferred',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        supportingEvidence: {
-          patterns: [],
-          frequency: 10,
-          confidence: 0.8,
-        },
-        validationStatus: validated ? 'validated' : 'rejected',
-        validatedBy: userId,
-        validatedAt: new Date(),
+        id: updated.id,
+        reasoningId: updated.reasoningId,
+        organizationId: updated.organizationId,
+        inferredRule: updated.inferredRule as any,
+        supportingEvidence: updated.supportingEvidence as any,
+        validationStatus: updated.validationStatus as any,
+        validatedBy: updated.validatedBy || undefined,
+        validatedAt: updated.validatedAt || undefined,
       };
     } catch (error) {
       logger.error('[NeuroSymbolic] Validate rule error', error);

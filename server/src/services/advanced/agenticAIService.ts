@@ -388,35 +388,33 @@ class AgenticAIService {
     autoApprove: boolean = false
   ): Promise<AgenticAction> {
     try {
-      // Check for concurrent execution locks (stub - implement if needed)
+      // Check for concurrent execution locks
       const lockKey = `action_${action.actionType}_${action.targetId}`;
-      // TODO: Implement action locking mechanism
-      // if (await this.isActionLocked(lockKey, organizationId)) {
-      //   throw new Error('Action is currently being executed by another process');
-      // }
-
-      // Validate preconditions (stub - implement if needed)
-      if (action.preconditions) {
-        // TODO: Implement precondition validation
-        // const preconditionsMet = await this.validatePreconditions(
-        //   action.preconditions,
-        //   organizationId
-        // );
-        // if (!preconditionsMet.valid) {
-        //   throw new Error(`Preconditions not met: ${preconditionsMet.reason}`);
-        // }
+      if (await this.isActionLocked(lockKey, organizationId)) {
+        throw new Error('Action is currently being executed by another process');
       }
 
-      // Check dependencies (stub - implement if needed)
+      // Validate preconditions
+      if (action.preconditions) {
+        const preconditionsMet = await this.validatePreconditions(
+          action.preconditions,
+          organizationId,
+          action.targetId
+        );
+        if (!preconditionsMet.valid) {
+          throw new Error(`Preconditions not met: ${preconditionsMet.reason}`);
+        }
+      }
+
+      // Check dependencies
       if (action.dependencies && action.dependencies.length > 0) {
-        // TODO: Implement dependency checking
-        // const dependenciesStatus = await this.checkDependencies(
-        //   action.dependencies,
-        //   organizationId
-        // );
-        // if (!dependenciesStatus.allComplete) {
-        //   throw new Error(`Dependencies not complete: ${dependenciesStatus.pending.join(', ')}`);
-        // }
+        const dependenciesStatus = await this.checkDependencies(
+          action.dependencies,
+          organizationId
+        );
+        if (!dependenciesStatus.allComplete) {
+          throw new Error(`Dependencies not complete: ${dependenciesStatus.pending.join(', ')}`);
+        }
       }
 
       // Estimate blast radius
@@ -467,8 +465,8 @@ class AgenticAIService {
         status: dbAction.status as any,
       };
 
-      // Lock action
-      // Lock action (simplified - in production, use distributed locking)
+      // Lock action using database-based locking
+      await this.lockAction(lockKey, organizationId, actionId);
       logger.info(`[Agentic AI] Action locked: ${lockKey}`);
 
       // Execute if approved
@@ -477,7 +475,7 @@ class AgenticAIService {
           return await this.executeActionInternal(agenticAction, organizationId, userId, action.timeoutSeconds);
         } finally {
           // Unlock action
-          // Unlock action (simplified - in production, use distributed locking)
+          await this.unlockAction(lockKey, organizationId);
           logger.info(`[Agentic AI] Action unlocked: ${lockKey}`);
         }
       }
@@ -1114,6 +1112,227 @@ class AgenticAIService {
     };
 
     return await this.executeActionInternal(action, organizationId, userId);
+  }
+
+  /**
+   * Check if an action is currently locked
+   */
+  private async isActionLocked(lockKey: string, organizationId: string): Promise<boolean> {
+    try {
+      // Use database to track action locks with expiration
+      const lock = await prisma.agenticAction.findFirst({
+        where: {
+          organizationId,
+          status: 'executing',
+          parameters: {
+            path: ['lockKey'],
+            equals: lockKey,
+          },
+        },
+      });
+
+      if (lock) {
+        // Check if lock is still valid (not expired)
+        const lockTimeout = 5 * 60 * 1000; // 5 minutes
+        const lockAge = Date.now() - (lock.executedAt?.getTime() || 0);
+        if (lockAge < lockTimeout) {
+          return true;
+        }
+        // Lock expired, clean it up
+        await this.unlockAction(lockKey, organizationId);
+      }
+
+      return false;
+    } catch (error) {
+      logger.error('[Agentic AI] Error checking action lock', error);
+      return false; // Fail open to prevent blocking
+    }
+  }
+
+  /**
+   * Lock an action to prevent concurrent execution
+   */
+  private async lockAction(lockKey: string, organizationId: string, actionId: string): Promise<void> {
+    try {
+      // Store lock in action parameters
+      await prisma.agenticAction.update({
+        where: { id: actionId },
+        data: {
+          parameters: {
+            ...(await prisma.agenticAction.findUnique({ where: { id: actionId } }))?.parameters as any,
+            lockKey,
+            lockedAt: new Date().toISOString(),
+          },
+        },
+      });
+    } catch (error) {
+      logger.error('[Agentic AI] Error locking action', error);
+      throw new Error('Failed to lock action');
+    }
+  }
+
+  /**
+   * Unlock an action
+   */
+  private async unlockAction(lockKey: string, organizationId: string): Promise<void> {
+    try {
+      // Find and clear lock
+      const lockedActions = await prisma.agenticAction.findMany({
+        where: {
+          organizationId,
+          status: 'executing',
+        },
+      });
+
+      for (const action of lockedActions) {
+        const params = action.parameters as any;
+        if (params?.lockKey === lockKey) {
+          await prisma.agenticAction.update({
+            where: { id: action.id },
+            data: {
+              parameters: {
+                ...params,
+                lockKey: undefined,
+                lockedAt: undefined,
+              },
+            },
+          });
+        }
+      }
+    } catch (error) {
+      logger.error('[Agentic AI] Error unlocking action', error);
+      // Don't throw - unlocking is best effort
+    }
+  }
+
+  /**
+   * Validate preconditions for an action
+   */
+  private async validatePreconditions(
+    preconditions: Record<string, any>,
+    organizationId: string,
+    targetId: string
+  ): Promise<{ valid: boolean; reason?: string }> {
+    try {
+      // Validate entity exists
+      if (preconditions.entityExists !== false) {
+        // Check if target entity exists based on action type
+        // This is a simplified check - in production, would check specific entity types
+        const entityExists = await this.checkEntityExists(targetId, organizationId);
+        if (!entityExists) {
+          return { valid: false, reason: `Target entity ${targetId} does not exist` };
+        }
+      }
+
+      // Validate status conditions
+      if (preconditions.requiredStatus) {
+        const currentStatus = await this.getEntityStatus(targetId, organizationId);
+        if (currentStatus !== preconditions.requiredStatus) {
+          return { valid: false, reason: `Entity status is ${currentStatus}, required: ${preconditions.requiredStatus}` };
+        }
+      }
+
+      // Validate permission conditions
+      if (preconditions.requiredPermissions) {
+        // In production, would check actual permissions
+        // For now, assume permissions are validated at API level
+      }
+
+      // Validate data conditions
+      if (preconditions.requiredData) {
+        for (const [key, value] of Object.entries(preconditions.requiredData)) {
+          const entityData = await this.getEntityData(targetId, organizationId);
+          if (entityData[key] !== value) {
+            return { valid: false, reason: `Required data condition not met: ${key} = ${value}` };
+          }
+        }
+      }
+
+      return { valid: true };
+    } catch (error) {
+      logger.error('[Agentic AI] Error validating preconditions', error);
+      return { valid: false, reason: `Precondition validation failed: ${error}` };
+    }
+  }
+
+  /**
+   * Check if entity exists
+   */
+  private async checkEntityExists(targetId: string, organizationId: string): Promise<boolean> {
+    // Check multiple entity types
+    const checks = [
+      prisma.frameworkControl.findUnique({ where: { id: targetId } }),
+      prisma.complianceFramework.findUnique({ where: { id: targetId } }),
+      prisma.riskItem.findUnique({ where: { id: targetId } }),
+      prisma.evidence.findUnique({ where: { id: targetId } }),
+    ];
+
+    const results = await Promise.all(checks);
+    return results.some(result => result !== null);
+  }
+
+  /**
+   * Get entity status
+   */
+  private async getEntityStatus(targetId: string, organizationId: string): Promise<string | null> {
+    const control = await prisma.frameworkControl.findUnique({ where: { id: targetId } });
+    if (control) return control.status || null;
+
+    const risk = await prisma.riskItem.findUnique({ where: { id: targetId } });
+    if (risk) return risk.status || null;
+
+    return null;
+  }
+
+  /**
+   * Get entity data
+   */
+  private async getEntityData(targetId: string, organizationId: string): Promise<Record<string, any>> {
+    const control = await prisma.frameworkControl.findUnique({ where: { id: targetId } });
+    if (control) return control as any;
+
+    const risk = await prisma.riskItem.findUnique({ where: { id: targetId } });
+    if (risk) return risk as any;
+
+    return {};
+  }
+
+  /**
+   * Check if dependencies are complete
+   */
+  private async checkDependencies(
+    dependencyIds: string[],
+    organizationId: string
+  ): Promise<{ allComplete: boolean; pending: string[]; completed: string[] }> {
+    try {
+      const dependencies = await prisma.agenticAction.findMany({
+        where: {
+          id: { in: dependencyIds },
+          organizationId,
+        },
+      });
+
+      const completed: string[] = [];
+      const pending: string[] = [];
+
+      for (const depId of dependencyIds) {
+        const dep = dependencies.find(d => d.id === depId);
+        if (dep && dep.status === 'completed') {
+          completed.push(depId);
+        } else {
+          pending.push(depId);
+        }
+      }
+
+      return {
+        allComplete: pending.length === 0,
+        pending,
+        completed,
+      };
+    } catch (error) {
+      logger.error('[Agentic AI] Error checking dependencies', error);
+      return { allComplete: false, pending: dependencyIds, completed: [] };
+    }
   }
 }
 
