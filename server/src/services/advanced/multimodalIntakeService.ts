@@ -308,8 +308,7 @@ class MultimodalIntakeService {
           confidence: result.confidence,
           duration: result.duration,
           segments: result.segments as any,
-          speakers: result.speakers as any,
-          accuracy: result.accuracy,
+          sourceType: 'audio',
         },
       });
     } catch (error) {
@@ -354,7 +353,7 @@ class MultimodalIntakeService {
       const transcription = await whisperService.transcribeVideo(
         audioBuffer || videoBuffer,
         {
-          language: metadata?.language || 'en',
+          language: (metadata as any)?.language || 'en',
         },
         organizationId || 'system',
         evidenceId
@@ -375,16 +374,33 @@ class MultimodalIntakeService {
       // Perform OCR on video frames
       const ocrText = await this.performVideoOCR(videoBuffer, format, duration);
 
+      // Convert whisper TranscriptionResult to multimodal TranscriptionResult
+      const multimodalTranscription: TranscriptionResult | undefined = transcription ? {
+        text: transcription.text,
+        confidence: transcription.confidence || 0.9,
+        language: transcription.language,
+        duration: transcription.duration,
+        segments: transcription.segments?.map(seg => ({
+          start: seg.start,
+          end: seg.end,
+          text: seg.text,
+          confidence: 0.9,
+        })),
+        speakers: undefined,
+        accuracy: 0.9,
+        noiseLevel: 'low' as const,
+      } : undefined;
+
       // Detect compliance-relevant content
       const complianceFlags = await this.detectComplianceRelevantContent(
         objectDetections,
         faceDetections,
         ocrText,
-        transcription
+        multimodalTranscription
       );
 
       const result: VideoAnalysisResult = {
-        transcription,
+        transcription: multimodalTranscription,
         sceneDetections,
         objectDetections,
         faceDetections,

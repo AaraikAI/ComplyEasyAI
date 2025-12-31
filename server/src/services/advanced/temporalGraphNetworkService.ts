@@ -800,8 +800,10 @@ class TemporalGraphNetworkService {
 
       // Sort by severity and lead time (critical with short lead time first)
       filteredWarnings.sort((a, b) => {
-        const severityOrder = { Critical: 4, High: 3, Medium: 2, Low: 1 };
-        const severityDiff = severityOrder[b.severity] - severityOrder[a.severity];
+        const severityOrder: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+        const aSeverity = (a as any).severity || 'Low';
+        const bSeverity = (b as any).severity || 'Low';
+        const severityDiff = (severityOrder[bSeverity] || 1) - (severityOrder[aSeverity] || 1);
         if (severityDiff !== 0) return severityDiff;
         return a.leadTimeDays - b.leadTimeDays; // Shorter lead time = more urgent
       });
@@ -875,15 +877,15 @@ class TemporalGraphNetworkService {
       };
 
       if (filters?.startDate) {
-        where.createdAt = { ...where.createdAt, gte: filters.startDate };
+        where.timestamp = { ...where.timestamp, gte: filters.startDate };
       }
       if (filters?.endDate) {
-        where.createdAt = { ...where.createdAt, lte: filters.endDate };
+        where.timestamp = { ...where.timestamp, lte: filters.endDate };
       }
 
       const auditLogs = await prisma.auditLog.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { timestamp: 'desc' },
         take: 100,
       });
 
@@ -896,11 +898,11 @@ class TemporalGraphNetworkService {
             type: details.type || 'unknown',
             severity: details.severity || 'Medium',
             description: details.description || 'Warning',
-            predictedDate: details.predictedDate ? new Date(details.predictedDate) : log.createdAt,
+            predictedDate: details.predictedDate ? new Date(details.predictedDate) : log.timestamp,
             actualDate: details.actualDate ? new Date(details.actualDate) : undefined,
             accuracy: details.accuracy || 'unknown',
             acknowledged: details.acknowledged || false,
-            createdAt: log.createdAt,
+            createdAt: log.timestamp,
           };
         });
 
@@ -944,7 +946,7 @@ class TemporalGraphNetworkService {
           organizationId,
           action: { contains: 'framework' },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { timestamp: 'desc' },
         take: 50,
       });
 
@@ -1097,7 +1099,7 @@ class TemporalGraphNetworkService {
       });
 
       // Framework age
-      const frameworkAge = (Date.now() - new Date(framework.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30); // months
+      const frameworkAge = (Date.now() - new Date(framework.updatedAt).getTime()) / (1000 * 60 * 60 * 24 * 30); // months
       factors.push({
         factor: 'Framework Maturity',
         impact: Math.min(20, frameworkAge * 0.5), // Older = more mature

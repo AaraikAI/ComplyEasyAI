@@ -1069,7 +1069,7 @@ class RedTeamService {
           if (violatingUsers.length > 0) {
             violations.push({
               policyId: policy.id,
-              policyName: policy.name,
+              policyName: policy.title || 'Unnamed Policy',
               violationType: 'Excessive Privileges',
               description: `${violatingUsers.length} users have admin privileges, violating least privilege policy`,
               affectedEntities: violatingUsers.map(u => u.id),
@@ -1092,7 +1092,7 @@ class RedTeamService {
             if (controlsWithoutEvidence.length > 0 && policy.content?.toLowerCase().includes('evidence')) {
               violations.push({
                 policyId: policy.id,
-                policyName: policy.name,
+                policyName: policy.title,
                 violationType: 'Missing Evidence',
                 description: `${controlsWithoutEvidence.length} controls lack evidence, violating data privacy policy`,
                 affectedEntities: controlsWithoutEvidence.map((c: any) => c.id),

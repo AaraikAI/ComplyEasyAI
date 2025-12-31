@@ -1,0 +1,9 @@
+1,3,0,main.dataHash
+2,4,0,main.privateKey
+3,5,0,main.userId
+4,1,0,main.userIdHash
+5,2,0,main.ownershipVerified
+6,5,1,main.hashUserId.in
+7,5,1,main.hashUserId.out
+8,2,2,main.hashOwnership.in
+9,2,2,main.hashOwnership.out

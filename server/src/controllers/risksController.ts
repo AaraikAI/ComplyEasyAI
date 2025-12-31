@@ -5,6 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import geminiService from '../services/geminiService';
 import { v4 as uuidv4 } from 'uuid';
+import { ComplianceStatus } from '@prisma/client';
 
 class RisksController {
   list: RequestHandler = async (req: Request, res: Response): Promise<void> => {
@@ -509,7 +510,7 @@ class RisksController {
 
       // 3. Check for low compliance scores
       for (const framework of frameworks) {
-        if (framework.progress < 50 && framework.status !== 'Pending') {
+        if (framework.progress < 50 && framework.status !== ComplianceStatus.In_Review) {
           const existingRisk = await prisma.riskItem.findFirst({
             where: {
               organizationId,

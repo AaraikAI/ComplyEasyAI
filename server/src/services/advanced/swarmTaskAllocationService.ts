@@ -1747,7 +1747,12 @@ class SwarmTaskAllocationService extends EventEmitter {
     recentTasks: SwarmTask[];
     topAgents: Array<{
       agent: SwarmAgent;
-      workload: ReturnType<typeof this.getAgentWorkload>;
+      workload: {
+        currentLoad: number;
+        maxLoad: number;
+        utilization: number;
+        assignedTasks: number;
+      };
     }>;
     alerts: MetricAlert[];
   } {

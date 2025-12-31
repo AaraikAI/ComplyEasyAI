@@ -266,7 +266,7 @@ class PhysicalAIService {
         lastSeen: dbDevice.lastSeen,
         sensorData: dbDevice.sensorData as any,
         complianceScore: complianceResult.overallScore,
-        certificates: device.certificates,
+        certificates: device.certificates?.map((cert: any) => ({ ...cert, id: cert.id || crypto.randomUUID() })),
       };
     } catch (error: any) {
       logger.error('[Physical AI] Error registering device', error);
@@ -1020,8 +1020,9 @@ class PhysicalAIService {
     let totalWeight = 0;
 
     for (const check of applicableChecks) {
-      const checkWeight = severityWeights[check.severity] || 1.0;
-      const checkScore = weights[check.status] || 0;
+      const checkWeight = severityWeights[check.severity as keyof typeof severityWeights] || 1.0;
+      const statusKey = check.status as 'pass' | 'warning' | 'fail';
+      const checkScore = weights[statusKey] || 0;
 
       totalScore += checkScore * checkWeight;
       totalWeight += checkWeight;
@@ -1539,7 +1540,18 @@ class PhysicalAIService {
         devicesByStatus[device.complianceStatus] = (devicesByStatus[device.complianceStatus] || 0) + 1;
 
         if (device.complianceChecks.length > 0) {
-          const score = this.calculateComplianceScore(device.complianceChecks);
+          const mappedChecks: EdgeComplianceCheck[] = device.complianceChecks.map((check: any) => ({
+            id: check.id,
+            deviceId: check.deviceId,
+            checkType: check.checkType as ComplianceCheckType,
+            status: check.status as 'pass' | 'fail' | 'warning' | 'not_applicable',
+            severity: check.severity as 'critical' | 'high' | 'medium' | 'low',
+            details: check.details,
+            evidence: undefined,
+            remediation: undefined,
+            timestamp: check.timestamp,
+          }));
+          const score = this.calculateComplianceScore(mappedChecks);
           totalComplianceScore += score;
           devicesWithScore++;
           
@@ -1768,7 +1780,7 @@ class PhysicalAIService {
         const sensorData = device.sensorData as any;
         const batteryLevel = sensorData?.battery?.level;
         const complianceScore = device.complianceChecks.length > 0 ?
-          this.calculateComplianceScore(device.complianceChecks) : undefined;
+          this.calculateComplianceScore(device.complianceChecks as any) : undefined;
 
         const issues: string[] = [];
         if (status === 'offline') {

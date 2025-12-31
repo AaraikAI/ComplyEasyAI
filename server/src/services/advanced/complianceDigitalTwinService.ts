@@ -112,7 +112,7 @@ class ComplianceDigitalTwinService {
 
       // Generate recommendations
       const recommendations = this.generateRecommendations(
-        scenario,
+        scenario.scenarioType,
         scoreChange,
         baselineScore,
         simulatedScore
@@ -421,7 +421,7 @@ class ComplianceDigitalTwinService {
    * Generate recommendations based on simulation results
    */
   private generateRecommendations(
-    scenario: SimulationScenario['scenarioType'],
+    scenario: 'control_change' | 'policy_update' | 'risk_event' | 'framework_addition' | 'control_removal' | 'control_modification' | 'evidence_update' | 'audit_schedule' | 'compliance_debt' | 'integration_change' | 'user_role_change' | 'framework_status_change' | 'data_breach' | 'audit_scenario',
     scoreChange: number,
     baselineScore: number,
     simulatedScore: number
@@ -1081,7 +1081,7 @@ class ComplianceDigitalTwinService {
   /**
    * Add random variation to parameters for Monte Carlo
    */
-  private addRandomVariation(parameters: Record<string, any>): Record<string, any> {
+  private addRandomVariationSimple(parameters: Record<string, any>): Record<string, any> {
     const varied = { ...parameters };
 
     // Add ±10% random variation to numeric parameters

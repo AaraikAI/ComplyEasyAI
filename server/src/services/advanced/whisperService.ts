@@ -27,6 +27,7 @@ export interface TranscriptionOptions {
 
 export interface TranscriptionResult {
   text: string;
+  confidence?: number;
   language: string;
   duration?: number;
   segments?: Array<{

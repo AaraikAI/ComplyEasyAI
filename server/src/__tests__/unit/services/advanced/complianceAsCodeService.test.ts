@@ -9,13 +9,31 @@ import * as path from 'path';
 
 // Mock axios for OPA calls
 jest.mock('axios', () => ({
-  post: jest.fn().mockResolvedValue({
-    data: {
-      result: {
-        allowed: true,
-        violations: [],
-      },
-    },
+  post: jest.fn().mockImplementation((url, data) => {
+    // Handle policy evaluation
+    if (url.includes('/v1/data/compliance/')) {
+      return Promise.resolve({
+        data: {
+          result: {
+            allow: true,
+            violations: [],
+          },
+        },
+      });
+    }
+    // Handle compile/validation
+    if (url.includes('/v1/compile')) {
+      return Promise.resolve({
+        data: { result: true },
+      });
+    }
+    return Promise.resolve({
+      data: { result: {} },
+    });
+  }),
+  put: jest.fn().mockResolvedValue({
+    data: {},
+    status: 200,
   }),
   get: jest.fn().mockResolvedValue({
     data: { policies: [] },
@@ -25,7 +43,7 @@ jest.mock('axios', () => ({
 jest.mock('fs', () => ({
   existsSync: jest.fn().mockReturnValue(true),
   mkdirSync: jest.fn(),
-  readFileSync: jest.fn().mockReturnValue('package compliance\n\nallow { true }'),
+  readFileSync: jest.fn().mockReturnValue('package compliance\n\nallow if { true }'),
   writeFileSync: jest.fn(),
 }));
 
@@ -55,7 +73,7 @@ describe('ComplianceAsCodeService', () => {
       const policy = {
         name: 'SOC2 Encryption Policy',
         framework: 'SOC2',
-        rego: 'package compliance\n\nallow { input.encryption.enabled == true }',
+        rego: 'package compliance\n\nallow if { input.encryption.enabled == true }',
         severity: 'critical' as const,
         tags: ['encryption', 'soc2'],
       };

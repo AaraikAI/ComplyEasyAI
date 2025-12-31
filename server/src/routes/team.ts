@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/database';
@@ -16,8 +16,9 @@ router.use(authenticate);
  */
 router.get(
   '/',
-  asyncHandler(async (req: AuthRequest, res) => {
-    const organizationId = req.user!.organizationId;
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
 
     const users = await prisma.user.findMany({
       where: { organizationId },
@@ -44,9 +45,10 @@ router.get(
 router.post(
   '/invite',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: AuthRequest, res) => {
-    const { email, name, role } = req.body;
-    const organizationId = req.user!.organizationId;
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const { email, name, role } = authReq.body;
+    const organizationId = authReq.user!.organizationId;
 
     if (!email || !name) {
       res.status(400).json({ error: 'Email and name are required' });
@@ -109,7 +111,7 @@ router.post(
     await prisma.auditLog.create({
       data: {
         action: `Team member invited: ${name} (${email}) with role ${role || 'viewer'}`,
-        userId: req.user!.id,
+        userId: (req as AuthRequest).user!.id,
         organizationId,
         hash: randomBytes(16).toString('hex'),
         ipAddress: req.ip,
@@ -130,10 +132,11 @@ router.post(
 router.patch(
   '/:id',
   authorize('admin'),
-  asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
-    const { role } = req.body;
-    const organizationId = req.user!.organizationId;
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const { id } = authReq.params;
+    const { role } = authReq.body;
+    const organizationId = authReq.user!.organizationId;
 
     if (!role || !['admin', 'editor', 'viewer'].includes(role)) {
       res.status(400).json({ error: 'Valid role is required' });
@@ -187,7 +190,7 @@ router.patch(
     await prisma.auditLog.create({
       data: {
         action: `Team member role updated: ${user.name} (${user.email}) to ${role}`,
-        userId: req.user!.id,
+        userId: (req as AuthRequest).user!.id,
         organizationId,
         hash: require('crypto').randomBytes(16).toString('hex'),
         ipAddress: req.ip,
@@ -208,9 +211,10 @@ router.patch(
 router.delete(
   '/:id',
   authorize('admin'),
-  asyncHandler(async (req: AuthRequest, res) => {
-    const { id } = req.params;
-    const organizationId = req.user!.organizationId;
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const { id } = authReq.params;
+    const organizationId = authReq.user!.organizationId;
 
     // Verify user belongs to same organization
     const user = await prisma.user.findFirst({
@@ -226,7 +230,7 @@ router.delete(
     }
 
     // Prevent deleting yourself
-    if (user.id === req.user!.id) {
+    if (user.id === (req as AuthRequest).user!.id) {
       res.status(400).json({ error: 'Cannot delete your own account' });
       return;
     }
@@ -239,7 +243,7 @@ router.delete(
     await prisma.auditLog.create({
       data: {
         action: `Team member removed: ${user.name} (${user.email})`,
-        userId: req.user!.id,
+        userId: (req as AuthRequest).user!.id,
         organizationId,
         hash: require('crypto').randomBytes(16).toString('hex'),
         ipAddress: req.ip,
