@@ -1178,7 +1178,7 @@ Received message:   &quot;Failed to exchange authorization code&quot;
     at runTest (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
     at Object.worker (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="GeminiService generateContent() should enforce rate limiting" name="GeminiService generateContent() should enforce rate limiting" time="0.008">
+    <testcase classname="GeminiService generateContent() should enforce rate limiting" name="GeminiService generateContent() should enforce rate limiting" time="0.009">
       <failure>Error: Failed to generate AI response: Cannot destructure property &apos;redactedText&apos; of &apos;(0 , piiRedaction_1.redactPII)(...)&apos; as it is undefined.
     at GeminiService.generateContent (/Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/services/geminiService.ts:93:13)
     at /Users/gverma/Desktop/AARAIK LLC/ComplyEasyAI/server/src/__tests__/unit/services/geminiService.test.ts:89:23
