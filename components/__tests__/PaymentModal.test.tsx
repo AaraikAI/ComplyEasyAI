@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PaymentModal } from '../PaymentModal';
+import { AuthProvider } from '../../contexts/AuthContext';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock the API service - define mock inline to avoid hoisting issues
@@ -21,20 +22,32 @@ describe('PaymentModal Component', () => {
   });
 
   it('renders correctly', () => {
-    render(<PaymentModal plan="Pro" price="Contact Us" onClose={mockClose} onSuccess={mockSuccess} />);
+    render(
+      <AuthProvider>
+        <PaymentModal plan="Pro" price="Contact Us" onClose={mockClose} onSuccess={mockSuccess} />
+      </AuthProvider>
+    );
     expect(screen.getByText('Secure Checkout')).toBeInTheDocument();
     expect(screen.getByText(/Pay \Contact Us/i)).toBeInTheDocument();
   });
 
   it('formats card input', () => {
-    render(<PaymentModal plan="Pro" price="Contact Us" onClose={mockClose} onSuccess={mockSuccess} />);
+    render(
+      <AuthProvider>
+        <PaymentModal plan="Pro" price="Contact Us" onClose={mockClose} onSuccess={mockSuccess} />
+      </AuthProvider>
+    );
     const input = screen.getByPlaceholderText('0000 0000 0000 0000');
     fireEvent.change(input, { target: { value: '1234567812345678' } });
     expect(input).toHaveValue('1234 5678 1234 5678');
   });
 
   it('submits payment successfully', async () => {
-    render(<PaymentModal plan="Pro" price="Contact Us" onClose={mockClose} onSuccess={mockSuccess} />);
+    render(
+      <AuthProvider>
+        <PaymentModal plan="Pro" price="Contact Us" onClose={mockClose} onSuccess={mockSuccess} />
+      </AuthProvider>
+    );
     
     // Fill form
     const cardInput = screen.getByPlaceholderText('0000 0000 0000 0000');

@@ -759,6 +759,15 @@ Authorization: Bearer <token>
 - `POST /api/enterprise/visionary-ai/autopilot/run` - Run compliance autopilot
 - `GET /api/enterprise/visionary-ai/benchmarking` - Get compliance benchmarking
 
+#### Homomorphic AI
+
+- `POST /api/acos/homomorphic/keys/generate` - Generate encryption keys for homomorphic operations
+- `POST /api/acos/homomorphic/encrypt` - Encrypt data for homomorphic operations
+- `POST /api/acos/homomorphic/decrypt` - Decrypt homomorphically encrypted data
+- `POST /api/acos/homomorphic/linear-regression` - Perform linear regression on encrypted data
+- `POST /api/acos/homomorphic/statistics` - Compute statistics (mean, variance) on encrypted data
+- `POST /api/acos/homomorphic/neural-network` - Run neural network inference on encrypted data
+
 ---
 
 ### Integrations

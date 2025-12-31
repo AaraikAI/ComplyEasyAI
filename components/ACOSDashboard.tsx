@@ -24,11 +24,16 @@ import {
   History,
   Trash2,
   Sparkles,
-  Loader2
+  Loader2,
+  Video,
+  Timer,
+  Lock
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { GoalModal } from './GoalModal';
+import { Plus, X } from 'lucide-react';
+import { HomomorphicAI } from './AIFeatures/HomomorphicAI';
 
 interface ComplianceGoal {
   id: string;
@@ -59,7 +64,7 @@ interface EarlyWarning {
 
 const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) => void }> = ({ onBack, onNavigate }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot' | 'neuroSymbolic'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot' | 'neuroSymbolic' | 'vr' | 'jit' | 'homomorphic'>('overview');
   const [goals, setGoals] = useState<ComplianceGoal[]>([]);
   const [loops, setLoops] = useState<ControlLoop[]>([]);
   const [warnings, setWarnings] = useState<EarlyWarning[]>([]);
@@ -74,7 +79,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
     // Check if there's a tab to navigate to from chatbot
     const checkTab = () => {
       const acosTab = sessionStorage.getItem('acosActiveTab');
-      if (acosTab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic'].includes(acosTab)) {
+      if (acosTab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic', 'vr', 'jit', 'homomorphic'].includes(acosTab)) {
         setActiveTab(acosTab as any);
         sessionStorage.removeItem('acosActiveTab'); // Clear after use
       }
@@ -89,7 +94,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
     // Listen for custom event from chatbot
     const handleTabChange = (event: CustomEvent) => {
       const tab = event.detail?.tab;
-      if (tab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic'].includes(tab)) {
+      if (tab && ['overview', 'goals', 'loops', 'predictions', 'simulations', 'redteam', 'swarm', 'iot', 'neuroSymbolic', 'vr', 'jit', 'homomorphic'].includes(tab)) {
         setActiveTab(tab as any);
         sessionStorage.removeItem('acosActiveTab');
       }
@@ -175,7 +180,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">aCOS Dashboard</h1>
-          <p className="text-gray-600 mt-1">Autonomous Compliance Operating System v3.0</p>
+          <p className="text-gray-600 mt-1">Autonomous Compliance Operating System</p>
         </div>
         <button
           onClick={onBack}
@@ -185,41 +190,163 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'overview', label: 'Overview', icon: BarChart3 },
-            { id: 'goals', label: 'Goals', icon: Target },
-            { id: 'loops', label: 'Control Loops', icon: Zap },
-            { id: 'predictions', label: 'Predictions', icon: TrendingUp },
-            { id: 'simulations', label: 'Simulations', icon: Network },
-            { id: 'redteam', label: 'Red Team', icon: Shield },
-            { id: 'swarm', label: 'Swarm', icon: Brain },
-            { id: 'iot', label: 'IoT Devices', icon: Cpu },
-            { id: 'neuroSymbolic', label: 'NeuroSymbolic AI', icon: Sparkles },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Icon size={16} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      {/* Main Content Layout with Sidebar */}
+      <div className="flex gap-6">
+        {/* Left Sidebar - Navigation Tabs */}
+        <div className="w-64 flex-shrink-0">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-6">
+            {/* Core Features Section */}
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                Core Features
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'overview', label: 'Overview', icon: BarChart3 },
+                  { id: 'goals', label: 'Goals', icon: Target },
+                  { id: 'loops', label: 'Control Loops', icon: Zap },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
 
-      {/* Tab Content */}
-      <div className="mt-6">
+            {/* Analytics & Intelligence Section */}
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                Analytics & Intelligence
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'predictions', label: 'Predictions', icon: TrendingUp },
+                  { id: 'simulations', label: 'Simulations', icon: Network },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Security & Testing Section */}
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                Security & Testing
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'redteam', label: 'Red Team', icon: Shield },
+                  { id: 'jit', label: 'JIT Access', icon: Timer },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* AI & Advanced Features Section */}
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                AI & Advanced
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'swarm', label: 'Swarm', icon: Brain },
+                  { id: 'neuroSymbolic', label: 'NeuroSymbolic AI', icon: Sparkles },
+                  { id: 'homomorphic', label: 'Homomorphic AI', icon: Lock },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Integration & Devices Section */}
+            <div>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-2">
+                Integration & Devices
+              </h3>
+              <nav className="space-y-1">
+                {[
+                  { id: 'iot', label: 'IoT Devices', icon: Cpu },
+                  { id: 'vr', label: 'VR Collaborations', icon: Video },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                      <span className="text-sm">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Content Area */}
+        <div className="flex-1 min-w-0">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Stats Grid */}
@@ -395,6 +522,20 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
         {activeTab === 'neuroSymbolic' && (
           <NeuroSymbolicTab />
         )}
+
+        {activeTab === 'vr' && (
+          <VRCollaborationsTab />
+        )}
+
+        {activeTab === 'jit' && (
+          <JITAccessTab />
+        )}
+
+        {activeTab === 'homomorphic' && (
+          <HomomorphicAITab />
+        )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1944,6 +2085,611 @@ const NeuroSymbolicTab: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// VR Collaborations Tab
+const VRCollaborationsTab: React.FC = () => {
+  const { user } = useAuth();
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    sessionName: '',
+    description: '',
+    sessionType: 'review' as 'review' | 'training' | 'simulation' | 'audit',
+    environment: 'compliance_landscape' as string,
+    maxParticipants: 10,
+  });
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const loadSessions = async () => {
+    setLoading(true);
+    try {
+      const data = await api.acos.getActiveVRSessions();
+      setSessions(data || []);
+    } catch (error) {
+      console.error('Error loading VR sessions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateSession = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      await api.acos.createVRSession({
+        sessionName: formData.sessionName,
+        description: formData.description,
+        sessionType: formData.sessionType,
+        environment: formData.environment,
+        maxParticipants: formData.maxParticipants,
+      });
+      setShowCreateModal(false);
+      setFormData({
+        sessionName: '',
+        description: '',
+        sessionType: 'review',
+        environment: 'compliance_landscape',
+        maxParticipants: 10,
+      });
+      loadSessions();
+    } catch (error) {
+      console.error('Error creating VR session:', error);
+      alert('Failed to create VR session. Please try again.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h2 className="text-xl font-semibold mb-2 flex items-center">
+              <Video className="mr-2" size={24} />
+              VR Collaborative Review Sessions
+            </h2>
+            <p className="text-gray-600">
+              3D compliance visualization, multi-user VR sessions, real-time collaboration, annotations, and training scenarios.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+          >
+            <Plus size={18} />
+            <span>Create Session</span>
+          </button>
+        </div>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="animate-spin text-blue-600" size={24} />
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Video className="mx-auto mb-4 text-gray-400" size={48} />
+            <p>No VR sessions available</p>
+            <p className="text-sm mt-2">Create a new VR session to start collaborative compliance reviews</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {sessions.map((session) => (
+              <div key={session.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium">{session.sessionName}</h3>
+                    <p className="text-sm text-gray-600 mt-1">{session.description}</p>
+                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                      <span>Type: {session.sessionType}</span>
+                      <span>Status: {session.status}</span>
+                      <span>Participants: {session.participants?.length || 0}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      api.acos.joinVRSession(session.id).then(() => {
+                        alert('Joining VR session...');
+                      }).catch(err => {
+                        console.error('Error joining session:', err);
+                        alert('Failed to join session');
+                      });
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Join Session
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Create VR Session Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Create VR Session</h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateSession} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Session Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.sessionName}
+                  onChange={(e) => setFormData({ ...formData, sessionName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Session Type *
+                </label>
+                <select
+                  value={formData.sessionType}
+                  onChange={(e) => setFormData({ ...formData, sessionType: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="review">Review</option>
+                  <option value="training">Training</option>
+                  <option value="simulation">Simulation</option>
+                  <option value="audit">Audit</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Environment Template
+                </label>
+                <select
+                  value={formData.environment}
+                  onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="compliance_landscape">Compliance Landscape</option>
+                  <option value="control_network">Control Network</option>
+                  <option value="risk_matrix">Risk Matrix</option>
+                  <option value="framework_cluster">Framework Cluster</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Max Participants
+                </label>
+                <input
+                  type="number"
+                  value={formData.maxParticipants}
+                  onChange={(e) => setFormData({ ...formData, maxParticipants: parseInt(e.target.value) || 10 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min={1}
+                  max={50}
+                />
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {creating ? 'Creating...' : 'Create Session'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// JIT Access Tab
+const JITAccessTab: React.FC = () => {
+  const { user } = useAuth();
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [formData, setFormData] = useState({
+    privilege: 'admin' as 'admin' | 'compliance_admin' | 'security_admin' | 'super_admin',
+    reason: 'emergency_fix' as 'incident_response' | 'compliance_audit' | 'security_investigation' | 'emergency_fix' | 'scheduled_maintenance' | 'data_access_request',
+    justification: '',
+    duration: 30,
+  });
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const loadSessions = async () => {
+    setLoading(true);
+    try {
+      const data = await api.acos.getJITAccessSessions();
+      setSessions(data || []);
+    } catch (error) {
+      console.error('Error loading JIT access sessions:', error);
+      setSessions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRequestAccess = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRequesting(true);
+    try {
+      const response = await api.acos.requestJITAccess({
+        privilege: formData.privilege,
+        reason: formData.reason,
+        justification: formData.justification,
+        duration: formData.duration,
+      });
+      
+      // Immediately add the new request/session to the list
+      if (response) {
+        setSessions((prev) => [response, ...prev]);
+      }
+      
+      setShowRequestModal(false);
+      setFormData({
+        privilege: 'admin',
+        reason: 'emergency_fix',
+        justification: '',
+        duration: 30,
+      });
+      
+      // Reload sessions after a short delay to ensure backend has processed it
+      setTimeout(() => {
+        loadSessions();
+      }, 500);
+      
+      alert('JIT access requested successfully!');
+    } catch (error: any) {
+      console.error('Error requesting JIT access:', error);
+      alert(error.message || 'Failed to request JIT access. Please try again.');
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h2 className="text-xl font-semibold mb-2 flex items-center">
+              <Timer className="mr-2" size={24} />
+              Just-In-Time Admin Access
+            </h2>
+            <p className="text-gray-600">
+              Grant temporary, time-bound privileged access that automatically expires after the task is done. Eliminate dormant admin accounts.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowRequestModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+          >
+            <Plus size={18} />
+            <span>Request Access</span>
+          </button>
+        </div>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="animate-spin text-blue-600" size={24} />
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Timer className="mx-auto mb-4 text-gray-400" size={48} />
+            <p>No active JIT access sessions</p>
+            <p className="text-sm mt-2">Request temporary admin access when needed</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {sessions.map((session: any) => {
+              // Handle both JITSession and JITAccessRequest types
+              const isSession = 'startTime' in session;
+              const isRequest = 'requestedPrivilege' in session;
+              
+              const privilege = isSession ? session.privilege : (isRequest ? session.requestedPrivilege : 'admin');
+              const reason = isRequest ? session.reason : (session.reason || 'N/A');
+              const status = isSession ? (session.active ? 'active' : 'expired') : (session.status || 'pending');
+              const expiresAt = isSession ? session.endTime : (isRequest ? session.expiresAt : null);
+              const sessionId = isSession ? session.id : (isRequest ? session.id : session.id);
+              
+              return (
+                <div key={sessionId} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-medium capitalize">{privilege?.replace(/_/g, ' ') || 'Admin Access'}</h3>
+                      <p className="text-sm text-gray-600 mt-1 capitalize">{reason?.replace(/_/g, ' ') || 'N/A'}</p>
+                      <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          status === 'active' || status === 'approved' 
+                            ? 'bg-green-100 text-green-800' 
+                            : status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : status === 'revoked'
+                            ? 'bg-red-100 text-red-800'
+                            : status === 'expired'
+                            ? 'bg-gray-100 text-gray-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {status === 'active' ? 'Active' : status === 'approved' ? 'Approved' : status === 'pending' ? 'Pending' : status === 'revoked' ? 'Cancelled' : status === 'expired' ? 'Expired' : 'Unknown'}
+                        </span>
+                        {expiresAt && (
+                          <span>Expires: {new Date(expiresAt).toLocaleString()}</span>
+                        )}
+                        {isSession && session.actionsPerformed && session.actionsPerformed.length > 0 && (
+                          <span>Actions: {session.actionsPerformed.length}</span>
+                        )}
+                        {isRequest && session.justification && (
+                          <span className="text-xs text-gray-400 truncate max-w-xs" title={session.justification}>
+                            {session.justification.substring(0, 50)}...
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {isRequest && status === 'pending' && (
+                        <button
+                          onClick={async () => {
+                            if (confirm('Are you sure you want to cancel this access request?')) {
+                              try {
+                                await api.acos.cancelJITAccessRequest(sessionId);
+                                // Optimistically update the UI
+                                setSessions(prev => prev.map(s => {
+                                  if ((s.id === sessionId || (s as any).requestId === sessionId)) {
+                                    return { ...s, status: 'revoked' };
+                                  }
+                                  return s;
+                                }));
+                                // Reload to ensure consistency
+                                await loadSessions();
+                              } catch (err: any) {
+                                console.error('Error canceling request:', err);
+                                alert(err.message || 'Failed to cancel request');
+                              }
+                            }
+                          }}
+                          className="px-4 py-2 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      {isSession && status === 'active' && (
+                        <button
+                          onClick={() => {
+                            if (confirm('Are you sure you want to revoke this JIT access session?')) {
+                              api.acos.revokeJITSession(sessionId, 'User initiated revocation')
+                                .then(() => {
+                                  loadSessions();
+                                })
+                                .catch((err) => {
+                                  console.error('Error revoking session:', err);
+                                  alert('Failed to revoke session');
+                                });
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                        >
+                          Revoke
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          // Show details modal
+                          const details = isRequest 
+                            ? `Request ID: ${sessionId}\nPrivilege: ${privilege}\nReason: ${reason}\nStatus: ${status}\nJustification: ${session.justification || 'N/A'}\nCreated: ${new Date(session.createdAt || Date.now()).toLocaleString()}\n${expiresAt ? `Expires: ${new Date(expiresAt).toLocaleString()}` : ''}`
+                            : `Session ID: ${sessionId}\nPrivilege: ${privilege}\nStatus: ${status}\n${expiresAt ? `Expires: ${new Date(expiresAt).toLocaleString()}` : ''}`;
+                          alert(details);
+                        }}
+                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Request JIT Access Modal */}
+      {showRequestModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Request JIT Access</h3>
+              <button
+                onClick={() => setShowRequestModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleRequestAccess} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Privilege Level *
+                </label>
+                <select
+                  value={formData.privilege}
+                  onChange={(e) => setFormData({ ...formData, privilege: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="admin">Admin</option>
+                  <option value="compliance_admin">Compliance Admin</option>
+                  <option value="security_admin">Security Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Reason *
+                </label>
+                <select
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="incident_response">Incident Response</option>
+                  <option value="compliance_audit">Compliance Audit</option>
+                  <option value="security_investigation">Security Investigation</option>
+                  <option value="emergency_fix">Emergency Fix</option>
+                  <option value="scheduled_maintenance">Scheduled Maintenance</option>
+                  <option value="data_access_request">Data Access Request</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Justification *
+                </label>
+                <textarea
+                  value={formData.justification}
+                  onChange={(e) => setFormData({ ...formData, justification: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                  placeholder="Explain why you need temporary admin access..."
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration (minutes) *
+                </label>
+                <input
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  min={5}
+                  max={480}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Maximum duration depends on privilege level</p>
+              </div>
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowRequestModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={requesting}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {requesting ? 'Requesting...' : 'Request Access'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const HomomorphicAITab: React.FC = () => {
+  const [showFullView, setShowFullView] = useState(false);
+
+  if (showFullView) {
+    // Use the full HomomorphicAI component
+    return <HomomorphicAI onBack={() => setShowFullView(false)} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold flex items-center">
+              <Lock className="mr-2 text-blue-500" size={24} />
+              Homomorphic AI
+            </h2>
+            <p className="text-gray-600 mt-1">
+              Privacy-preserving machine learning on encrypted data
+            </p>
+          </div>
+          <button
+            onClick={() => setShowFullView(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Open Full Interface
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-2">Key Generation</h3>
+            <p className="text-sm text-gray-600">
+              Generate encryption keys for BFV (integer) or CKKS (floating point) schemes
+            </p>
+          </div>
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-2">Encryption/Decryption</h3>
+            <p className="text-sm text-gray-600">
+              Encrypt and decrypt data while preserving privacy
+            </p>
+          </div>
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-2">ML Operations</h3>
+            <p className="text-sm text-gray-600">
+              Perform linear regression, statistics, and neural network inference on encrypted data
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> Homomorphic encryption allows you to perform computations on encrypted data without ever decrypting it. 
+            This ensures complete privacy while enabling AI/ML operations.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

@@ -13,15 +13,20 @@ import { RiskManagement } from './components/RiskManagement';
 import { MyTasks } from './components/MyTasks';
 import { Integrations } from './components/Integrations';
 import { Settings } from './components/Settings';
-import { PolicyGenerator } from './components/AIFeatures/PolicyGenerator';
-import { ContractAnalyzer } from './components/AIFeatures/ContractAnalyzer';
-import { GapAnalysis } from './components/AIFeatures/GapAnalysis';
-import { RFPResponder } from './components/AIFeatures/RFPResponder';
-import { PhishingGenerator } from './components/AIFeatures/PhishingGenerator';
-import { VendorScorer } from './components/AIFeatures/VendorScorer';
-import { DataMapper } from './components/AIFeatures/DataMapper';
-import { BCPGenerator } from './components/AIFeatures/BCPGenerator';
+// Lazy load AI features for code splitting and bundle optimization
+import { lazy, Suspense } from 'react';
 import ACOSDashboard from './components/ACOSDashboard';
+import SecurityFeatures from './components/SecurityFeatures';
+import RealTimeAnalytics from './components/RealTimeAnalytics';
+
+const PolicyGenerator = lazy(() => import('./components/AIFeatures/PolicyGenerator').then(m => ({ default: m.PolicyGenerator })));
+const ContractAnalyzer = lazy(() => import('./components/AIFeatures/ContractAnalyzer').then(m => ({ default: m.ContractAnalyzer })));
+const GapAnalysis = lazy(() => import('./components/AIFeatures/GapAnalysis').then(m => ({ default: m.GapAnalysis })));
+const RFPResponder = lazy(() => import('./components/AIFeatures/RFPResponder').then(m => ({ default: m.RFPResponder })));
+const PhishingGenerator = lazy(() => import('./components/AIFeatures/PhishingGenerator').then(m => ({ default: m.PhishingGenerator })));
+const VendorScorer = lazy(() => import('./components/AIFeatures/VendorScorer').then(m => ({ default: m.VendorScorer })));
+const DataMapper = lazy(() => import('./components/AIFeatures/DataMapper').then(m => ({ default: m.DataMapper })));
+const BCPGenerator = lazy(() => import('./components/AIFeatures/BCPGenerator').then(m => ({ default: m.BCPGenerator })));
 import { api } from './services/api';
 
 const MainApp: React.FC = () => {
@@ -101,26 +106,62 @@ const MainApp: React.FC = () => {
       case 'integrations':
         return <Integrations />;
       case 'ai-policy':
-        return <PolicyGenerator onBack={() => setCurrentView('dashboard')} />;
+        return (
+          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Policy Generator...</div>}>
+            <PolicyGenerator onBack={() => setCurrentView('dashboard')} />
+          </Suspense>
+        );
       case 'ai-contract':
-        return <ContractAnalyzer onBack={() => setCurrentView('dashboard')} />;
+        return (
+          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Contract Analyzer...</div>}>
+            <ContractAnalyzer onBack={() => setCurrentView('dashboard')} />
+          </Suspense>
+        );
       case 'ai-gap':
-        return <GapAnalysis onBack={() => setCurrentView('dashboard')} />;
+        return (
+          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Gap Analysis...</div>}>
+            <GapAnalysis onBack={() => setCurrentView('dashboard')} />
+          </Suspense>
+        );
       case 'ai-rfp':
-        return <RFPResponder onBack={() => setCurrentView('dashboard')} />;
+        return (
+          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading RFP Responder...</div>}>
+            <RFPResponder onBack={() => setCurrentView('dashboard')} />
+          </Suspense>
+        );
       case 'ai-phishing':
-        return <PhishingGenerator onBack={() => setCurrentView('dashboard')} />;
+        return (
+          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Phishing Generator...</div>}>
+            <PhishingGenerator onBack={() => setCurrentView('dashboard')} />
+          </Suspense>
+        );
       case 'ai-vendor':
-        return <VendorScorer onBack={() => setCurrentView('dashboard')} />;
+        return (
+          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Vendor Scorer...</div>}>
+            <VendorScorer onBack={() => setCurrentView('dashboard')} />
+          </Suspense>
+        );
       case 'ai-data-map':
-        return <DataMapper onBack={() => setCurrentView('dashboard')} />;
+        return (
+          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Data Mapper...</div>}>
+            <DataMapper onBack={() => setCurrentView('dashboard')} />
+          </Suspense>
+        );
       case 'ai-bcp':
-        return <BCPGenerator onBack={() => setCurrentView('dashboard')} />;
+        return (
+          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading BCP Generator...</div>}>
+            <BCPGenerator onBack={() => setCurrentView('dashboard')} />
+          </Suspense>
+        );
       case 'settings':
         if (user?.role !== 'admin') return <div>Access Denied</div>;
         return <Settings onNavigateToIntegrations={() => setCurrentView('integrations')} />;
       case 'acos':
         return <ACOSDashboard onBack={() => setCurrentView('dashboard')} onNavigate={setCurrentView} />;
+      case 'security':
+        return <SecurityFeatures onBack={() => setCurrentView('dashboard')} />;
+      case 'analytics':
+        return <RealTimeAnalytics onBack={() => setCurrentView('dashboard')} />;
       default:
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }
