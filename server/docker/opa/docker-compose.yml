@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  opa:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: complyeasy-opa
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./policies:/policies
+      - opa-data:/data
+    environment:
+      - OPA_LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - complyeasy-network
+
+  opa-replica:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: complyeasy-opa-replica
+    ports:
+      - "8182:8181"
+    volumes:
+      - ./policies:/policies
+      - opa-data:/data
+    environment:
+      - OPA_LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - complyeasy-network
+    depends_on:
+      - opa
+
+volumes:
+  opa-data:
+
+networks:
+  complyeasy-network:
+    driver: bridge
+

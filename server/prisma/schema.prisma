@@ -54,6 +54,9 @@ model Organization {
   deviceTrusts         DeviceTrust[]
   zeroTrustPolicies    ZeroTrustPolicy[]
   networkSegments      NetworkSegment[]
+  keyUsages            KeyUsage[]
+  keyRotationPolicies  KeyRotationPolicy[]
+  compliancePolicies   CompliancePolicy[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -1123,4 +1126,73 @@ model NetworkSegment {
 
   @@index([organizationId])
   @@index([trustLevel])
+}
+
+// BYOK Key Usage Tracking
+model KeyUsage {
+  id            String    @id @default(uuid())
+  organizationId String
+  keyId         String
+  provider      String    // aws_kms, azure_kv, gcp_kms, hashicorp_vault
+  operation     String    // encrypt, decrypt, generate
+  dataSize      Int?      // Size of data in bytes
+  success       Boolean   @default(true)
+  errorMessage  String?
+  metadata      Json?
+  timestamp     DateTime  @default(now())
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([keyId])
+  @@index([provider])
+  @@index([timestamp])
+  @@index([operation])
+}
+
+// Key Rotation Policies
+model KeyRotationPolicy {
+  id            String    @id @default(uuid())
+  organizationId String
+  keyId         String
+  provider      String
+  rotationIntervalDays Int @default(90)
+  lastRotation  DateTime?
+  nextRotation  DateTime
+  autoRotate    Boolean   @default(false)
+  notifyDaysBefore Int    @default(7)
+  enabled       Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([keyId, organizationId])
+  @@index([organizationId])
+  @@index([nextRotation])
+  @@index([enabled])
+}
+
+// Compliance-as-Code Policy Storage
+model CompliancePolicy {
+  id            String    @id @default(uuid())
+  organizationId String
+  name          String
+  framework     String    // SOC2, ISO27001, HIPAA, etc.
+  rego          String    @db.Text // OPA Rego policy code
+  severity      String    @default("high") // critical, high, medium, low
+  tags          String[]
+  version       Int       @default(1)
+  previousVersionId String?
+  enabled       Boolean   @default(true)
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  previousVersion CompliancePolicy? @relation("PolicyVersions", fields: [previousVersionId], references: [id])
+  nextVersions   CompliancePolicy[] @relation("PolicyVersions")
+
+  @@index([organizationId])
+  @@index([framework])
+  @@index([severity])
+  @@index([enabled])
+  @@index([version])
 }

@@ -275,6 +275,7 @@ class HomomorphicAIService {
     parameters?: {
       polyModulusDegree?: number;
       coeffModulusBitSizes?: number[];
+      plainModulusBitSize?: number;
       securityLevel?: 128 | 192 | 256;
     }
   ): Promise<EncryptedData> {
@@ -510,6 +511,7 @@ class HomomorphicAIService {
           ciphertext: ciphertext.save(),
           contextParams: {
             polyModulusDegree,
+            coeffModulusBitSizes: this.seal.CoeffModulus.BFVDefault(polyModulusDegree, sealSecurityLevel).values().map((v: any) => v.bitCount()),
             plainModulusBitSize: plainModulusBitSize,
           },
           scheme: 'BFV',

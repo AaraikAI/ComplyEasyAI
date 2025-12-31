@@ -1234,8 +1234,9 @@ class EvidenceTruthLayerService {
 
         for (let j = 0; j < batchResults.length; j++) {
           if (batchResults[j].status === 'fulfilled') {
+            const fulfilledResult = batchResults[j] as PromiseFulfilledResult<any>;
             results.push({
-              ...batchResults[j].value,
+              ...fulfilledResult.value,
               success: true,
             });
           } else {

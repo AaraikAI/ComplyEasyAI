@@ -522,18 +522,18 @@ class AuthController {
           const emailService = (await import('../services/emailService')).default;
           
           // Send email to old address
-          await emailService.sendEmail(
-            currentUser.email,
-            'Email Change Notification',
-            `Your email address for ComplyEasy AI has been changed from ${currentUser.email} to ${email}. If you did not make this change, please contact support immediately.`
-          );
+          await emailService.sendEmail({
+            to: currentUser.email,
+            subject: 'Email Change Notification',
+            html: `Your email address for ComplyEasy AI has been changed from ${currentUser.email} to ${email}. If you did not make this change, please contact support immediately.`,
+          });
           
           // Send confirmation email to new address
-          await emailService.sendEmail(
-            email,
-            'Email Change Confirmation',
-            `Your email address for ComplyEasy AI has been successfully changed to ${email}. Please verify this is correct.`
-          );
+          await emailService.sendEmail({
+            to: email,
+            subject: 'Email Change Confirmation',
+            html: `Your email address for ComplyEasy AI has been successfully changed to ${email}. Please verify this is correct.`,
+          });
         } catch (emailError) {
           logger.warn('Failed to send email confirmation, but profile was updated', emailError);
           // Continue with update even if email fails

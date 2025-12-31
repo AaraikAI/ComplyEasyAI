@@ -1,0 +1,15 @@
+1,3,0,main.controlsImplemented
+2,4,0,main.totalControls
+3,5,0,main.evidenceHash
+4,6,0,main.threshold
+5,1,0,main.complianceScore
+6,2,0,main.meetsThreshold
+7,3,1,main.mul1.a
+8,8,1,main.mul1.b
+9,1,1,main.mul1.out
+10,6,2,main.mul2.a
+11,4,2,main.mul2.b
+12,7,2,main.mul2.out
+13,1,3,main.sub.a
+14,7,3,main.sub.b
+15,2,3,main.sub.out

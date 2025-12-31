@@ -398,10 +398,10 @@ class VRCollaborativeReviewService {
         scheduledTime: config.scheduledTime,
         environment,
         complianceData,
-        permissions: config.permissions || {
-          canJoin: ['*'],
-          canEdit: ['host', 'reviewer'],
-          canRecord: ['host'],
+        permissions: {
+          canJoin: config.permissions?.canJoin || ['*'],
+          canEdit: config.permissions?.canEdit || ['host', 'reviewer'],
+          canRecord: config.permissions?.canRecord || ['host'],
         },
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1049,7 +1049,7 @@ class VRCollaborativeReviewService {
         };
       });
 
-      const overallPassed = criteriaResults.every(c => c.passed);
+      const overallPassed = criteriaResults.every((c: any) => c.passed);
 
       return {
         score: progress.score,

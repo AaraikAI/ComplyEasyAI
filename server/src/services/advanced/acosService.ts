@@ -18,12 +18,15 @@ import { ComplianceStatus } from '@prisma/client';
 
 export interface ComplianceGoal {
   id: string;
+  name?: string;
   goalType: 'maintain' | 'achieve' | 'improve';
   frameworks: string[];
   riskTolerance: 'low' | 'medium' | 'high';
   horizon: number; // days
   autoActionPolicy: 'conservative' | 'moderate' | 'aggressive';
   targetScore?: number;
+  deadline?: string;
+  status?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +43,12 @@ export interface ControlLoop {
   lastActed: Date;
   lastVerified: Date;
   cycleCount: number;
+  triggerType?: string;
+  triggerConfig?: any;
+  timeoutSeconds?: number;
+  parentLoopId?: string;
+  configuration?: any;
+  lastError?: string;
 }
 
 export interface ComplianceDebt {
@@ -177,9 +186,6 @@ class ACOSService {
         horizon: createdGoal.horizon,
         autoActionPolicy: createdGoal.autoActionPolicy as 'conservative' | 'moderate' | 'aggressive',
         targetScore: createdGoal.targetScore || undefined,
-        status: createdGoal.status,
-        name: createdGoal.name || undefined,
-        deadline: createdGoal.deadline ? createdGoal.deadline.toISOString() : undefined,
         createdAt: createdGoal.createdAt,
         updatedAt: createdGoal.updatedAt,
       };
@@ -236,9 +242,29 @@ class ACOSService {
         if (!parentLoop) {
           throw new Error('Parent loop not found');
         }
-        // Check for circular dependencies
-        if (await this.hasCircularDependency(config.parentLoopId, controlId, organizationId)) {
-          throw new Error('Circular dependency detected in control loops');
+        // Check for circular dependencies (simple check - verify parent doesn't have this control as parent)
+        const parentHasThisAsParent = await prisma.controlLoop.findFirst({
+          where: {
+            id: config.parentLoopId,
+            organizationId,
+            parentLoopId: { not: null },
+          },
+        });
+        if (parentHasThisAsParent) {
+          // Additional check: verify no circular chain
+          const visited = new Set<string>();
+          let currentId: string | null = config.parentLoopId;
+          while (currentId && !visited.has(currentId)) {
+            visited.add(currentId);
+            const current: any = await prisma.controlLoop.findFirst({
+              where: { id: currentId, organizationId },
+            });
+            if (!current || !current.parentLoopId) break;
+            if (current.parentLoopId === controlId) {
+              throw new Error('Circular dependency detected in control loops');
+            }
+            currentId = current.parentLoopId;
+          }
         }
       }
 
@@ -289,9 +315,9 @@ class ACOSService {
         triggerType: createdLoop.triggerType || 'manual',
         triggerConfig: createdLoop.triggerConfig,
         timeoutSeconds: createdLoop.timeoutSeconds || 300,
-        parentLoopId: createdLoop.parentLoopId,
-        configuration: createdLoop.configuration,
-        lastError: createdLoop.lastError,
+        parentLoopId: createdLoop.parentLoopId || undefined,
+        configuration: createdLoop.configuration || undefined,
+        lastError: createdLoop.lastError || undefined,
         lastObserved: createdLoop.lastObserved,
         lastActed: createdLoop.lastActed,
         lastVerified: createdLoop.lastVerified,
@@ -543,7 +569,6 @@ class ACOSService {
           confidence: newConfidence,
           cycleCount: newCycleCount,
           scoreChange,
-          phases: phaseResults,
         };
       } catch (error: any) {
         // Handle timeout or other errors
@@ -1245,9 +1270,9 @@ class ACOSService {
         triggerType: loop.triggerType || 'manual',
         triggerConfig: loop.triggerConfig,
         timeoutSeconds: loop.timeoutSeconds || 300,
-        parentLoopId: loop.parentLoopId,
+        parentLoopId: loop.parentLoopId || undefined,
         configuration: loop.configuration,
-        lastError: loop.lastError,
+        lastError: loop.lastError || undefined,
         lastObserved: loop.lastObserved || loop.createdAt,
         lastActed: loop.lastActed || loop.createdAt,
         lastVerified: loop.lastVerified || loop.createdAt,
@@ -1289,9 +1314,9 @@ class ACOSService {
         triggerType: loop.triggerType || 'manual',
         triggerConfig: loop.triggerConfig,
         timeoutSeconds: loop.timeoutSeconds || 300,
-        parentLoopId: loop.parentLoopId,
+        parentLoopId: loop.parentLoopId || undefined,
         configuration: loop.configuration,
-        lastError: loop.lastError,
+        lastError: loop.lastError || undefined,
         lastObserved: loop.lastObserved || loop.createdAt,
         lastActed: loop.lastActed || loop.createdAt,
         lastVerified: loop.lastVerified || loop.createdAt,
@@ -1399,11 +1424,11 @@ class ACOSService {
         confidence: updatedLoop.confidence || 0.5,
         status: (updatedLoop.status || 'active') as 'active' | 'paused' | 'error',
         triggerType: updatedLoop.triggerType || 'manual',
-        triggerConfig: updatedLoop.triggerConfig,
-        timeoutSeconds: updatedLoop.timeoutSeconds || 300,
-        parentLoopId: updatedLoop.parentLoopId,
-        configuration: updatedLoop.configuration,
-        lastError: updatedLoop.lastError,
+        triggerConfig: updatedLoop.triggerConfig || undefined,
+        timeoutSeconds: updatedLoop.timeoutSeconds || undefined,
+        parentLoopId: updatedLoop.parentLoopId || undefined,
+        configuration: updatedLoop.configuration || undefined,
+        lastError: updatedLoop.lastError || undefined,
         lastObserved: updatedLoop.lastObserved || updatedLoop.createdAt,
         lastActed: updatedLoop.lastActed || updatedLoop.createdAt,
         lastVerified: updatedLoop.lastVerified || updatedLoop.createdAt,
@@ -1460,11 +1485,11 @@ class ACOSService {
         confidence: updatedLoop.confidence || 0.5,
         status: 'paused',
         triggerType: updatedLoop.triggerType || 'manual',
-        triggerConfig: updatedLoop.triggerConfig,
-        timeoutSeconds: updatedLoop.timeoutSeconds || 300,
-        parentLoopId: updatedLoop.parentLoopId,
-        configuration: updatedLoop.configuration,
-        lastError: updatedLoop.lastError,
+        triggerConfig: updatedLoop.triggerConfig || undefined,
+        timeoutSeconds: updatedLoop.timeoutSeconds || undefined,
+        parentLoopId: updatedLoop.parentLoopId || undefined,
+        configuration: updatedLoop.configuration || undefined,
+        lastError: updatedLoop.lastError || undefined,
         lastObserved: updatedLoop.lastObserved || updatedLoop.createdAt,
         lastActed: updatedLoop.lastActed || updatedLoop.createdAt,
         lastVerified: updatedLoop.lastVerified || updatedLoop.createdAt,
@@ -1521,11 +1546,11 @@ class ACOSService {
         confidence: updatedLoop.confidence || 0.5,
         status: 'active',
         triggerType: updatedLoop.triggerType || 'manual',
-        triggerConfig: updatedLoop.triggerConfig,
-        timeoutSeconds: updatedLoop.timeoutSeconds || 300,
-        parentLoopId: updatedLoop.parentLoopId,
-        configuration: updatedLoop.configuration,
-        lastError: updatedLoop.lastError,
+        triggerConfig: updatedLoop.triggerConfig || undefined,
+        timeoutSeconds: updatedLoop.timeoutSeconds || undefined,
+        parentLoopId: updatedLoop.parentLoopId || undefined,
+        configuration: updatedLoop.configuration || undefined,
+        lastError: updatedLoop.lastError || undefined,
         lastObserved: updatedLoop.lastObserved || updatedLoop.createdAt,
         lastActed: updatedLoop.lastActed || updatedLoop.createdAt,
         lastVerified: updatedLoop.lastVerified || updatedLoop.createdAt,
@@ -1761,9 +1786,6 @@ class ACOSService {
         horizon: updatedGoal.horizon,
         autoActionPolicy: updatedGoal.autoActionPolicy as 'conservative' | 'moderate' | 'aggressive',
         targetScore: updatedGoal.targetScore || undefined,
-        status: updatedGoal.status || 'active',
-        name: updatedGoal.name || undefined,
-        deadline: updatedGoal.deadline ? updatedGoal.deadline.toISOString() : undefined,
         createdAt: updatedGoal.createdAt,
         updatedAt: updatedGoal.updatedAt,
       };
@@ -1850,9 +1872,6 @@ class ACOSService {
         horizon: restoredGoal.horizon,
         autoActionPolicy: restoredGoal.autoActionPolicy as 'conservative' | 'moderate' | 'aggressive',
         targetScore: restoredGoal.targetScore || undefined,
-        status: restoredGoal.status || 'active',
-        name: (restoredGoal as any).name,
-        deadline: (restoredGoal as any).deadline,
         createdAt: restoredGoal.createdAt,
         updatedAt: restoredGoal.updatedAt,
       };
@@ -1863,9 +1882,9 @@ class ACOSService {
   }
 
   /**
-   * Update a control loop's status and metrics
+   * Update a control loop's status and metrics (internal method)
    */
-  async updateControlLoop(
+  async updateControlLoopMetrics(
     loopId: string,
     organizationId: string,
     updates: {

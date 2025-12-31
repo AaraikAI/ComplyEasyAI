@@ -780,7 +780,7 @@ export const disconnectAzure: RequestHandler = async (req: Request, res: Respons
         connected: false,
         accessToken: null,
         refreshToken: null,
-        config: null,
+        config: undefined,
       },
     });
 
@@ -1076,7 +1076,7 @@ export const disconnectProvider: RequestHandler = async (req: Request, res: Resp
       where: { id: integration.id },
       data: {
         connected: false,
-        config: null,
+        config: undefined,
       },
     });
 

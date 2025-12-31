@@ -96,42 +96,51 @@ class ComplianceAsCodeService {
       const policyId = crypto.randomBytes(16).toString('hex');
 
       const fullPolicy: Policy = {
-        id: policyId,
+        id: policyId, // Will be replaced with DB ID
         ...policy,
       };
 
-      // Validate Rego syntax (skip in development if OPA not available)
+      // Validate Rego syntax - Required in production
       try {
         await this.validateRegoSyntax(policy.rego);
       } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          logger.warn('Rego syntax validation skipped in development mode', error);
-        } else {
+        if (process.env.NODE_ENV === 'production') {
           throw error;
         }
+        logger.warn('Rego syntax validation failed (development mode)', error);
       }
 
-      // Save policy to OPA (skip in development if OPA not available)
-      try {
-        await this.uploadPolicyToOPA(policyId, policy.rego);
-      } catch (error) {
-        if (process.env.NODE_ENV === 'development') {
-          logger.warn('OPA upload skipped in development mode', error);
-        } else {
-          throw error;
-        }
-      }
+      // Save policy to OPA - Required in production
+      await this.uploadPolicyToOPA(policyId, policy.rego);
 
-      // Store policy metadata in database
-      await this.storePolicyMetadata(organizationId, fullPolicy);
+      // Store policy in database (primary storage)
+      const dbPolicy = await prisma.compliancePolicy.create({
+        data: {
+          organizationId,
+          name: policy.name,
+          framework: policy.framework,
+          rego: policy.rego,
+          severity: policy.severity,
+          tags: policy.tags,
+          version: 1,
+          enabled: true,
+        },
+      });
 
-      // Save policy file locally
-      const policyFile = path.join(this.policiesPath, `${policyId}.rego`);
+      // Also save policy file locally for OPA (backup)
+      const policyFile = path.join(this.policiesPath, `${dbPolicy.id}.rego`);
       fs.writeFileSync(policyFile, policy.rego, 'utf-8');
 
-      logger.info(`Created compliance policy: ${policy.name} (${policyId})`);
+      logger.info(`Created compliance policy: ${policy.name} (${dbPolicy.id})`);
 
-      return fullPolicy;
+      return {
+        id: dbPolicy.id,
+        name: dbPolicy.name,
+        framework: dbPolicy.framework,
+        rego: dbPolicy.rego,
+        severity: dbPolicy.severity as 'critical' | 'high' | 'medium' | 'low',
+        tags: dbPolicy.tags,
+      };
     } catch (error) {
       logger.error('Error creating policy', error);
       throw new Error('Failed to create compliance policy');
@@ -171,7 +180,7 @@ class ComplianceAsCodeService {
   }
 
   /**
-   * Upload policy to OPA server
+   * Upload policy to OPA server - Production ready
    */
   private async uploadPolicyToOPA(policyId: string, rego: string): Promise<void> {
     try {
@@ -179,16 +188,22 @@ class ComplianceAsCodeService {
         `${this.opaEndpoint}/v1/policies/${policyId}`,
         rego,
         {
-          headers: { 'Content-Type': 'text/plain' },
+          headers: { 
+            'Content-Type': 'text/plain',
+            ...(process.env.OPA_AUTH_TOKEN ? { 'Authorization': `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {}),
+          },
           timeout: 5000,
         }
-      ).catch(() => {
-        // OPA server not running - policies will be loaded when it starts
-        logger.warn('OPA server not available, policy saved locally');
-      });
-    } catch (error) {
-      logger.error('Error uploading policy to OPA', error);
-      throw error;
+      );
+      logger.info(`Uploaded policy ${policyId} to OPA`);
+    } catch (error: any) {
+      // Production: Fail if OPA unavailable
+      if (process.env.NODE_ENV === 'production') {
+        logger.error('OPA server unavailable in production', error);
+        throw new Error('OPA server is required for policy management in production');
+      }
+      // Development: Warn but continue
+      logger.warn('OPA server not available, policy saved to database only (development mode)', error);
     }
   }
 
@@ -203,15 +218,25 @@ class ComplianceAsCodeService {
 
     try {
       // Query OPA for policy decision
+      // Production: Fail fast if OPA unavailable
       const response = await axios.post(
         `${this.opaEndpoint}/v1/data/compliance/${policyId}`,
         { input },
         {
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(process.env.OPA_AUTH_TOKEN ? { 'Authorization': `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {}),
+          },
           timeout: 10000,
         }
-      ).catch(() => {
-        // Fallback: evaluate locally if OPA not available
+      ).catch((error) => {
+        // Production: Fail if OPA unavailable
+        if (process.env.NODE_ENV === 'production') {
+          logger.error('OPA server unavailable in production', error);
+          throw new Error('OPA server is required for policy evaluation in production');
+        }
+        // Development: Allow fallback with warning
+        logger.warn('OPA server unavailable, using fallback (development mode only)');
         return this.evaluatePolicyLocally(policyId, input);
       });
 
@@ -239,20 +264,29 @@ class ComplianceAsCodeService {
   }
 
   /**
-   * Fallback: Evaluate policy locally (simplified)
+   * Fallback: Evaluate policy locally (development only)
+   * Production: This should never be called
    */
   private async evaluatePolicyLocally(
     policyId: string,
     input: any
   ): Promise<any> {
-    // Simplified evaluation when OPA not available
-    logger.warn('Using local policy evaluation fallback');
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Local policy evaluation is not allowed in production');
+    }
+
+    // Development: Return deny by default (safer than allow all)
+    logger.warn('Using local policy evaluation fallback (development only)');
 
     return {
       data: {
         result: {
-          allow: true,
-          violations: [],
+          allow: false,
+          violations: [{
+            rule: 'opa_unavailable',
+            severity: 'high',
+            message: 'OPA server unavailable - policy evaluation skipped (development mode)',
+          }],
         },
       },
     };
@@ -391,19 +425,73 @@ class ComplianceAsCodeService {
   }
 
   /**
-   * Verify webhook signature
+   * Verify webhook signature - Production Implementation
    */
   private verifyWebhookSignature(
     provider: string,
     payload: any,
     signature: string
   ): boolean {
-    // Implement signature verification based on provider
-    // GitHub: HMAC SHA256
-    // GitLab: X-Gitlab-Token
-    // etc.
+    try {
+      const secret = this.getWebhookSecret(provider);
+      if (!secret) {
+        logger.error(`Webhook secret not configured for ${provider}`);
+        return false;
+      }
 
-    return true; // Simplified for production implementation
+      // GitHub: HMAC SHA256
+      if (provider === 'github') {
+        const hmac = crypto.createHmac('sha256', secret);
+        const expected = hmac.update(JSON.stringify(payload)).digest('hex');
+        const expectedSignature = `sha256=${expected}`;
+        
+        return crypto.timingSafeEqual(
+          Buffer.from(signature),
+          Buffer.from(expectedSignature)
+        );
+      }
+
+      // GitLab: X-Gitlab-Token header
+      if (provider === 'gitlab') {
+        return crypto.timingSafeEqual(
+          Buffer.from(signature),
+          Buffer.from(secret)
+        );
+      }
+
+      // Jenkins: Basic token comparison
+      if (provider === 'jenkins') {
+        return crypto.timingSafeEqual(
+          Buffer.from(signature),
+          Buffer.from(secret)
+        );
+      }
+
+      // CircleCI: HMAC SHA256
+      if (provider === 'circleci') {
+        const hmac = crypto.createHmac('sha256', secret);
+        const expected = hmac.update(JSON.stringify(payload)).digest('hex');
+        
+        return crypto.timingSafeEqual(
+          Buffer.from(signature),
+          Buffer.from(expected)
+        );
+      }
+
+      logger.warn(`Unknown webhook provider: ${provider}`);
+      return false;
+    } catch (error) {
+      logger.error('Error verifying webhook signature', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get webhook secret from environment or configuration
+   */
+  private getWebhookSecret(provider: string): string | null {
+    const envKey = `${provider.toUpperCase()}_WEBHOOK_SECRET`;
+    return process.env[envKey] || null;
   }
 
   /**
@@ -575,70 +663,36 @@ allow {
   }
 
   /**
-   * Get policies by framework
+   * Get policies by framework - Database-backed
    */
   async getPoliciesByFramework(
     organizationId: string,
     framework?: string
   ): Promise<Policy[]> {
     try {
-      // Fetch policies from auditLog
-      const whereClause: any = {
+      const where: any = {
         organizationId,
-        action: {
-          startsWith: 'Policy Created:',
-        },
+        enabled: true,
       };
 
-      const logs = await prisma.auditLog.findMany({
-        where: whereClause,
-        orderBy: { timestamp: 'desc' },
+      if (framework) {
+        where.framework = framework;
+      }
+
+      const dbPolicies = await prisma.compliancePolicy.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
         take: 100,
       });
 
-      const policies: Policy[] = [];
-
-      for (const log of logs) {
-        try {
-          if (!log.details) continue;
-
-          const details = typeof log.details === 'string' 
-            ? JSON.parse(log.details) 
-            : log.details;
-
-          // Filter by framework if provided
-          if (framework && details.framework !== framework) {
-            continue;
-          }
-
-          // Extract policy name from action (format: "Policy Created: {name}") or use stored name
-          const policyName = details.name || log.action.replace('Policy Created: ', '');
-
-          // Use rego from details if available, otherwise try to read from file
-          let rego = details.rego || '';
-          if (!rego) {
-            const policyFile = path.join(this.policiesPath, `${details.policyId}.rego`);
-            if (fs.existsSync(policyFile)) {
-              rego = fs.readFileSync(policyFile, 'utf-8');
-            }
-          }
-
-          policies.push({
-            id: details.policyId,
-            name: policyName,
-            framework: details.framework || 'SOC2',
-            rego: rego,
-            severity: details.severity || 'high',
-            tags: details.tags || [],
-          });
-        } catch (e: any) {
-          logger.error('Error parsing policy from auditLog', { error: e.message, logId: log.id });
-          // Skip invalid entries
-          continue;
-        }
-      }
-
-      return policies;
+      return dbPolicies.map(p => ({
+        id: p.id,
+        name: p.name,
+        framework: p.framework,
+        rego: p.rego,
+        severity: p.severity as 'critical' | 'high' | 'medium' | 'low',
+        tags: p.tags,
+      }));
     } catch (error) {
       logger.error('Error getting policies by framework', error);
       return [];
@@ -666,24 +720,25 @@ allow {
   }
 
   /**
-   * Get policy by ID
+   * Get policy by ID - Database-backed
    */
   async getPolicy(policyId: string): Promise<Policy | null> {
     try {
-      const policyFile = path.join(this.policiesPath, `${policyId}.rego`);
-      if (!fs.existsSync(policyFile)) {
+      const dbPolicy = await prisma.compliancePolicy.findUnique({
+        where: { id: policyId },
+      });
+
+      if (!dbPolicy) {
         return null;
       }
 
-      const rego = fs.readFileSync(policyFile, 'utf-8');
-      // In production, retrieve metadata from database
       return {
-        id: policyId,
-        name: `Policy ${policyId}`,
-        framework: 'SOC2',
-        rego,
-        severity: 'high',
-        tags: [],
+        id: dbPolicy.id,
+        name: dbPolicy.name,
+        framework: dbPolicy.framework,
+        rego: dbPolicy.rego,
+        severity: dbPolicy.severity as 'critical' | 'high' | 'medium' | 'low',
+        tags: dbPolicy.tags,
       };
     } catch (error) {
       logger.error('Error getting policy', error);
@@ -692,7 +747,7 @@ allow {
   }
 
   /**
-   * Update policy
+   * Update policy - Creates new version with rollback capability
    */
   async updatePolicy(
     policyId: string,
@@ -700,31 +755,107 @@ allow {
     updates: Partial<Policy>
   ): Promise<Policy> {
     try {
-      const existing = await this.getPolicy(policyId);
-      if (!existing) {
+      const existing = await prisma.compliancePolicy.findUnique({
+        where: { id: policyId },
+      });
+
+      if (!existing || existing.organizationId !== organizationId) {
         throw new Error('Policy not found');
       }
 
-      const updated: Policy = {
-        ...existing,
-        ...updates,
-        id: policyId,
-      };
-
+      // Validate Rego if provided
       if (updates.rego) {
         await this.validateRegoSyntax(updates.rego);
-        await this.uploadPolicyToOPA(policyId, updates.rego);
-        const policyFile = path.join(this.policiesPath, `${policyId}.rego`);
-        fs.writeFileSync(policyFile, updates.rego, 'utf-8');
       }
 
-      await this.storePolicyMetadata(organizationId, updated);
+      // Create new version
+      const newVersion = existing.version + 1;
+      const updatedPolicy = await prisma.compliancePolicy.create({
+        data: {
+          organizationId,
+          name: updates.name || existing.name,
+          framework: updates.framework || existing.framework,
+          rego: updates.rego || existing.rego,
+          severity: (updates.severity || existing.severity) as 'critical' | 'high' | 'medium' | 'low',
+          tags: updates.tags || existing.tags,
+          version: newVersion,
+          previousVersionId: policyId,
+          enabled: true,
+        },
+      });
 
-      logger.info(`Updated compliance policy: ${policyId}`);
-      return updated;
+      // Upload to OPA
+      await this.uploadPolicyToOPA(updatedPolicy.id, updatedPolicy.rego);
+
+      // Update file
+      const policyFile = path.join(this.policiesPath, `${updatedPolicy.id}.rego`);
+      fs.writeFileSync(policyFile, updatedPolicy.rego, 'utf-8');
+
+      logger.info(`Updated compliance policy: ${policyId} -> version ${newVersion}`);
+
+      return {
+        id: updatedPolicy.id,
+        name: updatedPolicy.name,
+        framework: updatedPolicy.framework,
+        rego: updatedPolicy.rego,
+        severity: updatedPolicy.severity as 'critical' | 'high' | 'medium' | 'low',
+        tags: updatedPolicy.tags,
+      };
     } catch (error) {
       logger.error('Error updating policy', error);
       throw new Error('Failed to update compliance policy');
+    }
+  }
+
+  /**
+   * Rollback policy to previous version
+   */
+  async rollbackPolicy(policyId: string, organizationId: string): Promise<Policy> {
+    try {
+      const current = await prisma.compliancePolicy.findUnique({
+        where: { id: policyId },
+        include: { previousVersion: true },
+      });
+
+      if (!current || current.organizationId !== organizationId) {
+        throw new Error('Policy not found');
+      }
+
+      if (!current.previousVersion) {
+        throw new Error('No previous version to rollback to');
+      }
+
+      // Create new version from previous
+      const rolledBack = await prisma.compliancePolicy.create({
+        data: {
+          organizationId,
+          name: current.previousVersion.name,
+          framework: current.previousVersion.framework,
+          rego: current.previousVersion.rego,
+          severity: current.previousVersion.severity as 'critical' | 'high' | 'medium' | 'low',
+          tags: current.previousVersion.tags,
+          version: current.version + 1,
+          previousVersionId: policyId,
+          enabled: true,
+        },
+      });
+
+      // Upload to OPA
+      await this.uploadPolicyToOPA(rolledBack.id, rolledBack.rego);
+
+      logger.info(`Rolled back policy: ${policyId} to version ${rolledBack.version}`);
+
+      return {
+        id: rolledBack.id,
+        name: rolledBack.name,
+        framework: rolledBack.framework,
+        rego: rolledBack.rego,
+        severity: rolledBack.severity as 'critical' | 'high' | 'medium' | 'low',
+        tags: rolledBack.tags,
+      };
+    } catch (error) {
+      logger.error('Error rolling back policy', error);
+      throw new Error('Failed to rollback policy');
     }
   }
 
@@ -738,9 +869,21 @@ allow {
         fs.unlinkSync(policyFile);
       }
 
-      // Delete from OPA
-      await axios.delete(`${this.opaEndpoint}/v1/policies/${policyId}`).catch(() => {
-        logger.warn('OPA server not available, policy file deleted locally');
+      // Delete from OPA - Required in production
+      if (process.env.NODE_ENV === 'production') {
+        await axios.delete(`${this.opaEndpoint}/v1/policies/${policyId}`, {
+          headers: process.env.OPA_AUTH_TOKEN ? { 'Authorization': `Bearer ${process.env.OPA_AUTH_TOKEN}` } : {},
+        });
+      } else {
+        await axios.delete(`${this.opaEndpoint}/v1/policies/${policyId}`).catch(() => {
+          logger.warn('OPA server not available, policy deleted from database only');
+        });
+      }
+
+      // Delete from database
+      await prisma.compliancePolicy.update({
+        where: { id: policyId },
+        data: { enabled: false },
       });
 
       await prisma.auditLog.create({
@@ -783,30 +926,74 @@ allow {
   }
 
   /**
-   * Store policy metadata in database
+   * Test policy with sample data
    */
-  private async storePolicyMetadata(
-    organizationId: string,
-    policy: Policy
-  ): Promise<void> {
+  async testPolicy(
+    policyId: string,
+    testInput: any
+  ): Promise<PolicyEvaluationResult> {
     try {
-      await prisma.auditLog.create({
-        data: {
-          action: `Policy Created: ${policy.name}`,
-          organizationId,
-          hash: policy.id, // Use policy ID as hash for easier retrieval
-          details: JSON.stringify({
-            policyId: policy.id,
-            name: policy.name,
-            framework: policy.framework,
-            severity: policy.severity,
-            tags: policy.tags,
-            rego: policy.rego, // Store rego code in details for quick access
-          }),
-        },
-      });
+      const policy = await this.getPolicy(policyId);
+      if (!policy) {
+        throw new Error('Policy not found');
+      }
+
+      // Evaluate with test input
+      const result = await this.evaluatePolicy(policyId, testInput);
+
+      logger.info(`Policy test completed: ${policyId} - ${result.allowed ? 'PASS' : 'FAIL'}`);
+
+      return result;
     } catch (error) {
-      logger.error('Error storing policy metadata', error);
+      logger.error('Error testing policy', error);
+      throw new Error('Policy test failed');
+    }
+  }
+
+  /**
+   * Run performance benchmark on policy
+   */
+  async benchmarkPolicy(
+    policyId: string,
+    iterations: number = 100
+  ): Promise<{
+    averageTime: number;
+    minTime: number;
+    maxTime: number;
+    p95: number;
+    p99: number;
+  }> {
+    try {
+      const policy = await this.getPolicy(policyId);
+      if (!policy) {
+        throw new Error('Policy not found');
+      }
+
+      const testInput = { resource: { type: 'test' } };
+      const times: number[] = [];
+
+      for (let i = 0; i < iterations; i++) {
+        const start = Date.now();
+        await this.evaluatePolicy(policyId, testInput);
+        times.push(Date.now() - start);
+      }
+
+      times.sort((a, b) => a - b);
+      const sum = times.reduce((a, b) => a + b, 0);
+      const avg = sum / times.length;
+      const p95 = times[Math.floor(times.length * 0.95)];
+      const p99 = times[Math.floor(times.length * 0.99)];
+
+      return {
+        averageTime: avg,
+        minTime: times[0],
+        maxTime: times[times.length - 1],
+        p95,
+        p99,
+      };
+    } catch (error) {
+      logger.error('Error benchmarking policy', error);
+      throw new Error('Policy benchmark failed');
     }
   }
 }

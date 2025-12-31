@@ -22,6 +22,12 @@ interface ZKVerificationResult {
   timestamp?: Date;
 }
 
+interface CircuitPaths {
+  wasm: string;
+  zkey: string;
+  vkey: string;
+}
+
 /**
  * ZK-SNARK Service for privacy-preserving proofs
  *
@@ -33,21 +39,62 @@ interface ZKVerificationResult {
 class ZeroKnowledgeService {
   private circuitsPath: string;
   private proofsPath: string;
+  private compiledPath: string;
+  private keysPath: string;
+  private circuitPaths: Map<string, CircuitPaths> = new Map();
 
   constructor() {
     this.circuitsPath = path.join(__dirname, '../../zkp/circuits');
     this.proofsPath = path.join(__dirname, '../../zkp/proofs');
+    this.compiledPath = path.join(__dirname, '../../zkp/compiled');
+    this.keysPath = path.join(__dirname, '../../zkp/keys');
     this.ensureDirectories();
+    this.loadCircuitPaths();
   }
 
   /**
    * Ensure ZKP directories exist
    */
   private ensureDirectories(): void {
-    [this.circuitsPath, this.proofsPath].forEach((dir) => {
+    [
+      this.circuitsPath,
+      this.proofsPath,
+      this.compiledPath,
+      path.join(this.compiledPath, 'wasm'),
+      path.join(this.compiledPath, 'r1cs'),
+      this.keysPath,
+      path.join(this.keysPath, 'proving'),
+      path.join(this.keysPath, 'verification'),
+    ].forEach((dir) => {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
+    });
+  }
+
+  /**
+   * Load circuit file paths
+   */
+  private loadCircuitPaths(): void {
+    const circuits = ['compliance_check', 'credential_verification', 'data_ownership'];
+    
+    circuits.forEach((circuitName) => {
+      const wasmPath = path.join(this.compiledPath, 'wasm', `${circuitName}.wasm`);
+      const zkeyPath = path.join(this.keysPath, 'proving', `${circuitName}.zkey`);
+      const vkeyPath = path.join(this.keysPath, 'verification', `${circuitName}.vkey`);
+
+      // Check if files exist, if not, log warning but continue (for development)
+      const filesExist = fs.existsSync(wasmPath) && fs.existsSync(zkeyPath) && fs.existsSync(vkeyPath);
+      
+      if (!filesExist && process.env.NODE_ENV === 'production') {
+        logger.warn(`Circuit files not found for ${circuitName}. Run compilation and trusted setup.`);
+      }
+
+      this.circuitPaths.set(circuitName, {
+        wasm: wasmPath,
+        zkey: zkeyPath,
+        vkey: vkeyPath,
+      });
     });
   }
 
@@ -73,7 +120,7 @@ class ZeroKnowledgeService {
         threshold: 80, // 80% compliance threshold
       };
 
-      // Generate witness
+      // Generate real zk-SNARK proof
       const { proof, publicSignals } = await this.generateProofInternal(
         'compliance_check',
         input
@@ -234,52 +281,130 @@ class ZeroKnowledgeService {
   }
 
   /**
-   * Internal: Generate proof using snarkjs
-   * In production, this would use pre-compiled circuits and keys
+   * Internal: Generate proof using snarkjs with real circuits
+   * Uses pre-compiled circuits and keys for production
    */
   private async generateProofInternal(
     circuitName: string,
     input: any
   ): Promise<ZKProof> {
     try {
-      // In production, you would:
-      // 1. Load pre-compiled circuit and proving key
-      // 2. Generate witness from input
-      // 3. Generate zk-SNARK proof
+      const circuitPaths = this.circuitPaths.get(circuitName);
+      
+      if (!circuitPaths) {
+        throw new Error(`Circuit paths not found for ${circuitName}`);
+      }
 
-      // For now, we'll create a simulated proof structure
-      // that follows the zk-SNARK format
-      const simulatedProof = this.createSimulatedProof(circuitName, input);
+      // Check if circuit files exist
+      const wasmExists = fs.existsSync(circuitPaths.wasm);
+      const zkeyExists = fs.existsSync(circuitPaths.zkey);
 
-      return simulatedProof;
+      if (!wasmExists || !zkeyExists) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error(
+            `Circuit files not found for ${circuitName}. Run compilation and trusted setup.`
+          );
+        } else {
+          // In development, use simulated proof if files don't exist
+          logger.warn(
+            `Circuit files not found for ${circuitName}, using simulated proof (development mode)`
+          );
+          return this.createSimulatedProof(circuitName, input);
+        }
+      }
+
+      // Load circuit WASM and proving key
+      const wasmBuffer = fs.readFileSync(circuitPaths.wasm);
+      const zkeyBuffer = fs.readFileSync(circuitPaths.zkey);
+
+      // Generate zk-SNARK proof using Groth16
+      // snarkjs.groth16.fullProve handles witness generation internally
+      // It accepts input object, WASM buffer, and zkey buffer
+      const { proof, publicSignals } = await snarkjs.groth16.fullProve(
+        input,
+        wasmBuffer.toString('base64'),
+        zkeyBuffer.toString('base64')
+      );
+
+      logger.info(`Generated real zk-SNARK proof for ${circuitName}`);
+
+      return { proof, publicSignals: publicSignals.map((s: any) => s.toString()) };
     } catch (error) {
       logger.error(`Error in generateProofInternal for ${circuitName}`, error);
+      
+      // In development, fallback to simulated proof
+      if (process.env.NODE_ENV !== 'production') {
+        logger.warn(`Falling back to simulated proof for ${circuitName}`);
+        return this.createSimulatedProof(circuitName, input);
+      }
+      
       throw error;
     }
   }
 
   /**
-   * Internal: Verify proof using snarkjs
+   * Internal: Verify proof using snarkjs with real verification keys
    */
   private async verifyProofInternal(circuitName: string, proof: ZKProof): Promise<boolean> {
     try {
-      // In production, you would:
-      // 1. Load verification key
-      // 2. Verify the proof using snarkjs.groth16.verify()
+      const circuitPaths = this.circuitPaths.get(circuitName);
+      
+      if (!circuitPaths) {
+        throw new Error(`Circuit paths not found for ${circuitName}`);
+      }
 
-      // For now, validate proof structure
-      return this.validateProofStructure(proof);
+      // Check if verification key exists
+      const vkeyExists = fs.existsSync(circuitPaths.vkey);
+
+      if (!vkeyExists) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error(
+            `Verification key not found for ${circuitName}. Run trusted setup.`
+          );
+        } else {
+          // In development, validate proof structure
+          logger.warn(
+            `Verification key not found for ${circuitName}, validating structure (development mode)`
+          );
+          return this.validateProofStructure(proof);
+        }
+      }
+
+      // Load verification key
+      const vkey = JSON.parse(fs.readFileSync(circuitPaths.vkey, 'utf-8'));
+
+      // Verify the proof using Groth16
+      const isValid = await snarkjs.groth16.verify(
+        vkey,
+        proof.publicSignals,
+        proof.proof
+      );
+
+      logger.info(`Verified zk-SNARK proof for ${circuitName}: ${isValid ? 'VALID' : 'INVALID'}`);
+
+      return isValid;
     } catch (error) {
       logger.error(`Error in verifyProofInternal for ${circuitName}`, error);
+      
+      // In development, validate proof structure
+      if (process.env.NODE_ENV !== 'production') {
+        logger.warn(`Falling back to structure validation for ${circuitName}`);
+        return this.validateProofStructure(proof);
+      }
+      
       return false;
     }
   }
 
   /**
-   * Create simulated zk-SNARK proof
-   * In production, replace with actual snarkjs.groth16.fullProve()
+   * Create simulated zk-SNARK proof (development only)
+   * In production, this should never be used
    */
   private createSimulatedProof(circuitName: string, input: any): ZKProof {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Simulated proofs are not allowed in production');
+    }
+
     // Generate cryptographically secure random values for proof
     const randomFieldElement = () => {
       const buffer = crypto.randomBytes(32);
