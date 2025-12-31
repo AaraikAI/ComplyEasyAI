@@ -583,13 +583,70 @@ Format your response as JSON:
       throw new Error('Questionnaire not found');
     }
 
-    // For now, return JSON format
-    // PDF/DOCX generation would require additional libraries
-    return {
-      questionnaire,
-      format,
-      generatedAt: new Date(),
-    };
+    if (format === 'json') {
+      return {
+        questionnaire,
+        format,
+        generatedAt: new Date(),
+      };
+    }
+
+    if (format === 'pdf') {
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument();
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+      // Add title
+      doc.fontSize(20).text(questionnaire.title, { align: 'center' });
+      doc.moveDown();
+
+      if (questionnaire.description) {
+        doc.fontSize(12).text(questionnaire.description);
+        doc.moveDown();
+      }
+
+      // Add questions
+      doc.fontSize(16).text('Questions:', { underline: true });
+      doc.moveDown(0.5);
+
+      questionnaire.questions.forEach((q, index) => {
+        doc.fontSize(14).text(`${index + 1}. ${q.questionText}`, { continued: false });
+        if (q.questionType) {
+          doc.fontSize(10).text(`Type: ${q.questionType}`, { indent: 20 });
+        }
+        doc.moveDown(0.5);
+      });
+
+      // Add responses if available
+      if (questionnaire.responses && questionnaire.responses.length > 0) {
+        doc.addPage();
+        doc.fontSize(16).text('Responses:', { underline: true });
+        doc.moveDown(0.5);
+
+        questionnaire.responses.forEach((r, index) => {
+          doc.fontSize(12).text(`Response ${index + 1}:`, { continued: false });
+          doc.text(JSON.stringify(r, null, 2), { indent: 20 });
+          doc.moveDown(0.5);
+        });
+      }
+
+      doc.end();
+
+      return new Promise<{ format: string; content: Buffer; filename: string }>((resolve) => {
+        doc.on('end', () => {
+          resolve({
+            format: 'pdf',
+            content: Buffer.concat(chunks),
+            filename: `questionnaire-${questionnaire.id}-${new Date().toISOString().split('T')[0]}.pdf`,
+          });
+        });
+      });
+    }
+
+    // DOCX not implemented yet (would require docx library)
+    throw new Error(`Format ${format} not yet implemented. Use 'json' or 'pdf'.`);
   }
 }
 

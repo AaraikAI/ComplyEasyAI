@@ -375,16 +375,84 @@ export class ReportingService {
   }
 
   /**
-   * Export report (placeholder for PDF/Excel generation)
+   * Export report (PDF/Excel generation)
    */
   async exportReport(reportData: Record<string, unknown>, format: 'json' | 'pdf' | 'xlsx') {
-    // For now, return JSON
-    // PDF/Excel generation would require additional libraries
-    return {
-      data: reportData,
-      format,
-      exportedAt: new Date(),
-    };
+    if (format === 'json') {
+      return {
+        data: reportData,
+        format,
+        exportedAt: new Date(),
+      };
+    }
+
+    if (format === 'pdf') {
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument();
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {});
+
+      // Add title
+      doc.fontSize(20).text('Compliance Report', { align: 'center' });
+      doc.moveDown();
+
+      // Add report data
+      doc.fontSize(12);
+      for (const [key, value] of Object.entries(reportData)) {
+        if (typeof value === 'object' && value !== null) {
+          doc.text(`${key}:`, { continued: false });
+          doc.text(JSON.stringify(value, null, 2), { indent: 20 });
+        } else {
+          doc.text(`${key}: ${value}`);
+        }
+        doc.moveDown(0.5);
+      }
+
+      doc.end();
+
+      return new Promise<{ format: string; content: Buffer; filename: string }>((resolve) => {
+        doc.on('end', () => {
+          resolve({
+            format: 'pdf',
+            content: Buffer.concat(chunks),
+            filename: `report-${new Date().toISOString().split('T')[0]}.pdf`,
+          });
+        });
+      });
+    }
+
+    if (format === 'xlsx') {
+      const ExcelJS = require('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Report');
+
+      // Add headers
+      const headers = Object.keys(reportData);
+      worksheet.addRow(headers);
+
+      // Add data
+      const values = Object.values(reportData);
+      worksheet.addRow(values.map(v => typeof v === 'object' ? JSON.stringify(v) : v));
+
+      // Style headers
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' },
+      };
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      return {
+        format: 'xlsx',
+        content: buffer,
+        filename: `report-${new Date().toISOString().split('T')[0]}.xlsx`,
+      };
+    }
+
+    throw new Error(`Unsupported format: ${format}`);
   }
 
   /**

@@ -433,9 +433,18 @@ export class IssueManagementService {
     issueId: string,
     organizationId: string
   ) {
-    // Placeholder for notification system
-    // In production, this would integrate with email/Slack/etc.
-    console.log(`Notification to ${userId}: ${message}`);
+    // Use real notification service
+    const notificationService = (await import('./notificationService')).default;
+    
+    await notificationService.sendNotification(userId, organizationId, {
+      type: 'info',
+      category: 'issue',
+      title: 'Issue Assigned',
+      message,
+      templateId: 'issue_assigned',
+      link: `/issues/${issueId}`,
+      metadata: { issueId },
+    });
 
     await AuditLogger.log({
       userId,

@@ -88,8 +88,11 @@ class WhisperService {
     await this.initialize();
 
     try {
-      // If OpenAI API is not available, use fallback
+      // In production, require OpenAI API key
       if (!this.openai || !process.env.OPENAI_API_KEY) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('OPENAI_API_KEY is required for audio transcription in production');
+        }
         return this.fallbackTranscription(audioBuffer, options);
       }
 
@@ -176,7 +179,11 @@ class WhisperService {
       }
     } catch (error: any) {
       logger.error('[Whisper] Error transcribing audio', error);
-      // Fallback to basic transcription
+      // In production, throw error instead of fallback
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(`Audio transcription failed: ${error.message}`);
+      }
+      // Development fallback
       return this.fallbackTranscription(audioBuffer, options);
     }
   }
@@ -282,15 +289,19 @@ class WhisperService {
 
   /**
    * Fallback transcription (when API is not available)
+   * In production, this should throw an error or use alternative service
    */
   private fallbackTranscription(
     buffer: Buffer,
     options: TranscriptionOptions
   ): TranscriptionResult {
-    logger.warn('[Whisper] Using fallback transcription (API not available)');
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Whisper API not available. OPENAI_API_KEY must be configured for audio transcription in production.');
+    }
 
-    // Return a placeholder transcription
-    // In production, could use local Whisper model or other service
+    logger.warn('[Whisper] Using fallback transcription (API not available) - Development mode only');
+
+    // Development fallback only
     return {
       text: '[Transcription service not available. Please configure OPENAI_API_KEY for audio transcription.]',
       language: options.language || 'en',
