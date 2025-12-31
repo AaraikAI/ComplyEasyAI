@@ -98,7 +98,9 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     { id: 'frameworks', label: 'Frameworks', icon: ShieldCheck, roles: ['admin', 'editor'], relatedViews: ['framework-details'] },
     { id: 'reports', label: 'Report Generator', icon: FileText, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'audit', label: 'Audit Trail', icon: Activity, roles: ['admin', 'editor'], relatedViews: [] },
-    { id: 'acos', label: 'aCOS v3.0', icon: Brain, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'analytics', label: 'Real-time Analytics', icon: Activity, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'security', label: 'Security Features', icon: Lock, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'acos', label: 'aCOS', icon: Brain, roles: ['admin', 'editor'], relatedViews: [] },
   ];
 
   const aiTools = [

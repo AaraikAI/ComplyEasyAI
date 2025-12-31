@@ -51,6 +51,9 @@ model Organization {
   iotDevices           IoTDevice[]
   edgeComplianceChecks EdgeComplianceCheck[]
   transcriptionResults TranscriptionResult[]
+  deviceTrusts         DeviceTrust[]
+  zeroTrustPolicies    ZeroTrustPolicy[]
+  networkSegments      NetworkSegment[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -1040,6 +1043,7 @@ model EdgeComplianceCheck {
   organizationId  String
   checkType       String
   status          String
+  severity        String?   @default("medium")
   details         String
   timestamp       DateTime  @default(now())
   device          IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
@@ -1066,4 +1070,57 @@ model TranscriptionResult {
   @@index([organizationId])
   @@index([evidenceId])
   @@index([sourceType])
+}
+
+// Zero Trust Security Models
+model DeviceTrust {
+  id            String    @id @default(uuid())
+  deviceId      String
+  organizationId String
+  deviceType    String
+  fingerprint   String
+  trustScore    Float
+  isTrusted     Boolean   @default(false)
+  lastVerified  DateTime  @default(now())
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, organizationId])
+  @@index([organizationId])
+  @@index([deviceId])
+  @@index([isTrusted])
+}
+
+model ZeroTrustPolicy {
+  id            String    @id @default(uuid())
+  organizationId String
+  name          String
+  description   String    @db.Text
+  rules         Json
+  enabled       Boolean   @default(true)
+  priority      Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([enabled])
+}
+
+model NetworkSegment {
+  id            String    @id @default(uuid())
+  organizationId String
+  name          String
+  cidr          String?
+  resources     Json
+  trustLevel    String    @default("medium")
+  policies      Json
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([trustLevel])
 }

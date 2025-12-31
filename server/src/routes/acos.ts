@@ -156,6 +156,12 @@ router.get('/vr/training/sessions/:sessionId/evaluate', asyncHandler(acosControl
 router.post('/vr/training/sessions/:sessionId/complete', asyncHandler(acosController.completeVRTraining));
 router.get('/vr/training/history', asyncHandler(acosController.getVRTrainingHistory));
 
+// JIT Access
+router.post('/jit/request', authorize('admin', 'editor'), asyncHandler(acosController.requestJITAccess));
+router.get('/jit/sessions', asyncHandler(acosController.getJITAccessSessions));
+router.post('/jit/sessions/:sessionId/revoke', authorize('admin'), asyncHandler(acosController.revokeJITSession));
+router.post('/jit/requests/:requestId/cancel', asyncHandler(acosController.cancelJITAccessRequest));
+
 // Swarm Task Allocation
 router.post('/swarm-tasks/agents', authorize('admin'), asyncHandler(acosController.registerSwarmAgent));
 router.get('/swarm-tasks/agents', asyncHandler(acosController.getSwarmAgents));
@@ -205,6 +211,14 @@ router.post('/neuro-symbolic/causal-reasoning', authorize('admin', 'editor'), as
 router.post('/neuro-symbolic/explainable-decision', authorize('admin', 'editor'), asyncHandler(acosController.generateExplainableDecision));
 router.get('/neuro-symbolic/reasoning-history', asyncHandler(acosController.getReasoningHistory));
 router.post('/neuro-symbolic/inferences/:inferenceId/validate', authorize('admin', 'editor'), asyncHandler(acosController.validateInferredRule));
+
+// Homomorphic AI
+router.post('/homomorphic/keys/generate', authorize('admin', 'editor'), asyncHandler(acosController.generateHomomorphicKeys));
+router.post('/homomorphic/encrypt', authorize('admin', 'editor'), asyncHandler(acosController.encryptData));
+router.post('/homomorphic/decrypt', authorize('admin', 'editor'), asyncHandler(acosController.decryptData));
+router.post('/homomorphic/linear-regression', authorize('admin', 'editor'), asyncHandler(acosController.performEncryptedLinearRegression));
+router.post('/homomorphic/statistics', authorize('admin', 'editor'), asyncHandler(acosController.computeEncryptedStatistics));
+router.post('/homomorphic/neural-network', authorize('admin', 'editor'), asyncHandler(acosController.performEncryptedNeuralNetwork));
 
 export default router;
 

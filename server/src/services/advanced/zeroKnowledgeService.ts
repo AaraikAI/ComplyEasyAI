@@ -413,6 +413,53 @@ class ZeroKnowledgeService {
       logger.error('Error storing proof metadata', error);
     }
   }
+
+  /**
+   * Get all proofs for an organization
+   */
+  async getAllProofs(organizationId: string): Promise<any[]> {
+    try {
+      const logs = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: {
+            startsWith: 'ZK Proof Generated:',
+          },
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 100, // Limit to recent 100 proofs
+      });
+
+      return logs.map(log => {
+        try {
+          const details = typeof log.details === 'string' 
+            ? JSON.parse(log.details) 
+            : log.details || {};
+          return {
+            id: log.id,
+            proofType: details.proofType,
+            frameworkId: details.frameworkId,
+            publicSignals: details.publicSignals,
+            createdAt: log.timestamp,
+            action: log.action,
+          };
+        } catch (e: any) {
+          logger.error('Error parsing proof details', { error: e.message, logId: log.id });
+          return {
+            id: log.id,
+            proofType: 'unknown',
+            frameworkId: '',
+            publicSignals: [],
+            createdAt: log.timestamp,
+            action: log.action,
+          };
+        }
+      });
+    } catch (error) {
+      logger.error('Error getting all proofs', error);
+      return [];
+    }
+  }
 }
 
 export default new ZeroKnowledgeService();

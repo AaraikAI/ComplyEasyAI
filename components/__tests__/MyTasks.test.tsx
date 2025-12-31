@@ -2,6 +2,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MyTasks } from '../MyTasks';
+import { AuthProvider } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -59,7 +60,11 @@ describe('MyTasks Component', () => {
   });
 
   it('renders tasks assigned to user', async () => {
-    render(<MyTasks />);
+    render(
+      <AuthProvider>
+        <MyTasks />
+      </AuthProvider>
+    );
     await waitFor(() => {
       expect(screen.getByText('High Severity Task')).toBeInTheDocument();
       expect(screen.getByText('Low Severity Task')).toBeInTheDocument();
@@ -67,7 +72,11 @@ describe('MyTasks Component', () => {
   });
 
   it('filters tasks by severity', async () => {
-    render(<MyTasks />);
+    render(
+      <AuthProvider>
+        <MyTasks />
+      </AuthProvider>
+    );
     await waitFor(() => screen.getByText('High Severity Task'));
 
     const filter = screen.getByDisplayValue('All Severities');
@@ -78,7 +87,11 @@ describe('MyTasks Component', () => {
   });
 
   it('opens action modal on button click', async () => {
-    render(<MyTasks />);
+    render(
+      <AuthProvider>
+        <MyTasks />
+      </AuthProvider>
+    );
 
     // Wait for tasks to load
     await screen.findByText('High Severity Task');

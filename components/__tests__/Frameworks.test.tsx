@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Frameworks } from '../Frameworks';
 import { ComplianceFramework, ComplianceStatus, FrameworkType } from '../../types';
+import { AuthProvider } from '../../contexts/AuthContext';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 describe('Frameworks Component', () => {
@@ -22,13 +23,21 @@ describe('Frameworks Component', () => {
   });
 
   it('renders active frameworks', () => {
-    render(<Frameworks activeFrameworks={mockActive} onAddFramework={mockAdd} onSelectFramework={mockSelect} />);
+    render(
+      <AuthProvider>
+        <Frameworks activeFrameworks={mockActive} onAddFramework={mockAdd} onSelectFramework={mockSelect} />
+      </AuthProvider>
+    );
     expect(screen.getByText(FrameworkType.SOC2)).toBeInTheDocument();
     expect(screen.getByText('100%')).toBeInTheDocument();
   });
 
   it('opens add modal and filters catalog', async () => {
-    render(<Frameworks activeFrameworks={mockActive} onAddFramework={mockAdd} onSelectFramework={mockSelect} />);
+    render(
+      <AuthProvider>
+        <Frameworks activeFrameworks={mockActive} onAddFramework={mockAdd} onSelectFramework={mockSelect} />
+      </AuthProvider>
+    );
 
     // Click to open modal - use getAllByText since there might be multiple
     const addFrameworkButtons = screen.getAllByText('Add Framework');
@@ -46,7 +55,11 @@ describe('Frameworks Component', () => {
   });
 
   it('adds a framework', async () => {
-    render(<Frameworks activeFrameworks={mockActive} onAddFramework={mockAdd} onSelectFramework={mockSelect} />);
+    render(
+      <AuthProvider>
+        <Frameworks activeFrameworks={mockActive} onAddFramework={mockAdd} onSelectFramework={mockSelect} />
+      </AuthProvider>
+    );
 
     // Open modal - use getAllByText since there might be multiple
     const addFrameworkButtons = screen.getAllByText('Add Framework');

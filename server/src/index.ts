@@ -30,12 +30,14 @@ import personnelRoutes from './routes/personnel';
 import vendorRoutes from './routes/vendors';
 import enterpriseRoutes from './routes/enterprise';
 
-// aCOS v3.0 Routes
+// aCOS Routes
 import acosRoutes from './routes/acos';
 
-// aCOS v3.0 Services
+// Security Routes
+import securityRoutes from './routes/security';
+
+// aCOS Services
 import mqttService from './services/advanced/mqttService';
-import config from './config';
 
 const app = express();
 
@@ -176,8 +178,11 @@ app.use('/api/personnel', apiLimiter, personnelRoutes);
 app.use('/api/vendors', apiLimiter, vendorRoutes);
 app.use('/api/enterprise', apiLimiter, enterpriseRoutes);
 
-// aCOS v3.0 routes
+// aCOS routes
 app.use('/api/acos', apiLimiter, acosRoutes);
+
+// Security routes (Zero Trust, ZKP, BYOK, Compliance-as-Code)
+app.use('/api/security', apiLimiter, securityRoutes);
 
 // 404 handler
 app.use(notFound);
