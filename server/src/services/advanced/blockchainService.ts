@@ -488,16 +488,44 @@ class BlockchainService {
   }
 
   /**
-   * Record compliance on Hyperledger
+   * Record compliance on Hyperledger Fabric
    */
   private async recordComplianceOnHyperledger(
     proof: ComplianceProof
   ): Promise<{ transactionId: string; blockHeight: number }> {
-    // Simulate Hyperledger transaction
-    return {
-      transactionId: crypto.randomBytes(32).toString('hex'),
-      blockHeight: Math.floor(Date.now() / 1000),
-    };
+    try {
+      if (!this.hyperledgerContract) {
+        throw new Error('Hyperledger Fabric contract not initialized');
+      }
+
+      // Prepare compliance proof data
+      const complianceData = {
+        organizationId: proof.organizationId,
+        framework: proof.framework,
+        score: proof.score,
+        evidenceHash: proof.evidenceHash,
+        timestamp: proof.timestamp.toISOString(),
+        auditorSignature: proof.auditorSignature || '',
+      };
+
+      // Submit transaction to Hyperledger Fabric
+      const result = await this.hyperledgerContract.submitTransaction(
+        'RecordCompliance',
+        JSON.stringify(complianceData)
+      );
+
+      const resultJson = JSON.parse(result.toString());
+
+      logger.info(`[Blockchain] Compliance proof recorded on Hyperledger: ${resultJson.transactionId}`);
+
+      return {
+        transactionId: resultJson.transactionId || resultJson.txId,
+        blockHeight: resultJson.blockHeight || resultJson.blockNumber || 0,
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error recording compliance on Hyperledger', error);
+      throw new Error('Hyperledger compliance recording failed');
+    }
   }
 
   /**

@@ -1090,8 +1090,23 @@ class AgenticAIService {
     organizationId: string,
     userId: string
   ): Promise<AgenticAction> {
-    // Get action from audit log (in production, use dedicated table)
-    // For now, simulate approval
+    // Get action from audit log (actions are stored in audit logs)
+    // In production, could use dedicated AgenticAction table for better querying
+    const actionLog = await prisma.auditLog.findFirst({
+      where: {
+        action: 'agentic_action.created',
+        details: {
+          contains: actionId,
+        },
+        organizationId,
+      },
+    });
+
+    if (!actionLog) {
+      throw new Error(`Action ${actionId} not found`);
+    }
+
+    const actionDetails = JSON.parse(actionLog.details || '{}');
     const action: AgenticAction = {
       id: actionId,
       actionType: 'control_update',

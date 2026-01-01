@@ -49,6 +49,7 @@ model Organization {
   ruleInferences       RuleInference[]
   federatedSwarmPeers  FederatedSwarmPeer[]
   federatedSwarmAggregations FederatedSwarmAggregation[]
+  notifications        Notification[]
   complianceTrajectories ComplianceTrajectory[]
   simulationScenarios  SimulationScenario[]
   simulationResults    SimulationResult[]
