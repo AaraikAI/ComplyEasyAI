@@ -14,7 +14,9 @@ export type BillingCycle = 'monthly' | 'annual';
 export interface TierPricing {
   annualMin: number;        // Minimum annual price in USD
   annualMax: number;        // Maximum annual price in USD
-  monthlyMultiplier: number; // Typically 1.15-1.20 (15-20% more)
+  monthlyMultiplier: number; // Typically 1.0 for billed annually pricing
+  monthlyMin?: number;      // Monthly rate when billed annually (annualMin/12)
+  monthlyMax?: number;      // Monthly rate when billed annually (annualMax/12)
   perUserIncrement?: number; // Additional cost per 10 users (for scaling tiers)
   stripePriceIdAnnual?: string;
   stripePriceIdMonthly?: string;
@@ -151,11 +153,13 @@ const foundationTier: Tier = {
   targetAudience: 'Startups/SMBs worldwide (e.g., tech/AI firms testing regulations)',
 
   pricing: {
-    annualMin: 1500,
-    annualMax: 3000,
-    monthlyMultiplier: 1.17, // ~17% more for monthly
-    netAfterStripeMin: 1455,
-    netAfterStripeMax: 2910,
+    annualMin: 4250,
+    annualMax: 8500,
+    monthlyMultiplier: 1.0, // Monthly billed annually: $354-$708/mo
+    monthlyMin: 354,
+    monthlyMax: 708,
+    netAfterStripeMin: 4125,
+    netAfterStripeMax: 8250,
     margin: '>92% margins (covers minimal costs)',
   },
 
@@ -283,12 +287,14 @@ const essentialsTier: Tier = {
   targetAudience: 'Growing SMBs (10-100 users; tech/finance/healthcare)',
 
   pricing: {
-    annualMin: 4500,
-    annualMax: 11250,
-    monthlyMultiplier: 1.18, // ~18% more for monthly
-    perUserIncrement: 450, // +$450 per 10 users
-    netAfterStripeMin: 4370,
-    netAfterStripeMax: 10925,
+    annualMin: 5100,
+    annualMax: 12750,
+    monthlyMultiplier: 1.0, // Monthly billed annually: $425-$1,063/mo
+    monthlyMin: 425,
+    monthlyMax: 1063,
+    perUserIncrement: 510, // +$510 per 10 users
+    netAfterStripeMin: 4950,
+    netAfterStripeMax: 12370,
     margin: '90%+ margins (absorb ~3% fees)',
   },
 
@@ -416,11 +422,13 @@ const growthTier: Tier = {
   targetAudience: 'Mid-market/MSPs (100-1k users; multi-region)',
 
   pricing: {
-    annualMin: 7500,
-    annualMax: 22500,
-    monthlyMultiplier: 1.20, // ~20% more for monthly
-    netAfterStripeMin: 7280,
-    netAfterStripeMax: 21850,
+    annualMin: 8500,
+    annualMax: 25500,
+    monthlyMultiplier: 1.0, // Monthly billed annually: $708-$2,125/mo
+    monthlyMin: 708,
+    monthlyMax: 2125,
+    netAfterStripeMin: 8250,
+    netAfterStripeMax: 24735,
     margin: '88% margins',
   },
 
@@ -550,11 +558,13 @@ const visionaryTier: Tier = {
   targetAudience: 'Large corps/gov (1k+ users; energy/manufacturing/crypto)',
 
   pricing: {
-    annualMin: 15000,
-    annualMax: 75000,
-    monthlyMultiplier: 1.20, // ~20% more for monthly (for custom quotes)
-    netAfterStripeMin: 14565,
-    netAfterStripeMax: 72825,
+    annualMin: 17000,
+    annualMax: 85000,
+    monthlyMultiplier: 1.0, // Monthly billed annually: $1,417-$7,083/mo
+    monthlyMin: 1417,
+    monthlyMax: 7083,
+    netAfterStripeMin: 16490,
+    netAfterStripeMax: 82450,
     margin: '85%+ margins (optimized costs)',
   },
 
@@ -684,21 +694,21 @@ export const tierAddOns: TierAddOn[] = [
     id: 'custom-frameworks',
     name: 'Custom Frameworks',
     description: 'Create unlimited custom compliance frameworks tailored to your industry',
-    priceAnnual: 775, // Mid-point of $750-800
+    priceAnnual: 660, // Mid-point of $640-680 (10-15% below comp)
     availableForTiers: ['Growth', 'Visionary'],
   },
   {
     id: 'on-prem-deployment',
     name: 'On-Premises Deployment',
     description: 'Deploy ComplyEasyAI on your own infrastructure with full data control',
-    priceAnnual: 3875, // Mid-point of $3,750-4,000
+    priceAnnual: 3200, // Mid-point of $3,000-3,400 (10-15% below comp)
     availableForTiers: ['Visionary'],
   },
   {
     id: 'custom-ai-models',
     name: 'Custom AI Models',
     description: 'Fine-tuned AI models trained on your compliance data and requirements',
-    priceAnnual: 2325, // Mid-point of $2,250-2,400
+    priceAnnual: 1920, // Mid-point of $1,800-2,040 (10-15% below comp)
     availableForTiers: ['Visionary'],
   },
 ];
