@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Integration, Role } from '../types';
+import { User, Integration, Role, TierName, SubscriptionDetails, UsageMetrics, TIER_ORDER } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Save, User as UserIcon, Users, CreditCard, Layers, Power, Plus, X, Trash2, CheckCircle, RefreshCw, Upload, Lock, Loader2, Shield } from 'lucide-react';
+import { Save, User as UserIcon, Users, CreditCard, Layers, Power, Plus, X, Trash2, CheckCircle, RefreshCw, Upload, Lock, Loader2, Shield, AlertTriangle, ExternalLink } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
+import PricingSection from './PricingSection';
 
 interface SettingsProps {
   onNavigateToIntegrations?: () => void;
@@ -21,10 +22,14 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
   const [newMember, setNewMember] = useState({ name: '', email: '', role: 'viewer' as Role });
 
   // --- Billing State ---
-  const [currentPlan, setCurrentPlan] = useState('Pro');
+  const [currentTier, setCurrentTier] = useState<TierName>('Foundation');
+  const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
+  const [usageMetrics, setUsageMetrics] = useState<UsageMetrics | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('Pro');
-  const [selectedPrice, setSelectedPrice] = useState('Contact Us');
+  const [selectedTier, setSelectedTier] = useState<TierName>('Foundation');
+  const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'annual'>('annual');
+  const [isLoadingBilling, setIsLoadingBilling] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
 
   // --- Profile State ---
   const [profileName, setProfileName] = useState(currentUser?.name || '');
@@ -53,7 +58,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
 
   // --- Organization State ---
   const [organizationName, setOrganizationName] = useState('');
-  const [organizationPlan, setOrganizationPlan] = useState<'Basic' | 'Pro' | 'Enterprise'>('Basic');
+  const [organizationTier, setOrganizationTier] = useState<TierName>('Foundation');
   const [isSavingOrganization, setIsSavingOrganization] = useState(false);
   const [planChangeStatus, setPlanChangeStatus] = useState<string | null>(null);
 
@@ -182,8 +187,19 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       try {
         const org = await api.organization.get();
         setOrganizationName(org.name || '');
-        setOrganizationPlan(org.plan || 'Basic');
-        setCurrentPlan(org.plan || 'Basic'); // Also update current plan for billing tab
+        // Map old plan names to new tier names if needed
+        const tierMap: Record<string, TierName> = {
+          'Basic': 'Foundation',
+          'Pro': 'Essentials',
+          'Enterprise': 'Growth',
+          'Foundation': 'Foundation',
+          'Essentials': 'Essentials',
+          'Growth': 'Growth',
+          'Visionary': 'Visionary',
+        };
+        const tier = tierMap[org.plan] || 'Foundation';
+        setOrganizationTier(tier);
+        setCurrentTier(tier);
       } catch (error) {
         console.error('Failed to load organization:', error);
       }
@@ -193,6 +209,36 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       loadOrganization();
     }
   }, [activeTab, currentUser]);
+
+  // Load billing details
+  useEffect(() => {
+    const loadBillingDetails = async () => {
+      try {
+        setIsLoadingBilling(true);
+        setBillingError(null);
+        const [subscription, usage] = await Promise.all([
+          api.billing.getSubscription(),
+          api.billing.getUsageMetrics?.() || Promise.resolve(null),
+        ]);
+        if (subscription) {
+          setSubscriptionDetails(subscription);
+          setCurrentTier(subscription.tier || 'Foundation');
+        }
+        if (usage) {
+          setUsageMetrics(usage);
+        }
+      } catch (error: any) {
+        console.error('Failed to load billing details:', error);
+        setBillingError(error.message || 'Failed to load billing information');
+      } finally {
+        setIsLoadingBilling(false);
+      }
+    };
+
+    if (activeTab === 'billing') {
+      loadBillingDetails();
+    }
+  }, [activeTab]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,26 +272,25 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     }
   };
 
-  const openUpgrade = (plan: string) => {
-    const priceMap: Record<string, string> = {
-      'Basic': 'Contact Us',
-      'Pro': 'Contact Us',
-      'Enterprise': 'Contact Us'
-    };
-    setSelectedPlan(plan);
-    setSelectedPrice(priceMap[plan] || '$0');
+  const handleSelectTier = (tier: TierName, billingCycle: 'monthly' | 'annual') => {
+    setSelectedTier(tier);
+    setSelectedBillingCycle(billingCycle);
+
+    // For Visionary tier, redirect to contact sales
+    if (tier === 'Visionary') {
+      window.open('/contact-sales?tier=Visionary', '_blank');
+      return;
+    }
+
     setShowPaymentModal(true);
   };
 
   const handlePaymentSuccess = async () => {
-    // This will be called by PaymentModal when user clicks "Continue to Secure Checkout"
-    // The actual redirect happens in PaymentModal
-    // After successful payment, user returns to /settings?success=true
     try {
       setPlanChangeStatus('Creating checkout session...');
-      const response: any = await api.billing.createCheckout(selectedPlan as 'Basic' | 'Pro' | 'Enterprise');
+      const response: any = await api.billing.createCheckout(selectedTier, selectedBillingCycle);
       if (response.url) {
-        setPlanChangeStatus(`Redirecting to checkout for ${selectedPlan} plan...`);
+        setPlanChangeStatus(`Redirecting to checkout for ${selectedTier} plan...`);
         window.location.href = response.url;
       } else {
         throw new Error('No checkout URL received');
@@ -255,6 +300,18 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       const errorMessage = error.message || 'Failed to create checkout session. Please check your Stripe configuration.';
       setPlanChangeStatus(`Error: ${errorMessage}`);
       alert(errorMessage);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      const response = await api.billing.createPortalSession();
+      if (response.url) {
+        window.location.href = response.url;
+      }
+    } catch (error: any) {
+      console.error('Failed to open billing portal:', error);
+      alert(error.message || 'Failed to open billing portal');
     }
   };
 
@@ -357,56 +414,105 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         {/* --- Billing Tab --- */}
         {activeTab === 'billing' && (
           <div className="animate-fadeIn space-y-6">
-             <h3 className="text-xl font-bold text-gray-900">Plan & Billing</h3>
-             <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-8 text-white mb-8 relative overflow-hidden shadow-lg">
-                <div className="relative z-10">
-                   <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-brand-400 text-sm font-medium mb-1 uppercase tracking-wider">Current Subscription</p>
-                        <h2 className="text-4xl font-bold mb-2">{currentPlan} Plan</h2>
-                        <p className="text-slate-400 text-lg">
-                          {currentPlan === 'Basic' ? 'Contact Us' : currentPlan === 'Pro' ? 'Contact Us' : 'Contact Us'} / month
-                        </p>
-                      </div>
-                      <span className="bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center shadow-sm">
-                        <CheckCircle size={12} className="mr-1"/> Active
-                      </span>
-                   </div>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-900">Plan & Billing</h3>
+              {subscriptionDetails && (
+                <button
+                  onClick={handleManageSubscription}
+                  className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  <ExternalLink size={16} />
+                  Manage Subscription
+                </button>
+              )}
+            </div>
+
+            {/* Error Message */}
+            {billingError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                <AlertTriangle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <p className="font-medium text-red-800">Error loading billing information</p>
+                  <p className="text-sm text-red-700">{billingError}</p>
                 </div>
-                {/* Decor */}
-                <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white opacity-5 rounded-full blur-3xl"></div>
-             </div>
-             
-             <h4 className="font-bold text-gray-900 mb-4 text-lg">Available Plans</h4>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-               {[
-                 { name: 'Basic', price: 'Contact Us', features: ['5 Frameworks', 'Email Support'] }, 
-                 { name: 'Pro', price: 'Contact Us', features: ['50+ Integrations', 'Predictive AI', 'Priority Support'] }, 
-                 { name: 'Enterprise', price: 'Contact Us', features: ['Unlimited', 'Dedicated Agent', 'SLA'] }
-               ].map(plan => (
-                 <div key={plan.name} className={`border rounded-xl p-5 flex flex-col transition-all hover:shadow-md ${currentPlan === plan.name ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500' : 'border-gray-200'}`}>
-                    <div className="flex justify-between items-center mb-2">
-                       <h4 className="font-bold text-lg">{plan.name}</h4>
-                       {currentPlan === plan.name && <CheckCircle className="text-brand-600" size={20}/>}
+              </div>
+            )}
+
+            {/* Current Subscription Banner */}
+            <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-8 text-white relative overflow-hidden shadow-lg">
+              <div className="relative z-10">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-indigo-400 text-sm font-medium mb-1 uppercase tracking-wider">Current Subscription</p>
+                    <h2 className="text-4xl font-bold mb-2">{currentTier}</h2>
+                    {subscriptionDetails ? (
+                      <div className="space-y-1">
+                        <p className="text-slate-400 text-lg">
+                          {subscriptionDetails.billingCycle === 'annual' ? 'Annual' : 'Monthly'} billing
+                        </p>
+                        {subscriptionDetails.currentPeriodEnd && (
+                          <p className="text-slate-500 text-sm">
+                            Next billing: {new Date(subscriptionDetails.currentPeriodEnd).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 text-lg">Free trial or no active subscription</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full flex items-center shadow-sm ${
+                      subscriptionDetails?.status === 'active' ? 'bg-green-500 text-white' :
+                      subscriptionDetails?.status === 'trialing' ? 'bg-blue-500 text-white' :
+                      subscriptionDetails?.status === 'past_due' ? 'bg-yellow-500 text-white' :
+                      'bg-gray-500 text-white'
+                    }`}>
+                      <CheckCircle size={12} className="mr-1"/>
+                      {subscriptionDetails?.status === 'active' ? 'Active' :
+                       subscriptionDetails?.status === 'trialing' ? 'Trial' :
+                       subscriptionDetails?.status === 'past_due' ? 'Past Due' :
+                       'Inactive'}
+                    </span>
+                    {subscriptionDetails?.cancelAtPeriodEnd && (
+                      <span className="text-xs text-yellow-400">
+                        Cancels at period end
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Usage Summary */}
+                {usageMetrics && (
+                  <div className="mt-6 grid grid-cols-4 gap-4">
+                    <div className="bg-white/10 rounded-lg p-3">
+                      <p className="text-slate-400 text-xs">Users</p>
+                      <p className="text-white font-bold text-lg">{usageMetrics.users}</p>
                     </div>
-                    <p className="text-2xl font-bold text-gray-900 mb-4">{plan.price}<span className="text-sm font-normal text-gray-500">/mo</span></p>
-                    <ul className="mb-6 space-y-2 flex-1">
-                      {plan.features.map(f => (
-                        <li key={f} className="text-sm text-gray-600 flex items-center">
-                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></div> {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <button 
-                      onClick={() => openUpgrade(plan.name)}
-                      disabled={currentPlan === plan.name}
-                      className={`w-full py-2.5 rounded-lg text-sm font-bold transition-colors ${currentPlan === plan.name ? 'bg-gray-200 text-gray-500 cursor-default' : 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm'}`}
-                    >
-                      {currentPlan === plan.name ? 'Current Plan' : 'Upgrade'}
-                    </button>
-                 </div>
-               ))}
-             </div>
+                    <div className="bg-white/10 rounded-lg p-3">
+                      <p className="text-slate-400 text-xs">Frameworks</p>
+                      <p className="text-white font-bold text-lg">{usageMetrics.frameworks}</p>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-3">
+                      <p className="text-slate-400 text-xs">AI Requests</p>
+                      <p className="text-white font-bold text-lg">{usageMetrics.aiRequestsThisMonth}</p>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-3">
+                      <p className="text-slate-400 text-xs">Storage</p>
+                      <p className="text-white font-bold text-lg">{usageMetrics.storageGB} GB</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white opacity-5 rounded-full blur-3xl"></div>
+            </div>
+
+            {/* Pricing Section */}
+            <PricingSection
+              currentTier={currentTier}
+              onSelectTier={handleSelectTier}
+              loading={isLoadingBilling}
+              embedded={true}
+            />
           </div>
         )}
         
@@ -827,7 +933,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         {activeTab === 'organization' && currentUser?.role === 'admin' && (
           <div className="animate-fadeIn space-y-6 max-w-2xl">
             <h3 className="text-xl font-bold text-gray-900">Organization Settings</h3>
-            
+
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <div className="space-y-4">
                 <div>
@@ -843,25 +949,25 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Current Plan</label>
                   <div className="px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-medium">
-                    {currentPlan}
+                    {currentTier}
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Upgrade Plan</label>
                   <select
-                    value={organizationPlan}
-                    onChange={(e) => setOrganizationPlan(e.target.value as 'Basic' | 'Pro' | 'Enterprise')}
+                    value={organizationTier}
+                    onChange={(e) => setOrganizationTier(e.target.value as TierName)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
                   >
-                    <option value="Basic">Basic</option>
-                    <option value="Pro">Pro</option>
-                    <option value="Enterprise">Enterprise</option>
+                    {TIER_ORDER.map((tier) => (
+                      <option key={tier} value={tier}>{tier}</option>
+                    ))}
                   </select>
-                  {organizationPlan !== currentPlan && (
+                  {organizationTier !== currentTier && (
                     <p className="text-xs text-gray-500 mt-1">
-                      {organizationPlan === 'Enterprise' ? 'Upgrading to Enterprise plan' : 
-                       organizationPlan === 'Pro' && currentPlan === 'Basic' ? 'Upgrading to Pro plan' :
-                       'Changing plan'}
+                      {TIER_ORDER.indexOf(organizationTier) > TIER_ORDER.indexOf(currentTier)
+                        ? `Upgrading to ${organizationTier} plan`
+                        : `Downgrading to ${organizationTier} plan`}
                     </p>
                   )}
                 </div>
@@ -876,7 +982,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                   <button
                     onClick={async () => {
                       // Only update name if plan hasn't changed
-                      if (organizationPlan === currentPlan) {
+                      if (organizationTier === currentTier) {
                         setIsSavingOrganization(true);
                         setPlanChangeStatus(null);
                         try {
@@ -892,10 +998,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                         }
                       } else {
                         // Plan changed - route to checkout
-                        setPlanChangeStatus('Redirecting to secure checkout...');
-                        setSelectedPlan(organizationPlan);
-                        setSelectedPrice('Contact Us');
-                        setShowPaymentModal(true);
+                        handleSelectTier(organizationTier, 'annual');
                       }
                     }}
                     disabled={isSavingOrganization}
@@ -906,10 +1009,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                         <Loader2 className="animate-spin mr-2" size={18} />
                         Saving...
                       </>
-                    ) : organizationPlan !== currentPlan ? (
+                    ) : organizationTier !== currentTier ? (
                       <>
                         <CreditCard size={18} className="mr-2" />
-                        Upgrade to {organizationPlan}
+                        {TIER_ORDER.indexOf(organizationTier) > TIER_ORDER.indexOf(currentTier) ? 'Upgrade' : 'Downgrade'} to {organizationTier}
                       </>
                     ) : (
                       <>
@@ -1194,9 +1297,9 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       </div>
 
       {showPaymentModal && (
-        <PaymentModal 
-          plan={selectedPlan} 
-          price={selectedPrice} 
+        <PaymentModal
+          plan={selectedTier}
+          price={selectedBillingCycle === 'annual' ? 'Annual billing' : 'Monthly billing'}
           onClose={() => setShowPaymentModal(false)}
           onSuccess={handlePaymentSuccess}
         />
