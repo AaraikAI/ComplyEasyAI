@@ -11,8 +11,10 @@ import {
   ArrowRight,
   Loader2,
   AlertTriangle,
+  Calendar,
 } from 'lucide-react';
 import TierCard from './TierCard';
+import DemoBookingForm from './DemoBookingForm';
 import {
   TierName,
   Tier,
@@ -37,11 +39,13 @@ const TIERS: Record<TierName, Tier> = {
     description: 'Perfect for startups and SMBs beginning their compliance journey.',
     targetAudience: 'Startups/SMBs worldwide',
     pricing: {
-      annualMin: 1500,
-      annualMax: 3000,
-      monthlyMultiplier: 1.17,
-      netAfterStripeMin: 1455,
-      netAfterStripeMax: 2910,
+      annualMin: 4250,
+      annualMax: 8500,
+      monthlyMultiplier: 1.0,
+      monthlyMin: 354,
+      monthlyMax: 708,
+      netAfterStripeMin: 4125,
+      netAfterStripeMax: 8250,
       margin: '>92%',
     },
     limits: {
@@ -94,12 +98,14 @@ const TIERS: Record<TierName, Tier> = {
     description: 'Full-featured compliance platform with advanced AI.',
     targetAudience: 'Growing SMBs (10-100 users)',
     pricing: {
-      annualMin: 4500,
-      annualMax: 11250,
-      monthlyMultiplier: 1.18,
-      perUserIncrement: 450,
-      netAfterStripeMin: 4370,
-      netAfterStripeMax: 10925,
+      annualMin: 5100,
+      annualMax: 12750,
+      monthlyMultiplier: 1.0,
+      monthlyMin: 425,
+      monthlyMax: 1063,
+      perUserIncrement: 510,
+      netAfterStripeMin: 4950,
+      netAfterStripeMax: 12370,
       margin: '90%+',
     },
     limits: {
@@ -152,11 +158,13 @@ const TIERS: Record<TierName, Tier> = {
     description: 'Advanced aCOS for mid-market and MSPs.',
     targetAudience: 'Mid-market/MSPs (100-1k users)',
     pricing: {
-      annualMin: 7500,
-      annualMax: 22500,
-      monthlyMultiplier: 1.20,
-      netAfterStripeMin: 7280,
-      netAfterStripeMax: 21850,
+      annualMin: 8500,
+      annualMax: 25500,
+      monthlyMultiplier: 1.0,
+      monthlyMin: 708,
+      monthlyMax: 2125,
+      netAfterStripeMin: 8250,
+      netAfterStripeMax: 24735,
       margin: '88%',
     },
     limits: {
@@ -209,11 +217,13 @@ const TIERS: Record<TierName, Tier> = {
     description: 'Cutting-edge compliance technology for enterprises.',
     targetAudience: 'Large corps/gov (1k+ users)',
     pricing: {
-      annualMin: 15000,
-      annualMax: 75000,
-      monthlyMultiplier: 1.20,
-      netAfterStripeMin: 14565,
-      netAfterStripeMax: 72825,
+      annualMin: 17000,
+      annualMax: 85000,
+      monthlyMultiplier: 1.0,
+      monthlyMin: 1417,
+      monthlyMax: 7083,
+      netAfterStripeMin: 16490,
+      netAfterStripeMax: 82450,
       margin: '85%+',
     },
     limits: {
@@ -266,21 +276,21 @@ const TIER_ADD_ONS: TierAddOn[] = [
     id: 'custom-frameworks',
     name: 'Custom Frameworks',
     description: 'Create custom compliance frameworks',
-    priceAnnual: 775,
+    priceAnnual: 660, // $640-680 (10-15% below comp)
     availableForTiers: ['Growth', 'Visionary'],
   },
   {
     id: 'on-prem-deployment',
     name: 'On-Premises Deployment',
     description: 'Deploy on your infrastructure',
-    priceAnnual: 3875,
+    priceAnnual: 3200, // $3,000-3,400 (10-15% below comp)
     availableForTiers: ['Visionary'],
   },
   {
     id: 'custom-ai-models',
     name: 'Custom AI Models',
     description: 'Fine-tuned AI for your data',
-    priceAnnual: 2325,
+    priceAnnual: 1920, // $1,800-2,040 (10-15% below comp)
     availableForTiers: ['Visionary'],
   },
 ];
@@ -304,11 +314,18 @@ const PricingSection: React.FC<PricingSectionProps> = ({
 }) => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [showComparison, setShowComparison] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [selectedDemoTier, setSelectedDemoTier] = useState<TierName | undefined>(undefined);
 
   const handleSelectTier = (tierName: TierName) => {
     if (onSelectTier) {
       onSelectTier(tierName, billingCycle);
     }
+  };
+
+  const handleBookDemo = (tierName?: TierName) => {
+    setSelectedDemoTier(tierName);
+    setShowDemoModal(true);
   };
 
   const currentTierIndex = currentTier ? TIER_ORDER.indexOf(currentTier) : -1;
@@ -322,10 +339,30 @@ const PricingSection: React.FC<PricingSectionProps> = ({
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
               Choose Your Compliance Journey
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
               From startups to enterprises, we have the perfect plan to help you achieve
               and maintain compliance excellence.
             </p>
+            <button
+              onClick={() => handleBookDemo()}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+            >
+              <Calendar size={20} />
+              Book a Demo
+            </button>
+          </div>
+        )}
+
+        {/* Book a Demo CTA for embedded mode */}
+        {embedded && (
+          <div className="flex justify-center mb-8">
+            <button
+              onClick={() => handleBookDemo()}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+            >
+              <Calendar size={20} />
+              Book a Demo
+            </button>
           </div>
         )}
 
@@ -382,6 +419,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                   isCurrentTier={isCurrentTier}
                   isPopular={tierName === 'Essentials'}
                   onSelect={handleSelectTier}
+                  onBookDemo={handleBookDemo}
                   billingCycle={billingCycle}
                   isUpgrade={isUpgrade}
                   isDowngrade={isDowngrade}
@@ -556,6 +594,14 @@ const PricingSection: React.FC<PricingSectionProps> = ({
           </div>
         )}
       </div>
+
+      {/* Demo Booking Modal */}
+      <DemoBookingForm
+        isOpen={showDemoModal}
+        onClose={() => setShowDemoModal(false)}
+        preselectedTier={selectedDemoTier}
+        source="pricing_page"
+      />
     </div>
   );
 };
