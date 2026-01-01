@@ -36,6 +36,9 @@ import acosRoutes from './routes/acos';
 // Security Routes
 import securityRoutes from './routes/security';
 
+// Webhook Routes
+import webhooksRoutes from './routes/webhooks';
+
 // aCOS Services
 import mqttService from './services/advanced/mqttService';
 
@@ -96,7 +99,7 @@ app.use(cors({
   origin: config.security.corsOrigin || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Webhook-Signature', 'X-Webhook-Timestamp', 'X-Webhook-Event'],
   exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
   maxAge: 86400, // 24 hours
 }));
@@ -183,6 +186,9 @@ app.use('/api/acos', apiLimiter, acosRoutes);
 
 // Security routes (Zero Trust, ZKP, BYOK, Compliance-as-Code)
 app.use('/api/security', apiLimiter, securityRoutes);
+
+// Webhook routes (Zapier, automation)
+app.use('/api/webhooks', apiLimiter, webhooksRoutes);
 
 // 404 handler
 app.use(notFound);

@@ -1,4 +1,4 @@
-import { User, RiskItem, ComplianceFramework, AuditLog, Integration } from '../types';
+import { User, RiskItem, ComplianceFramework, AuditLog, Integration, TierName, SubscriptionDetails, UsageMetrics, Tier, TierComparison, UpgradePreview, Webhook, WebhookEvent, ApiKey, BillingCycle } from '../types';
 
 // Backend API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -476,21 +476,148 @@ export const api = {
 
   // --- Billing ---
   billing: {
-    createCheckout: async (plan: 'Basic' | 'Pro' | 'Enterprise') => {
-      return fetchAPI('/billing/checkout', {
+    createCheckout: async (tier: TierName, billingCycle: BillingCycle = 'annual') => {
+      return fetchAPI<{ url: string }>('/billing/checkout', {
         method: 'POST',
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ tier, billingCycle }),
       });
     },
 
     createPortalSession: async () => {
-      return fetchAPI('/billing/portal', {
+      return fetchAPI<{ url: string }>('/billing/portal', {
         method: 'POST',
       });
     },
 
     getSubscription: async () => {
-      return fetchAPI('/billing/subscription');
+      return fetchAPI<SubscriptionDetails>('/billing/subscription');
+    },
+
+    getAvailableTiers: async () => {
+      return fetchAPI<{ tiers: Tier[] }>('/billing/tiers');
+    },
+
+    previewTierChange: async (targetTier: TierName) => {
+      return fetchAPI<UpgradePreview>('/billing/preview-change', {
+        method: 'POST',
+        body: JSON.stringify({ targetTier }),
+      });
+    },
+
+    changeTier: async (targetTier: TierName) => {
+      return fetchAPI<{ success: boolean; message: string }>('/billing/change-tier', {
+        method: 'POST',
+        body: JSON.stringify({ targetTier }),
+      });
+    },
+
+    cancelSubscription: async (cancelImmediately = false) => {
+      return fetchAPI<{ success: boolean; message: string }>('/billing/cancel', {
+        method: 'POST',
+        body: JSON.stringify({ cancelImmediately }),
+      });
+    },
+
+    reactivateSubscription: async () => {
+      return fetchAPI<{ success: boolean; message: string }>('/billing/reactivate', {
+        method: 'POST',
+      });
+    },
+
+    getUsageMetrics: async () => {
+      return fetchAPI<UsageMetrics>('/billing/usage');
+    },
+
+    compareTiers: async (targetTier: TierName) => {
+      return fetchAPI<TierComparison>(`/billing/compare/${targetTier}`);
+    },
+
+    addAddOn: async (addOnId: string) => {
+      return fetchAPI<{ success: boolean }>('/billing/addons', {
+        method: 'POST',
+        body: JSON.stringify({ addOnId }),
+      });
+    },
+
+    removeAddOn: async (addOnId: string) => {
+      return fetchAPI<{ success: boolean }>(`/billing/addons/${addOnId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    requestQuote: async (tier: TierName, requirements: Record<string, any>) => {
+      return fetchAPI<{ quoteId: string; message: string }>('/billing/quote', {
+        method: 'POST',
+        body: JSON.stringify({ tier, requirements }),
+      });
+    },
+  },
+
+  // --- Webhooks ---
+  webhooks: {
+    list: async () => {
+      return fetchAPI<{ webhooks: Webhook[] }>('/webhooks');
+    },
+
+    create: async (webhook: Partial<Webhook>) => {
+      return fetchAPI<{ webhook: Webhook }>('/webhooks', {
+        method: 'POST',
+        body: JSON.stringify(webhook),
+      });
+    },
+
+    get: async (id: string) => {
+      return fetchAPI<{ webhook: Webhook }>(`/webhooks/${id}`);
+    },
+
+    update: async (id: string, updates: Partial<Webhook>) => {
+      return fetchAPI<{ webhook: Webhook }>(`/webhooks/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    delete: async (id: string) => {
+      return fetchAPI<{ success: boolean }>(`/webhooks/${id}`, {
+        method: 'DELETE',
+      });
+    },
+
+    test: async (id: string) => {
+      return fetchAPI<{ success: boolean; responseCode?: number }>(`/webhooks/${id}/test`, {
+        method: 'POST',
+      });
+    },
+
+    regenerateSecret: async (id: string) => {
+      return fetchAPI<{ secret: string }>(`/webhooks/${id}/regenerate-secret`, {
+        method: 'POST',
+      });
+    },
+
+    getEvents: async (webhookId?: string) => {
+      const url = webhookId ? `/webhooks/${webhookId}/events` : '/webhooks/events';
+      return fetchAPI<{ events: WebhookEvent[] }>(url);
+    },
+  },
+
+  // --- API Keys ---
+  apiKeys: {
+    list: async () => {
+      return fetchAPI<{ apiKeys: ApiKey[] }>('/webhooks/api-keys');
+    },
+
+    create: async (name: string, scopes: string[]) => {
+      return fetchAPI<{ apiKey: ApiKey; key: string }>('/webhooks/api-keys', {
+        method: 'POST',
+        body: JSON.stringify({ name, scopes }),
+      });
+    },
+
+    revoke: async (id: string) => {
+      return fetchAPI<{ success: boolean }>(`/webhooks/api-keys/${id}`, {
+        method: 'DELETE',
+      });
     },
   },
 
