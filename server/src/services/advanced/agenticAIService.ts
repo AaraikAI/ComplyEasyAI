@@ -1279,7 +1279,7 @@ class AgenticAIService {
       prisma.frameworkControl.findUnique({ where: { id: targetId } }),
       prisma.complianceFramework.findUnique({ where: { id: targetId } }),
       prisma.riskItem.findUnique({ where: { id: targetId } }),
-      prisma.evidence.findUnique({ where: { id: targetId } }),
+      prisma.evidenceAnalysis.findUnique({ where: { id: targetId } }),
     ];
 
     const results = await Promise.all(checks);

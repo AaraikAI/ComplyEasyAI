@@ -695,8 +695,8 @@ class MultimodalIntakeService {
               .seekInput(t)
               .frames(1)
               .output(framePath)
-              .on('end', resolve)
-              .on('error', reject)
+              .on('end', () => resolve())
+              .on('error', (err: Error) => reject(err))
               .run();
           });
 
@@ -785,8 +785,8 @@ class MultimodalIntakeService {
               .seekInput(t)
               .frames(1)
               .output(framePath)
-              .on('end', resolve)
-              .on('error', reject)
+              .on('end', () => resolve())
+              .on('error', (err: Error) => reject(err))
               .run();
           });
 
@@ -794,8 +794,15 @@ class MultimodalIntakeService {
           
           if (this.faceDetector) {
             // Use MediaPipe Face Detector
-            const image = await sharp(frameBuffer).toBuffer();
-            const detections = this.faceDetector.detect(image);
+            // Convert buffer to image data that MediaPipe can use
+            const imageData = await sharp(frameBuffer).raw().toBuffer({ resolveWithObject: true });
+            // Create ImageData-like object for MediaPipe
+            const image = {
+              data: new Uint8ClampedArray(imageData.data),
+              width: imageData.info.width,
+              height: imageData.info.height,
+            };
+            const detections = this.faceDetector.detect(image as any);
             
             detections.detections.forEach((detection: any, index: number) => {
               const bbox = detection.boundingBox;
@@ -919,8 +926,8 @@ class MultimodalIntakeService {
               .seekInput(t)
               .frames(1)
               .output(framePath)
-              .on('end', resolve)
-              .on('error', reject)
+              .on('end', () => resolve())
+              .on('error', (err: Error) => reject(err))
               .run();
           });
 
@@ -935,18 +942,33 @@ class MultimodalIntakeService {
             },
           });
 
-          if (data.words && data.words.length > 0) {
-            // Group words into text blocks
-            const textBlocks = this.groupWordsIntoBlocks(data.words);
+          // Tesseract.js API: data.symbols or data.lines contains word-level data
+          // Use data.text for full text, or parse from data.symbols/data.lines
+          if (data.text && data.text.trim().length > 0) {
+            // Extract words from symbols or lines if available
+            const words = this.extractWordsFromTesseractData(data);
             
-            textBlocks.forEach((block) => {
-              ocrResults.push({
-                text: block.text,
-                timestamp: t,
-                confidence: block.confidence,
-                bbox: block.bbox,
+            if (words.length > 0) {
+              // Group words into text blocks
+              const textBlocks = this.groupWordsIntoBlocks(words);
+              
+              textBlocks.forEach((block) => {
+                ocrResults.push({
+                  text: block.text,
+                  timestamp: t,
+                  confidence: block.confidence,
+                  bbox: block.bbox,
+                });
               });
-            });
+            } else {
+              // Fallback: use full text if word-level data not available
+              ocrResults.push({
+                text: data.text,
+                timestamp: t,
+                confidence: data.confidence || 0.8,
+                bbox: { x: 0, y: 0, width: 0, height: 0 },
+              });
+            }
           }
           
           await unlink(framePath).catch(() => {});
@@ -968,6 +990,116 @@ class MultimodalIntakeService {
   /**
    * Group OCR words into text blocks
    */
+  /**
+   * Extract words from Tesseract.js data structure
+   * Handles different Tesseract.js API versions
+   */
+  private extractWordsFromTesseractData(data: any): Array<{ text: string; confidence: number; bbox: { x0: number; y0: number; x1: number; y1: number } }> {
+    const words: Array<{ text: string; confidence: number; bbox: { x0: number; y0: number; x1: number; y1: number } }> = [];
+
+    // Try different Tesseract.js API structures
+    if (data.words && Array.isArray(data.words)) {
+      // Direct words array (older API)
+      return data.words.map((w: any) => ({
+        text: w.text || w.word || '',
+        confidence: w.confidence || 0,
+        bbox: {
+          x0: w.bbox?.x0 || w.left || 0,
+          y0: w.bbox?.y0 || w.top || 0,
+          x1: w.bbox?.x1 || (w.left || 0) + (w.width || 0),
+          y1: w.bbox?.y1 || (w.top || 0) + (w.height || 0),
+        },
+      }));
+    }
+
+    // Try symbols array (newer API)
+    if (data.symbols && Array.isArray(data.symbols)) {
+      // Group symbols into words
+      let currentWord = '';
+      let currentConfidence = 0;
+      let currentBbox = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+      let symbolCount = 0;
+
+      for (const symbol of data.symbols) {
+        if (symbol.text && symbol.text.trim()) {
+          currentWord += symbol.text;
+          currentConfidence += symbol.confidence || 0;
+          symbolCount++;
+
+          if (symbol.bbox) {
+            currentBbox.x0 = Math.min(currentBbox.x0, symbol.bbox.x0 || symbol.left || 0);
+            currentBbox.y0 = Math.min(currentBbox.y0, symbol.bbox.y0 || symbol.top || 0);
+            currentBbox.x1 = Math.max(currentBbox.x1, symbol.bbox.x1 || (symbol.left || 0) + (symbol.width || 0));
+            currentBbox.y1 = Math.max(currentBbox.y1, symbol.bbox.y1 || (symbol.top || 0) + (symbol.height || 0));
+          }
+
+          // If space or punctuation, finalize word
+          if (symbol.text.match(/\s|[,.;:!?]/)) {
+            if (currentWord.trim()) {
+              words.push({
+                text: currentWord.trim(),
+                confidence: symbolCount > 0 ? currentConfidence / symbolCount : 0,
+                bbox: currentBbox,
+              });
+            }
+            currentWord = '';
+            currentConfidence = 0;
+            currentBbox = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+            symbolCount = 0;
+          }
+        }
+      }
+
+      // Finalize last word
+      if (currentWord.trim()) {
+        words.push({
+          text: currentWord.trim(),
+          confidence: symbolCount > 0 ? currentConfidence / symbolCount : 0,
+          bbox: currentBbox,
+        });
+      }
+    }
+
+    // Try lines array (alternative API)
+    if (data.lines && Array.isArray(data.lines) && words.length === 0) {
+      for (const line of data.lines) {
+        if (line.words && Array.isArray(line.words)) {
+          for (const word of line.words) {
+            words.push({
+              text: word.text || '',
+              confidence: word.confidence || 0,
+              bbox: {
+                x0: word.bbox?.x0 || word.left || 0,
+                y0: word.bbox?.y0 || word.top || 0,
+                x1: word.bbox?.x1 || (word.left || 0) + (word.width || 0),
+                y1: word.bbox?.y1 || (word.top || 0) + (word.height || 0),
+              },
+            });
+          }
+        }
+      }
+    }
+
+    // Fallback: create word from full text if no word-level data
+    if (words.length === 0 && data.text) {
+      const textWords = data.text.split(/\s+/).filter((w: string) => w.length > 0);
+      textWords.forEach((word: string, index: number) => {
+        words.push({
+          text: word,
+          confidence: data.confidence || 0.8,
+          bbox: {
+            x0: index * 50, // Approximate positions
+            y0: 0,
+            x1: (index + 1) * 50,
+            y1: 20,
+          },
+        });
+      });
+    }
+
+    return words;
+  }
+
   private groupWordsIntoBlocks(words: Array<{ text: string; confidence: number; bbox: { x0: number; y0: number; x1: number; y1: number } }>): Array<{ text: string; confidence: number; bbox: { x: number; y: number; width: number; height: number } }> {
     if (!words || words.length === 0) return [];
 
@@ -975,7 +1107,8 @@ class MultimodalIntakeService {
     const lineHeight = 30; // Approximate line height in pixels
     const maxDistance = 50; // Max distance between words on same line
 
-    let currentBlock: { words: typeof words; minX: number; minY: number; maxX: number; maxY: number } | null = null;
+    type WordBlock = { words: Array<{ text: string; confidence: number; bbox: { x0: number; y0: number; x1: number; y1: number } }>; minX: number; minY: number; maxX: number; maxY: number };
+    let currentBlock: WordBlock | null = null;
 
     words.forEach((word) => {
       if (!currentBlock) {
@@ -1025,15 +1158,17 @@ class MultimodalIntakeService {
 
     // Finalize last block
     if (currentBlock) {
-      const avgConfidence = currentBlock.words.reduce((sum, w) => sum + w.confidence, 0) / currentBlock.words.length;
+      const block = currentBlock as WordBlock;
+      if (block.words.length === 0) return blocks;
+      const avgConfidence = block.words.reduce((sum: number, w: { text: string; confidence: number; bbox: { x0: number; y0: number; x1: number; y1: number } }) => sum + w.confidence, 0) / block.words.length;
       blocks.push({
-        text: currentBlock.words.map(w => w.text).join(' '),
+        text: block.words.map((w: { text: string; confidence: number; bbox: { x0: number; y0: number; x1: number; y1: number } }) => w.text).join(' '),
         confidence: avgConfidence / 100,
         bbox: {
-          x: currentBlock.minX,
-          y: currentBlock.minY,
-          width: currentBlock.maxX - currentBlock.minX,
-          height: currentBlock.maxY - currentBlock.minY,
+          x: block.minX,
+          y: block.minY,
+          width: block.maxX - block.minX,
+          height: block.maxY - block.minY,
         },
       });
     }

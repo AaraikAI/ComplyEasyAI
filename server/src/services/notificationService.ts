@@ -385,10 +385,12 @@ class NotificationService {
       link?: string;
     }
   ): void {
+    // Map 'critical' to 'error' for WebSocket (which doesn't support 'critical')
+    const wsType = notification.type === 'critical' ? 'error' : notification.type;
     websocketService.sendNotification(userId, {
       title: notification.title,
       message: notification.message,
-      type: notification.type,
+      type: wsType as 'info' | 'success' | 'warning' | 'error',
       link: notification.link,
     });
   }

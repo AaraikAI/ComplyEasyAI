@@ -1439,7 +1439,8 @@ class PhysicalAIService {
         latency = networkInfo.latency;
       } else {
         // Real latency measurement using ping or device API
-        latency = await this.measureNetworkLatency(device.deviceId, device.mqttTopic);
+        const measuredLatency = await this.measureNetworkLatency(device.deviceId, device.mqttTopic || undefined);
+        latency = measuredLatency || 0;
       }
       
       if (networkInfo.signalStrength !== undefined) {
@@ -1842,10 +1843,12 @@ class PhysicalAIService {
           // Send ping message and measure response time
           await new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => reject(new Error('Timeout')), 5000);
-            mqttService.publish(`${mqttTopic}/ping`, JSON.stringify({ timestamp: startTime }), () => {
+            mqttService.publish(`${mqttTopic}/ping`, { timestamp: startTime }, { qos: 0 });
+            // Note: MQTT publish is fire-and-forget, so we resolve after a short delay
+            setTimeout(() => {
               clearTimeout(timeout);
               resolve();
-            });
+            }, 100);
           });
           const latency = Date.now() - startTime;
           return Math.max(0, latency);

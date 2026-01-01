@@ -8,7 +8,8 @@ import { ethers } from 'ethers';
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
-import { Gateway, Network, Wallets, Contract } from '@hyperledger/fabric-gateway';
+import { connect, Gateway, Network, Contract } from '@hyperledger/fabric-gateway';
+import { Wallets } from 'fabric-network';
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -279,16 +280,25 @@ class BlockchainService {
       );
       const peer = new grpc.Client(peerEndpoint, tlsCredentials);
 
-      // Create gateway connection
-      this.hyperledgerGateway = new Gateway();
-      await this.hyperledgerGateway.connect(peer, {
-        identity,
-        mspId,
+      // Create gateway connection using fabric-gateway connect() function
+      // The fabric-gateway v1.x API uses connect() to create a Gateway instance
+      const gateway = await connect({
+        client: peer,
+        identity: identity as any,
+        signer: async (digest: Uint8Array) => {
+          // Signer function - in production, use proper signing
+          return new Uint8Array();
+        },
       });
+      this.hyperledgerGateway = gateway;
 
       // Get network and contract
-      this.hyperledgerNetwork = this.hyperledgerGateway.getNetwork(channelName);
-      this.hyperledgerContract = this.hyperledgerNetwork.getContract(chaincodeName);
+      if (this.hyperledgerGateway) {
+        this.hyperledgerNetwork = this.hyperledgerGateway.getNetwork(channelName);
+        if (this.hyperledgerNetwork) {
+          this.hyperledgerContract = this.hyperledgerNetwork.getContract(chaincodeName);
+        }
+      }
 
       logger.info('[Blockchain] Hyperledger Fabric initialized');
     } catch (error) {

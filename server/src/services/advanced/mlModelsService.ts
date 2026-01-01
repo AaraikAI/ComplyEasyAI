@@ -270,8 +270,8 @@ class MLModelsService {
 
       return {
         history: finalMetrics,
-        finalAccuracy,
-        finalLoss,
+        finalAccuracy: typeof finalAccuracy === 'number' ? finalAccuracy : (await finalAccuracy.data())[0] || 0,
+        finalLoss: typeof finalLoss === 'number' ? finalLoss : (await finalLoss.data())[0] || 0,
       };
     } catch (error) {
       logger.error('[ML Models] Error training deepfake model', error);
