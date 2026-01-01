@@ -2548,14 +2548,6 @@ class VRCollaborativeReviewService {
       hints: ['Prioritize critical issues', 'Create actionable remediation steps', 'Set realistic timelines'],
     };
   }
-        ],
-        completionConditions: { allTasksComplete: true },
-        hints: ['Interact with documents by pointing and clicking'],
-      });
-    }
-
-    return scenes;
-  }
 
   private estimateTrainingDuration(
     difficulty: VRTrainingScenario['difficulty'],
