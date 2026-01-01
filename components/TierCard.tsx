@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, X, Crown, Rocket, TrendingUp, Building2, Sparkles, Zap } from 'lucide-react';
+import { Check, X, Crown, Rocket, TrendingUp, Building2, Sparkles, Zap, Calendar } from 'lucide-react';
 import {
   TierName,
   Tier,
@@ -14,6 +14,7 @@ interface TierCardProps {
   isCurrentTier?: boolean;
   isPopular?: boolean;
   onSelect?: (tierName: TierName) => void;
+  onBookDemo?: (tierName: TierName) => void;
   billingCycle?: 'monthly' | 'annual';
   disabled?: boolean;
   isUpgrade?: boolean;
@@ -36,6 +37,7 @@ const TierCard: React.FC<TierCardProps> = ({
   isCurrentTier = false,
   isPopular = false,
   onSelect,
+  onBookDemo,
   billingCycle = 'annual',
   disabled = false,
   isUpgrade = false,
@@ -46,8 +48,9 @@ const TierCard: React.FC<TierCardProps> = ({
 
   const calculatePrice = () => {
     if (billingCycle === 'monthly') {
-      const monthlyBase = tier.pricing.annualMin * tier.pricing.monthlyMultiplier / 12;
-      return Math.round(monthlyBase);
+      // Use the monthly price if available, otherwise calculate from annual
+      const monthlyPrice = tier.pricing.monthlyMin || (tier.pricing.annualMin / 12);
+      return Math.round(monthlyPrice);
     }
     return tier.pricing.annualMin;
   };
@@ -61,6 +64,12 @@ const TierCard: React.FC<TierCardProps> = ({
     if (!disabled && onSelect && !isCurrentTier) {
       if (isDowngrade && !canDowngrade) return;
       onSelect(tier.name);
+    }
+  };
+
+  const handleBookDemo = () => {
+    if (onBookDemo) {
+      onBookDemo(tier.name);
     }
   };
 
@@ -198,19 +207,38 @@ const TierCard: React.FC<TierCardProps> = ({
         )}
       </div>
 
-      {/* CTA Button */}
-      <button
-        onClick={handleSelect}
-        disabled={isCurrentTier || (isDowngrade && !canDowngrade)}
-        className={`w-full py-3 px-4 rounded-xl font-semibold transition-all ${getButtonStyle()}`}
-        style={
-          !isCurrentTier && !disabled && !(isDowngrade && !canDowngrade)
-            ? { borderColor: colors.primary }
-            : {}
-        }
-      >
-        {getButtonText()}
-      </button>
+      {/* CTA Buttons */}
+      <div className="space-y-2">
+        {/* Book a Demo - Primary CTA for all tiers */}
+        <button
+          onClick={handleBookDemo}
+          className="w-full py-3 px-4 rounded-xl font-semibold transition-all bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 flex items-center justify-center gap-2"
+        >
+          <Calendar size={18} />
+          Book a Demo
+        </button>
+
+        {/* Secondary action button */}
+        {!isCurrentTier && (
+          <button
+            onClick={handleSelect}
+            disabled={isCurrentTier || (isDowngrade && !canDowngrade)}
+            className={`w-full py-2.5 px-4 rounded-xl font-medium transition-all text-sm ${
+              disabled || (isDowngrade && !canDowngrade)
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            {getButtonText()}
+          </button>
+        )}
+
+        {isCurrentTier && (
+          <div className="text-center text-sm text-green-600 font-medium py-2">
+            Your Current Plan
+          </div>
+        )}
+      </div>
 
       {/* Features list */}
       <div className="mt-6 space-y-3">

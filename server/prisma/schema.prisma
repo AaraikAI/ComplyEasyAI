@@ -1528,3 +1528,60 @@ model ApiKey {
   @@index([keyHash])
   @@index([keyPrefix])
 }
+
+// Demo requests for lead capture and welcome email automation
+model DemoRequest {
+  id                  String            @id @default(uuid())
+  firstName           String
+  lastName            String
+  email               String
+  company             String
+  jobTitle            String?
+  phone               String?
+  companySize         String?           // e.g., '1-10', '11-50', '51-200', '201-1000', '1000+'
+  industry            String?
+  country             String?
+  interestedTier      String?           // Which tier they're interested in
+  currentChallenge    String?           // Their main compliance challenge
+  howDidYouHear       String?           // Marketing attribution
+  message             String?           // Additional notes/questions
+  status              DemoRequestStatus @default(pending)
+  scheduledAt         DateTime?         // When the demo is scheduled
+  completedAt         DateTime?         // When the demo was completed
+  assignedTo          String?           // Sales rep assigned
+  welcomeEmailSentAt  DateTime?         // When welcome email was sent via webhook
+  followUpEmailSentAt DateTime?         // When follow-up email was sent
+  notes               String?           // Internal notes
+  source              String?           // e.g., 'pricing_page', 'landing_page', 'referral'
+  utmSource           String?           // UTM parameters for tracking
+  utmMedium           String?
+  utmCampaign         String?
+  ipAddress           String?           // For basic fraud prevention
+  userAgent           String?           // Browser info
+  referrer            String?           // Where they came from
+  convertedToUserId   String?           // If they sign up, link to user
+  convertedAt         DateTime?         // When they converted to a user
+  metadata            Json?             // Additional custom data
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([company])
+  @@index([interestedTier])
+  @@index([createdAt])
+  @@index([scheduledAt])
+}
+
+enum DemoRequestStatus {
+  pending             // Just submitted
+  contacted           // Initial outreach made
+  scheduled           // Demo scheduled
+  completed           // Demo completed
+  qualified           // Qualified lead
+  proposal_sent       // Proposal sent
+  negotiation         // In negotiation
+  converted           // Converted to customer
+  disqualified        // Not a fit
+  no_response         // No response after follow-up
+}
