@@ -7,7 +7,8 @@
 
 import { Router } from 'express';
 import { demoController } from '../controllers/demoController';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
+import { asyncHandler, authAsyncHandler } from '../types/express';
 
 const router = Router();
 
@@ -20,7 +21,7 @@ const router = Router();
  * @desc    Submit a demo request (public)
  * @access  Public
  */
-router.post('/request', demoController.submitDemoRequest.bind(demoController));
+router.post('/request', asyncHandler(demoController.submitDemoRequest.bind(demoController)));
 
 // ============================================================================
 // ADMIN ROUTES (Authentication required)
@@ -34,8 +35,8 @@ router.post('/request', demoController.submitDemoRequest.bind(demoController));
 router.get(
   '/requests',
   authenticate,
-  requireAdmin,
-  demoController.getAllDemoRequests.bind(demoController)
+  authorize('admin'),
+  authAsyncHandler(demoController.getAllDemoRequests.bind(demoController) as any)
 );
 
 /**
@@ -46,8 +47,8 @@ router.get(
 router.get(
   '/requests/stats',
   authenticate,
-  requireAdmin,
-  demoController.getDemoStats.bind(demoController)
+  authorize('admin'),
+  authAsyncHandler(demoController.getDemoStats.bind(demoController) as any)
 );
 
 /**
@@ -58,8 +59,8 @@ router.get(
 router.get(
   '/requests/:id',
   authenticate,
-  requireAdmin,
-  demoController.getDemoRequest.bind(demoController)
+  authorize('admin'),
+  authAsyncHandler(demoController.getDemoRequest.bind(demoController) as any)
 );
 
 /**
@@ -70,8 +71,8 @@ router.get(
 router.put(
   '/requests/:id',
   authenticate,
-  requireAdmin,
-  demoController.updateDemoRequest.bind(demoController)
+  authorize('admin'),
+  authAsyncHandler(demoController.updateDemoRequest.bind(demoController) as any)
 );
 
 /**
@@ -82,8 +83,8 @@ router.put(
 router.post(
   '/requests/:id/schedule',
   authenticate,
-  requireAdmin,
-  demoController.scheduleDemo.bind(demoController)
+  authorize('admin'),
+  authAsyncHandler(demoController.scheduleDemo.bind(demoController) as any)
 );
 
 /**
@@ -94,8 +95,8 @@ router.post(
 router.post(
   '/requests/:id/convert',
   authenticate,
-  requireAdmin,
-  demoController.markAsConverted.bind(demoController)
+  authorize('admin'),
+  authAsyncHandler(demoController.markAsConverted.bind(demoController) as any)
 );
 
 /**
@@ -106,8 +107,8 @@ router.post(
 router.delete(
   '/requests/:id',
   authenticate,
-  requireAdmin,
-  demoController.deleteDemoRequest.bind(demoController)
+  authorize('admin'),
+  authAsyncHandler(demoController.deleteDemoRequest.bind(demoController) as any)
 );
 
 export default router;
