@@ -10,13 +10,23 @@ datasource db {
 model Organization {
   id                   String                @id @default(dbgenerated("(uuid_generate_v4())::text"))
   name                 String
-  plan                 Plan                  @default(Basic)
+  plan                 Plan                  @default(Foundation)
   stripeCustomerId     String?               @unique
+  stripeSubscriptionId String?               @unique
   subscriptionStatus   SubscriptionStatus    @default(trialing)
+  billingCycle         BillingCycle          @default(annual)
+  trialEndsAt          DateTime?
+  subscriptionStartedAt DateTime?
+  subscriptionEndsAt   DateTime?
+  cancelAtPeriodEnd    Boolean               @default(false)
+  activeAddOns         String[]              @default([])
+  usageMetrics         Json?
   parentOrganizationId String?
   isParent             Boolean               @default(false)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @default(now()) @updatedAt
+  webhooks             Webhook[]
+  webhookEvents        WebhookEvent[]
   accessReviews        AccessReview[]
   auditLogs            AuditLog[]
   frameworks           ComplianceFramework[]
@@ -678,12 +688,21 @@ enum SubscriptionStatus {
   past_due
   canceled
   trialing
+  incomplete
+  incomplete_expired
+  unpaid
+}
+
+enum BillingCycle {
+  monthly
+  annual
 }
 
 enum Plan {
-  Basic
-  Pro
-  Enterprise
+  Foundation
+  Essentials
+  Growth
+  Visionary
 }
 
 enum AccessReviewStatus {
@@ -1372,4 +1391,140 @@ model NotificationPreference {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ============================================================================
+// WEBHOOK SYSTEM FOR ZAPIER/AUTOMATION
+// ============================================================================
+
+model Webhook {
+  id              String    @id @default(uuid())
+  organizationId  String
+  name            String
+  url             String
+  secret          String    // HMAC signing secret
+  events          String[]  // Array of event types to subscribe to
+  headers         Json?     // Custom headers to include
+  enabled         Boolean   @default(true)
+  retryPolicy     Json?     // Retry configuration
+  lastTriggeredAt DateTime?
+  failureCount    Int       @default(0)
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  webhookEvents   WebhookEvent[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([enabled])
+  @@index([events])
+}
+
+model WebhookEvent {
+  id              String    @id @default(uuid())
+  webhookId       String?
+  organizationId  String
+  eventType       String
+  payload         Json
+  status          WebhookEventStatus @default(pending)
+  attempts        Int       @default(0)
+  maxAttempts     Int       @default(5)
+  lastAttemptAt   DateTime?
+  nextAttemptAt   DateTime?
+  responseCode    Int?
+  responseBody    String?   @db.Text
+  errorMessage    String?
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  webhook         Webhook?  @relation(fields: [webhookId], references: [id], onDelete: SetNull)
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([organizationId])
+  @@index([eventType])
+  @@index([status])
+  @@index([nextAttemptAt])
+  @@index([createdAt])
+}
+
+enum WebhookEventStatus {
+  pending
+  processing
+  delivered
+  failed
+  exhausted
+}
+
+// Subscription change history for audit trail
+model SubscriptionHistory {
+  id              String    @id @default(uuid())
+  organizationId  String
+  previousPlan    Plan?
+  newPlan         Plan
+  previousStatus  SubscriptionStatus?
+  newStatus       SubscriptionStatus
+  changeType      SubscriptionChangeType
+  reason          String?
+  changedBy       String?   // User ID or 'system' for automated changes
+  stripeEventId   String?   // Reference to Stripe event if applicable
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([changeType])
+  @@index([createdAt])
+}
+
+enum SubscriptionChangeType {
+  trial_started
+  trial_ended
+  upgrade
+  downgrade
+  renewal
+  cancellation
+  reactivation
+  payment_failed
+  payment_recovered
+  addon_added
+  addon_removed
+}
+
+// Usage tracking for tier limits enforcement
+model UsageTracking {
+  id              String    @id @default(uuid())
+  organizationId  String
+  metricType      String    // e.g., 'ai_requests', 'storage_gb', 'api_calls'
+  period          String    // e.g., '2024-01' for monthly, '2024-01-01' for daily
+  count           Int       @default(0)
+  limit           Int       @default(-1) // -1 = unlimited
+  resetAt         DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([organizationId, metricType, period])
+  @@index([organizationId])
+  @@index([metricType])
+  @@index([period])
+}
+
+// API keys for webhook authentication and external integrations
+model ApiKey {
+  id              String    @id @default(uuid())
+  organizationId  String
+  name            String
+  keyHash         String    @unique // Hashed API key
+  keyPrefix       String    // First 8 chars of key for identification
+  scopes          String[]  // Allowed API scopes
+  rateLimit       Int       @default(1000) // Requests per hour
+  expiresAt       DateTime?
+  lastUsedAt      DateTime?
+  createdBy       String
+  createdAt       DateTime  @default(now())
+  revokedAt       DateTime?
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([keyHash])
+  @@index([keyPrefix])
 }

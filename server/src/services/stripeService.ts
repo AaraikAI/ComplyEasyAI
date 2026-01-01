@@ -1,29 +1,129 @@
+/**
+ * Stripe Service
+ *
+ * Production-level Stripe integration for the 4-tier subscription system:
+ * - Foundation: $1,500-$3,000/year
+ * - Essentials: $4,500-$11,250/year
+ * - Growth: $7,500-$22,500/year
+ * - Visionary: $15,000-$75,000+/year (custom)
+ *
+ * Handles:
+ * - Customer creation
+ * - Checkout sessions
+ * - Billing portal
+ * - Subscription management
+ * - Webhooks
+ * - Upgrades/Downgrades
+ */
+
 import Stripe from 'stripe';
 import config from '../config';
 import logger from '../config/logger';
 import prisma from '../config/database';
+import { TierName, TIERS, getTier, getTierIndex, BillingCycle } from '../config/tiers';
+import type { Plan, SubscriptionStatus, SubscriptionChangeType } from '@prisma/client';
 
 const stripe = new Stripe(config.stripe.secretKey, {
   apiVersion: '2025-02-24.acacia',
 });
 
+// ============================================================================
+// TYPES
+// ============================================================================
+
 interface CreateCheckoutSessionOptions {
-  priceId: string;
+  tierName: TierName;
+  billingCycle: 'monthly' | 'annual';
   customerId?: string;
   customerEmail: string;
   organizationId: string;
   successUrl: string;
   cancelUrl: string;
+  userCount?: number; // For scaled pricing
+  addOns?: string[]; // Add-on IDs to include
+  trialDays?: number;
+  couponCode?: string;
 }
 
+interface SubscriptionDetails {
+  tier: TierName;
+  status: SubscriptionStatus;
+  billingCycle: 'monthly' | 'annual';
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
+  trialEnd: Date | null;
+  stripeSubscriptionId: string | null;
+  stripeCustomerId: string | null;
+  addOns: string[];
+  nextInvoiceAmount: number | null;
+  usage: {
+    users: number;
+  };
+}
+
+interface UpgradePreview {
+  currentTier: TierName;
+  targetTier: TierName;
+  proratedAmount: number;
+  newMonthlyAmount: number;
+  immediateCharge: number;
+  nextBillingDate: Date;
+}
+
+// ============================================================================
+// PRICE ID CONFIGURATION
+// ============================================================================
+
+// These should be configured in environment variables
+// Format: STRIPE_TIER_BILLINGCYCLE_PRICE_ID
+const PRICE_IDS: Record<TierName, { monthly: string; annual: string }> = {
+  Foundation: {
+    monthly: process.env.STRIPE_FOUNDATION_MONTHLY_PRICE_ID || '',
+    annual: process.env.STRIPE_FOUNDATION_ANNUAL_PRICE_ID || '',
+  },
+  Essentials: {
+    monthly: process.env.STRIPE_ESSENTIALS_MONTHLY_PRICE_ID || '',
+    annual: process.env.STRIPE_ESSENTIALS_ANNUAL_PRICE_ID || '',
+  },
+  Growth: {
+    monthly: process.env.STRIPE_GROWTH_MONTHLY_PRICE_ID || '',
+    annual: process.env.STRIPE_GROWTH_ANNUAL_PRICE_ID || '',
+  },
+  Visionary: {
+    monthly: process.env.STRIPE_VISIONARY_MONTHLY_PRICE_ID || '',
+    annual: process.env.STRIPE_VISIONARY_ANNUAL_PRICE_ID || '',
+  },
+};
+
+// Add-on price IDs
+const ADDON_PRICE_IDS: Record<string, string> = {
+  'custom-frameworks': process.env.STRIPE_ADDON_CUSTOM_FRAMEWORKS_PRICE_ID || '',
+  'on-prem-deployment': process.env.STRIPE_ADDON_ON_PREM_PRICE_ID || '',
+  'custom-ai-models': process.env.STRIPE_ADDON_CUSTOM_AI_PRICE_ID || '',
+};
+
+// ============================================================================
+// STRIPE SERVICE CLASS
+// ============================================================================
+
 class StripeService {
-  async createCustomer(email: string, name: string, organizationId: string): Promise<string> {
+  /**
+   * Create a Stripe customer for an organization
+   */
+  async createCustomer(
+    email: string,
+    name: string,
+    organizationId: string,
+    metadata?: Record<string, string>
+  ): Promise<string> {
     try {
       const customer = await stripe.customers.create({
         email,
         name,
         metadata: {
           organizationId,
+          ...metadata,
         },
       });
 
@@ -33,7 +133,7 @@ class StripeService {
         data: { stripeCustomerId: customer.id },
       });
 
-      logger.info(`Stripe customer created: ${customer.id}`);
+      logger.info(`Stripe customer created: ${customer.id} for org: ${organizationId}`);
       return customer.id;
     } catch (error) {
       logger.error('Failed to create Stripe customer', error);
@@ -41,32 +141,100 @@ class StripeService {
     }
   }
 
+  /**
+   * Create a checkout session for subscription
+   */
   async createCheckoutSession(options: CreateCheckoutSessionOptions): Promise<string> {
     try {
-      const session = await stripe.checkout.sessions.create({
-        customer: options.customerId,
-        customer_email: options.customerId ? undefined : options.customerEmail,
+      const {
+        tierName,
+        billingCycle,
+        customerId,
+        customerEmail,
+        organizationId,
+        successUrl,
+        cancelUrl,
+        userCount = 10,
+        addOns = [],
+        trialDays,
+        couponCode,
+      } = options;
+
+      // Get price ID for the tier and billing cycle
+      const priceId = PRICE_IDS[tierName][billingCycle];
+
+      // Validate price ID
+      if (!priceId || !priceId.startsWith('price_')) {
+        // For development/demo, create a session placeholder
+        if (!config.stripe.secretKey) {
+          throw new Error('Stripe is not configured. Please contact support to upgrade your plan.');
+        }
+        throw new Error(`Price ID for ${tierName} ${billingCycle} plan is not configured.`);
+      }
+
+      // Build line items
+      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ];
+
+      // Add add-ons if selected
+      for (const addOnId of addOns) {
+        const addOnPriceId = ADDON_PRICE_IDS[addOnId];
+        if (addOnPriceId && addOnPriceId.startsWith('price_')) {
+          lineItems.push({
+            price: addOnPriceId,
+            quantity: 1,
+          });
+        }
+      }
+
+      // Build session params
+      const sessionParams: Stripe.Checkout.SessionCreateParams = {
+        customer: customerId,
+        customer_email: customerId ? undefined : customerEmail,
         mode: 'subscription',
         payment_method_types: ['card'],
-        line_items: [
-          {
-            price: options.priceId,
-            quantity: 1,
-          },
-        ],
-        success_url: options.successUrl,
-        cancel_url: options.cancelUrl,
+        line_items: lineItems,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         metadata: {
-          organizationId: options.organizationId,
+          organizationId,
+          tierName,
+          billingCycle,
+          userCount: userCount.toString(),
+          addOns: JSON.stringify(addOns),
         },
         subscription_data: {
           metadata: {
-            organizationId: options.organizationId,
+            organizationId,
+            tierName,
+            billingCycle,
           },
         },
-      });
+        billing_address_collection: 'required',
+        tax_id_collection: {
+          enabled: true,
+        },
+        allow_promotion_codes: true,
+      };
 
-      logger.info(`Checkout session created: ${session.id}`);
+      // Add trial period if specified
+      if (trialDays && trialDays > 0) {
+        sessionParams.subscription_data!.trial_period_days = trialDays;
+      }
+
+      // Add coupon if provided
+      if (couponCode) {
+        sessionParams.discounts = [{ coupon: couponCode }];
+        delete sessionParams.allow_promotion_codes; // Can't use both
+      }
+
+      const session = await stripe.checkout.sessions.create(sessionParams);
+
+      logger.info(`Checkout session created: ${session.id} for tier: ${tierName}`);
       return session.url!;
     } catch (error) {
       logger.error('Failed to create checkout session', error);
@@ -74,6 +242,9 @@ class StripeService {
     }
   }
 
+  /**
+   * Create billing portal session for subscription management
+   */
   async createPortalSession(customerId: string, returnUrl: string): Promise<string> {
     try {
       const session = await stripe.billingPortal.sessions.create({
@@ -88,7 +259,415 @@ class StripeService {
     }
   }
 
-  async handleWebhook(payload: Buffer, signature: string): Promise<void> {
+  /**
+   * Get subscription details for an organization
+   */
+  async getSubscriptionDetails(organizationId: string): Promise<SubscriptionDetails | null> {
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        include: {
+          users: { select: { id: true } },
+        },
+      });
+
+      if (!org) return null;
+
+      const tier = org.plan as TierName;
+
+      const details: SubscriptionDetails = {
+        tier,
+        status: org.subscriptionStatus as SubscriptionStatus,
+        billingCycle: (org.billingCycle as 'monthly' | 'annual') || 'annual',
+        currentPeriodStart: org.subscriptionStartedAt || org.createdAt,
+        currentPeriodEnd: org.subscriptionEndsAt || new Date(),
+        cancelAtPeriodEnd: org.cancelAtPeriodEnd,
+        trialEnd: org.trialEndsAt,
+        stripeSubscriptionId: org.stripeSubscriptionId,
+        stripeCustomerId: org.stripeCustomerId,
+        addOns: org.activeAddOns || [],
+        nextInvoiceAmount: null,
+        usage: {
+          users: org.users.length,
+        },
+      };
+
+      // Get upcoming invoice if customer exists
+      if (org.stripeCustomerId) {
+        try {
+          const upcomingInvoice = await stripe.invoices.retrieveUpcoming({
+            customer: org.stripeCustomerId,
+          });
+          details.nextInvoiceAmount = upcomingInvoice.amount_due / 100;
+        } catch {
+          // No upcoming invoice
+        }
+      }
+
+      return details;
+    } catch (error) {
+      logger.error('Failed to get subscription details', error);
+      throw new Error('Failed to fetch subscription details');
+    }
+  }
+
+  /**
+   * Preview upgrade/downgrade pricing
+   */
+  async previewTierChange(
+    organizationId: string,
+    targetTier: TierName,
+    billingCycle: 'monthly' | 'annual' = 'annual'
+  ): Promise<UpgradePreview | null> {
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (!org?.stripeSubscriptionId || !org?.stripeCustomerId) {
+        return null;
+      }
+
+      const currentTier = org.plan as TierName;
+      const subscription = await stripe.subscriptions.retrieve(org.stripeSubscriptionId);
+
+      // Get new price
+      const newPriceId = PRICE_IDS[targetTier][billingCycle];
+      if (!newPriceId) return null;
+
+      // Preview proration
+      const preview = await stripe.invoices.retrieveUpcoming({
+        customer: org.stripeCustomerId,
+        subscription: org.stripeSubscriptionId,
+        subscription_items: [
+          {
+            id: subscription.items.data[0].id,
+            price: newPriceId,
+          },
+        ],
+        subscription_proration_behavior: 'create_prorations',
+      });
+
+      const tier = getTier(targetTier);
+      const monthlyAmount = billingCycle === 'annual'
+        ? tier.pricing.annualMin / 12
+        : tier.pricing.annualMin * tier.pricing.monthlyMultiplier / 12;
+
+      return {
+        currentTier,
+        targetTier,
+        proratedAmount: preview.amount_due / 100,
+        newMonthlyAmount: monthlyAmount,
+        immediateCharge: preview.amount_due / 100,
+        nextBillingDate: new Date(subscription.current_period_end * 1000),
+      };
+    } catch (error) {
+      logger.error('Failed to preview tier change', error);
+      return null;
+    }
+  }
+
+  /**
+   * Upgrade or downgrade subscription
+   */
+  async changeTier(
+    organizationId: string,
+    targetTier: TierName,
+    billingCycle: 'monthly' | 'annual' = 'annual',
+    immediate: boolean = true
+  ): Promise<boolean> {
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (!org?.stripeSubscriptionId) {
+        throw new Error('No active subscription found');
+      }
+
+      const currentTier = org.plan as TierName;
+      const subscription = await stripe.subscriptions.retrieve(org.stripeSubscriptionId);
+      const newPriceId = PRICE_IDS[targetTier][billingCycle];
+
+      if (!newPriceId) {
+        throw new Error(`Price not configured for ${targetTier} ${billingCycle}`);
+      }
+
+      const isUpgrade = getTierIndex(targetTier) > getTierIndex(currentTier);
+
+      // Update subscription
+      await stripe.subscriptions.update(org.stripeSubscriptionId, {
+        items: [
+          {
+            id: subscription.items.data[0].id,
+            price: newPriceId,
+          },
+        ],
+        proration_behavior: immediate ? 'create_prorations' : 'none',
+        metadata: {
+          tierName: targetTier,
+          billingCycle,
+          previousTier: currentTier,
+        },
+      });
+
+      // Update organization
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: {
+          plan: targetTier as Plan,
+          billingCycle: billingCycle as BillingCycle,
+        },
+      });
+
+      // Record subscription history
+      await prisma.subscriptionHistory.create({
+        data: {
+          organizationId,
+          previousPlan: currentTier as Plan,
+          newPlan: targetTier as Plan,
+          previousStatus: org.subscriptionStatus,
+          newStatus: org.subscriptionStatus,
+          changeType: isUpgrade ? 'upgrade' : 'downgrade',
+          changedBy: 'system',
+          metadata: { billingCycle, immediate },
+        },
+      });
+
+      logger.info(`Tier changed for org ${organizationId}: ${currentTier} -> ${targetTier}`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to change tier', error);
+      throw new Error('Failed to change subscription tier');
+    }
+  }
+
+  /**
+   * Cancel subscription
+   */
+  async cancelSubscription(
+    organizationId: string,
+    atPeriodEnd: boolean = true,
+    reason?: string
+  ): Promise<boolean> {
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (!org?.stripeSubscriptionId) {
+        throw new Error('No active subscription found');
+      }
+
+      if (atPeriodEnd) {
+        // Cancel at end of billing period
+        await stripe.subscriptions.update(org.stripeSubscriptionId, {
+          cancel_at_period_end: true,
+          metadata: { cancelReason: reason || 'User requested' },
+        });
+
+        await prisma.organization.update({
+          where: { id: organizationId },
+          data: { cancelAtPeriodEnd: true },
+        });
+      } else {
+        // Immediate cancellation
+        await stripe.subscriptions.cancel(org.stripeSubscriptionId);
+
+        await prisma.organization.update({
+          where: { id: organizationId },
+          data: {
+            plan: 'Foundation' as Plan,
+            subscriptionStatus: 'canceled',
+            stripeSubscriptionId: null,
+            cancelAtPeriodEnd: false,
+          },
+        });
+      }
+
+      // Record subscription history
+      await prisma.subscriptionHistory.create({
+        data: {
+          organizationId,
+          previousPlan: org.plan,
+          newPlan: atPeriodEnd ? org.plan : ('Foundation' as Plan),
+          previousStatus: org.subscriptionStatus,
+          newStatus: atPeriodEnd ? org.subscriptionStatus : 'canceled',
+          changeType: 'cancellation',
+          reason,
+          changedBy: 'system',
+        },
+      });
+
+      logger.info(`Subscription canceled for org ${organizationId}, atPeriodEnd: ${atPeriodEnd}`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to cancel subscription', error);
+      throw new Error('Failed to cancel subscription');
+    }
+  }
+
+  /**
+   * Reactivate a canceled subscription
+   */
+  async reactivateSubscription(organizationId: string): Promise<boolean> {
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (!org?.stripeSubscriptionId) {
+        throw new Error('No subscription to reactivate');
+      }
+
+      await stripe.subscriptions.update(org.stripeSubscriptionId, {
+        cancel_at_period_end: false,
+      });
+
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: { cancelAtPeriodEnd: false },
+      });
+
+      // Record subscription history
+      await prisma.subscriptionHistory.create({
+        data: {
+          organizationId,
+          previousPlan: org.plan,
+          newPlan: org.plan,
+          previousStatus: org.subscriptionStatus,
+          newStatus: 'active',
+          changeType: 'reactivation',
+          changedBy: 'system',
+        },
+      });
+
+      logger.info(`Subscription reactivated for org ${organizationId}`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to reactivate subscription', error);
+      throw new Error('Failed to reactivate subscription');
+    }
+  }
+
+  /**
+   * Add an add-on to subscription
+   */
+  async addAddOn(organizationId: string, addOnId: string): Promise<boolean> {
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (!org?.stripeSubscriptionId) {
+        throw new Error('No active subscription found');
+      }
+
+      const addOnPriceId = ADDON_PRICE_IDS[addOnId];
+      if (!addOnPriceId) {
+        throw new Error('Add-on not found');
+      }
+
+      // Add to Stripe subscription
+      await stripe.subscriptionItems.create({
+        subscription: org.stripeSubscriptionId,
+        price: addOnPriceId,
+        quantity: 1,
+      });
+
+      // Update organization
+      const currentAddOns = org.activeAddOns || [];
+      if (!currentAddOns.includes(addOnId)) {
+        await prisma.organization.update({
+          where: { id: organizationId },
+          data: {
+            activeAddOns: [...currentAddOns, addOnId],
+          },
+        });
+      }
+
+      // Record history
+      await prisma.subscriptionHistory.create({
+        data: {
+          organizationId,
+          previousPlan: org.plan,
+          newPlan: org.plan,
+          previousStatus: org.subscriptionStatus,
+          newStatus: org.subscriptionStatus,
+          changeType: 'addon_added',
+          metadata: { addOnId },
+          changedBy: 'system',
+        },
+      });
+
+      logger.info(`Add-on ${addOnId} added for org ${organizationId}`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to add add-on', error);
+      throw new Error('Failed to add add-on');
+    }
+  }
+
+  /**
+   * Remove an add-on from subscription
+   */
+  async removeAddOn(organizationId: string, addOnId: string): Promise<boolean> {
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (!org?.stripeSubscriptionId) {
+        throw new Error('No active subscription found');
+      }
+
+      // Find and remove from Stripe subscription
+      const subscription = await stripe.subscriptions.retrieve(org.stripeSubscriptionId);
+      const addOnPriceId = ADDON_PRICE_IDS[addOnId];
+      const addOnItem = subscription.items.data.find(item => item.price.id === addOnPriceId);
+
+      if (addOnItem) {
+        await stripe.subscriptionItems.del(addOnItem.id);
+      }
+
+      // Update organization
+      const currentAddOns = org.activeAddOns || [];
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: {
+          activeAddOns: currentAddOns.filter(id => id !== addOnId),
+        },
+      });
+
+      // Record history
+      await prisma.subscriptionHistory.create({
+        data: {
+          organizationId,
+          previousPlan: org.plan,
+          newPlan: org.plan,
+          previousStatus: org.subscriptionStatus,
+          newStatus: org.subscriptionStatus,
+          changeType: 'addon_removed',
+          metadata: { addOnId },
+          changedBy: 'system',
+        },
+      });
+
+      logger.info(`Add-on ${addOnId} removed for org ${organizationId}`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to remove add-on', error);
+      throw new Error('Failed to remove add-on');
+    }
+  }
+
+  /**
+   * Handle Stripe webhooks
+   */
+  async handleWebhook(payload: Buffer, signature: string): Promise<{
+    event: Stripe.Event;
+    processed: boolean;
+  }> {
     let event: Stripe.Event;
 
     try {
@@ -120,6 +699,9 @@ class StripeService {
           break;
 
         case 'customer.subscription.created':
+          await this.handleSubscriptionCreated(event.data.object as Stripe.Subscription);
+          break;
+
         case 'customer.subscription.updated':
           await this.handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
           break;
@@ -136,6 +718,10 @@ class StripeService {
           await this.handlePaymentFailed(event.data.object as Stripe.Invoice);
           break;
 
+        case 'customer.subscription.trial_will_end':
+          await this.handleTrialEnding(event.data.object as Stripe.Subscription);
+          break;
+
         default:
           logger.info(`Unhandled event type: ${event.type}`);
       }
@@ -145,17 +731,25 @@ class StripeService {
         where: { eventId: event.id },
         data: { processed: true },
       });
+
+      return { event, processed: true };
     } catch (error) {
       logger.error(`Error processing webhook ${event.type}`, error);
       throw error;
     }
   }
 
+  /**
+   * Handle checkout session completed
+   */
   private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
     const organizationId = session.metadata?.organizationId;
     if (!organizationId) return;
 
-    // Get organization and user
+    const tierName = (session.metadata?.tierName as TierName) || 'Foundation';
+    const billingCycle = (session.metadata?.billingCycle as 'monthly' | 'annual') || 'annual';
+    const addOns = session.metadata?.addOns ? JSON.parse(session.metadata.addOns) : [];
+
     const organization = await prisma.organization.findUnique({
       where: { id: organizationId },
       include: {
@@ -168,50 +762,99 @@ class StripeService {
 
     if (!organization) return;
 
-    // Update organization with customer ID if not already set
-    if (session.customer && typeof session.customer === 'string') {
-      await prisma.organization.update({
-        where: { id: organizationId },
-        data: {
-          stripeCustomerId: session.customer,
-          subscriptionStatus: 'active',
-        },
-      });
-    }
+    // Get subscription details
+    const subscriptionId = typeof session.subscription === 'string'
+      ? session.subscription
+      : session.subscription?.id;
 
-    // Get plan and amount from session
-    const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
-    const amountTotal = session.amount_total ? (session.amount_total / 100).toFixed(2) : '0.00';
-    const currency = session.currency?.toUpperCase() || 'USD';
-    const amount = `${currency} ${amountTotal}`;
+    let subscriptionEnd: Date | undefined;
+    let trialEnd: Date | undefined;
 
-    // Determine plan from price ID
-    let plan = 'Basic';
-    if (lineItems.data.length > 0) {
-      const priceId = lineItems.data[0].price?.id;
-      if (priceId === config.stripe.priceIds.pro) {
-        plan = 'Pro';
-      } else if (priceId === config.stripe.priceIds.enterprise) {
-        plan = 'Enterprise';
+    if (subscriptionId) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      subscriptionEnd = new Date(subscription.current_period_end * 1000);
+      if (subscription.trial_end) {
+        trialEnd = new Date(subscription.trial_end * 1000);
       }
     }
+
+    // Update organization
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: {
+        stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id,
+        stripeSubscriptionId: subscriptionId,
+        plan: tierName as Plan,
+        billingCycle: billingCycle as BillingCycle,
+        subscriptionStatus: 'active',
+        subscriptionStartedAt: new Date(),
+        subscriptionEndsAt: subscriptionEnd,
+        trialEndsAt: trialEnd,
+        activeAddOns: addOns,
+      },
+    });
+
+    // Record subscription history
+    await prisma.subscriptionHistory.create({
+      data: {
+        organizationId,
+        previousPlan: organization.plan,
+        newPlan: tierName as Plan,
+        previousStatus: organization.subscriptionStatus,
+        newStatus: 'active',
+        changeType: organization.subscriptionStatus === 'trialing' ? 'trial_ended' : 'upgrade',
+        stripeEventId: session.id,
+        metadata: { billingCycle, addOns },
+        changedBy: 'system',
+      },
+    });
 
     // Send confirmation email
     const userEmail = session.customer_email || organization.users[0]?.email;
     if (userEmail) {
       try {
+        const tier = getTier(tierName);
+        const amount = session.amount_total
+          ? `$${(session.amount_total / 100).toFixed(2)}`
+          : `$${tier.pricing.annualMin}`;
+
         const emailService = (await import('./emailService')).default;
-        await emailService.sendPaymentConfirmation(userEmail, plan, amount);
+        await emailService.sendPaymentConfirmation(userEmail, tierName, amount);
         logger.info(`Payment confirmation email sent to ${userEmail}`);
       } catch (error) {
         logger.error('Failed to send payment confirmation email', error);
-        // Don't fail the webhook if email fails
       }
     }
 
-    logger.info(`Checkout completed for organization: ${organizationId}, plan: ${plan}`);
+    logger.info(`Checkout completed for org ${organizationId}, tier: ${tierName}`);
   }
 
+  /**
+   * Handle subscription created
+   */
+  private async handleSubscriptionCreated(subscription: Stripe.Subscription): Promise<void> {
+    const organizationId = subscription.metadata?.organizationId;
+    if (!organizationId) return;
+
+    const tierName = subscription.metadata?.tierName as TierName || 'Foundation';
+
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: {
+        stripeSubscriptionId: subscription.id,
+        subscriptionStatus: subscription.status as SubscriptionStatus,
+        subscriptionStartedAt: new Date(subscription.start_date * 1000),
+        subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
+        trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+      },
+    });
+
+    logger.info(`Subscription created for org ${organizationId}`);
+  }
+
+  /**
+   * Handle subscription updated
+   */
   private async handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
     const customerId = typeof subscription.customer === 'string'
       ? subscription.customer
@@ -226,28 +869,51 @@ class StripeService {
       return;
     }
 
-    // Determine plan from price ID
-    let plan: 'Basic' | 'Pro' | 'Enterprise' = 'Basic';
-    const priceId = subscription.items.data[0]?.price.id;
+    // Determine tier from metadata or price
+    let tierName: TierName = subscription.metadata?.tierName as TierName || organization.plan as TierName;
 
-    if (priceId === config.stripe.priceIds.pro) {
-      plan = 'Pro';
-    } else if (priceId === config.stripe.priceIds.enterprise) {
-      plan = 'Enterprise';
+    // Check price ID to determine tier
+    const priceId = subscription.items.data[0]?.price.id;
+    for (const [tier, prices] of Object.entries(PRICE_IDS)) {
+      if (prices.monthly === priceId || prices.annual === priceId) {
+        tierName = tier as TierName;
+        break;
+      }
     }
 
-    // Update organization
+    const previousStatus = organization.subscriptionStatus;
+
     await prisma.organization.update({
       where: { id: organization.id },
       data: {
-        plan,
-        subscriptionStatus: subscription.status as any,
+        plan: tierName as Plan,
+        subscriptionStatus: subscription.status as SubscriptionStatus,
+        subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
       },
     });
 
-    logger.info(`Subscription updated for organization: ${organization.id} - Plan: ${plan}`);
+    // Record if status changed
+    if (previousStatus !== subscription.status) {
+      await prisma.subscriptionHistory.create({
+        data: {
+          organizationId: organization.id,
+          previousPlan: organization.plan,
+          newPlan: tierName as Plan,
+          previousStatus: previousStatus,
+          newStatus: subscription.status as SubscriptionStatus,
+          changeType: subscription.cancel_at_period_end ? 'cancellation' : 'renewal',
+          changedBy: 'system',
+        },
+      });
+    }
+
+    logger.info(`Subscription updated for org ${organization.id}, tier: ${tierName}`);
   }
 
+  /**
+   * Handle subscription deleted
+   */
   private async handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
     const customerId = typeof subscription.customer === 'string'
       ? subscription.customer
@@ -262,19 +928,72 @@ class StripeService {
     await prisma.organization.update({
       where: { id: organization.id },
       data: {
-        plan: 'Basic',
+        plan: 'Foundation' as Plan,
         subscriptionStatus: 'canceled',
+        stripeSubscriptionId: null,
+        cancelAtPeriodEnd: false,
+        activeAddOns: [],
       },
     });
 
-    logger.info(`Subscription canceled for organization: ${organization.id}`);
+    // Record subscription history
+    await prisma.subscriptionHistory.create({
+      data: {
+        organizationId: organization.id,
+        previousPlan: organization.plan,
+        newPlan: 'Foundation' as Plan,
+        previousStatus: organization.subscriptionStatus,
+        newStatus: 'canceled',
+        changeType: 'cancellation',
+        changedBy: 'system',
+      },
+    });
+
+    logger.info(`Subscription deleted for org ${organization.id}`);
   }
 
+  /**
+   * Handle successful payment
+   */
   private async handlePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
-    logger.info(`Payment succeeded for invoice: ${invoice.id}`);
-    // Could send receipt email here
+    const customerId = typeof invoice.customer === 'string'
+      ? invoice.customer
+      : invoice.customer?.id;
+
+    if (!customerId) return;
+
+    const organization = await prisma.organization.findUnique({
+      where: { stripeCustomerId: customerId },
+    });
+
+    if (!organization) return;
+
+    // Update subscription status if it was past_due
+    if (organization.subscriptionStatus === 'past_due') {
+      await prisma.organization.update({
+        where: { id: organization.id },
+        data: { subscriptionStatus: 'active' },
+      });
+
+      await prisma.subscriptionHistory.create({
+        data: {
+          organizationId: organization.id,
+          previousPlan: organization.plan,
+          newPlan: organization.plan,
+          previousStatus: 'past_due',
+          newStatus: 'active',
+          changeType: 'payment_recovered',
+          changedBy: 'system',
+        },
+      });
+    }
+
+    logger.info(`Payment succeeded for org ${organization.id}`);
   }
 
+  /**
+   * Handle failed payment
+   */
   private async handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
     const customerId = typeof invoice.customer === 'string'
       ? invoice.customer
@@ -293,25 +1012,126 @@ class StripeService {
       data: { subscriptionStatus: 'past_due' },
     });
 
-    logger.warn(`Payment failed for organization: ${organization.id}`);
-    // Could send payment failed email here
+    await prisma.subscriptionHistory.create({
+      data: {
+        organizationId: organization.id,
+        previousPlan: organization.plan,
+        newPlan: organization.plan,
+        previousStatus: organization.subscriptionStatus,
+        newStatus: 'past_due',
+        changeType: 'payment_failed',
+        changedBy: 'system',
+      },
+    });
+
+    logger.warn(`Payment failed for org ${organization.id}`);
+
+    // TODO: Send payment failed notification email
   }
 
-  async cancelSubscription(customerId: string): Promise<void> {
+  /**
+   * Handle trial ending notification
+   */
+  private async handleTrialEnding(subscription: Stripe.Subscription): Promise<void> {
+    const customerId = typeof subscription.customer === 'string'
+      ? subscription.customer
+      : subscription.customer.id;
+
+    const organization = await prisma.organization.findUnique({
+      where: { stripeCustomerId: customerId },
+    });
+
+    if (!organization) return;
+
+    logger.info(`Trial ending soon for org ${organization.id}`);
+
+    // TODO: Send trial ending notification email
+  }
+
+  /**
+   * Create a quote for custom pricing (Visionary tier)
+   */
+  async createQuote(
+    organizationId: string,
+    options: {
+      userCount: number;
+      features: string[];
+      addOns: string[];
+      billingCycle: 'monthly' | 'annual';
+    }
+  ): Promise<{ quoteId: string; amount: number; url: string } | null> {
     try {
-      const subscriptions = await stripe.subscriptions.list({
-        customer: customerId,
-        status: 'active',
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
       });
 
-      for (const subscription of subscriptions.data) {
-        await stripe.subscriptions.cancel(subscription.id);
+      if (!org?.stripeCustomerId) {
+        throw new Error('Customer not found');
       }
 
-      logger.info(`Subscriptions canceled for customer: ${customerId}`);
+      // Calculate custom price based on requirements
+      const basePrice = TIERS.Visionary.pricing.annualMin;
+      const userMultiplier = Math.ceil(options.userCount / 1000);
+      const featureMultiplier = 1 + (options.features.length * 0.1);
+      const addOnTotal = options.addOns.reduce((sum, addOn) => {
+        const addOnInfo = {
+          'custom-frameworks': 775,
+          'on-prem-deployment': 3875,
+          'custom-ai-models': 2325,
+        }[addOn];
+        return sum + (addOnInfo || 0);
+      }, 0);
+
+      const totalAnnual = Math.round(basePrice * userMultiplier * featureMultiplier + addOnTotal);
+
+      // Create a product for this custom quote first
+      const product = await stripe.products.create({
+        name: `ComplyEasyAI Visionary Plan - Custom`,
+        description: `Custom enterprise plan for ${options.userCount} users`,
+        metadata: {
+          organizationId,
+          userCount: options.userCount.toString(),
+        },
+      });
+
+      // Create a price for this product
+      const price = await stripe.prices.create({
+        product: product.id,
+        currency: 'usd',
+        unit_amount: totalAnnual * 100,
+        recurring: {
+          interval: options.billingCycle === 'annual' ? 'year' : 'month',
+        },
+      });
+
+      // Create Stripe quote with the price
+      const quote = await stripe.quotes.create({
+        customer: org.stripeCustomerId,
+        line_items: [
+          {
+            price: price.id,
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          organizationId,
+          userCount: options.userCount.toString(),
+          features: JSON.stringify(options.features),
+          addOns: JSON.stringify(options.addOns),
+        },
+      });
+
+      // Finalize quote to get PDF
+      const finalizedQuote = await stripe.quotes.finalizeQuote(quote.id);
+
+      return {
+        quoteId: finalizedQuote.id,
+        amount: totalAnnual,
+        url: (finalizedQuote as any).pdf || `https://dashboard.stripe.com/quotes/${finalizedQuote.id}`,
+      };
     } catch (error) {
-      logger.error('Failed to cancel subscription', error);
-      throw new Error('Failed to cancel subscription');
+      logger.error('Failed to create quote', error);
+      return null;
     }
   }
 }
