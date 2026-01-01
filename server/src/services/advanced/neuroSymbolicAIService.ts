@@ -63,6 +63,7 @@ export interface NeuralSymbolicReasoning {
 
 export interface RuleInference {
   id: string;
+  reasoningId: string; // Add reasoningId to match Prisma model
   organizationId: string;
   inferredRule: SymbolicRule;
   supportingEvidence: {
@@ -471,6 +472,7 @@ Format as JSON with: {prediction, confidence, factors}`;
 
           const inference: RuleInference = {
             id: crypto.randomUUID(),
+            reasoningId: '', // Will be set when stored with reasoning result
             organizationId,
             inferredRule,
             supportingEvidence: {
@@ -669,16 +671,21 @@ Final Confidence: ${(reasoning.hybridResult.confidence * 100).toFixed(0)}%
    */
   private async storeReasoningResult(reasoning: NeuralSymbolicReasoning): Promise<void> {
     try {
+      // Map NeuralSymbolicReasoning interface to Prisma model structure
       await prisma.neuroSymbolicReasoning.create({
         data: {
           id: reasoning.id,
           organizationId: reasoning.organizationId,
-          input: reasoning.input as any,
+          input: { query: reasoning.query } as any, // Store query as input
           neuralPrediction: reasoning.neuralPrediction as any,
-          symbolicRules: reasoning.symbolicRules as any,
-          finalDecision: reasoning.finalDecision as any,
-          confidence: reasoning.confidence,
-          explanation: reasoning.explanation,
+          symbolicRules: { 
+            applicableRules: reasoning.symbolicReasoning.applicableRules,
+            logicalSteps: reasoning.symbolicReasoning.logicalSteps,
+            conclusion: reasoning.symbolicReasoning.conclusion,
+          } as any, // Store symbolic reasoning as rules
+          finalDecision: reasoning.hybridResult.finalDecision as any,
+          confidence: reasoning.hybridResult.confidence,
+          explanation: reasoning.hybridResult.explanation || '',
         },
       });
       logger.info(`[NeuroSymbolic] Stored reasoning result: ${reasoning.id}`);
