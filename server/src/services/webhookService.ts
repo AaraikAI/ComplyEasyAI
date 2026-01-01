@@ -117,6 +117,14 @@ export const WEBHOOK_EVENT_TYPES = {
   'acos.action_executed': 'Agentic action executed',
   'acos.debt_detected': 'Compliance debt detected',
   'acos.regulatory_change': 'Regulatory change detected',
+
+  // Demo Request Events (for lead capture automation)
+  'demo.request.new': 'New demo request submitted',
+  'demo.request.welcome': 'Send welcome email to demo requester',
+  'demo.request.scheduled': 'Demo scheduled confirmation',
+  'demo.request.status_changed': 'Demo request status changed',
+  'demo.request.converted': 'Demo lead converted to customer',
+  'demo.request.followup': 'Follow-up reminder for demo request',
 } as const;
 
 export type WebhookEventType = keyof typeof WEBHOOK_EVENT_TYPES;

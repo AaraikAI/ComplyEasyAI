@@ -39,6 +39,9 @@ import securityRoutes from './routes/security';
 // Webhook Routes
 import webhooksRoutes from './routes/webhooks';
 
+// Demo Routes
+import demoRoutes from './routes/demo';
+
 // aCOS Services
 import mqttService from './services/advanced/mqttService';
 
@@ -189,6 +192,7 @@ app.use('/api/security', apiLimiter, securityRoutes);
 
 // Webhook routes (Zapier, automation)
 app.use('/api/webhooks', apiLimiter, webhooksRoutes);
+app.use('/api/demo', apiLimiter, demoRoutes);
 
 // 404 handler
 app.use(notFound);

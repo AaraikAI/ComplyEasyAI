@@ -922,6 +922,77 @@ export const api = {
   },
 
   // Security Features
+  // --- Demo Requests ---
+  demo: {
+    submitRequest: async (data: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      company: string;
+      jobTitle?: string;
+      phone?: string;
+      companySize?: string;
+      industry?: string;
+      country?: string;
+      interestedTier?: string;
+      currentChallenge?: string;
+      howDidYouHear?: string;
+      message?: string;
+      utmSource?: string;
+      utmMedium?: string;
+      utmCampaign?: string;
+    }) => {
+      return fetchAPI<{ success: boolean; demoRequest: any; message: string }>('/demo/request', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    // Admin endpoints
+    getRequests: async (params?: { status?: string; tier?: string; page?: number; limit?: number }) => {
+      const queryString = params
+        ? '?' + new URLSearchParams(params as any).toString()
+        : '';
+      return fetchAPI<{ demoRequests: any[]; total: number; page: number; totalPages: number }>(`/demo/requests${queryString}`);
+    },
+
+    getRequest: async (id: string) => {
+      return fetchAPI<{ demoRequest: any }>(`/demo/requests/${id}`);
+    },
+
+    updateRequest: async (id: string, updates: { status?: string; notes?: string; assignedTo?: string }) => {
+      return fetchAPI<{ success: boolean; demoRequest: any }>(`/demo/requests/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    scheduleDemo: async (id: string, scheduledAt: string, meetingLink?: string, notes?: string) => {
+      return fetchAPI<{ success: boolean; demoRequest: any }>(`/demo/requests/${id}/schedule`, {
+        method: 'POST',
+        body: JSON.stringify({ scheduledAt, meetingLink, notes }),
+      });
+    },
+
+    markAsConverted: async (id: string, notes?: string) => {
+      return fetchAPI<{ success: boolean; demoRequest: any }>(`/demo/requests/${id}/convert`, {
+        method: 'POST',
+        body: JSON.stringify({ notes }),
+      });
+    },
+
+    getStats: async () => {
+      return fetchAPI<{
+        total: number;
+        byStatus: Record<string, number>;
+        byTier: Record<string, number>;
+        conversionRate: number;
+        averageTimeToSchedule: number;
+        recentRequests: any[];
+      }>('/demo/stats');
+    },
+  },
+
   security: {
     // Zero Trust Security
     verifyDeviceTrust: async (data: { deviceId?: string; deviceType?: string; macAddress?: string; ipAddress?: string }) => 

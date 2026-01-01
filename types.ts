@@ -39,6 +39,8 @@ export interface TierPricing {
   annualMin: number;
   annualMax: number;
   monthlyMultiplier: number;
+  monthlyMin?: number;      // Monthly rate when billed annually
+  monthlyMax?: number;      // Monthly rate when billed annually
   perUserIncrement?: number;
   netAfterStripeMin: number;
   netAfterStripeMax: number;
