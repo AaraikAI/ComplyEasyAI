@@ -28,7 +28,7 @@ class AuthController {
         const organization = await prisma.organization.create({
           data: {
             name: `${email.split('@')[0]}'s Organization`,
-            plan: 'Basic',
+            plan: 'Foundation',
           },
         });
 
@@ -345,7 +345,7 @@ class AuthController {
       const organization = await prisma.organization.create({
         data: {
           name: organizationName || `${name}'s Organization`,
-          plan: 'Basic',
+          plan: 'Foundation',
         },
       });
 
