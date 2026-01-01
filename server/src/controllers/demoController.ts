@@ -10,7 +10,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
-import { webhookService } from '../services/webhookService';
+import webhookService from '../services/webhookService';
 import { DemoRequestStatus } from '@prisma/client';
 
 // ============================================================================
@@ -492,7 +492,7 @@ class DemoController {
       // Find all organizations with webhooks subscribed to demo events
       const webhooks = await prisma.webhook.findMany({
         where: {
-          isActive: true,
+          enabled: true,
           events: {
             has: 'demo.request.welcome',
           },
@@ -549,7 +549,7 @@ class DemoController {
 
       const webhooks = await prisma.webhook.findMany({
         where: {
-          isActive: true,
+          enabled: true,
           events: {
             has: 'demo.request.new',
           },
@@ -591,7 +591,7 @@ class DemoController {
 
       const webhooks = await prisma.webhook.findMany({
         where: {
-          isActive: true,
+          enabled: true,
           events: {
             has: 'demo.request.status_changed',
           },
@@ -631,7 +631,7 @@ class DemoController {
 
       const webhooks = await prisma.webhook.findMany({
         where: {
-          isActive: true,
+          enabled: true,
           events: {
             has: 'demo.request.scheduled',
           },
@@ -673,7 +673,7 @@ class DemoController {
 
       const webhooks = await prisma.webhook.findMany({
         where: {
-          isActive: true,
+          enabled: true,
           events: {
             has: 'demo.request.converted',
           },
