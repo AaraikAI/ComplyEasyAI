@@ -23,7 +23,6 @@ import prisma from '../config/database';
 import { TierName, TIERS, getTier, getTierIndex, BillingCycle } from '../config/tiers';
 import type { Plan, SubscriptionStatus, SubscriptionChangeType } from '@prisma/client';
 import notificationService from './notificationService';
-import notificationService from './notificationService';
 
 const stripe = new Stripe(config.stripe.secretKey, {
   apiVersion: '2025-02-24.acacia',
@@ -1033,7 +1032,7 @@ class StripeService {
       const orgAdmins = await prisma.user.findMany({
         where: {
           organizationId: organization.id,
-          role: { in: ['admin', 'owner'] },
+          role: 'admin',
         },
         select: {
           id: true,
@@ -1079,7 +1078,7 @@ class StripeService {
       const orgAdmins = await prisma.user.findMany({
         where: {
           organizationId: organization.id,
-          role: { in: ['admin', 'owner'] },
+          role: 'admin',
         },
         select: {
           id: true,
