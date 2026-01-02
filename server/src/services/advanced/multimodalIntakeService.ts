@@ -704,9 +704,13 @@ class MultimodalIntakeService {
           // For production, integrate with cloud vision API
           const frameBuffer = fs.readFileSync(framePath);
           
-          // Use a lightweight object detection approach
-          // In production, would use Google Cloud Vision API or AWS Rekognition
+          // Production-ready: Use Google Cloud Vision API or AWS Rekognition
           const visionApiKey = process.env.GOOGLE_VISION_API_KEY;
+          const awsAccessKey = process.env.AWS_ACCESS_KEY_ID;
+          const awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY;
+          const awsRegion = process.env.AWS_REGION || 'us-east-1';
+
+          // Try Google Cloud Vision API first
           if (visionApiKey) {
             try {
               const vision = require('@google-cloud/vision');
@@ -728,9 +732,61 @@ class MultimodalIntakeService {
                   } : undefined,
                 });
               });
+              
+              if (result.localizedObjectAnnotations && result.localizedObjectAnnotations.length > 0) {
+                logger.debug(`[Multimodal] Google Vision API detected ${result.localizedObjectAnnotations.length} objects at ${t}s`);
+                // Continue to AWS Rekognition if configured for redundancy/fallback
+              }
             } catch (apiError) {
-              logger.warn(`[Multimodal] Vision API error at ${t}s, using fallback`, apiError);
+              logger.warn(`[Multimodal] Google Vision API error at ${t}s, trying AWS Rekognition`, apiError);
             }
+          }
+
+          // Fallback to AWS Rekognition if Google Vision fails or not configured
+          if (awsAccessKey && awsSecretKey && detections.length === 0) {
+            try {
+              const { RekognitionClient, DetectLabelsCommand } = require('@aws-sdk/client-rekognition');
+              const rekognitionClient = new RekognitionClient({
+                region: awsRegion,
+                credentials: {
+                  accessKeyId: awsAccessKey,
+                  secretAccessKey: awsSecretKey,
+                },
+              });
+
+              const command = new DetectLabelsCommand({
+                Image: { Bytes: frameBuffer },
+                MaxLabels: 10,
+                MinConfidence: 0.7,
+              });
+
+              const result = await rekognitionClient.send(command);
+              
+              result.Labels?.forEach((label: any) => {
+                detections.push({
+                  object: label.Name,
+                  confidence: label.Confidence / 100, // Convert to 0-1 range
+                  timestamp: t,
+                  bbox: label.Instances?.[0]?.BoundingBox ? {
+                    x: label.Instances[0].BoundingBox.Left * 100,
+                    y: label.Instances[0].BoundingBox.Top * 100,
+                    width: label.Instances[0].BoundingBox.Width * 100,
+                    height: label.Instances[0].BoundingBox.Height * 100,
+                  } : undefined,
+                });
+              });
+
+              if (detections.length > 0) {
+                logger.debug(`[Multimodal] AWS Rekognition detected ${detections.length} objects at ${t}s`);
+              }
+            } catch (rekognitionError) {
+              logger.warn(`[Multimodal] AWS Rekognition error at ${t}s`, rekognitionError);
+            }
+          }
+
+          // If both APIs fail and no detections, log warning but continue
+          if (detections.length === 0 && (!visionApiKey && (!awsAccessKey || !awsSecretKey))) {
+            logger.debug(`[Multimodal] No vision API configured, skipping object detection at ${t}s`);
           }
           
           await unlink(framePath).catch(() => {});

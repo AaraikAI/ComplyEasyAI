@@ -1893,19 +1893,102 @@ class PhysicalAIService {
         }
       }
 
-      // Fallback: Use device type to estimate signal strength
-      // In production, would query actual network interface or device API
+      // Production-ready: Query actual network interface or device API for signal strength
       if (deviceType.includes('wifi') || deviceType.includes('wireless')) {
-        // Query WiFi signal strength using system tools
         try {
           const { exec } = require('child_process');
           const { promisify } = require('util');
           const execAsync = promisify(exec);
           
-          // On macOS/Linux, can use iwconfig or similar
-          // This is a placeholder - in production would use device-specific APIs
-          return 75; // Default signal strength
+          // Real signal strength measurement using system tools
+          let signalStrength = 75; // Default fallback
+          
+          // Try macOS (airport command)
+          try {
+            const { stdout } = await execAsync('/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I');
+            const rssiMatch = stdout.match(/agrCtlRSSI:\s*(-?\d+)/);
+            if (rssiMatch) {
+              const rssi = parseInt(rssiMatch[1], 10);
+              // Convert RSSI (dBm) to percentage (typically -100 to -30 dBm maps to 0-100%)
+              signalStrength = Math.max(0, Math.min(100, ((rssi + 100) / 70) * 100));
+              logger.debug(`[Physical AI] Measured WiFi signal strength: ${signalStrength}% (RSSI: ${rssi} dBm)`);
+              return Math.round(signalStrength);
+            }
+          } catch (macError) {
+            // Not macOS or airport command failed, try Linux
+          }
+
+          // Try Linux (iwconfig or iw)
+          try {
+            const { stdout } = await execAsync('iwconfig 2>/dev/null | grep -i "signal level" || iw dev 2>/dev/null | grep -i "signal" || echo ""');
+            if (stdout) {
+              // Parse signal level from iwconfig output (e.g., "Signal level=-67 dBm")
+              const dbmMatch = stdout.match(/signal level[=:]\s*(-?\d+)\s*dBm/i) || stdout.match(/-(\d+)\s*dBm/i);
+              if (dbmMatch) {
+                const rssi = -parseInt(dbmMatch[1], 10);
+                signalStrength = Math.max(0, Math.min(100, ((rssi + 100) / 70) * 100));
+                logger.debug(`[Physical AI] Measured WiFi signal strength: ${signalStrength}% (RSSI: ${rssi} dBm)`);
+                return Math.round(signalStrength);
+              }
+              
+              // Try parsing quality percentage directly
+              const qualityMatch = stdout.match(/(\d+)\/(\d+)/);
+              if (qualityMatch) {
+                const current = parseInt(qualityMatch[1], 10);
+                const max = parseInt(qualityMatch[2], 10);
+                signalStrength = Math.round((current / max) * 100);
+                logger.debug(`[Physical AI] Measured WiFi signal quality: ${signalStrength}%`);
+                return signalStrength;
+              }
+            }
+          } catch (linuxError) {
+            // Linux commands failed, try Windows
+          }
+
+          // Try Windows (netsh wlan show interfaces)
+          try {
+            const { stdout } = await execAsync('netsh wlan show interfaces 2>nul | findstr "Signal"');
+            if (stdout) {
+              const percentMatch = stdout.match(/(\d+)%/);
+              if (percentMatch) {
+                signalStrength = parseInt(percentMatch[1], 10);
+                logger.debug(`[Physical AI] Measured WiFi signal strength: ${signalStrength}%`);
+                return signalStrength;
+              }
+            }
+          } catch (windowsError) {
+            // Windows command failed
+          }
+
+          // If all system commands fail, try MQTT device API
+          if (mqttService && mqttService.getConnectionStatus()) {
+            try {
+              const deviceTopic = `devices/${deviceId}/status`;
+              const response = await new Promise<any>((resolve, reject) => {
+                const timeout = setTimeout(() => reject(new Error('Timeout')), 2000);
+                mqttService.subscribe(deviceTopic, (message) => {
+                  clearTimeout(timeout);
+                  resolve(message);
+                });
+                // Request signal strength from device
+                mqttService.publish(`${deviceTopic}/request`, { type: 'signal_strength' }, { qos: 0 });
+              });
+
+              if (response?.payload?.signalStrength !== undefined) {
+                const deviceSignal = response.payload.signalStrength;
+                logger.debug(`[Physical AI] Received signal strength from device API: ${deviceSignal}%`);
+                return Math.max(0, Math.min(100, deviceSignal));
+              }
+            } catch (mqttError) {
+              logger.debug('[Physical AI] MQTT device API query failed', mqttError);
+            }
+          }
+
+          // Final fallback
+          logger.warn(`[Physical AI] Could not measure signal strength for ${deviceId}, using default`);
+          return 75;
         } catch (error) {
+          logger.warn(`[Physical AI] Signal strength measurement error for ${deviceId}`, error);
           return 75;
         }
       }

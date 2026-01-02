@@ -251,17 +251,34 @@ class RegulatoryIntelligenceFabricService {
 
   /**
    * Extract text from PDF buffer
+   * Production-ready: Uses pdf-parse library for real PDF text extraction
    */
   private async extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
-    // In production, would use pdf-parse or similar library
-    // For now, return a placeholder
     try {
-      // Simulate PDF extraction
-      // In production: const pdf = require('pdf-parse'); const data = await pdf(pdfBuffer); return data.text;
-      return pdfBuffer.toString('utf-8', 0, Math.min(10000, pdfBuffer.length));
+      // Use pdf-parse for real PDF text extraction
+      const pdfParse = require('pdf-parse');
+      const data = await pdfParse(pdfBuffer);
+      
+      if (!data || !data.text) {
+        logger.warn('[RIF] PDF extraction returned no text');
+        return '';
+      }
+
+      logger.debug(`[RIF] Extracted ${data.text.length} characters from PDF`);
+      return data.text;
     } catch (error) {
       logger.error('[RIF] Error extracting PDF text', error);
-      throw error;
+      // Fallback: try to extract as plain text if PDF parsing fails
+      try {
+        const text = pdfBuffer.toString('utf-8', 0, Math.min(10000, pdfBuffer.length));
+        if (text && text.trim().length > 0) {
+          logger.warn('[RIF] Using fallback text extraction method');
+          return text;
+        }
+      } catch (fallbackError) {
+        logger.error('[RIF] Fallback text extraction also failed', fallbackError);
+      }
+      throw new Error(`PDF text extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
