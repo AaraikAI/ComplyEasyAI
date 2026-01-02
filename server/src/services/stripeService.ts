@@ -22,6 +22,8 @@ import logger from '../config/logger';
 import prisma from '../config/database';
 import { TierName, TIERS, getTier, getTierIndex, BillingCycle } from '../config/tiers';
 import type { Plan, SubscriptionStatus, SubscriptionChangeType } from '@prisma/client';
+import notificationService from './notificationService';
+import notificationService from './notificationService';
 
 const stripe = new Stripe(config.stripe.secretKey, {
   apiVersion: '2025-02-24.acacia',
@@ -1026,7 +1028,34 @@ class StripeService {
 
     logger.warn(`Payment failed for org ${organization.id}`);
 
-    // TODO: Send payment failed notification email
+    // Send payment failed notification email to organization admins
+    try {
+      const orgAdmins = await prisma.user.findMany({
+        where: {
+          organizationId: organization.id,
+          role: { in: ['admin', 'owner'] },
+        },
+        select: {
+          id: true,
+          email: true,
+        },
+      });
+
+      for (const admin of orgAdmins) {
+        await notificationService.sendNotification(admin.id, organization.id, {
+          type: 'error',
+          category: 'billing',
+          title: 'Payment Failed',
+          message: `Your payment for ${organization.name} has failed. Please update your payment method to avoid service interruption.`,
+          link: `/settings/billing`,
+        });
+      }
+
+      logger.info(`[Stripe] Payment failed notifications sent to ${orgAdmins.length} admins for org ${organization.id}`);
+    } catch (error) {
+      logger.error('[Stripe] Error sending payment failed notifications', error);
+      // Don't throw - billing issue shouldn't break the webhook handler
+    }
   }
 
   /**
@@ -1045,7 +1074,40 @@ class StripeService {
 
     logger.info(`Trial ending soon for org ${organization.id}`);
 
-    // TODO: Send trial ending notification email
+    // Send trial ending notification email to organization admins
+    try {
+      const orgAdmins = await prisma.user.findMany({
+        where: {
+          organizationId: organization.id,
+          role: { in: ['admin', 'owner'] },
+        },
+        select: {
+          id: true,
+          email: true,
+        },
+      });
+
+      // Calculate days remaining in trial
+      const trialEndsAt = organization.trialEndsAt;
+      const daysRemaining = trialEndsAt
+        ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      for (const admin of orgAdmins) {
+        await notificationService.sendNotification(admin.id, organization.id, {
+          type: 'warning',
+          category: 'billing',
+          title: 'Trial Ending Soon',
+          message: `Your trial for ${organization.name} ends in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}. Subscribe now to continue using the service.`,
+          link: `/settings/billing`,
+        });
+      }
+
+      logger.info(`[Stripe] Trial ending notifications sent to ${orgAdmins.length} admins for org ${organization.id}`);
+    } catch (error) {
+      logger.error('[Stripe] Error sending trial ending notifications', error);
+      // Don't throw - notification failure shouldn't break the webhook handler
+    }
   }
 
   /**
