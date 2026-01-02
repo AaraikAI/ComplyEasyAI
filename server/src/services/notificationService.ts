@@ -369,7 +369,7 @@ class NotificationService {
     let slackChannel: string | null = null;
 
     try {
-      // Check if user has Slack ID stored in integration metadata
+      // Check if user has Slack ID stored in integration config
       const slackIntegration = await prisma.integration.findFirst({
         where: {
           organizationId,
@@ -377,12 +377,12 @@ class NotificationService {
           connected: true,
         },
         select: {
-          metadata: true,
+          config: true,
         },
       });
 
-      if (slackIntegration?.metadata) {
-        const metadata = slackIntegration.metadata as any;
+      if (slackIntegration?.config) {
+        const metadata = slackIntegration.config as any;
         // Look for user's Slack ID in metadata (could be stored as userId -> slackUserId mapping)
         if (metadata.users && metadata.users[userId]) {
           slackUserId = metadata.users[userId].slackUserId || null;
@@ -390,7 +390,7 @@ class NotificationService {
       }
 
       // If no Slack user ID found, try to get from user's notification preferences
-      if (!slackUserId && user?.notificationPreferences?.slack) {
+      if (!slackUserId && user?.notificationPreference?.slack) {
         // Check if Slack user ID is stored in user metadata or preferences
         const userMetadata = user as any;
         if (userMetadata.slackUserId) {
@@ -464,13 +464,16 @@ class NotificationService {
       throw new Error('Twilio credentials not configured');
     }
 
-    // Production-ready: Get user phone number from user profile
+    // Production-ready: Get user phone number from notification preferences or user metadata
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
-        contactPhone: true,
-        phone: true,
+        notificationPreference: {
+          select: {
+            categories: true,
+          },
+        },
       },
     });
 
@@ -478,8 +481,10 @@ class NotificationService {
       throw new Error(`User ${userId} not found`);
     }
 
-    // Get phone number from user profile (check both phone and contactPhone fields)
-    const phoneNumber = user.phone || user.contactPhone;
+    // Get phone number from user's notification preferences metadata
+    // In production, phone numbers should be stored securely in user metadata or a separate table
+    const prefCategories = user.notificationPreference?.categories as any;
+    const phoneNumber = prefCategories?.phoneNumber || null;
 
     if (!phoneNumber) {
       logger.warn(`[Notification] SMS not sent - phone number not available for user ${userId}`);
@@ -515,11 +520,11 @@ class NotificationService {
           userId,
           organizationId,
           type: notification.type,
-          category: notification.category,
+          category: 'sms',
           title: notification.title,
           message: notification.message,
           link: notification.link,
-          channel: 'sms',
+          channels: ['sms'],
           status: 'sent',
           metadata: {
             twilioSid: message.sid,
