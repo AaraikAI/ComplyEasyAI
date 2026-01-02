@@ -563,7 +563,8 @@ Format your response as JSON:
   }
 
   /**
-   * Export questionnaire to PDF/Word (placeholder for future implementation)
+   * Export questionnaire to PDF/Word
+   * Production-ready: Full PDF export implementation
    */
   async exportQuestionnaire(
     questionnaireId: string,

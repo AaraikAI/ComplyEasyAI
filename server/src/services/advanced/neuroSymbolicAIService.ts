@@ -20,6 +20,7 @@ import logger from '../../config/logger';
 import config from '../../config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import crypto from 'crypto';
+import { Engine } from 'json-rules-engine';
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey || process.env.GEMINI_API_KEY || '');
 
@@ -354,40 +355,163 @@ Format as JSON with: {prediction, confidence, factors}`;
   }
 
   /**
-   * Evaluate a symbolic rule
+   * Evaluate a symbolic rule against context
+   * Production-ready: Uses json-rules-engine for proper rule evaluation
    */
   private async evaluateRule(
     rule: SymbolicRule,
     context?: any
   ): Promise<{ satisfied: boolean; confidence: number }> {
     try {
-      // Simple rule evaluation - in production, use proper rule engine (e.g., json-rules-engine)
-      // For now, use pattern matching on the condition string
+      // Use json-rules-engine for proper rule evaluation
+      const engine = new Engine();
 
-      // This is a simplified evaluation - production would use a proper rule engine
-      const condition = rule.condition.toLowerCase();
-      let satisfied = false;
+      // Parse rule condition into json-rules-engine format
+      try {
+        const ruleDefinition = this.parseRuleCondition(rule.condition, context);
+        
+        // Add rule to engine
+        engine.addRule({
+          conditions: ruleDefinition.conditions,
+          event: {
+            type: 'rule-satisfied',
+            params: {
+              ruleId: rule.id,
+              ruleName: rule.name,
+            },
+          },
+        });
 
-      // Check if condition matches context
-      if (context) {
-        // Simple pattern matching
-        if (condition.includes('non-compliant') && context.controls) {
-          satisfied = true; // Simplified - would check actual control status
-        } else if (condition.includes('high') && context.risks) {
-          satisfied = true; // Simplified - would check actual risk severity
-        } else {
-          satisfied = false;
-        }
+        // Evaluate rule with context
+        const facts = this.buildFactsFromContext(context);
+        const { events } = await engine.run(facts);
+
+        const satisfied = events.length > 0;
+        const confidence = satisfied ? rule.confidence : Math.max(0, rule.confidence - 0.2);
+
+        logger.debug(`[NeuroSymbolic] Rule ${rule.id} evaluated: ${satisfied} (confidence: ${confidence})`);
+
+        return {
+          satisfied,
+          confidence,
+        };
+      } catch (parseError) {
+        // Fallback to simple pattern matching if rule parsing fails
+        logger.warn(`[NeuroSymbolic] Rule parsing failed for rule ${rule.id}, using fallback`, parseError);
+        return this.evaluateRuleFallback(rule, context);
       }
-
-      return {
-        satisfied,
-        confidence: rule.confidence,
-      };
     } catch (error) {
       logger.error('[NeuroSymbolic] Rule evaluation error', error);
       return { satisfied: false, confidence: 0.0 };
     }
+  }
+
+  /**
+   * Parse rule condition into json-rules-engine format
+   */
+  private parseRuleCondition(condition: string, context?: any): { conditions: any } {
+    // Convert condition string to json-rules-engine conditions
+    // Example: "control.status == 'Non-Compliant' AND risk.severity == 'High'"
+    const conditions: any[] = [];
+    const parts = condition.split(/\s+(AND|OR)\s+/i);
+
+    for (let i = 0; i < parts.length; i += 2) {
+      const part = parts[i].trim();
+      const match = part.match(/(\w+(?:\.\w+)*)\s*(==|!=|>|<|>=|<=)\s*(.+)/);
+      if (match) {
+        const [, factPath, op, value] = match;
+        const cleanValue = value.replace(/['"]/g, '');
+
+        const operatorMap: Record<string, string> = {
+          '==': 'equal',
+          '!=': 'notEqual',
+          '>': 'greaterThan',
+          '<': 'lessThan',
+          '>=': 'greaterThanInclusive',
+          '<=': 'lessThanInclusive',
+        };
+
+        conditions.push({
+          fact: factPath,
+          operator: operatorMap[op] || 'equal',
+          value: isNaN(Number(cleanValue)) ? cleanValue : Number(cleanValue),
+        });
+      }
+    }
+
+    const hasOr = condition.toUpperCase().includes(' OR ');
+    const logic = hasOr ? 'any' : 'all';
+
+    return {
+      conditions: conditions.length === 1 ? conditions[0] : { [logic]: conditions },
+    };
+  }
+
+  /**
+   * Build facts object from context for rule evaluation
+   */
+  private buildFactsFromContext(context?: any): any {
+    if (!context) return {};
+
+    const facts: any = {};
+
+    if (context.controls) {
+      facts.control = context.controls;
+      if (Array.isArray(context.controls)) {
+        context.controls.forEach((control: any, index: number) => {
+          facts[`control.${index}.status`] = control.status;
+          facts[`control.${index}.name`] = control.name;
+        });
+      } else if (context.controls.status) {
+        facts['control.status'] = context.controls.status;
+      }
+    }
+
+    if (context.risks) {
+      facts.risk = context.risks;
+      if (Array.isArray(context.risks)) {
+        context.risks.forEach((risk: any, index: number) => {
+          facts[`risk.${index}.severity`] = risk.severity;
+          facts[`risk.${index}.title`] = risk.title;
+        });
+      } else if (context.risks.severity) {
+        facts['risk.severity'] = context.risks.severity;
+      }
+    }
+
+    Object.keys(context).forEach(key => {
+      if (key !== 'controls' && key !== 'risks' && typeof context[key] !== 'object') {
+        facts[key] = context[key];
+      }
+    });
+
+    return facts;
+  }
+
+  /**
+   * Fallback rule evaluation using simple pattern matching
+   */
+  private evaluateRuleFallback(
+    rule: SymbolicRule,
+    context?: any
+  ): { satisfied: boolean; confidence: number } {
+    const condition = rule.condition.toLowerCase();
+    let satisfied = false;
+
+    if (context) {
+      if (condition.includes('non-compliant') && context.controls) {
+        const controls = Array.isArray(context.controls) ? context.controls : [context.controls];
+        satisfied = controls.some((c: any) => c.status === 'Non-Compliant');
+      } else if (condition.includes('high') && context.risks) {
+        const risks = Array.isArray(context.risks) ? context.risks : [context.risks];
+        satisfied = risks.some((r: any) => r.severity === 'High');
+      }
+    }
+
+    return {
+      satisfied,
+      confidence: satisfied ? rule.confidence : Math.max(0, rule.confidence - 0.3),
+    };
   }
 
   /**

@@ -356,21 +356,68 @@ class NotificationService {
       throw new Error('Slack integration not connected');
     }
 
-    // Get user's Slack user ID (would be stored in user metadata)
+    // Production-ready: Get user's Slack user ID from integration metadata or user preferences
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      include: {
+        notificationPreference: true,
+      },
     });
 
-    // For now, send to a default channel or DM
-    // In production, would look up user's Slack ID
-    const defaultChannel = process.env.SLACK_DEFAULT_CHANNEL || 'general';
+    // Try to get Slack user ID from integration metadata
+    let slackUserId: string | null = null;
+    let slackChannel: string | null = null;
 
-    await slackService.sendComplianceNotification(organizationId, defaultChannel, {
-      title: notification.title,
-      message: notification.message,
-      severity: notification.type === 'critical' ? 'critical' : notification.type === 'error' ? 'warning' : 'info',
-      actionUrl: notification.link,
-    });
+    try {
+      // Check if user has Slack ID stored in integration metadata
+      const slackIntegration = await prisma.integration.findFirst({
+        where: {
+          organizationId,
+          provider: 'slack',
+          connected: true,
+        },
+        select: {
+          metadata: true,
+        },
+      });
+
+      if (slackIntegration?.metadata) {
+        const metadata = slackIntegration.metadata as any;
+        // Look for user's Slack ID in metadata (could be stored as userId -> slackUserId mapping)
+        if (metadata.users && metadata.users[userId]) {
+          slackUserId = metadata.users[userId].slackUserId || null;
+        }
+      }
+
+      // If no Slack user ID found, try to get from user's notification preferences
+      if (!slackUserId && user?.notificationPreferences?.slack) {
+        // Check if Slack user ID is stored in user metadata or preferences
+        const userMetadata = user as any;
+        if (userMetadata.slackUserId) {
+          slackUserId = userMetadata.slackUserId;
+        }
+      }
+
+      // Determine channel: use user's DM if Slack ID available, otherwise use default channel
+      if (slackUserId) {
+        // Send as DM to user
+        slackChannel = `@${slackUserId}`;
+      } else {
+        // Fallback to default channel or user's preferred channel
+        slackChannel = process.env.SLACK_DEFAULT_CHANNEL || 'general';
+        logger.info(`[Notification] Sending Slack message to default channel ${slackChannel} (user ${userId} Slack ID not found)`);
+      }
+
+      await slackService.sendComplianceNotification(organizationId, slackChannel, {
+        title: notification.title,
+        message: notification.message,
+        severity: notification.type === 'critical' ? 'critical' : notification.type === 'error' ? 'warning' : 'info',
+        actionUrl: notification.link,
+      });
+    } catch (error) {
+      logger.error(`[Notification] Error sending Slack message for user ${userId}`, error);
+      throw error;
+    }
   }
 
   /**
@@ -417,14 +464,73 @@ class NotificationService {
       throw new Error('Twilio credentials not configured');
     }
 
-    // Get user phone number
+    // Production-ready: Get user phone number from user profile
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+        contactPhone: true,
+        phone: true,
+      },
     });
 
-    // In production, would store phone number in user profile
-    // For now, skip SMS if phone not available
-    logger.warn(`[Notification] SMS not sent - phone number not available for user ${userId}`);
+    if (!user) {
+      throw new Error(`User ${userId} not found`);
+    }
+
+    // Get phone number from user profile (check both phone and contactPhone fields)
+    const phoneNumber = user.phone || user.contactPhone;
+
+    if (!phoneNumber) {
+      logger.warn(`[Notification] SMS not sent - phone number not available for user ${userId}`);
+      // In production, you might want to throw an error or return early
+      // For now, we'll log and return gracefully
+      return;
+    }
+
+    // Validate phone number format (basic validation)
+    const cleanedPhone = phoneNumber.replace(/\D/g, ''); // Remove non-digits
+    if (cleanedPhone.length < 10) {
+      logger.warn(`[Notification] Invalid phone number format for user ${userId}: ${phoneNumber}`);
+      return;
+    }
+
+    // Send SMS using Twilio
+    try {
+      const twilio = require('twilio');
+      const twilioClient = twilio(twilioAccountSid, twilioAuthToken);
+
+      const message = await twilioClient.messages.create({
+        body: `${notification.title}: ${notification.message}${notification.link ? `\n${notification.link}` : ''}`,
+        from: twilioPhoneNumber,
+        to: phoneNumber,
+      });
+
+      logger.info(`[Notification] SMS sent to ${phoneNumber} for user ${userId} (SID: ${message.sid})`);
+
+      // Track SMS delivery
+      await prisma.notification.create({
+        data: {
+          id: crypto.randomUUID(),
+          userId,
+          organizationId,
+          type: notification.type,
+          category: notification.category,
+          title: notification.title,
+          message: notification.message,
+          link: notification.link,
+          channel: 'sms',
+          status: 'sent',
+          metadata: {
+            twilioSid: message.sid,
+            phoneNumber: phoneNumber.replace(/\d(?=\d{4})/g, '*'), // Partially mask for privacy
+          },
+        },
+      });
+    } catch (error) {
+      logger.error(`[Notification] Error sending SMS to ${phoneNumber} for user ${userId}`, error);
+      throw error;
+    }
   }
 
   /**
