@@ -134,6 +134,22 @@ app.get('/api/docs.json', (req: Request, res: Response) => {
   res.send(swaggerSpec);
 });
 
+// Root endpoint - provide API information
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    name: 'ComplyEasy AI Backend API',
+    version: '2.0.0',
+    status: 'running',
+    environment: config.server.env,
+    endpoints: {
+      health: '/health',
+      apiDocs: '/api/docs',
+      apiSpec: '/api/docs.json',
+    },
+    message: 'ComplyEasy AI Enterprise Backend Server is running. Visit /api/docs for API documentation.',
+  });
+});
+
 // Health check endpoint
 app.get('/health', async (req: Request, res: Response) => {
   try {
@@ -236,8 +252,8 @@ if (config.mqtt.brokerUrl && config.mqtt.brokerUrl !== 'mqtt://localhost:1883') 
   logger.info('ℹ️  MQTT not configured (set MQTT_BROKER_URL to enable)');
 }
 
-// Start server
-httpServer.listen(config.server.port, () => {
+// Start server - bind to all interfaces (IPv4 and IPv6)
+httpServer.listen(config.server.port, '0.0.0.0', () => {
   logger.info(`
     ╔════════════════════════════════════════╗
     ║   ComplyEasy AI Backend Server         ║
