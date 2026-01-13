@@ -48,6 +48,7 @@ model Organization {
   controlLoops         ControlLoop[]
   controlLoopHistory   ControlLoopHistory[]
   complianceDebts      ComplianceDebt[]
+  aiSuggestions        AISuggestion[]
   changeImpacts        ChangeImpact[]
   agenticActions       AgenticAction[]
   evidenceAnalyses     EvidenceAnalysis[]
@@ -74,6 +75,7 @@ model Organization {
   keyUsages            KeyUsage[]
   keyRotationPolicies  KeyRotationPolicy[]
   compliancePolicies   CompliancePolicy[]
+  chatConversations    ChatConversation[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -110,6 +112,10 @@ model User {
   backupCodes           TwoFactorBackupCode[]
   notifications         Notification[]
   notificationPreference NotificationPreference?
+  ownedControls         FrameworkControl[]
+  uploadedEvidenceVersions EvidenceVersion[]
+  aiSuggestions        AISuggestion[]
+  chatConversations    ChatConversation[]
   organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([email])
@@ -289,6 +295,10 @@ model ComplianceFramework {
   progress       Int                @default(0)
   nextAuditDate  DateTime
   region         String?
+  notes          String?            @db.Text
+  version        Int                @default(1) // For concurrent edit tracking
+  lastModifiedBy String?
+  lastModifiedAt DateTime?          @updatedAt
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @default(now()) @updatedAt
   organizationId String
@@ -296,26 +306,36 @@ model ComplianceFramework {
   controls       FrameworkControl[]
   complianceDebts ComplianceDebt[]
   complianceTrajectories ComplianceTrajectory[]
+  aiSuggestions  AISuggestion[]
 
   @@index([organizationId])
   @@index([status])
 }
 
 model FrameworkControl {
-  id             String              @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  name           String
-  description    String?
-  status         String              @default("Pending")
-  evidence       String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @default(now()) @updatedAt
-  frameworkId    String
-  mappedControls Json?
-  framework      ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  controlLoops   ControlLoop[]
-  complianceDebts ComplianceDebt[] @relation("ComplianceDebtControl")
+  id               String              @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name             String
+  description      String?
+  status           String              @default("Pending")
+  evidence         String?
+  evidenceRequired Boolean             @default(false)
+  ownerId          String?
+  category         String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @default(now()) @updatedAt
+  frameworkId      String
+  mappedControls   Json?
+  framework        ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  owner             User?               @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  controlLoops     ControlLoop[]
+  complianceDebts  ComplianceDebt[]    @relation("ComplianceDebtControl")
+  sourceMappings   ControlMapping[]    @relation("SourceMappings")
+  targetMappings   ControlMapping[]    @relation("TargetMappings")
+  evidenceVersions  EvidenceVersion[]
+  aiSuggestions    AISuggestion[]
 
   @@index([frameworkId])
+  @@index([ownerId])
 }
 
 model RiskItem {
@@ -699,6 +719,9 @@ enum BillingCycle {
 }
 
 enum Plan {
+  Basic        // Legacy value - will be migrated
+  Pro          // Legacy value - will be migrated
+  Enterprise   // Legacy value - will be migrated
   Foundation
   Essentials
   Growth
@@ -1584,4 +1607,87 @@ enum DemoRequestStatus {
   converted           // Converted to customer
   disqualified        // Not a fit
   no_response         // No response after follow-up
+}
+
+model ControlMapping {
+  id              String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sourceControlId String
+  targetControlId String
+  mappingType     String            @default("equivalent") // 'equivalent', 'related', 'superset', 'subset'
+  confidence      Float?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+  sourceControl   FrameworkControl  @relation("SourceMappings", fields: [sourceControlId], references: [id], onDelete: Cascade)
+  targetControl   FrameworkControl  @relation("TargetMappings", fields: [targetControlId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceControlId, targetControlId])
+  @@index([sourceControlId])
+  @@index([targetControlId])
+}
+
+model AISuggestion {
+  id              String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  frameworkId     String
+  fileName        String
+  fileUrl         String
+  s3Key           String
+  classification  String
+  description     String?
+  confidence      Float
+  status          AISuggestionStatus @default(pending)
+  feedback        String?           // User feedback when rejected
+  controlId       String?           // Created control ID if accepted
+  suggestedBy     String
+  organizationId  String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+  framework       ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  suggester       User              @relation(fields: [suggestedBy], references: [id], onDelete: Restrict)
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  control         FrameworkControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
+
+  @@index([frameworkId])
+  @@index([status])
+  @@index([organizationId])
+  @@index([suggestedBy])
+  @@index([createdAt])
+}
+
+enum AISuggestionStatus {
+  pending
+  accepted
+  rejected
+}
+
+model EvidenceVersion {
+  id            String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  controlId     String
+  versionNumber Int
+  fileUrl       String
+  fileName      String
+  uploadedBy    String?
+  uploadedAt    DateTime        @default(now())
+  fileSize      BigInt?
+  mimeType      String?
+  isCurrent     Boolean         @default(false)
+  control       FrameworkControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  uploader      User?           @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
+
+  @@index([controlId])
+  @@index([controlId, versionNumber])
+}
+
+model ChatConversation {
+  id             String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  userId         String
+  messages       Json     @default("[]")
+  fileContext    Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
 }

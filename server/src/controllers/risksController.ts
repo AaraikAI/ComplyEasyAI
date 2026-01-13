@@ -12,15 +12,43 @@ class RisksController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
-      const { status, severity, assignedTo } = req.query;
+      const { status, severity, assignedTo, category, search, sortBy, sortOrder } = req.query;
+
+      // Build where clause with all filters
+      const where: any = {
+        organizationId,
+        ...(status && status !== 'All' && { status: status as any }),
+        ...(severity && severity !== 'All' && { severity: severity as any }),
+        ...(assignedTo && assignedTo !== 'All' && { assignedToId: assignedTo as string }),
+        ...(category && category !== 'All' && { category: category as string }),
+        ...(search && {
+          OR: [
+            { title: { contains: search as string, mode: 'insensitive' } },
+            { description: { contains: search as string, mode: 'insensitive' } },
+            { category: { contains: search as string, mode: 'insensitive' } },
+          ],
+        }),
+      };
+
+      // Build orderBy clause
+      let orderBy: any[] = [];
+      if (sortBy === 'severity') {
+        orderBy = [{ severity: (sortOrder === 'asc' ? 'asc' : 'desc') }];
+      } else if (sortBy === 'detectedAt') {
+        orderBy = [{ detectedAt: (sortOrder === 'asc' ? 'asc' : 'desc') }];
+      } else if (sortBy === 'riskScore') {
+        orderBy = [{ riskScore: (sortOrder === 'asc' ? 'asc' : 'desc') }];
+      } else {
+        // Default sorting
+        orderBy = [
+          { severity: 'desc' },
+          { detectedAt: 'desc' },
+        ];
+      }
 
       const risks = await prisma.riskItem.findMany({
-        where: {
-          organizationId,
-          ...(status && { status: status as any }),
-          ...(severity && { severity: severity as any }),
-          ...(assignedTo && { assignedToId: assignedTo as string }),
-        },
+        where,
+        orderBy,
         include: {
           assignedTo: {
             select: {
@@ -83,11 +111,16 @@ class RisksController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
-      const { title, severity, description, category, assignedToId } = req.body;
+      const { title, severity, description, category, assignedToId, likelihood, impact, mitigationPlan, targetDate } = req.body;
 
       if (!severity || !description || !category) {
         throw new AppError('Severity, description, and category are required', 400);
       }
+
+      // Calculate risk score: likelihood × impact
+      const riskLikelihood = likelihood !== undefined ? parseInt(likelihood) : 3;
+      const riskImpact = impact !== undefined ? parseInt(impact) : 3;
+      const calculatedRiskScore = riskLikelihood * riskImpact;
 
       const risk = await prisma.riskItem.create({
         data: {
@@ -97,6 +130,11 @@ class RisksController {
           category,
           organizationId,
           assignedToId: assignedToId || null,
+          likelihood: riskLikelihood,
+          impact: riskImpact,
+          riskScore: calculatedRiskScore,
+          mitigationPlan: mitigationPlan || null,
+          targetDate: targetDate ? new Date(targetDate) : null,
         },
         include: {
           assignedTo: {
@@ -174,7 +212,12 @@ class RisksController {
       // Only include allowed fields
       for (const field of allowedFields) {
         if (updateData[field] !== undefined) {
-          filteredData[field] = updateData[field];
+          // Handle null/empty string for mitigationPlan - allow clearing it
+          if (field === 'mitigationPlan' && (updateData[field] === null || updateData[field] === '')) {
+            filteredData[field] = null;
+          } else {
+            filteredData[field] = updateData[field];
+          }
         }
       }
 

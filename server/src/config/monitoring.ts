@@ -75,15 +75,34 @@ export function initializeSentry(): void {
   }
 
   try {
+    // Sentry v8 uses different integration setup
+    const integrations: any[] = [];
+    
+    // Add profiling integration if available
+    if (ProfilingIntegration) {
+      integrations.push(new ProfilingIntegration());
+    }
+    
+    // HTTP integration for tracing (v8 API)
+    if (Sentry.httpIntegration) {
+      integrations.push(Sentry.httpIntegration({ tracing: true }));
+    } else if (Sentry.Integrations && Sentry.Integrations.Http) {
+      // Fallback for older API
+      integrations.push(new Sentry.Integrations.Http({ tracing: true }));
+    }
+    
+    // Express integration (v8 API)
+    if (Sentry.expressIntegration) {
+      integrations.push(Sentry.expressIntegration());
+    } else if (Sentry.Integrations && Sentry.Integrations.Express) {
+      // Fallback for older API
+      integrations.push(new Sentry.Integrations.Express({ app: undefined }));
+    }
+    
     Sentry.init({
       dsn: config.sentry.dsn,
       environment: config.sentry.environment,
-      integrations: [
-        ProfilingIntegration ? new ProfilingIntegration() : undefined,
-        // Automatically instrument Node.js libraries and frameworks
-        new Sentry.Integrations.Http({ tracing: true }),
-        new Sentry.Integrations.Express({ app: undefined }), // Will be set in index.ts
-      ].filter(Boolean),
+      integrations,
       // Performance Monitoring
       tracesSampleRate: config.sentry.tracesSampleRate,
       // Profiling
@@ -231,15 +250,43 @@ export function clearUserContext(): void {
 
 /**
  * Start a transaction for performance monitoring
+ * In Sentry v8, transactions are automatically handled by Express integration
+ * This function returns a mock transaction object for compatibility
  */
 export function startTransaction(name: string, op: string): any {
+  // In Sentry v8, the Express integration automatically handles transactions
+  // We return a mock object that provides the same interface for compatibility
   if (config.sentry.enabled && Sentry) {
-    return Sentry.startTransaction({
-      name,
-      op,
-    });
+    try {
+      // Check if Sentry has the old API (v6/v7) or new API (v8+)
+      if (typeof Sentry.startTransaction === 'function') {
+        // Old API (v6/v7)
+        try {
+          return Sentry.startTransaction({
+            name,
+            op,
+          });
+        } catch (error) {
+          console.warn('Failed to start Sentry transaction (old API):', error);
+        }
+      }
+      // For Sentry v8+, Express integration handles transactions automatically
+      // Return a no-op object since Express integration manages transactions
+    } catch (error) {
+      // If Sentry is initialized but API is incompatible, return no-op
+      console.warn('Sentry transaction API not available:', error);
+    }
   }
-  return null;
+  
+  // Return a no-op mock object if Sentry is disabled, not available, or using v8+
+  return {
+    setData: () => {},
+    setHttpStatus: () => {},
+    setStatus: () => {},
+    setTag: () => {},
+    setUser: () => {},
+    finish: () => {},
+  };
 }
 
 export default {

@@ -10,7 +10,7 @@ interface AuthContextType {
   loginWithMagicLink: (email: string) => Promise<void>;
   verifyMagicLink: (token: string) => Promise<void>;
   logout: () => void;
-  register: (name: string, email: string, organizationName?: string) => Promise<void>;
+  register: (name: string, email: string, organizationName?: string, password?: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -95,13 +95,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, organizationName?: string) => {
+  const register = async (name: string, email: string, organizationName?: string, password?: string) => {
     try {
       // Call API to register new user
-      const response: any = await api.auth.register(name, email, organizationName);
+      const response: any = await api.auth.register(name, email, organizationName, password);
       
-      // Registration returns user info, but login requires magic link
-      // For better UX, we'll request a magic link immediately after registration
+      // Check if user already exists - backend now sends magic link automatically
+      if (response?.existingUser) {
+        // User already exists, backend sent magic link
+        // Return the response so caller can handle the devToken if in development
+        return response;
+      }
+      
+      // Registration returns user info, and backend already sent a magic link
       // The user will need to verify via the magic link sent to their email
       if (response && response.user) {
         // Store partial user data (will be completed after magic link verification)
@@ -116,6 +122,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('user_data', JSON.stringify(partialUser));
         // Don't set user yet - wait for magic link verification
       }
+      
+      return response;
     } catch (error) {
       console.error('Failed to register:', error);
       throw error;
