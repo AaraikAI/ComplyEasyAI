@@ -772,8 +772,9 @@ class ZeroTrustService {
                 id: segment.id || `segment_${segment.cidr}`,
                 name: segment.name || segment.cidr,
                 cidr: segment.cidr,
-                trustLevel: segment.trustLevel || 0.5,
-                requirements: segment.requirements || [],
+                trustLevel: this.mapTrustLevelToEnum(segment.trustLevel),
+                resources: segment.resources || [],
+                policies: segment.policies || [],
               };
               this.networkSegments.set(networkSegment.id, networkSegment);
               return networkSegment;
@@ -788,6 +789,26 @@ class ZeroTrustService {
       logger.error(`[Zero Trust] Error getting network segment for ${ipAddress}`, error);
       return null;
     }
+  }
+
+  /**
+   * Map numeric or string trust level to enum value
+   */
+  private mapTrustLevelToEnum(trustLevel: any): 'untrusted' | 'low' | 'medium' | 'high' | 'trusted' {
+    if (typeof trustLevel === 'string') {
+      const validLevels = ['untrusted', 'low', 'medium', 'high', 'trusted'];
+      if (validLevels.includes(trustLevel)) {
+        return trustLevel as 'untrusted' | 'low' | 'medium' | 'high' | 'trusted';
+      }
+    }
+    if (typeof trustLevel === 'number') {
+      if (trustLevel < 0.2) return 'untrusted';
+      if (trustLevel < 0.4) return 'low';
+      if (trustLevel < 0.6) return 'medium';
+      if (trustLevel < 0.8) return 'high';
+      return 'trusted';
+    }
+    return 'medium'; // Default
   }
 
   /**
