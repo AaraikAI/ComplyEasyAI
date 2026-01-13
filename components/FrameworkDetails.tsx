@@ -10,6 +10,9 @@ interface FrameworkControl {
   description?: string;
   status: string;
   evidence?: string;
+  evidenceRequired?: boolean;
+  ownerId?: string;
+  owner?: { id: string; name: string; email: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -25,6 +28,28 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
   const [controls, setControls] = useState<FrameworkControl[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [readinessScore, setReadinessScore] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [frameworkNotes, setFrameworkNotes] = useState('');
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [controlMappings, setControlMappings] = useState<any[]>([]);
+  const [evidenceVersions, setEvidenceVersions] = useState<any[]>([]);
+  const [showMappings, setShowMappings] = useState(false);
+  const [showVersions, setShowVersions] = useState(false);
+  const [frameworkVersion, setFrameworkVersion] = useState<number>(1);
+  const [showAddMappingModal, setShowAddMappingModal] = useState(false);
+  const [availableControls, setAvailableControls] = useState<any[]>([]);
+
+  const formatAuditDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {
+      return dateString;
+    }
+  };
   const [analyzingFile, setAnalyzingFile] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [exportingControl, setExportingControl] = useState<string | null>(null);
@@ -47,13 +72,25 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     name: '',
     description: '',
     status: 'Pending',
+    ownerId: '',
+    category: '',
   });
 
   useEffect(() => {
     if (framework) {
       loadFrameworkDetails();
     }
-  }, [framework]);
+    // Load team members for owner dropdown
+    const loadTeamMembers = async () => {
+      try {
+        const members = await api.team.list();
+        setTeamMembers(members || []);
+      } catch (error) {
+        console.error('Failed to load team members:', error);
+      }
+    };
+    loadTeamMembers();
+  }, [framework, searchQuery, currentPage]);
 
   // Check if we need to scroll to a specific control (from Red Team navigation)
   useEffect(() => {
@@ -84,11 +121,33 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     
     try {
       setIsLoading(true);
-      const frameworkData: any = await api.frameworks.getById(framework.id);
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      params.append('page', currentPage.toString());
+      params.append('limit', '50');
+      
+      const queryString = params.toString();
+      const frameworkData: any = await api.frameworks.getById(framework.id, queryString || undefined);
       
       // Extract controls from framework data
       const frameworkControls = frameworkData.controls || [];
       setControls(frameworkControls);
+      
+      // Set pagination info
+      if (frameworkData.pagination) {
+        setTotalPages(frameworkData.pagination.totalPages || 1);
+        setCurrentPage(frameworkData.pagination.page || 1);
+      }
+      
+      // Set framework notes
+      if (frameworkData.notes !== undefined) {
+        setFrameworkNotes(frameworkData.notes || '');
+      }
+      
+      // Set framework version for concurrent edit tracking
+      if (frameworkData.version !== undefined) {
+        setFrameworkVersion(frameworkData.version || 1);
+      }
       
       // Calculate readiness score dynamically from control statuses
       const calculateReadinessScore = () => {
@@ -110,6 +169,10 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     }
   };
 
+  const [pendingSuggestion, setPendingSuggestion] = useState<any>(null);
+  const [rejectFeedback, setRejectFeedback] = useState('');
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+
   const handleSmartUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !framework?.id) return;
@@ -123,28 +186,78 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
 
       const response = await api.frameworks.smartUpload(framework.id, formData);
 
-      setAnalysisResult(response.classification);
+      // Check if response contains a suggestion (new control) or control (existing control)
+      if (response.suggestion) {
+        // New suggestion - show modal for accept/reject
+        setPendingSuggestion(response.suggestion);
+        setShowSuggestionModal(true);
+        const confidencePercent = Math.round((response.suggestion.confidence || 0) * 100);
+        setAnalysisResult(
+          `AI Suggestion: "${response.suggestion.classification}" (${confidencePercent}% confidence) - Review below`
+        );
+      } else if (response.control) {
+        // Existing control updated - show success
+        setAnalysisResult(
+          `File added to existing control: "${response.control.name}"`
+        );
+        await loadFrameworkDetails();
+        if (onDataChanged) {
+          onDataChanged();
+        }
+        setTimeout(() => {
+          setAnalysisResult(null);
+        }, 3000);
+      }
+    } catch (error: any) {
+      console.error('Smart upload failed:', error);
+      setAnalysisResult(`Error: ${error.message || 'Failed to upload file'}`);
+    } finally {
+      setAnalyzingFile(null);
+      if (smartUploadRef.current) {
+        smartUploadRef.current.value = '';
+      }
+    }
+  };
+
+  const handleAcceptSuggestion = async () => {
+    if (!pendingSuggestion?.id || !framework?.id) return;
+
+    try {
+      await api.frameworks.acceptSuggestion(pendingSuggestion.id);
+      setAnalysisResult(`Control "${pendingSuggestion.classification}" created successfully!`);
+      setShowSuggestionModal(false);
+      setPendingSuggestion(null);
       
-      // Reload controls to show the new/updated control
       await loadFrameworkDetails();
-      // Notify parent to refresh data
       if (onDataChanged) {
         onDataChanged();
       }
 
-      // Show success message
       setTimeout(() => {
         setAnalysisResult(null);
-        setAnalyzingFile(null);
       }, 3000);
     } catch (error: any) {
-      console.error('Smart upload failed:', error);
-      setAnalysisResult(`Error: ${error.message || 'Failed to upload file'}`);
-      setAnalyzingFile(null);
-    } finally {
-      if (smartUploadRef.current) {
-        smartUploadRef.current.value = '';
-      }
+      console.error('Failed to accept suggestion:', error);
+      alert(`Failed to accept suggestion: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleRejectSuggestion = async () => {
+    if (!pendingSuggestion?.id) return;
+
+    try {
+      await api.frameworks.rejectSuggestion(pendingSuggestion.id, rejectFeedback);
+      setAnalysisResult('Suggestion rejected. Feedback recorded.');
+      setShowSuggestionModal(false);
+      setPendingSuggestion(null);
+      setRejectFeedback('');
+
+      setTimeout(() => {
+        setAnalysisResult(null);
+      }, 3000);
+    } catch (error: any) {
+      console.error('Failed to reject suggestion:', error);
+      alert(`Failed to reject suggestion: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -214,8 +327,8 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     if (!framework?.id || !newControl.name.trim()) return;
 
     try {
-      // Prepare control data - only include description if it's not empty
-      const controlData: { name: string; description?: string; status: string } = {
+      // Prepare control data - include all fields
+      const controlData: { name: string; description?: string; status: string; category?: string; ownerId?: string } = {
         name: newControl.name.trim(),
         status: newControl.status || 'Pending',
       };
@@ -224,9 +337,19 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       if (newControl.description && newControl.description.trim()) {
         controlData.description = newControl.description.trim();
       }
+      
+      // Include category if provided
+      if (newControl.category && newControl.category.trim()) {
+        controlData.category = newControl.category.trim();
+      }
+      
+      // Include owner if provided
+      if (newControl.ownerId) {
+        controlData.ownerId = newControl.ownerId;
+      }
 
       await api.frameworks.createControl(framework.id, controlData);
-      setNewControl({ name: '', description: '', status: 'Pending' });
+      setNewControl({ name: '', description: '', status: 'Pending', ownerId: '', category: '' });
       setShowAddControl(false);
       await loadFrameworkDetails();
       // Notify parent to refresh data
@@ -243,6 +366,15 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
   const handleUpdateControlStatus = async (control: FrameworkControl, newStatus: string) => {
     if (!framework?.id) return;
 
+    // Check if evidence is required but not uploaded
+    if (control.evidenceRequired && !control.evidence) {
+      const confirmed = confirm(
+        `⚠️ Warning: This control requires evidence but no evidence has been uploaded. ` +
+        `Are you sure you want to update the status to "${newStatus}" without evidence?`
+      );
+      if (!confirmed) return;
+    }
+
     try {
       await api.frameworks.updateControl(framework.id, control.id, { status: newStatus });
       await loadFrameworkDetails();
@@ -256,22 +388,115 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     }
   };
 
-  const handleControlClick = (control: FrameworkControl) => {
-    // Allow status updates for all controls except "Compliant" (final state)
-    if (control.status !== 'Compliant') {
-      const statusOptions = ['Pending', 'In Progress', 'Implemented', 'Compliant', 'At Risk'];
-      const currentIndex = statusOptions.indexOf(control.status);
-      const nextStatus = statusOptions[currentIndex + 1] || statusOptions[0];
-      
-      if (confirm(`Update "${control.name}" status from "${control.status}" to "${nextStatus}"?`)) {
-        handleUpdateControlStatus(control, nextStatus);
-      }
-    } else {
-      // For Compliant controls, allow going back to Implemented if needed
-      if (confirm(`Update "${control.name}" status from "Compliant" to "Implemented"?`)) {
-        handleUpdateControlStatus(control, 'Implemented');
-      }
+  const [selectedControl, setSelectedControl] = useState<FrameworkControl | null>(null);
+  const [showControlDetails, setShowControlDetails] = useState(false);
+  const [selectedControls, setSelectedControls] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkEvidenceRequired, setBulkEvidenceRequired] = useState(false);
+  const [showBulkUpdate, setShowBulkUpdate] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; email: string }>>([]);
+
+  const handleControlClick = async (control: FrameworkControl) => {
+    // Open control details view instead of cycling status
+    setSelectedControl(control);
+    setShowControlDetails(true);
+    
+    // Load mappings and versions
+    try {
+      const [mappingsData, versionsData] = await Promise.all([
+        api.frameworks.getControlMappings?.(control.id) || Promise.resolve({ mappings: [] }),
+        api.frameworks.getEvidenceVersions?.(control.id) || Promise.resolve({ versions: [] }),
+      ]);
+      setControlMappings(mappingsData.mappings || []);
+      setEvidenceVersions(versionsData.versions || []);
+    } catch (error) {
+      console.error('Failed to load mappings/versions:', error);
     }
+  };
+
+  const handleUpdateAuditDate = async (newDate: string) => {
+    if (!framework?.id) return;
+
+    try {
+      const auditDate = new Date(newDate);
+      if (isNaN(auditDate.getTime())) {
+        alert('Invalid date format. Please use YYYY-MM-DD format.');
+        return;
+      }
+
+      // Check if date is in the past
+      if (auditDate < new Date()) {
+        const confirmed = confirm('⚠️ Warning: This audit date is in the past. Are you sure you want to set it?');
+        if (!confirmed) return;
+      }
+
+      await api.frameworks.update(framework.id, { nextAuditDate: newDate });
+      
+      // Reload framework data
+      if (onDataChanged) {
+        onDataChanged();
+      }
+      
+      // Update local state
+      if (framework) {
+        framework.nextAuditDate = auditDate.toISOString();
+      }
+    } catch (error: any) {
+      console.error('Failed to update audit date:', error);
+      alert(`Failed to update audit date: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const handleBulkUpdate = async () => {
+    if (!framework?.id || selectedControls.size === 0 || !bulkStatus) {
+      alert('Please select controls and choose a status');
+      return;
+    }
+
+    // Check if any selected controls have evidenceRequired and warn
+    const controlsWithEvidenceRequired = Array.from(selectedControls)
+      .map(id => controls.find(c => c.id === id))
+      .filter(c => c?.evidenceRequired && !c.evidence);
+
+    if (controlsWithEvidenceRequired.length > 0 && !bulkEvidenceRequired) {
+      const confirmed = confirm(
+        `⚠️ Warning: ${controlsWithEvidenceRequired.length} selected control(s) require evidence but don't have any uploaded. ` +
+        `Are you sure you want to update their status without evidence?`
+      );
+      if (!confirmed) return;
+    }
+
+    try {
+      await api.frameworks.bulkUpdateControls(framework.id, {
+        controlIds: Array.from(selectedControls),
+        status: bulkStatus,
+        evidenceRequired: bulkEvidenceRequired,
+      });
+
+      await loadFrameworkDetails();
+      if (onDataChanged) {
+        onDataChanged();
+      }
+
+      setSelectedControls(new Set());
+      setBulkStatus('');
+      setBulkEvidenceRequired(false);
+      setShowBulkUpdate(false);
+      alert(`Successfully updated ${selectedControls.size} control(s)`);
+    } catch (error: any) {
+      console.error('Failed to bulk update controls:', error);
+      alert(`Failed to bulk update: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const toggleControlSelection = (controlId: string) => {
+    const newSelection = new Set(selectedControls);
+    if (newSelection.has(controlId)) {
+      newSelection.delete(controlId);
+    } else {
+      newSelection.add(controlId);
+    }
+    setSelectedControls(newSelection);
   };
 
   const handleDeleteControl = async (control: FrameworkControl) => {
@@ -373,12 +598,33 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                 {framework.status}
               </span>
               <span className="text-gray-400">•</span>
-              <span className="text-gray-500 text-sm">Next Audit: {framework.nextAuditDate}</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-500 text-sm">Next Audit: {formatAuditDate(framework.nextAuditDate)}</span>
+                {user?.role === 'admin' && (
+                  <button
+                    onClick={() => {
+                      const newDate = prompt('Enter new audit date (YYYY-MM-DD):', framework.nextAuditDate.split('T')[0]);
+                      if (newDate) {
+                        handleUpdateAuditDate(newDate);
+                      }
+                    }}
+                    className="text-xs text-brand-600 hover:text-brand-800 underline"
+                    title="Update audit date"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+              {new Date(framework.nextAuditDate) < new Date() && (
+                <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
+                  ⚠️ Past Due
+                </span>
+              )}
             </div>
           </div>
           <div className="mt-4 md:mt-0 text-right">
              <div className="text-3xl font-bold text-brand-600">{readinessScore}%</div>
-             <div className="text-sm text-gray-400">Readiness Score</div>
+             <div className="text-sm text-gray-400">Status Score</div>
           </div>
         </div>
 
@@ -397,14 +643,84 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
             ? 'bg-red-50 border border-red-200 text-red-800' 
             : 'bg-blue-50 border border-blue-200 text-blue-800'
         }`}>
-           <span className="font-medium">
-             {analysisResult.startsWith('Error:') 
-               ? analysisResult 
-               : `AI Analysis: File likely maps to "${analysisResult}"`}
-           </span>
-           <button onClick={() => setAnalysisResult(null)} className="hover:opacity-70">
-             <X size={16}/>
-           </button>
+           <span className="font-medium">{analysisResult}</span>
+          <button onClick={() => setAnalysisResult(null)} className="hover:opacity-70">
+            <X size={16}/>
+          </button>
+        </div>
+      )}
+
+      {/* AI Suggestion Modal */}
+      {showSuggestionModal && pendingSuggestion && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50" onClick={() => setShowSuggestionModal(false)}>
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">AI Suggestion</h3>
+              <button onClick={() => setShowSuggestionModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-gray-700 mb-2">Suggested Control Name</h4>
+                <p className="text-gray-900 text-lg">{pendingSuggestion.classification}</p>
+              </div>
+
+              {pendingSuggestion.description && (
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-2">Description</h4>
+                  <p className="text-gray-600">{pendingSuggestion.description}</p>
+                </div>
+              )}
+
+              <div>
+                <h4 className="font-semibold text-gray-700 mb-2">Confidence Score</h4>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-brand-600 h-2.5 rounded-full" 
+                      style={{ width: `${Math.round((pendingSuggestion.confidence || 0) * 100)}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    {Math.round((pendingSuggestion.confidence || 0) * 100)}%
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-700 mb-2">File</h4>
+                <p className="text-gray-600">{pendingSuggestion.fileName}</p>
+              </div>
+
+              <div className="border-t pt-4">
+                <h4 className="font-semibold text-gray-700 mb-2">Feedback (Optional - for rejection)</h4>
+                <textarea
+                  value={rejectFeedback}
+                  onChange={(e) => setRejectFeedback(e.target.value)}
+                  placeholder="Provide feedback on why this suggestion doesn't fit..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <button
+                  onClick={handleRejectSuggestion}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                >
+                  Reject
+                </button>
+                <button
+                  onClick={handleAcceptSuggestion}
+                  className="px-4 py-2 text-white bg-brand-600 rounded-lg hover:bg-brand-700"
+                >
+                  Accept & Create Control
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -422,9 +738,43 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-          <h3 className="font-semibold text-gray-800">Controls & Evidence</h3>
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-gray-800">Controls & Evidence</h3>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  loadFrameworkDetails();
+                }
+              }}
+              placeholder="Search controls (e.g., password policy)..."
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none w-64"
+            />
+          </div>
           <div className="flex space-x-2">
+            {selectedControls.size > 0 && (
+              <div className="flex items-center space-x-2 mr-4">
+                <span className="text-sm text-gray-600">{selectedControls.size} selected</span>
+                <button
+                  onClick={() => setShowBulkUpdate(true)}
+                  className="text-sm bg-brand-600 text-white px-3 py-1.5 rounded-lg hover:bg-brand-700 flex items-center shadow-sm"
+                >
+                  Bulk Update
+                </button>
+                <button
+                  onClick={() => setSelectedControls(new Set())}
+                  className="text-sm bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
             <button
               onClick={() => setShowAddControl(!showAddControl)}
               className="text-sm bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200 flex items-center shadow-sm"
@@ -463,6 +813,13 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
                   required
                 />
+                <input
+                  type="text"
+                  value={newControl.category}
+                  onChange={(e) => setNewControl({ ...newControl, category: e.target.value })}
+                  placeholder="Category (optional)"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                />
                 <select
                   value={newControl.status}
                   onChange={(e) => setNewControl({ ...newControl, status: e.target.value })}
@@ -474,32 +831,48 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                   <option value="Compliant">Compliant</option>
                   <option value="At Risk">At Risk</option>
                 </select>
-                <div className="flex space-x-2">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-brand-700 transition-colors"
-                  >
-                    Create
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAddControl(false);
-                      setNewControl({ name: '', description: '', status: 'Pending' });
-                    }}
-                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
               </div>
-              <textarea
-                value={newControl.description}
-                onChange={(e) => setNewControl({ ...newControl, description: e.target.value })}
-                placeholder="Description (optional)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                rows={2}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <textarea
+                  value={newControl.description}
+                  onChange={(e) => setNewControl({ ...newControl, description: e.target.value })}
+                  placeholder="Description (optional)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  rows={2}
+                />
+                {(user?.role === 'admin' || user?.role === 'editor') && (
+                  <select
+                    value={newControl.ownerId}
+                    onChange={(e) => setNewControl({ ...newControl, ownerId: e.target.value })}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  >
+                    <option value="">No Owner</option>
+                    {teamMembers.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name} ({member.email})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="submit"
+                  className="bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors"
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddControl(false);
+                    setNewControl({ name: '', description: '', status: 'Pending', ownerId: '', category: '' });
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </form>
           </div>
         )}
@@ -530,10 +903,21 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                   control.status !== 'Compliant'
                     ? 'hover:bg-brand-50 cursor-pointer border-l-4 border-transparent hover:border-brand-500'
                     : 'hover:bg-gray-50 cursor-pointer'
-                }`}
+                } ${selectedControls.has(control.id) ? 'bg-brand-50 border-l-4 border-brand-500' : ''}`}
                 onClick={() => handleControlClick(control)}
               >
                 <div className="flex items-start space-x-4 flex-1">
+                  {(user?.role === 'admin' || user?.role === 'editor') && (
+                    <input
+                      type="checkbox"
+                      checked={selectedControls.has(control.id)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleControlSelection(control.id);
+                      }}
+                      className="mt-1 h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
+                    />
+                  )}
                   <div className={`mt-1 ${getStatusColor(control.status)}`}>
                     {getStatusIcon(control.status)}
                   </div>
@@ -563,10 +947,13 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                         {control.status}
                       </span>
                       {control.status !== 'Compliant' && (
-                        <span className="text-xs text-gray-500 italic">Click to update status</span>
+                        <span className="text-xs text-gray-500 italic">Click to view details</span>
                       )}
                       {control.status === 'Compliant' && (
                         <span className="text-xs text-green-600 italic">✓ Fully compliant</span>
+                      )}
+                      {control.evidenceRequired && !control.evidence && (
+                        <span className="text-xs text-red-600 italic">⚠️ Evidence Required</span>
                       )}
                     </div>
                   </div>
@@ -627,7 +1014,461 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
             ))
           )}
         </div>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => {
+                  if (currentPage > 1) {
+                    setCurrentPage(currentPage - 1);
+                  }
+                }}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => {
+                  if (currentPage < totalPages) {
+                    setCurrentPage(currentPage + 1);
+                  }
+                }}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Control Details Modal */}
+      {showControlDetails && selectedControl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50" onClick={() => setShowControlDetails(false)}>
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">{selectedControl.name}</h3>
+              <button onClick={() => setShowControlDetails(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {selectedControl.description && (
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-2">Description</h4>
+                  <p className="text-gray-600">{selectedControl.description}</p>
+                </div>
+              )}
+
+              {selectedControl.category && (
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-2">Category</h4>
+                  <p className="text-gray-600">{selectedControl.category}</p>
+                </div>
+              )}
+
+              <div>
+                <h4 className="font-semibold text-gray-700 mb-2">Status</h4>
+                <div className="space-y-2">
+                  <select
+                    value={selectedControl.status}
+                    onChange={(e) => {
+                      const newStatus = e.target.value;
+                      // Check if evidence is required but not uploaded
+                      if (selectedControl.evidenceRequired && !selectedControl.evidence) {
+                        const confirmed = confirm(
+                          `⚠️ Warning: This control requires evidence but no evidence has been uploaded. ` +
+                          `Are you sure you want to update the status to "${newStatus}" without evidence?`
+                        );
+                        if (!confirmed) return;
+                      }
+                      if (confirm(`Update status to "${newStatus}"?`)) {
+                        handleUpdateControlStatus(selectedControl, newStatus);
+                        setShowControlDetails(false);
+                      }
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Implemented">Implemented</option>
+                    <option value="Compliant">Compliant</option>
+                    <option value="At Risk">At Risk</option>
+                  </select>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedControl.evidenceRequired || false}
+                      onChange={async (e) => {
+                        const evidenceRequired = e.target.checked;
+                        try {
+                          await api.frameworks.updateControl(framework!.id, selectedControl.id, { evidenceRequired });
+                          setSelectedControl({ ...selectedControl, evidenceRequired });
+                          await loadFrameworkDetails();
+                        } catch (error: any) {
+                          alert(`Failed to update evidence required: ${error.message}`);
+                        }
+                      }}
+                      className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Evidence Required</span>
+                  </label>
+                </div>
+              </div>
+
+              {(user?.role === 'admin') && (
+                <div>
+                  <h4 className="font-semibold text-gray-700 mb-2">Owner</h4>
+                  <select
+                    value={selectedControl.ownerId || ''}
+                    onChange={async (e) => {
+                      const ownerId = e.target.value || undefined;
+                      try {
+                        await api.frameworks.updateControl(framework!.id, selectedControl.id, { ownerId });
+                        // TODO: Load user data for owner
+                        setSelectedControl({ ...selectedControl, ownerId });
+                        await loadFrameworkDetails();
+                        alert('Owner updated. Notification sent to owner.');
+                      } catch (error: any) {
+                        alert(`Failed to update owner: ${error.message}`);
+                      }
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 w-full"
+                  >
+                    <option value="">No Owner</option>
+                    {teamMembers.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name} ({member.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <h4 className="font-semibold text-gray-700 mb-2">Evidence</h4>
+                {selectedControl.evidence ? (
+                  <div className="space-y-2">
+                    <a 
+                      href="#" 
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        try {
+                          const result = await api.frameworks.getEvidenceUrl(framework!.id, selectedControl.id);
+                          window.open(result.url, '_blank');
+                        } catch (error: any) {
+                          alert(`Failed to open evidence: ${error.message}`);
+                        }
+                      }}
+                      className="text-brand-600 hover:underline block"
+                    >
+                      {selectedControl.evidence.split('/').pop()}
+                    </a>
+                    {evidenceVersions.length > 0 && (
+                      <div>
+                        <button
+                          onClick={() => setShowVersions(!showVersions)}
+                          className="text-sm text-brand-600 hover:text-brand-800"
+                        >
+                          {showVersions ? 'Hide' : 'Show'} Version History ({evidenceVersions.length})
+                        </button>
+                        {showVersions && (
+                          <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+                            {evidenceVersions.map((version: any) => (
+                              <div key={version.id} className="text-xs text-gray-600 flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span>v{version.versionNumber} - {version.fileName}</span>
+                                <div className="flex space-x-2">
+                                  {version.isCurrent && <span className="text-green-600">Current</span>}
+                                  {!version.isCurrent && (user?.role === 'admin' || user?.role === 'editor') && (
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm(`Restore version ${version.versionNumber}?`)) {
+                                          try {
+                                            await api.frameworks.restoreEvidenceVersion(selectedControl.id, version.id);
+                                            await loadFrameworkDetails();
+                                            setShowControlDetails(false);
+                                            alert('Version restored successfully');
+                                          } catch (error: any) {
+                                            alert(`Failed to restore: ${error.message}`);
+                                          }
+                                        }
+                                      }}
+                                      className="text-xs text-brand-600 hover:text-brand-800"
+                                    >
+                                      Restore
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {(user?.role === 'admin' || user?.role === 'editor') && (
+                      <button
+                        onClick={async () => {
+                          if (confirm('Are you sure you want to delete this evidence?')) {
+                            try {
+                              await api.frameworks.updateControl(framework!.id, selectedControl.id, { evidence: null });
+                              setSelectedControl({ ...selectedControl, evidence: undefined });
+                              await loadFrameworkDetails();
+                              alert('Evidence deleted successfully');
+                            } catch (error: any) {
+                              alert(`Failed to delete evidence: ${error.message}`);
+                            }
+                          }
+                        }}
+                        className="text-sm text-red-600 hover:text-red-800"
+                      >
+                        Delete Evidence
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No evidence uploaded</p>
+                )}
+              </div>
+
+              {/* Control Mappings Section */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-semibold text-gray-700">Also Satisfies</h4>
+                  <button
+                    onClick={() => setShowMappings(!showMappings)}
+                    className="text-sm text-brand-600 hover:text-brand-800"
+                  >
+                    {showMappings ? 'Hide' : 'Show'} Mappings ({controlMappings.length})
+                  </button>
+                </div>
+                {showMappings && (
+                  <div className="space-y-2">
+                    {controlMappings.length === 0 ? (
+                      <p className="text-sm text-gray-500">No mappings found</p>
+                    ) : (
+                      controlMappings.map((mapping: any) => {
+                        // Use the Prisma include structure
+                        const mappedControl = mapping.sourceControlId === selectedControl.id 
+                          ? { 
+                              name: mapping.targetControl?.name || 'Unknown Control', 
+                              framework: mapping.targetControl?.framework?.name || 'Unknown Framework' 
+                            }
+                          : { 
+                              name: mapping.sourceControl?.name || 'Unknown Control', 
+                              framework: mapping.sourceControl?.framework?.name || 'Unknown Framework' 
+                            };
+                        return (
+                          <div key={mapping.id} className="text-sm p-2 bg-gray-50 rounded">
+                            <span className="font-medium">{mappedControl.name}</span>
+                            <span className="text-gray-500"> ({mappedControl.framework})</span>
+                            <span className="text-xs text-gray-400 ml-2">- {mapping.mappingType}</span>
+                            {(user?.role === 'admin' || user?.role === 'editor') && (
+                              <button
+                                onClick={async () => {
+                                  if (confirm('Delete this mapping?')) {
+                                    try {
+                                      await api.frameworks.deleteControlMapping(mapping.id);
+                                      setControlMappings(controlMappings.filter(m => m.id !== mapping.id));
+                                    } catch (error: any) {
+                                      alert(`Failed to delete mapping: ${error.message}`);
+                                    }
+                                  }
+                                }}
+                                className="ml-2 text-xs text-red-600 hover:text-red-800"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                    {(user?.role === 'admin' || user?.role === 'editor') && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            // Load all frameworks and controls for the organization
+                            const allFrameworks = await api.frameworks.list();
+                            const allControls: any[] = [];
+                            for (const fw of allFrameworks) {
+                              if (fw.id !== framework?.id) { // Exclude current framework
+                                try {
+                                  const fwData: any = await api.frameworks.getById(fw.id);
+                                  const fwControls = (fwData.controls || []).map((c: any) => ({
+                                    ...c,
+                                    frameworkName: fw.name,
+                                    frameworkId: fw.id,
+                                  }));
+                                  allControls.push(...fwControls);
+                                } catch (err) {
+                                  console.error(`Failed to load controls for framework ${fw.id}:`, err);
+                                }
+                              }
+                            }
+                            setAvailableControls(allControls);
+                            setShowAddMappingModal(true);
+                          } catch (error: any) {
+                            alert(`Failed to load controls: ${error.message}`);
+                          }
+                        }}
+                        className="text-sm text-brand-600 hover:text-brand-800"
+                      >
+                        + Add Mapping
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <button
+                  onClick={() => setShowControlDetails(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                >
+                  Close
+                </button>
+                {(user?.role === 'admin' || user?.role === 'editor') && (
+                  <button
+                    onClick={() => {
+                      if (confirm(`Delete control "${selectedControl.name}"?`)) {
+                        handleDeleteControl(selectedControl);
+                        setShowControlDetails(false);
+                      }
+                    }}
+                    className="px-4 py-2 text-red-700 bg-red-50 rounded-lg hover:bg-red-100"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Mapping Modal */}
+      {showAddMappingModal && selectedControl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50" onClick={() => setShowAddMappingModal(false)}>
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">Add Control Mapping</h3>
+              <button onClick={() => setShowAddMappingModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Source Control
+                </label>
+                <input
+                  type="text"
+                  value={`${selectedControl.name} (${framework?.name})`}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Target Control *
+                </label>
+                <select
+                  id="targetControl"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  defaultValue=""
+                >
+                  <option value="">Select a control...</option>
+                  {availableControls.map((control) => (
+                    <option key={control.id} value={control.id}>
+                      {control.name} ({control.frameworkName})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mapping Type *
+                </label>
+                <select
+                  id="mappingType"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  defaultValue="equivalent"
+                >
+                  <option value="equivalent">Equivalent</option>
+                  <option value="related">Related</option>
+                  <option value="superset">Superset (this control covers more)</option>
+                  <option value="subset">Subset (this control covers less)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confidence (0-1, optional)
+                </label>
+                <input
+                  type="number"
+                  id="confidence"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  placeholder="0.85"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <button
+                  onClick={() => setShowAddMappingModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    const targetControlId = (document.getElementById('targetControl') as HTMLSelectElement)?.value;
+                    const mappingType = (document.getElementById('mappingType') as HTMLSelectElement)?.value;
+                    const confidenceInput = (document.getElementById('confidence') as HTMLInputElement)?.value;
+                    const confidence = confidenceInput ? parseFloat(confidenceInput) : undefined;
+
+                    if (!targetControlId) {
+                      alert('Please select a target control');
+                      return;
+                    }
+
+                    try {
+                      await api.frameworks.createControlMapping({
+                        sourceControlId: selectedControl.id,
+                        targetControlId,
+                        mappingType,
+                        confidence,
+                      });
+                      setShowAddMappingModal(false);
+                      await handleControlClick(selectedControl); // Reload mappings
+                      alert('Mapping created successfully');
+                    } catch (error: any) {
+                      alert(`Failed to create mapping: ${error.message}`);
+                    }
+                  }}
+                  className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700"
+                >
+                  Create Mapping
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

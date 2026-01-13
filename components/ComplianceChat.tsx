@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, User, Bot, Lock, AlertCircle } from 'lucide-react';
+import { MessageSquare, X, Send, User, Bot, Lock, AlertCircle, Trash2, Paperclip, FileText } from 'lucide-react';
 import { chatWithComplianceBot } from '../services/geminiService';
 import { ChatMessage } from '../types';
 import ReactMarkdown from 'react-markdown';
@@ -25,7 +25,59 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{file: File; content: string}>>([]);
+  const [showFileUpload, setShowFileUpload] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const clearChatHistory = () => {
+    setMessages([
+      { 
+        id: '1', 
+        sender: 'ai', 
+        text: 'Chat history cleared. How can I help you today?', 
+        timestamp: new Date() 
+      }
+    ]);
+    setUploadedFiles([]);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles: Array<{file: File; content: string}> = [];
+    
+    for (const file of Array.from(files)) {
+      try {
+        // Read file content (limit to 50KB for text files)
+        if (file.size > 50 * 1024) {
+          alert(`File ${file.name} is too large. Maximum size is 50KB.`);
+          continue;
+        }
+
+        const content = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsText(file);
+        });
+
+        newFiles.push({ file, content });
+      } catch (error) {
+        console.error(`Error reading file ${file.name}:`, error);
+        alert(`Error reading file ${file.name}. Please try again.`);
+      }
+    }
+
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+    setShowFileUpload(false);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -530,8 +582,23 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
 
         case 'query':
         default:
-          // Use AI for general queries
-          responseText = await chatWithComplianceBot(userInput);
+          // Use AI for general queries with file context
+          const fileContext = uploadedFiles.length > 0
+            ? uploadedFiles.map(f => ({
+                filename: f.file.name,
+                content: f.content,
+                type: f.file.type || 'text/plain',
+              }))
+            : undefined;
+
+          // Call backend API for multi-turn context support
+          try {
+            const response = await api.ai.chat(userInput, fileContext);
+            responseText = response.response || await chatWithComplianceBot(userInput);
+          } catch (error: any) {
+            // Fallback to frontend service if backend fails
+            responseText = await chatWithComplianceBot(userInput);
+          }
           break;
       }
 
@@ -616,15 +683,64 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Uploaded Files Display */}
+          {uploadedFiles.length > 0 && (
+            <div className="px-4 py-2 bg-blue-50 border-t border-blue-100">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-medium text-blue-800">Files attached:</span>
+                {uploadedFiles.map((f, idx) => (
+                  <div key={idx} className="flex items-center gap-1 px-2 py-1 bg-white rounded border border-blue-200">
+                    <FileText size={12} className="text-blue-600" />
+                    <span className="text-xs text-blue-800">{f.file.name}</span>
+                    <button
+                      onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== idx))}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Input */}
           <div className="p-4 bg-white border-t border-gray-100">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 mb-2">
+              <button
+                onClick={clearChatHistory}
+                disabled={messages.length <= 1}
+                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Clear chat history"
+              >
+                <Trash2 size={16} />
+              </button>
+              <button
+                onClick={() => {
+                  setShowFileUpload(!showFileUpload);
+                  if (!showFileUpload && fileInputRef.current) {
+                    fileInputRef.current.click();
+                  }
+                }}
+                className="p-2 text-gray-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                title="Attach file for context"
+              >
+                <Paperclip size={16} />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".txt,.md,.pdf,.doc,.docx"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !isTyping && !isExecuting && handleSend()}
-                placeholder={isExecuting ? "Executing..." : "Try: 'Go to dashboard' or 'Create a risk'"}
+                placeholder={isExecuting ? "Executing..." : uploadedFiles.length > 0 ? "Ask about the attached files..." : "Try: 'Go to dashboard' or 'Create a risk'"}
                 disabled={isTyping || isExecuting}
                 className="flex-1 bg-gray-100 text-gray-800 placeholder-gray-400 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
               />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { performGapAnalysis } from '../../services/geminiService';
-import { ArrowLeft, Loader2, GitMerge, AlertTriangle, X } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, X, Download, TrendingUp, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { AVAILABLE_FRAMEWORKS } from '../../constants';
 import { api } from '../../services/api';
@@ -9,6 +9,8 @@ export const GapAnalysis: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [currentFrameworks, setCurrentFrameworks] = useState<string[]>([]);
   const [targetFrameworks, setTargetFrameworks] = useState<string[]>([]);
   const [result, setResult] = useState('');
+  const [gaps, setGaps] = useState<Array<{control: string; criticality: string; effort: string; remediation: string}>>([]);
+  const [prioritized, setPrioritized] = useState<Array<{control: string; priority: number; rationale: string}>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userFrameworks, setUserFrameworks] = useState<any[]>([]);
@@ -73,21 +75,27 @@ export const GapAnalysis: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setError(null);
     setLoading(true);
     setResult('');
+    setGaps([]);
+    setPrioritized([]);
 
     try {
-      // Set timeout for analysis (30 seconds)
+      // Set timeout for analysis (60 seconds for enhanced analysis)
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Analysis timeout. The gap analysis is taking too long. Please try with fewer frameworks.')), 30000);
+        setTimeout(() => reject(new Error('Analysis timeout. The gap analysis is taking too long. Please try with fewer frameworks.')), 60000);
       });
 
-      const analysisPromise = performGapAnalysis(currentFrameworks, targetFrameworks);
+      // Call backend API directly for enhanced response
+      const response = await api.ai.performGapAnalysis(currentFrameworks, targetFrameworks);
       
-      const text = await Promise.race([analysisPromise, timeoutPromise]) as string;
-      setResult(text);
+      setResult(response.analysis || '');
+      setGaps(response.gaps || []);
+      setPrioritized(response.prioritized || []);
     } catch (err: any) {
       const errorMessage = err.message || 'Gap analysis failed. Please try again.';
       setError(errorMessage);
       setResult('');
+      setGaps([]);
+      setPrioritized([]);
     } finally {
       setLoading(false);
     }
@@ -116,9 +124,9 @@ export const GapAnalysis: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       )}
 
       <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Current Frameworks */}
-          <div className="flex-1">
+          <div className="flex-1 border-r border-gray-200 pr-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Current Frameworks <span className="text-red-500">*</span>
             </label>
@@ -182,13 +190,8 @@ export const GapAnalysis: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             )}
           </div>
 
-          {/* Arrow */}
-          <div className="flex items-center justify-center lg:justify-start">
-            <GitMerge size={32} className="text-gray-400 rotate-90 lg:rotate-0" />
-          </div>
-
           {/* Target Frameworks */}
-          <div className="flex-1">
+          <div className="flex-1 pl-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Target Frameworks <span className="text-red-500">*</span>
             </label>
@@ -243,10 +246,108 @@ export const GapAnalysis: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         {result && (
-          <div className="mt-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
-            <div className="prose prose-sm max-w-none">
-              <ReactMarkdown>{result}</ReactMarkdown>
+          <div className="mt-8 space-y-6">
+            {/* Export Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  const exportData = {
+                    analysis: result,
+                    gaps,
+                    prioritized,
+                    currentFrameworks,
+                    targetFrameworks,
+                    generatedAt: new Date().toISOString(),
+                  };
+                  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `gap-analysis-${new Date().toISOString().split('T')[0]}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
+              >
+                <Download size={16} />
+                Export Analysis
+              </button>
             </div>
+
+            {/* Analysis Summary */}
+            <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">
+              <h3 className="text-lg font-semibold mb-4">Executive Summary</h3>
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown>{result}</ReactMarkdown>
+              </div>
+            </div>
+
+            {/* Prioritized Gaps */}
+            {prioritized.length > 0 && (
+              <div className="p-6 bg-white rounded-xl border border-gray-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp className="text-brand-600" size={20} />
+                  <h3 className="text-lg font-semibold">Prioritized Gaps</h3>
+                </div>
+                <div className="space-y-3">
+                  {prioritized
+                    .sort((a, b) => b.priority - a.priority)
+                    .map((item, idx) => (
+                      <div key={idx} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-medium text-gray-900">{item.control}</h4>
+                          <span className="px-2 py-1 bg-brand-100 text-brand-800 rounded text-xs font-semibold">
+                            Priority: {item.priority}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">{item.rationale}</p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Detailed Gaps with Remediation */}
+            {gaps.length > 0 && (
+              <div className="p-6 bg-white rounded-xl border border-gray-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertCircle className="text-red-600" size={20} />
+                  <h3 className="text-lg font-semibold">Gap Details & Remediation</h3>
+                </div>
+                <div className="space-y-4">
+                  {gaps.map((gap, idx) => (
+                    <div key={idx} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium text-gray-900">{gap.control}</h4>
+                        <div className="flex gap-2">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            gap.criticality === 'Critical' ? 'bg-red-100 text-red-800' :
+                            gap.criticality === 'High' ? 'bg-orange-100 text-orange-800' :
+                            gap.criticality === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {gap.criticality}
+                          </span>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            gap.effort === 'High' ? 'bg-red-100 text-red-800' :
+                            gap.effort === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            Effort: {gap.effort}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-gray-700 mb-1">Remediation Steps:</p>
+                        <div className="prose prose-sm max-w-none text-gray-600">
+                          <ReactMarkdown>{gap.remediation}</ReactMarkdown>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

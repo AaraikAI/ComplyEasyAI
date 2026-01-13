@@ -257,23 +257,99 @@ class SecureChatService {
   }
 
   /**
-   * Main chat method - processes queries securely using local AI
+   * Get or create conversation for user
    */
-  async chatWithUser(message: string, userId: string, organizationId: string): Promise<ChatResponse> {
+  private async getConversation(userId: string, organizationId: string): Promise<any> {
+    try {
+      // Try to find existing conversation
+      const existing = await prisma.chatConversation.findFirst({
+        where: {
+          userId,
+          organizationId,
+        },
+        orderBy: { updatedAt: 'desc' },
+      });
+
+      if (existing) {
+        return existing;
+      }
+
+      // Create new conversation
+      return await prisma.chatConversation.create({
+        data: {
+          userId,
+          organizationId,
+          messages: [],
+          fileContext: {},
+        },
+      });
+    } catch (error) {
+      logger.error('Error getting conversation', error);
+      return null;
+    }
+  }
+
+  /**
+   * Main chat method - processes queries securely using local AI with conversation context
+   */
+  async chatWithUser(
+    message: string,
+    userId: string,
+    organizationId: string,
+    fileContext?: { filename: string; content: string; type: string }[]
+  ): Promise<ChatResponse> {
     try {
       logger.info(`[Secure Chat] Processing query for user ${userId}`);
+
+      // Get conversation for context
+      const conversation = await this.getConversation(userId, organizationId);
+      const conversationHistory = (conversation?.messages as any[]) || [];
 
       // Fetch user context
       const context = await this.getUserContext(userId, organizationId);
 
-      // Process query locally (no external API calls)
-      const response = await this.processQueryLocally(message, context);
+      // Build context with conversation history (last 10 messages for context)
+      const recentHistory = conversationHistory.slice(-10);
+      const historyContext = recentHistory.length > 0
+        ? `\n\nPrevious conversation:\n${recentHistory.map((m: any) => 
+            `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`
+          ).join('\n')}`
+        : '';
+
+      // Add file context if provided
+      const fileContextStr = fileContext && fileContext.length > 0
+        ? `\n\nFile Context:\n${fileContext.map(f => 
+            `File: ${f.filename} (${f.type})\nContent: ${f.content.substring(0, 2000)}...`
+          ).join('\n\n')}`
+        : '';
+
+      // Process query locally with context
+      const enhancedMessage = message + historyContext + fileContextStr;
+      const response = await this.processQueryLocally(enhancedMessage, context);
+
+      // Update conversation with new messages
+      if (conversation) {
+        const updatedMessages = [
+          ...conversationHistory,
+          { sender: 'user', text: message, timestamp: new Date().toISOString() },
+          { sender: 'assistant', text: response, timestamp: new Date().toISOString() },
+        ];
+
+        await prisma.chatConversation.update({
+          where: { id: conversation.id },
+          data: {
+            messages: updatedMessages,
+            fileContext: fileContext ? { files: fileContext } : conversation.fileContext,
+            updatedAt: new Date(),
+          },
+        });
+      }
 
       // Log the interaction (without sensitive data)
       await prisma.auditLog.create({
         data: {
           action: 'Secure Chat Query',
-          details: `Query processed locally using homomorphic AI. No external data transmission.`,
+          details: `Query processed locally using homomorphic AI. No external data transmission.${fileContext ? ` File context included: ${fileContext.length} file(s).` : ''}`,
           userId,
           organizationId,
           hash: require('crypto').randomBytes(32).toString('hex'),
@@ -284,7 +360,7 @@ class SecureChatService {
 
       return {
         response,
-        sources: ['Local AI Processing', 'User Account Data'],
+        sources: ['Local AI Processing', 'User Account Data', ...(fileContext ? ['File Context'] : [])],
         encrypted: true,
       };
     } catch (error: any) {

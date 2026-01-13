@@ -42,6 +42,10 @@ import webhooksRoutes from './routes/webhooks';
 // Demo Routes
 import demoRoutes from './routes/demo';
 
+// Control Mappings & Evidence Versioning Routes
+import controlMappingsRoutes from './routes/controlMappings';
+import evidenceVersionsRoutes from './routes/evidenceVersions';
+
 // aCOS Services
 import mqttService from './services/advanced/mqttService';
 
@@ -194,6 +198,8 @@ app.use('/api/integrations', apiLimiter, integrationsRoutes);
 app.use('/api/team', apiLimiter, teamRoutes);
 app.use('/api/audit', apiLimiter, auditRoutes);
 app.use('/api/organization', apiLimiter, organizationRoutes);
+app.use('/api/control-mappings', apiLimiter, controlMappingsRoutes);
+app.use('/api/evidence-versions', apiLimiter, evidenceVersionsRoutes);
 
 // Enterprise Module routes
 app.use('/api/personnel', apiLimiter, personnelRoutes);
@@ -287,6 +293,13 @@ httpServer.listen(config.server.port, '0.0.0.0', () => {
     ║   → OpenAPI Spec: /api/docs.json       ║
     ╚════════════════════════════════════════╝
   `);
+}).on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    logger.error(`❌ Port ${config.server.port} is already in use. Please stop the other process or use a different port.`);
+  } else {
+    logger.error(`❌ Failed to start server on port ${config.server.port}:`, error);
+  }
+  process.exit(1);
 });
 
 // Graceful shutdown

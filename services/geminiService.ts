@@ -153,12 +153,18 @@ export const classifyEvidence = async (filename: string): Promise<string> => {
   }
 };
 
-export const generateRFPResponse = async (q: string, ctx: string): Promise<string> => {
+export const generateRFPResponse = async (q: string, ctx: string): Promise<{response: string; confidence: number}> => {
   try {
-    const response: any = await api.ai.generateRFPResponse(q, ctx);
-    return response.response || "Error.";
-  } catch (e) {
-    return "Error.";
+    const result: any = await api.ai.generateRFPResponse(q, ctx);
+    return {
+      response: result.response || "Error.",
+      confidence: result.confidence || 0.75
+    };
+  } catch (e: any) {
+    return {
+      response: e?.message || "Error.",
+      confidence: 0
+    };
   }
 };
 

@@ -34,6 +34,7 @@ export const LandingPage: React.FC = () => {
     setLoading(true);
     try {
       // Request magic link from backend
+      // Backend auto-creates users if they don't exist, so this should always succeed for valid emails
       const response: any = await loginWithMagicLink(email);
       // In development, backend returns the token directly for testing
       if (response?.devToken) {
@@ -48,13 +49,14 @@ export const LandingPage: React.FC = () => {
     } catch (e: any) {
       console.error('Login error:', e);
       const errorMsg = e?.message || 'Failed to send magic link';
-      // If user doesn't exist, backend will auto-create, so just show the error
-      if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch')) {
+      // Backend auto-creates users, so errors are likely network/server issues
+      if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch') || errorMsg.includes('Cannot connect')) {
         alert('Cannot connect to server. Please check:\n1. Backend server is running\n2. Network connection is active');
       } else {
-        // If request fails, go to register (user might not exist)
-        setAuthStep('register');
+        // Show error but don't redirect to registration - backend handles user creation
+        alert(`Failed to send magic link: ${errorMsg}\n\nPlease try again or contact support if the issue persists.`);
       }
+      // Don't redirect to registration - stay on email step so user can retry
     }
     setLoading(false);
   };
@@ -63,13 +65,26 @@ export const LandingPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.auth.register(name, email, undefined, password || undefined);
-      // After registration, request magic link for login
-      const response: any = await loginWithMagicLink(email);
+      const response: any = await api.auth.register(name, email, undefined, password || undefined);
+      
+      // Check if user already exists - backend now sends magic link automatically
+      if (response?.existingUser) {
+        // User already exists, but backend sent a magic link
+        // In development, backend returns the token directly for testing
+        if (response?.devToken) {
+          setMockToken(response.devToken);
+          console.log('Development token received for existing user:', response.devToken);
+        }
+        setAuthStep('magic-link-sent');
+        setLoading(false);
+        return;
+      }
+      
+      // New user registration - backend already sent a magic link
       // In development, backend returns the token directly for testing
       if (response?.devToken) {
         setMockToken(response.devToken);
-        console.log('Development token received:', response.devToken);
+        console.log('Development token received for new user:', response.devToken);
       } else {
         // Fallback: generate a mock token (won't work with real backend)
         const testToken = `mock_token_${Date.now()}_${email}`;
@@ -80,7 +95,8 @@ export const LandingPage: React.FC = () => {
       console.error('Registration error:', error);
       const errorMsg = error?.message || 'Unknown error';
       if (errorMsg.includes('already exists') || errorMsg.includes('409')) {
-        alert('This email is already registered. Please try logging in instead.');
+        // This shouldn't happen anymore since backend handles it, but just in case
+        alert('This email is already registered. A magic link has been sent to your email for login.');
         setAuthStep('email');
       } else if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch')) {
         alert('Cannot connect to server. Please check:\n1. Backend server is running\n2. Network connection is active');
@@ -555,24 +571,7 @@ export const LandingPage: React.FC = () => {
                )}
 
                {authStep === 'register' && (
-                  <form onSubmit={async (e) => {
-                    e.preventDefault();
-                    setLoading(true);
-                    try {
-                      await register(name, email);
-                      // After registration, request magic link for login
-                      const response: any = await loginWithMagicLink(email);
-                      if (response?.devToken) {
-                        setMockToken(response.devToken);
-                      }
-                      setAuthStep('magic-link-sent');
-                    } catch (error: any) {
-                      console.error('Registration error:', error);
-                      alert(error.message || 'Registration failed. Please try again.');
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}>
+                  <form onSubmit={handleRegister}>
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h3>
                     <p className="text-gray-500 mb-6">Looks like you're new here!</p>
                     

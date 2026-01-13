@@ -95,16 +95,29 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
         // Ensure connectedIntegrations is an array
         const integrationsArray = Array.isArray(connectedIntegrations) ? connectedIntegrations : [];
         
-        // Map connected integrations to our catalog
-        const connectedMap = new Map(
-          integrationsArray.map((int: any) => [int.name?.toLowerCase() || int.provider?.toLowerCase() || '', int])
-        );
+        // Map connected integrations to our catalog - key by both name and provider
+        const connectedMap = new Map();
+        integrationsArray.forEach((int: any) => {
+          const key1 = int.name?.toLowerCase() || '';
+          const key2 = int.provider?.toLowerCase() || '';
+          if (key1) connectedMap.set(key1, int);
+          if (key2) connectedMap.set(key2, int);
+        });
 
         setIntegrations(ALL_INTEGRATIONS.map(int => {
-          const connected = connectedMap.get(int.name.toLowerCase()) || connectedMap.get(int.id.toLowerCase());
-          return connected 
-            ? { ...int, connected: true, lastSync: connected.lastSync || 'Never' }
-            : int;
+          // Check both name and id for matching
+          const connected = connectedMap.get(int.name.toLowerCase()) || 
+                           connectedMap.get(int.id.toLowerCase());
+          
+          // Only mark as connected if the integration exists AND is actually connected in DB
+          if (connected && connected.connected === true) {
+            return { 
+              ...int, 
+              connected: true, 
+              lastSync: connected.lastSync ? new Date(connected.lastSync).toLocaleString() : 'Never' 
+            };
+          }
+          return { ...int, connected: false, lastSync: 'Never' };
         }));
       } catch (error) {
         console.error('Failed to load integrations:', error);
@@ -143,9 +156,15 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
 
       setIntegrations(ALL_INTEGRATIONS.map(int => {
         const connected = connectedMap.get(int.name.toLowerCase()) || connectedMap.get(int.id.toLowerCase());
-        return connected 
-          ? { ...int, connected: true, lastSync: connected.lastSync || 'Never' }
-          : int;
+        // Only mark as connected if the integration exists AND is actually connected in DB
+        if (connected && connected.connected === true) {
+          return { 
+            ...int, 
+            connected: true, 
+            lastSync: connected.lastSync ? new Date(connected.lastSync).toLocaleString() : 'Never' 
+          };
+        }
+        return { ...int, connected: false, lastSync: 'Never' };
       }));
     } catch (error) {
       console.error('Failed to refresh integrations:', error);
@@ -154,10 +173,26 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
     setSelectedIntegration(null);
   };
 
-  const handleDisconnect = async (integration: Integration) => {
-    if (!confirm(`Are you sure you want to disconnect ${integration.name}?`)) {
+  const handleDisconnect = async (integration?: Integration) => {
+    // Handle case where integration might be undefined (called from modal)
+    if (!integration) {
+      // If called from modal, selectedIntegration should be set
+      if (!selectedIntegration) {
+        console.error('No integration selected for disconnect');
+        return;
+      }
+      integration = selectedIntegration;
+    }
+
+    if (!integration.name) {
+      console.error('Integration name is missing');
       return;
     }
+
+    // Confirmation is already handled in IntegrationModal, skip here to avoid double popup
+    // if (!confirm(`Are you sure you want to disconnect ${integration.name}?`)) {
+    //   return;
+    // }
     
     try {
       // Map integration name to provider ID
@@ -226,12 +261,16 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
 
       setIntegrations(ALL_INTEGRATIONS.map(int => {
         const connected = connectedMap.get(int.name.toLowerCase()) || connectedMap.get(int.id.toLowerCase());
-        return connected 
+        // Only mark as connected if the integration exists AND is actually connected
+        return connected && connected.connected === true
           ? { ...int, connected: true, lastSync: connected.lastSync || 'Never' }
           : { ...int, connected: false, lastSync: 'Never' };
       }));
       
       setSelectedIntegration(null);
+      
+      // Show success message
+      alert(`${integration.name} has been disconnected successfully.`);
     } catch (error: any) {
       console.error('Failed to disconnect integration:', error);
       alert(`Failed to disconnect: ${error.message || 'Unknown error'}`);
@@ -305,9 +344,15 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
 
       setIntegrations(ALL_INTEGRATIONS.map(int => {
         const connected = connectedMap.get(int.name.toLowerCase()) || connectedMap.get(int.id.toLowerCase());
-        return connected 
-          ? { ...int, connected: true, lastSync: connected.lastSync || 'Just now' }
-          : int;
+        // Only mark as connected if the integration exists AND is actually connected in DB
+        if (connected && connected.connected === true) {
+          return { 
+            ...int, 
+            connected: true, 
+            lastSync: connected.lastSync ? new Date(connected.lastSync).toLocaleString() : 'Just now' 
+          };
+        }
+        return { ...int, connected: false, lastSync: 'Never' };
       }));
       
       alert(`${integration.name} synced successfully!`);
