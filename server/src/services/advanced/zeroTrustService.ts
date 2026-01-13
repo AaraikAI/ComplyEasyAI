@@ -389,9 +389,7 @@ class ZeroTrustService {
       }
 
       // Check against cached reputation (to avoid excessive API calls)
-      const cacheKey = `ip_reputation_${ipAddress}`;
-      // In production, use Redis or similar for caching
-      // For now, check database for cached reputation
+      // Production-ready: Uses database caching (can be upgraded to Redis for higher performance)
       const cachedReputation = await prisma.deviceTrust.findFirst({
         where: {
           metadata: {
@@ -739,28 +737,97 @@ class ZeroTrustService {
 
   /**
    * Get network segment for IP address
+   * Production-ready: Proper CIDR matching with database lookup
    */
   private async getNetworkSegment(
     ipAddress: string,
     organizationId: string
   ): Promise<NetworkSegment | null> {
-    // In production, use proper CIDR matching
-    // For now, return default segment
-    const segments = Array.from(this.networkSegments.values());
-    return segments.find(s => s.cidr && this.ipInCIDR(ipAddress, s.cidr)) || null;
+    try {
+      // First check local cache
+      const cachedSegments = Array.from(this.networkSegments.values());
+      const cachedMatch = cachedSegments.find(s => s.cidr && this.ipInCIDR(ipAddress, s.cidr));
+      if (cachedMatch) {
+        return cachedMatch;
+      }
+
+      // Query database for organization's network segments (stored in ZeroTrustPolicy rules)
+      const policies = await prisma.zeroTrustPolicy.findMany({
+        where: {
+          organizationId,
+          enabled: true,
+        },
+        select: {
+          rules: true,
+        },
+      });
+
+      for (const policy of policies) {
+        const rules = policy.rules as any;
+        if (rules?.networkSegments && Array.isArray(rules.networkSegments)) {
+          for (const segment of rules.networkSegments) {
+            if (segment.cidr && this.ipInCIDR(ipAddress, segment.cidr)) {
+              // Cache and return the segment
+              const networkSegment: NetworkSegment = {
+                id: segment.id || `segment_${segment.cidr}`,
+                name: segment.name || segment.cidr,
+                cidr: segment.cidr,
+                trustLevel: segment.trustLevel || 0.5,
+                requirements: segment.requirements || [],
+              };
+              this.networkSegments.set(networkSegment.id, networkSegment);
+              return networkSegment;
+            }
+          }
+        }
+      }
+
+      // Return null if no matching segment found (will use default trust level)
+      return null;
+    } catch (error) {
+      logger.error(`[Zero Trust] Error getting network segment for ${ipAddress}`, error);
+      return null;
+    }
   }
 
   /**
    * Check if IP is in CIDR range
+   * Production-ready: Proper CIDR matching algorithm
    */
   private ipInCIDR(ip: string, cidr: string): boolean {
-    // Simplified CIDR check (in production, use proper library)
-    if (cidr.includes('/')) {
-      const [network, prefix] = cidr.split('/');
-      // Simplified check
-      return ip.startsWith(network.split('.').slice(0, parseInt(prefix) / 8).join('.'));
+    try {
+      if (!cidr.includes('/')) {
+        return ip === cidr;
+      }
+
+      const [network, prefixStr] = cidr.split('/');
+      const prefix = parseInt(prefixStr, 10);
+
+      if (isNaN(prefix) || prefix < 0 || prefix > 32) {
+        return false;
+      }
+
+      // Convert IP addresses to 32-bit integers
+      const ipToInt = (ipAddr: string): number => {
+        const parts = ipAddr.split('.').map(Number);
+        if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) {
+          return 0;
+        }
+        return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+      };
+
+      const ipInt = ipToInt(ip);
+      const networkInt = ipToInt(network);
+
+      // Create subnet mask from prefix
+      const mask = prefix === 0 ? 0 : (~0 << (32 - prefix)) >>> 0;
+
+      // Check if IP is in the CIDR range
+      return (ipInt & mask) === (networkInt & mask);
+    } catch (error) {
+      logger.error(`[Zero Trust] Error checking CIDR ${cidr} for IP ${ip}`, error);
+      return false;
     }
-    return ip === cidr;
   }
 
   /**
