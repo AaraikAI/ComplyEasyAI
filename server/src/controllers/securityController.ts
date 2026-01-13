@@ -239,7 +239,32 @@ class SecurityController {
         privateData
       );
 
-      res.json(proof);
+      const proofId = crypto.randomBytes(16).toString('hex');
+      
+      // Store proof in auditLog
+      await prisma.auditLog.create({
+        data: {
+          action: 'ZK Proof Generated: compliance_check',
+          organizationId: authReq.user!.organizationId,
+          hash: proofId,
+          details: JSON.stringify({
+            proofId,
+            proofType: 'compliance_check',
+            frameworkId,
+            controlsImplemented: privateData.controlsImplemented,
+            totalControls: privateData.totalControls,
+            publicSignals: proof.publicSignals,
+          }),
+        },
+      });
+
+      res.json({
+        ...proof,
+        proofId,
+        frameworkId,
+        proofType: 'compliance',
+        timestamp: new Date(),
+      });
     } catch (error: any) {
       logger.error('Generate compliance proof error', error);
       throw new AppError(error.message || 'Failed to generate compliance proof', 500);
@@ -335,7 +360,7 @@ class SecurityController {
   generateOwnershipProof: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { dataHash, secret } = req.body;
+      const { dataHash, secret, assetId, assetType } = req.body;
       if (!dataHash || !secret) {
         throw new AppError('Data hash and secret are required', 400);
       }
@@ -358,6 +383,8 @@ class SecurityController {
             proofId,
             proofType: 'data_ownership',
             dataHash,
+            assetId: assetId || null,
+            assetType: assetType || null,
             publicSignals: proof.publicSignals,
           }),
         },
@@ -366,7 +393,10 @@ class SecurityController {
       res.json({
         ...proof,
         proofId,
+        proofType: 'ownership',
         dataHash,
+        assetId: assetId || null,
+        assetType: assetType || null,
         timestamp: new Date(),
       });
     } catch (error: any) {
@@ -442,15 +472,33 @@ class SecurityController {
           keyName,
           authReq.user!.organizationId
         );
-      } else if (provider === 'gcp_kms' || provider === 'hashicorp_vault' || provider === 'local') {
-        // For other providers, return a mock key ID in development
-        // In production, these would need proper implementation
-        if (process.env.NODE_ENV === 'development') {
-          keyId = `mock-${provider}-${Date.now()}`;
-          logger.info(`Mock ${provider} key created: ${keyId} for org ${authReq.user!.organizationId}`);
-        } else {
-          throw new AppError(`${provider} provider is not yet fully implemented. Please use AWS KMS or Azure Key Vault.`, 400);
+      } else if (provider === 'gcp_kms') {
+        const { projectId, location, keyRing, keyId: providedKeyId } = req.body;
+        if (!projectId || !location || !keyRing || !providedKeyId) {
+          throw new AppError('Project ID, location, key ring, and key ID are required for GCP KMS', 400);
         }
+        keyId = await byokService.createGCPKey(
+          projectId,
+          location,
+          keyRing,
+          providedKeyId,
+          authReq.user!.organizationId,
+          req.body.credentials
+        );
+      } else if (provider === 'hashicorp_vault') {
+        if (!vaultUrl || !keyName) {
+          throw new AppError('Vault URL and key name are required for HashiCorp Vault', 400);
+        }
+        keyId = await byokService.createVaultKey(
+          vaultUrl,
+          keyName,
+          authReq.user!.organizationId,
+          req.body.token || process.env.VAULT_TOKEN
+        );
+      } else if (provider === 'local') {
+        // For local provider, generate a secure key ID
+        keyId = `local-${crypto.randomBytes(16).toString('hex')}`;
+        logger.info(`Local key created: ${keyId} for org ${authReq.user!.organizationId}`);
       } else {
         throw new AppError('Invalid provider. Supported: aws_kms, azure_kv, gcp_kms, hashicorp_vault, local', 400);
       }

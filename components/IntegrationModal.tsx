@@ -213,7 +213,18 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
       const response: any = await api.integrations.authorize(provider);
       
       if (response.comingSoon || response.error?.includes('coming soon')) {
-        setError(response.error || `${integration.name} integration is coming soon.`);
+        // If provider doesn't support OAuth, suggest using PAT/API key instead
+        if (response.useConnect || response.supportedAuthTypes) {
+          setError(`${integration.name} does not support OAuth. Please use ${response.supportedAuthTypes?.join(' or ') || 'API key or PAT'} connection instead.`);
+          // Automatically switch to PAT connection if available
+          if (response.supportedAuthTypes?.includes('pat')) {
+            setAuthType('pat');
+          } else if (response.supportedAuthTypes?.includes('api-key')) {
+            setAuthType('api-key');
+          }
+        } else {
+          setError(response.error || `${integration.name} integration is coming soon.`);
+        }
         setIsConnecting(false);
         setStatus('idle');
         return;
@@ -245,8 +256,20 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         throw new Error('No authorization URL received');
       }
     } catch (err: any) {
-      if (err.message?.includes('coming soon') || err.status === 501) {
-        setError(`${integration.name} integration is coming soon. Please check back later.`);
+      if (err.message?.includes('coming soon') || err.status === 501 || err.status === 400) {
+        // Check if error suggests using connect instead
+        const errorResponse = err.response?.data || err;
+        if (errorResponse.useConnect || errorResponse.supportedAuthTypes) {
+          setError(`${integration.name} does not support OAuth. Please use ${errorResponse.supportedAuthTypes?.join(' or ') || 'API key or PAT'} connection instead.`);
+          // Automatically switch to appropriate auth type
+          if (errorResponse.supportedAuthTypes?.includes('pat')) {
+            setAuthType('pat');
+          } else if (errorResponse.supportedAuthTypes?.includes('api-key')) {
+            setAuthType('api-key');
+          }
+        } else {
+          setError(`${integration.name} integration is coming soon. Please check back later.`);
+        }
       } else {
         setError(err.message || 'Failed to initiate connection');
       }

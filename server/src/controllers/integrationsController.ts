@@ -1101,19 +1101,21 @@ export const authorizeProvider: RequestHandler = async (req: Request, res: Respo
   try {
     const { provider } = req.params;
     
-    // List of supported OAuth providers
-    const supportedProviders = ['google', 'github', 'slack', 'jira'];
+    // List of supported OAuth providers (these have specific routes)
+    const supportedOAuthProviders = ['google', 'github', 'slack', 'jira'];
     
-    if (supportedProviders.includes(provider)) {
+    if (supportedOAuthProviders.includes(provider)) {
       // This should not be reached if specific routes are set up correctly
       res.status(404).json({ error: `Authorization endpoint not found for ${provider}` });
       return;
     }
     
-    // For unsupported providers, return a message indicating it's coming soon
-    res.status(501).json({ 
-      error: `${provider} integration is coming soon. Please check back later.`,
-      comingSoon: true 
+    // For providers that don't support OAuth, they should use PAT/API key connections
+    // Redirect to connect endpoint instead
+    res.status(400).json({ 
+      error: `${provider} does not support OAuth. Please use API key or PAT connection instead.`,
+      useConnect: true,
+      supportedAuthTypes: ['pat', 'api-key', 'api-key-secret']
     });
   } catch (error) {
     logger.error('Error in generic authorize', error);
