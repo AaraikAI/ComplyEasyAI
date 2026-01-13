@@ -7,6 +7,7 @@ import { Request, Response, RequestHandler } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import logger from '../config/logger';
+import { Prisma } from '@prisma/client';
 
 // Import integration services
 import googleService from '../services/integrations/googleService';
@@ -861,12 +862,99 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
         res.status(400).json({ error: 'API key is required' });
         return;
       }
+
+      // Validate API key for providers that require validation (Stripe, SendGrid, etc.)
+      const providersRequiringValidation = ['stripe', 'sendgrid'];
+      if (providersRequiringValidation.includes(provider.toLowerCase())) {
+        try {
+          const patValidationService = (await import('../services/integrations/patValidationService')).default;
+          const validation = await patValidationService.validateToken(
+            provider,
+            credentials.apiKey,
+            credentials.baseUrl
+          );
+
+          if (!validation.valid) {
+            res.status(400).json({ 
+              error: validation.error || 'Invalid API key',
+              details: 'Please verify your API key is correct and has the required permissions'
+            });
+            return;
+          }
+
+          logger.info(`API key validated successfully for ${provider}`, {
+            organizationId,
+            userInfo: validation.userInfo,
+          });
+        } catch (validationError: any) {
+          logger.error(`API key validation failed for ${provider}:`, validationError);
+          res.status(400).json({ 
+            error: validationError.message || 'Failed to validate API key',
+            details: 'Please check your API key and try again'
+          });
+          return;
+        }
+      }
+
       config = { apiKey: credentials.apiKey, baseUrl: credentials.baseUrl };
     } else if (type === 'api-key-secret') {
       if (!credentials.apiKey || !credentials.apiSecret) {
         res.status(400).json({ error: 'API key and secret are required' });
         return;
       }
+
+      // Validate API key and secret for providers that require validation
+      const providersRequiringValidation = ['sendgrid', 'twilio'];
+      if (providersRequiringValidation.includes(provider.toLowerCase())) {
+        try {
+          const patValidationService = (await import('../services/integrations/patValidationService')).default;
+          
+          if (provider.toLowerCase() === 'twilio') {
+            // Twilio uses Account SID (apiKey) and Auth Token (apiSecret)
+            // Pass auth token as token and Account SID as baseUrl for validation
+            const validation = await patValidationService.validateToken(
+              provider,
+              credentials.apiSecret, // Auth Token
+              credentials.apiKey // Account SID as baseUrl parameter
+            );
+
+            if (!validation.valid) {
+              res.status(400).json({ 
+                error: validation.error || 'Invalid Twilio credentials',
+                details: 'Please verify your Account SID and Auth Token are correct'
+              });
+              return;
+            }
+          } else {
+            // SendGrid uses API key for validation
+            const validation = await patValidationService.validateToken(
+              provider,
+              credentials.apiKey,
+              credentials.baseUrl
+            );
+
+            if (!validation.valid) {
+              res.status(400).json({ 
+                error: validation.error || 'Invalid API key',
+                details: 'Please verify your API key is correct and has the required permissions'
+              });
+              return;
+            }
+          }
+
+          logger.info(`API key and secret validated successfully for ${provider}`, {
+            organizationId,
+          });
+        } catch (validationError: any) {
+          logger.error(`API key validation failed for ${provider}:`, validationError);
+          res.status(400).json({ 
+            error: validationError.message || 'Failed to validate credentials',
+            details: 'Please check your credentials and try again'
+          });
+          return;
+        }
+      }
+
       config = { 
         apiKey: credentials.apiKey, 
         apiSecret: credentials.apiSecret,
@@ -888,6 +976,37 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
         res.status(400).json({ error: 'Personal access token is required' });
         return;
       }
+
+      // Validate PAT token before saving
+      try {
+        const patValidationService = (await import('../services/integrations/patValidationService')).default;
+        const validation = await patValidationService.validateToken(
+          provider,
+          credentials.token,
+          credentials.baseUrl
+        );
+
+        if (!validation.valid) {
+          res.status(400).json({ 
+            error: validation.error || 'Invalid personal access token',
+            details: 'Please verify your token is correct and has the required permissions'
+          });
+          return;
+        }
+
+        logger.info(`PAT validated successfully for ${provider}`, {
+          organizationId,
+          userInfo: validation.userInfo,
+        });
+      } catch (validationError: any) {
+        logger.error(`PAT validation failed for ${provider}:`, validationError);
+        res.status(400).json({ 
+          error: validationError.message || 'Failed to validate token',
+          details: 'Please check your token and try again'
+        });
+        return;
+      }
+
       config = { token: credentials.token, baseUrl: credentials.baseUrl };
     } else if (type === 'service-account') {
       if (!credentials.serviceAccountJson) {
@@ -1076,7 +1195,8 @@ export const disconnectProvider: RequestHandler = async (req: Request, res: Resp
       where: { id: integration.id },
       data: {
         connected: false,
-        config: undefined,
+        config: Prisma.DbNull, // Use Prisma.DbNull to clear JSONB fields
+        lastSync: null,
       },
     });
 

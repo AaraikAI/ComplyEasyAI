@@ -42,6 +42,10 @@ import webhooksRoutes from './routes/webhooks';
 // Demo Routes
 import demoRoutes from './routes/demo';
 
+// Control Mappings & Evidence Versioning Routes
+import controlMappingsRoutes from './routes/controlMappings';
+import evidenceVersionsRoutes from './routes/evidenceVersions';
+
 // aCOS Services
 import mqttService from './services/advanced/mqttService';
 
@@ -134,6 +138,22 @@ app.get('/api/docs.json', (req: Request, res: Response) => {
   res.send(swaggerSpec);
 });
 
+// Root endpoint - provide API information
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    name: 'ComplyEasy AI Backend API',
+    version: '2.0.0',
+    status: 'running',
+    environment: config.server.env,
+    endpoints: {
+      health: '/health',
+      apiDocs: '/api/docs',
+      apiSpec: '/api/docs.json',
+    },
+    message: 'ComplyEasy AI Enterprise Backend Server is running. Visit /api/docs for API documentation.',
+  });
+});
+
 // Health check endpoint
 app.get('/health', async (req: Request, res: Response) => {
   try {
@@ -178,6 +198,8 @@ app.use('/api/integrations', apiLimiter, integrationsRoutes);
 app.use('/api/team', apiLimiter, teamRoutes);
 app.use('/api/audit', apiLimiter, auditRoutes);
 app.use('/api/organization', apiLimiter, organizationRoutes);
+app.use('/api/control-mappings', apiLimiter, controlMappingsRoutes);
+app.use('/api/evidence-versions', apiLimiter, evidenceVersionsRoutes);
 
 // Enterprise Module routes
 app.use('/api/personnel', apiLimiter, personnelRoutes);
@@ -236,8 +258,8 @@ if (config.mqtt.brokerUrl && config.mqtt.brokerUrl !== 'mqtt://localhost:1883') 
   logger.info('ℹ️  MQTT not configured (set MQTT_BROKER_URL to enable)');
 }
 
-// Start server
-httpServer.listen(config.server.port, () => {
+// Start server - bind to all interfaces (IPv4 and IPv6)
+httpServer.listen(config.server.port, '0.0.0.0', () => {
   logger.info(`
     ╔════════════════════════════════════════╗
     ║   ComplyEasy AI Backend Server         ║
@@ -271,6 +293,13 @@ httpServer.listen(config.server.port, () => {
     ║   → OpenAPI Spec: /api/docs.json       ║
     ╚════════════════════════════════════════╝
   `);
+}).on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EADDRINUSE') {
+    logger.error(`❌ Port ${config.server.port} is already in use. Please stop the other process or use a different port.`);
+  } else {
+    logger.error(`❌ Failed to start server on port ${config.server.port}:`, error);
+  }
+  process.exit(1);
 });
 
 // Graceful shutdown

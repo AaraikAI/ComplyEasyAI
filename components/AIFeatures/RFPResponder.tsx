@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
 import { generateRFPResponse } from '../../services/geminiService';
-import { FileText, Loader2, ArrowLeft, Send, AlertTriangle, X } from 'lucide-react';
+import { FileText, Loader2, ArrowLeft, Send, AlertTriangle, X, Download, Edit2, Save, XCircle, CheckCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { api } from '../../services/api';
 
 const MAX_QUESTION_LENGTH = 10000; // 10k characters
+
+interface RFPAnswer {
+  question: string;
+  answer: string;
+  confidence: number;
+  edited: boolean;
+}
 
 export const RFPResponder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [context, setContext] = useState('');
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
+  const [answers, setAnswers] = useState<RFPAnswer[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,50 +61,138 @@ export const RFPResponder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     setError(null);
     setLoading(true);
-    setAnswer('');
+    setAnswers([]);
 
     try {
       // Check if question is too long
       if (question.length > MAX_QUESTION_LENGTH) {
         setError(`Question is very long (${question.length} characters). Processing first ${MAX_QUESTION_LENGTH} characters...`);
         const truncatedQuestion = question.substring(0, MAX_QUESTION_LENGTH) + '\n\n[Question truncated due to length...]';
-        const result = await generateRFPResponse(truncatedQuestion, context || 'Standard enterprise security posture.');
-        setAnswer(result);
+        const result = await api.ai.generateRFPResponse(truncatedQuestion, context || 'Standard enterprise security posture.');
+        setAnswers([{
+          question: truncatedQuestion,
+          answer: result.response || result.answer || result,
+          confidence: result.confidence || 0.75,
+          edited: false,
+        }]);
         return;
       }
 
       // Detect multiple questions
       const questions = detectMultipleQuestions(question);
+      const newAnswers: RFPAnswer[] = [];
       
-      if (questions.length > 1) {
-        // Handle multiple questions
-        setAnswer('Processing multiple questions...\n\n');
-        const answers: string[] = [];
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (q.trim().length === 0) continue;
         
-        for (let i = 0; i < questions.length; i++) {
-          const q = questions[i];
-          if (q.trim().length === 0) continue;
-          
-          try {
-            const response = await generateRFPResponse(q, context || 'Standard enterprise security posture.');
-            answers.push(`**Question ${i + 1}:**\n${q}\n\n**Answer:**\n${response}\n\n---\n\n`);
-          } catch (err: any) {
-            answers.push(`**Question ${i + 1}:**\n${q}\n\n**Answer:**\nError processing this question: ${err.message || 'Unknown error'}\n\n---\n\n`);
-          }
+        try {
+          const result = await api.ai.generateRFPResponse(q, context || 'Standard enterprise security posture.');
+          newAnswers.push({
+            question: q,
+            answer: result.response || result,
+            confidence: result.confidence || 0.75,
+            edited: false,
+          });
+        } catch (err: any) {
+          newAnswers.push({
+            question: q,
+            answer: `Error processing this question: ${err.message || 'Unknown error'}`,
+            confidence: 0,
+            edited: false,
+          });
         }
-        
-        setAnswer(answers.join(''));
-      } else {
-        // Single question
-        const result = await generateRFPResponse(question, context || 'Standard enterprise security posture.');
-        setAnswer(result);
       }
+      
+      setAnswers(newAnswers);
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to generate RFP response. Please try again.';
       setError(errorMessage);
-      setAnswer('');
+      setAnswers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = (index: number) => {
+    setEditingIndex(index);
+    setEditText(answers[index].answer);
+  };
+
+  const handleSaveEdit = (index: number) => {
+    const updated = [...answers];
+    updated[index] = { ...updated[index], answer: editText, edited: true };
+    setAnswers(updated);
+    setEditingIndex(null);
+    setEditText('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingIndex(null);
+    setEditText('');
+  };
+
+  const handleExportCSV = () => {
+    const csvContent = [
+      ['Question', 'Answer', 'Confidence', 'Edited'],
+      ...answers.map(a => [
+        a.question.replace(/"/g, '""'),
+        a.answer.replace(/"/g, '""'),
+        (a.confidence * 100).toFixed(1) + '%',
+        a.edited ? 'Yes' : 'No'
+      ])
+    ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rfp-responses-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPDF = () => {
+    // Create HTML content for PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>RFP Responses</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #333; }
+            .question { margin: 20px 0; padding: 15px; background: #f5f5f5; border-left: 4px solid #0066cc; }
+            .answer { margin: 10px 0; padding: 10px; background: white; }
+            .confidence { color: #666; font-size: 0.9em; }
+            .edited { color: #ff6600; font-size: 0.9em; }
+          </style>
+        </head>
+        <body>
+          <h1>RFP Responses</h1>
+          <p><strong>Company Context:</strong> ${context || 'Not provided'}</p>
+          <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+          <hr>
+          ${answers.map((a, i) => `
+            <div class="question">
+              <h3>Question ${i + 1}</h3>
+              <p>${a.question}</p>
+              <div class="answer">
+                <p>${a.answer}</p>
+                <div class="confidence">Confidence: ${(a.confidence * 100).toFixed(1)}%</div>
+                ${a.edited ? '<div class="edited">✓ Edited</div>' : ''}
+              </div>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.print();
     }
   };
 
@@ -166,16 +264,92 @@ export const RFPResponder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </button>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-y-auto">
-          {answer ? (
-             <div className="prose prose-sm max-w-none">
-                <ReactMarkdown>{answer}</ReactMarkdown>
-             </div>
+          {answers.length > 0 ? (
+            <div className="space-y-6">
+              <div className="flex justify-end gap-2 mb-4">
+                <button
+                  onClick={handleExportCSV}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                >
+                  <Download size={16} />
+                  Export CSV
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                >
+                  <Download size={16} />
+                  Export PDF
+                </button>
+              </div>
+              {answers.map((answer, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-semibold text-gray-900">Question {index + 1}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        answer.confidence >= 0.8 ? 'bg-green-100 text-green-800' :
+                        answer.confidence >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        Confidence: {(answer.confidence * 100).toFixed(0)}%
+                      </span>
+                      {answer.edited && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">
+                          Edited
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-3">{answer.question}</p>
+                  {editingIndex === index ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none text-sm"
+                        rows={6}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSaveEdit(index)}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                        >
+                          <Save size={14} />
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                        >
+                          <XCircle size={14} />
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="prose prose-sm max-w-none bg-white p-3 rounded border border-gray-200">
+                        <ReactMarkdown>{answer.answer}</ReactMarkdown>
+                      </div>
+                      <button
+                        onClick={() => handleEdit(index)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-brand-600 hover:text-brand-800 hover:bg-brand-50 rounded transition-colors"
+                      >
+                        <Edit2 size={14} />
+                        Edit Response
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           ) : (
-             <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <FileText size={48} className="mb-2" />
-                <p>Generated answer(s) will appear here.</p>
-                <p className="text-xs mt-2">Supports single or multiple questions</p>
-             </div>
+            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+              <FileText size={48} className="mb-2" />
+              <p>Generated answer(s) will appear here.</p>
+              <p className="text-xs mt-2">Supports single or multiple questions</p>
+            </div>
           )}
         </div>
       </div>

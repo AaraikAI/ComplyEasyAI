@@ -607,6 +607,11 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
   };
 
   const handleDisconnect = async () => {
+    if (!integration || !integration.name) {
+      setError('Integration information is missing');
+      return;
+    }
+
     if (!confirm(`Are you sure you want to disconnect ${integration.name}?`)) {
       return;
     }
@@ -617,8 +622,15 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
     try {
       const provider = getProviderId();
       await api.integrations.disconnect(provider);
-      onDisconnect();
+      
+      // Call onDisconnect callback with the integration to refresh parent
+      if (onDisconnect) {
+        onDisconnect(integration);
+      }
       onClose();
+      
+      // Don't reload the entire page - let the parent component handle the refresh
+      // The onDisconnect callback should trigger a reload of the integrations list
     } catch (err: any) {
       setError(err.message || 'Failed to disconnect integration');
       setIsConnecting(false);

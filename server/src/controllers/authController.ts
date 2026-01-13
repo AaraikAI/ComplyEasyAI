@@ -17,9 +17,26 @@ class AuthController {
       }
 
       // Check if user exists
+      // Select only needed organization fields to avoid schema mismatch issues
+      // Excluding plan field to avoid enum mismatch (database may have 'Pro' which isn't in enum)
       let user = await prisma.user.findUnique({
         where: { email },
-        include: { organization: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          avatar: true,
+          organizationId: true,
+          twoFactorEnabled: true,
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              // plan: true, // Excluded to avoid enum mismatch with 'Pro' value
+            },
+          },
+        },
       });
 
       // If user doesn't exist, create a new one (auto-registration)
@@ -40,7 +57,22 @@ class AuthController {
             role: 'admin', // First user is admin
             organizationId: organization.id,
           },
-          include: { organization: true },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            avatar: true,
+            organizationId: true,
+            twoFactorEnabled: true,
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                plan: true,
+              },
+            },
+          },
         });
 
         logger.info(`New user registered: ${email}`);
@@ -87,10 +119,27 @@ class AuthController {
       }
 
       res.json(response);
-    } catch (error) {
-      logger.error('Request magic link error', error);
+    } catch (error: any) {
+      logger.error('Request magic link error', {
+        message: error?.message,
+        stack: error?.stack,
+        code: error?.code,
+        meta: error?.meta,
+        email: req.body?.email,
+      });
       if (error instanceof AppError) throw error;
-      throw new AppError('Failed to send magic link', 500);
+      
+      // Provide more specific error message
+      let errorMessage = 'Failed to send magic link';
+      if (error?.code === 'P2002') {
+        errorMessage = 'A magic link was already sent recently. Please check your email or wait a few minutes.';
+      } else if (error?.code === 'P2003') {
+        errorMessage = 'Database constraint error. Please contact support.';
+      } else if (error?.message) {
+        errorMessage = `Failed to send magic link: ${error.message}`;
+      }
+      
+      throw new AppError(errorMessage, 500);
     }
   }
 
@@ -118,7 +167,22 @@ class AuthController {
       // Get user
       const user = await prisma.user.findUnique({
         where: { email: magicLink.email },
-        include: { organization: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          avatar: true,
+          organizationId: true,
+          twoFactorEnabled: true,
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              plan: true,
+            },
+          },
+        },
       });
 
       if (!user) {
@@ -245,7 +309,24 @@ class AuthController {
       // Find user
       const user = await prisma.user.findUnique({
         where: { email },
-        include: { organization: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          avatar: true,
+          organizationId: true,
+          passwordHash: true,
+          twoFactorEnabled: true,
+          twoFactorVerified: true,
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              plan: true,
+            },
+          },
+        },
       });
 
       if (!user) {
@@ -335,10 +416,68 @@ class AuthController {
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
         where: { email },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          avatar: true,
+          organizationId: true,
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              plan: true,
+            },
+          },
+        },
       });
 
       if (existingUser) {
-        throw new AppError('User already exists', 409);
+        // User already exists - send them a magic link instead of error
+        logger.info(`User ${email} already exists, sending magic link for login`);
+        
+        // Generate magic link token
+        const token = uuidv4();
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+        // Store magic link token
+        await prisma.magicLink.create({
+          data: {
+            email,
+            token,
+            expiresAt,
+          },
+        });
+
+        // Send magic link email
+        try {
+          const emailSent = await emailService.sendMagicLink(email, token);
+          if (!emailSent) {
+            logger.warn(`Failed to send magic link email to ${email}, but continuing with token generation`);
+          }
+        } catch (error: any) {
+          logger.error(`Failed to send magic link email to ${email}:`, error.message);
+          if (process.env.NODE_ENV !== 'development') {
+            throw new AppError(`Failed to send email: ${error.message}`, 500);
+          }
+        }
+
+        // In development, also return the token for testing
+        const response: any = {
+          message: 'An account with this email already exists. A magic link has been sent to your email for login.',
+          email,
+          existingUser: true,
+        };
+
+        // Only return token in development mode for testing
+        if (process.env.NODE_ENV === 'development') {
+          response.devToken = token;
+          response.devMessage = 'Development mode: Use this token to verify the magic link';
+        }
+
+        res.status(200).json(response);
+        return;
       }
 
       // Create organization
@@ -381,14 +520,23 @@ class AuthController {
       // Send magic link
       await emailService.sendMagicLink(email, token);
 
-      res.status(201).json({
+      // In development, also return the token for testing (remove in production!)
+      const response: any = {
         message: 'Registration successful. Check your email for login link.',
         user: {
           id: user.id,
           email: user.email,
           name: user.name,
         },
-      });
+      };
+
+      // Only return token in development mode for testing
+      if (process.env.NODE_ENV === 'development') {
+        response.devToken = token;
+        response.devMessage = 'Development mode: Use this token to verify the magic link';
+      }
+
+      res.status(201).json(response);
 
       logger.info(`New user registered: ${email}`);
     } catch (error) {
@@ -409,7 +557,22 @@ class AuthController {
       // Get user
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        include: { organization: true },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          avatar: true,
+          organizationId: true,
+          twoFactorEnabled: true,
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              plan: true,
+            },
+          },
+        },
       });
 
       if (!user) {

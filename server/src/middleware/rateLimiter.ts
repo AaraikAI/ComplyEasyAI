@@ -8,7 +8,7 @@ export const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip rate limiting for health checks, static assets, TGN predictions, control loop operations, and frameworks GET requests
+    // Skip rate limiting for health checks, static assets, TGN predictions, control loop operations
     const path = req.path || '';
     const method = req.method || '';
     
@@ -32,13 +32,29 @@ export const apiLimiter = rateLimit({
       return true;
     }
     
-    // Skip rate limiting for GET requests to frameworks (read-only, frequently accessed)
-    if (path.includes('/frameworks') && method === 'GET') {
+    // Skip for GET requests to list endpoints (read-only operations)
+    if (method === 'GET' && (
+      path.includes('/integrations') ||
+      path.includes('/frameworks') ||
+      path.includes('/tasks') ||
+      path.includes('/risks') ||
+      path.includes('/team')
+    )) {
       return true;
     }
     
+    // Apply rate limiting to write operations (POST, PUT, PATCH, DELETE)
     return false;
   },
+});
+
+// Framework-specific rate limiter (100 requests in 10 seconds)
+export const frameworkLimiter = rateLimit({
+  windowMs: 10 * 1000, // 10 seconds
+  max: 100, // 100 requests per window
+  message: 'Too many framework requests. Please slow down.',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 export const authLimiter = rateLimit({

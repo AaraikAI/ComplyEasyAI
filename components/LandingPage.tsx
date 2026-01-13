@@ -5,9 +5,10 @@ import {
   ShieldCheck, EyeOff, Key, GitMerge, BrainCircuit, Timer, Target, RefreshCw, TrendingUp,
   AlertTriangle, FileCheck, Network, Mic, Video, Radio, Cpu, Eye, Layers, Workflow, Sparkles
 } from 'lucide-react';
-import { PRICING_TIERS } from '../constants';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
+import PricingSection from './PricingSection';
+import { TierName } from '../types';
 
 export const LandingPage: React.FC = () => {
   const { verifyMagicLink, register, loginWithMagicLink } = useAuth();
@@ -33,6 +34,7 @@ export const LandingPage: React.FC = () => {
     setLoading(true);
     try {
       // Request magic link from backend
+      // Backend auto-creates users if they don't exist, so this should always succeed for valid emails
       const response: any = await loginWithMagicLink(email);
       // In development, backend returns the token directly for testing
       if (response?.devToken) {
@@ -47,13 +49,14 @@ export const LandingPage: React.FC = () => {
     } catch (e: any) {
       console.error('Login error:', e);
       const errorMsg = e?.message || 'Failed to send magic link';
-      // If user doesn't exist, backend will auto-create, so just show the error
-      if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch')) {
+      // Backend auto-creates users, so errors are likely network/server issues
+      if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch') || errorMsg.includes('Cannot connect')) {
         alert('Cannot connect to server. Please check:\n1. Backend server is running\n2. Network connection is active');
       } else {
-        // If request fails, go to register (user might not exist)
-        setAuthStep('register');
+        // Show error but don't redirect to registration - backend handles user creation
+        alert(`Failed to send magic link: ${errorMsg}\n\nPlease try again or contact support if the issue persists.`);
       }
+      // Don't redirect to registration - stay on email step so user can retry
     }
     setLoading(false);
   };
@@ -62,13 +65,26 @@ export const LandingPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.auth.register(name, email, undefined, password || undefined);
-      // After registration, request magic link for login
-      const response: any = await loginWithMagicLink(email);
+      const response: any = await api.auth.register(name, email, undefined, password || undefined);
+      
+      // Check if user already exists - backend now sends magic link automatically
+      if (response?.existingUser) {
+        // User already exists, but backend sent a magic link
+        // In development, backend returns the token directly for testing
+        if (response?.devToken) {
+          setMockToken(response.devToken);
+          console.log('Development token received for existing user:', response.devToken);
+        }
+        setAuthStep('magic-link-sent');
+        setLoading(false);
+        return;
+      }
+      
+      // New user registration - backend already sent a magic link
       // In development, backend returns the token directly for testing
       if (response?.devToken) {
         setMockToken(response.devToken);
-        console.log('Development token received:', response.devToken);
+        console.log('Development token received for new user:', response.devToken);
       } else {
         // Fallback: generate a mock token (won't work with real backend)
         const testToken = `mock_token_${Date.now()}_${email}`;
@@ -79,7 +95,8 @@ export const LandingPage: React.FC = () => {
       console.error('Registration error:', error);
       const errorMsg = error?.message || 'Unknown error';
       if (errorMsg.includes('already exists') || errorMsg.includes('409')) {
-        alert('This email is already registered. Please try logging in instead.');
+        // This shouldn't happen anymore since backend handles it, but just in case
+        alert('This email is already registered. A magic link has been sent to your email for login.');
         setAuthStep('email');
       } else if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch')) {
         alert('Cannot connect to server. Please check:\n1. Backend server is running\n2. Network connection is active');
@@ -340,50 +357,14 @@ export const LandingPage: React.FC = () => {
 
       {/* Pricing Section */}
       <section id="pricing" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-brand-600 font-bold tracking-wide uppercase text-sm mb-2">Simple Pricing</h2>
-            <h3 className="text-3xl lg:text-4xl font-bold text-slate-900">Scale your compliance journey</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {PRICING_TIERS.map((tier, idx) => (
-              <div key={idx} className={`relative p-8 rounded-2xl border ${tier.recommended ? 'border-brand-500 shadow-2xl scale-105 z-10' : 'border-gray-200 bg-gray-50'}`}>
-                {tier.recommended && (
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-brand-600 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                    Most Popular
-                  </div>
-                )}
-                <div className="text-center mb-8">
-                  <h4 className="text-xl font-bold text-slate-900 mb-2">{tier.name}</h4>
-                  <div className="flex items-baseline justify-center">
-                    <span className="text-4xl font-bold text-slate-900">{tier.price}</span>
-                    <span className="text-slate-500">{tier.period}</span>
-                  </div>
-                  <p className="text-sm text-slate-500 mt-2">{tier.target}</p>
-                </div>
-                <ul className="space-y-4 mb-8">
-                  {tier.features.map((feature, fIdx) => (
-                    <li key={fIdx} className="flex items-center text-slate-600 text-sm">
-                      <CheckCircle size={16} className="text-green-500 mr-3 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <button 
-                  onClick={() => { setAuthStep('register'); setShowAuthModal(true); }}
-                  className={`w-full py-3 rounded-xl font-bold transition-colors ${
-                    tier.recommended 
-                      ? 'bg-brand-600 text-white hover:bg-brand-700' 
-                      : 'bg-white text-brand-600 border border-brand-200 hover:bg-brand-50'
-                  }`}
-                >
-                  Choose {tier.name}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+        <PricingSection
+          embedded={false}
+          onSelectTier={(tier: TierName) => {
+            // When user selects a tier, show registration modal
+            setAuthStep('register');
+            setShowAuthModal(true);
+          }}
+        />
       </section>
 
       {/* About Section */}
@@ -590,24 +571,7 @@ export const LandingPage: React.FC = () => {
                )}
 
                {authStep === 'register' && (
-                  <form onSubmit={async (e) => {
-                    e.preventDefault();
-                    setLoading(true);
-                    try {
-                      await register(name, email);
-                      // After registration, request magic link for login
-                      const response: any = await loginWithMagicLink(email);
-                      if (response?.devToken) {
-                        setMockToken(response.devToken);
-                      }
-                      setAuthStep('magic-link-sent');
-                    } catch (error: any) {
-                      console.error('Registration error:', error);
-                      alert(error.message || 'Registration failed. Please try again.');
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}>
+                  <form onSubmit={handleRegister}>
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h3>
                     <p className="text-gray-500 mb-6">Looks like you're new here!</p>
                     
