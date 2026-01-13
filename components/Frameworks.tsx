@@ -198,7 +198,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
               
               <div className="mb-4">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-500">Readiness</span>
+                  <span className="text-gray-500">Status</span>
                   <span className="font-bold text-gray-900">{fw.progress}%</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-2">

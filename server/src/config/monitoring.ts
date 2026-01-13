@@ -283,6 +283,8 @@ export function startTransaction(name: string, op: string): any {
     setData: () => {},
     setHttpStatus: () => {},
     setStatus: () => {},
+    setTag: () => {},
+    setUser: () => {},
     finish: () => {},
   };
 }

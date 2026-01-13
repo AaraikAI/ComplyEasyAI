@@ -302,24 +302,32 @@ export const api = {
       return fetchAPI<ComplianceFramework[]>('/frameworks');
     },
 
-    getById: async (id: string) => {
-      return fetchAPI<ComplianceFramework>(`/frameworks/${id}`);
+    getById: async (id: string, queryParams?: string) => {
+      const url = queryParams ? `/frameworks/${id}?${queryParams}` : `/frameworks/${id}`;
+      return fetchAPI<ComplianceFramework>(url);
     },
 
     exportControl: async (frameworkId: string, controlId: string) => {
       return fetchAPI(`/frameworks/${frameworkId}/controls/${controlId}/export`);
     },
 
-    createControl: async (frameworkId: string, control: { name: string; description?: string; status?: string }) => {
+    createControl: async (frameworkId: string, control: { name: string; description?: string; status?: string; category?: string; ownerId?: string }) => {
       return fetchAPI(`/frameworks/${frameworkId}/controls`, {
         method: 'POST',
         body: JSON.stringify(control),
       });
     },
 
-    updateControl: async (frameworkId: string, controlId: string, updates: { status?: string; description?: string; evidence?: string }) => {
+    updateControl: async (frameworkId: string, controlId: string, updates: { status?: string; description?: string; evidence?: string; evidenceRequired?: boolean; ownerId?: string; category?: string }) => {
       return fetchAPI(`/frameworks/${frameworkId}/controls/${controlId}`, {
         method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    bulkUpdateControls: async (frameworkId: string, updates: { controlIds: string[]; status: string; evidenceRequired?: boolean }) => {
+      return fetchAPI(`/frameworks/${frameworkId}/controls/bulk-update`, {
+        method: 'POST',
         body: JSON.stringify(updates),
       });
     },
@@ -348,7 +356,46 @@ export const api = {
       return response.json();
     },
 
+    getEvidenceUrl: async (frameworkId: string, controlId: string) => {
+      return fetchAPI<{ url: string }>(`/frameworks/${frameworkId}/controls/${controlId}/evidence/url`);
+    },
+
     smartUpload: async (frameworkId: string, formData: FormData) => {
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/frameworks/${frameworkId}/smart-upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || error.message || `HTTP ${response.status}`);
+      }
+
+      return response.json();
+    },
+
+    getSuggestions: async (frameworkId: string) => {
+      return fetchAPI<{ suggestions: any[] }>(`/frameworks/${frameworkId}/suggestions`);
+    },
+
+    acceptSuggestion: async (suggestionId: string) => {
+      return fetchAPI(`/frameworks/suggestions/${suggestionId}/accept`, {
+        method: 'POST',
+      });
+    },
+
+    rejectSuggestion: async (suggestionId: string, feedback?: string) => {
+      return fetchAPI(`/frameworks/suggestions/${suggestionId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ feedback }),
+      });
+    },
+
+    smartUploadOld: async (frameworkId: string, formData: FormData) => {
       const token = getAuthToken();
       const response = await fetch(`${API_BASE_URL}/frameworks/${frameworkId}/smart-upload`, {
         method: 'POST',
@@ -385,6 +432,55 @@ export const api = {
         method: 'DELETE',
       });
     },
+
+    // Control Mappings
+    getControlMappings: async (controlId: string) => {
+      return fetchAPI(`/control-mappings/control/${controlId}`);
+    },
+    createControlMapping: async (mapping: { sourceControlId: string; targetControlId: string; mappingType?: string; confidence?: number }) => {
+      return fetchAPI('/control-mappings', {
+        method: 'POST',
+        body: JSON.stringify(mapping),
+      });
+    },
+    deleteControlMapping: async (mappingId: string) => {
+      return fetchAPI(`/control-mappings/${mappingId}`, {
+        method: 'DELETE',
+      });
+    },
+    exportControlMappings: async () => {
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/control-mappings/export/csv`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to export');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `control-mappings-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+
+    // Evidence Versioning
+    getEvidenceVersions: async (controlId: string) => {
+      return fetchAPI(`/evidence-versions/control/${controlId}`);
+    },
+    restoreEvidenceVersion: async (controlId: string, versionId: string) => {
+      return fetchAPI(`/evidence-versions/control/${controlId}/restore/${versionId}`, {
+        method: 'POST',
+      });
+    },
+    deleteEvidenceVersion: async (controlId: string, versionId: string) => {
+      return fetchAPI(`/evidence-versions/control/${controlId}/${versionId}`, {
+        method: 'DELETE',
+      });
+    },
   },
 
   // --- AI ---
@@ -410,10 +506,10 @@ export const api = {
       });
     },
 
-    performGapAnalysis: async (current: string[], target: string) => {
+    performGapAnalysis: async (current: string[], target: string | string[]) => {
       return fetchAPI('/ai/gap-analysis', {
         method: 'POST',
-        body: JSON.stringify({ current, target }),
+        body: JSON.stringify({ current, target: Array.isArray(target) ? target : [target] }),
       });
     },
 
@@ -424,10 +520,10 @@ export const api = {
       });
     },
 
-    generatePhishing: async (theme: string, department: string) => {
+    generatePhishing: async (type: string, theme: string, department: string, difficulty: string) => {
       return fetchAPI('/ai/phishing', {
         method: 'POST',
-        body: JSON.stringify({ theme, department }),
+        body: JSON.stringify({ type, theme, department, difficulty }),
       });
     },
 
@@ -445,17 +541,17 @@ export const api = {
       });
     },
 
-    generateBCP: async (scenario: string) => {
+    generateBCP: async (scenario: string, rto?: string, rpo?: string) => {
       return fetchAPI('/ai/bcp', {
         method: 'POST',
-        body: JSON.stringify({ scenario }),
+        body: JSON.stringify({ scenario, rto, rpo }),
       });
     },
 
-    chat: async (message: string) => {
+    chat: async (message: string, fileContext?: Array<{filename: string; content: string; type: string}>) => {
       return fetchAPI('/ai/chat', {
         method: 'POST',
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, fileContext }),
       });
     },
   },

@@ -88,11 +88,13 @@ class AIController {
     try {
       const authReq = req as AuthRequest;
       const { current, target } = req.body;
-      const analysis = await geminiService.performGapAnalysis(current, target, authReq.user!.id);
-      res.json({ analysis });
-    } catch (error) {
+      const targetArray = Array.isArray(target) ? target : [target];
+      const result = await geminiService.performGapAnalysis(current, targetArray, authReq.user!.id);
+      res.json(result);
+    } catch (error: any) {
       logger.error('Gap analysis error', error);
-      throw new AppError('Failed to perform gap analysis', 500);
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to perform gap analysis', 500);
     }
   };
 
@@ -100,23 +102,31 @@ class AIController {
     try {
       const authReq = req as AuthRequest;
       const { question, context } = req.body;
-      const response = await geminiService.generateRFPResponse(question, context, authReq.user!.id);
-      res.json({ response });
-    } catch (error) {
+      const result = await geminiService.generateRFPResponse(question, context, authReq.user!.id);
+      res.json(result);
+    } catch (error: any) {
       logger.error('RFP response error', error);
-      throw new AppError('Failed to generate RFP response', 500);
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to generate RFP response', 500);
     }
   };
 
   generatePhishing: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { theme, department } = req.body;
-      const email = await geminiService.generatePhishingSimulation(theme, department, authReq.user!.id);
-      res.json({ email });
-    } catch (error) {
+      const { type, theme, department, difficulty } = req.body;
+      const result = await geminiService.generatePhishingSimulation(
+        type || 'Email',
+        theme,
+        department,
+        difficulty || 'Medium',
+        authReq.user!.id
+      );
+      res.json(result);
+    } catch (error: any) {
       logger.error('Generate phishing error', error);
-      throw new AppError('Failed to generate phishing simulation', 500);
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to generate phishing simulation', 500);
     }
   };
 
@@ -136,30 +146,37 @@ class AIController {
     try {
       const authReq = req as AuthRequest;
       const { process } = req.body;
-      const map = await geminiService.generateDataMap(process, authReq.user!.id);
-      res.json({ map });
-    } catch (error) {
+      const result = await geminiService.generateDataMap(process, authReq.user!.id);
+      res.json(result);
+    } catch (error: any) {
       logger.error('Generate data map error', error);
-      throw new AppError('Failed to generate data map', 500);
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to generate data map', 500);
     }
   };
 
   generateBCP: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { scenario } = req.body;
-      const plan = await geminiService.generateBCP(scenario, authReq.user!.id);
-      res.json({ plan });
-    } catch (error) {
+      const { scenario, rto, rpo } = req.body;
+      const result = await geminiService.generateBCP(
+        scenario,
+        rto || '4 hours',
+        rpo || '1 hour',
+        authReq.user!.id
+      );
+      res.json(result);
+    } catch (error: any) {
       logger.error('Generate BCP error', error);
-      throw new AppError('Failed to generate BCP', 500);
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to generate BCP', 500);
     }
   };
 
   chat: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { message } = req.body;
+      const { message, fileContext } = req.body;
 
       if (!message) {
         throw new AppError('Message is required', 400);
@@ -167,10 +184,12 @@ class AIController {
 
       // Use secure chat service that processes locally with user's account data
       // No data is sent to external LLMs - all processing happens on-premise
+      // Supports multi-turn conversation context and file context
       const chatResponse = await secureChatService.chatWithUser(
         message,
         authReq.user!.id,
-        authReq.user!.organizationId
+        authReq.user!.organizationId,
+        fileContext
       );
 
       res.json({
