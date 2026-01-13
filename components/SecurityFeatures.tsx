@@ -468,7 +468,10 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
     ownershipHash: '',
     timestamp: '',
   });
-  const [generatedProof, setGeneratedProof] = useState<any>(null);
+  // Separate proof states for each tab
+  const [complianceProof, setComplianceProof] = useState<any>(null);
+  const [credentialProof, setCredentialProof] = useState<any>(null);
+  const [ownershipProof, setOwnershipProof] = useState<any>(null);
 
   useEffect(() => {
     loadProofs();
@@ -498,7 +501,15 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
           evidenceHash: complianceForm.evidenceHash,
         }
       );
-      setGeneratedProof(proof);
+      // Generate unique proof ID if not provided
+      const proofWithId = {
+        ...proof,
+        proofId: proof.proofId || proof.id || `compliance-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        proofType: 'compliance',
+        frameworkId: complianceForm.frameworkId,
+        timestamp: new Date().toISOString(),
+      };
+      setComplianceProof(proofWithId);
       loadProofs();
       alert('Compliance proof generated successfully!');
     } catch (error: any) {
@@ -587,11 +598,16 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
             </button>
           </form>
 
-          {generatedProof && (
+          {complianceProof && (
             <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-              <h4 className="font-medium mb-2">Generated Proof</h4>
+              <h4 className="font-medium mb-2">Generated Compliance Proof</h4>
+              <div className="space-y-2 text-sm mb-3">
+                <p><strong>Proof ID:</strong> {complianceProof.proofId}</p>
+                <p><strong>Framework ID:</strong> {complianceProof.frameworkId || complianceForm.frameworkId}</p>
+                <p><strong>Timestamp:</strong> {new Date(complianceProof.timestamp || Date.now()).toLocaleString()}</p>
+              </div>
               <textarea
-                value={JSON.stringify(generatedProof, null, 2)}
+                value={JSON.stringify(complianceProof.proof || complianceProof, null, 2)}
                 readOnly
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs"
                 rows={10}
@@ -614,7 +630,16 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
                 issuer: credentialForm.issuer,
                 expirationDate: credentialForm.expirationDate,
               }, 'user-secret-key');
-              setGeneratedProof(proof);
+              // Generate unique proof ID if not provided
+              const proofWithId = {
+                ...proof,
+                proofId: proof.proofId || proof.id || `credential-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                proofType: 'credential',
+                credentialType: credentialForm.credentialType,
+                issuer: credentialForm.issuer,
+                timestamp: new Date().toISOString(),
+              };
+              setCredentialProof(proofWithId);
               loadProofs();
               alert('Credential proof generated successfully!');
             } catch (error: any) {
@@ -679,23 +704,24 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
             </button>
           </form>
 
-          {generatedProof && (
+          {credentialProof && (
             <div className="mt-6 p-4 bg-slate-50 rounded-lg">
               <h4 className="font-medium mb-2">Generated Credential Proof</h4>
-              <div className="space-y-2 text-sm">
-                <p><strong>Proof ID:</strong> {generatedProof.proofId || generatedProof.id}</p>
-                <p><strong>Credential Type:</strong> {generatedProof.credentialType || credentialForm.credentialType}</p>
-                <p><strong>Issuer:</strong> {generatedProof.issuer || credentialForm.issuer}</p>
-                <p><strong>Valid:</strong> {generatedProof.isValid !== false ? 'Yes' : 'No'}</p>
-                {generatedProof.proof && (
-                  <textarea
-                    value={JSON.stringify(generatedProof.proof, null, 2)}
-                    readOnly
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs"
-                    rows={8}
-                  />
-                )}
+              <div className="space-y-2 text-sm mb-3">
+                <p><strong>Proof ID:</strong> {credentialProof.proofId}</p>
+                <p><strong>Credential Type:</strong> {credentialProof.credentialType || credentialForm.credentialType}</p>
+                <p><strong>Issuer:</strong> {credentialProof.issuer || credentialForm.issuer}</p>
+                <p><strong>Valid:</strong> {credentialProof.isValid !== false ? 'Yes' : 'No'}</p>
+                <p><strong>Timestamp:</strong> {new Date(credentialProof.timestamp || Date.now()).toLocaleString()}</p>
               </div>
+              {credentialProof.proof && (
+                <textarea
+                  value={JSON.stringify(credentialProof.proof, null, 2)}
+                  readOnly
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs"
+                  rows={8}
+                />
+              )}
             </div>
           )}
         </div>
@@ -710,9 +736,20 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
             try {
               const proof = await api.security.generateOwnershipProof(
                 ownershipForm.ownershipHash,
-                'user-secret-key'
+                'user-secret-key',
+                ownershipForm.assetId,
+                ownershipForm.assetType
               );
-              setGeneratedProof(proof);
+              // Generate unique proof ID if not provided
+              const proofWithId = {
+                ...proof,
+                proofId: proof.proofId || proof.id || `ownership-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                proofType: 'ownership',
+                assetId: ownershipForm.assetId,
+                assetType: ownershipForm.assetType,
+                timestamp: new Date().toISOString(),
+              };
+              setOwnershipProof(proofWithId);
               loadProofs();
               alert('Ownership proof generated successfully!');
             } catch (error: any) {
@@ -777,23 +814,24 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
             </button>
           </form>
 
-          {generatedProof && (
+          {ownershipProof && (
             <div className="mt-6 p-4 bg-slate-50 rounded-lg">
               <h4 className="font-medium mb-2">Generated Ownership Proof</h4>
-              <div className="space-y-2 text-sm">
-                <p><strong>Proof ID:</strong> {generatedProof.proofId || generatedProof.id}</p>
-                <p><strong>Asset ID:</strong> {generatedProof.assetId || ownershipForm.assetId}</p>
-                <p><strong>Asset Type:</strong> {generatedProof.assetType || ownershipForm.assetType}</p>
-                <p><strong>Owner Verified:</strong> {generatedProof.isValid !== false ? 'Yes' : 'No'}</p>
-                {generatedProof.proof && (
-                  <textarea
-                    value={JSON.stringify(generatedProof.proof, null, 2)}
-                    readOnly
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs"
-                    rows={8}
-                  />
-                )}
+              <div className="space-y-2 text-sm mb-3">
+                <p><strong>Proof ID:</strong> {ownershipProof.proofId}</p>
+                <p><strong>Asset ID:</strong> {ownershipProof.assetId || ownershipForm.assetId}</p>
+                <p><strong>Asset Type:</strong> {ownershipProof.assetType || ownershipForm.assetType}</p>
+                <p><strong>Owner Verified:</strong> {ownershipProof.isValid !== false ? 'Yes' : 'No'}</p>
+                <p><strong>Timestamp:</strong> {new Date(ownershipProof.timestamp || Date.now()).toLocaleString()}</p>
               </div>
+              {ownershipProof.proof && (
+                <textarea
+                  value={JSON.stringify(ownershipProof.proof, null, 2)}
+                  readOnly
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-xs"
+                  rows={8}
+                />
+              )}
             </div>
           )}
         </div>

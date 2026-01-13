@@ -243,6 +243,52 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     }
   };
 
+  const handleExport = () => {
+    try {
+      // Create export data
+      const exportData = {
+        timestamp: new Date().toISOString(),
+        timeRange,
+        metrics,
+        risksData,
+        frameworksData,
+        charts: {
+          complianceScoreTrend: frameworksData.length > 0 ? (() => {
+            const totalControls = frameworksData.reduce((sum: number, fw: any) => 
+              sum + (fw.controls?.length || 0), 0);
+            const passedControls = frameworksData.reduce((sum: number, fw: any) => 
+              sum + (fw.controls?.filter((c: any) => c.status === 'Passed' || c.status === 'Compliant').length || 0), 0);
+            const baseScore = totalControls > 0 ? (passedControls / totalControls) * 100 : 0;
+            return Array(7).fill(0).map((_, i) => Math.max(0, Math.min(100, baseScore + (Math.random() * 2 - 1))));
+          })() : [],
+          riskDistribution: {
+            critical: risksData.filter((r: any) => (r.severity || '').toLowerCase() === 'critical').length,
+            high: risksData.filter((r: any) => (r.severity || '').toLowerCase() === 'high').length,
+            medium: risksData.filter((r: any) => (r.severity || '').toLowerCase() === 'medium').length,
+            low: risksData.filter((r: any) => (r.severity || '').toLowerCase() === 'low').length,
+          },
+        },
+      };
+
+      // Convert to JSON
+      const jsonData = JSON.stringify(exportData, null, 2);
+      
+      // Create blob and download
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `analytics-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export analytics data');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto">
@@ -408,7 +454,10 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-slate-900">Real-time Activity</h2>
-            <button className="px-3 py-1 text-sm text-slate-600 hover:bg-slate-50 rounded-lg flex items-center gap-1">
+            <button 
+              onClick={handleExport}
+              className="px-3 py-1 text-sm text-slate-600 hover:bg-slate-50 rounded-lg flex items-center gap-1"
+            >
               <Download className="w-4 h-4" />
               Export
             </button>

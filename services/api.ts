@@ -1120,8 +1120,8 @@ export const api = {
       fetchAPI('/security/zkp/credential-proof/generate', { method: 'POST', body: JSON.stringify({ credential, secret }) }),
     verifyCredentialProof: async (proof: any, requiredLevel?: number) => 
       fetchAPI('/security/zkp/credential-proof/verify', { method: 'POST', body: JSON.stringify({ proof, requiredLevel }) }),
-    generateOwnershipProof: async (dataHash: string, secret: string) => 
-      fetchAPI('/security/zkp/ownership-proof/generate', { method: 'POST', body: JSON.stringify({ dataHash, secret }) }),
+    generateOwnershipProof: async (dataHash: string, secret: string, assetId?: string, assetType?: string) => 
+      fetchAPI('/security/zkp/ownership-proof/generate', { method: 'POST', body: JSON.stringify({ dataHash, secret, assetId, assetType }) }),
     verifyOwnershipProof: async (proof: any, dataHash: string) => 
       fetchAPI('/security/zkp/ownership-proof/verify', { method: 'POST', body: JSON.stringify({ proof, dataHash }) }),
     getZKProofs: async () => fetchAPI('/security/zkp/proofs'),

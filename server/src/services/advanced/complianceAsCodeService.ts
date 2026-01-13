@@ -110,8 +110,15 @@ class ComplianceAsCodeService {
         logger.warn('Rego syntax validation failed (development mode)', error);
       }
 
-      // Save policy to OPA - Required in production
-      await this.uploadPolicyToOPA(policyId, policy.rego);
+      // Save policy to OPA - Required in production (but don't fail if OPA unavailable in dev)
+      try {
+        await this.uploadPolicyToOPA(policyId, policy.rego);
+      } catch (error) {
+        if (process.env.NODE_ENV === 'production') {
+          throw error;
+        }
+        logger.warn('OPA upload failed (development mode), policy saved to database only', error);
+      }
 
       // Store policy in database (primary storage)
       const dbPolicy = await prisma.compliancePolicy.create({
