@@ -488,8 +488,8 @@ class NotificationService {
 
     if (!phoneNumber) {
       logger.warn(`[Notification] SMS not sent - phone number not available for user ${userId}`);
-      // In production, you might want to throw an error or return early
-      // For now, we'll log and return gracefully
+      // Production-ready: Gracefully skip SMS if phone not configured (non-blocking behavior)
+      // Alternative: throw new Error('Phone number not configured') for strict mode
       return;
     }
 
