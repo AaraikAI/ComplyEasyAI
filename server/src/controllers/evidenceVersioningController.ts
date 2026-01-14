@@ -180,7 +180,7 @@ class EvidenceVersioningController {
 
       await prisma.auditLog.create({
         data: {
-          action: `Evidence version ${version[0].versionNumber} restored for control: ${control.name}`,
+          action: `Evidence version ${version.versionNumber} restored for control: ${control.name}`,
           userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
@@ -235,7 +235,7 @@ class EvidenceVersioningController {
 
       await prisma.auditLog.create({
         data: {
-          action: `Evidence version ${version[0].versionNumber} deleted for control: ${control.name}`,
+          action: `Evidence version ${version.versionNumber} deleted for control: ${control.name}`,
           userId: authReq.user!.id,
           organizationId,
           hash: uuidv4(),
