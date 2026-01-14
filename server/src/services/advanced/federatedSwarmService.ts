@@ -677,25 +677,40 @@ class FederatedSwarmService {
         return null;
       }
 
-      // Check minimum participants
+      // Check minimum participants threshold (ENFORCED)
       const uniqueParticipants = new Set(contributions.map(c => c.organizationId)).size;
-      const minimumParticipants = 3; // Minimum required for aggregation
+      const minimumParticipants = this.getMinimumParticipantsThreshold(modelType);
 
       if (uniqueParticipants < minimumParticipants) {
-        logger.warn(`[Federated Swarm] Insufficient participants: ${uniqueParticipants}/${minimumParticipants}`);
+        logger.warn(`[Federated Swarm] Insufficient participants: ${uniqueParticipants}/${minimumParticipants}. Aggregation blocked.`);
+        // Store failed aggregation attempt
+        await prisma.auditLog.create({
+          data: {
+            action: 'federated_swarm.aggregation_blocked',
+            details: JSON.stringify({
+              modelType,
+              participantCount: uniqueParticipants,
+              minimumRequired: minimumParticipants,
+              reason: 'Insufficient participants',
+            }),
+            userId: 'system',
+            organizationId: 'system',
+            hash: require('crypto').randomBytes(16).toString('hex'),
+          },
+        });
         return null;
       }
 
       // Get current round number
       const round = Math.floor(contributions.length / 10); // Approximate round from contribution count
 
-      // Aggregate model weights using enhanced federated averaging
-      const aggregatedWeights = await this.federatedAveraging(contributions, modelType, round);
+      // Aggregate model weights using SECURE aggregation (cryptographic)
+      const aggregatedWeights = await this.secureAggregation(contributions, modelType);
 
       // Get model version
       const version = await this.getModelVersion(modelType);
 
-      // Calculate convergence
+      // Calculate convergence (with tracking)
       const convergence = await this.calculateConvergence(modelType, aggregatedWeights);
 
       // Validate model
@@ -703,6 +718,24 @@ class FederatedSwarmService {
 
       // Calculate performance metrics
       const metrics = await this.calculateModelMetrics(modelType, aggregatedWeights);
+
+      // Store model version with weights for convergence tracking
+      await prisma.auditLog.create({
+        data: {
+          action: 'federated_swarm.model_versioned',
+          details: JSON.stringify({
+            modelType,
+            version,
+            weights: aggregatedWeights,
+            convergence,
+            participantCount: uniqueParticipants,
+            timestamp: new Date(),
+          }),
+          userId: 'system',
+          organizationId: 'system',
+          hash: require('crypto').randomBytes(16).toString('hex'),
+        },
+      });
 
       return {
         modelId: `model_${modelType}_${Date.now()}`,
@@ -1416,20 +1449,133 @@ class FederatedSwarmService {
   }
 
   /**
-   * Calculate model convergence
+   * Get minimum participants threshold (enforced)
+   */
+  private getMinimumParticipantsThreshold(modelType: string): number {
+    // Different thresholds for different model types
+    const thresholds: Record<string, number> = {
+      risk_prediction: 3,
+      control_effectiveness: 5,
+      compliance_scoring: 4,
+    };
+    return thresholds[modelType] || 3;
+  }
+
+  /**
+   * Calculate model convergence (ENHANCED with tracking)
    */
   private async calculateConvergence(
     modelType: string,
     weights: any
   ): Promise<number> {
     try {
-      // Simplified convergence calculation
-      // In production, would compare with previous iterations
-      const weightVariance = this.calculateWeightVariance(weights);
-      const convergence = Math.max(0, Math.min(1, 1 - weightVariance));
+      // Get previous model version for comparison
+      const previousModel = await this.getPreviousModelVersion(modelType);
+      
+      if (!previousModel) {
+        // First iteration, no convergence yet
+        return 0.1;
+      }
+
+      // Calculate weight change between iterations
+      const weightChange = this.calculateWeightChange(weights, previousModel.weights);
+      
+      // Convergence increases as weight changes decrease
+      // Convergence = 1 - normalized_weight_change
+      const normalizedChange = Math.min(1, Math.abs(weightChange) * 10);
+      const convergence = Math.max(0, Math.min(1, 1 - normalizedChange));
+
+      // Track convergence history
+      await this.trackConvergenceHistory(modelType, convergence, weightChange);
+
       return convergence;
     } catch (error) {
+      logger.error('[Federated Swarm] Error calculating convergence', error);
       return 0.5;
+    }
+  }
+
+  /**
+   * Get previous model version for convergence comparison
+   */
+  private async getPreviousModelVersion(modelType: string): Promise<{ weights: any; version: number } | null> {
+    try {
+      const versionLogs = await prisma.auditLog.findMany({
+        where: {
+          action: 'federated_swarm.model_versioned',
+          details: {
+            contains: modelType,
+          },
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 2, // Get last 2 versions
+      });
+
+      if (versionLogs.length < 2) {
+        return null; // Not enough history
+      }
+
+      const previousLog = versionLogs[1];
+      const details = JSON.parse(previousLog.details || '{}');
+      
+      return {
+        weights: details.weights || this.getDefaultModelWeights(modelType),
+        version: details.version || 1,
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Calculate weight change between two model versions
+   */
+  private calculateWeightChange(currentWeights: any, previousWeights: any): number {
+    if (!previousWeights || typeof currentWeights !== 'object' || typeof previousWeights !== 'object') {
+      return 1.0; // Maximum change if can't compare
+    }
+
+    let totalChange = 0;
+    let keyCount = 0;
+
+    for (const key in currentWeights) {
+      if (previousWeights[key] !== undefined && 
+          typeof currentWeights[key] === 'number' && 
+          typeof previousWeights[key] === 'number') {
+        const change = Math.abs(currentWeights[key] - previousWeights[key]);
+        totalChange += change;
+        keyCount++;
+      }
+    }
+
+    return keyCount > 0 ? totalChange / keyCount : 1.0;
+  }
+
+  /**
+   * Track convergence history
+   */
+  private async trackConvergenceHistory(
+    modelType: string,
+    convergence: number,
+    weightChange: number
+  ): Promise<void> {
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: 'federated_swarm.convergence_tracked',
+          details: JSON.stringify({
+            modelType,
+            convergence,
+            weightChange,
+            timestamp: new Date(),
+          }),
+          userId: 'system',
+          organizationId: 'system',
+          hash: require('crypto').randomBytes(16).toString('hex'),
+        },
+      });
+    } catch (error) {
+      // Ignore tracking errors
     }
   }
 
@@ -1670,8 +1816,9 @@ class FederatedSwarmService {
   }
 
   /**
-   * Secure aggregation (cryptographic aggregation)
+   * Secure aggregation (cryptographic aggregation) - ENHANCED
    * Production-ready: Implements secure multi-party computation with secret sharing
+   * Uses cryptographic masks and differential privacy
    */
   private async secureAggregation(
     contributions: any[],
@@ -1708,8 +1855,9 @@ class FederatedSwarmService {
         maskedContributions.push(masked);
       }
 
-      // Step 2: Aggregate masked values
-      const aggregated = await this.federatedAveraging(maskedContributions, modelType);
+      // Step 2: Aggregate masked values using federated averaging
+      const round = Math.floor(contributions.length / 10);
+      const aggregated = await this.federatedAveraging(maskedContributions, modelType, round);
 
       // Step 3: Remove aggregate mask (masks sum to zero across participants)
       // In distributed setting, each party shares negative mask with next party

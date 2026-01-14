@@ -655,6 +655,7 @@ Format as JSON with: {prediction, confidence, factors}`;
       }
 
       // Build causal chain using neural-symbolic reasoning
+      const reasoningId = crypto.randomUUID();
       const causalChain: string[] = [];
       const rootCauses: string[] = [];
       const recommendations: string[] = [];
@@ -672,7 +673,7 @@ Format as JSON with: {prediction, confidence, factors}`;
         recommendations.push('Implement risk mitigation measures');
       }
 
-      // Neural reasoning: Use AI to identify additional causes
+      // NEURAL CAUSAL REASONING (ENHANCED with causal graph construction)
       if (!config.gemini.apiKey && !process.env.GEMINI_API_KEY) {
         logger.warn('[NeuroSymbolic] GEMINI_API_KEY not configured for causal reasoning');
         return {
@@ -684,20 +685,49 @@ Format as JSON with: {prediction, confidence, factors}`;
       }
 
       try {
+        // Get related controls and risks for context
+        const relatedControls = await prisma.frameworkControl.findMany({
+          where: {
+            frameworkId: violation.frameworkId,
+            id: { not: violation.controlId },
+          },
+          take: 10,
+        });
+
+        const relatedRisks = await prisma.riskItem.findMany({
+          where: { organizationId },
+          take: 10,
+        });
+
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-        const prompt = `Analyze the root causes of this compliance violation:
+        const prompt = `Perform NEURAL CAUSAL REASONING to analyze root causes of this compliance violation.
+Build a causal graph identifying direct and indirect causes.
+
 Control: ${control.name}
 Framework: ${control.framework?.name || 'Unknown'}
 Violation Type: ${violation.violationType}
 Status: ${control.status}
 Evidence: ${control.evidence ? 'Present' : 'Missing'}
 
-Identify:
-1. Root causes
-2. Causal chain
-3. Recommendations
+Related Controls: ${relatedControls.map(c => c.name).join(', ')}
+Related Risks: ${relatedRisks.map(r => r.title).join(', ')}
 
-Format as JSON: {rootCauses: [], causalChain: [], recommendations: []}`;
+Use neural reasoning to:
+1. Identify root causes (direct and indirect)
+2. Build causal chain (cause → effect relationships)
+3. Detect hidden dependencies between controls/risks
+4. Generate recommendations based on causal analysis
+
+Format as JSON:
+{
+  "rootCauses": ["cause1", "cause2"],
+  "causalChain": ["step1 → step2 → step3"],
+  "causalGraph": {
+    "nodes": [{"id": "node1", "type": "control|risk|evidence", "label": "..."}],
+    "edges": [{"from": "node1", "to": "node2", "type": "causes|mitigates|depends_on"}]
+  },
+  "recommendations": ["rec1", "rec2"]
+}`;
 
         const result = await model.generateContent({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -716,8 +746,13 @@ Format as JSON: {rootCauses: [], causalChain: [], recommendations: []}`;
         rootCauses.push(...(parsed.rootCauses || []));
         causalChain.push(...(parsed.causalChain || []));
         recommendations.push(...(parsed.recommendations || []));
+
+        // Store causal graph for visualization
+        if (parsed.causalGraph) {
+          await this.storeCausalGraph(reasoningId, parsed.causalGraph, organizationId);
+        }
       } catch (error) {
-        logger.warn('[NeuroSymbolic] Neural causal reasoning failed, using symbolic only');
+        logger.warn('[NeuroSymbolic] Neural causal reasoning failed, using symbolic only', error);
       }
 
       return {
@@ -733,7 +768,7 @@ Format as JSON: {rootCauses: [], causalChain: [], recommendations: []}`;
   }
 
   /**
-   * Generate explainable AI decision
+   * Generate explainable AI decision (ENHANCED with visual explanations and counterfactuals)
    */
   async generateExplainableDecision(
     organizationId: string,
@@ -747,6 +782,16 @@ Format as JSON: {rootCauses: [], causalChain: [], recommendations: []}`;
     symbolicJustification: string[];
     neuralFactors: string[];
     confidence: number;
+    visualExplanation?: {
+      type: 'graph' | 'tree' | 'flowchart';
+      data: any;
+      svg?: string;
+    };
+    counterfactuals?: Array<{
+      scenario: string;
+      outcome: string;
+      probability: number;
+    }>;
   }> {
     try {
       // Perform hybrid reasoning
@@ -759,6 +804,12 @@ Format as JSON: {rootCauses: [], causalChain: [], recommendations: []}`;
       const neuralFactors = Array.isArray(reasoning.neuralPrediction.result)
         ? reasoning.neuralPrediction.result
         : [reasoning.neuralPrediction.result];
+
+      // Generate VISUAL EXPLANATION (graph/tree)
+      const visualExplanation = await this.generateVisualExplanation(reasoning);
+
+      // Generate COUNTERFACTUAL explanations
+      const counterfactuals = await this.generateCounterfactuals(organizationId, decision, reasoning);
 
       // Build explanation
       const explanation = `
@@ -783,10 +834,219 @@ Final Confidence: ${(reasoning.hybridResult.confidence * 100).toFixed(0)}%
         symbolicJustification,
         neuralFactors,
         confidence: reasoning.hybridResult.confidence,
+        visualExplanation,
+        counterfactuals,
       };
     } catch (error) {
       logger.error('[NeuroSymbolic] Explainable decision error', error);
       throw error;
+    }
+  }
+
+  /**
+   * Generate visual explanation (graph/tree/flowchart)
+   */
+  private async generateVisualExplanation(
+    reasoning: NeuralSymbolicReasoning
+  ): Promise<{
+    type: 'graph' | 'tree' | 'flowchart';
+    data: any;
+    svg?: string;
+  }> {
+    try {
+      // Build decision tree/graph structure
+      const nodes: Array<{ id: string; label: string; type: string; color?: string }> = [];
+      const edges: Array<{ from: string; to: string; label: string; type: string }> = [];
+
+      // Add neural prediction node
+      nodes.push({
+        id: 'neural',
+        label: `Neural Prediction\n(${(reasoning.neuralPrediction.confidence * 100).toFixed(0)}% confidence)`,
+        type: 'neural',
+        color: '#3b82f6',
+      });
+
+      // Add symbolic reasoning nodes
+      reasoning.symbolicReasoning.applicableRules.forEach((rule, index) => {
+        const ruleId = `rule_${index}`;
+        nodes.push({
+          id: ruleId,
+          label: rule.name,
+          type: 'rule',
+          color: '#10b981',
+        });
+        edges.push({
+          from: ruleId,
+          to: 'neural',
+          label: rule.condition,
+          type: 'influences',
+        });
+      });
+
+      // Add hybrid result node
+      nodes.push({
+        id: 'hybrid',
+        label: `Hybrid Decision\n(${(reasoning.hybridResult.confidence * 100).toFixed(0)}% confidence)`,
+        type: 'decision',
+        color: '#f59e0b',
+      });
+      edges.push({
+        from: 'neural',
+        to: 'hybrid',
+        label: `${(reasoning.hybridResult.neuralWeight * 100).toFixed(0)}% weight`,
+        type: 'contributes',
+      });
+
+      // Generate SVG representation (simplified)
+      const svg = this.generateExplanationSVG(nodes, edges);
+
+      return {
+        type: 'graph',
+        data: { nodes, edges },
+        svg,
+      };
+    } catch (error) {
+      logger.error('[NeuroSymbolic] Visual explanation generation error', error);
+      return {
+        type: 'graph',
+        data: { nodes: [], edges: [] },
+      };
+    }
+  }
+
+  /**
+   * Generate SVG for visual explanation
+   */
+  private generateExplanationSVG(
+    nodes: Array<{ id: string; label: string; type: string; color?: string }>,
+    edges: Array<{ from: string; to: string; label: string; type: string }>
+  ): string {
+    // Generate simple SVG flowchart
+    const nodePositions = new Map<string, { x: number; y: number }>();
+    const nodeWidth = 150;
+    const nodeHeight = 80;
+    const spacing = 200;
+
+    // Calculate positions
+    nodes.forEach((node, index) => {
+      const row = Math.floor(index / 3);
+      const col = index % 3;
+      nodePositions.set(node.id, {
+        x: col * spacing + 100,
+        y: row * spacing + 100,
+      });
+    });
+
+    // Generate SVG
+    const svgNodes = nodes.map(node => {
+      const pos = nodePositions.get(node.id) || { x: 0, y: 0 };
+      const color = node.color || '#6b7280';
+      return `<rect x="${pos.x}" y="${pos.y}" width="${nodeWidth}" height="${nodeHeight}" fill="${color}" stroke="#000" stroke-width="2" rx="5"/>
+<text x="${pos.x + nodeWidth / 2}" y="${pos.y + nodeHeight / 2}" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${node.label}</text>`;
+    }).join('\n');
+
+    const svgEdges = edges.map(edge => {
+      const fromPos = nodePositions.get(edge.from) || { x: 0, y: 0 };
+      const toPos = nodePositions.get(edge.to) || { x: 0, y: 0 };
+      const fromX = fromPos.x + nodeWidth / 2;
+      const fromY = fromPos.y + nodeHeight;
+      const toX = toPos.x + nodeWidth / 2;
+      const toY = toPos.y;
+      return `<line x1="${fromX}" y1="${fromY}" x2="${toX}" y2="${toY}" stroke="#000" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="${(fromX + toX) / 2}" y="${(fromY + toY) / 2 - 10}" text-anchor="middle" font-size="10" fill="#666">${edge.label}</text>`;
+    }).join('\n');
+
+    return `<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#000" />
+    </marker>
+  </defs>
+  ${svgNodes}
+  ${svgEdges}
+</svg>`;
+  }
+
+  /**
+   * Generate counterfactual explanations
+   */
+  private async generateCounterfactuals(
+    organizationId: string,
+    decision: { action: string; reasoning: string },
+    reasoning: NeuralSymbolicReasoning
+  ): Promise<Array<{ scenario: string; outcome: string; probability: number }>> {
+    try {
+      if (!config.gemini.apiKey && !process.env.GEMINI_API_KEY) {
+        return [];
+      }
+
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const prompt = `Generate COUNTERFACTUAL explanations for this decision:
+Decision: ${decision.action}
+Reasoning: ${decision.reasoning}
+
+Neural Prediction: ${JSON.stringify(reasoning.neuralPrediction)}
+Symbolic Conclusion: ${reasoning.symbolicReasoning.conclusion}
+
+For each counterfactual scenario, answer:
+1. What if a different condition was true?
+2. What would be the outcome?
+3. What is the probability?
+
+Format as JSON:
+{
+  "counterfactuals": [
+    {
+      "scenario": "If X was different, then...",
+      "outcome": "Decision would be Y",
+      "probability": 0.75
+    }
+  ]
+}`;
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.8, // Higher temperature for creative counterfactuals
+          maxOutputTokens: 2048,
+        },
+      });
+
+      const response = result.response.text();
+      const jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+      const jsonText = jsonMatch ? jsonMatch[1] : response;
+      const parsed = JSON.parse(jsonText);
+
+      return parsed.counterfactuals || [];
+    } catch (error) {
+      logger.warn('[NeuroSymbolic] Counterfactual generation failed', error);
+      return [];
+    }
+  }
+
+  /**
+   * Store causal graph for visualization
+   */
+  private async storeCausalGraph(
+    reasoningId: string,
+    causalGraph: any,
+    organizationId: string
+  ): Promise<void> {
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: 'neuro_symbolic.causal_graph_generated',
+          details: JSON.stringify({
+            reasoningId,
+            causalGraph,
+          }),
+          userId: 'system',
+          organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+    } catch (error) {
+      logger.error('[NeuroSymbolic] Error storing causal graph', error);
     }
   }
 

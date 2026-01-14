@@ -47,6 +47,7 @@ export interface RedTeamResult {
     id: string;
     role: string;
     actions: string[];
+    sharedIntelligence?: string[];
   }>;
   timeout?: boolean;
 }
@@ -89,6 +90,10 @@ class RedTeamService {
         attackers.push({ id: 'attacker_1', role: 'Threat Actor', actions: [] });
       }
 
+      // Multi-actor coordination: Shared intelligence and coordinated attacks
+      const sharedIntelligence: string[] = [];
+      const coordinationEvents: Array<{ attackerId: string; event: string; timestamp: number }> = [];
+
       // Check timeout before starting
       if (Date.now() - startTime > timeLimit) {
         return {
@@ -102,55 +107,154 @@ class RedTeamService {
         };
       }
 
-      if (scenario.attackType === 'control_bypass') {
-        const result = await this.simulateControlBypass(
-          organizationId,
-          scenario.targetFramework,
-          scenario.targetControl
-        );
-        attackPath.push(...result.attackPath);
-        vulnerabilitiesFound.push(...result.vulnerabilities);
-        if (attackers.length > 0) attackers[0].actions.push(...result.attackPath);
-      } else if (scenario.attackType === 'evidence_tampering') {
-        const result = await this.simulateEvidenceTampering(organizationId);
-        attackPath.push(...result.attackPath);
-        vulnerabilitiesFound.push(...result.vulnerabilities);
-        if (attackers.length > 0) attackers[0].actions.push(...result.attackPath);
-      } else if (scenario.attackType === 'policy_violation') {
-        const result = await this.simulatePolicyViolation(organizationId);
-        attackPath.push(...result.attackPath);
-        vulnerabilitiesFound.push(...result.vulnerabilities);
-        if (attackers.length > 0) attackers[0].actions.push(...result.attackPath);
-      } else if (scenario.attackType === 'access_escalation') {
-        const result = await this.simulateAccessEscalation(organizationId);
-        attackPath.push(...result.attackPath);
-        vulnerabilitiesFound.push(...result.vulnerabilities);
-        if (attackers.length > 0) attackers[0].actions.push(...result.attackPath);
-      } else if (scenario.attackType === 'social_engineering') {
-        const result = await this.simulateSocialEngineering(organizationId);
-        attackPath.push(...result.attackPath);
-        vulnerabilitiesFound.push(...result.vulnerabilities);
-        if (attackers.length > 0) attackers[0].actions.push(...result.attackPath);
-      } else if (scenario.attackType === 'data_exfiltration') {
-        const result = await this.simulateDataExfiltration(organizationId);
-        attackPath.push(...result.attackPath);
-        vulnerabilitiesFound.push(...result.vulnerabilities);
-        if (attackers.length > 0) attackers[0].actions.push(...result.attackPath);
-      } else if (scenario.attackType === 'insider_threat') {
-        const result = await this.simulateInsiderThreat(organizationId);
-        attackPath.push(...result.attackPath);
-        vulnerabilitiesFound.push(...result.vulnerabilities);
-        if (attackers.length > 0) attackers[0].actions.push(...result.attackPath);
-      } else if (scenario.attackType === 'policy_circumvention') {
-        const result = await this.simulatePolicyCircumvention(organizationId);
-        attackPath.push(...result.attackPath);
-        vulnerabilitiesFound.push(...result.vulnerabilities);
-        if (attackers.length > 0) attackers[0].actions.push(...result.attackPath);
-      } else if (scenario.attackType === 'audit_evasion') {
-        const result = await this.simulateAuditEvasion(organizationId);
-        attackPath.push(...result.attackPath);
-        vulnerabilitiesFound.push(...result.vulnerabilities);
-        if (attackers.length > 0) attackers[0].actions.push(...result.attackPath);
+      // Execute attack with timeout monitoring and multi-actor coordination
+      let attackResult: { attackPath: string[]; vulnerabilities: RedTeamResult['vulnerabilitiesFound'] } | null = null;
+      
+      // Check timeout before each major operation
+      const checkTimeout = () => {
+        const elapsed = Date.now() - startTime;
+        if (elapsed > timeLimit) {
+          throw new Error('TIMEOUT');
+        }
+        return elapsed;
+      };
+
+      try {
+        if (scenario.attackType === 'control_bypass') {
+          checkTimeout();
+          attackResult = await this.simulateControlBypass(
+            organizationId,
+            scenario.targetFramework,
+            scenario.targetControl
+          );
+          
+          // Multi-actor coordination: Share intelligence
+          if (scenario.multipleAttackers && attackResult.attackPath.length > 0) {
+            sharedIntelligence.push(...attackResult.attackPath);
+            coordinationEvents.push({
+              attackerId: attackers[0].id,
+              event: 'Discovered control bypass method',
+              timestamp: Date.now() - startTime,
+            });
+            
+            // Other attackers use shared intelligence
+            for (let i = 1; i < attackers.length; i++) {
+              attackers[i].actions.push(`Used shared intelligence: ${attackResult.attackPath[0]}`);
+              coordinationEvents.push({
+                attackerId: attackers[i].id,
+                event: 'Received shared intelligence',
+                timestamp: Date.now() - startTime,
+              });
+            }
+          }
+          
+          attackPath.push(...attackResult.attackPath);
+          vulnerabilitiesFound.push(...attackResult.vulnerabilities);
+          if (attackers.length > 0) attackers[0].actions.push(...attackResult.attackPath);
+        } else if (scenario.attackType === 'evidence_tampering') {
+          checkTimeout();
+          attackResult = await this.simulateEvidenceTampering(organizationId);
+          if (scenario.multipleAttackers) {
+            await this.coordinateMultiActorAttack(attackers, attackResult, sharedIntelligence, coordinationEvents, startTime);
+          }
+          attackPath.push(...attackResult.attackPath);
+          vulnerabilitiesFound.push(...attackResult.vulnerabilities);
+          if (attackers.length > 0) attackers[0].actions.push(...attackResult.attackPath);
+        } else if (scenario.attackType === 'policy_violation') {
+          checkTimeout();
+          attackResult = await this.simulatePolicyViolation(organizationId);
+          if (scenario.multipleAttackers) {
+            await this.coordinateMultiActorAttack(attackers, attackResult, sharedIntelligence, coordinationEvents, startTime);
+          }
+          attackPath.push(...attackResult.attackPath);
+          vulnerabilitiesFound.push(...attackResult.vulnerabilities);
+          if (attackers.length > 0) attackers[0].actions.push(...attackResult.attackPath);
+        } else if (scenario.attackType === 'access_escalation') {
+          checkTimeout();
+          attackResult = await this.simulateAccessEscalation(organizationId);
+          if (scenario.multipleAttackers) {
+            await this.coordinateMultiActorAttack(attackers, attackResult, sharedIntelligence, coordinationEvents, startTime);
+          }
+          attackPath.push(...attackResult.attackPath);
+          vulnerabilitiesFound.push(...attackResult.vulnerabilities);
+          if (attackers.length > 0) attackers[0].actions.push(...attackResult.attackPath);
+        } else if (scenario.attackType === 'social_engineering') {
+          checkTimeout();
+          attackResult = await this.simulateSocialEngineering(organizationId);
+          if (scenario.multipleAttackers) {
+            await this.coordinateMultiActorAttack(attackers, attackResult, sharedIntelligence, coordinationEvents, startTime);
+          }
+          attackPath.push(...attackResult.attackPath);
+          vulnerabilitiesFound.push(...attackResult.vulnerabilities);
+          if (attackers.length > 0) attackers[0].actions.push(...attackResult.attackPath);
+        } else if (scenario.attackType === 'data_exfiltration') {
+          checkTimeout();
+          attackResult = await this.simulateDataExfiltration(organizationId);
+          if (scenario.multipleAttackers) {
+            await this.coordinateMultiActorAttack(attackers, attackResult, sharedIntelligence, coordinationEvents, startTime);
+          }
+          attackPath.push(...attackResult.attackPath);
+          vulnerabilitiesFound.push(...attackResult.vulnerabilities);
+          if (attackers.length > 0) attackers[0].actions.push(...attackResult.attackPath);
+        } else if (scenario.attackType === 'insider_threat') {
+          checkTimeout();
+          attackResult = await this.simulateInsiderThreat(organizationId);
+          if (scenario.multipleAttackers) {
+            await this.coordinateMultiActorAttack(attackers, attackResult, sharedIntelligence, coordinationEvents, startTime);
+          }
+          attackPath.push(...attackResult.attackPath);
+          vulnerabilitiesFound.push(...attackResult.vulnerabilities);
+          if (attackers.length > 0) attackers[0].actions.push(...attackResult.attackPath);
+        } else if (scenario.attackType === 'policy_circumvention') {
+          checkTimeout();
+          attackResult = await this.simulatePolicyCircumvention(organizationId);
+          if (scenario.multipleAttackers) {
+            await this.coordinateMultiActorAttack(attackers, attackResult, sharedIntelligence, coordinationEvents, startTime);
+          }
+          attackPath.push(...attackResult.attackPath);
+          vulnerabilitiesFound.push(...attackResult.vulnerabilities);
+          if (attackers.length > 0) attackers[0].actions.push(...attackResult.attackPath);
+        } else if (scenario.attackType === 'audit_evasion') {
+          checkTimeout();
+          attackResult = await this.simulateAuditEvasion(organizationId);
+          if (scenario.multipleAttackers) {
+            await this.coordinateMultiActorAttack(attackers, attackResult, sharedIntelligence, coordinationEvents, startTime);
+          }
+          attackPath.push(...attackResult.attackPath);
+          vulnerabilitiesFound.push(...attackResult.vulnerabilities);
+          if (attackers.length > 0) attackers[0].actions.push(...attackResult.attackPath);
+        }
+      } catch (error: any) {
+        // Handle timeout gracefully - return partial results
+        if (error.message === 'TIMEOUT') {
+          logger.warn(`[Red Team] Simulation ${scenarioId} timed out, returning partial results`);
+          const executionTime = Date.now() - startTime;
+          const partialResult: RedTeamResult = {
+            scenarioId,
+            success: vulnerabilitiesFound.length > 0,
+            attackPath,
+            vulnerabilitiesFound,
+            remediationRecommendations: this.generateRemediationRecommendations(vulnerabilitiesFound),
+            executionTime,
+            report: this.generateReport(scenario, vulnerabilitiesFound, attackPath, executionTime),
+            attackers: scenario.multipleAttackers ? attackers : undefined,
+            timeout: true,
+          };
+          
+          // Store partial result
+          await prisma.auditLog.create({
+            data: {
+              action: 'red_team.simulation_timeout',
+              details: JSON.stringify({ ...partialResult, coordinationEvents }),
+              userId,
+              organizationId,
+              hash: (await import('crypto')).randomBytes(16).toString('hex'),
+            },
+          });
+          
+          return partialResult;
+        }
+        throw error;
       }
 
       // Check timeout during execution
@@ -168,8 +272,11 @@ class RedTeamService {
         vulnerabilitiesFound
       );
 
-      // Generate report
+      // Generate report (include coordination events if multi-actor)
       const report = this.generateReport(scenario, vulnerabilitiesFound, attackPath, executionTime);
+      if (scenario.multipleAttackers && coordinationEvents.length > 0) {
+        report?.findings.push(`Multi-actor coordination: ${coordinationEvents.length} coordination events`);
+      }
 
       const result: RedTeamResult = {
         scenarioId,
@@ -179,7 +286,10 @@ class RedTeamService {
         remediationRecommendations,
         executionTime,
         report,
-        attackers: scenario.multipleAttackers ? attackers : undefined,
+        attackers: scenario.multipleAttackers ? attackers.map(a => ({
+          ...a,
+          sharedIntelligence: sharedIntelligence.filter((_, idx) => idx < 5), // Include first 5 shared items
+        })) : undefined,
         timeout,
       };
 
@@ -739,6 +849,65 @@ class RedTeamService {
     }
 
     return { attackPath, vulnerabilities };
+  }
+
+  /**
+   * Coordinate multi-actor attack (attacker interaction simulation)
+   */
+  private async coordinateMultiActorAttack(
+    attackers: Array<{ id: string; role: string; actions: string[] }>,
+    attackResult: { attackPath: string[]; vulnerabilities: RedTeamResult['vulnerabilitiesFound'] },
+    sharedIntelligence: string[],
+    coordinationEvents: Array<{ attackerId: string; event: string; timestamp: number }>,
+    startTime: number
+  ): Promise<void> {
+    // Simulate attacker interaction and coordination
+    if (attackers.length < 2) return;
+
+    // Attacker 1 shares intelligence with others
+    if (attackResult.attackPath.length > 0) {
+      sharedIntelligence.push(...attackResult.attackPath);
+      coordinationEvents.push({
+        attackerId: attackers[0].id,
+        event: `Shared ${attackResult.attackPath.length} attack steps with team`,
+        timestamp: Date.now() - startTime,
+      });
+
+      // Other attackers receive and act on shared intelligence
+      for (let i = 1; i < attackers.length; i++) {
+        const attacker = attackers[i];
+        const receivedIntel = attackResult.attackPath[Math.floor(Math.random() * attackResult.attackPath.length)];
+        
+        attacker.actions.push(`Received intelligence: ${receivedIntel}`);
+        attacker.actions.push(`Coordinated attack based on shared intelligence`);
+        
+        coordinationEvents.push({
+          attackerId: attacker.id,
+          event: `Acted on shared intelligence from ${attackers[0].id}`,
+          timestamp: Date.now() - startTime,
+        });
+
+        // Simulate coordinated parallel attack
+        if (attackResult.vulnerabilities.length > 0) {
+          const vuln = attackResult.vulnerabilities[Math.floor(Math.random() * attackResult.vulnerabilities.length)];
+          attacker.actions.push(`Exploited vulnerability: ${vuln.type} (${vuln.severity})`);
+        }
+      }
+
+      // Simulate attacker-to-attacker communication
+      if (attackers.length >= 3) {
+        coordinationEvents.push({
+          attackerId: attackers[1].id,
+          event: `Coordinated with ${attackers[2].id} for parallel exploitation`,
+          timestamp: Date.now() - startTime,
+        });
+        coordinationEvents.push({
+          attackerId: attackers[2].id,
+          event: `Received coordination signal from ${attackers[1].id}`,
+          timestamp: Date.now() - startTime,
+        });
+      }
+    }
   }
 
   /**

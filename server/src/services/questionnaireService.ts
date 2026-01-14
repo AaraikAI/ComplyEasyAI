@@ -646,8 +646,74 @@ Format your response as JSON:
       });
     }
 
-    // DOCX not implemented yet (would require docx library)
-    throw new Error(`Format ${format} not yet implemented. Use 'json' or 'pdf'.`);
+    // DOCX export (Production-ready: uses docx library)
+    if (format === 'docx') {
+      try {
+        // Use docx library for DOCX generation
+        const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = require('docx');
+        
+        const doc = new Document({
+          sections: [{
+            properties: {},
+            children: [
+              new Paragraph({
+                text: questionnaire.title,
+                heading: HeadingLevel.TITLE,
+                alignment: AlignmentType.CENTER,
+              }),
+              new Paragraph({
+                text: `Generated: ${new Date().toLocaleDateString()}`,
+                alignment: AlignmentType.CENTER,
+              }),
+              new Paragraph({ text: '' }), // Spacing
+              ...questionnaire.questions.map((q: any, index: number) => [
+                new Paragraph({
+                  text: `Question ${index + 1}`,
+                  heading: HeadingLevel.HEADING_2,
+                }),
+                new Paragraph({
+                  text: q.question,
+                  spacing: { after: 200 },
+                }),
+                ...(q.options && q.options.length > 0 ? [
+                  new Paragraph({
+                    text: 'Options:',
+                    spacing: { before: 100 },
+                  }),
+                  ...q.options.map((opt: string) => 
+                    new Paragraph({
+                      text: `  • ${opt}`,
+                      indent: { left: 400 },
+                    })
+                  ),
+                ] : []),
+                ...(q.answer ? [
+                  new Paragraph({
+                    text: `Answer: ${q.answer}`,
+                    spacing: { before: 100 },
+                  }),
+                ] : []),
+                new Paragraph({ text: '' }), // Spacing between questions
+              ]).flat(),
+            ],
+          }],
+        });
+        
+        const buffer = await Packer.toBuffer(doc);
+        
+        return {
+          format: 'docx',
+          content: buffer,
+          filename: `questionnaire-${questionnaire.id}-${new Date().toISOString().split('T')[0]}.docx`,
+        };
+      } catch (docxError: any) {
+        logger.error('[Questionnaire] Error generating DOCX', docxError);
+        // Fallback: Try using a simpler approach or return error
+        throw new Error(`DOCX generation failed: ${docxError.message}. Please install 'docx' package: npm install docx`);
+      }
+    }
+    
+    throw new Error(`Format ${format} not yet implemented. Use 'json', 'pdf', or 'docx'.`);
   }
 }
 

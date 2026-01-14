@@ -231,6 +231,17 @@ const httpServer = createServer(app);
 // Initialize WebSocket
 websocketService.initialize(httpServer);
 
+// Initialize Session Management
+try {
+  const sessionManagement = await import('./services/sessionManagementService');
+  if (sessionManagement.default) {
+    await sessionManagement.default.initialize();
+    logger.info('✓ Session management initialized');
+  }
+} catch (error) {
+  logger.warn('⚠️  Session management initialization failed (optional):', error);
+}
+
 // Test database connection before starting server (skip in test environment)
 if (process.env.NODE_ENV !== 'test') {
   testConnection().then((connected) => {
@@ -318,6 +329,16 @@ const gracefulShutdown = async (signal: string) => {
     }
 
     try {
+      // Shutdown session management
+      try {
+        const sessionManagement = await import('./services/sessionManagementService');
+        if (sessionManagement.default) {
+          sessionManagement.default.shutdown();
+        }
+      } catch (error) {
+        logger.warn('Session management shutdown error', error);
+      }
+
       // Disconnect MQTT
       mqttService.disconnect();
       

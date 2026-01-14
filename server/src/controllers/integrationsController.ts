@@ -20,12 +20,22 @@ import prisma from '../config/database';
 // Store OAuth states temporarily (in production, use Redis)
 const oauthStates = new Map<string, { organizationId: string; provider: string; timestamp: number }>();
 
+// Track active OAuth windows to prevent duplicates
+const activeOAuthWindows = new Map<string, { state: string; timestamp: number }>();
+
 // Clean up expired states every 10 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [state, data] of oauthStates.entries()) {
     if (now - data.timestamp > 600000) { // 10 minutes
       oauthStates.delete(state);
+    }
+  }
+  
+  // Clean up expired OAuth window tracking (15 minutes)
+  for (const [key, window] of activeOAuthWindows.entries()) {
+    if (now - window.timestamp > 900000) { // 15 minutes
+      activeOAuthWindows.delete(key);
     }
   }
 }, 600000);
@@ -71,10 +81,31 @@ export const authorizeGoogle: RequestHandler = async (req: Request, res: Respons
   try {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
+    const windowKey = `${organizationId}:google`;
+    
+    // Check for active OAuth window
+    const activeWindow = activeOAuthWindows.get(windowKey);
+    if (activeWindow) {
+      const timeSinceStart = Date.now() - activeWindow.timestamp;
+      if (timeSinceStart < 900000) { // 15 minutes
+        // Return existing state if window is still active
+        res.json({ 
+          authUrl: googleService.getAuthorizationUrl(activeWindow.state),
+          existingWindow: true,
+          message: 'An OAuth window is already open. Please complete that authorization or wait for it to expire.'
+        });
+        return;
+      } else {
+        // Clean up expired window
+        activeOAuthWindows.delete(windowKey);
+      }
+    }
+    
     const state = generateState(organizationId, 'google');
+    activeOAuthWindows.set(windowKey, { state, timestamp: Date.now() });
     const authUrl = googleService.getAuthorizationUrl(state);
 
-    res.json({ authUrl });
+    res.json({ authUrl, existingWindow: false });
   } catch (error) {
     logger.error('Error generating Google auth URL', error);
     res.status(500).json({ error: 'Failed to initiate Google authorization' });
@@ -82,36 +113,90 @@ export const authorizeGoogle: RequestHandler = async (req: Request, res: Respons
 };
 
 export const callbackGoogle: RequestHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { code, state } = req.query;
+  const maxRetries = 3;
+  const baseDelay = 1000;
+  let lastError: any;
 
-    if (!code || !state) {
-      res.status(400).json({ error: 'Missing authorization code or state' });
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const { code, state } = req.query;
+
+      if (!code || !state) {
+        res.status(400).json({ error: 'Missing authorization code or state' });
+        return;
+      }
+
+      const organizationId = verifyState(state as string, 'google');
+
+      if (!organizationId) {
+        res.status(400).json({ error: 'Invalid or expired state parameter' });
+        return;
+      }
+
+      // Clean up active window
+      const windowKey = `${organizationId}:google`;
+      activeOAuthWindows.delete(windowKey);
+
+      // Exchange code for tokens with retry logic for network failures
+      let tokens;
+      try {
+        tokens = await googleService.getTokensFromCode(code as string);
+      } catch (tokenError: any) {
+        // Retry on network errors
+        if (attempt < maxRetries && (
+          tokenError.code === 'ECONNRESET' ||
+          tokenError.code === 'ETIMEDOUT' ||
+          tokenError.code === 'ENOTFOUND' ||
+          tokenError.message?.includes('network') ||
+          tokenError.message?.includes('timeout')
+        )) {
+          const delay = baseDelay * Math.pow(2, attempt);
+          logger.warn(`Google OAuth token exchange attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          lastError = tokenError;
+          continue;
+        }
+        throw tokenError;
+      }
+
+      // Get user info
+      const userInfo = await googleService.getUserInfo(tokens.access_token);
+
+      // Save integration
+      await googleService.saveIntegration(organizationId, tokens, userInfo);
+
+      // Redirect to frontend with success message
+      res.redirect(`${process.env.CLIENT_URL}/settings?integration=google&status=success`);
       return;
+    } catch (error: any) {
+      lastError = error;
+      
+      // Don't retry on authentication errors
+      if (error.response?.status === 401 || error.response?.status === 403 || error.message?.includes('Invalid')) {
+        logger.error('Error in Google OAuth callback (non-retryable)', error);
+        res.redirect(`${process.env.CLIENT_URL}/settings?integration=google&status=error&message=${encodeURIComponent(error.message)}`);
+        return;
+      }
+
+      // Retry on network errors
+      if (attempt < maxRetries && (
+        error.code === 'ECONNRESET' ||
+        error.code === 'ETIMEDOUT' ||
+        error.code === 'ENOTFOUND' ||
+        error.message?.includes('network') ||
+        error.message?.includes('timeout')
+      )) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        logger.warn(`Google OAuth callback attempt ${attempt + 1} failed, retrying in ${delay}ms...`, error.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
     }
-
-    const organizationId = verifyState(state as string, 'google');
-
-    if (!organizationId) {
-      res.status(400).json({ error: 'Invalid or expired state parameter' });
-      return;
-    }
-
-    // Exchange code for tokens
-    const tokens = await googleService.getTokensFromCode(code as string);
-
-    // Get user info
-    const userInfo = await googleService.getUserInfo(tokens.access_token);
-
-    // Save integration
-    await googleService.saveIntegration(organizationId, tokens, userInfo);
-
-    // Redirect to frontend with success message
-    res.redirect(`${process.env.CLIENT_URL}/settings?integration=google&status=success`);
-  } catch (error) {
-    logger.error('Error in Google OAuth callback', error);
-    res.redirect(`${process.env.CLIENT_URL}/settings?integration=google&status=error`);
   }
+
+  // All retries exhausted
+  logger.error('Error in Google OAuth callback after retries', lastError);
+  res.redirect(`${process.env.CLIENT_URL}/settings?integration=google&status=error&message=${encodeURIComponent(lastError?.message || 'Network error')}`);
 };
 
 export const syncGoogleData: RequestHandler = async (req: Request, res: Response): Promise<void> => {

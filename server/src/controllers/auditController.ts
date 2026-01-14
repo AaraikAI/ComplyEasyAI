@@ -4,6 +4,7 @@ import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
+import blockchainService from '../services/advanced/blockchainService';
 
 class AuditController {
   list: RequestHandler = async (req: Request, res: Response): Promise<void> => {
@@ -92,6 +93,44 @@ class AuditController {
           },
         },
       });
+
+      // Submit to blockchain asynchronously (don't block response)
+      // Only submit critical audit logs to blockchain
+      const criticalActions = ['user.delete', 'organization.delete', 'framework.delete', 'risk.critical', 'compliance.certificate'];
+      const isCritical = criticalActions.some(action => actionString.toLowerCase().includes(action.toLowerCase()));
+      
+      if (isCritical) {
+        blockchainService.recordAuditLog(
+          organizationId,
+          actionString,
+          { logId: auditLog.id, details },
+          'polygon' // Default to Polygon for lower gas fees
+        ).then((blockchainRecord) => {
+          // Store blockchain record in metadata for now
+          // Note: In production, add transactionHash, network, blockNumber fields to AuditLog model
+          prisma.auditLog.update({
+            where: { id: auditLog.id },
+            data: {
+              metadata: {
+                ...(auditLog.metadata as any || {}),
+                blockchain: {
+                  transactionHash: blockchainRecord.transactionHash,
+                  network: blockchainRecord.network,
+                  blockNumber: blockchainRecord.blockNumber,
+                  verified: blockchainRecord.verified,
+                },
+              },
+            },
+          }).catch((error) => {
+            logger.error('Failed to update audit log with blockchain info', error);
+          });
+          
+          logger.info(`Audit log ${auditLog.id} submitted to blockchain: ${blockchainRecord.transactionHash}`);
+        }).catch((error) => {
+          // Log error but don't fail the audit log creation
+          logger.warn('Failed to submit audit log to blockchain', error);
+        });
+      }
 
       res.status(201).json(auditLog);
     } catch (error) {

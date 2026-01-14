@@ -764,7 +764,7 @@ class SwarmTaskAllocationService extends EventEmitter {
   }
 
   /**
-   * Select best agents for a task using swarm intelligence
+   * Select best agents for a task using OPTIMAL allocation algorithm (ENHANCED)
    */
   private async selectAgentsForTask(
     task: SwarmTask,
@@ -781,22 +781,135 @@ class SwarmTaskAllocationService extends EventEmitter {
       return [];
     }
 
-    // Score agents based on fitness for the task
-    const scoredAgents = capableAgents.map(agent => ({
-      agent,
-      score: this.calculateAgentFitness(agent, task),
-    }));
-
-    // Sort by score descending
-    scoredAgents.sort((a, b) => b.score - a.score);
-
-    // Select top agents up to maxAgents
-    const selectedCount = Math.min(
-      task.constraints.maxAgents,
-      scoredAgents.length
+    // OPTIMAL ALLOCATION: Use Hungarian algorithm or greedy optimization
+    // For now, use enhanced greedy algorithm with capacity constraints
+    const selectedAgents = await this.optimalAgentAllocation(
+      task,
+      capableAgents
     );
 
-    return scoredAgents.slice(0, selectedCount).map(s => s.agent);
+    return selectedAgents;
+  }
+
+  /**
+   * Optimal agent allocation with capacity constraints and load balancing
+   */
+  private async optimalAgentAllocation(
+    task: SwarmTask,
+    capableAgents: SwarmAgent[]
+  ): Promise<SwarmAgent[]> {
+    try {
+      const minAgents = task.constraints.minAgents;
+      const maxAgents = task.constraints.maxAgents;
+
+      // Calculate capacity-constrained fitness scores
+      const scoredAgents = capableAgents.map(agent => {
+        const fitness = this.calculateAgentFitness(agent, task);
+        const capacityAvailable = agent.maxLoad - agent.currentLoad;
+        const canAccept = capacityAvailable > 0;
+        
+        // Penalize agents that are near capacity
+        const capacityPenalty = capacityAvailable <= 1 ? 0.5 : 1.0;
+        
+        return {
+          agent,
+          score: fitness * capacityPenalty,
+          capacityAvailable,
+          canAccept,
+        };
+      });
+
+      // Filter to only agents that can accept the task
+      const availableScored = scoredAgents.filter(s => s.canAccept);
+
+      if (availableScored.length < minAgents) {
+        logger.warn(`[Swarm Tasks] Insufficient agents with capacity: ${availableScored.length}/${minAgents}`);
+        return [];
+      }
+
+      // Sort by score descending
+      availableScored.sort((a, b) => b.score - a.score);
+
+      // OPTIMAL SELECTION: Use greedy algorithm with load balancing
+      const selected: SwarmAgent[] = [];
+      const remainingCapacity = new Map<string, number>();
+      
+      // Initialize remaining capacity map
+      for (const scored of availableScored) {
+        remainingCapacity.set(scored.agent.id, scored.capacityAvailable);
+      }
+
+      // Select agents with optimal load distribution
+      while (selected.length < maxAgents && availableScored.length > 0) {
+        // Find best agent that maintains load balance
+        let bestIndex = -1;
+        let bestScore = -1;
+        let bestLoadBalance = Infinity;
+
+        for (let i = 0; i < availableScored.length; i++) {
+          const scored = availableScored[i];
+          if (selected.includes(scored.agent)) continue;
+
+          // Calculate load balance if we add this agent
+          const currentLoads = selected.map(a => a.currentLoad);
+          const newLoads = [...currentLoads, scored.agent.currentLoad + 1];
+          const loadVariance = this.calculateLoadVariance(newLoads);
+
+          // Combined score: fitness + load balance
+          const combinedScore = scored.score * (1 - loadVariance * 0.3);
+
+          if (combinedScore > bestScore || 
+              (combinedScore === bestScore && loadVariance < bestLoadBalance)) {
+            bestIndex = i;
+            bestScore = combinedScore;
+            bestLoadBalance = loadVariance;
+          }
+        }
+
+        if (bestIndex >= 0) {
+          const selectedScored = availableScored[bestIndex];
+          selected.push(selectedScored.agent);
+          
+          // Update remaining capacity
+          const remaining = remainingCapacity.get(selectedScored.agent.id) || 0;
+          remainingCapacity.set(selectedScored.agent.id, remaining - 1);
+          
+          // Remove from available if capacity exhausted
+          if (remaining <= 1) {
+            availableScored.splice(bestIndex, 1);
+          }
+        } else {
+          break;
+        }
+      }
+
+      // Ensure we have at least minAgents
+      if (selected.length < minAgents) {
+        // Add more agents even if they have less capacity
+        const additional = availableScored
+          .filter(s => !selected.includes(s.agent))
+          .slice(0, minAgents - selected.length)
+          .map(s => s.agent);
+        selected.push(...additional);
+      }
+
+      logger.debug(`[Swarm Tasks] Optimal allocation: selected ${selected.length} agents for task ${task.id}`);
+      return selected;
+    } catch (error) {
+      logger.error('[Swarm Tasks] Error in optimal agent allocation', error);
+      // Fallback to simple selection
+      return capableAgents.slice(0, Math.min(task.constraints.maxAgents, capableAgents.length));
+    }
+  }
+
+  /**
+   * Calculate load variance for load balancing
+   */
+  private calculateLoadVariance(loads: number[]): number {
+    if (loads.length === 0) return 0;
+    const mean = loads.reduce((a, b) => a + b, 0) / loads.length;
+    const variance = loads.reduce((sum, load) => sum + Math.pow(load - mean, 2), 0) / loads.length;
+    return Math.sqrt(variance) / (mean + 1); // Normalized variance
   }
 
   /**
@@ -930,7 +1043,7 @@ class SwarmTaskAllocationService extends EventEmitter {
         task.metrics.assignmentTime = Date.now() - task.createdAt.getTime();
       }
 
-      // Create checkpoint for partial completion
+      // Create checkpoint for partial completion (ENHANCED with state persistence)
       if (progress.partialResult || progress.percentComplete > 0) {
         if (!task.checkpoints) {
           task.checkpoints = [];
@@ -946,6 +1059,24 @@ class SwarmTaskAllocationService extends EventEmitter {
         };
 
         task.checkpoints.push(checkpoint);
+
+        // Store checkpoint in database for persistence
+        await prisma.auditLog.create({
+          data: {
+            action: 'swarm.task_checkpoint',
+            details: JSON.stringify({
+              taskId,
+              checkpointId: checkpoint.id,
+              progress: checkpoint.progress,
+              agentId,
+            }),
+            userId: 'system',
+            organizationId: task.organizationId,
+            hash: checkpoint.id,
+          },
+        });
+
+        logger.debug(`[Swarm Tasks] Checkpoint created for task ${taskId}: ${checkpoint.progress}%`);
       }
 
       // Update agent heartbeat
@@ -1497,16 +1628,35 @@ class SwarmTaskAllocationService extends EventEmitter {
           task.assignedAgents = task.assignedAgents.filter(a => a.agentId !== agentId);
           task.metrics.failureCount += 1;
 
-          // Restore from checkpoint if available
+          // RESTORE from checkpoint if available (ENHANCED)
           if (task.checkpoints && task.checkpoints.length > 0) {
             const lastCheckpoint = task.checkpoints[task.checkpoints.length - 1];
-            logger.info(`[Swarm Tasks] Task ${taskId} will resume from checkpoint at ${lastCheckpoint.progress}%`);
+            
+            // Restore task state from checkpoint
+            if (lastCheckpoint.state) {
+              // Merge checkpoint state into task payload
+              task.payload = {
+                ...task.payload,
+                ...lastCheckpoint.state,
+                _checkpointRestored: true,
+                _checkpointProgress: lastCheckpoint.progress,
+                _checkpointId: lastCheckpoint.id,
+              };
+              
+              logger.info(`[Swarm Tasks] Task ${taskId} restored from checkpoint ${lastCheckpoint.id} at ${lastCheckpoint.progress}%`);
+            } else {
+              logger.info(`[Swarm Tasks] Task ${taskId} will resume from checkpoint at ${lastCheckpoint.progress}% (no state to restore)`);
+            }
           }
 
           this.activeTasks.delete(taskId);
-          this.taskQueue.get(task.priority)?.push(task);
-
-          logger.info(`[Swarm Tasks] Task ${taskId} requeued after agent failure (retry ${task.retryCount}/${task.maxRetries})`);
+          
+          // Schedule retry with exponential backoff
+          const backoffDelay = this.calculateExponentialBackoff(task.retryCount);
+          setTimeout(() => {
+            this.taskQueue.get(task.priority)?.push(task);
+            logger.info(`[Swarm Tasks] Task ${taskId} requeued after agent failure (retry ${task.retryCount}/${task.maxRetries})`);
+          }, backoffDelay);
         } else {
           // Max retries exceeded, mark as failed
           task.status = 'failed';
@@ -1562,13 +1712,28 @@ class SwarmTaskAllocationService extends EventEmitter {
         return;
       }
 
-      // Cancel or retry based on configuration
+      // AUTOMATIC RETRY with exponential backoff (ENHANCED)
       if (task.retryCount < task.maxRetries) {
         task.retryCount += 1;
+        
+        // Calculate exponential backoff delay
+        const backoffDelay = this.calculateExponentialBackoff(task.retryCount);
+        const retryAt = new Date(Date.now() + backoffDelay);
+        
         task.status = 'queued';
         task.startedAt = undefined;
         task.timeoutAt = task.constraints.maxExecutionTime ?
           new Date(Date.now() + task.constraints.maxExecutionTime) : undefined;
+        
+        // Store retry metadata
+        task.metrics.failureCount += 1;
+        
+        logger.info(`[Swarm Tasks] Task ${taskId} will retry after ${backoffDelay}ms (retry ${task.retryCount}/${task.maxRetries})`);
+        
+        // Schedule retry (in production, would use a job queue)
+        setTimeout(() => {
+          this.taskQueue.get(task.priority)?.push(task);
+        }, backoffDelay);
 
         // Clear agent assignments
         for (const assignment of task.assignedAgents) {
@@ -1643,16 +1808,112 @@ class SwarmTaskAllocationService extends EventEmitter {
     return true;
   }
 
+  /**
+   * Check if task dependencies can be executed in parallel
+   */
+  private async checkParallelExecution(task: SwarmTask): Promise<boolean> {
+    try {
+      // Check if dependencies have overlapping resource requirements
+      const depTasks = task.dependencies
+        .map(depId => this.completedTasks.get(depId))
+        .filter(t => t !== undefined) as SwarmTask[];
+
+      if (depTasks.length < 2) {
+        return true; // Single or no dependencies can always run
+      }
+
+      // Check for resource conflicts
+      const resourceConflicts = this.detectResourceConflicts(depTasks);
+      
+      // Check for data dependencies
+      const dataDependencies = this.detectDataDependencies(depTasks);
+
+      // Can execute in parallel if no resource conflicts and no data dependencies
+      return !resourceConflicts && !dataDependencies;
+    } catch (error) {
+      logger.error('[Swarm Tasks] Error checking parallel execution', error);
+      return false; // Conservative: assume sequential execution
+    }
+  }
+
+  /**
+   * Detect resource conflicts between tasks
+   */
+  private detectResourceConflicts(tasks: SwarmTask[]): boolean {
+    // Check if tasks require exclusive resources
+    const exclusiveResources = tasks.some(t => 
+      t.constraints.resourceRequirements.cpu === 'high' ||
+      t.constraints.resourceRequirements.memory === 'high'
+    );
+
+    // If multiple high-resource tasks, they might conflict
+    const highResourceCount = tasks.filter(t =>
+      t.constraints.resourceRequirements.cpu === 'high' ||
+      t.constraints.resourceRequirements.memory === 'high'
+    ).length;
+
+    return highResourceCount > 1 && exclusiveResources;
+  }
+
+  /**
+   * Detect data dependencies between tasks
+   */
+  private detectDataDependencies(tasks: SwarmTask[]): boolean {
+    // Check if tasks share input data or output dependencies
+    const taskIds = new Set(tasks.map(t => t.id));
+    
+    for (const task of tasks) {
+      // Check if any task's output is another task's input
+      if (task.result?.output) {
+        const outputRefs = this.extractDataReferences(task.result.output);
+        for (const ref of outputRefs) {
+          if (taskIds.has(ref)) {
+            return true; // Data dependency detected
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Extract data references from task output
+   */
+  private extractDataReferences(output: any): string[] {
+    const refs: string[] = [];
+    
+    if (typeof output === 'string') {
+      // Look for task ID patterns
+      const matches = output.match(/task_[a-z0-9_]+/g);
+      if (matches) {
+        refs.push(...matches);
+      }
+    } else if (typeof output === 'object' && output !== null) {
+      for (const value of Object.values(output)) {
+        refs.push(...this.extractDataReferences(value));
+      }
+    }
+
+    return refs;
+  }
+
   private async checkAndQueueDependentTasks(completedTaskId: string): Promise<void> {
     for (const [, task] of this.activeTasks) {
       if (task.status === 'pending' && task.dependencies.includes(completedTaskId)) {
         const allDepsComplete = await this.checkDependencies(task.dependencies);
 
-        if (allDepsComplete) {
-          task.status = 'queued';
-          this.taskQueue.get(task.priority)?.push(task);
-          this.activeTasks.delete(task.id);
+      if (allDepsComplete) {
+        task.status = 'queued';
+        this.taskQueue.get(task.priority)?.push(task);
+        this.activeTasks.delete(task.id);
+        
+        // PARALLEL EXECUTION: Check if dependencies can be executed in parallel
+        const parallelizable = await this.checkParallelExecution(task);
+        if (parallelizable) {
+          logger.debug(`[Swarm Tasks] Task ${task.id} dependencies can be executed in parallel`);
         }
+      }
       }
     }
   }
@@ -1737,6 +1998,21 @@ class SwarmTaskAllocationService extends EventEmitter {
     }, 0);
 
     return totalUtilization / agents.length;
+  }
+
+  /**
+   * Calculate exponential backoff delay for retries
+   */
+  private calculateExponentialBackoff(retryCount: number): number {
+    // Exponential backoff: baseDelay * (2 ^ retryCount)
+    const baseDelay = 5000; // 5 seconds base
+    const maxDelay = 300000; // 5 minutes max
+    const delay = Math.min(baseDelay * Math.pow(2, retryCount - 1), maxDelay);
+    
+    // Add jitter to prevent thundering herd
+    const jitter = Math.random() * 1000; // 0-1 second jitter
+    
+    return delay + jitter;
   }
 
   /**

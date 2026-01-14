@@ -53,6 +53,7 @@ model Organization {
   agenticActions       AgenticAction[]
   evidenceAnalyses     EvidenceAnalysis[]
   regulatoryChanges    RegulatoryChange[]
+  regulatoryFeeds      RegulatoryFeed[]
   riskPredictions      RiskPrediction[]
   vrTrainingScenarios  VRTrainingScenario[]
   vrTrainingSessions   VRTrainingSession[]
@@ -942,6 +943,31 @@ model EvidenceAnalysis {
   @@index([verificationStatus])
 }
 
+model RegulatoryFeed {
+  id                String    @id @default(uuid())
+  organizationId    String
+  name              String
+  url               String
+  feedType          String    // rss, api, website
+  jurisdiction      String
+  pollingInterval   Int       @default(60) // minutes
+  status            String    @default("active") // active, paused, error
+  lastPolledAt      DateTime?
+  lastHash          String?   // For change detection
+  errorCount        Int       @default(0)
+  lastError         String?
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  changes           RegulatoryChange[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([feedType])
+  @@index([jurisdiction])
+}
+
 model RegulatoryChange {
   id                    String    @id @default(uuid())
   organizationId        String
@@ -955,14 +981,17 @@ model RegulatoryChange {
   status                String    @default("pending")
   regulationText        String?   @db.Text
   source                String?
+  feedId                String?   // Link to RegulatoryFeed if from feed
   createdBy             String
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  feed                  RegulatoryFeed? @relation(fields: [feedId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([jurisdiction])
   @@index([status])
+  @@index([feedId])
 }
 
 model RiskPrediction {

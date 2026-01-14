@@ -14,6 +14,7 @@ import logger from '../../config/logger';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import * as crypto from 'crypto';
+import notificationService from '../notificationService';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -94,6 +95,7 @@ class RegulatoryIntelligenceFabricService {
       jurisdiction: string;
       effectiveDate: Date;
       source?: string;
+      feedId?: string; // Link to RegulatoryFeed
     },
     userId: string
   ): Promise<RegulatoryChange> {
@@ -189,6 +191,7 @@ class RegulatoryIntelligenceFabricService {
           status: conflicts.length > 0 ? 'conflict' : 'analyzed',
           regulationText,
           source: sourceUrl,
+          feedId: metadata.feedId || null, // Link to feed if provided
           createdBy: userId,
         },
       });
@@ -630,68 +633,158 @@ class RegulatoryIntelligenceFabricService {
   }
 
   /**
-   * Calculate change severity
+   * Calculate change severity (Enhanced Implementation)
    */
   private calculateChangeSeverity(
     regulationText: string,
-    metadata: { jurisdiction: string }
+    metadata: { jurisdiction: string; effectiveDate?: Date; name?: string }
   ): 'critical' | 'high' | 'medium' | 'low' {
     const lowerText = regulationText.toLowerCase();
     
-    // Critical keywords
-    const criticalKeywords = ['breach', 'penalty', 'fine', 'criminal', 'prison', 'mandatory'];
-    if (criticalKeywords.some(kw => lowerText.includes(kw))) {
-      return 'critical';
+    // Enhanced keyword detection with scoring
+    const criticalKeywords = ['breach', 'penalty', 'fine', 'criminal', 'prison', 'mandatory', 'illegal', 'prosecution'];
+    const highKeywords = ['required', 'must', 'shall', 'prohibited', 'violation', 'enforcement', 'sanction', 'non-compliance'];
+    const mediumKeywords = ['recommended', 'should', 'guidance', 'best practice', 'advisory', 'consider'];
+    const lowKeywords = ['optional', 'may', 'suggested', 'voluntary'];
+    
+    // Count keyword occurrences
+    const criticalCount = criticalKeywords.filter(kw => lowerText.includes(kw)).length;
+    const highCount = highKeywords.filter(kw => lowerText.includes(kw)).length;
+    const mediumCount = mediumKeywords.filter(kw => lowerText.includes(kw)).length;
+    const lowCount = lowKeywords.filter(kw => lowerText.includes(kw)).length;
+    
+    // Calculate severity score
+    let severityScore = criticalCount * 10 + highCount * 5 + mediumCount * 2 - lowCount * 3;
+    
+    // Adjust based on effective date proximity (if provided)
+    if (metadata.effectiveDate) {
+      const daysUntilEffective = Math.floor((metadata.effectiveDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      if (daysUntilEffective < 30) {
+        severityScore += 5; // Very soon = more critical
+      } else if (daysUntilEffective < 90) {
+        severityScore += 2;
+      }
     }
-
-    // High keywords
-    const highKeywords = ['required', 'must', 'shall', 'prohibited', 'violation'];
-    if (highKeywords.some(kw => lowerText.includes(kw))) {
-      return 'high';
+    
+    // Adjust based on jurisdiction importance
+    const majorJurisdictions = ['US', 'EU', 'UK', 'CA', 'AU', 'Global'];
+    if (majorJurisdictions.includes(metadata.jurisdiction)) {
+      severityScore += 3;
     }
-
-    // Medium keywords
-    const mediumKeywords = ['recommended', 'should', 'guidance', 'best practice'];
-    if (mediumKeywords.some(kw => lowerText.includes(kw))) {
-      return 'medium';
-    }
-
+    
+    // Determine severity level
+    if (severityScore >= 15 || criticalCount > 2) return 'critical';
+    if (severityScore >= 8 || (criticalCount > 0 || highCount > 2)) return 'high';
+    if (severityScore >= 3 || (highCount > 0 || mediumCount > 2)) return 'medium';
     return 'low';
   }
 
   /**
-   * Identify affected controls
+   * Identify affected controls (Enhanced with AI-powered semantic matching)
    */
   private async identifyAffectedControls(
     regulationText: string,
     organizationId: string
-  ): Promise<Array<{ id: string; name: string }>> {
+  ): Promise<Array<{ id: string; name: string; matchConfidence?: number; reason?: string }>> {
     try {
       const frameworks = await prisma.complianceFramework.findMany({
         where: { organizationId },
         include: { controls: true },
       });
 
-      const affectedControls: Array<{ id: string; name: string }> = [];
+      if (frameworks.length === 0 || frameworks.every(f => f.controls.length === 0)) {
+        return [];
+      }
+
+      // Use AI for semantic matching if available
+      try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+        const prompt = `Analyze the following regulation text and identify which compliance controls are affected.
+
+Regulation Text:
+${regulationText.substring(0, 4000)}
+
+Available Controls:
+${frameworks.flatMap(f => f.controls.map((c, idx) => 
+  `${idx + 1}. [${f.name}] ${c.name}\n   Description: ${c.description || 'N/A'}`
+)).join('\n\n')}
+
+For each affected control, provide:
+- Control number (from list above)
+- Match confidence (0-1)
+- Brief reason for match
+
+Return JSON array format:
+[{"controlNumber": 1, "confidence": 0.85, "reason": "Control directly addresses requirement X"}]
+
+Only include controls with confidence > 0.5.`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        
+        // Parse AI response
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const allControls = frameworks.flatMap(f => f.controls);
+          const matches = JSON.parse(jsonMatch[0]);
+          const affectedControls: Array<{ id: string; name: string; matchConfidence: number; reason: string }> = [];
+          
+          for (const match of matches) {
+            if (match.controlNumber && match.controlNumber > 0 && match.controlNumber <= allControls.length) {
+              const control = allControls[match.controlNumber - 1];
+              if (match.confidence > 0.5) {
+                affectedControls.push({
+                  id: control.id,
+                  name: control.name,
+                  matchConfidence: match.confidence,
+                  reason: match.reason || 'AI-identified semantic match',
+                });
+              }
+            }
+          }
+          
+          if (affectedControls.length > 0) {
+            logger.info(`[RIF] AI identified ${affectedControls.length} affected controls`);
+            return affectedControls;
+          }
+        }
+      } catch (aiError: any) {
+        logger.warn('[RIF] AI-based control identification failed, using keyword matching', aiError);
+      }
+
+      // Fallback to enhanced keyword matching
+      const affectedControls: Array<{ id: string; name: string; matchConfidence: number; reason: string }> = [];
       const lowerText = regulationText.toLowerCase();
+      
+      // Extract meaningful keywords (longer words, exclude common words)
+      const commonWords = new Set(['the', 'and', 'or', 'but', 'for', 'with', 'from', 'that', 'this', 'are', 'was', 'were']);
+      const keywords = regulationText
+        .split(/\s+/)
+        .filter(w => w.length > 4 && !commonWords.has(w.toLowerCase()))
+        .slice(0, 30)
+        .map(w => w.toLowerCase().replace(/[^a-z0-9]/g, ''))
+        .filter(w => w.length > 0);
 
       for (const framework of frameworks) {
         for (const control of framework.controls) {
-          const controlText = (control.name + ' ' + (control.description || '')).toLowerCase();
+          const controlText = `${control.name} ${control.description || ''}`.toLowerCase();
+          const matchingKeywords = keywords.filter(kw => controlText.includes(kw));
           
-          // Simple keyword matching (in production, would use NLP)
-          const keywords = regulationText.split(/\s+/).slice(0, 20);
-          for (const keyword of keywords) {
-            if (keyword.length > 3 && controlText.includes(keyword.toLowerCase())) {
-              affectedControls.push({
-                id: control.id,
-                name: control.name,
-              });
-              break;
-            }
+          if (matchingKeywords.length > 0) {
+            const confidence = Math.min(0.9, matchingKeywords.length / keywords.length * 2);
+            affectedControls.push({
+              id: control.id,
+              name: control.name,
+              matchConfidence: confidence,
+              reason: `Matched ${matchingKeywords.length} keywords: ${matchingKeywords.slice(0, 3).join(', ')}`,
+            });
           }
         }
       }
+
+      // Sort by confidence (highest first)
+      affectedControls.sort((a, b) => (b.matchConfidence || 0) - (a.matchConfidence || 0));
 
       return affectedControls;
     } catch (error) {
@@ -798,13 +891,21 @@ class RegulatoryIntelligenceFabricService {
           const patterns = conflictPatterns[newJurisdiction];
           if (patterns && patterns[existingJurisdiction]) {
             const conflictId = crypto.randomUUID();
+            // Generate AI-powered resolution suggestion
+            const resolution = await this.generateConflictResolution(
+              jurisdiction,
+              existingChange.jurisdiction,
+              'requirement_mismatch',
+              patterns[existingJurisdiction]
+            );
+            
             conflicts.push({
               id: conflictId,
               regulation1: jurisdiction,
               regulation2: existingChange.jurisdiction,
               conflictType: 'requirement_mismatch',
               description: patterns[existingJurisdiction],
-              resolution: 'Review both requirements and implement the stricter control',
+              resolution: resolution || 'Review both requirements and implement the stricter control. Consider implementing controls that satisfy both regulations where possible.',
               severity: 'high',
               affectedFrameworks: affectedFrameworks,
             });
@@ -817,13 +918,21 @@ class RegulatoryIntelligenceFabricService {
 
           if (overlappingFrameworks.length > 0) {
             const conflictId = crypto.randomUUID();
+            // Generate cross-framework conflict resolution
+            const resolution = await this.generateConflictResolution(
+              jurisdiction,
+              existingChange.jurisdiction,
+              'overlap',
+              `Both regulations affect frameworks: ${overlappingFrameworks.join(', ')}`
+            );
+            
             conflicts.push({
               id: conflictId,
               regulation1: jurisdiction,
               regulation2: existingChange.jurisdiction,
               conflictType: 'overlap',
               description: `Both regulations affect frameworks: ${overlappingFrameworks.join(', ')}`,
-              resolution: 'Harmonize controls across overlapping frameworks',
+              resolution: resolution || `Harmonize controls across overlapping frameworks (${overlappingFrameworks.join(', ')}). Create unified controls that satisfy both regulations.`,
               severity: 'medium',
               affectedFrameworks: overlappingFrameworks,
             });
@@ -840,13 +949,21 @@ class RegulatoryIntelligenceFabricService {
 
           for (const contradiction of contradictions) {
             const conflictId = crypto.randomUUID();
+            // Generate contradiction resolution
+            const resolution = await this.generateConflictResolution(
+              jurisdiction,
+              existingChange.jurisdiction,
+              'contradiction',
+              contradiction
+            );
+            
             conflicts.push({
               id: conflictId,
               regulation1: jurisdiction,
               regulation2: existingChange.jurisdiction,
               conflictType: 'contradiction',
               description: contradiction,
-              resolution: 'Seek legal guidance on conflicting requirements',
+              resolution: resolution || 'Seek legal guidance on conflicting requirements. Consider implementing controls for both regulations with clear documentation of the conflict and decision rationale.',
               severity: 'critical',
               affectedFrameworks: affectedFrameworks,
             });
@@ -961,6 +1078,40 @@ class RegulatoryIntelligenceFabricService {
   }
 
   /**
+   * Generate conflict resolution suggestions (AI-powered)
+   */
+  private async generateConflictResolution(
+    regulation1: string,
+    regulation2: string,
+    conflictType: string,
+    description: string
+  ): Promise<string> {
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const prompt = `You are a compliance expert. Provide a specific, actionable resolution suggestion for this regulatory conflict:
+
+Regulation 1: ${regulation1}
+Regulation 2: ${regulation2}
+Conflict Type: ${conflictType}
+Description: ${description}
+
+Provide a concise, actionable resolution suggestion (2-3 sentences) that:
+1. Addresses the specific conflict
+2. Provides concrete steps to resolve it
+3. Considers compliance with both regulations where possible
+
+Return only the resolution text, no JSON or formatting.`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text().trim();
+    } catch (error) {
+      logger.warn('[RIF] AI conflict resolution generation failed, using default', error);
+      return '';
+    }
+  }
+
+  /**
    * Notify stakeholders of conflicts
    */
   private async notifyConflictStakeholders(
@@ -968,8 +1119,37 @@ class RegulatoryIntelligenceFabricService {
     organizationId: string
   ): Promise<void> {
     try {
-      // In production, would send emails/notifications to stakeholders
-      // For now, log to audit
+      // Get organization admins
+      const admins = await prisma.user.findMany({
+        where: {
+          organizationId,
+          role: 'admin',
+        },
+      });
+
+      // Send notifications
+      for (const admin of admins) {
+        try {
+          await notificationService.sendNotification(
+            admin.id,
+            organizationId,
+            {
+              type: conflicts.some(c => c.severity === 'critical') ? 'critical' : 'warning',
+              category: 'rif_conflict',
+              title: `Regulatory Conflict Detected: ${conflicts.length} conflict(s)`,
+              message: `${conflicts.length} regulatory conflict(s) detected:\n\n${conflicts.slice(0, 3).map(c => 
+                `• ${c.severity.toUpperCase()}: ${c.description}\n  Resolution: ${c.resolution}`
+              ).join('\n\n')}`,
+              link: `/settings/regulatory?conflicts=true`,
+              channels: ['email', 'websocket'],
+            }
+          );
+        } catch (error: any) {
+          logger.warn(`[RIF] Failed to send conflict notification to ${admin.id}`, error);
+        }
+      }
+
+      // Log to audit
       await prisma.auditLog.create({
         data: {
           action: 'rif.conflict_notification',
@@ -1202,12 +1382,46 @@ class RegulatoryIntelligenceFabricService {
         throw new Error('Regulatory change not found');
       }
 
+      // DRY-RUN MODE: Generate preview without making changes
+      if (options?.dryRun) {
+        const preview = await this.generateAutoUpdatePreview(regulatoryChange, organizationId);
+        return {
+          controlsCreated: preview.controlsToCreate.length,
+          controlsUpdated: preview.controlsToUpdate.length,
+          controlsDeprecated: preview.controlsToDeprecate.length,
+          frameworksAffected: preview.frameworksAffected.length,
+          preview,
+          requiresApproval: options?.requireApproval !== false,
+        };
+      }
+
+      // APPROVAL WORKFLOW: Queue for approval if required
+      if (options?.requireApproval !== false) {
+        const approvalId = await this.queueForApproval(
+          regulatoryChangeId,
+          organizationId,
+          userId,
+          regulatoryChange
+        );
+        return {
+          controlsCreated: 0,
+          controlsUpdated: 0,
+          controlsDeprecated: 0,
+          frameworksAffected: 0,
+          requiresApproval: true,
+          approvalId,
+        };
+      }
+
       let controlsCreated = 0;
       let controlsUpdated = 0;
       let controlsDeprecated = 0;
       const affectedFrameworkIds = new Set<string>();
-      const errors: string[] = [];
+      const errors: Array<{ controlId: string; error: string }> = [];
       const checkpointId = crypto.randomBytes(16).toString('hex');
+
+      // Create checkpoint for rollback
+      await this.createCheckpoint(regulatoryChangeId, organizationId, userId);
 
       // Process auto-generated controls
       const autoControls = regulatoryChange.autoGeneratedControls as any[] || [];
@@ -1231,27 +1445,36 @@ class RegulatoryIntelligenceFabricService {
             (c.description && c.description.toLowerCase().includes(controlData.description.toLowerCase().substring(0, 50)))
           );
 
-          if (existingControl) {
-            // Update existing control
-            await prisma.frameworkControl.update({
-              where: { id: existingControl.id },
-              data: {
-                description: `${existingControl.description || ''}\n\n[Auto-updated from ${regulatoryChange.regulationName}]: ${controlData.description}`,
-                updatedAt: new Date(),
-              },
+          try {
+            if (existingControl) {
+              // Update existing control
+              await prisma.frameworkControl.update({
+                where: { id: existingControl.id },
+                data: {
+                  description: `${existingControl.description || ''}\n\n[Auto-updated from ${regulatoryChange.regulationName} on ${new Date().toISOString()}]: ${controlData.description}`,
+                  updatedAt: new Date(),
+                },
+              });
+              controlsUpdated++;
+            } else {
+              // Create new control
+              await prisma.frameworkControl.create({
+                data: {
+                  frameworkId: framework.id,
+                  name: controlData.name,
+                  description: `[Auto-generated from ${regulatoryChange.regulationName} on ${new Date().toISOString()}]: ${controlData.description}`,
+                  status: 'Pending',
+                  category: controlData.category || 'Regulatory',
+                },
+              });
+              controlsCreated++;
+            }
+          } catch (controlError: any) {
+            errors.push({
+              controlId: existingControl?.id || 'new',
+              error: controlError.message || 'Failed to create/update control',
             });
-            controlsUpdated++;
-          } else {
-            // Create new control
-            await prisma.frameworkControl.create({
-              data: {
-                frameworkId: framework.id,
-                name: controlData.name,
-                description: `[Auto-generated from ${regulatoryChange.regulationName}]: ${controlData.description}`,
-                status: 'Pending',
-              },
-            });
-            controlsCreated++;
+            logger.error(`[RIF] Error processing control ${controlData.name}`, controlError);
           }
         }
       }
@@ -1431,16 +1654,90 @@ class RegulatoryIntelligenceFabricService {
   }
 
   /**
+   * Generate preview of auto-update (dry-run)
+   */
+  private async generateAutoUpdatePreview(
+    regulatoryChange: any,
+    organizationId: string
+  ): Promise<{
+    controlsToCreate: Array<{ name: string; description: string; frameworkId: string; frameworkName: string }>;
+    controlsToUpdate: Array<{ id: string; name: string; currentDescription: string; newDescription: string }>;
+    controlsToDeprecate: Array<{ id: string; name: string; reason: string }>;
+    frameworksAffected: Array<{ id: string; name: string }>;
+  }> {
+    const controlsToCreate: Array<{ name: string; description: string; frameworkId: string; frameworkName: string }> = [];
+    const controlsToUpdate: Array<{ id: string; name: string; currentDescription: string; newDescription: string }> = [];
+    const controlsToDeprecate: Array<{ id: string; name: string; reason: string }> = [];
+    const frameworksAffected: Array<{ id: string; name: string }> = [];
+
+    const frameworks = await prisma.complianceFramework.findMany({
+      where: {
+        organizationId,
+        id: { in: regulatoryChange.affectedFrameworks || [] },
+      },
+      include: { controls: true },
+    });
+
+    for (const framework of frameworks) {
+      frameworksAffected.push({ id: framework.id, name: framework.name });
+
+      const autoControls = regulatoryChange.autoGeneratedControls as any[] || [];
+      for (const controlData of autoControls) {
+        const existingControl = framework.controls.find((c: any) =>
+          c.name.toLowerCase().includes(controlData.name.toLowerCase().split(':')[0]) ||
+          (c.description && c.description.toLowerCase().includes(controlData.description.toLowerCase().substring(0, 50)))
+        );
+
+        if (existingControl) {
+          controlsToUpdate.push({
+            id: existingControl.id,
+            name: existingControl.name,
+            currentDescription: existingControl.description || '',
+            newDescription: `${existingControl.description || ''}\n\n[Auto-updated from ${regulatoryChange.regulationName}]: ${controlData.description}`,
+          });
+        } else {
+          controlsToCreate.push({
+            name: controlData.name,
+            description: controlData.description,
+            frameworkId: framework.id,
+            frameworkName: framework.name,
+          });
+        }
+      }
+    }
+
+    // Identify obsolete controls
+    const obsolete = await this.identifyObsoleteControls(regulatoryChange, organizationId);
+    for (const control of obsolete) {
+      controlsToDeprecate.push({
+        id: control.id,
+        name: control.name,
+        reason: `Control is related to repealed/amended regulation: ${regulatoryChange.regulationName}`,
+      });
+    }
+
+    return {
+      controlsToCreate,
+      controlsToUpdate,
+      controlsToDeprecate,
+      frameworksAffected,
+    };
+  }
+
+  /**
    * Queue for approval
    */
   private async queueForApproval(
     regulatoryChangeId: string,
     organizationId: string,
     userId: string,
-    updateSummary: any
+    regulatoryChange: any
   ): Promise<string> {
     try {
       const approvalId = crypto.randomUUID();
+      
+      // Generate preview for approval
+      const preview = await this.generateAutoUpdatePreview(regulatoryChange, organizationId);
 
       await prisma.auditLog.create({
         data: {
@@ -1448,9 +1745,11 @@ class RegulatoryIntelligenceFabricService {
           details: JSON.stringify({
             approvalId,
             regulatoryChangeId,
-            updateSummary,
+            regulationName: regulatoryChange.regulationName,
+            preview,
             requestedBy: userId,
             timestamp: new Date(),
+            status: 'pending_approval',
           }),
           userId,
           organizationId,
@@ -1458,9 +1757,105 @@ class RegulatoryIntelligenceFabricService {
         },
       });
 
+      // Notify admins for approval
+      const admins = await prisma.user.findMany({
+        where: { organizationId, role: 'admin' },
+      });
+
+      for (const admin of admins) {
+        try {
+          await notificationService.sendNotification(
+            admin.id,
+            organizationId,
+            {
+              type: 'warning',
+              category: 'rif_approval',
+              title: `Auto-Update Approval Required: ${regulatoryChange.regulationName}`,
+              message: `Auto-update for ${regulatoryChange.regulationName} requires approval:\n\n` +
+                `• ${preview.controlsToCreate.length} controls to create\n` +
+                `• ${preview.controlsToUpdate.length} controls to update\n` +
+                `• ${preview.controlsToDeprecate.length} controls to deprecate\n` +
+                `• ${preview.frameworksAffected.length} frameworks affected`,
+              link: `/settings/regulatory?approvalId=${approvalId}`,
+              channels: ['email', 'websocket'],
+            }
+          );
+        } catch (error: any) {
+          logger.warn(`[RIF] Failed to send approval notification to ${admin.id}`, error);
+        }
+      }
+
       return approvalId;
     } catch (error) {
       logger.error('[RIF] Error queueing for approval', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Approve auto-update
+   */
+  async approveAutoUpdate(
+    approvalId: string,
+    organizationId: string,
+    userId: string
+  ): Promise<{
+    controlsCreated: number;
+    controlsUpdated: number;
+    controlsDeprecated: number;
+    frameworksAffected: number;
+  }> {
+    try {
+      const approvalLog = await prisma.auditLog.findFirst({
+        where: {
+          organizationId,
+          hash: approvalId,
+          action: 'rif.auto_update_queued',
+        },
+      });
+
+      if (!approvalLog) {
+        throw new Error('Approval request not found');
+      }
+
+      const approvalDetails = JSON.parse(approvalLog.details || '{}');
+      if (approvalDetails.status !== 'pending_approval') {
+        throw new Error('Approval request is not pending');
+      }
+
+      // Execute the auto-update without requiring approval
+      const result = await this.autoUpdateControls(
+        approvalDetails.regulatoryChangeId,
+        organizationId,
+        userId,
+        { requireApproval: false, dryRun: false }
+      );
+
+      // Update approval status
+      await prisma.auditLog.create({
+        data: {
+          action: 'rif.auto_update_approved',
+          details: JSON.stringify({
+            approvalId,
+            regulatoryChangeId: approvalDetails.regulatoryChangeId,
+            approvedBy: userId,
+            approvedAt: new Date(),
+            result,
+          }),
+          userId,
+          organizationId,
+          hash: crypto.randomBytes(16).toString('hex'),
+        },
+      });
+
+      return {
+        controlsCreated: result.controlsCreated,
+        controlsUpdated: result.controlsUpdated,
+        controlsDeprecated: result.controlsDeprecated || 0,
+        frameworksAffected: result.frameworksAffected,
+      };
+    } catch (error) {
+      logger.error('[RIF] Error approving auto-update', error);
       throw error;
     }
   }
@@ -1631,18 +2026,59 @@ class RegulatoryIntelligenceFabricService {
     try {
       const changes: RegulatoryChange[] = [];
 
-      // Get registered feeds for organization (in production, would be from Feed table)
-      // For now, use default feeds
-      const defaultFeeds: RegulatoryFeed[] = [
-        { id: 'feed_1', name: 'SEC', url: 'https://www.sec.gov/rss/divisions/corpfin/cfnew.xml', feedType: 'rss', jurisdiction: 'US', pollingInterval: 60, organizationId, status: 'active' },
-        { id: 'feed_2', name: 'GDPR', url: 'https://ec.europa.eu/newsroom/just/rss', feedType: 'rss', jurisdiction: 'EU', pollingInterval: 120, organizationId, status: 'active' },
-        { id: 'feed_3', name: 'NIST', url: 'https://csrc.nist.gov/CSRC/media/rss-feeds/publications-feed', feedType: 'rss', jurisdiction: 'US', pollingInterval: 180, organizationId, status: 'active' },
-        { id: 'feed_4', name: 'ISO', url: 'https://www.iso.org/rss/standards.xml', feedType: 'rss', jurisdiction: 'Global', pollingInterval: 240, organizationId, status: 'active' },
-      ];
+      // Get registered feeds for organization from database
+      let feedsToMonitor: RegulatoryFeed[] = [];
+      
+      if (feedIds && feedIds.length > 0) {
+        // Get specific feeds by ID
+        const dbFeeds = await prisma.regulatoryFeed.findMany({
+          where: {
+            organizationId,
+            id: { in: feedIds },
+            status: 'active',
+          },
+        });
+        feedsToMonitor = dbFeeds.map(f => ({
+          id: f.id,
+          name: f.name,
+          url: f.url,
+          feedType: f.feedType,
+          jurisdiction: f.jurisdiction,
+          pollingInterval: f.pollingInterval,
+          organizationId: f.organizationId,
+          status: f.status,
+        }));
+      } else {
+        // Get all active feeds for organization
+        const dbFeeds = await prisma.regulatoryFeed.findMany({
+          where: {
+            organizationId,
+            status: 'active',
+          },
+        });
+        feedsToMonitor = dbFeeds.map(f => ({
+          id: f.id,
+          name: f.name,
+          url: f.url,
+          feedType: f.feedType,
+          jurisdiction: f.jurisdiction,
+          pollingInterval: f.pollingInterval,
+          organizationId: f.organizationId,
+          status: f.status,
+        }));
+      }
 
-      const feedsToMonitor = feedIds 
-        ? defaultFeeds.filter(f => feedIds.includes(f.id))
-        : defaultFeeds.filter(f => f.status === 'active');
+      // If no custom feeds, use default feeds (for backward compatibility)
+      if (feedsToMonitor.length === 0) {
+        logger.info(`[RIF] No custom feeds found for organization ${organizationId}, using defaults`);
+        const defaultFeeds: RegulatoryFeed[] = [
+          { id: 'feed_1', name: 'SEC', url: 'https://www.sec.gov/rss/divisions/corpfin/cfnew.xml', feedType: 'rss', jurisdiction: 'US', pollingInterval: 60, organizationId, status: 'active' },
+          { id: 'feed_2', name: 'GDPR', url: 'https://ec.europa.eu/newsroom/just/rss', feedType: 'rss', jurisdiction: 'EU', pollingInterval: 120, organizationId, status: 'active' },
+          { id: 'feed_3', name: 'NIST', url: 'https://csrc.nist.gov/CSRC/media/rss-feeds/publications-feed', feedType: 'rss', jurisdiction: 'US', pollingInterval: 180, organizationId, status: 'active' },
+          { id: 'feed_4', name: 'ISO', url: 'https://www.iso.org/rss/standards.xml', feedType: 'rss', jurisdiction: 'Global', pollingInterval: 240, organizationId, status: 'active' },
+        ];
+        feedsToMonitor = defaultFeeds;
+      }
 
       const processedItems = new Set<string>(); // For deduplication
 
@@ -1873,7 +2309,7 @@ class RegulatoryIntelligenceFabricService {
         }
       }
 
-      // Ingest as regulation
+      // Ingest as regulation and link to feed
       const regulation = await this.ingestRegulation(
         organizationId,
         { text: fullText },
@@ -1882,6 +2318,7 @@ class RegulatoryIntelligenceFabricService {
           jurisdiction: feed.jurisdiction,
           effectiveDate: item.published,
           source: item.url || feed.url,
+          feedId: feed.id, // Link to feed
         },
         'system'
       );
@@ -1911,11 +2348,26 @@ class RegulatoryIntelligenceFabricService {
   private async updateFeedStatus(
     feedId: string,
     organizationId: string,
-    status: 'active' | 'inactive' | 'error',
+    status: 'active' | 'paused' | 'error',
     lastError: string | null
   ): Promise<void> {
     try {
-      // In production, would update Feed table
+      // Update Feed table in database
+      await prisma.regulatoryFeed.updateMany({
+        where: {
+          id: feedId,
+          organizationId,
+        },
+        data: {
+          status,
+          lastPolledAt: new Date(),
+          lastError: lastError || undefined,
+          errorCount: lastError ? { increment: 1 } : undefined,
+          updatedAt: new Date(),
+        },
+      });
+
+      // Also log to audit log
       await prisma.auditLog.create({
         data: {
           action: 'rif.feed_status_updated',
@@ -1936,7 +2388,7 @@ class RegulatoryIntelligenceFabricService {
   }
 
   /**
-   * Add new feed
+   * Add new feed (Production-ready: stores in database)
    */
   async addFeed(
     organizationId: string,
@@ -1954,22 +2406,39 @@ class RegulatoryIntelligenceFabricService {
     userId: string
   ): Promise<RegulatoryFeed> {
     try {
-      const feedId = crypto.randomUUID();
+      // Store in database
+      const dbFeed = await prisma.regulatoryFeed.create({
+        data: {
+          organizationId,
+          name: feed.name,
+          url: feed.url,
+          feedType: feed.feedType,
+          jurisdiction: feed.jurisdiction,
+          pollingInterval: feed.pollingInterval,
+          status: 'active',
+          metadata: feed.authentication ? { authentication: feed.authentication } : undefined,
+        },
+      });
+
       const newFeed: RegulatoryFeed = {
-        id: feedId,
-        ...feed,
-        organizationId,
-        status: 'active',
+        id: dbFeed.id,
+        name: dbFeed.name,
+        url: dbFeed.url,
+        feedType: dbFeed.feedType,
+        jurisdiction: dbFeed.jurisdiction,
+        pollingInterval: dbFeed.pollingInterval,
+        organizationId: dbFeed.organizationId,
+        status: dbFeed.status,
       };
 
-      // In production, would store in Feed table
+      // Log to audit log
       await prisma.auditLog.create({
         data: {
           action: 'rif.feed_added',
           details: JSON.stringify(newFeed),
           userId,
           organizationId,
-          hash: feedId,
+          hash: dbFeed.id,
         },
       });
 
@@ -1983,7 +2452,7 @@ class RegulatoryIntelligenceFabricService {
   }
 
   /**
-   * Remove feed
+   * Remove feed (Production-ready: deletes from database)
    */
   async removeFeed(
     feedId: string,
@@ -1991,7 +2460,15 @@ class RegulatoryIntelligenceFabricService {
     userId: string
   ): Promise<void> {
     try {
-      // In production, would delete from Feed table
+      // Delete from database
+      await prisma.regulatoryFeed.deleteMany({
+        where: {
+          id: feedId,
+          organizationId,
+        },
+      });
+
+      // Log to audit log
       await prisma.auditLog.create({
         data: {
           action: 'rif.feed_removed',
@@ -2005,6 +2482,101 @@ class RegulatoryIntelligenceFabricService {
       logger.info(`[RIF] Feed removed: ${feedId}`);
     } catch (error) {
       logger.error('[RIF] Error removing feed', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all feeds for organization (Production-ready: queries database)
+   */
+  async getFeeds(organizationId: string): Promise<RegulatoryFeed[]> {
+    try {
+      const dbFeeds = await prisma.regulatoryFeed.findMany({
+        where: { organizationId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return dbFeeds.map(f => ({
+        id: f.id,
+        name: f.name,
+        url: f.url,
+        feedType: f.feedType,
+        jurisdiction: f.jurisdiction,
+        pollingInterval: f.pollingInterval,
+        organizationId: f.organizationId,
+        status: f.status,
+      }));
+    } catch (error) {
+      logger.error('[RIF] Error getting feeds', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update feed (Production-ready: updates database)
+   */
+  async updateFeed(
+    feedId: string,
+    organizationId: string,
+    updates: {
+      name?: string;
+      url?: string;
+      feedType?: 'rss' | 'api' | 'website';
+      jurisdiction?: string;
+      pollingInterval?: number;
+      status?: 'active' | 'paused' | 'error';
+    },
+    userId: string
+  ): Promise<RegulatoryFeed> {
+    try {
+      const dbFeed = await prisma.regulatoryFeed.updateMany({
+        where: {
+          id: feedId,
+          organizationId,
+        },
+        data: {
+          ...updates,
+          updatedAt: new Date(),
+        },
+      });
+
+      if (dbFeed.count === 0) {
+        throw new Error('Feed not found');
+      }
+
+      const updatedFeed = await prisma.regulatoryFeed.findFirst({
+        where: { id: feedId, organizationId },
+      });
+
+      if (!updatedFeed) {
+        throw new Error('Feed not found after update');
+      }
+
+      // Log to audit log
+      await prisma.auditLog.create({
+        data: {
+          action: 'rif.feed_updated',
+          details: JSON.stringify({ feedId, updates }),
+          userId,
+          organizationId,
+          hash: feedId,
+        },
+      });
+
+      logger.info(`[RIF] Feed updated: ${feedId}`);
+
+      return {
+        id: updatedFeed.id,
+        name: updatedFeed.name,
+        url: updatedFeed.url,
+        feedType: updatedFeed.feedType,
+        jurisdiction: updatedFeed.jurisdiction,
+        pollingInterval: updatedFeed.pollingInterval,
+        organizationId: updatedFeed.organizationId,
+        status: updatedFeed.status,
+      };
+    } catch (error) {
+      logger.error('[RIF] Error updating feed', error);
       throw error;
     }
   }

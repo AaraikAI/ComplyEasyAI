@@ -2,8 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { AuditLog } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldCheck, Search, Filter, Download, Loader2, ArrowUpDown, AlertTriangle, X } from 'lucide-react';
+import { ShieldCheck, Search, Filter, Download, Loader2, ArrowUpDown, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import crypto from 'crypto';
+
+// Helper function to generate blockchain explorer URLs
+const getBlockchainExplorerUrl = (transactionHash: string, network: string): string | null => {
+  if (!transactionHash) return null;
+  
+  switch (network?.toLowerCase()) {
+    case 'ethereum':
+      return `https://etherscan.io/tx/${transactionHash}`;
+    case 'polygon':
+      return `https://polygonscan.com/tx/${transactionHash}`;
+    case 'hyperledger':
+      // Hyperledger doesn't have a public explorer, return null
+      return null;
+    default:
+      // Default to Polygon if network is not specified
+      return `https://polygonscan.com/tx/${transactionHash}`;
+  }
+};
 
 type SortField = 'timestamp' | 'user' | 'action' | 'hash';
 type SortOrder = 'asc' | 'desc';
@@ -38,6 +56,9 @@ export const AuditTrail: React.FC = () => {
           verified: log.hash ? verifyHash(log.hash, log) : false,
           userId: log.userId,
           organizationId: log.organizationId,
+          transactionHash: log.transactionHash || log.blockchainRecord?.transactionHash || (log.metadata as any)?.blockchain?.transactionHash || null,
+          network: log.network || log.blockchainRecord?.network || (log.metadata as any)?.blockchain?.network || null,
+          blockNumber: log.blockNumber || log.blockchainRecord?.blockNumber || (log.metadata as any)?.blockchain?.blockNumber || null,
         }));
 
         setAuditLogs(transformedLogs);
@@ -301,12 +322,25 @@ export const AuditTrail: React.FC = () => {
                   <td className="px-6 py-4 text-gray-800">{log.action}</td>
                   <td className="px-6 py-4">
                     {log.hash ? (
-                      <span 
-                        className="font-mono text-xs text-brand-600 bg-brand-50 px-2 py-1 rounded cursor-help" 
-                        title="Verified on blockchain"
-                      >
-                        {log.hash.substring(0, 16)}...
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span 
+                          className="font-mono text-xs text-brand-600 bg-brand-50 px-2 py-1 rounded cursor-help" 
+                          title="Verified on blockchain"
+                        >
+                          {log.hash.substring(0, 16)}...
+                        </span>
+                        {log.transactionHash && (
+                          <a
+                            href={getBlockchainExplorerUrl(log.transactionHash, log.network || 'polygon') || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand-600 hover:text-brand-800 flex items-center"
+                            title={`View on ${log.network === 'ethereum' ? 'Etherscan' : log.network === 'polygon' ? 'Polygonscan' : 'Blockchain Explorer'}`}
+                          >
+                            <ExternalLink size={14} />
+                          </a>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-red-600 text-xs flex items-center">
                         <AlertTriangle size={12} className="mr-1" />

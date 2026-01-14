@@ -55,6 +55,19 @@ router.post(
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: 'Invalid email format' });
+      return;
+    }
+
+    // Validate role
+    if (role && !['admin', 'editor', 'viewer'].includes(role)) {
+      res.status(400).json({ error: 'Invalid role. Must be admin, editor, or viewer' });
+      return;
+    }
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -122,6 +135,186 @@ router.post(
     logger.info(`Team member invited: ${email} to organization ${organizationId}`);
 
     res.status(201).json(newUser);
+  })
+);
+
+/**
+ * POST /api/team/bulk-invite
+ * Bulk invite team members from CSV data
+ */
+router.post(
+  '/bulk-invite',
+  authorize('admin', 'editor'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as AuthRequest;
+    const { invites } = req.body; // Array of { email, name, role }
+    const organizationId = authReq.user!.organizationId;
+
+    if (!Array.isArray(invites) || invites.length === 0) {
+      res.status(400).json({ error: 'Invites array is required and must not be empty' });
+      return;
+    }
+
+    if (invites.length > 100) {
+      res.status(400).json({ error: 'Maximum 100 invites per batch' });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const validRoles = ['admin', 'editor', 'viewer'];
+    const { v4: uuidv4 } = await import('uuid');
+    const { randomBytes } = await import('crypto');
+    const emailService = (await import('../services/emailService')).default;
+
+    const results = {
+      successful: [] as any[],
+      failed: [] as Array<{ email: string; name: string; error: string }>,
+    };
+
+    // Validate all invites before processing
+    const validationErrors: Array<{ email: string; name: string; error: string }> = [];
+    
+    for (const invite of invites) {
+      if (!invite.email || !invite.name) {
+        validationErrors.push({
+          email: invite.email || 'N/A',
+          name: invite.name || 'N/A',
+          error: 'Email and name are required',
+        });
+        continue;
+      }
+
+      if (!emailRegex.test(invite.email)) {
+        validationErrors.push({
+          email: invite.email,
+          name: invite.name,
+          error: 'Invalid email format',
+        });
+        continue;
+      }
+
+      if (invite.role && !validRoles.includes(invite.role)) {
+        validationErrors.push({
+          email: invite.email,
+          name: invite.name,
+          error: `Invalid role. Must be one of: ${validRoles.join(', ')}`,
+        });
+        continue;
+      }
+    }
+
+    // If validation errors exist, return them without processing
+    if (validationErrors.length > 0) {
+      res.status(400).json({
+        error: 'Validation failed',
+        validationErrors,
+        message: 'Please fix validation errors before sending invites',
+      });
+      return;
+    }
+
+    // Process invites
+    for (const invite of invites) {
+      try {
+        // Check if user already exists
+        const existingUser = await prisma.user.findUnique({
+          where: { email: invite.email },
+        });
+
+        if (existingUser) {
+          results.failed.push({
+            email: invite.email,
+            name: invite.name,
+            error: 'User with this email already exists',
+          });
+          continue;
+        }
+
+        // Create new user
+        const newUser = await prisma.user.create({
+          data: {
+            email: invite.email,
+            name: invite.name,
+            role: invite.role || 'viewer',
+            organizationId,
+            avatar: invite.name.substring(0, 2).toUpperCase(),
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            avatar: true,
+            lastLogin: true,
+            createdAt: true,
+          },
+        });
+
+        // Generate magic link
+        const token = uuidv4();
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        await prisma.magicLink.create({
+          data: {
+            email: invite.email,
+            token,
+            expiresAt,
+          },
+        });
+
+        // Send invitation email
+        try {
+          await emailService.sendMagicLink(invite.email, token);
+        } catch (emailError) {
+          logger.warn(`Failed to send invitation email to ${invite.email}`, emailError);
+        }
+
+        results.successful.push(newUser);
+
+        // Log audit for each successful invite
+        await prisma.auditLog.create({
+          data: {
+            action: `Team member bulk invited: ${invite.name} (${invite.email}) with role ${invite.role || 'viewer'}`,
+            userId: (req as AuthRequest).user!.id,
+            organizationId,
+            hash: randomBytes(16).toString('hex'),
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent'],
+          },
+        });
+      } catch (error: any) {
+        logger.error(`Failed to invite ${invite.email}`, error);
+        results.failed.push({
+          email: invite.email,
+          name: invite.name,
+          error: error.message || 'Unknown error',
+        });
+      }
+    }
+
+    // Log bulk invite summary
+    await prisma.auditLog.create({
+      data: {
+        action: `Bulk invite completed: ${results.successful.length} successful, ${results.failed.length} failed`,
+        userId: (req as AuthRequest).user!.id,
+        organizationId,
+        hash: randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    logger.info(`Bulk invite completed: ${results.successful.length} successful, ${results.failed.length} failed`);
+
+    res.status(201).json({
+      successful: results.successful,
+      failed: results.failed,
+      summary: {
+        total: invites.length,
+        successful: results.successful.length,
+        failed: results.failed.length,
+      },
+    });
   })
 );
 
