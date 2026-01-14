@@ -2,6 +2,7 @@ import { QuestionnaireStatus, QuestionnaireQuestion, QuestionnaireResponse, Pris
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import logger from '../config/logger';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 

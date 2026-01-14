@@ -2399,8 +2399,8 @@ class PhysicalAIService {
       });
 
       if (device) {
-        const metadata = device.metadata as any;
-        const ipAddress = metadata?.ipAddress || metadata?.network?.ipAddress;
+        const sensorData = device.sensorData as any;
+        const ipAddress = sensorData?.ipAddress || sensorData?.network?.ipAddress;
         
         if (ipAddress) {
           // Use system ping for latency measurement
