@@ -371,6 +371,28 @@ class AuthController {
 
       const refreshToken = generateRefreshToken(user.id);
 
+      // Create session with session management (ENHANCED)
+      let sessionInfo: { existingSessionsTerminated?: number } = {};
+      try {
+        const sessionManagement = await import('../services/sessionManagementService');
+        if (sessionManagement.default) {
+          const result = await sessionManagement.default.createSession(
+            user.id,
+            user.organizationId,
+            accessToken,
+            refreshToken,
+            {
+              ipAddress: req.ip,
+              userAgent: req.headers['user-agent'],
+              deviceInfo: this.extractDeviceInfo(req.headers['user-agent'] || ''),
+            }
+          );
+          sessionInfo = { existingSessionsTerminated: result.existingSessionsTerminated };
+        }
+      } catch (error) {
+        logger.warn('[Auth] Session management not available, continuing without it', error);
+      }
+
       // Log authentication
       await prisma.auditLog.create({
         data: {
@@ -397,6 +419,7 @@ class AuthController {
             name: user.organization.name,
           },
         },
+        ...sessionInfo, // Include session info if sessions were terminated
       });
     } catch (error) {
       logger.error('Login error', error);
@@ -871,8 +894,58 @@ class AuthController {
     }
   }
 
+  /**
+   * Extract device info from user agent
+   */
+  private extractDeviceInfo(userAgent: string): { type: string; os: string; browser: string } {
+    const ua = userAgent.toLowerCase();
+    
+    // Detect device type
+    let type = 'desktop';
+    if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
+      type = 'mobile';
+    } else if (ua.includes('tablet') || ua.includes('ipad')) {
+      type = 'tablet';
+    }
+
+    // Detect OS
+    let os = 'unknown';
+    if (ua.includes('windows')) os = 'Windows';
+    else if (ua.includes('mac os')) os = 'macOS';
+    else if (ua.includes('linux')) os = 'Linux';
+    else if (ua.includes('android')) os = 'Android';
+    else if (ua.includes('ios') || ua.includes('iphone') || ua.includes('ipad')) os = 'iOS';
+
+    // Detect browser
+    let browser = 'unknown';
+    if (ua.includes('chrome') && !ua.includes('edg')) browser = 'Chrome';
+    else if (ua.includes('firefox')) browser = 'Firefox';
+    else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari';
+    else if (ua.includes('edg')) browser = 'Edge';
+    else if (ua.includes('opera')) browser = 'Opera';
+
+    return { type, os, browser };
+  }
+
   async logout(req: Request, res: Response): Promise<void> {
     try {
+      // Terminate session if session management is enabled
+      try {
+        const authReq = req as any;
+        if (authReq.user) {
+          const sessionManagement = await import('../services/sessionManagementService');
+          if (sessionManagement.default) {
+            const token = req.headers.authorization?.substring(7);
+            if (token) {
+              const sessionId = require('crypto').createHash('sha256').update(token).digest('hex');
+              await sessionManagement.default.terminateSession(sessionId, 'logout');
+            }
+          }
+        }
+      } catch (error) {
+        logger.warn('[Auth] Session termination not available', error);
+      }
+
       // In a more complex setup, you might invalidate the refresh token here
       res.json({ message: 'Logged out successfully' });
     } catch (error) {

@@ -40,6 +40,9 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
   const [frameworkVersion, setFrameworkVersion] = useState<number>(1);
   const [showAddMappingModal, setShowAddMappingModal] = useState(false);
   const [availableControls, setAvailableControls] = useState<any[]>([]);
+  const [conflictData, setConflictData] = useState<any>(null);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [pendingUpdate, setPendingUpdate] = useState<{ type: 'notes' | 'auditDate'; data: any } | null>(null);
 
   const formatAuditDate = (dateString: string) => {
     try {
@@ -414,7 +417,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     }
   };
 
-  const handleUpdateAuditDate = async (newDate: string) => {
+  const handleUpdateAuditDate = async (newDate: string, resolutionStrategy?: 'overwrite' | 'merge') => {
     if (!framework?.id) return;
 
     try {
@@ -430,9 +433,19 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         if (!confirmed) return;
       }
 
-      await api.frameworks.update(framework.id, { nextAuditDate: newDate });
+      const updatePayload: any = { 
+        nextAuditDate: newDate,
+        version: frameworkVersion,
+      };
+      
+      if (resolutionStrategy) {
+        updatePayload.resolutionStrategy = resolutionStrategy;
+      }
+
+      await api.frameworks.update(framework.id, updatePayload);
       
       // Reload framework data
+      await loadFrameworkDetails();
       if (onDataChanged) {
         onDataChanged();
       }
@@ -441,9 +454,71 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       if (framework) {
         framework.nextAuditDate = auditDate.toISOString();
       }
+      
+      setShowConflictModal(false);
+      setConflictData(null);
+      setPendingUpdate(null);
     } catch (error: any) {
       console.error('Failed to update audit date:', error);
-      alert(`Failed to update audit date: ${error.message || 'Unknown error'}`);
+      
+      // Check for 409 Conflict
+      if (error.status === 409 || error.message?.includes('409')) {
+        try {
+          const conflictDetails = JSON.parse(error.message || error.error || '{}');
+          setConflictData(conflictDetails);
+          setPendingUpdate({ type: 'auditDate', data: { nextAuditDate: newDate } });
+          setShowConflictModal(true);
+        } catch (parseError) {
+          alert(`Conflict detected: Framework was modified by another user. Please refresh and try again.`);
+        }
+      } else {
+        alert(`Failed to update audit date: ${error.message || 'Unknown error'}`);
+      }
+    }
+  };
+
+  const handleSaveNotes = async (resolutionStrategy?: 'overwrite' | 'merge') => {
+    if (!framework?.id) return;
+
+    try {
+      const updatePayload: any = { 
+        notes: frameworkNotes,
+        version: frameworkVersion,
+      };
+      
+      if (resolutionStrategy) {
+        updatePayload.resolutionStrategy = resolutionStrategy;
+      }
+
+      await api.frameworks.update(framework.id, updatePayload);
+      setIsEditingNotes(false);
+      setShowConflictModal(false);
+      setConflictData(null);
+      setPendingUpdate(null);
+      
+      // Reload framework data
+      await loadFrameworkDetails();
+      if (onDataChanged) {
+        onDataChanged();
+      }
+      
+      alert('Notes saved successfully');
+    } catch (error: any) {
+      console.error('Failed to save notes:', error);
+      
+      // Check for 409 Conflict
+      if (error.status === 409 || error.message?.includes('409')) {
+        try {
+          const conflictDetails = JSON.parse(error.message || error.error || '{}');
+          setConflictData(conflictDetails);
+          setPendingUpdate({ type: 'notes', data: { notes: frameworkNotes } });
+          setShowConflictModal(true);
+        } catch (parseError) {
+          alert(`Conflict detected: Framework was modified by another user. Please refresh and try again.`);
+        }
+      } else {
+        alert(`Failed to save notes: ${error.message || 'Unknown error'}`);
+      }
     }
   };
 
@@ -634,6 +709,61 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
             style={{ width: `${readinessScore}%` }}
           ></div>
         </div>
+      </div>
+
+      {/* Framework Notes Section */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Framework Notes</h3>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => {
+                if (isEditingNotes) {
+                  // Save notes
+                  handleSaveNotes();
+                } else {
+                  setIsEditingNotes(true);
+                }
+              }}
+              className="text-sm text-brand-600 hover:text-brand-800 font-medium"
+            >
+              {isEditingNotes ? 'Save' : 'Edit'}
+            </button>
+          )}
+        </div>
+        {isEditingNotes ? (
+          <div className="space-y-3">
+            <textarea
+              value={frameworkNotes}
+              onChange={(e) => setFrameworkNotes(e.target.value)}
+              placeholder="Add notes about this framework..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none"
+              rows={4}
+            />
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => {
+                  setIsEditingNotes(false);
+                  // Reload to restore original notes
+                  loadFrameworkDetails();
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveNotes}
+                className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700"
+              >
+                Save Notes
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-gray-700 whitespace-pre-wrap">
+            {frameworkNotes || <span className="text-gray-400 italic">No notes added yet.</span>}
+          </div>
+        )}
       </div>
 
       {/* AI Analysis Result Toast */}
@@ -1464,6 +1594,88 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                 >
                   Create Mapping
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Conflict Resolution Modal */}
+      {showConflictModal && conflictData && pendingUpdate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50" onClick={() => setShowConflictModal(false)}>
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">Conflict Detected</h3>
+              <button onClick={() => setShowConflictModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-yellow-800 font-medium mb-2">⚠️ Framework was modified by another user</p>
+                <p className="text-sm text-yellow-700">
+                  Last modified by: <strong>{conflictData.lastModifiedBy || 'Unknown'}</strong>
+                  {conflictData.lastModifiedAt && (
+                    <> on {new Date(conflictData.lastModifiedAt).toLocaleString()}</>
+                  )}
+                </p>
+              </div>
+
+              {conflictData.conflictingFields && conflictData.conflictingFields.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Conflicting fields:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-600">
+                    {conflictData.conflictingFields.map((field: string) => (
+                      <li key={field}>{field}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="border-t pt-4">
+                <p className="text-sm font-medium text-gray-700 mb-3">How would you like to resolve this conflict?</p>
+                <div className="space-y-3">
+                  <button
+                    onClick={async () => {
+                      if (pendingUpdate.type === 'notes') {
+                        await handleSaveNotes('overwrite');
+                      } else if (pendingUpdate.type === 'auditDate') {
+                        await handleUpdateAuditDate(pendingUpdate.data.nextAuditDate, 'overwrite');
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-left"
+                  >
+                    <div className="font-semibold">Overwrite Their Changes</div>
+                    <div className="text-sm opacity-90">Your changes will replace the other user's changes</div>
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (pendingUpdate.type === 'notes') {
+                        await handleSaveNotes('merge');
+                      } else if (pendingUpdate.type === 'auditDate') {
+                        await handleUpdateAuditDate(pendingUpdate.data.nextAuditDate, 'merge');
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-left"
+                  >
+                    <div className="font-semibold">Merge Changes</div>
+                    <div className="text-sm opacity-90">Attempt to combine both sets of changes</div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowConflictModal(false);
+                      setConflictData(null);
+                      setPendingUpdate(null);
+                      // Reload to get latest version
+                      loadFrameworkDetails();
+                    }}
+                    className="w-full px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-left"
+                  >
+                    <div className="font-semibold">Cancel and Refresh</div>
+                    <div className="text-sm opacity-90">Discard your changes and reload the latest version</div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

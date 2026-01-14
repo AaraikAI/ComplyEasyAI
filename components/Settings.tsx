@@ -20,6 +20,14 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [newMember, setNewMember] = useState({ name: '', email: '', role: 'viewer' as Role });
+  const [showBulkInviteModal, setShowBulkInviteModal] = useState(false);
+  const [bulkInviteFile, setBulkInviteFile] = useState<File | null>(null);
+  const [bulkInviteResults, setBulkInviteResults] = useState<{
+    successful: User[];
+    failed: Array<{ email: string; name: string; error: string }>;
+    summary: { total: number; successful: number; failed: number };
+  } | null>(null);
+  const [isProcessingBulkInvite, setIsProcessingBulkInvite] = useState(false);
 
   // --- Billing State ---
   const [currentTier, setCurrentTier] = useState<TierName>('Foundation');
@@ -30,6 +38,13 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
   const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [isLoadingBilling, setIsLoadingBilling] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
+  const [prorationPreview, setProrationPreview] = useState<{
+    proratedAmount: number;
+    newMonthlyAmount: number;
+    immediateCharge: number;
+    nextBillingDate: Date;
+  } | null>(null);
+  const [isLoadingProration, setIsLoadingProration] = useState(false);
 
   // --- Profile State ---
   const [profileName, setProfileName] = useState(currentUser?.name || '');
@@ -272,7 +287,82 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     }
   };
 
-  const handleSelectTier = (tier: TierName, billingCycle: 'monthly' | 'annual') => {
+  const handleBulkInviteFile = async (file: File) => {
+    return new Promise<Array<{ name: string; email: string; role?: string }>>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string;
+          const lines = text.split('\n').filter(line => line.trim());
+          
+          // Skip header row if present
+          const dataLines = lines[0]?.toLowerCase().includes('email') || lines[0]?.toLowerCase().includes('name')
+            ? lines.slice(1)
+            : lines;
+
+          const invites: Array<{ name: string; email: string; role?: string }> = [];
+          
+          for (const line of dataLines) {
+            const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
+            if (parts.length >= 2) {
+              const email = parts[0];
+              const name = parts[1];
+              const role = parts[2]?.toLowerCase() || 'viewer';
+              
+              if (email && name) {
+                invites.push({
+                  email,
+                  name,
+                  role: ['admin', 'editor', 'viewer'].includes(role) ? role as Role : 'viewer',
+                });
+              }
+            }
+          }
+          
+          if (invites.length === 0) {
+            reject(new Error('No valid invites found in CSV. Expected format: email,name,role'));
+            return;
+          }
+          
+          resolve(invites);
+        } catch (error) {
+          reject(new Error('Failed to parse CSV file. Please ensure it is in the correct format.'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
+    });
+  };
+
+  const handleBulkInvite = async () => {
+    if (!bulkInviteFile) {
+      alert('Please select a CSV file');
+      return;
+    }
+
+    setIsProcessingBulkInvite(true);
+    setBulkInviteResults(null);
+
+    try {
+      const invites = await handleBulkInviteFile(bulkInviteFile);
+      const results = await api.team.bulkInvite(invites);
+      
+      setBulkInviteResults(results);
+      
+      // Reload team members
+      const teamMembers = await api.team.list();
+      setUsers(teamMembers);
+      
+      // Don't close modal yet - show results
+    } catch (error: any) {
+      console.error('Failed to process bulk invite:', error);
+      alert(error.message || 'Failed to process bulk invite. Please check the CSV format.');
+    } finally {
+      setIsProcessingBulkInvite(false);
+    }
+  };
+
+  const handleSelectTier = async (tier: TierName, billingCycle: 'monthly' | 'annual') => {
     setSelectedTier(tier);
     setSelectedBillingCycle(billingCycle);
 
@@ -280,6 +370,30 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     if (tier === 'Visionary') {
       window.open('/contact-sales?tier=Visionary', '_blank');
       return;
+    }
+
+    // If changing from current tier, fetch proration preview
+    if (tier !== currentTier && subscriptionDetails) {
+      setIsLoadingProration(true);
+      setProrationPreview(null);
+      try {
+        const preview = await api.billing.previewTierChange(tier, billingCycle);
+        if (preview?.stripePreview) {
+          setProrationPreview({
+            proratedAmount: preview.stripePreview.proratedAmount || 0,
+            newMonthlyAmount: preview.stripePreview.newMonthlyAmount || 0,
+            immediateCharge: preview.stripePreview.immediateCharge || 0,
+            nextBillingDate: new Date(preview.stripePreview.nextBillingDate),
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load proration preview:', error);
+        // Continue without proration preview
+      } finally {
+        setIsLoadingProration(false);
+      }
+    } else {
+      setProrationPreview(null);
     }
 
     setShowPaymentModal(true);
@@ -513,6 +627,52 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
               loading={isLoadingBilling}
               embedded={true}
             />
+
+            {/* Proration Preview */}
+            {prorationPreview && selectedTier !== currentTier && (
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <h4 className="font-semibold text-gray-900 mb-4">Proration Preview</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Prorated Amount</span>
+                    <span className="font-semibold text-gray-900">
+                      ${prorationPreview.proratedAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">New Monthly Amount</span>
+                    <span className="font-semibold text-gray-900">
+                      ${prorationPreview.newMonthlyAmount.toFixed(2)}/mo
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-gray-600">Immediate Charge</span>
+                    <span className="font-semibold text-brand-600">
+                      ${prorationPreview.immediateCharge.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-600">Next Billing Date</span>
+                    <span className="font-medium text-gray-900">
+                      {prorationPreview.nextBillingDate.toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>Note:</strong> You'll be charged the prorated amount immediately. 
+                      Your next full billing cycle will start on {prorationPreview.nextBillingDate.toLocaleDateString()}.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isLoadingProration && (
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex items-center justify-center">
+                <Loader2 className="animate-spin text-brand-600 mr-3" size={20} />
+                <span className="text-gray-600">Calculating proration...</span>
+              </div>
+            )}
           </div>
         )}
         
@@ -1043,9 +1203,14 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                 <h3 className="font-bold text-xl text-gray-900">Team Members</h3>
                 <p className="text-sm text-gray-500">Manage access and roles for your organization.</p>
               </div>
-              <button onClick={() => setShowInviteModal(true)} className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-sm transition-colors">
-                <Plus size={16} /> <span>Invite Member</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button onClick={() => setShowBulkInviteModal(true)} className="flex items-center space-x-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 shadow-sm transition-colors">
+                  <Upload size={16} /> <span>Bulk Invite (CSV)</span>
+                </button>
+                <button onClick={() => setShowInviteModal(true)} className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-sm transition-colors">
+                  <Plus size={16} /> <span>Invite Member</span>
+                </button>
+              </div>
             </div>
             
             {isLoadingUsers ? (
@@ -1333,6 +1498,119 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
              </form>
            </div>
          </div>
+      )}
+
+      {showBulkInviteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white p-6 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl animate-scaleIn">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg">Bulk Invite Members (CSV)</h3>
+              <button onClick={() => {
+                setShowBulkInviteModal(false);
+                setBulkInviteFile(null);
+                setBulkInviteResults(null);
+              }}>
+                <X className="text-gray-400 hover:text-gray-600" size={20}/>
+              </button>
+            </div>
+
+            {!bulkInviteResults ? (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800 font-medium mb-2">CSV Format:</p>
+                  <p className="text-xs text-blue-700 font-mono">email,name,role</p>
+                  <p className="text-xs text-blue-700 font-mono mt-1">john@example.com,John Doe,editor</p>
+                  <p className="text-xs text-blue-700 font-mono">jane@example.com,Jane Smith,viewer</p>
+                  <p className="text-xs text-blue-600 mt-2">Role is optional (defaults to viewer). Valid roles: admin, editor, viewer</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Select CSV File</label>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setBulkInviteFile(e.target.files?.[0] || null)}
+                    className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
+                  />
+                </div>
+
+                <button
+                  onClick={handleBulkInvite}
+                  disabled={!bulkInviteFile || isProcessingBulkInvite}
+                  className="w-full bg-brand-600 text-white p-3 rounded-lg font-bold hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isProcessingBulkInvite ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={16} />
+                      Processing...
+                    </>
+                  ) : (
+                    'Process Invites'
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className={`p-4 rounded-lg ${bulkInviteResults.summary.failed === 0 ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                  <p className="font-semibold text-gray-900 mb-2">Results Summary</p>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600">Total</p>
+                      <p className="text-2xl font-bold text-gray-900">{bulkInviteResults.summary.total}</p>
+                    </div>
+                    <div>
+                      <p className="text-green-600">Successful</p>
+                      <p className="text-2xl font-bold text-green-600">{bulkInviteResults.summary.successful}</p>
+                    </div>
+                    <div>
+                      <p className="text-red-600">Failed</p>
+                      <p className="text-2xl font-bold text-red-600">{bulkInviteResults.summary.failed}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {bulkInviteResults.failed.length > 0 && (
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-2">Failed Invites</p>
+                    <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Email</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Name</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Error</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {bulkInviteResults.failed.map((failed, idx) => (
+                            <tr key={idx} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 text-gray-900">{failed.email}</td>
+                              <td className="px-3 py-2 text-gray-700">{failed.name}</td>
+                              <td className="px-3 py-2 text-red-600 text-xs">{failed.error}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-2 pt-4 border-t">
+                  <button
+                    onClick={() => {
+                      setShowBulkInviteModal(false);
+                      setBulkInviteFile(null);
+                      setBulkInviteResults(null);
+                    }}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

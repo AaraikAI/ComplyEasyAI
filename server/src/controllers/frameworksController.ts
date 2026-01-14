@@ -167,12 +167,44 @@ class FrameworksController {
         throw new AppError('Framework not found', 404);
       }
 
-      // Concurrent edit conflict resolution
+      // CONCURRENT EDIT CONFLICT RESOLUTION (ENHANCED with conflict details)
       if (updateData.version !== undefined && updateData.version !== existingFramework.version) {
-        throw new AppError(
-          'Framework was modified by another user. Please refresh and try again.',
-          409 // Conflict status code
-        );
+        // If resolutionStrategy is provided, handle it
+        if (updateData.resolutionStrategy === 'overwrite') {
+          // Overwrite: proceed with update, ignoring version mismatch
+          delete updateData.resolutionStrategy;
+          // Continue to update below
+        } else if (updateData.resolutionStrategy === 'merge') {
+          // Merge: combine existing and new data (simplified merge)
+          const mergedData = {
+            ...existingFramework,
+            ...updateData,
+          };
+          delete mergedData.resolutionStrategy;
+          delete mergedData.version; // Will be incremented below
+          Object.assign(updateData, mergedData);
+          // Continue to update below
+        } else {
+          // No resolution strategy: return conflict details for UI
+          const lastModifier = existingFramework.lastModifiedBy
+            ? await prisma.user.findUnique({
+                where: { id: existingFramework.lastModifiedBy },
+                select: { id: true, name: true, email: true },
+              })
+            : null;
+
+          // Return conflict details for UI
+          const conflictDetails = {
+            message: 'Framework was modified by another user',
+            currentVersion: existingFramework.version,
+            submittedVersion: updateData.version,
+            lastModifiedBy: lastModifier?.name || lastModifier?.email || 'Unknown',
+            lastModifiedAt: existingFramework.lastModifiedAt || existingFramework.updatedAt,
+            conflictingFields: this.detectConflictingFields(existingFramework, updateData),
+          };
+
+          throw new AppError(JSON.stringify(conflictDetails), 409); // Conflict status code
+        }
       }
 
       // Validate nextAuditDate if being updated
@@ -188,9 +220,12 @@ class FrameworksController {
         updateData.nextAuditDate = auditDate;
       }
 
+      // Remove resolutionStrategy from update payload if present
+      const { resolutionStrategy, ...cleanUpdateData } = updateData;
+      
       // Increment version for concurrent edit tracking
       const updatePayload: any = {
-        ...updateData,
+        ...cleanUpdateData,
         version: existingFramework.version + 1,
         lastModifiedBy: authReq.user!.id,
         lastModifiedAt: new Date(),
@@ -215,6 +250,109 @@ class FrameworksController {
       logger.error('Update framework error', error);
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to update framework', 500);
+    }
+  };
+
+  /**
+   * Detect conflicting fields between existing and new data
+   */
+  private detectConflictingFields(existing: any, updateData: any): string[] {
+    const conflictingFields: string[] = [];
+    const fieldsToCheck = ['name', 'region', 'status', 'notes', 'nextAuditDate'];
+
+    for (const field of fieldsToCheck) {
+      if (updateData[field] !== undefined && existing[field] !== updateData[field]) {
+        conflictingFields.push(field);
+      }
+    }
+
+    return conflictingFields;
+  }
+
+  /**
+   * Resolve conflict with last-write-wins (ENHANCED with notification)
+   */
+  resolveConflict: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { id } = req.params;
+      const { resolution, forceUpdate } = req.body; // resolution: 'keep_mine' | 'keep_theirs' | 'merge'
+      const organizationId = authReq.user!.organizationId;
+
+      const existingFramework = await prisma.complianceFramework.findFirst({
+        where: { id, organizationId },
+      });
+
+      if (!existingFramework) {
+        throw new AppError('Framework not found', 404);
+      }
+
+      let finalData: any;
+
+      if (resolution === 'keep_mine' || forceUpdate) {
+        // Last-write-wins: Use submitted data
+        finalData = req.body.updateData || req.body;
+        delete finalData.version; // Remove version check for forced update
+        finalData.version = existingFramework.version + 1;
+        finalData.lastModifiedBy = authReq.user!.id;
+        finalData.lastModifiedAt = new Date();
+      } else if (resolution === 'keep_theirs') {
+        // Keep existing data, just refresh
+        finalData = existingFramework;
+      } else {
+        // Merge: Combine both (simplified - in production would be more sophisticated)
+        finalData = {
+          ...existingFramework,
+          ...(req.body.updateData || req.body),
+          version: existingFramework.version + 1,
+          lastModifiedBy: authReq.user!.id,
+          lastModifiedAt: new Date(),
+        };
+      }
+
+      const framework = await prisma.complianceFramework.update({
+        where: { id },
+        data: finalData,
+      });
+
+      // Send notification to last modifier if different user
+      if (existingFramework.lastModifiedBy && existingFramework.lastModifiedBy !== authReq.user!.id) {
+        try {
+          const notificationService = await import('../services/notificationService');
+          if (notificationService.default) {
+            await notificationService.default.sendNotification(
+              authReq.user!.id,
+              organizationId,
+              {
+                type: 'info',
+                category: 'framework.conflict_resolved',
+                title: 'Framework Conflict Resolved',
+                message: `${authReq.user!.name || authReq.user!.email} resolved a conflict in framework "${framework.name}"`,
+                link: `/frameworks/${id}`,
+                channels: ['email', 'websocket'],
+              }
+            );
+          }
+        } catch (notifError) {
+          logger.warn('[Framework] Notification service not available', notifError);
+        }
+      }
+
+      await prisma.auditLog.create({
+        data: {
+          action: `Framework Conflict Resolved: ${framework.name}`,
+          details: JSON.stringify({ resolution, conflictResolvedBy: authReq.user!.id }),
+          userId: authReq.user!.id,
+          organizationId,
+          hash: uuidv4(),
+        },
+      });
+
+      res.json(framework);
+    } catch (error) {
+      logger.error('Resolve conflict error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to resolve conflict', 500);
     }
   };
 

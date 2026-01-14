@@ -106,6 +106,69 @@ class ComplianceDigitalTwinService {
         simulatedScore = result.newScore;
         affectedControls = result.affectedControls;
         affectedFrameworks = result.affectedFrameworks;
+      } else if (scenario.scenarioType === 'control_removal') {
+        const result = await this.simulateControlRemoval(
+          organizationId,
+          scenario.parameters
+        );
+        simulatedScore = result.newScore;
+        affectedControls = result.affectedControls;
+        affectedFrameworks = result.affectedFrameworks;
+      } else if (scenario.scenarioType === 'control_modification') {
+        const result = await this.simulateControlModification(
+          organizationId,
+          scenario.parameters
+        );
+        simulatedScore = result.newScore;
+        affectedControls = result.affectedControls;
+        affectedFrameworks = result.affectedFrameworks;
+      } else if (scenario.scenarioType === 'evidence_update') {
+        const result = await this.simulateEvidenceUpdate(
+          organizationId,
+          scenario.parameters
+        );
+        simulatedScore = result.newScore;
+        affectedControls = result.affectedControls;
+      } else if (scenario.scenarioType === 'audit_schedule') {
+        const result = await this.simulateAuditSchedule(
+          organizationId,
+          scenario.parameters
+        );
+        simulatedScore = result.newScore;
+        affectedFrameworks = result.affectedFrameworks;
+      } else if (scenario.scenarioType === 'compliance_debt') {
+        const result = await this.simulateComplianceDebt(
+          organizationId,
+          scenario.parameters
+        );
+        simulatedScore = result.newScore;
+        affectedControls = result.affectedControls;
+        affectedFrameworks = result.affectedFrameworks;
+      } else if (scenario.scenarioType === 'integration_change') {
+        const result = await this.simulateIntegrationChange(
+          organizationId,
+          scenario.parameters
+        );
+        simulatedScore = result.newScore;
+        affectedControls = result.affectedControls;
+      } else if (scenario.scenarioType === 'user_role_change') {
+        const result = await this.simulateUserRoleChange(
+          organizationId,
+          scenario.parameters
+        );
+        simulatedScore = result.newScore;
+        affectedControls = result.affectedControls;
+      } else if (scenario.scenarioType === 'framework_status_change') {
+        const result = await this.simulateFrameworkStatusChange(
+          organizationId,
+          scenario.parameters
+        );
+        simulatedScore = result.newScore;
+        affectedFrameworks = result.affectedFrameworks;
+      } else {
+        // Unknown scenario type - return baseline with warning
+        logger.warn(`[Digital Twin] Unknown scenario type: ${scenario.scenarioType}, returning baseline`);
+        simulatedScore = baselineScore;
       }
 
       const scoreChange = simulatedScore - baselineScore;
@@ -564,6 +627,352 @@ class ComplianceDigitalTwinService {
       affectedControls: findingsCount,
       affectedFrameworks: frameworks.length,
       gaps,
+    };
+  }
+
+  /**
+   * Simulate control removal
+   */
+  private async simulateControlRemoval(
+    organizationId: string,
+    parameters: Record<string, any>
+  ): Promise<{
+    newScore: number;
+    affectedControls: number;
+    affectedFrameworks: number;
+  }> {
+    const { controlId, frameworkId } = parameters;
+    const baselineScore = await this.calculateBaselineScore(organizationId);
+    
+    // Removing a control decreases compliance score
+    let scoreImpact = -5; // Base impact
+    
+    // If specific control provided, check its importance
+    if (controlId) {
+      const control = await prisma.frameworkControl.findUnique({
+        where: { id: controlId },
+        include: { framework: true },
+      });
+      
+      if (control) {
+        // Critical controls have higher impact
+        if (control.status === 'Implemented' || control.status === 'Compliant') {
+          scoreImpact = -8; // Removing implemented control is worse
+        }
+      }
+    }
+    
+    const newScore = Math.max(0, baselineScore + scoreImpact);
+    
+    // Get affected frameworks
+    const frameworks = frameworkId
+      ? await prisma.complianceFramework.findMany({
+          where: { id: frameworkId, organizationId },
+        })
+      : await prisma.complianceFramework.findMany({
+          where: { organizationId },
+        });
+    
+    return {
+      newScore,
+      affectedControls: 1,
+      affectedFrameworks: frameworks.length > 0 ? 1 : 0,
+    };
+  }
+
+  /**
+   * Simulate control modification
+   */
+  private async simulateControlModification(
+    organizationId: string,
+    parameters: Record<string, any>
+  ): Promise<{
+    newScore: number;
+    affectedControls: number;
+    affectedFrameworks: number;
+  }> {
+    const { controlId, modificationType, oldStatus, newStatus } = parameters;
+    const baselineScore = await this.calculateBaselineScore(organizationId);
+    
+    let scoreImpact = 0;
+    
+    // Status changes have different impacts
+    if (oldStatus && newStatus) {
+      if (oldStatus === 'Pending' && newStatus === 'Implemented') {
+        scoreImpact = 3; // Implementing improves score
+      } else if (oldStatus === 'Implemented' && newStatus === 'Pending') {
+        scoreImpact = -3; // Reverting hurts score
+      } else if (oldStatus === 'Not_Implemented' && newStatus === 'Compliant') {
+        scoreImpact = 5; // Becoming compliant is best
+      } else if (oldStatus === 'Compliant' && newStatus === 'Not_Implemented') {
+        scoreImpact = -5; // Losing compliance is worst
+      }
+    } else {
+      // Generic modification - slight improvement
+      scoreImpact = 1;
+    }
+    
+    const newScore = Math.min(100, Math.max(0, baselineScore + scoreImpact));
+    
+    // Get affected frameworks
+    const control = controlId
+      ? await prisma.frameworkControl.findUnique({
+          where: { id: controlId },
+          include: { framework: true },
+        })
+      : null;
+    
+    return {
+      newScore,
+      affectedControls: 1,
+      affectedFrameworks: control?.framework ? 1 : 0,
+    };
+  }
+
+  /**
+   * Simulate evidence update
+   */
+  private async simulateEvidenceUpdate(
+    organizationId: string,
+    parameters: Record<string, any>
+  ): Promise<{
+    newScore: number;
+    affectedControls: number;
+  }> {
+    const { controlId, evidenceQuality } = parameters;
+    const baselineScore = await this.calculateBaselineScore(organizationId);
+    
+    // Better evidence improves compliance confidence
+    let scoreImpact = 0;
+    
+    if (evidenceQuality === 'high' || evidenceQuality === 'verified') {
+      scoreImpact = 2; // High-quality evidence improves score
+    } else if (evidenceQuality === 'low' || evidenceQuality === 'missing') {
+      scoreImpact = -2; // Poor evidence reduces score
+    } else {
+      scoreImpact = 1; // Standard update
+    }
+    
+    const newScore = Math.min(100, Math.max(0, baselineScore + scoreImpact));
+    
+    return {
+      newScore,
+      affectedControls: controlId ? 1 : 0,
+    };
+  }
+
+  /**
+   * Simulate audit schedule change
+   */
+  private async simulateAuditSchedule(
+    organizationId: string,
+    parameters: Record<string, any>
+  ): Promise<{
+    newScore: number;
+    affectedFrameworks: number;
+  }> {
+    const { frameworkId, newAuditDate, daysUntilAudit } = parameters;
+    const baselineScore = await this.calculateBaselineScore(organizationId);
+    
+    // Earlier audits may reveal gaps, later audits give more time
+    let scoreImpact = 0;
+    
+    if (daysUntilAudit !== undefined) {
+      if (daysUntilAudit < 30) {
+        scoreImpact = -3; // Short notice may reveal unpreparedness
+      } else if (daysUntilAudit > 180) {
+        scoreImpact = 1; // More time to prepare
+      }
+    }
+    
+    const newScore = Math.min(100, Math.max(0, baselineScore + scoreImpact));
+    
+    // Get affected frameworks
+    const frameworks = frameworkId
+      ? await prisma.complianceFramework.findMany({
+          where: { id: frameworkId, organizationId },
+        })
+      : await prisma.complianceFramework.findMany({
+          where: { organizationId },
+        });
+    
+    return {
+      newScore,
+      affectedFrameworks: frameworks.length,
+    };
+  }
+
+  /**
+   * Simulate compliance debt accumulation
+   */
+  private async simulateComplianceDebt(
+    organizationId: string,
+    parameters: Record<string, any>
+  ): Promise<{
+    newScore: number;
+    affectedControls: number;
+    affectedFrameworks: number;
+  }> {
+    const { debtAmount, debtType, frameworkId } = parameters;
+    const baselineScore = await this.calculateBaselineScore(organizationId);
+    
+    // Compliance debt reduces score
+    const debtHours = debtAmount || 100; // Default 100 hours
+    const scoreImpact = -Math.min(20, Math.floor(debtHours / 10)); // Max -20% impact
+    
+    const newScore = Math.max(0, baselineScore + scoreImpact);
+    
+    // Get affected controls and frameworks
+    const frameworks = frameworkId
+      ? await prisma.complianceFramework.findMany({
+          where: { id: frameworkId, organizationId },
+          include: { controls: true },
+        })
+      : await prisma.complianceFramework.findMany({
+          where: { organizationId },
+          include: { controls: true },
+        });
+    
+    const totalControls = frameworks.reduce((sum, fw) => sum + (fw.controls?.length || 0), 0);
+    const affectedControls = Math.min(totalControls, Math.floor(debtHours / 5)); // ~5 hours per control
+    
+    return {
+      newScore,
+      affectedControls,
+      affectedFrameworks: frameworks.length,
+    };
+  }
+
+  /**
+   * Simulate integration change
+   */
+  private async simulateIntegrationChange(
+    organizationId: string,
+    parameters: Record<string, any>
+  ): Promise<{
+    newScore: number;
+    affectedControls: number;
+  }> {
+    const { integrationType, action, integrationId } = parameters;
+    const baselineScore = await this.calculateBaselineScore(organizationId);
+    
+    let scoreImpact = 0;
+    
+    // Adding integration may improve monitoring, removing may reduce visibility
+    if (action === 'add' || action === 'connect') {
+      scoreImpact = 2; // New integration improves visibility
+    } else if (action === 'remove' || action === 'disconnect') {
+      scoreImpact = -2; // Losing integration reduces visibility
+    } else if (action === 'update' || action === 'reconfigure') {
+      scoreImpact = 1; // Updates may improve functionality
+    }
+    
+    const newScore = Math.min(100, Math.max(0, baselineScore + scoreImpact));
+    
+    // Count controls that might depend on integrations
+    const controls = await prisma.frameworkControl.findMany({
+      where: {
+        framework: { organizationId },
+        OR: [
+          { name: { contains: 'monitoring' } },
+          { name: { contains: 'integration' } },
+          { description: { contains: 'integration' } },
+        ],
+      },
+    });
+    
+    return {
+      newScore,
+      affectedControls: Math.min(controls.length, 5), // Cap at 5 for integration changes
+    };
+  }
+
+  /**
+   * Simulate user role change
+   */
+  private async simulateUserRoleChange(
+    organizationId: string,
+    parameters: Record<string, any>
+  ): Promise<{
+    newScore: number;
+    affectedControls: number;
+  }> {
+    const { userId, oldRole, newRole } = parameters;
+    const baselineScore = await this.calculateBaselineScore(organizationId);
+    
+    let scoreImpact = 0;
+    
+    // Role changes affect access and control ownership
+    if (oldRole === 'viewer' && newRole === 'admin') {
+      scoreImpact = 1; // More capable admin
+    } else if (oldRole === 'admin' && newRole === 'viewer') {
+      scoreImpact = -1; // Losing admin capability
+    } else if (oldRole === 'editor' && newRole === 'admin') {
+      scoreImpact = 0.5; // Slight improvement
+    } else if (oldRole === 'admin' && newRole === 'editor') {
+      scoreImpact = -0.5; // Slight reduction
+    }
+    
+    const newScore = Math.min(100, Math.max(0, baselineScore + scoreImpact));
+    
+    // Count controls owned by the user
+    const userControls = userId
+      ? await prisma.frameworkControl.count({
+          where: {
+            ownerId: userId,
+            framework: { organizationId },
+          },
+        })
+      : 0;
+    
+    return {
+      newScore,
+      affectedControls: Math.max(1, userControls), // At least 1 if user has controls
+    };
+  }
+
+  /**
+   * Simulate framework status change
+   */
+  private async simulateFrameworkStatusChange(
+    organizationId: string,
+    parameters: Record<string, any>
+  ): Promise<{
+    newScore: number;
+    affectedFrameworks: number;
+  }> {
+    const { frameworkId, oldStatus, newStatus } = parameters;
+    const baselineScore = await this.calculateBaselineScore(organizationId);
+    
+    let scoreImpact = 0;
+    
+    // Status changes have significant impact
+    if (oldStatus === 'Non_Compliant' && newStatus === 'Compliant') {
+      scoreImpact = 10; // Major improvement
+    } else if (oldStatus === 'Compliant' && newStatus === 'Non_Compliant') {
+      scoreImpact = -10; // Major degradation
+    } else if (oldStatus === 'At_Risk' && newStatus === 'Compliant') {
+      scoreImpact = 5; // Good improvement
+    } else if (oldStatus === 'Compliant' && newStatus === 'At_Risk') {
+      scoreImpact = -5; // Concerning
+    } else if (oldStatus === 'In_Review' && newStatus === 'Compliant') {
+      scoreImpact = 3; // Positive
+    }
+    
+    const newScore = Math.min(100, Math.max(0, baselineScore + scoreImpact));
+    
+    // Get affected frameworks
+    const frameworks = frameworkId
+      ? await prisma.complianceFramework.findMany({
+          where: { id: frameworkId, organizationId },
+        })
+      : await prisma.complianceFramework.findMany({
+          where: { organizationId },
+        });
+    
+    return {
+      newScore,
+      affectedFrameworks: frameworks.length,
     };
   }
 

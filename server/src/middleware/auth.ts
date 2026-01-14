@@ -5,6 +5,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import monitoring from '../config/monitoring';
 import { User, Organization } from '@prisma/client';
+import crypto from 'crypto';
 
 export interface AuthUser extends User {
   organization?: Organization;
@@ -62,6 +63,19 @@ const authenticateMiddleware = async (
       
       // Set user context for error tracking
       monitoring.setUserContext(user.id, user.email, user.organizationId);
+      
+      // Update session activity (if session management is enabled)
+      try {
+        const sessionManagement = await import('../services/sessionManagementService');
+        if (sessionManagement.default) {
+          // Extract session ID from token (use token hash as session ID)
+          const sessionId = crypto.createHash('sha256').update(token).digest('hex');
+          await sessionManagement.default.updateSessionActivity(sessionId);
+        }
+      } catch (error) {
+        // Session management not available, continue without it
+        logger.debug('[Auth] Session management not available');
+      }
       
       next();
     } catch (error) {

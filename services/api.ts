@@ -593,10 +593,20 @@ export const api = {
       return fetchAPI<{ tiers: Tier[] }>('/billing/tiers');
     },
 
-    previewTierChange: async (targetTier: TierName) => {
-      return fetchAPI<UpgradePreview>('/billing/preview-change', {
+    previewTierChange: async (targetTier: TierName, billingCycle: 'monthly' | 'annual' = 'annual') => {
+      return fetchAPI<{
+        comparison: any;
+        stripePreview?: {
+          proratedAmount: number;
+          newMonthlyAmount: number;
+          immediateCharge: number;
+          nextBillingDate: string;
+        };
+        canDowngrade: boolean;
+        downgradeBlockers: string[];
+      }>('/billing/preview-change', {
         method: 'POST',
-        body: JSON.stringify({ targetTier }),
+        body: JSON.stringify({ tier: targetTier, billingCycle }),
       });
     },
 
@@ -804,6 +814,17 @@ export const api = {
       return fetchAPI<User>('/team/invite', {
         method: 'POST',
         body: JSON.stringify({ name, email, role }),
+      });
+    },
+
+    bulkInvite: async (invites: Array<{ name: string; email: string; role?: string }>) => {
+      return fetchAPI<{
+        successful: User[];
+        failed: Array<{ email: string; name: string; error: string }>;
+        summary: { total: number; successful: number; failed: number };
+      }>('/team/bulk-invite', {
+        method: 'POST',
+        body: JSON.stringify({ invites }),
       });
     },
 

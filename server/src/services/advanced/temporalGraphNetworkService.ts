@@ -11,6 +11,8 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import mlModelsService from './mlModelsService';
+import notificationService from '../notificationService';
+import webhookService from '../webhookService';
 
 export interface RiskPrediction {
   riskId?: string;
@@ -808,10 +810,173 @@ class TemporalGraphNetworkService {
         return a.leadTimeDays - b.leadTimeDays; // Shorter lead time = more urgent
       });
 
-      return filteredWarnings;
+      // Check for unacknowledged warnings and apply escalation logic
+      const warningsWithEscalation = await Promise.all(
+        filteredWarnings.map(async (warning) => {
+          // Generate unique warning ID
+          const warningId = `warn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Check if warning was previously acknowledged
+          const acknowledgmentLogs = await prisma.auditLog.findMany({
+            where: {
+              organizationId,
+              action: 'tgn.warning_acknowledged',
+              details: { contains: warningId },
+            },
+            orderBy: { timestamp: 'desc' },
+            take: 1,
+          });
+
+          const acknowledged = acknowledgmentLogs.length > 0;
+          const acknowledgedAt = acknowledged ? acknowledgmentLogs[0].timestamp : undefined;
+          const acknowledgedBy = acknowledged ? acknowledgmentLogs[0].userId : undefined;
+          
+          // Check if marked as false positive
+          let falsePositive = false;
+          if (acknowledged) {
+            try {
+              const details = JSON.parse(acknowledgmentLogs[0].details || '{}');
+              falsePositive = details.falsePositive === true;
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+
+          // Escalation logic: escalate if unacknowledged for >24 hours (Critical) or >72 hours (High)
+          let escalated = false;
+          if (!acknowledged && warning.predictedDate) {
+            const hoursUntilPredicted = (warning.predictedDate.getTime() - Date.now()) / (1000 * 60 * 60);
+            const escalationThreshold = warning.severity === 'Critical' ? 24 : 72;
+            
+            // Check if warning was generated more than threshold hours ago
+            const warningAge = (Date.now() - (warning.predictedDate.getTime() - warning.leadTimeDays * 24 * 60 * 60 * 1000)) / (1000 * 60 * 60);
+            escalated = warningAge > escalationThreshold;
+          }
+
+          return {
+            ...warning,
+            id: warningId,
+            acknowledged,
+            acknowledgedAt,
+            acknowledgedBy,
+            escalated,
+            falsePositive,
+          };
+        })
+      );
+
+      // Send notifications for new unacknowledged warnings
+      await this.sendWarningNotifications(organizationId, warningsWithEscalation.filter(w => !w.acknowledged));
+
+      // Apply acknowledgment filter if specified
+      let finalWarnings = warningsWithEscalation;
+      if (filters?.acknowledged !== undefined) {
+        finalWarnings = finalWarnings.filter(w => w.acknowledged === filters.acknowledged);
+      }
+
+      return finalWarnings;
     } catch (error) {
       logger.error('[TGN] Error getting early warnings', error);
       throw error;
+    }
+  }
+
+  /**
+   * Send warning notifications (Email/Slack/Webhook)
+   */
+  private async sendWarningNotifications(
+    organizationId: string,
+    warnings: Array<{
+      id?: string;
+      type: string;
+      severity: string;
+      description: string;
+      predictedDate: Date;
+      leadTimeDays: number;
+      recommendedAction: string;
+    }>
+  ): Promise<void> {
+    try {
+      // Get organization admins and users who should receive warnings
+      const users = await prisma.user.findMany({
+        where: {
+          organizationId,
+          role: { in: ['admin', 'editor'] },
+        },
+      });
+
+      for (const warning of warnings) {
+        // Send notifications to all admins/editors
+        for (const user of users) {
+          try {
+            // Email notification
+            await notificationService.sendNotification(
+              user.id,
+              organizationId,
+              {
+                type: warning.severity === 'Critical' ? 'critical' : 'warning',
+                category: 'tgn_early_warning',
+                title: `Early Warning: ${warning.type} - ${warning.severity}`,
+                message: `${warning.description}\n\nPredicted Date: ${warning.predictedDate.toLocaleDateString()}\nLead Time: ${warning.leadTimeDays} days\n\nRecommended Action: ${warning.recommendedAction}`,
+                link: `/acos/predictions?warning=${warning.id}`,
+                channels: ['email', 'websocket'],
+              }
+            );
+          } catch (error: any) {
+            logger.warn(`[TGN] Failed to send notification to user ${user.id}`, error);
+          }
+        }
+
+        // Send Slack notification if integration is connected
+        try {
+          const slackIntegration = await prisma.integration.findFirst({
+            where: {
+              organizationId,
+              provider: 'slack',
+              connected: true,
+            },
+          });
+
+          if (slackIntegration) {
+            // Send to Slack channel configured in integration
+            await notificationService.sendNotification(
+              users[0]?.id || 'system',
+              organizationId,
+              {
+                type: warning.severity === 'Critical' ? 'critical' : 'warning',
+                category: 'tgn_early_warning',
+                title: `🚨 Early Warning: ${warning.type}`,
+                message: `*${warning.severity}*: ${warning.description}\n*Predicted Date:* ${warning.predictedDate.toLocaleDateString()}\n*Lead Time:* ${warning.leadTimeDays} days\n\n*Recommended Action:* ${warning.recommendedAction}`,
+                channels: ['slack'],
+              }
+            );
+          }
+        } catch (error: any) {
+          logger.warn('[TGN] Failed to send Slack notification', error);
+        }
+
+        // Send webhook notification
+        try {
+          await webhookService.dispatchEvent(
+            organizationId,
+            'tgn.early_warning',
+            {
+              warningId: warning.id,
+              type: warning.type,
+              severity: warning.severity,
+              description: warning.description,
+              predictedDate: warning.predictedDate.toISOString(),
+              leadTimeDays: warning.leadTimeDays,
+              recommendedAction: warning.recommendedAction,
+            }
+          );
+        } catch (error: any) {
+          logger.warn('[TGN] Failed to dispatch webhook', error);
+        }
+      }
+    } catch (error) {
+      logger.error('[TGN] Error sending warning notifications', error);
+      // Don't throw - notifications are non-critical
     }
   }
 
@@ -840,11 +1005,39 @@ class TemporalGraphNetworkService {
         },
       });
 
-      logger.info(`[TGN] Warning ${warningId} acknowledged by user ${userId}`);
+      // Update false positive rate tracking
+      if (falsePositive) {
+        await this.trackFalsePositive(organizationId, warningId);
+      }
+
+      logger.info(`[TGN] Warning ${warningId} acknowledged by user ${userId} (falsePositive: ${falsePositive})`);
       return true;
     } catch (error) {
       logger.error('[TGN] Error acknowledging warning', error);
       return false;
+    }
+  }
+
+  /**
+   * Track false positive for rate calculation
+   */
+  private async trackFalsePositive(organizationId: string, warningId: string): Promise<void> {
+    try {
+      // Store false positive tracking in audit log
+      await prisma.auditLog.create({
+        data: {
+          action: 'tgn.false_positive_tracked',
+          details: JSON.stringify({
+            warningId,
+            trackedAt: new Date(),
+          }),
+          userId: 'system',
+          organizationId,
+          hash: (await import('crypto')).randomBytes(16).toString('hex'),
+        },
+      });
+    } catch (error) {
+      logger.error('[TGN] Error tracking false positive', error);
     }
   }
 
@@ -914,24 +1107,58 @@ class TemporalGraphNetworkService {
   }
 
   /**
-   * Calculate false positive rate
+   * Calculate false positive rate (target: <10%)
    */
-  async calculateFalsePositiveRate(organizationId: string): Promise<number> {
+  async calculateFalsePositiveRate(organizationId: string): Promise<{
+    rate: number;
+    totalWarnings: number;
+    falsePositives: number;
+    targetMet: boolean;
+    targetRate: number;
+  }> {
     try {
       const history = await this.getWarningHistory(organizationId);
       const totalWarnings = history.length;
       
       if (totalWarnings === 0) {
-        return 0;
+        return {
+          rate: 0,
+          totalWarnings: 0,
+          falsePositives: 0,
+          targetMet: true,
+          targetRate: 0.1, // 10%
+        };
       }
 
-      const falsePositives = history.filter(h => h.accuracy === 'false_positive').length;
-      const falsePositiveRate = falsePositives / totalWarnings;
+      // Count false positives from acknowledgment logs
+      const falsePositiveLogs = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: 'tgn.false_positive_tracked',
+        },
+      });
 
-      return Math.round(falsePositiveRate * 100) / 100;
+      const falsePositives = falsePositiveLogs.length;
+      const falsePositiveRate = falsePositives / totalWarnings;
+      const targetRate = 0.1; // 10% target
+      const targetMet = falsePositiveRate < targetRate;
+
+      return {
+        rate: Math.round(falsePositiveRate * 100) / 100,
+        totalWarnings,
+        falsePositives,
+        targetMet,
+        targetRate,
+      };
     } catch (error) {
       logger.error('[TGN] Error calculating false positive rate', error);
-      return 0;
+      return {
+        rate: 0,
+        totalWarnings: 0,
+        falsePositives: 0,
+        targetMet: false,
+        targetRate: 0.1,
+      };
     }
   }
 

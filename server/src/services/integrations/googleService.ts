@@ -187,8 +187,9 @@ class GoogleService {
 
   /**
    * Ensure access token is valid, refresh if needed
+   * Includes retry logic with exponential backoff for network failures
    */
-  async ensureValidToken(organizationId: string): Promise<string> {
+  async ensureValidToken(organizationId: string, retryCount: number = 0): Promise<string> {
     const integration = await this.getIntegration(organizationId);
 
     if (!integration || !integration.connected) {
@@ -205,23 +206,85 @@ class GoogleService {
         throw new Error('No refresh token available');
       }
 
-      // Refresh the token
-      const newTokens = await this.refreshAccessToken(integration.refreshToken);
+      const maxRetries = 3;
+      const baseDelay = 1000; // 1 second
 
-      // Update in database
-      await prisma.integration.update({
-        where: { id: integration.id },
-        data: {
-          accessToken: newTokens.access_token,
-          refreshToken: newTokens.refresh_token || integration.refreshToken,
-          expiresAt: new Date(newTokens.expiry_date),
-        },
-      });
+      try {
+        // Refresh the token with retry logic
+        const newTokens = await this.refreshAccessTokenWithRetry(
+          integration.refreshToken,
+          maxRetries,
+          baseDelay
+        );
 
-      return newTokens.access_token;
+        // Update in database
+        await prisma.integration.update({
+          where: { id: integration.id },
+          data: {
+            accessToken: newTokens.access_token,
+            refreshToken: newTokens.refresh_token || integration.refreshToken,
+            expiresAt: new Date(newTokens.expiry_date),
+          },
+        });
+
+        return newTokens.access_token;
+      } catch (error: any) {
+        logger.error(`Failed to refresh Google token after ${retryCount} retries`, error);
+        
+        // If network error and retries left, retry the entire method
+        if (retryCount < maxRetries && (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT' || error.message?.includes('network'))) {
+          const delay = baseDelay * Math.pow(2, retryCount);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.ensureValidToken(organizationId, retryCount + 1);
+        }
+        
+        throw error;
+      }
     }
 
     return integration.accessToken!;
+  }
+
+  /**
+   * Refresh access token with exponential backoff retry logic
+   */
+  private async refreshAccessTokenWithRetry(
+    refreshToken: string,
+    maxRetries: number = 3,
+    baseDelay: number = 1000
+  ): Promise<GoogleTokens> {
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await this.refreshAccessToken(refreshToken);
+      } catch (error: any) {
+        lastError = error;
+        
+        // Don't retry on authentication errors (invalid refresh token)
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          throw new Error('Refresh token is invalid or expired. Please reconnect the integration.');
+        }
+
+        // Retry on network errors
+        if (attempt < maxRetries && (
+          error.code === 'ECONNRESET' ||
+          error.code === 'ETIMEDOUT' ||
+          error.code === 'ENOTFOUND' ||
+          error.message?.includes('network') ||
+          error.message?.includes('timeout')
+        )) {
+          const delay = baseDelay * Math.pow(2, attempt);
+          logger.warn(`Google token refresh attempt ${attempt + 1} failed, retrying in ${delay}ms...`, error.message);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    throw lastError || new Error('Failed to refresh token after retries');
   }
 
   /**
