@@ -1528,7 +1528,7 @@ Return only the resolution text, no JSON or formatting.`;
         controlsUpdated,
         controlsDeprecated,
         frameworksAffected: affectedFrameworkIds.size,
-        errors: errors.length > 0 ? errors.map(e => ({ controlId: '', error: e })) : undefined,
+        errors: errors.length > 0 ? errors : undefined,
       };
     } catch (error: any) {
       logger.error('[RIF] Error auto-updating controls', error);
@@ -2038,15 +2038,15 @@ Return only the resolution text, no JSON or formatting.`;
             status: 'active',
           },
         });
-        feedsToMonitor = dbFeeds.map(f => ({
+        feedsToMonitor = dbFeeds.map((f): RegulatoryFeed => ({
           id: f.id,
           name: f.name,
           url: f.url,
-          feedType: f.feedType,
+          feedType: f.feedType as 'rss' | 'api' | 'website',
           jurisdiction: f.jurisdiction,
           pollingInterval: f.pollingInterval,
           organizationId: f.organizationId,
-          status: f.status,
+          status: f.status as 'active' | 'inactive' | 'error',
         }));
       } else {
         // Get all active feeds for organization
@@ -2056,15 +2056,15 @@ Return only the resolution text, no JSON or formatting.`;
             status: 'active',
           },
         });
-        feedsToMonitor = dbFeeds.map(f => ({
+        feedsToMonitor = dbFeeds.map((f): RegulatoryFeed => ({
           id: f.id,
           name: f.name,
           url: f.url,
-          feedType: f.feedType,
+          feedType: f.feedType as 'rss' | 'api' | 'website',
           jurisdiction: f.jurisdiction,
           pollingInterval: f.pollingInterval,
           organizationId: f.organizationId,
-          status: f.status,
+          status: f.status as 'active' | 'inactive' | 'error',
         }));
       }
 
@@ -2424,11 +2424,11 @@ Return only the resolution text, no JSON or formatting.`;
         id: dbFeed.id,
         name: dbFeed.name,
         url: dbFeed.url,
-        feedType: dbFeed.feedType,
+        feedType: dbFeed.feedType as 'rss' | 'api' | 'website',
         jurisdiction: dbFeed.jurisdiction,
         pollingInterval: dbFeed.pollingInterval,
         organizationId: dbFeed.organizationId,
-        status: dbFeed.status,
+        status: dbFeed.status as 'active' | 'inactive' | 'error',
       };
 
       // Log to audit log
@@ -2496,15 +2496,15 @@ Return only the resolution text, no JSON or formatting.`;
         orderBy: { createdAt: 'desc' },
       });
 
-      return dbFeeds.map(f => ({
+      return dbFeeds.map((f): RegulatoryFeed => ({
         id: f.id,
         name: f.name,
         url: f.url,
-        feedType: f.feedType,
+        feedType: f.feedType as 'rss' | 'api' | 'website',
         jurisdiction: f.jurisdiction,
         pollingInterval: f.pollingInterval,
         organizationId: f.organizationId,
-        status: f.status,
+        status: f.status as 'active' | 'inactive' | 'error',
       }));
     } catch (error) {
       logger.error('[RIF] Error getting feeds', error);
@@ -2569,11 +2569,11 @@ Return only the resolution text, no JSON or formatting.`;
         id: updatedFeed.id,
         name: updatedFeed.name,
         url: updatedFeed.url,
-        feedType: updatedFeed.feedType,
+        feedType: updatedFeed.feedType as 'rss' | 'api' | 'website',
         jurisdiction: updatedFeed.jurisdiction,
         pollingInterval: updatedFeed.pollingInterval,
         organizationId: updatedFeed.organizationId,
-        status: updatedFeed.status,
+        status: updatedFeed.status as 'active' | 'inactive' | 'error',
       };
     } catch (error) {
       logger.error('[RIF] Error updating feed', error);

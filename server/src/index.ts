@@ -231,16 +231,18 @@ const httpServer = createServer(app);
 // Initialize WebSocket
 websocketService.initialize(httpServer);
 
-// Initialize Session Management
-try {
-  const sessionManagement = await import('./services/sessionManagementService');
-  if (sessionManagement.default) {
-    await sessionManagement.default.initialize();
-    logger.info('✓ Session management initialized');
+// Initialize Session Management (async initialization)
+(async () => {
+  try {
+    const sessionManagement = await import('./services/sessionManagementService');
+    if (sessionManagement.default) {
+      await sessionManagement.default.initialize();
+      logger.info('✓ Session management initialized');
+    }
+  } catch (error) {
+    logger.warn('⚠️  Session management initialization failed (optional):', error);
   }
-} catch (error) {
-  logger.warn('⚠️  Session management initialization failed (optional):', error);
-}
+})();
 
 // Test database connection before starting server (skip in test environment)
 if (process.env.NODE_ENV !== 'test') {

@@ -587,7 +587,7 @@ class FrameworksController {
             updateData.ownerId,
             organizationId,
             {
-              type: 'control_assigned',
+              type: 'info',
               category: 'compliance',
               title: `Control Assigned: ${control.name}`,
               message: `You have been assigned as the owner of control "${control.name}" in framework "${framework.name}".`,
@@ -949,7 +949,7 @@ class FrameworksController {
           },
         });
 
-        return res.json({
+        res.json({
           classification,
           confidence,
           control: updatedControl,
@@ -959,6 +959,7 @@ class FrameworksController {
             filename: uploadResult.filename,
           },
         });
+        return;
       }
 
       // Extract s3Key from URL if possible, otherwise use URL

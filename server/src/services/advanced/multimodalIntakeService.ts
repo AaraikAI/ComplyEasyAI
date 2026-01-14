@@ -307,24 +307,7 @@ class MultimodalIntakeService {
     const pauseSimilarity = 1 - Math.abs(features1.pauseBefore - features2.avgPause) / Math.max(features1.pauseBefore, features2.avgPause, 1);
     const styleMatch = (features1.capitalizationRatio > 0.1 && features2.style === 'formal') ||
                        (features1.capitalizationRatio <= 0.1 && features2.style === 'casual') ? 1 : 0.5;
-    
-    // Weighted average
-    return (lengthSimilarity * 0.4 + pauseSimilarity * 0.3 + styleMatch * 0.3);
-  }
 
-  /**
-   * Calculate speaker similarity for diarization
-   */
-  private calculateSpeakerSimilarity(
-    features1: { length: number; pauseBefore: number; avgWordLength: number; punctuationCount: number; capitalizationRatio: number },
-    features2: { avgLength: number; avgPause: number; style: string }
-  ): number {
-    // Normalize features for comparison
-    const lengthSimilarity = 1 - Math.abs(features1.length - features2.avgLength) / Math.max(features1.length, features2.avgLength, 1);
-    const pauseSimilarity = 1 - Math.abs(features1.pauseBefore - features2.avgPause) / Math.max(features1.pauseBefore, features2.avgPause, 1);
-    const styleMatch = (features1.capitalizationRatio > 0.1 && features2.style === 'formal') ||
-                       (features1.capitalizationRatio <= 0.1 && features2.style === 'casual') ? 1 : 0.5;
-    
     // Weighted average
     return (lengthSimilarity * 0.4 + pauseSimilarity * 0.3 + styleMatch * 0.3);
   }
@@ -469,10 +452,14 @@ class MultimodalIntakeService {
         speakerData.features.avgPause = (speakerData.features.avgPause * (segmentCount - 1) + features.pauseBefore) / segmentCount;
       });
 
-    return Array.from(speakers.entries()).map(([id, segmentIndices]) => ({
+    return Array.from(speakers.entries()).map(([id, speakerData]) => ({
       id,
-      segments: segmentIndices,
+      segments: speakerData.segments,
     }));
+    } catch (error) {
+      logger.error('[Multimodal] Speaker diarization error', error);
+      return [];
+    }
   }
 
   /**

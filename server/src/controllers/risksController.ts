@@ -59,10 +59,6 @@ class RisksController {
             },
           },
         },
-        orderBy: [
-          { severity: 'desc' },
-          { detectedAt: 'desc' },
-        ],
       });
 
       res.json(risks);
