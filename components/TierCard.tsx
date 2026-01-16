@@ -183,29 +183,6 @@ const TierCard: React.FC<TierCardProps> = ({
         </div>
       </div>
 
-      {/* Price */}
-      <div className="mb-6">
-        <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-bold text-gray-900">
-            {priceDisplay === 'Custom' ? 'Custom' : priceDisplay}
-          </span>
-          {priceDisplay !== 'Custom' && (
-            <span className="text-gray-500">
-              /{billingCycle === 'monthly' ? 'mo' : 'yr'}
-            </span>
-          )}
-        </div>
-        {tier.name !== 'Visionary' && billingCycle === 'annual' && (
-          <p className="text-sm text-green-600 mt-1">
-            Save {Math.round((1 - 1/tier.pricing.monthlyMultiplier) * 100)}% vs monthly
-          </p>
-        )}
-        {tier.name === 'Visionary' && (
-          <p className="text-sm text-gray-500 mt-1">
-            Starting at {formatPrice(tier.pricing.annualMin)}/year
-          </p>
-        )}
-      </div>
 
       {/* CTA Buttons */}
       <div className="space-y-2">
@@ -261,28 +238,6 @@ const TierCard: React.FC<TierCardProps> = ({
             </span>
           </div>
         ))}
-      </div>
-
-      {/* Limits summary */}
-      <div className="mt-6 pt-4 border-t border-gray-100">
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-gray-500">Users</p>
-            <p className="font-semibold">{formatLimit(tier.limits.maxUsers)}</p>
-          </div>
-          <div>
-            <p className="text-gray-500">Frameworks</p>
-            <p className="font-semibold">{formatLimit(tier.limits.maxFrameworks)}</p>
-          </div>
-          <div>
-            <p className="text-gray-500">AI Requests/mo</p>
-            <p className="font-semibold">{formatLimit(tier.limits.maxAiRequestsPerMonth)}</p>
-          </div>
-          <div>
-            <p className="text-gray-500">Storage</p>
-            <p className="font-semibold">{formatLimit(tier.limits.maxStorageGB)} GB</p>
-          </div>
-        </div>
       </div>
     </div>
   );

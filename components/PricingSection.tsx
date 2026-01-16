@@ -519,17 +519,6 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                 <FeatureRow feature="BYOK Encryption" tiers={TIERS} featureKey="byokEncryption" />
                 <FeatureRow feature="On-Premises Deployment" tiers={TIERS} featureKey="onPremDeployment" />
 
-                {/* Limits */}
-                <tr className="bg-gray-50">
-                  <td colSpan={5} className="px-6 py-3 text-sm font-bold text-gray-700">
-                    Usage Limits
-                  </td>
-                </tr>
-                <LimitRow label="Users" tiers={TIERS} limitKey="maxUsers" />
-                <LimitRow label="Frameworks" tiers={TIERS} limitKey="maxFrameworks" />
-                <LimitRow label="Workspaces" tiers={TIERS} limitKey="maxWorkspaces" />
-                <LimitRow label="AI Requests/month" tiers={TIERS} limitKey="maxAiRequestsPerMonth" />
-                <LimitRow label="Storage (GB)" tiers={TIERS} limitKey="maxStorageGB" />
               </tbody>
             </table>
           </div>
@@ -552,12 +541,6 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                     <h4 className="text-lg font-semibold text-gray-900">{addon.name}</h4>
                   </div>
                   <p className="text-gray-600 mb-4">{addon.description}</p>
-                  <div className="flex items-baseline gap-1 mb-4">
-                    <span className="text-2xl font-bold text-gray-900">
-                      {formatPrice(addon.priceAnnual)}
-                    </span>
-                    <span className="text-gray-500">/year</span>
-                  </div>
                   <p className="text-sm text-gray-500">
                     Available for: {addon.availableForTiers.join(', ')}
                   </p>

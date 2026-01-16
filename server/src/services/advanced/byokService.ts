@@ -136,11 +136,29 @@ class BYOKService {
     const key = `${projectId}-${location}`;
 
     if (!this.gcpKmsClients.has(key)) {
-      const client = new KeyManagementServiceClient({
+      // Handle credentials properly - if it's an object with project_id, use it directly
+      // Otherwise, use keyFilename or credentials field
+      const clientConfig: any = {
         projectId,
-        keyFilename: credentials?.keyFilename,
-        credentials: credentials?.credentials,
-      });
+      };
+
+      if (credentials) {
+        if (credentials.project_id || credentials.type === 'service_account') {
+          // It's a service account JSON object
+          clientConfig.credentials = credentials;
+        } else if (credentials.keyFilename) {
+          clientConfig.keyFilename = credentials.keyFilename;
+        } else if (credentials.credentials) {
+          clientConfig.credentials = credentials.credentials;
+        } else if (typeof credentials === 'string' && credentials.endsWith('.json')) {
+          // It's a file path
+          clientConfig.keyFilename = credentials;
+        }
+      } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        clientConfig.keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      }
+
+      const client = new KeyManagementServiceClient(clientConfig);
       this.gcpKmsClients.set(key, client);
     }
 
@@ -568,10 +586,11 @@ class BYOKService {
         KeyUsage: 'ENCRYPT_DECRYPT',
         Origin: 'AWS_KMS',
         MultiRegion: false,
-        Tags: [
-          { TagKey: 'Organization', TagValue: organizationId },
-          { TagKey: 'ManagedBy', TagValue: 'ComplyEasy' },
-        ],
+        // Tags are optional - only add if user has kms:TagResource permission
+        // Tags: [
+        //   { TagKey: 'Organization', TagValue: organizationId },
+        //   { TagKey: 'ManagedBy', TagValue: 'ComplyEasy' },
+        // ],
       });
 
       const response = await client.send(command);
@@ -605,13 +624,24 @@ class BYOKService {
 
       const keyClient = this.getAzureKeyClient(vaultUrl);
 
-      const result = await keyClient.createRsaKey(keyName, {
-        keySize: 4096,
-        tags: {
-          organization: organizationId,
-          managedBy: 'ComplyEasy',
-        },
-      });
+      // Try to create key - handle authentication redirects
+      let result;
+      try {
+        result = await keyClient.createRsaKey(keyName, {
+          keySize: 4096,
+          // Tags are optional
+          // tags: {
+          //   organization: organizationId,
+          //   managedBy: 'ComplyEasy',
+          // },
+        });
+      } catch (error: any) {
+        // Handle 302 redirect (authentication required)
+        if (error.statusCode === 302 || error.message?.includes('302') || error.message?.includes('redirect')) {
+          throw new Error('Azure authentication required. Please ensure you are authenticated with Azure CLI or have valid credentials configured.');
+        }
+        throw error;
+      }
 
       logger.info(`Created Azure Key Vault key: ${result.name} for org ${organizationId}`);
 
@@ -639,7 +669,24 @@ class BYOKService {
         throw new Error('GCP credentials required in production');
       }
 
-      const client = this.getGCPKMSClient(projectId, location, credentials);
+      // Handle credentials - if it's a JSON string, parse it; if it's a file path, validate it exists
+      let parsedCredentials = credentials;
+      if (typeof credentials === 'string') {
+        try {
+          parsedCredentials = JSON.parse(credentials);
+        } catch {
+          // If not JSON, it might be a file path - check if it exists
+          const fs = require('fs');
+          const path = require('path');
+          if (fs.existsSync(credentials)) {
+            parsedCredentials = JSON.parse(fs.readFileSync(credentials, 'utf8'));
+          } else {
+            throw new Error(`GCP service account file not found: ${credentials}. Please provide a valid file path or JSON credentials.`);
+          }
+        }
+      }
+
+      const client = this.getGCPKMSClient(projectId, location, parsedCredentials);
 
       // Create key ring if it doesn't exist
       const keyRingPath = client.keyRingPath(projectId, location, keyRing);

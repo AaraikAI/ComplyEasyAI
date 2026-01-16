@@ -127,6 +127,7 @@ router.get('/physical-ai/health/bulk-check', asyncHandler(acosController.bulkHea
 router.post('/vr/sessions', authorize('admin', 'editor'), asyncHandler(acosController.createVRSession));
 router.get('/vr/sessions', asyncHandler(acosController.getActiveVRSessions));
 router.get('/vr/sessions/:sessionId', asyncHandler(acosController.getVRSessionDetails));
+router.get('/vr/sessions/:sessionId/health', asyncHandler(acosController.checkVRSessionHealth));
 router.post('/vr/sessions/:sessionId/join', asyncHandler(acosController.joinVRSession));
 router.post('/vr/sessions/:sessionId/leave', asyncHandler(acosController.leaveVRSession));
 router.post('/vr/sessions/:sessionId/start', authorize('admin', 'editor'), asyncHandler(acosController.startVRSession));
@@ -161,6 +162,12 @@ router.post('/jit/request', authorize('admin', 'editor'), asyncHandler(acosContr
 router.get('/jit/sessions', asyncHandler(acosController.getJITAccessSessions));
 router.post('/jit/sessions/:sessionId/revoke', authorize('admin'), asyncHandler(acosController.revokeJITSession));
 router.post('/jit/requests/:requestId/cancel', asyncHandler(acosController.cancelJITAccessRequest));
+
+// Admin JIT Access Approval Workflow
+router.get('/jit/requests/pending', authorize('admin'), asyncHandler(acosController.getPendingJITAccessRequests));
+router.get('/jit/requests', authorize('admin'), asyncHandler(acosController.getAllJITAccessRequests));
+router.post('/jit/requests/:requestId/approve', authorize('admin'), asyncHandler(acosController.approveJITAccessRequest));
+router.post('/jit/requests/:requestId/deny', authorize('admin'), asyncHandler(acosController.denyJITAccessRequest));
 
 // Swarm Task Allocation
 router.post('/swarm-tasks/agents', authorize('admin'), asyncHandler(acosController.registerSwarmAgent));

@@ -332,6 +332,294 @@ class VRCollaborativeReviewService {
   private voiceChatStates: Map<string, VoiceChatState> = new Map();
   private trainingProgress: Map<string, TrainingProgress> = new Map();
   private annotations: Map<string, VRAnnotation[]> = new Map();
+  
+  // Session expiration settings (in milliseconds)
+  private readonly SESSION_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours
+  private readonly INACTIVE_SESSION_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours of inactivity
+  private cleanupInterval: NodeJS.Timeout | null = null;
+
+  /**
+   * Initialize service - restore sessions from database and start cleanup job
+   */
+  async initialize(): Promise<void> {
+    try {
+      logger.info('[VR Review] Initializing service - restoring sessions from database...');
+      await this.restoreSessionsFromDatabase();
+      this.startCleanupJob();
+      logger.info('[VR Review] Service initialized successfully');
+    } catch (error) {
+      logger.error('[VR Review] Error initializing service', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Restore active sessions from database on startup
+   */
+  private async restoreSessionsFromDatabase(): Promise<void> {
+    try {
+      const now = new Date();
+      const dbSessions = await prisma.vRCollaborativeSession.findMany({
+        where: {
+          status: {
+            in: ['pending', 'active', 'paused'],
+          },
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: now } },
+          ],
+        },
+      });
+
+      let restoredCount = 0;
+      let expiredCount = 0;
+
+      for (const dbSession of dbSessions) {
+        try {
+          // Check if session has expired
+          if (dbSession.expiresAt && new Date(dbSession.expiresAt) < now) {
+            await this.markSessionExpired(dbSession.sessionId);
+            expiredCount++;
+            continue;
+          }
+
+          // Check if session is inactive
+          const lastActivity = dbSession.lastActivityAt;
+          const inactiveTime = now.getTime() - lastActivity.getTime();
+          if (inactiveTime > this.INACTIVE_SESSION_TIMEOUT && dbSession.status === 'active') {
+            await this.markSessionExpired(dbSession.sessionId);
+            expiredCount++;
+            continue;
+          }
+
+          // Restore session to memory
+          const session: VRSession = {
+            id: dbSession.sessionId,
+            organizationId: dbSession.organizationId,
+            sessionName: dbSession.sessionName,
+            description: dbSession.description || undefined,
+            sessionType: dbSession.sessionType as any,
+            status: dbSession.status as any,
+            hostUserId: dbSession.hostUserId,
+            participants: (dbSession.participants as any) || [],
+            maxParticipants: dbSession.maxParticipants || undefined,
+            scheduledTime: dbSession.scheduledTime || undefined,
+            environment: dbSession.environment as any,
+            complianceData: dbSession.complianceData as any,
+            startedAt: dbSession.startedAt || undefined,
+            endedAt: dbSession.endedAt || undefined,
+            createdAt: dbSession.createdAt,
+            updatedAt: dbSession.updatedAt,
+            permissions: dbSession.permissions as any,
+            recording: dbSession.recording as any,
+          };
+
+          this.activeSessions.set(dbSession.sessionId, session);
+          
+          // Restore participants map
+          const participantsMap = new Map<string, VRParticipant>();
+          session.participants.forEach(p => {
+            participantsMap.set(p.userId, p);
+          });
+          this.sessionParticipants.set(dbSession.sessionId, participantsMap);
+
+          // Initialize other maps
+          this.sessionChats.set(dbSession.sessionId, []);
+          this.voiceChatStates.set(dbSession.sessionId, {
+            enabled: true,
+            participants: session.participants.map(p => ({
+              userId: p.userId,
+              isMuted: false,
+              volume: 1.0,
+            })),
+          });
+          this.annotations.set(dbSession.sessionId, []);
+
+          restoredCount++;
+        } catch (error) {
+          logger.error(`[VR Review] Error restoring session ${dbSession.sessionId}`, error);
+        }
+      }
+
+      logger.info(`[VR Review] Restored ${restoredCount} sessions, expired ${expiredCount} sessions`);
+    } catch (error) {
+      logger.error('[VR Review] Error restoring sessions from database', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Start periodic cleanup job for expired sessions
+   */
+  private startCleanupJob(): void {
+    // Run cleanup every hour
+    this.cleanupInterval = setInterval(async () => {
+      try {
+        await this.cleanupExpiredSessions();
+      } catch (error) {
+        logger.error('[VR Review] Error in cleanup job', error);
+      }
+    }, 60 * 60 * 1000); // 1 hour
+
+    // Also run cleanup immediately
+    this.cleanupExpiredSessions().catch(error => {
+      logger.error('[VR Review] Error in initial cleanup', error);
+    });
+  }
+
+  /**
+   * Cleanup expired sessions
+   */
+  async cleanupExpiredSessions(): Promise<void> {
+    try {
+      const now = new Date();
+      const expiredSessions = await prisma.vRCollaborativeSession.findMany({
+        where: {
+          status: {
+            in: ['pending', 'active', 'paused'],
+          },
+          OR: [
+            { expiresAt: { lte: now } },
+            {
+              lastActivityAt: {
+                lt: new Date(now.getTime() - this.INACTIVE_SESSION_TIMEOUT),
+              },
+              status: 'active',
+            },
+          ],
+        },
+      });
+
+      for (const session of expiredSessions) {
+        await this.markSessionExpired(session.sessionId);
+      }
+
+      if (expiredSessions.length > 0) {
+        logger.info(`[VR Review] Cleaned up ${expiredSessions.length} expired sessions`);
+      }
+    } catch (error) {
+      logger.error('[VR Review] Error cleaning up expired sessions', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark a session as expired
+   */
+  private async markSessionExpired(sessionId: string): Promise<void> {
+    try {
+      // Remove from memory
+      this.activeSessions.delete(sessionId);
+      this.sessionParticipants.delete(sessionId);
+      this.sessionChats.delete(sessionId);
+      this.voiceChatStates.delete(sessionId);
+      this.annotations.delete(sessionId);
+
+      // Update in database
+      await prisma.vRCollaborativeSession.updateMany({
+        where: { sessionId },
+        data: {
+          status: 'completed',
+          endedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      logger.error(`[VR Review] Error marking session ${sessionId} as expired`, error);
+    }
+  }
+
+  /**
+   * Health check for a session - verifies it exists and is valid
+   */
+  async healthCheck(sessionId: string): Promise<{ valid: boolean; reason?: string }> {
+    try {
+      const session = this.activeSessions.get(sessionId);
+      if (!session) {
+        // Check database
+        const dbSession = await prisma.vRCollaborativeSession.findUnique({
+          where: { sessionId },
+        });
+
+        if (!dbSession) {
+          return { valid: false, reason: 'Session not found' };
+        }
+
+        if (dbSession.status === 'completed') {
+          return { valid: false, reason: 'Session has ended' };
+        }
+
+        if (dbSession.expiresAt && new Date(dbSession.expiresAt) < new Date()) {
+          return { valid: false, reason: 'Session has expired' };
+        }
+
+        // Session exists in DB but not in memory - restore it
+        await this.restoreSessionFromDatabase(sessionId);
+        return { valid: true };
+      }
+
+      // Check if session is expired
+      if (session.status === 'completed') {
+        return { valid: false, reason: 'Session has ended' };
+      }
+
+      return { valid: true };
+    } catch (error) {
+      logger.error(`[VR Review] Error in health check for session ${sessionId}`, error);
+      return { valid: false, reason: 'Health check failed' };
+    }
+  }
+
+  /**
+   * Restore a single session from database
+   */
+  private async restoreSessionFromDatabase(sessionId: string): Promise<void> {
+    const dbSession = await prisma.vRCollaborativeSession.findUnique({
+      where: { sessionId },
+    });
+
+    if (!dbSession || dbSession.status === 'completed') {
+      return;
+    }
+
+    const session: VRSession = {
+      id: dbSession.sessionId,
+      organizationId: dbSession.organizationId,
+      sessionName: dbSession.sessionName,
+      description: dbSession.description || undefined,
+      sessionType: dbSession.sessionType as any,
+      status: dbSession.status as any,
+      hostUserId: dbSession.hostUserId,
+      participants: (dbSession.participants as any) || [],
+      maxParticipants: dbSession.maxParticipants || undefined,
+      scheduledTime: dbSession.scheduledTime || undefined,
+      environment: dbSession.environment as any,
+      complianceData: dbSession.complianceData as any,
+      startedAt: dbSession.startedAt || undefined,
+      endedAt: dbSession.endedAt || undefined,
+      createdAt: dbSession.createdAt,
+      updatedAt: dbSession.updatedAt,
+      permissions: dbSession.permissions as any,
+      recording: dbSession.recording as any,
+    };
+
+    this.activeSessions.set(sessionId, session);
+    
+    const participantsMap = new Map<string, VRParticipant>();
+    session.participants.forEach(p => {
+      participantsMap.set(p.userId, p);
+    });
+    this.sessionParticipants.set(sessionId, participantsMap);
+    this.sessionChats.set(sessionId, []);
+    this.voiceChatStates.set(sessionId, {
+      enabled: true,
+      participants: session.participants.map(p => ({
+        userId: p.userId,
+        isMuted: false,
+        volume: 1.0,
+      })),
+    });
+    this.annotations.set(sessionId, []);
+  }
 
   /**
    * Create a new VR review session (enhanced)
@@ -413,7 +701,10 @@ class VRCollaborativeReviewService {
         updatedAt: new Date(),
       };
 
-      // Store session in memory and database
+      // Calculate expiration time (24 hours from now)
+      const expiresAt = new Date(Date.now() + this.SESSION_EXPIRATION_TIME);
+
+      // Store session in memory
       this.activeSessions.set(sessionId, session);
       this.sessionParticipants.set(sessionId, new Map([[hostUserId, hostParticipant]]));
       this.sessionChats.set(sessionId, []);
@@ -423,7 +714,28 @@ class VRCollaborativeReviewService {
       });
       this.annotations.set(sessionId, []);
 
-      // Store in database
+      // Persist to database
+      await prisma.vRCollaborativeSession.create({
+        data: {
+          sessionId,
+          organizationId,
+          sessionName: config.sessionName,
+          description: config.description,
+          sessionType: config.sessionType,
+          status: 'pending',
+          hostUserId,
+          maxParticipants: config.maxParticipants,
+          scheduledTime: config.scheduledTime,
+          expiresAt,
+          environment: environment as any,
+          complianceData: complianceData as any,
+          participants: [hostParticipant] as any,
+          permissions: session.permissions as any,
+          lastActivityAt: new Date(),
+        },
+      });
+
+      // Store in audit log
       await prisma.auditLog.create({
         data: {
           action: 'vr_session.created',
@@ -521,6 +833,15 @@ class VRCollaborativeReviewService {
         voiceChat.participants.push({ userId, isMuted: false, volume: 1.0 });
       }
 
+      // Update session in database
+      await prisma.vRCollaborativeSession.update({
+        where: { sessionId },
+        data: {
+          participants: session.participants as any,
+          lastActivityAt: new Date(),
+        },
+      });
+
       // Log join event
       await prisma.auditLog.create({
         data: {
@@ -579,6 +900,15 @@ class VRCollaborativeReviewService {
         }
       });
 
+      // Update session in database
+      await prisma.vRCollaborativeSession.update({
+        where: { sessionId },
+        data: {
+          participants: session.participants as any,
+          lastActivityAt: new Date(),
+        },
+      });
+
       // Log leave event
       await prisma.auditLog.create({
         data: {
@@ -617,6 +947,16 @@ class VRCollaborativeReviewService {
       session.status = 'active';
       session.startedAt = new Date();
       session.updatedAt = new Date();
+
+      // Update session in database
+      await prisma.vRCollaborativeSession.update({
+        where: { sessionId },
+        data: {
+          status: 'active',
+          startedAt: session.startedAt,
+          lastActivityAt: new Date(),
+        },
+      });
 
       await prisma.auditLog.create({
         data: {
@@ -662,6 +1002,20 @@ class VRCollaborativeReviewService {
 
       // Generate session summary
       const summary = await this.generateSessionSummary(session);
+
+      // Update session in database
+      await prisma.vRCollaborativeSession.update({
+        where: { sessionId },
+        data: {
+          status: 'completed',
+          endedAt: session.endedAt,
+          lastActivityAt: new Date(),
+          metadata: {
+            ...((session as any).metadata || {}),
+            summary,
+          } as any,
+        },
+      });
 
       // Store session data permanently
       await prisma.auditLog.create({
@@ -843,10 +1197,10 @@ class VRCollaborativeReviewService {
         data: {
           id: scenarioId,
           organizationId,
-          name: config.name,
+            name: config.name,
           description: config.description,
-          framework: config.framework,
-          difficulty: config.difficulty,
+            framework: config.framework,
+            difficulty: config.difficulty,
           estimatedDuration: scenario.estimatedDuration,
           objectives: config.objectives,
           scenarioData: scenario as any,
@@ -895,7 +1249,7 @@ class VRCollaborativeReviewService {
       // Create training session in database
       await prisma.vRTrainingSession.create({
         data: {
-          scenarioId,
+            scenarioId,
           organizationId,
           userId,
           sessionId,
@@ -1215,14 +1569,70 @@ class VRCollaborativeReviewService {
    */
   async getActiveSessions(organizationId: string): Promise<VRSession[]> {
     const sessions: VRSession[] = [];
+    const now = new Date();
 
+    // First, get sessions from memory
     this.activeSessions.forEach((session) => {
       if (session.organizationId === organizationId && session.status !== 'completed') {
         sessions.push(session);
       }
     });
 
-    return sessions;
+    // Also check database for sessions that might not be in memory
+    const dbSessions = await prisma.vRCollaborativeSession.findMany({
+      where: {
+        organizationId,
+        status: {
+          in: ['pending', 'active', 'paused'],
+        },
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: now } },
+        ],
+      },
+    });
+
+    // Health check and restore missing sessions
+    for (const dbSession of dbSessions) {
+      const existsInMemory = this.activeSessions.has(dbSession.sessionId);
+      
+      if (!existsInMemory) {
+        // Restore from database
+        try {
+          await this.restoreSessionFromDatabase(dbSession.sessionId);
+          const restoredSession = this.activeSessions.get(dbSession.sessionId);
+          if (restoredSession) {
+            sessions.push(restoredSession);
+          }
+        } catch (error) {
+          logger.error(`[VR Review] Error restoring session ${dbSession.sessionId}`, error);
+        }
+      } else {
+        // Health check existing session
+        const healthCheck = await this.healthCheck(dbSession.sessionId);
+        if (!healthCheck.valid) {
+          // Remove invalid session
+          this.activeSessions.delete(dbSession.sessionId);
+          sessions.splice(
+            sessions.findIndex(s => s.id === dbSession.sessionId),
+            1
+          );
+        }
+      }
+    }
+
+    // Filter out expired or invalid sessions
+    return sessions.filter(session => {
+      if (session.status === 'completed') return false;
+      
+      // Check expiration if available in DB
+      const dbSession = dbSessions.find(s => s.sessionId === session.id);
+      if (dbSession?.expiresAt && new Date(dbSession.expiresAt) < now) {
+        return false;
+      }
+      
+      return true;
+    });
   }
 
   /**
@@ -2555,11 +2965,11 @@ class VRCollaborativeReviewService {
     }
 
     return {
-      id: 'intro_scene',
+        id: 'intro_scene',
       name: `Introduction to ${framework}`,
       description: `Learn the fundamentals of ${framework} compliance in an immersive environment`,
-      environment: {
-        template: 'training_lab',
+        environment: {
+          template: 'training_lab',
         theme: difficulty === 'expert' ? 'futuristic' : 'default',
         interactiveObjects: [
           {
@@ -2680,10 +3090,10 @@ class VRCollaborativeReviewService {
             canInteract: ['*'],
           },
         })),
-        spatialAnchors: [],
-      },
-      tasks: [
-        {
+          spatialAnchors: [],
+        },
+        tasks: [
+          {
           id: 'task_identify_risks',
           description: 'Identify all visible risks',
           requiredAction: 'interact',
@@ -2698,9 +3108,9 @@ class VRCollaborativeReviewService {
           successFeedback: 'Risk severity assessment complete!',
           failureFeedback: 'Analyze each risk to determine its severity.',
           points: 30,
-        },
-      ],
-      completionConditions: { allTasksComplete: true },
+          },
+        ],
+        completionConditions: { allTasksComplete: true },
       hints: [
         'Larger cubes indicate higher severity risks',
         'Color coding: Red = Critical, Orange = High, Yellow = Medium',
@@ -2720,22 +3130,22 @@ class VRCollaborativeReviewService {
       id: 'evidence_collection_scene',
       name: 'Evidence Collection',
       description: 'Learn to collect and organize compliance evidence',
-      environment: {
-        template: 'audit_room',
-        interactiveObjects: [],
-        spatialAnchors: [],
-      },
-      tasks: [
-        {
+        environment: {
+          template: 'audit_room',
+          interactiveObjects: [],
+          spatialAnchors: [],
+        },
+        tasks: [
+          {
           id: 'task_collect_evidence',
           description: 'Collect evidence for compliance controls',
           requiredAction: 'collect',
           successFeedback: 'Evidence collection complete!',
           failureFeedback: 'Use the evidence collection tool to gather documents.',
           points: 30,
-        },
-      ],
-      completionConditions: { allTasksComplete: true },
+          },
+        ],
+        completionConditions: { allTasksComplete: true },
       hints: ['Look for evidence markers', 'Collect all required evidence types'],
     };
   }

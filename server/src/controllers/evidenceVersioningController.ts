@@ -46,10 +46,10 @@ class EvidenceVersioningController {
       });
 
       res.json({ versions });
-    } catch (error) {
-      logger.error('Get versions error', error);
+    } catch (error: any) {
+      logger.error('Get versions error', { error: error.message, stack: error.stack, controlId });
       if (error instanceof AppError) throw error;
-      throw new AppError('Failed to fetch versions', 500);
+      throw new AppError(`Failed to fetch versions: ${error.message || 'Unknown error'}`, 500);
     }
   };
 

@@ -451,13 +451,21 @@ class MultimodalIntakeService {
         speakerData.features.avgLength = (speakerData.features.avgLength * (segmentCount - 1) + features.length) / segmentCount;
         speakerData.features.avgPause = (speakerData.features.avgPause * (segmentCount - 1) + features.pauseBefore) / segmentCount;
       });
-
-    return Array.from(speakers.entries()).map(([id, speakerData]) => ({
-      id,
-      segments: speakerData.segments,
-    }));
+      
+      // Convert to TranscriptionResult format
+      const result: TranscriptionResult['speakers'] = Array.from(speakers.entries()).map(([speakerId, data]) => ({
+        speakerId,
+        segments: data.segments.map(idx => ({
+          start: segments[idx].start,
+          end: segments[idx].end,
+          confidence: segments[idx].confidence || 0.9,
+        })),
+      }));
+      
+      logger.info(`[Multimodal] Speaker diarization complete: ${result.length} speakers identified`);
+      return result;
     } catch (error) {
-      logger.error('[Multimodal] Speaker diarization error', error);
+      logger.error('[Multimodal] Error in speaker diarization', error);
       return [];
     }
   }

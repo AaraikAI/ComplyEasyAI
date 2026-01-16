@@ -57,6 +57,7 @@ model Organization {
   riskPredictions      RiskPrediction[]
   vrTrainingScenarios  VRTrainingScenario[]
   vrTrainingSessions   VRTrainingSession[]
+  vrCollaborativeSessions VRCollaborativeSession[]
   neuroSymbolicReasonings NeuroSymbolicReasoning[]
   ruleInferences       RuleInference[]
   federatedSwarmPeers  FederatedSwarmPeer[]
@@ -77,6 +78,7 @@ model Organization {
   keyRotationPolicies  KeyRotationPolicy[]
   compliancePolicies   CompliancePolicy[]
   chatConversations    ChatConversation[]
+  aiSystems            AISystem[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -117,6 +119,9 @@ model User {
   uploadedEvidenceVersions EvidenceVersion[]
   aiSuggestions        AISuggestion[]
   chatConversations    ChatConversation[]
+  aiRmfSubcategoryOwner AIRMFSubcategory[]   @relation("AIRMFSubcategoryOwner")
+  aiRmfActorUser        AIRMFActor[]         @relation("AIRMFActorUser")
+  aiRmfRiskActivityOwner AIRMFRiskActivity[] @relation("AIRMFRiskActivityOwner")
   organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([email])
@@ -1334,6 +1339,40 @@ model VRSessionPerformance {
   @@index([timestamp])
 }
 
+// VR Collaborative Review Sessions
+model VRCollaborativeSession {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sessionId         String    @unique
+  organizationId    String
+  sessionName       String
+  description       String?
+  sessionType       String    // 'review' | 'training' | 'simulation' | 'audit'
+  status            String    @default("pending") // 'pending' | 'active' | 'paused' | 'completed'
+  hostUserId        String
+  maxParticipants   Int?
+  scheduledTime     DateTime?
+  startedAt         DateTime?
+  endedAt           DateTime?
+  expiresAt         DateTime? // Session expiration time
+  lastActivityAt    DateTime  @default(now()) @updatedAt
+  environment       Json      // VREnvironment data
+  complianceData    Json      // VRComplianceData
+  participants      Json      @default("[]") // Array of VRParticipant
+  permissions       Json?     // Permissions object
+  recording         Json?     // VRRecording data
+  metadata          Json?     // Additional metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([sessionId])
+  @@index([status])
+  @@index([hostUserId])
+  @@index([expiresAt])
+  @@index([lastActivityAt])
+}
+
 // NeuroSymbolic AI Reasoning
 model NeuroSymbolicReasoning {
   id              String    @id @default(uuid())
@@ -1719,4 +1758,231 @@ model ChatConversation {
 
   @@index([organizationId])
   @@index([userId])
+}
+
+// ============================================================================
+// NIST AI RMF 1.0 Models
+// ============================================================================
+
+model AISystem {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId    String
+  name               String
+  description        String?   @db.Text
+  systemType         String    // e.g., "Machine Learning", "Generative AI", "Decision Support"
+  useCase            String?   @db.Text
+  deploymentContext  String?   // e.g., "Healthcare", "Finance", "Manufacturing"
+  lifecycleStage     String    @default("Plan_and_Design") // Plan_and_Design, Collect_and_Process, Build_and_Validate, Deploy_and_Operate, Monitor_and_Maintain
+  autonomyLevel      String    @default("Human_in_Loop") // Fully_Autonomous, Human_in_Loop, Human_Override, Fully_Manual
+  status             String    @default("In_Development") // In_Development, Deployed, Retired, Under_Review
+  riskLevel          String?   // Critical, High, Medium, Low
+  overallTrustworthinessScore Int? // 0-100
+  metadata           Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coreFunctions      AIRMFCoreFunction[]
+  trustworthinessCharacteristics AIRMFTrustworthinessCharacteristic[]
+  lifecycleStages    AIRMFLifecycleStage[]
+  actors              AIRMFActor[]
+  assessments         AIRMFAssessment[]
+  profiles            AIRMFProfile[]
+  riskActivities      AIRMFRiskActivity[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([lifecycleStage])
+  @@index([riskLevel])
+}
+
+model AIRMFCoreFunction {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId        String
+  functionName      String    // GOVERN, MAP, MEASURE, MANAGE
+  description       String?   @db.Text
+  status            String    @default("Not_Started") // Not_Started, In_Progress, Completed, Under_Review
+  completionPercent Int       @default(0)
+  lastAssessed      DateTime?
+  categories        AIRMFCategory[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+
+  @@unique([aiSystemId, functionName])
+  @@index([aiSystemId])
+  @@index([functionName])
+  @@index([status])
+}
+
+model AIRMFCategory {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  coreFunctionId    String
+  categoryId        String    // e.g., "GOV-1", "MAP-1", "MEAS-1", "MAN-1"
+  name              String
+  description       String?   @db.Text
+  status            String    @default("Not_Started")
+  completionPercent Int       @default(0)
+  subcategories     AIRMFSubcategory[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  coreFunction      AIRMFCoreFunction @relation(fields: [coreFunctionId], references: [id], onDelete: Cascade)
+
+  @@unique([coreFunctionId, categoryId])
+  @@index([coreFunctionId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model AIRMFSubcategory {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  categoryId        String
+  subcategoryId     String    // e.g., "GOV-1.1", "MAP-1.1"
+  name              String
+  description       String?   @db.Text
+  status            String    @default("Not_Started") // Not_Started, In_Progress, Completed, Non_Applicable
+  evidence          String?   @db.Text
+  evidenceUrl       String?
+  ownerId           String?
+  notes             String?   @db.Text
+  lastReviewed      DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  category          AIRMFCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  owner              User?    @relation("AIRMFSubcategoryOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@unique([categoryId, subcategoryId])
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([status])
+  @@index([ownerId])
+}
+
+model AIRMFTrustworthinessCharacteristic {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId        String
+  characteristic    String    // Valid_and_Reliable, Safe, Secure_and_Resilient, Accountable_and_Transparent, Explainable_and_Interpretable, Privacy_Enhanced, Fair_with_Bias_Managed
+  description       String?   @db.Text
+  score             Int?      // 0-100
+  status            String    @default("Not_Assessed") // Not_Assessed, Assessed, Needs_Improvement, Compliant
+  assessmentNotes   String?   @db.Text
+  lastAssessed      DateTime?
+  evidence          Json?     // Evidence and documentation
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+
+  @@unique([aiSystemId, characteristic])
+  @@index([aiSystemId])
+  @@index([characteristic])
+  @@index([status])
+}
+
+model AIRMFLifecycleStage {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId        String
+  stage             String    // Plan_and_Design, Collect_and_Process, Build_and_Validate, Deploy_and_Operate, Monitor_and_Maintain
+  status            String    @default("Not_Started")
+  startDate         DateTime?
+  completionDate    DateTime?
+  notes             String?   @db.Text
+  risks             Json?     // Risks identified at this stage
+  activities        Json?     // Activities performed
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+
+  @@unique([aiSystemId, stage])
+  @@index([aiSystemId])
+  @@index([stage])
+  @@index([status])
+}
+
+model AIRMFActor {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId        String
+  actorType         String    // Developer, Operator, Evaluator, Decision_Maker, End_User, Regulator, etc.
+  userId             String?   // Link to User if applicable
+  name               String
+  role               String
+  responsibilities  String[]  @default([])
+  involvementStages  String[]  @default([]) // Lifecycle stages where this actor is involved
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  aiSystem           AISystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  user               User?    @relation("AIRMFActorUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([aiSystemId])
+  @@index([actorType])
+  @@index([userId])
+}
+
+model AIRMFAssessment {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId        String
+  assessmentType    String    // Initial, Periodic, Post_Incident, Pre_Deployment
+  assessedBy        String
+  assessmentDate    DateTime  @default(now())
+  overallScore      Int?      // 0-100
+  functionScores    Json?     // Scores for each core function
+  characteristicScores Json?  // Scores for each trustworthiness characteristic
+  findings          Json?     // Assessment findings
+  recommendations   String[]  @default([])
+  status            String    @default("Draft") // Draft, Completed, Approved
+  approvedBy        String?
+  approvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+
+  @@index([aiSystemId])
+  @@index([assessmentType])
+  @@index([assessmentDate])
+  @@index([status])
+}
+
+model AIRMFProfile {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId        String
+  profileName       String    // e.g., "High-Risk Healthcare AI", "Consumer-Facing AI", "Internal Decision Support"
+  profileType       String    // Context_Profile, Sector_Profile, Use_Case_Profile
+  description       String?   @db.Text
+  selectedFunctions Json      // Selected functions, categories, and subcategories
+  priorities        Json?     // Prioritized risks and characteristics
+  customizations    Json?     // Custom subcategories or modifications
+  status            String    @default("Draft")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+
+  @@index([aiSystemId])
+  @@index([profileType])
+  @@index([status])
+}
+
+model AIRMFRiskActivity {
+  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId        String
+  activityType      String    // Risk_Identification, Risk_Analysis, Risk_Evaluation, Risk_Treatment, Risk_Monitoring
+  relatedFunction   String?   // GOVERN, MAP, MEASURE, MANAGE
+  relatedCategory   String?   // Category ID
+  relatedSubcategory String?  // Subcategory ID
+  description       String    @db.Text
+  riskLevel         String    // Critical, High, Medium, Low
+  status            String    @default("Open") // Open, In_Progress, Mitigated, Accepted, Transferred
+  mitigationPlan    String?   @db.Text
+  ownerId           String?
+  targetDate        DateTime?
+  completedDate     DateTime?
+  evidence          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  owner             User?     @relation("AIRMFRiskActivityOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([aiSystemId])
+  @@index([activityType])
+  @@index([relatedFunction])
+  @@index([riskLevel])
+  @@index([status])
+  @@index([ownerId])
 }

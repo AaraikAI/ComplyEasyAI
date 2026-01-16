@@ -18,7 +18,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
     { 
       id: '1', 
       sender: 'ai', 
-      text: 'Hi! I\'m your ComplyEasy AI assistant. I can help you:\n\n🔹 **Navigate** to any section:\n   - Main sections: dashboard, risks, frameworks, aCOS, audit, reports, tasks, integrations, settings\n   - aCOS tabs: overview, goals, control loops, predictions, simulations, red team, swarm, IoT devices, neuroSymbolic AI, VR collaborations, JIT access, homomorphic AI\n   - Security Features: zero trust, zero-knowledge proofs, BYOK encryption, compliance-as-code\n   - Real Time Analytics: live metrics, charts, and trends\n   - Settings tabs: profile, security, organization, team, billing\n   - AI Tools: policy generator, contract analyzer, gap analysis, RFP responder, phishing sim, vendor risk, GDPR mapper, BCP generator\n🔹 **Create** items (risks, goals, control loops, etc.)\n🔹 **Run** operations (simulations, scans, etc.)\n🔹 **Edit** items (update status, modify details, etc.)\n\nJust tell me what you need! For example:\n- "Go to dashboard" or "Open policy generator"\n- "Go to aCOS overview" or "Open homomorphic AI"\n- "Go to security features" or "Open zero trust"\n- "Go to real time analytics"\n- "Create a risk for missing encryption"\n- "Run a compliance scan"\n- "Update risk status to Resolved"\n\n*Note: Delete operations are not available via chat for security.*', 
+      text: 'Hi! I\'m your ComplyEasy AI assistant. I can help you:\n\n🔹 **Navigate** to any section:\n   - Main sections: dashboard, risks, frameworks, aCOS, audit, reports, tasks, integrations, settings\n   - aCOS tabs: overview, goals, control loops, predictions, simulations, red team, swarm, IoT devices, neuroSymbolic AI, VR collaborations, JIT access, homomorphic AI\n   - NIST AI RMF: dashboard, systems, create, assessments\n   - Security Features: zero trust, zero-knowledge proofs, BYOK encryption, compliance-as-code\n   - Real Time Analytics: live metrics, charts, and trends\n   - Settings tabs: profile, security, organization, team, billing\n   - AI Tools: policy generator, contract analyzer, gap analysis, RFP responder, phishing sim, vendor risk, GDPR mapper, BCP generator\n🔹 **Create** items (risks, goals, control loops, etc.)\n🔹 **Run** operations (simulations, scans, etc.)\n🔹 **Edit** items (update status, modify details, etc.)\n\nJust tell me what you need! For example:\n- "Go to dashboard" or "Open policy generator"\n- "Go to aCOS overview" or "Open homomorphic AI"\n- "Go to NIST AI RMF" or "Open AI systems"\n- "Go to security features" or "Open zero trust"\n- "Go to real time analytics"\n- "Create a risk for missing encryption"\n- "Run a compliance scan"\n- "Update risk status to Resolved"\n\n*Note: Delete operations are not available via chat for security.*', 
       timestamp: new Date() 
     }
   ]);
@@ -122,6 +122,12 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:security\s+)?(?:zero\s*)?knowledge\s+proofs?|zkp/i, view: 'security-zkp' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:security\s+)?(?:byok|bring\s+your\s+own\s+key|encryption)/i, view: 'security-byok' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:security\s+)?(?:compliance\s+as\s+code|cac)/i, view: 'security-compliance-as-code' },
+      // NIST AI RMF navigation
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:nist\s+)?(?:ai\s+)?rmf/i, view: 'ai-rmf' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:nist\s+)?(?:ai\s+)?rmf\s+dashboard/i, view: 'ai-rmf-dashboard' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:nist\s+)?(?:ai\s+)?rmf\s+(?:ai\s+)?systems?/i, view: 'ai-rmf-systems' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:nist\s+)?(?:ai\s+)?rmf\s+create/i, view: 'ai-rmf-create' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:nist\s+)?(?:ai\s+)?rmf\s+assessments?/i, view: 'ai-rmf-assessments' },
       // Real Time Analytics navigation
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:real\s*time\s+)?analytics?/i, view: 'analytics' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+audit/i, view: 'audit' },
@@ -254,6 +260,39 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
       if (view === 'analytics') {
         onNavigate('analytics');
         return '✅ Navigating to Real Time Analytics...';
+      }
+
+      // Handle NIST AI RMF navigation
+      if (view.startsWith('ai-rmf-')) {
+        const aiRmfTab = view.replace('ai-rmf-', '');
+        sessionStorage.setItem('aiRmfActiveTab', aiRmfTab);
+        window.dispatchEvent(new CustomEvent('aiRmfTabChange', { detail: { tab: aiRmfTab } }));
+        
+        const tabNames: Record<string, string> = {
+          'dashboard': 'Dashboard',
+          'systems': 'AI Systems',
+          'create': 'Create AI System',
+          'assessments': 'Assessments',
+        };
+        
+        // Navigate directly to the specific view
+        if (aiRmfTab === 'systems') {
+          setTimeout(() => onNavigate('ai-rmf-systems'), 0);
+        } else if (aiRmfTab === 'create') {
+          setTimeout(() => onNavigate('ai-rmf-create'), 0);
+        } else if (aiRmfTab === 'assessments') {
+          setTimeout(() => onNavigate('ai-rmf-assessments'), 0);
+        } else {
+          setTimeout(() => onNavigate('ai-rmf'), 0);
+        }
+        
+        return `✅ Navigating to NIST AI RMF > ${tabNames[aiRmfTab] || aiRmfTab}...`;
+      }
+
+      // Handle NIST AI RMF main navigation
+      if (view === 'ai-rmf' || view === 'nist-ai-rmf') {
+        onNavigate('ai-rmf');
+        return '✅ Navigating to NIST AI RMF Dashboard...';
       }
 
       // Handle Settings sub-tabs

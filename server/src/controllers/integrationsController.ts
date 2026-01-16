@@ -948,15 +948,32 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
         return;
       }
 
-      // Validate API key for providers that require validation (Stripe, SendGrid, etc.)
-      const providersRequiringValidation = ['stripe', 'sendgrid'];
+      // Validate API key for providers that require validation
+      const providersRequiringValidation = [
+        'stripe', 'sendgrid', 'digitalocean', 'onelogin', 'microsoft', 'microsoft365', 'office365',
+        'docker', 'dockerhub', 'kubernetes', 'k8s', 'confluence', 'trello', 'asana', 'monday', 'monday.com',
+        'microsoft-teams', 'teams', 'discord', 'okta', 'workday', 'newrelic', 'new-relic', 'sentry',
+        'pagerduty', 'pager-duty', 'auth0', 'datadog', 'qualys', 'tenable', 'tenableio', 'crowdstrike',
+        'paloalto', 'palo-alto', 'rapid7', 'splunk', 'bamboohr', 'adp', 'mongodb', 'mongodb-atlas',
+        'postgresql', 'postgres', 'mysql', 'redis', 'elasticsearch', 'elastic', 'heroku', 'salesforce',
+        'hubspot', 'zendesk', 'paypal', 'jenkins'
+      ];
       if (providersRequiringValidation.includes(provider.toLowerCase())) {
         try {
           const patValidationService = (await import('../services/integrations/patValidationService')).default;
+          
+          // Handle special cases for providers that need different parameters
+          let baseUrlParam = credentials.baseUrl;
+          if (provider.toLowerCase() === 'kubernetes' || provider.toLowerCase() === 'k8s') {
+            baseUrlParam = credentials.baseUrl || credentials.apiServerUrl;
+          } else if (provider.toLowerCase() === 'jenkins') {
+            baseUrlParam = credentials.baseUrl || credentials.jenkinsUrl;
+          }
+          
           const validation = await patValidationService.validateToken(
             provider,
             credentials.apiKey,
-            credentials.baseUrl
+            baseUrlParam
           );
 
           if (!validation.valid) {
@@ -972,9 +989,19 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
             userInfo: validation.userInfo,
           });
         } catch (validationError: any) {
-          logger.error(`API key validation failed for ${provider}:`, validationError);
+          // Extract error message safely to avoid circular JSON errors
+          let errorMessage = 'Failed to validate API key';
+          if (validationError?.message) {
+            errorMessage = String(validationError.message);
+          } else if (validationError?.response?.data?.message) {
+            errorMessage = String(validationError.response.data.message);
+          } else if (validationError?.response?.statusText) {
+            errorMessage = `HTTP ${validationError.response.status}: ${validationError.response.statusText}`;
+          }
+          
+          logger.error(`API key validation failed for ${provider}:`, { message: errorMessage, status: validationError?.response?.status });
           res.status(400).json({ 
-            error: validationError.message || 'Failed to validate API key',
+            error: errorMessage,
             details: 'Please check your API key and try again'
           });
           return;
@@ -1065,10 +1092,23 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
       // Validate PAT token before saving
       try {
         const patValidationService = (await import('../services/integrations/patValidationService')).default;
+        // Handle special cases for providers that need different parameters
+        let baseUrlParam = credentials.baseUrl;
+        if (provider.toLowerCase() === 'trello') {
+          // Trello needs API key as baseUrl parameter
+          baseUrlParam = credentials.apiKey;
+        } else if (provider.toLowerCase() === 'kubernetes' || provider.toLowerCase() === 'k8s') {
+          // Kubernetes needs API server URL
+          baseUrlParam = credentials.baseUrl || credentials.apiServerUrl;
+        } else if (provider.toLowerCase() === 'jenkins') {
+          // Jenkins needs base URL
+          baseUrlParam = credentials.baseUrl || credentials.jenkinsUrl;
+        }
+        
         const validation = await patValidationService.validateToken(
           provider,
           credentials.token,
-          credentials.baseUrl
+          baseUrlParam
         );
 
         if (!validation.valid) {
@@ -1084,9 +1124,19 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
           userInfo: validation.userInfo,
         });
       } catch (validationError: any) {
-        logger.error(`PAT validation failed for ${provider}:`, validationError);
+        // Extract error message safely to avoid circular JSON errors
+        let errorMessage = 'Failed to validate token';
+        if (validationError?.message) {
+          errorMessage = String(validationError.message);
+        } else if (validationError?.response?.data?.message) {
+          errorMessage = String(validationError.response.data.message);
+        } else if (validationError?.response?.statusText) {
+          errorMessage = `HTTP ${validationError.response.status}: ${validationError.response.statusText}`;
+        }
+        
+        logger.error(`PAT validation failed for ${provider}:`, { message: errorMessage, status: validationError?.response?.status });
         res.status(400).json({ 
-          error: validationError.message || 'Failed to validate token',
+          error: errorMessage,
           details: 'Please check your token and try again'
         });
         return;
