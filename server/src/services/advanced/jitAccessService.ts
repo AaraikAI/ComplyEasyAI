@@ -210,10 +210,40 @@ class JITAccessService {
         throw new Error('Access request not found');
       }
 
+      if (request.status !== 'pending') {
+        throw new Error('Access request is not pending');
+      }
+
+      // Verify approver has sufficient privileges
+      const approver = await prisma.user.findUnique({
+        where: { id: approverId },
+      });
+
+      if (!approver || approver.role !== 'admin') {
+        throw new Error('Insufficient privileges to deny request');
+      }
+
       request.status = 'denied';
+      request.approvedBy = approverId;
       await this.updateAccessRequest(request);
 
-      logger.info(`JIT access denied: ${request.userId} -> ${request.requestedPrivilege} by ${approverId}`);
+      // Store denial reason in audit log
+      await prisma.auditLog.create({
+        data: {
+          action: `JIT Access Request Denied: ${request.requestedPrivilege}`,
+          userId: request.userId,
+          organizationId: request.organizationId,
+          hash: crypto.randomBytes(32).toString('hex'),
+          details: JSON.stringify({
+            requestId: request.id,
+            deniedBy: approverId,
+            denialReason: reason,
+            timestamp: new Date(),
+          }),
+        },
+      });
+
+      logger.info(`JIT access denied: ${request.userId} -> ${request.requestedPrivilege} by ${approverId} (reason: ${reason})`);
     } catch (error) {
       logger.error('Error denying JIT access', error);
       throw new Error('JIT access denial failed');
@@ -381,6 +411,240 @@ class JITAccessService {
     }
 
     return sessions;
+  }
+
+  /**
+   * Get all pending access requests for an organization (admin only)
+   */
+  async getPendingAccessRequests(organizationId: string): Promise<JITAccessRequest[]> {
+    try {
+      const pendingRequests: JITAccessRequest[] = [];
+      
+      // Get all pending requests from audit logs
+      const logs = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: {
+            startsWith: 'JIT Access Request:',
+          },
+        },
+        orderBy: {
+          timestamp: 'desc',
+        },
+        take: 1000, // Get a large number to find all requests
+      });
+
+      // Group logs by requestId to find the latest status for each request
+      const requestMap = new Map<string, any>();
+
+      for (const log of logs) {
+        try {
+          const details = JSON.parse(log.details || '{}');
+          const requestId = details.requestId || log.id;
+          
+          // Only process if we haven't seen a more recent entry for this request
+          if (!requestMap.has(requestId) || log.timestamp > requestMap.get(requestId).timestamp) {
+            let status = details.status || 'pending';
+            
+            // Check if request has expired
+            if (details.expiresAt) {
+              const expiresAt = new Date(details.expiresAt);
+              if (expiresAt < new Date() && (status === 'approved' || status === 'pending')) {
+                status = 'expired';
+              }
+            }
+            
+            requestMap.set(requestId, {
+              id: requestId,
+              userId: log.userId || '',
+              organizationId: log.organizationId || organizationId,
+              requestedPrivilege: details.privilege || 'admin',
+              reason: details.reason || 'incident_response',
+              justification: details.justification || '',
+              duration: details.duration || 30,
+              status: status,
+              createdAt: log.timestamp,
+              approvedAt: details.approvedAt ? new Date(details.approvedAt) : undefined,
+              expiresAt: details.expiresAt ? new Date(details.expiresAt) : undefined,
+              approvedBy: details.approvedBy,
+              timestamp: log.timestamp,
+            });
+          }
+        } catch (parseError) {
+          // Skip invalid log entries
+          continue;
+        }
+      }
+
+      // Get updated statuses from update logs
+      const updateLogs = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: {
+            startsWith: 'JIT Access Request Updated:',
+          },
+        },
+        orderBy: {
+          timestamp: 'desc',
+        },
+        take: 1000,
+      });
+
+      for (const log of updateLogs) {
+        try {
+          const details = JSON.parse(log.details || '{}');
+          const requestId = details.requestId;
+          
+          if (requestId && requestMap.has(requestId)) {
+            const existing = requestMap.get(requestId);
+            // Update if this is a more recent entry
+            if (log.timestamp > existing.timestamp) {
+              existing.status = details.status || existing.status;
+              existing.approvedBy = details.approvedBy || existing.approvedBy;
+              existing.approvedAt = details.approvedAt ? new Date(details.approvedAt) : existing.approvedAt;
+              existing.expiresAt = details.expiresAt ? new Date(details.expiresAt) : existing.expiresAt;
+              existing.timestamp = log.timestamp;
+            }
+          }
+        } catch (parseError) {
+          continue;
+        }
+      }
+
+      // Filter to only pending requests and convert to array
+      for (const requestData of requestMap.values()) {
+        if (requestData.status === 'pending') {
+          // Check if it hasn't expired
+          if (!requestData.expiresAt || requestData.expiresAt > new Date()) {
+            const request: JITAccessRequest = {
+              id: requestData.id,
+              userId: requestData.userId,
+              organizationId: requestData.organizationId,
+              requestedPrivilege: requestData.requestedPrivilege,
+              reason: requestData.reason,
+              justification: requestData.justification,
+              duration: requestData.duration,
+              status: requestData.status,
+              createdAt: requestData.createdAt,
+              approvedAt: requestData.approvedAt,
+              expiresAt: requestData.expiresAt,
+              approvedBy: requestData.approvedBy,
+            };
+            pendingRequests.push(request);
+          }
+        }
+      }
+
+      // Sort by creation time (newest first)
+      pendingRequests.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      return pendingRequests;
+    } catch (error) {
+      logger.error('Error fetching pending access requests', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all access requests for an organization (admin only)
+   */
+  async getAllAccessRequests(organizationId: string, status?: string): Promise<JITAccessRequest[]> {
+    try {
+      const allRequests: JITAccessRequest[] = [];
+      
+      // Get all requests from audit logs
+      const logs = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          OR: [
+            {
+              action: {
+                startsWith: 'JIT Access Request:',
+              },
+            },
+            {
+              action: {
+                startsWith: 'JIT Access Request Updated:',
+              },
+            },
+          ],
+        },
+        orderBy: {
+          timestamp: 'desc',
+        },
+        take: 1000,
+      });
+
+      // Group logs by requestId to find the latest status for each request
+      const requestMap = new Map<string, any>();
+
+      for (const log of logs) {
+        try {
+          const details = JSON.parse(log.details || '{}');
+          const requestId = details.requestId || log.id;
+          
+          // Only process if we haven't seen a more recent entry for this request
+          if (!requestMap.has(requestId) || log.timestamp > requestMap.get(requestId).timestamp) {
+            let statusValue = details.status || 'pending';
+            
+            // Check if request has expired
+            if (details.expiresAt) {
+              const expiresAt = new Date(details.expiresAt);
+              if (expiresAt < new Date() && (statusValue === 'approved' || statusValue === 'pending')) {
+                statusValue = 'expired';
+              }
+            }
+            
+            requestMap.set(requestId, {
+              id: requestId,
+              userId: log.userId || '',
+              organizationId: log.organizationId || organizationId,
+              requestedPrivilege: details.privilege || 'admin',
+              reason: details.reason || 'incident_response',
+              justification: details.justification || '',
+              duration: details.duration || 30,
+              status: statusValue,
+              createdAt: log.timestamp,
+              approvedAt: details.approvedAt ? new Date(details.approvedAt) : undefined,
+              expiresAt: details.expiresAt ? new Date(details.expiresAt) : undefined,
+              approvedBy: details.approvedBy,
+              timestamp: log.timestamp,
+            });
+          }
+        } catch (parseError) {
+          continue;
+        }
+      }
+
+      // Convert to array and filter by status if provided
+      for (const requestData of requestMap.values()) {
+        if (!status || requestData.status === status) {
+          const request: JITAccessRequest = {
+            id: requestData.id,
+            userId: requestData.userId,
+            organizationId: requestData.organizationId,
+            requestedPrivilege: requestData.requestedPrivilege,
+            reason: requestData.reason,
+            justification: requestData.justification,
+            duration: requestData.duration,
+            status: requestData.status,
+            createdAt: requestData.createdAt,
+            approvedAt: requestData.approvedAt,
+            expiresAt: requestData.expiresAt,
+            approvedBy: requestData.approvedBy,
+          };
+          allRequests.push(request);
+        }
+      }
+
+      // Sort by creation time (newest first)
+      allRequests.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      return allRequests;
+    } catch (error) {
+      logger.error('Error fetching all access requests', error);
+      throw error;
+    }
   }
 
   /**

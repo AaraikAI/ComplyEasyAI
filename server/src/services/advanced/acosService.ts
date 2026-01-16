@@ -1252,7 +1252,13 @@ class ACOSService {
           organizationId,
         },
         include: {
-          control: true,
+          control: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
         },
         orderBy: {
           createdAt: 'desc',
@@ -1278,9 +1284,9 @@ class ACOSService {
         lastVerified: loop.lastVerified || loop.createdAt,
         cycleCount: loop.cycleCount || 0,
       }));
-    } catch (error) {
-      logger.error('[aCOS] Error getting active control loops', error);
-      return [];
+    } catch (error: any) {
+      logger.error('[aCOS] Error getting active control loops', { error: error.message, stack: error.stack, organizationId });
+      throw new Error(`Failed to get control loops: ${error.message || 'Unknown error'}`);
     }
   }
 

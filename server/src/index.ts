@@ -46,6 +46,9 @@ import demoRoutes from './routes/demo';
 import controlMappingsRoutes from './routes/controlMappings';
 import evidenceVersionsRoutes from './routes/evidenceVersions';
 
+// NIST AI RMF Routes
+import aiRmfRoutes from './routes/aiRmf';
+
 // aCOS Services
 import mqttService from './services/advanced/mqttService';
 
@@ -209,6 +212,9 @@ app.use('/api/enterprise', apiLimiter, enterpriseRoutes);
 // aCOS routes
 app.use('/api/acos', apiLimiter, acosRoutes);
 
+// NIST AI RMF routes
+app.use('/api/ai-rmf', apiLimiter, aiRmfRoutes);
+
 // Security routes (Zero Trust, ZKP, BYOK, Compliance-as-Code)
 app.use('/api/security', apiLimiter, securityRoutes);
 
@@ -241,6 +247,19 @@ websocketService.initialize(httpServer);
     }
   } catch (error) {
     logger.warn('⚠️  Session management initialization failed (optional):', error);
+  }
+})();
+
+// Initialize VR Collaborative Review Service (async initialization)
+(async () => {
+  try {
+    const vrService = await import('./services/advanced/vrCollaborativeReviewService');
+    if (vrService.default) {
+      await vrService.default.initialize();
+      logger.info('✓ VR Collaborative Review Service initialized');
+    }
+  } catch (error) {
+    logger.warn('⚠️  VR Collaborative Review Service initialization failed (optional):', error);
   }
 })();
 

@@ -2112,9 +2112,33 @@ const VRCollaborationsTab: React.FC = () => {
     setLoading(true);
     try {
       const data = await api.acos.getActiveVRSessions();
-      setSessions(data || []);
+      // Perform health checks in parallel for better performance
+      if (data && data.length > 0) {
+        const healthChecks = await Promise.allSettled(
+          data.map(session => api.acos.checkVRSessionHealth(session.id))
+        );
+        
+        const validSessions = data.filter((session, index) => {
+          const checkResult = healthChecks[index];
+          if (checkResult.status === 'fulfilled' && checkResult.value.valid) {
+            return true;
+          }
+          // Log failed health checks
+          if (checkResult.status === 'rejected') {
+            console.warn(`Session ${session.id} health check failed:`, checkResult.reason);
+          } else if (checkResult.value && !checkResult.value.valid) {
+            console.warn(`Session ${session.id} is invalid:`, checkResult.value.reason);
+          }
+          return false;
+        });
+        
+        setSessions(validSessions);
+      } else {
+        setSessions([]);
+      }
     } catch (error) {
       console.error('Error loading VR sessions:', error);
+      setSessions([]);
     } finally {
       setLoading(false);
     }
@@ -2195,13 +2219,21 @@ const VRCollaborationsTab: React.FC = () => {
                     </div>
                   </div>
                   <button 
-                    onClick={() => {
-                      api.acos.joinVRSession(session.id).then(() => {
+                    onClick={async () => {
+                      try {
+                        await api.acos.joinVRSession(session.id);
                         alert('Joining VR session...');
-                      }).catch(err => {
+                        // Refresh session list to get updated participant count
+                        loadSessions();
+                      } catch (err: any) {
                         console.error('Error joining session:', err);
-                        alert('Failed to join session');
-                      });
+                        const errorMessage = err?.message || err?.error || err?.toString() || 'Failed to join session';
+                        alert(errorMessage);
+                        // If session not found, refresh the list
+                        if (errorMessage.includes('not found') || errorMessage.includes('ended') || errorMessage.includes('inactive')) {
+                          loadSessions();
+                        }
+                      }
                     }}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
@@ -2322,9 +2354,17 @@ const VRCollaborationsTab: React.FC = () => {
 // JIT Access Tab
 const JITAccessTab: React.FC = () => {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [sessions, setSessions] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [allRequests, setAllRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingPending, setLoadingPending] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showDenyModal, setShowDenyModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [denyReason, setDenyReason] = useState('');
+  const [activeTab, setActiveTab] = useState<'my-requests' | 'pending-approvals' | 'all-requests'>('my-requests');
   const [requesting, setRequesting] = useState(false);
   const [formData, setFormData] = useState({
     privilege: 'admin' as 'admin' | 'compliance_admin' | 'security_admin' | 'super_admin',
@@ -2335,7 +2375,22 @@ const JITAccessTab: React.FC = () => {
 
   useEffect(() => {
     loadSessions();
-  }, []);
+    if (isAdmin) {
+      loadPendingRequests();
+      loadAllRequests();
+    }
+  }, [isAdmin]);
+
+  // Auto-refresh pending requests every 30 seconds for admins
+  useEffect(() => {
+    if (!isAdmin || activeTab !== 'pending-approvals') return;
+
+    const interval = setInterval(() => {
+      loadPendingRequests();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [isAdmin, activeTab]);
 
   const loadSessions = async () => {
     setLoading(true);
@@ -2347,6 +2402,69 @@ const JITAccessTab: React.FC = () => {
       setSessions([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingRequests = async () => {
+    setLoadingPending(true);
+    try {
+      const data = await api.acos.getPendingJITAccessRequests();
+      setPendingRequests(data || []);
+    } catch (error) {
+      console.error('Error loading pending requests:', error);
+      setPendingRequests([]);
+    } finally {
+      setLoadingPending(false);
+    }
+  };
+
+  const loadAllRequests = async () => {
+    try {
+      const data = await api.acos.getAllJITAccessRequests();
+      setAllRequests(data || []);
+    } catch (error) {
+      console.error('Error loading all requests:', error);
+      setAllRequests([]);
+    }
+  };
+
+  const handleApprove = async (requestId: string) => {
+    if (!confirm('Are you sure you want to approve this access request?')) {
+      return;
+    }
+
+    try {
+      await api.acos.approveJITAccessRequest(requestId);
+      alert('Access request approved successfully!');
+      await loadPendingRequests();
+      await loadAllRequests();
+      await loadSessions();
+    } catch (error: any) {
+      console.error('Error approving request:', error);
+      alert(error.message || 'Failed to approve request');
+    }
+  };
+
+  const handleDeny = async () => {
+    if (!selectedRequest) return;
+    
+    if (!denyReason.trim()) {
+      alert('Please provide a reason for denial');
+      return;
+    }
+
+    try {
+      await api.acos.denyJITAccessRequest(selectedRequest.id, denyReason);
+      alert('Access request denied successfully!');
+      setShowDenyModal(false);
+      setSelectedRequest(null);
+      setDenyReason('');
+      await loadPendingRequests();
+      await loadAllRequests();
+      await loadSessions();
+    } catch (error: any) {
+      console.error('Error denying request:', error);
+      alert(error.message || 'Failed to deny request');
     }
   };
 
@@ -2409,6 +2527,197 @@ const JITAccessTab: React.FC = () => {
             <span>Request Access</span>
           </button>
         </div>
+
+        {/* Admin Tabs */}
+        {isAdmin && (
+          <div className="flex space-x-2 mb-4 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('my-requests')}
+              className={`px-4 py-2 font-medium text-sm ${
+                activeTab === 'my-requests'
+                  ? 'border-b-2 border-blue-600 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              My Requests
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('pending-approvals');
+                loadPendingRequests();
+              }}
+              className={`px-4 py-2 font-medium text-sm relative ${
+                activeTab === 'pending-approvals'
+                  ? 'border-b-2 border-blue-600 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Pending Approvals
+              {pendingRequests.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                  {pendingRequests.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('all-requests');
+                loadAllRequests();
+              }}
+              className={`px-4 py-2 font-medium text-sm ${
+                activeTab === 'all-requests'
+                  ? 'border-b-2 border-blue-600 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All Requests
+            </button>
+          </div>
+        )}
+
+        {/* Pending Approvals View (Admin Only) */}
+        {isAdmin && activeTab === 'pending-approvals' && (
+          <div>
+            {loadingPending ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="animate-spin text-blue-600" size={24} />
+              </div>
+            ) : pendingRequests.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <CheckCircle className="mx-auto mb-4 text-gray-400" size={48} />
+                <p>No pending access requests</p>
+                <p className="text-sm mt-2">All requests have been processed</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingRequests.map((request: any) => (
+                  <div key={request.id} className="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="font-medium capitalize">{request.requestedPrivilege?.replace(/_/g, ' ') || 'Admin Access'}</h3>
+                          <span className="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs font-medium rounded">
+                            Pending Approval
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p><strong>Requested by:</strong> {request.user?.name || request.user?.email || 'Unknown User'}</p>
+                          <p><strong>Reason:</strong> <span className="capitalize">{request.reason?.replace(/_/g, ' ') || 'N/A'}</span></p>
+                          <p><strong>Duration:</strong> {request.duration} minutes</p>
+                          <p><strong>Justification:</strong> {request.justification || 'N/A'}</p>
+                          <p><strong>Requested:</strong> {new Date(request.createdAt).toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <button
+                          onClick={() => handleApprove(request.id)}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
+                        >
+                          <CheckCircle size={18} />
+                          <span>Approve</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setShowDenyModal(true);
+                          }}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-2"
+                        >
+                          <X size={18} />
+                          <span>Deny</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* All Requests View (Admin Only) */}
+        {isAdmin && activeTab === 'all-requests' && (
+          <div>
+            {allRequests.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <History className="mx-auto mb-4 text-gray-400" size={48} />
+                <p>No access requests found</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {allRequests.map((request: any) => {
+                  const status = request.status || 'pending';
+                  return (
+                    <div key={request.id} className={`border rounded-lg p-4 ${
+                      status === 'approved' ? 'border-green-200 bg-green-50' :
+                      status === 'denied' ? 'border-red-200 bg-red-50' :
+                      status === 'pending' ? 'border-yellow-200 bg-yellow-50' :
+                      'border-gray-200 bg-gray-50'
+                    }`}>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h3 className="font-medium capitalize">{request.requestedPrivilege?.replace(/_/g, ' ') || 'Admin Access'}</h3>
+                            <span className={`px-2 py-1 text-xs font-medium rounded ${
+                              status === 'approved' ? 'bg-green-200 text-green-800' :
+                              status === 'denied' ? 'bg-red-200 text-red-800' :
+                              status === 'pending' ? 'bg-yellow-200 text-yellow-800' :
+                              'bg-gray-200 text-gray-800'
+                            }`}>
+                              {status === 'approved' ? 'Approved' :
+                               status === 'denied' ? 'Denied' :
+                               status === 'pending' ? 'Pending' :
+                               status === 'expired' ? 'Expired' :
+                               status === 'revoked' ? 'Revoked' : status}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <p><strong>Requested by:</strong> {request.user?.name || request.user?.email || 'Unknown User'}</p>
+                            <p><strong>Reason:</strong> <span className="capitalize">{request.reason?.replace(/_/g, ' ') || 'N/A'}</span></p>
+                            <p><strong>Duration:</strong> {request.duration} minutes</p>
+                            {request.approver && (
+                              <p><strong>Processed by:</strong> {request.approver?.name || request.approver?.email || 'Unknown'}</p>
+                            )}
+                            {request.approvedAt && (
+                              <p><strong>Processed at:</strong> {new Date(request.approvedAt).toLocaleString()}</p>
+                            )}
+                            {request.expiresAt && (
+                              <p><strong>Expires:</strong> {new Date(request.expiresAt).toLocaleString()}</p>
+                            )}
+                            <p><strong>Requested:</strong> {new Date(request.createdAt).toLocaleString()}</p>
+                          </div>
+                        </div>
+                        {status === 'pending' && (
+                          <div className="flex gap-2 ml-4">
+                            <button
+                              onClick={() => handleApprove(request.id)}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedRequest(request);
+                                setShowDenyModal(true);
+                              }}
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                            >
+                              Deny
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* My Requests View (Default) */}
+        {(activeTab === 'my-requests' || !isAdmin) && (
+          <>
         
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -2531,6 +2840,8 @@ const JITAccessTab: React.FC = () => {
             })}
           </div>
         )}
+          </>
+        )}
       </div>
 
       {/* Request JIT Access Modal */}
@@ -2626,6 +2937,72 @@ const JITAccessTab: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Deny Request Modal */}
+      {showDenyModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Deny Access Request</h3>
+              <button
+                onClick={() => {
+                  setShowDenyModal(false);
+                  setSelectedRequest(null);
+                  setDenyReason('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">
+                <strong>Requested by:</strong> {selectedRequest.user?.name || selectedRequest.user?.email || 'Unknown User'}
+              </p>
+              <p className="text-sm text-gray-600 mb-2">
+                <strong>Privilege:</strong> <span className="capitalize">{selectedRequest.requestedPrivilege?.replace(/_/g, ' ')}</span>
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Justification:</strong> {selectedRequest.justification || 'N/A'}
+              </p>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Reason for Denial *
+              </label>
+              <textarea
+                value={denyReason}
+                onChange={(e) => setDenyReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                rows={4}
+                placeholder="Please provide a reason for denying this access request..."
+                required
+              />
+            </div>
+            <div className="flex space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDenyModal(false);
+                  setSelectedRequest(null);
+                  setDenyReason('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeny}
+                disabled={!denyReason.trim()}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Deny Request
+              </button>
+            </div>
           </div>
         </div>
       )}

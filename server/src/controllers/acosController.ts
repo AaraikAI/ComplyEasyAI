@@ -17,6 +17,7 @@ import jitAccessService from '../services/advanced/jitAccessService';
 import homomorphicAIService from '../services/advanced/homomorphicAIService';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
+import prisma from '../config/database';
 
 class ACOSController {
   // aCOS Goals
@@ -1666,9 +1667,22 @@ class ACOSController {
         role
       );
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Join VR session error', error);
-      throw new AppError('Failed to join VR session', 500);
+      if (error instanceof AppError) {
+        throw error;
+      }
+      const errorMessage = error?.message || 'Unknown error';
+      if (errorMessage.includes('not found') || errorMessage.includes('inactive')) {
+        throw new AppError('Session not found or has ended. Please refresh the session list.', 404);
+      }
+      if (errorMessage.includes('permission')) {
+        throw new AppError('You do not have permission to join this session', 403);
+      }
+      if (errorMessage.includes('full')) {
+        throw new AppError(errorMessage, 409);
+      }
+      throw new AppError(`Failed to join VR session: ${errorMessage}`, 500);
     }
   };
 
@@ -1839,6 +1853,17 @@ class ACOSController {
     } catch (error) {
       logger.error('Get active VR sessions error', error);
       throw new AppError('Failed to get active VR sessions', 500);
+    }
+  };
+
+  checkVRSessionHealth: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { sessionId } = req.params;
+      const healthCheck = await vrCollaborativeReviewService.healthCheck(sessionId);
+      res.json(healthCheck);
+    } catch (error: any) {
+      logger.error('VR session health check error', error);
+      throw new AppError(`Failed to check session health: ${error.message}`, 500);
     }
   };
 
@@ -2789,6 +2814,131 @@ class ACOSController {
     } catch (error: any) {
       logger.error('Cancel JIT access request error', error);
       throw new AppError(error.message || 'Failed to cancel JIT access request', 500);
+    }
+  };
+
+  // Admin JIT Access Approval Workflow
+  getPendingJITAccessRequests: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      
+      // Only admins can view pending requests
+      if (authReq.user!.role !== 'admin') {
+        throw new AppError('Insufficient privileges. Admin access required.', 403);
+      }
+
+      const requests = await jitAccessService.getPendingAccessRequests(authReq.user!.organizationId);
+      
+      // Enrich with user information
+      const enrichedRequests = await Promise.all(
+        requests.map(async (request) => {
+          const user = await prisma.user.findUnique({
+            where: { id: request.userId },
+            select: { id: true, name: true, email: true, role: true },
+          });
+          return {
+            ...request,
+            user: user || null,
+          };
+        })
+      );
+
+      res.json(enrichedRequests);
+    } catch (error: any) {
+      logger.error('Get pending JIT access requests error', error);
+      throw new AppError(error.message || 'Failed to get pending access requests', 500);
+    }
+  };
+
+  getAllJITAccessRequests: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { status } = req.query;
+      
+      // Only admins can view all requests
+      if (authReq.user!.role !== 'admin') {
+        throw new AppError('Insufficient privileges. Admin access required.', 403);
+      }
+
+      const requests = await jitAccessService.getAllAccessRequests(
+        authReq.user!.organizationId,
+        status as string | undefined
+      );
+      
+      // Enrich with user information
+      const enrichedRequests = await Promise.all(
+        requests.map(async (request) => {
+          const user = await prisma.user.findUnique({
+            where: { id: request.userId },
+            select: { id: true, name: true, email: true, role: true },
+          });
+          const approver = request.approvedBy ? await prisma.user.findUnique({
+            where: { id: request.approvedBy },
+            select: { id: true, name: true, email: true },
+          }) : null;
+          return {
+            ...request,
+            user: user || null,
+            approver: approver || null,
+          };
+        })
+      );
+
+      res.json(enrichedRequests);
+    } catch (error: any) {
+      logger.error('Get all JIT access requests error', error);
+      throw new AppError(error.message || 'Failed to get access requests', 500);
+    }
+  };
+
+  approveJITAccessRequest: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { requestId } = req.params;
+      
+      // Only admins can approve requests
+      if (authReq.user!.role !== 'admin') {
+        throw new AppError('Insufficient privileges. Admin access required.', 403);
+      }
+
+      const session = await jitAccessService.approveAccess(
+        requestId,
+        authReq.user!.id,
+        authReq.user!.organizationId
+      );
+
+      res.json({ success: true, session });
+    } catch (error: any) {
+      logger.error('Approve JIT access request error', error);
+      throw new AppError(error.message || 'Failed to approve access request', 500);
+    }
+  };
+
+  denyJITAccessRequest: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { requestId } = req.params;
+      const { reason } = req.body;
+      
+      // Only admins can deny requests
+      if (authReq.user!.role !== 'admin') {
+        throw new AppError('Insufficient privileges. Admin access required.', 403);
+      }
+
+      if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
+        throw new AppError('Denial reason is required', 400);
+      }
+
+      await jitAccessService.denyAccess(
+        requestId,
+        authReq.user!.id,
+        reason.trim()
+      );
+
+      res.json({ success: true });
+    } catch (error: any) {
+      logger.error('Deny JIT access request error', error);
+      throw new AppError(error.message || 'Failed to deny access request', 500);
     }
   };
 

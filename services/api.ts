@@ -1029,6 +1029,7 @@ export const api = {
     getActiveVRSessions: async () => fetchAPI('/acos/vr/sessions'),
     createVRSession: async (data: any) => fetchAPI('/acos/vr/sessions', { method: 'POST', body: JSON.stringify(data) }),
     getVRSessionDetails: async (sessionId: string) => fetchAPI(`/acos/vr/sessions/${sessionId}`),
+    checkVRSessionHealth: async (sessionId: string) => fetchAPI(`/acos/vr/sessions/${sessionId}/health`),
     joinVRSession: async (sessionId: string) => fetchAPI(`/acos/vr/sessions/${sessionId}/join`, { method: 'POST' }),
 
     // JIT Access
@@ -1036,6 +1037,14 @@ export const api = {
     getJITAccessSessions: async () => fetchAPI('/acos/jit/sessions'),
     revokeJITSession: async (sessionId: string, reason?: string) => fetchAPI(`/acos/jit/sessions/${sessionId}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) }),
     cancelJITAccessRequest: async (requestId: string) => fetchAPI(`/acos/jit/requests/${requestId}/cancel`, { method: 'POST' }),
+    // Admin JIT Access Approval
+    getPendingJITAccessRequests: async () => fetchAPI('/acos/jit/requests/pending'),
+    getAllJITAccessRequests: async (status?: string) => {
+      const url = status ? `/acos/jit/requests?status=${encodeURIComponent(status)}` : '/acos/jit/requests';
+      return fetchAPI(url);
+    },
+    approveJITAccessRequest: async (requestId: string) => fetchAPI(`/acos/jit/requests/${requestId}/approve`, { method: 'POST' }),
+    denyJITAccessRequest: async (requestId: string, reason: string) => fetchAPI(`/acos/jit/requests/${requestId}/deny`, { method: 'POST', body: JSON.stringify({ reason }) }),
   },
 
   // Security Features
@@ -1149,7 +1158,7 @@ export const api = {
     getZKProof: async (proofId: string) => fetchAPI(`/security/zkp/proofs/${proofId}`),
 
     // BYOK Encryption
-    generateBYOKKey: async (provider: 'aws_kms' | 'azure_kv', options: any) => 
+    generateBYOKKey: async (provider: 'aws_kms' | 'azure_kv' | 'gcp_kms' | 'hashicorp_vault' | 'local', options: any) => 
       fetchAPI('/security/byok/keys/generate', { method: 'POST', body: JSON.stringify({ provider, ...options }) }),
     importBYOKKey: async (provider: 'aws_kms' | 'azure_kv', keyId: string, options: any) => 
       fetchAPI('/security/byok/keys/import', { method: 'POST', body: JSON.stringify({ provider, keyId, ...options }) }),
@@ -1196,6 +1205,184 @@ export const api = {
       fetchAPI(`/security/compliance-as-code/ci-cd/integrations/${integrationId}`, { method: 'DELETE' }),
     detectDrift: async (policyId: string) => 
       fetchAPI('/security/compliance-as-code/drift/detect', { method: 'POST', body: JSON.stringify({ policyId }) }),
+  },
+
+  // --- NIST AI RMF ---
+  aiRmf: {
+    // AI System Management
+    createAISystem: async (data: {
+      name: string;
+      description?: string;
+      systemType: string;
+      useCase?: string;
+      deploymentContext?: string;
+      lifecycleStage?: string;
+      autonomyLevel?: string;
+      metadata?: any;
+    }) => {
+      return fetchAPI('/ai-rmf/systems', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    getAISystems: async (filters?: { status?: string; lifecycleStage?: string; riskLevel?: string }) => {
+      const params = new URLSearchParams();
+      if (filters?.status) params.append('status', filters.status);
+      if (filters?.lifecycleStage) params.append('lifecycleStage', filters.lifecycleStage);
+      if (filters?.riskLevel) params.append('riskLevel', filters.riskLevel);
+      const queryString = params.toString();
+      return fetchAPI(`/ai-rmf/systems${queryString ? `?${queryString}` : ''}`);
+    },
+
+    getAISystemById: async (id: string) => {
+      return fetchAPI(`/ai-rmf/systems/${id}`);
+    },
+
+    updateAISystem: async (id: string, updates: any) => {
+      return fetchAPI(`/ai-rmf/systems/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    deleteAISystem: async (id: string) => {
+      return fetchAPI(`/ai-rmf/systems/${id}`, {
+        method: 'DELETE',
+      });
+    },
+
+    // Core Functions
+    updateCoreFunction: async (aiSystemId: string, functionName: string, updates: any) => {
+      return fetchAPI(`/ai-rmf/systems/${aiSystemId}/functions/${functionName}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    // Categories and Subcategories
+    updateCategory: async (categoryId: string, updates: any) => {
+      return fetchAPI(`/ai-rmf/categories/${categoryId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    updateSubcategory: async (subcategoryId: string, updates: any) => {
+      return fetchAPI(`/ai-rmf/subcategories/${subcategoryId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    // Trustworthiness Characteristics
+    updateTrustworthinessCharacteristic: async (aiSystemId: string, characteristic: string, updates: any) => {
+      return fetchAPI(`/ai-rmf/systems/${aiSystemId}/trustworthiness/${characteristic}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    // Lifecycle Stages
+    updateLifecycleStage: async (aiSystemId: string, stage: string, updates: any) => {
+      return fetchAPI(`/ai-rmf/systems/${aiSystemId}/lifecycle/${stage}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    // AI Actors
+    addActor: async (aiSystemId: string, data: {
+      actorType: string;
+      userId?: string;
+      name: string;
+      role: string;
+      responsibilities?: string[];
+      involvementStages?: string[];
+    }) => {
+      return fetchAPI(`/ai-rmf/systems/${aiSystemId}/actors`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    removeActor: async (actorId: string) => {
+      return fetchAPI(`/ai-rmf/actors/${actorId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    // Assessments
+    createAssessment: async (aiSystemId: string, data: {
+      assessmentType: string;
+      assessedBy: string;
+      overallScore?: number;
+      functionScores?: any;
+      characteristicScores?: any;
+      findings?: any;
+      recommendations?: string[];
+    }) => {
+      return fetchAPI(`/ai-rmf/systems/${aiSystemId}/assessments`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    getAssessments: async (aiSystemId: string) => {
+      return fetchAPI(`/ai-rmf/systems/${aiSystemId}/assessments`);
+    },
+
+    // Profiles
+    createProfile: async (aiSystemId: string, data: {
+      profileName: string;
+      profileType: string;
+      description?: string;
+      selectedFunctions: any;
+      priorities?: any;
+      customizations?: any;
+    }) => {
+      return fetchAPI(`/ai-rmf/systems/${aiSystemId}/profiles`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    // Risk Activities
+    createRiskActivity: async (aiSystemId: string, data: {
+      activityType: string;
+      relatedFunction?: string;
+      relatedCategory?: string;
+      relatedSubcategory?: string;
+      description: string;
+      riskLevel: string;
+      mitigationPlan?: string;
+      ownerId?: string;
+      targetDate?: string;
+      evidence?: any;
+    }) => {
+      return fetchAPI(`/ai-rmf/systems/${aiSystemId}/risk-activities`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    updateRiskActivity: async (riskActivityId: string, updates: any) => {
+      return fetchAPI(`/ai-rmf/risk-activities/${riskActivityId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    // Analytics
+    calculateTrustworthinessScore: async (aiSystemId: string) => {
+      return fetchAPI(`/ai-rmf/systems/${aiSystemId}/calculate-trustworthiness`, {
+        method: 'POST',
+      });
+    },
+
+    getDashboardData: async () => {
+      return fetchAPI('/ai-rmf/dashboard');
+    },
   },
 };
 

@@ -18,6 +18,11 @@ import { lazy, Suspense } from 'react';
 import ACOSDashboard from './components/ACOSDashboard';
 import SecurityFeatures from './components/SecurityFeatures';
 import RealTimeAnalytics from './components/RealTimeAnalytics';
+import { AIRMFDashboard } from './components/AIRMFDashboard';
+import { AISystemList } from './components/AISystemList';
+import { AISystemDetails } from './components/AISystemDetails';
+import { AISystemCreate } from './components/AISystemCreate';
+import { AIRMFAssessments } from './components/AIRMFAssessments';
 
 const PolicyGenerator = lazy(() => import('./components/AIFeatures/PolicyGenerator').then(m => ({ default: m.PolicyGenerator })));
 const ContractAnalyzer = lazy(() => import('./components/AIFeatures/ContractAnalyzer').then(m => ({ default: m.ContractAnalyzer })));
@@ -162,6 +167,60 @@ const MainApp: React.FC = () => {
         return <SecurityFeatures onBack={() => setCurrentView('dashboard')} />;
       case 'analytics':
         return <RealTimeAnalytics onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-rmf':
+        return (
+          <AIRMFDashboard 
+            onNavigate={(view: string, systemId?: string) => {
+              if (view === 'ai-rmf-systems') {
+                setCurrentView('ai-rmf-systems');
+              } else if (view === 'ai-rmf-create') {
+                setCurrentView('ai-rmf-create');
+              } else if (view === 'ai-rmf-assessments') {
+                setCurrentView('ai-rmf-assessments');
+              } else if (view === 'ai-rmf-details' && systemId) {
+                setSelectedFrameworkId(systemId);
+                setCurrentView('ai-rmf-details');
+              }
+            }} 
+          />
+        );
+      case 'ai-rmf-systems':
+        return (
+          <AISystemList
+            onSelectSystem={(systemId: string) => {
+              setSelectedFrameworkId(systemId);
+              setCurrentView('ai-rmf-details');
+            }}
+            onCreateNew={() => setCurrentView('ai-rmf-create')}
+          />
+        );
+      case 'ai-rmf-create':
+        return (
+          <AISystemCreate
+            onBack={() => setCurrentView('ai-rmf')}
+            onSuccess={(systemId: string) => {
+              setSelectedFrameworkId(systemId);
+              setCurrentView('ai-rmf-details');
+            }}
+          />
+        );
+      case 'ai-rmf-details':
+        return (
+          <AISystemDetails
+            systemId={selectedFrameworkId || ''}
+            onBack={() => setCurrentView('ai-rmf-systems')}
+          />
+        );
+      case 'ai-rmf-assessments':
+        return (
+          <AIRMFAssessments
+            onBack={() => setCurrentView('ai-rmf')}
+            onViewSystem={(systemId: string) => {
+              setSelectedFrameworkId(systemId);
+              setCurrentView('ai-rmf-details');
+            }}
+          />
+        );
       default:
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }

@@ -404,16 +404,48 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     setSelectedControl(control);
     setShowControlDetails(true);
     
+    // Reset mappings visibility - will show if mappings exist
+    setShowMappings(false);
+    
     // Load mappings and versions
     try {
       const [mappingsData, versionsData] = await Promise.all([
-        api.frameworks.getControlMappings?.(control.id) || Promise.resolve({ mappings: [] }),
-        api.frameworks.getEvidenceVersions?.(control.id) || Promise.resolve({ versions: [] }),
+        api.frameworks.getControlMappings(control.id).catch(err => {
+          console.error('Failed to load mappings:', err);
+          return { mappings: [] };
+        }),
+        api.frameworks.getEvidenceVersions(control.id).catch(err => {
+          console.error('Failed to load versions:', err);
+          return { versions: [] };
+        }),
       ]);
-      setControlMappings(mappingsData.mappings || []);
-      setEvidenceVersions(versionsData.versions || []);
+      
+      // Handle both response formats: { mappings: [...] } or just [...]
+      const mappings = mappingsData?.mappings || (Array.isArray(mappingsData) ? mappingsData : []);
+      const versions = versionsData?.versions || (Array.isArray(versionsData) ? versionsData : []);
+      
+      const mappingsArray = Array.isArray(mappings) ? mappings : [];
+      const versionsArray = Array.isArray(versions) ? versions : [];
+      
+      setControlMappings(mappingsArray);
+      setEvidenceVersions(versionsArray);
+      
+      // Auto-show mappings if they exist
+      if (mappingsArray.length > 0) {
+        setShowMappings(true);
+      }
+      
+      // Debug logging
+      console.log('Control clicked - Mappings loaded:', {
+        controlId: control.id,
+        mappingsCount: mappingsArray.length,
+        mappings: mappingsArray,
+        rawResponse: mappingsData
+      });
     } catch (error) {
       console.error('Failed to load mappings/versions:', error);
+      setControlMappings([]);
+      setEvidenceVersions([]);
     }
   };
 
@@ -481,10 +513,15 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     if (!framework?.id) return;
 
     try {
+      // Ensure we only send primitive values to avoid circular JSON errors
       const updatePayload: any = { 
-        notes: frameworkNotes,
-        version: frameworkVersion,
+        notes: typeof frameworkNotes === 'string' ? frameworkNotes : String(frameworkNotes || ''),
       };
+      
+      // Only include version if it's a valid primitive value
+      if (frameworkVersion && typeof frameworkVersion === 'string') {
+        updatePayload.version = frameworkVersion;
+      }
       
       if (resolutionStrategy) {
         updatePayload.resolutionStrategy = resolutionStrategy;
@@ -717,9 +754,11 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
           <h3 className="text-lg font-semibold text-gray-900">Framework Notes</h3>
           {user?.role === 'admin' && (
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 if (isEditingNotes) {
-                  // Save notes
+                  // Save notes - call without event
                   handleSaveNotes();
                 } else {
                   setIsEditingNotes(true);
@@ -752,7 +791,11 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                 Cancel
               </button>
               <button
-                onClick={handleSaveNotes}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSaveNotes();
+                }}
                 className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700"
               >
                 Save Notes
@@ -1406,7 +1449,19 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                                   if (confirm('Delete this mapping?')) {
                                     try {
                                       await api.frameworks.deleteControlMapping(mapping.id);
-                                      setControlMappings(controlMappings.filter(m => m.id !== mapping.id));
+                                      // Reload mappings to ensure consistency
+                                      try {
+                                        const mappingsData = await api.frameworks.getControlMappings(selectedControl.id);
+                                        // Handle both response formats: { mappings: [...] } or just [...]
+                                        const mappings = mappingsData?.mappings || (Array.isArray(mappingsData) ? mappingsData : []);
+                                        const mappingsArray = Array.isArray(mappings) ? mappings : [];
+                                        setControlMappings(mappingsArray);
+                                        console.log('Mappings reloaded after delete:', mappingsArray.length, mappingsArray);
+                                      } catch (reloadError: any) {
+                                        console.error('Failed to reload mappings after delete:', reloadError);
+                                        // Fallback: remove from local state
+                                        setControlMappings(controlMappings.filter(m => m.id !== mapping.id));
+                                      }
                                     } catch (error: any) {
                                       alert(`Failed to delete mapping: ${error.message}`);
                                     }
@@ -1584,7 +1639,23 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                         confidence,
                       });
                       setShowAddMappingModal(false);
-                      await handleControlClick(selectedControl); // Reload mappings
+                      
+                      // Reload mappings and automatically show them
+                      try {
+                        const mappingsData = await api.frameworks.getControlMappings(selectedControl.id);
+                        // Handle both response formats: { mappings: [...] } or just [...]
+                        const mappings = mappingsData?.mappings || (Array.isArray(mappingsData) ? mappingsData : []);
+                        const mappingsArray = Array.isArray(mappings) ? mappings : [];
+                        setControlMappings(mappingsArray);
+                        setShowMappings(true); // Automatically show mappings after creation
+                        console.log('Mappings reloaded:', mappingsArray.length, mappingsArray);
+                      } catch (reloadError: any) {
+                        console.error('Failed to reload mappings:', reloadError);
+                        // Fallback: reload entire control
+                        await handleControlClick(selectedControl);
+                        setShowMappings(true);
+                      }
+                      
                       alert('Mapping created successfully');
                     } catch (error: any) {
                       alert(`Failed to create mapping: ${error.message}`);

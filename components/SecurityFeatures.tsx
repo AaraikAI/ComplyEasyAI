@@ -851,6 +851,10 @@ const BYOKTab: React.FC = () => {
     vaultUrl: '',
     keyName: '',
     description: '',
+    projectId: '',
+    location: '',
+    keyRing: '',
+    keyId: '',
   });
 
   useEffect(() => {
@@ -878,9 +882,13 @@ const BYOKTab: React.FC = () => {
         vaultUrl: keyForm.vaultUrl,
         keyName: keyForm.keyName,
         description: keyForm.description,
+        projectId: keyForm.projectId,
+        location: keyForm.location,
+        keyRing: keyForm.keyRing,
+        keyId: keyForm.keyId,
       });
       setShowKeyModal(false);
-      setKeyForm({ provider: 'aws_kms', region: '', vaultUrl: '', keyName: '', description: '' });
+      setKeyForm({ provider: 'aws_kms', region: '', vaultUrl: '', keyName: '', description: '', projectId: '', location: '', keyRing: '', keyId: '' });
       // Optimistically add the key to the list
       if (result && result.keyId) {
         const newKey = {
@@ -994,6 +1002,79 @@ const BYOKTab: React.FC = () => {
                       onChange={(e) => setKeyForm({ ...keyForm, vaultUrl: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                       placeholder="https://your-vault.vault.azure.net"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Key Name</label>
+                    <input
+                      type="text"
+                      value={keyForm.keyName}
+                      onChange={(e) => setKeyForm({ ...keyForm, keyName: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+              {keyForm.provider === 'gcp_kms' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Project ID</label>
+                    <input
+                      type="text"
+                      value={keyForm.projectId}
+                      onChange={(e) => setKeyForm({ ...keyForm, projectId: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      placeholder="my-project-id"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                    <input
+                      type="text"
+                      value={keyForm.location}
+                      onChange={(e) => setKeyForm({ ...keyForm, location: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      placeholder="us-east1"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Key Ring</label>
+                    <input
+                      type="text"
+                      value={keyForm.keyRing}
+                      onChange={(e) => setKeyForm({ ...keyForm, keyRing: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      placeholder="my-key-ring"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Key ID</label>
+                    <input
+                      type="text"
+                      value={keyForm.keyId}
+                      onChange={(e) => setKeyForm({ ...keyForm, keyId: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      placeholder="my-key-id"
+                      required
+                    />
+                  </div>
+                </>
+              )}
+              {keyForm.provider === 'hashicorp_vault' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Vault URL</label>
+                    <input
+                      type="text"
+                      value={keyForm.vaultUrl}
+                      onChange={(e) => setKeyForm({ ...keyForm, vaultUrl: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      placeholder="https://vault.example.com:8200"
                       required
                     />
                   </div>

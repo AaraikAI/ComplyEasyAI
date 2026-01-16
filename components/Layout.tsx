@@ -96,6 +96,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     { id: 'risks', label: 'Risk Management', icon: ShieldAlert, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'integrations', label: 'Integrations', icon: Layers, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'frameworks', label: 'Frameworks', icon: ShieldCheck, roles: ['admin', 'editor'], relatedViews: ['framework-details'] },
+    { id: 'ai-rmf', label: 'NIST AI RMF', icon: Brain, roles: ['admin', 'editor', 'viewer'], relatedViews: ['ai-rmf-systems', 'ai-rmf-create', 'ai-rmf-details', 'ai-rmf-assessments'] },
     { id: 'reports', label: 'Report Generator', icon: FileText, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'audit', label: 'Audit Trail', icon: Activity, roles: ['admin', 'editor'], relatedViews: [] },
     { id: 'analytics', label: 'Real-time Analytics', icon: Activity, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
