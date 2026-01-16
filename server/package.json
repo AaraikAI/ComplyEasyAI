@@ -91,7 +91,7 @@
     "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",
     "sharp": "^0.33.5",
-    "snarkjs": "^0.7.5",
+    "snarkjs": "^0.7.6",
     "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
     "stripe": "^17.5.0",

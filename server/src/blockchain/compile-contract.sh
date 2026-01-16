@@ -46,6 +46,7 @@ if [ ! -f "package.json" ]; then
 {
   "name": "complyeasy-blockchain",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "description": "Smart contracts for ComplyEasyAI",
   "scripts": {
@@ -54,6 +55,17 @@ if [ ! -f "package.json" ]; then
   }
 }
 EOF
+else
+    # Update existing package.json to include type: module if not present
+    if ! grep -q '"type": "module"' package.json; then
+        # Use node to add type: module to package.json
+        node -e "
+        const fs = require('fs');
+        const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+        pkg.type = 'module';
+        fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+        "
+    fi
 fi
 
 # Install Hardhat and dependencies
@@ -65,9 +77,9 @@ echo ""
 echo "Step 2/4: Configuring Hardhat..."
 
 cat > hardhat.config.js << 'EOF'
-require("@nomicfoundation/hardhat-toolbox");
+import "@nomicfoundation/hardhat-toolbox";
 
-module.exports = {
+export default {
   solidity: {
     version: "0.8.20",
     settings: {

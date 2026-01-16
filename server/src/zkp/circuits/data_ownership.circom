@@ -1,10 +1,11 @@
+pragma circom 2.0.0;
 
-// Data Ownership Circuit - Simplified for circom 0.5
+// Data Ownership Circuit - Simplified for circom 2.0
 
 template DataOwnership() {
-    signal private input dataHash;
-    signal private input privateKey;
-    signal private input userId;
+    signal input dataHash;
+    signal input privateKey;
+    signal input userId;
     
     signal output userIdHash;
     signal output ownershipVerified;

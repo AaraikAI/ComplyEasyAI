@@ -197,12 +197,15 @@ EOF
         chmod +x /tmp/opa
 
         # Move to bin
-        echo "Installing to /usr/local/bin..."
-        sudo mv /tmp/opa /usr/local/bin/opa
+        # Install to local bin directory (no sudo required)
+        mkdir -p bin
+        mv /tmp/opa bin/opa
+        chmod +x bin/opa
 
-        echo -e "${GREEN}✓ OPA installed${NC}"
+        echo -e "${GREEN}✓ OPA installed to $SCRIPT_DIR/bin/opa${NC}"
+        echo -e "${YELLOW}Note: Add $SCRIPT_DIR/bin to your PATH or use ./bin/opa${NC}"
 
-        # Create systemd service (Linux only)
+        # Create systemd service (Linux only) - optional, requires sudo
         if [ "$MACHINE" = "Linux" ]; then
             echo ""
             echo "Create systemd service? [y/N]"
@@ -218,7 +221,7 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=$SCRIPT_DIR
-ExecStart=/usr/local/bin/opa run --server --log-level info
+ExecStart=$SCRIPT_DIR/bin/opa run --server --log-level info
 Restart=on-failure
 
 [Install]
@@ -236,7 +239,8 @@ EOF
 
         echo ""
         echo "To run OPA manually:"
-        echo "  opa run --server --log-level info"
+        echo "  $SCRIPT_DIR/bin/opa run --server --log-level info"
+        echo "  Or: cd $SCRIPT_DIR && ./bin/opa run --server --log-level info"
         echo ""
         echo "OPA will run on http://localhost:8181"
         echo ""

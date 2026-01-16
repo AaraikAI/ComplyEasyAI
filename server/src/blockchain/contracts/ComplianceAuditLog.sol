@@ -164,7 +164,11 @@ contract ComplianceAuditLog {
     /**
      * @dev Get audit log by ID
      * @param logId Log ID to retrieve
-     * @return Audit entry details
+     * @return organizationId Organization ID
+     * @return userId User ID
+     * @return action Action performed
+     * @return dataHash Hash of the data
+     * @return timestamp Timestamp of the audit entry
      */
     function getAuditLog(bytes32 logId)
         external
@@ -191,7 +195,9 @@ contract ComplianceAuditLog {
     /**
      * @dev Get evidence by ID
      * @param evidenceId Evidence ID to retrieve
-     * @return Evidence details
+     * @return logId Associated audit log ID
+     * @return evidenceHash Hash of the evidence
+     * @return timestamp Timestamp when evidence was stored
      */
     function getEvidence(bytes32 evidenceId)
         external
