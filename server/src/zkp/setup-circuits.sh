@@ -69,13 +69,20 @@ fi
 # Install snarkjs
 echo ""
 echo "Step 2/6: Installing snarkjs..."
-if ! npm list -g snarkjs &> /dev/null; then
-    echo "Installing snarkjs globally..."
-    npm install -g snarkjs@latest
+if ! npm list snarkjs &> /dev/null && ! npm list -g snarkjs &> /dev/null; then
+    echo "Installing snarkjs locally..."
+    npm install snarkjs@latest
     echo -e "${GREEN}✓ snarkjs installed${NC}"
 else
-    SNARKJS_VERSION=$(npm list -g snarkjs --depth=0 2>/dev/null | grep snarkjs | awk '{print $2}' || echo "unknown")
+    SNARKJS_VERSION=$(npm list snarkjs --depth=0 2>/dev/null | grep snarkjs | awk '{print $2}' || npm list -g snarkjs --depth=0 2>/dev/null | grep snarkjs | awk '{print $2}' || echo "unknown")
     echo -e "${GREEN}✓ snarkjs already installed ($SNARKJS_VERSION)${NC}"
+fi
+
+# Use npx for snarkjs commands if not globally installed
+if command -v snarkjs &> /dev/null; then
+    SNARKJS_CMD="snarkjs"
+else
+    SNARKJS_CMD="npx snarkjs"
 fi
 
 # Download Powers of Tau
@@ -157,7 +164,7 @@ setup_circuit() {
     # Generate zkey (proving key)
     echo "  [2/5] Generating proving key (zkey)..."
     mkdir -p keys/proving
-    snarkjs groth16 setup \
+    $SNARKJS_CMD groth16 setup \
         "compiled/${CIRCUIT_NAME}.r1cs" \
         "$PTAU_FILE" \
         "keys/proving/${CIRCUIT_NAME}_0000.zkey" \
@@ -166,7 +173,7 @@ setup_circuit() {
 
     # Phase 2 contribution (adds randomness)
     echo "  [3/5] Adding phase 2 contribution..."
-    snarkjs zkey contribute \
+    $SNARKJS_CMD zkey contribute \
         "keys/proving/${CIRCUIT_NAME}_0000.zkey" \
         "keys/proving/${CIRCUIT_NAME}.zkey" \
         --name="ComplyEasyAI Contribution" \
@@ -178,7 +185,7 @@ setup_circuit() {
     # Export verification key
     echo "  [4/5] Exporting verification key..."
     mkdir -p keys/verification
-    snarkjs zkey export verificationkey \
+    $SNARKJS_CMD zkey export verificationkey \
         "keys/proving/${CIRCUIT_NAME}.zkey" \
         "keys/verification/${CIRCUIT_NAME}.vkey" \
         > /dev/null 2>&1
@@ -186,7 +193,7 @@ setup_circuit() {
 
     # Verify the setup
     echo "  [5/5] Verifying setup..."
-    snarkjs zkey verify \
+    $SNARKJS_CMD zkey verify \
         "compiled/${CIRCUIT_NAME}.r1cs" \
         "$PTAU_FILE" \
         "keys/proving/${CIRCUIT_NAME}.zkey" \
@@ -256,7 +263,7 @@ cat > test_input.json << 'EOF'
 EOF
 
 echo "Testing compliance_check circuit..."
-if snarkjs groth16 fullprove \
+if $SNARKJS_CMD groth16 fullprove \
     test_input.json \
     compiled/wasm/compliance_check.wasm \
     keys/proving/compliance_check.zkey \
@@ -267,7 +274,7 @@ if snarkjs groth16 fullprove \
     echo -e "${GREEN}✓ Proof generation successful${NC}"
 
     # Verify the proof
-    if snarkjs groth16 verify \
+    if $SNARKJS_CMD groth16 verify \
         keys/verification/compliance_check.vkey \
         public.json \
         proof.json \

@@ -1,11 +1,13 @@
-// Compliance Check Circuit - Simplified for circom 0.5
+pragma circom 2.0.0;
+
+// Compliance Check Circuit - Simplified for circom 2.0
 // Proves that controls implemented meet threshold without revealing actual numbers
 
 template ComplianceCheck() {
-    signal private input controlsImplemented;
-    signal private input totalControls;
-    signal private input evidenceHash;
-    signal private input threshold;
+    signal input controlsImplemented;
+    signal input totalControls;
+    signal input evidenceHash;
+    signal input threshold;
     
     signal output complianceScore;
     signal output meetsThreshold;

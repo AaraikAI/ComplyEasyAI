@@ -1,12 +1,13 @@
+pragma circom 2.0.0;
 
-// Credential Verification Circuit - Simplified for circom 0.5
+// Credential Verification Circuit - Simplified for circom 2.0
 
 template CredentialVerification() {
-    signal private input roleLevel;
-    signal private input permissionsHash;
-    signal private input expiryTimestamp;
-    signal private input currentTimestamp;
-    signal private input secret;
+    signal input roleLevel;
+    signal input permissionsHash;
+    signal input expiryTimestamp;
+    signal input currentTimestamp;
+    signal input secret;
     
     signal output verifiedRoleLevel;
     signal output isExpired;
