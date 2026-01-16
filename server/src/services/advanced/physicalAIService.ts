@@ -2403,19 +2403,42 @@ class PhysicalAIService {
         const ipAddress = sensorData?.ipAddress || sensorData?.network?.ipAddress;
         
         if (ipAddress) {
+          // SECURITY: Validate IP address to prevent command injection
+          const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+          const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+
+          const isValidIP = ipv4Regex.test(ipAddress) || ipv6Regex.test(ipAddress);
+
+          if (!isValidIP) {
+            logger.warn(`[Physical AI] Invalid IP address format: ${ipAddress}`);
+            return 50; // Return default latency
+          }
+
           // Use system ping for latency measurement
           try {
-            const { exec } = require('child_process');
-            const { promisify } = require('util');
-            const execAsync = promisify(exec);
-            
-            // Platform-specific ping commands
+            const { spawn } = require('child_process');
+
+            // Platform-specific ping commands (using spawn with array args prevents injection)
             const isWindows = process.platform === 'win32';
-            const pingCommand = isWindows 
-              ? `ping -n 1 ${ipAddress}`
-              : `ping -c 1 ${ipAddress}`;
-            
-            const { stdout } = await execAsync(pingCommand, { timeout: 5000 });
+            const pingArgs = isWindows
+              ? ['-n', '1', ipAddress]
+              : ['-c', '1', ipAddress];
+
+            const pingProcess = spawn(isWindows ? 'ping' : 'ping', pingArgs);
+
+            let stdout = '';
+            pingProcess.stdout.on('data', (data: Buffer) => {
+              stdout += data.toString();
+            });
+
+            await new Promise((resolve, reject) => {
+              pingProcess.on('close', resolve);
+              pingProcess.on('error', reject);
+              setTimeout(() => {
+                pingProcess.kill();
+                reject(new Error('Ping timeout'));
+              }, 5000);
+            });
             
             // Parse latency from ping output
             if (isWindows) {

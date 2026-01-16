@@ -4,6 +4,7 @@ import { ComplianceFramework } from '../types';
 import { FileText, Loader2, Download, Calendar, CheckSquare, AlertTriangle, X, Settings } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateComplianceReport } from '../services/geminiService';
+import * as DOMPurify from 'dompurify';
 
 type ReportFormat = 'PDF' | 'JSON';
 type ReportSection = 'executive_summary' | 'frameworks' | 'controls' | 'risks' | 'evidence' | 'recommendations' | 'audit_trail';
@@ -237,13 +238,31 @@ export const Reports: React.FC = () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else {
-        // PDF export using browser print API
+        // PDF export using browser print API with XSS protection
         try {
           const printWindow = window.open('', '_blank');
           if (!printWindow) {
             setError('Please allow popups to download PDF');
             return;
           }
+
+          // Sanitize framework names
+          const sanitizedFrameworks = selectedFrameworks.map(id => {
+            const fw = frameworks.find(f => f.id === id);
+            return fw ? DOMPurify.sanitize(fw.name, { ALLOWED_TAGS: [] }) : '';
+          }).filter(Boolean).join(', ');
+
+          // Sanitize report content line by line
+          const sanitizedReportLines = report.split('\n').map(line => {
+            if (line.startsWith('#')) {
+              const level = line.match(/^#+/)?.[0].length || 1;
+              const text = line.replace(/^#+\s*/, '');
+              const sanitizedText = DOMPurify.sanitize(text, { ALLOWED_TAGS: [] });
+              return `<h${Math.min(level, 6)}>${sanitizedText}</h${Math.min(level, 6)}>`;
+            }
+            const sanitizedLine = DOMPurify.sanitize(line, { ALLOWED_TAGS: [] });
+            return `<p>${sanitizedLine}</p>`;
+          }).join('\n');
 
           const pdfContent = `
             <!DOCTYPE html>
@@ -268,20 +287,10 @@ export const Reports: React.FC = () => {
                 <div class="meta">
                   <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
                   <p><strong>Date Range:</strong> ${reportOptions.startDate} to ${reportOptions.endDate}</p>
-                  <p><strong>Frameworks:</strong> ${selectedFrameworks.map(id => {
-                    const fw = frameworks.find(f => f.id === id);
-                    return fw ? fw.name : '';
-                  }).filter(Boolean).join(', ')}</p>
+                  <p><strong>Frameworks:</strong> ${sanitizedFrameworks}</p>
                 </div>
                 <div class="section">
-                  ${report.split('\n').map(line => {
-                    if (line.startsWith('#')) {
-                      const level = line.match(/^#+/)?.[0].length || 1;
-                      const text = line.replace(/^#+\s*/, '');
-                      return `<h${Math.min(level, 6)}>${text}</h${Math.min(level, 6)}>`;
-                    }
-                    return `<p>${line}</p>`;
-                  }).join('\n')}
+                  ${sanitizedReportLines}
                 </div>
               </body>
             </html>
@@ -289,7 +298,7 @@ export const Reports: React.FC = () => {
 
           printWindow.document.write(pdfContent);
           printWindow.document.close();
-          
+
           // Wait for content to load, then trigger print
           setTimeout(() => {
             printWindow.print();
