@@ -3,6 +3,7 @@ import { generateRFPResponse } from '../../services/geminiService';
 import { FileText, Loader2, ArrowLeft, Send, AlertTriangle, X, Download, Edit2, Save, XCircle, CheckCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../../services/api';
+import * as DOMPurify from 'dompurify';
 
 const MAX_QUESTION_LENGTH = 10000; // 10k characters
 
@@ -153,7 +154,24 @@ export const RFPResponder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handleExportPDF = () => {
-    // Create HTML content for PDF
+    // Create HTML content for PDF with sanitization
+    const sanitizedContext = DOMPurify.sanitize(context || 'Not provided', { ALLOWED_TAGS: [] });
+    const sanitizedAnswers = answers.map((a, i) => {
+      const sanitizedQuestion = DOMPurify.sanitize(a.question, { ALLOWED_TAGS: [] });
+      const sanitizedAnswer = DOMPurify.sanitize(a.answer, { ALLOWED_TAGS: [] });
+      return `
+        <div class="question">
+          <h3>Question ${i + 1}</h3>
+          <p>${sanitizedQuestion}</p>
+          <div class="answer">
+            <p>${sanitizedAnswer}</p>
+            <div class="confidence">Confidence: ${(a.confidence * 100).toFixed(1)}%</div>
+            ${a.edited ? '<div class="edited">✓ Edited</div>' : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -170,20 +188,10 @@ export const RFPResponder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </head>
         <body>
           <h1>RFP Responses</h1>
-          <p><strong>Company Context:</strong> ${context || 'Not provided'}</p>
+          <p><strong>Company Context:</strong> ${sanitizedContext}</p>
           <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
           <hr>
-          ${answers.map((a, i) => `
-            <div class="question">
-              <h3>Question ${i + 1}</h3>
-              <p>${a.question}</p>
-              <div class="answer">
-                <p>${a.answer}</p>
-                <div class="confidence">Confidence: ${(a.confidence * 100).toFixed(1)}%</div>
-                ${a.edited ? '<div class="edited">✓ Edited</div>' : ''}
-              </div>
-            </div>
-          `).join('')}
+          ${sanitizedAnswers}
         </body>
       </html>
     `;
