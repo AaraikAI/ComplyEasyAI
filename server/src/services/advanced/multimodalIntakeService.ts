@@ -454,16 +454,12 @@ class MultimodalIntakeService {
       
       // Convert to TranscriptionResult format
       const result: TranscriptionResult['speakers'] = Array.from(speakers.entries()).map(([speakerId, data]) => ({
-        speakerId,
-        segments: data.segments.map(idx => ({
-          start: segments[idx].start,
-          end: segments[idx].end,
-          confidence: segments[idx].confidence || 0.9,
-        })),
+        id: speakerId,
+        segments: data.segments,
       }));
-      
-      logger.info(`[Multimodal] Speaker diarization complete: ${result.length} speakers identified`);
-      return result;
+
+      logger.info(`[Multimodal] Speaker diarization complete: ${result?.length || 0} speakers identified`);
+      return result || [];
     } catch (error) {
       logger.error('[Multimodal] Error in speaker diarization', error);
       return [];

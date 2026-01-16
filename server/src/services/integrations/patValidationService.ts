@@ -39,11 +39,11 @@ class PATValidationService {
         case 'digitalocean':
           return await this.validateDigitalOceanToken(token);
         case 'onelogin':
-          return await this.validateOneLoginToken(token, baseUrl);
+          return await this.validateOktaToken(token, baseUrl);
         case 'microsoft':
         case 'microsoft365':
         case 'office365':
-          return await this.validateMicrosoft365Token(token);
+          return await this.validateMicrosoftTeamsToken(token);
         case 'docker':
         case 'dockerhub':
           return await this.validateDockerHubToken(token);
