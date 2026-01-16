@@ -84,8 +84,39 @@ echo "Step 3/6: Downloading Powers of Tau ceremony file..."
 PTAU_FILE="powersOfTau28_hez_final_12.ptau"
 if [ ! -f "$PTAU_FILE" ]; then
     echo "Downloading $PTAU_FILE (6.5 MB)..."
-    curl -L -o "$PTAU_FILE" "https://hermez.s3-eu-west-1.amazonaws.com/$PTAU_FILE"
-    echo -e "${GREEN}✓ Powers of Tau downloaded${NC}"
+
+    # Multiple mirror URLs (try in order until one works)
+    PTAU_URLS=(
+        "https://storage.googleapis.com/zkevm/ptau/$PTAU_FILE"
+        "https://github.com/iden3/snarkjs/raw/master/build/$PTAU_FILE"
+        "https://ipfs.io/ipfs/QmTiT4eiYz5KF7gQrDsgfBDVZmCc8CPPFmzGhdXVmq8dXR?filename=$PTAU_FILE"
+        "https://cloudflare-ipfs.com/ipfs/QmTiT4eiYz5KF7gQrDsgfBDVZmCc8CPPFmzGhdXVmq8dXR?filename=$PTAU_FILE"
+        "https://hermez.s3-eu-west-1.amazonaws.com/$PTAU_FILE"
+    )
+
+    DOWNLOAD_SUCCESS=0
+    for url in "${PTAU_URLS[@]}"; do
+        echo "Trying: $url"
+        if curl -L -f -o "$PTAU_FILE" "$url" 2>/dev/null; then
+            DOWNLOAD_SUCCESS=1
+            echo -e "${GREEN}✓ Powers of Tau downloaded successfully${NC}"
+            break
+        else
+            echo -e "${YELLOW}  Failed, trying next mirror...${NC}"
+            rm -f "$PTAU_FILE"  # Clean up partial download
+        fi
+    done
+
+    if [ $DOWNLOAD_SUCCESS -eq 0 ]; then
+        echo -e "${RED}Error: Could not download Powers of Tau from any mirror${NC}"
+        echo ""
+        echo "Please download manually from one of these sources:"
+        echo "1. https://github.com/iden3/snarkjs/tree/master/build"
+        echo "2. https://github.com/hermeznetwork/phase2ceremony_4/tree/main/ptau"
+        echo ""
+        echo "Save as: $SCRIPT_DIR/$PTAU_FILE"
+        exit 1
+    fi
 else
     echo -e "${GREEN}✓ Powers of Tau already exists${NC}"
 fi
