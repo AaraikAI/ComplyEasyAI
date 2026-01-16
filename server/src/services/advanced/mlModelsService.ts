@@ -370,8 +370,8 @@ class MLModelsService {
     risks: any[];
     frameworks: any[];
     controls: any[];
-  }): Graph {
-    const graph = new Graph();
+  }): any {
+    const graph = new Graph() as any;
 
     // Add nodes
     for (const risk of data.risks) {
@@ -436,7 +436,7 @@ class MLModelsService {
    * Predict future risks using TGN
    */
   async predictRisksWithTGN(
-    graph: Graph,
+    graph: any,
     timeHorizonMonths: number
   ): Promise<Array<{
     riskType: string;
@@ -470,7 +470,7 @@ class MLModelsService {
         predictedDate: Date;
       }> = [];
 
-      const riskNodes = graph.filterNodes((node) => {
+      const riskNodes = graph.filterNodes((node: any) => {
         const attrs = graph.getNodeAttributes(node);
         return attrs.type === 'risk';
       });
@@ -504,7 +504,7 @@ class MLModelsService {
   /**
    * Extract features from graph for ML model
    */
-  private extractGraphFeatures(graph: Graph): number[] {
+  private extractGraphFeatures(graph: any): number[] {
     const features: number[] = [];
 
     // Node count
@@ -514,36 +514,36 @@ class MLModelsService {
     features.push(graph.size);
 
     // Average degree
-    const degrees = graph.nodes().map((node) => graph.degree(node));
-    const avgDegree = degrees.reduce((a, b) => a + b, 0) / degrees.length;
+    const degrees = graph.nodes().map((node: any) => graph.degree(node));
+    const avgDegree = degrees.reduce((a: any, b: any) => a + b, 0) / degrees.length;
     features.push(avgDegree);
 
     // Risk node count
-    const riskNodes = graph.filterNodes((node) => {
+    const riskNodes = graph.filterNodes((node: any) => {
       return graph.getNodeAttributes(node).type === 'risk';
     });
     features.push(riskNodes.length);
 
     // Framework node count
-    const frameworkNodes = graph.filterNodes((node) => {
+    const frameworkNodes = graph.filterNodes((node: any) => {
       return graph.getNodeAttributes(node).type === 'framework';
     });
     features.push(frameworkNodes.length);
 
     // Control node count
-    const controlNodes = graph.filterNodes((node) => {
+    const controlNodes = graph.filterNodes((node: any) => {
       return graph.getNodeAttributes(node).type === 'control';
     });
     features.push(controlNodes.length);
 
     // Average edge weight
     const edges = graph.edges();
-    const weights = edges.map((edge) => graph.getEdgeAttributes(edge).weight || 0);
-    const avgWeight = weights.reduce((a, b) => a + b, 0) / weights.length;
+    const weights = edges.map((edge: any) => graph.getEdgeAttributes(edge).weight || 0);
+    const avgWeight = weights.reduce((a: any, b: any) => a + b, 0) / weights.length;
     features.push(avgWeight);
 
     // Temporal spread (time range)
-    const timestamps = graph.nodes().map((node) => graph.getNodeAttributes(node).timestamp || 0);
+    const timestamps = graph.nodes().map((node: any) => graph.getNodeAttributes(node).timestamp || 0);
     const minTime = Math.min(...timestamps);
     const maxTime = Math.max(...timestamps);
     const timeSpread = (maxTime - minTime) / (1000 * 60 * 60 * 24); // days
