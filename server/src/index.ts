@@ -97,14 +97,14 @@ app.use(helmet({
       // Use nonces for inline styles (stricter than 'unsafe-inline')
       styleSrc: [
         "'self'",
-        (req: Request) => `'nonce-${(req as any).nonce}'`,
+        (req: any) => `'nonce-${req.nonce}'`,
         // Allow Tailwind CDN in development (consider self-hosting in production)
         ...(process.env.NODE_ENV === 'development' ? ["'unsafe-inline'", "https://cdn.tailwindcss.com"] : []),
       ],
       // Use nonces for inline scripts (stricter than 'unsafe-inline')
       scriptSrc: [
         "'self'",
-        (req: Request) => `'nonce-${(req as any).nonce}'`,
+        (req: any) => `'nonce-${req.nonce}'`,
         // Allow Vite HMR and Tailwind CDN in development
         ...(process.env.NODE_ENV === 'development' ? ["'unsafe-eval'", "https://cdn.tailwindcss.com"] : []),
       ],

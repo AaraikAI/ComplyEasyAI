@@ -195,28 +195,34 @@ class FeatureService {
       const subscription = await stripe.subscriptions.retrieve(org.stripeSubscriptionId);
 
       // Create price if not exists (in production, create these in Stripe dashboard)
-      // For now, we'll add the item directly with a unit amount
+      // For now, we'll create a product and price first, then add to subscription
       const unitAmount = billingCycle === 'annual' 
         ? Math.round(price * 100) // Convert to cents
         : Math.round((price / 12) * 100);
 
-      const subscriptionItem = await stripe.subscriptionItems.create({
-        subscription: org.stripeSubscriptionId,
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: feature.name,
-            description: feature.description,
-          },
-          unit_amount: unitAmount,
-          recurring: {
-            interval: billingCycle === 'annual' ? 'year' : 'month',
-          },
+      // Create a product for this feature
+      const product = await stripe.products.create({
+        name: feature.name,
+        description: feature.description || undefined,
+      });
+
+      // Create a recurring price for the product
+      const stripePrice = await stripe.prices.create({
+        product: product.id,
+        currency: 'usd',
+        unit_amount: unitAmount,
+        recurring: {
+          interval: billingCycle === 'annual' ? 'year' : 'month',
         },
       });
 
+      const subscriptionItem = await stripe.subscriptionItems.create({
+        subscription: org.stripeSubscriptionId,
+        price: stripePrice.id,
+      });
+
       stripeSubscriptionItemId = subscriptionItem.id;
-      stripePriceId = subscriptionItem.price.id;
+      stripePriceId = stripePrice.id;
     } catch (error: any) {
       logger.error('Failed to create Stripe subscription item', { error, featureId, organizationId });
       throw new Error('Failed to create Stripe subscription item');

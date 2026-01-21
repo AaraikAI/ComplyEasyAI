@@ -1612,12 +1612,6 @@ export const api = {
       getAdsFromRepository: async (platformId: string): Promise<{ ads: any[] }> => {
         return fetchAPI<{ ads: any[] }>(`/eu-regulations/dsa/platforms/${platformId}/ad-repository`);
       },
-      getPlatform: async (platformId: string): Promise<{ platform: any }> => {
-        return fetchAPI<{ platform: any }>(`/eu-regulations/dsa/platforms/${platformId}`);
-      },
-      getPlatform: async (platformId: string): Promise<{ platform: any }> => {
-        return fetchAPI<{ platform: any }>(`/eu-regulations/dsa/platforms/${platformId}`);
-      },
       getContentModerationHistory: async (platformId: string): Promise<{ history: any[] }> =>
         fetchAPI<{ history: any[] }>(`/eu-regulations/dsa/platforms/${platformId}/content-moderation`),
       getTransparencyReports: async (platformId: string): Promise<{ reports: any[] }> =>

@@ -768,10 +768,10 @@ class EURegulationsController {
   };
 
   /**
-   * Get transparency reports
+   * Get DSA transparency reports
    * GET /api/eu-regulations/dsa/platforms/:id/transparency-reports
    */
-  getTransparencyReports: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  getDSATransparencyReports: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;

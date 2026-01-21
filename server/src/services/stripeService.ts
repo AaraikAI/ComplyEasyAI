@@ -723,18 +723,6 @@ class StripeService {
           await this.handleTrialEnding(event.data.object as Stripe.Subscription);
           break;
 
-        case 'customer.subscription_item.created':
-          await this.handleSubscriptionItemCreated(event.data.object as Stripe.SubscriptionItem);
-          break;
-
-        case 'customer.subscription_item.updated':
-          await this.handleSubscriptionItemUpdated(event.data.object as Stripe.SubscriptionItem);
-          break;
-
-        case 'customer.subscription_item.deleted':
-          await this.handleSubscriptionItemDeleted(event.data.object as Stripe.SubscriptionItem);
-          break;
-
         default:
           logger.info(`Unhandled event type: ${event.type}`);
       }
