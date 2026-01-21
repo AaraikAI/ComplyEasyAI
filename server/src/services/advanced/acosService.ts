@@ -540,14 +540,14 @@ class ACOSService {
 
         await this.recordLoopHistory(loopId, organizationId, 'learn', learned, learnDuration, true);
 
-        const newConfidence = Math.max(0, Math.min(1, loop.confidence + learned.confidenceAdjustment));
+        // Don't update confidence based on execution - confidence is based on control implementation status
+        // Confidence will be updated separately when control status changes
         const newCycleCount = loop.cycleCount + 1;
 
-        // Update the loop in database
+        // Update the loop in database (without changing confidence)
         await prisma.controlLoop.update({
           where: { id: loopId },
           data: {
-            confidence: newConfidence,
             cycleCount: newCycleCount,
             lastObserved: new Date(),
             lastActed: acted ? new Date() : loop.lastActed,
@@ -558,7 +558,25 @@ class ACOSService {
           },
         });
 
-        logger.info(`[aCOS] Control loop executed: ${loopId}, cycles: ${newCycleCount}, confidence: ${newConfidence}`);
+        // Recalculate confidence based on current control implementation status
+        const updatedControl = await prisma.frameworkControl.findUnique({
+          where: { id: control.id },
+        });
+        if (updatedControl) {
+          const calculatedConfidence = this.calculateConfidenceFromControlStatus(updatedControl.status);
+          await prisma.controlLoop.update({
+            where: { id: loopId },
+            data: { confidence: calculatedConfidence },
+          });
+        }
+
+        // Get updated confidence after recalculation
+        const updatedLoop = await prisma.controlLoop.findUnique({
+          where: { id: loopId },
+        });
+        const finalConfidence = updatedLoop?.confidence || loop.confidence;
+
+        logger.info(`[aCOS] Control loop executed: ${loopId}, cycles: ${newCycleCount}, confidence: ${finalConfidence}`);
 
         return {
           observed,
@@ -566,7 +584,7 @@ class ACOSService {
           acted,
           verified,
           learned,
-          confidence: newConfidence,
+          confidence: finalConfidence,
           cycleCount: newCycleCount,
           scoreChange,
         };
@@ -2253,6 +2271,61 @@ class ACOSService {
   /**
    * Record control loop execution history
    */
+  /**
+   * Calculate confidence score based on control implementation status
+   * Confidence reflects how well the control is implemented, not execution success
+   */
+  private calculateConfidenceFromControlStatus(controlStatus: string): number {
+    // Map control status to confidence score (0-1)
+    const statusConfidenceMap: Record<string, number> = {
+      'Implemented': 0.95,      // Fully implemented - very high confidence
+      'Compliant': 0.90,        // Compliant - high confidence
+      'In_Progress': 0.60,     // In progress - moderate confidence
+      'At Risk': 0.40,         // At risk - low confidence
+      'Pending': 0.25,         // Pending - very low confidence
+      'Not_Implemented': 0.10, // Not implemented - minimal confidence
+      'Failed': 0.05,          // Failed - almost no confidence
+    };
+
+    return statusConfidenceMap[controlStatus] || 0.5; // Default to 0.5 if status unknown
+  }
+
+  /**
+   * Update confidence for all control loops associated with a control
+   * Called when control status changes
+   */
+  async updateControlLoopConfidence(controlId: string, organizationId: string): Promise<void> {
+    try {
+      const control = await prisma.frameworkControl.findUnique({
+        where: { id: controlId },
+      });
+
+      if (!control) {
+        logger.warn(`[aCOS] Control not found for confidence update: ${controlId}`);
+        return;
+      }
+
+      const calculatedConfidence = this.calculateConfidenceFromControlStatus(control.status);
+
+      // Update all loops for this control
+      await prisma.controlLoop.updateMany({
+        where: {
+          controlId,
+          organizationId,
+        },
+        data: {
+          confidence: calculatedConfidence,
+          updatedAt: new Date(),
+        },
+      });
+
+      logger.info(`[aCOS] Updated confidence for control loops of control ${controlId} to ${calculatedConfidence} (status: ${control.status})`);
+    } catch (error) {
+      logger.error('[aCOS] Error updating control loop confidence', error);
+      // Don't throw - this is a background update
+    }
+  }
+
   private async recordLoopHistory(
     loopId: string,
     organizationId: string,

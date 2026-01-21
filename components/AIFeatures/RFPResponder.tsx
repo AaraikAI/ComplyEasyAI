@@ -196,9 +196,16 @@ export const RFPResponder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </html>
     `;
 
+    // SECURITY: Sanitize entire HTML content before writing to prevent XSS
+    const sanitizedHtmlContent = DOMPurify.sanitize(htmlContent, {
+      ALLOWED_TAGS: ['html', 'head', 'body', 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'strong', 'em', 'br', 'style', 'hr', 'title'],
+      ALLOWED_ATTR: ['class', 'style'],
+      ALLOW_DATA_ATTR: false
+    });
+
     const printWindow = window.open('', '_blank');
     if (printWindow) {
-      printWindow.document.write(htmlContent);
+      printWindow.document.write(sanitizedHtmlContent);
       printWindow.document.close();
       printWindow.print();
     }

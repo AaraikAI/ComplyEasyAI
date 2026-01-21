@@ -56,6 +56,7 @@ router.delete('/actors/:actorId', authorize('admin', 'editor'), asyncHandler(aiR
 
 router.post('/systems/:aiSystemId/assessments', authorize('admin', 'editor'), asyncHandler(aiRmfController.createAssessment.bind(aiRmfController)));
 router.get('/systems/:aiSystemId/assessments', asyncHandler(aiRmfController.getAssessments.bind(aiRmfController)));
+router.delete('/assessments/:assessmentId', authorize('admin', 'editor'), asyncHandler(aiRmfController.deleteAssessment.bind(aiRmfController)));
 
 // ============================================================================
 // Profiles

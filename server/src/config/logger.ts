@@ -1,6 +1,7 @@
 import winston from 'winston';
 import config from './index';
 import elasticsearch from './elasticsearch';
+import { sanitizeForLogging } from '../utils/logSanitizer';
 
 const { combine, timestamp, printf, colorize, errors, json } = winston.format;
 
@@ -10,8 +11,29 @@ const logFormat = printf(({ level, message, timestamp, stack, ...meta }) => {
   return `${timestamp} [${level}]: ${stack || message} ${metaStr}`;
 });
 
+// Sanitization format - removes sensitive data before logging
+const sanitizationFormat = winston.format((info) => {
+  // Sanitize all metadata
+  if (info.metadata) {
+    info.metadata = sanitizeForLogging(info.metadata);
+  }
+
+  // Sanitize message if it's an object
+  if (typeof info.message === 'object') {
+    info.message = sanitizeForLogging(info.message);
+  }
+
+  // Sanitize any additional fields
+  if (info.error) {
+    info.error = sanitizeForLogging(info.error);
+  }
+
+  return info;
+})();
+
 // JSON format for structured logging (file/Elasticsearch)
 const jsonFormat = combine(
+  sanitizationFormat, // Apply sanitization first
   errors({ stack: true }),
   timestamp(),
   json()

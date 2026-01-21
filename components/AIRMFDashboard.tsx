@@ -63,11 +63,18 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
       }
     };
     
+    // Listen for trustworthiness updates
+    const handleTrustworthinessUpdate = () => {
+      loadDashboardData();
+    };
+    
     window.addEventListener('aiRmfTabChange', handleTabChange as EventListener);
+    window.addEventListener('aiSystemTrustworthinessUpdated', handleTrustworthinessUpdate);
     
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener('aiRmfTabChange', handleTabChange as EventListener);
+      window.removeEventListener('aiSystemTrustworthinessUpdated', handleTrustworthinessUpdate);
     };
   }, []);
 

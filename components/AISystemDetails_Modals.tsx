@@ -172,6 +172,154 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
 };
 
 // Create Actor Modal
+// Edit Risk Activity Modal
+export const EditRiskActivityModal: React.FC<any> = ({ activity, teamMembers, onClose }) => {
+  const { user } = useAuth();
+  const [formData, setFormData] = useState({
+    status: activity.status || 'Open',
+    riskLevel: activity.riskLevel || 'Medium',
+    mitigationPlan: activity.mitigationPlan || '',
+    ownerId: activity.ownerId || '',
+    targetDate: activity.targetDate ? new Date(activity.targetDate).toISOString().split('T')[0] : '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      await api.aiRmf.updateRiskActivity(activity.id, {
+        status: formData.status,
+        riskLevel: formData.riskLevel,
+        mitigationPlan: formData.mitigationPlan && formData.mitigationPlan.trim() ? formData.mitigationPlan : undefined,
+        ownerId: formData.ownerId && formData.ownerId.trim() ? formData.ownerId : undefined,
+        targetDate: formData.targetDate ? new Date(formData.targetDate) : undefined,
+      });
+      onClose();
+    } catch (error: any) {
+      console.error('Failed to update risk activity:', error);
+      alert(`Failed to update risk activity: ${error.message || 'Unknown error'}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">Update Risk Activity</h2>
+          <button
+            onClick={onClose}
+            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+            <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-700">
+              {activity.activityType.replace(/_/g, ' ')}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-700">
+              {activity.description}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+              required
+            >
+              <option value="Open">Open</option>
+              <option value="In_Progress">In Progress</option>
+              <option value="Mitigated">Mitigated</option>
+              <option value="Closed">Closed</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Risk Level *</label>
+            <select
+              value={formData.riskLevel}
+              onChange={(e) => setFormData({ ...formData, riskLevel: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+              required
+            >
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Mitigation Plan</label>
+            <textarea
+              value={formData.mitigationPlan}
+              onChange={(e) => setFormData({ ...formData, mitigationPlan: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+              rows={4}
+              placeholder="Describe the mitigation plan..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Owner</label>
+            <select
+              value={formData.ownerId}
+              onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value="">Unassigned</option>
+              {teamMembers.map((member: any) => (
+                <option key={member.id} value={member.id}>
+                  {member.name || member.email}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+            <input
+              type="date"
+              value={formData.targetDate}
+              onChange={(e) => setFormData({ ...formData, targetDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
+            >
+              {submitting ? 'Updating...' : 'Update Risk Activity'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 export const CreateActorModal: React.FC<any> = ({ systemId, teamMembers, onClose }) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({

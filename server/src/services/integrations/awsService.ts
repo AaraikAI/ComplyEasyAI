@@ -10,6 +10,18 @@ import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 
+// Security fix for GHSA-j965-2qgj-vjmq: Validate AWS region parameter
+const validateRegion = (region: string): string => {
+  if (!region || typeof region !== 'string') {
+    throw new Error('AWS region must be a non-empty string');
+  }
+  // Basic validation - allow alphanumeric, hyphens, underscores
+  if (!/^[a-zA-Z0-9_-]+$/.test(region)) {
+    throw new Error('Invalid AWS region format');
+  }
+  return region;
+};
+
 interface AWSCredentials {
   accessKeyId: string;
   secretAccessKey: string;
@@ -43,7 +55,7 @@ class AWSService {
       const sts = new AWS.STS({
         accessKeyId: credentials.accessKeyId,
         secretAccessKey: credentials.secretAccessKey,
-        region: credentials.region,
+        region: validateRegion(credentials.region),
         sessionToken: credentials.sessionToken,
       });
 
@@ -164,7 +176,7 @@ class AWSService {
       const cloudtrail = new AWS.CloudTrail({
         accessKeyId: credentials.accessKeyId,
         secretAccessKey: credentials.secretAccessKey,
-        region: credentials.region,
+        region: validateRegion(credentials.region),
         sessionToken: credentials.sessionToken,
       });
 
@@ -214,7 +226,7 @@ class AWSService {
       const s3 = new AWS.S3({
         accessKeyId: credentials.accessKeyId,
         secretAccessKey: credentials.secretAccessKey,
-        region: credentials.region,
+        region: validateRegion(credentials.region),
         sessionToken: credentials.sessionToken,
       });
 
@@ -279,7 +291,7 @@ class AWSService {
       const iam = new AWS.IAM({
         accessKeyId: credentials.accessKeyId,
         secretAccessKey: credentials.secretAccessKey,
-        region: credentials.region,
+        region: validateRegion(credentials.region),
         sessionToken: credentials.sessionToken,
       });
 
@@ -332,7 +344,7 @@ class AWSService {
       const configService = new AWS.ConfigService({
         accessKeyId: credentials.accessKeyId,
         secretAccessKey: credentials.secretAccessKey,
-        region: credentials.region,
+        region: validateRegion(credentials.region),
         sessionToken: credentials.sessionToken,
       });
 
@@ -393,7 +405,7 @@ class AWSService {
       const securityhub = new AWS.SecurityHub({
         accessKeyId: credentials.accessKeyId,
         secretAccessKey: credentials.secretAccessKey,
-        region: credentials.region,
+        region: validateRegion(credentials.region),
         sessionToken: credentials.sessionToken,
       });
 

@@ -3,16 +3,19 @@ import React, { useState } from 'react';
 import { 
   ArrowRight, CheckCircle, Lock, Shield, Zap, Globe, X, Mail, Loader2, BarChart, Users, Server,
   ShieldCheck, EyeOff, Key, GitMerge, BrainCircuit, Timer, Target, RefreshCw, TrendingUp,
-  AlertTriangle, FileCheck, Network, Mic, Video, Radio, Cpu, Eye, Layers, Workflow, Sparkles
+  AlertTriangle, FileCheck, Network, Mic, Video, Radio, Cpu, Eye, Layers, Workflow, Sparkles,
+  ClipboardCheck
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import PricingSection from './PricingSection';
+import DemoBookingForm from './DemoBookingForm';
 import { TierName } from '../types';
 
 export const LandingPage: React.FC = () => {
   const { verifyMagicLink, register, loginWithMagicLink } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
   const [authStep, setAuthStep] = useState<'email' | 'magic-link-sent' | 'register' | 'password-login'>('email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -192,10 +195,10 @@ export const LandingPage: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
               <button 
-                onClick={() => { setAuthStep('email'); setShowAuthModal(true); }}
+                onClick={() => setShowDemoModal(true)}
                 className="w-full sm:w-auto px-8 py-4 bg-brand-600 text-white rounded-full font-semibold hover:bg-brand-700 transition-all transform hover:scale-105 shadow-xl shadow-brand-600/20 flex items-center justify-center"
               >
-                Start Free Trial <ArrowRight size={20} className="ml-2" />
+                Book a Demo <ArrowRight size={20} className="ml-2" />
               </button>
             </div>
           </div>
@@ -242,6 +245,11 @@ export const LandingPage: React.FC = () => {
                 icon: Server, 
                 title: '100+ Integrations', 
                 desc: 'Seamlessly connect with AWS, Google Workspace, GitHub, Jira, Slack, and more to unify your data.'
+              },
+              { 
+                icon: ClipboardCheck, 
+                title: 'NIST AI RMF Framework', 
+                desc: 'Comprehensive AI risk management with GOVERN, MAP, MEASURE, and MANAGE functions. Track trustworthiness characteristics, lifecycle stages, and conduct detailed assessments.'
               },
               // aCOS Features
               {
@@ -339,6 +347,22 @@ export const LandingPage: React.FC = () => {
                 icon: Timer,
                 title: 'JIT Admin Access',
                 desc: 'Eliminate dormant admin accounts. Grant temporary, time-bound privileged access that automatically expires after the task is done.'
+              },
+              // EU Regulations
+              {
+                icon: ShieldCheck,
+                title: 'EU AI Act Compliance',
+                desc: 'Comprehensive compliance management for Regulation (EU) 2024/1689. Risk-based classification, high-risk system management, transparency reporting, and 20+ automated controls for AI systems.'
+              },
+              {
+                icon: Globe,
+                title: 'Digital Markets Act (DMA)',
+                desc: 'Full DMA compliance for gatekeeper platforms. Track Core Platform Services, manage data portability, ensure interoperability, monitor prohibited practices, and generate compliance reports per Regulation (EU) 2022/1925.'
+              },
+              {
+                icon: Shield,
+                title: 'Digital Services Act (DSA)',
+                desc: 'Complete DSA compliance for online platforms. Content moderation tracking, illegal content reporting, VLOP/VLOSE designation, ad repository management, transparency reporting, and 31+ controls per Regulation (EU) 2022/2065.'
               }
             ].map((feature, idx) => (
               <div key={idx} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all hover:-translate-y-1">
@@ -443,6 +467,15 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Demo Booking Modal */}
+      {showDemoModal && (
+        <DemoBookingForm
+          isOpen={showDemoModal}
+          onClose={() => setShowDemoModal(false)}
+          source="landing_page"
+        />
+      )}
 
       {/* Auth Modal (Magic Link / SSO) */}
       {showAuthModal && (

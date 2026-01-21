@@ -1332,6 +1332,12 @@ export const api = {
       return fetchAPI(`/ai-rmf/systems/${aiSystemId}/assessments`);
     },
 
+    deleteAssessment: async (assessmentId: string) => {
+      return fetchAPI(`/ai-rmf/assessments/${assessmentId}`, {
+        method: 'DELETE',
+      });
+    },
+
     // Profiles
     createProfile: async (aiSystemId: string, data: {
       profileName: string;
@@ -1382,6 +1388,279 @@ export const api = {
 
     getDashboardData: async () => {
       return fetchAPI('/ai-rmf/dashboard');
+    },
+  },
+
+  // ============================================================================
+  // FEATURE SUBSCRIPTIONS (A-La-Carte)
+  // ============================================================================
+
+  /**
+   * Get all available features for organization's tier
+   */
+  getAvailableFeatures: async (): Promise<{ features: any[] }> => {
+    return fetchAPI<{ features: any[] }>('/billing/features');
+  },
+
+  /**
+   * Get active feature subscriptions
+   */
+  getFeatureSubscriptions: async (): Promise<{ subscriptions: any[]; totalAnnualCost: number; totalMonthlyCost: number }> => {
+    return fetchAPI<{ subscriptions: any[]; totalAnnualCost: number; totalMonthlyCost: number }>('/billing/features/subscriptions');
+  },
+
+  /**
+   * Subscribe to a feature
+   */
+  subscribeToFeature: async (featureId: string, billingCycle: 'monthly' | 'annual' = 'annual'): Promise<{ subscription: any }> => {
+    return fetchAPI<{ subscription: any }>(`/billing/features/${featureId}/subscribe`, {
+      method: 'POST',
+      body: JSON.stringify({ billingCycle }),
+    });
+  },
+
+  /**
+   * Unsubscribe from a feature
+   */
+  unsubscribeFromFeature: async (featureId: string): Promise<{ message: string }> => {
+    return fetchAPI<{ message: string }>(`/billing/features/${featureId}/unsubscribe`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Check feature access
+   */
+  checkFeatureAccess: async (featureId: string): Promise<{ hasAccess: boolean; feature: any }> => {
+    return fetchAPI<{ hasAccess: boolean; feature: any }>(`/billing/features/${featureId}/access`);
+  },
+
+  /**
+   * Get available feature bundles
+   */
+  getAvailableBundles: async (): Promise<{ bundles: any[] }> => {
+    return fetchAPI<{ bundles: any[] }>('/billing/bundles');
+  },
+
+  /**
+   * Subscribe to a feature bundle
+   */
+  subscribeToBundle: async (bundleId: string, billingCycle: 'monthly' | 'annual' = 'annual'): Promise<{ subscriptions: any[]; count: number }> => {
+    return fetchAPI<{ subscriptions: any[]; count: number }>(`/billing/bundles/${bundleId}/subscribe`, {
+      method: 'POST',
+      body: JSON.stringify({ billingCycle }),
+    });
+  },
+
+  // ============================================================================
+  // EU REGULATIONS COMPLIANCE
+  // ============================================================================
+  euRegulations: {
+    // EU AI Act
+    aiAct: {
+      registerSystem: async (systemData: any): Promise<{ system: any }> => {
+        return fetchAPI<{ system: any }>('/eu-regulations/ai-act/systems', {
+          method: 'POST',
+          body: JSON.stringify(systemData),
+        });
+      },
+      getSystems: async (): Promise<{ systems: any[] }> => {
+        return fetchAPI<{ systems: any[] }>('/eu-regulations/ai-act/systems');
+      },
+      getSystem: async (id: string): Promise<{ system: any }> => {
+        return fetchAPI<{ system: any }>(`/eu-regulations/ai-act/systems/${id}`);
+      },
+      updateSystem: async (id: string, updates: any): Promise<{ system: any }> => {
+        return fetchAPI<{ system: any }>(`/eu-regulations/ai-act/systems/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(updates),
+        });
+      },
+      updateSystemStatus: async (id: string, complianceStatus: string): Promise<{ system: any }> => {
+        return fetchAPI<{ system: any }>(`/eu-regulations/ai-act/systems/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ complianceStatus }),
+        });
+      },
+      deleteSystem: async (id: string): Promise<void> => {
+        return fetchAPI(`/eu-regulations/ai-act/systems/${id}`, {
+          method: 'DELETE',
+        });
+      },
+      getRiskAssessments: async (systemId: string): Promise<{ assessments: any[] }> => {
+        return fetchAPI<{ assessments: any[] }>(`/eu-regulations/ai-act/systems/${systemId}/assessments`);
+      },
+      getLatestRiskAssessment: async (systemId: string): Promise<{ assessment: any | null }> => {
+        return fetchAPI<{ assessment: any | null }>(`/eu-regulations/ai-act/systems/${systemId}/assessments/latest`);
+      },
+      conductRiskAssessment: async (systemId: string, assessmentData: any): Promise<{ assessment: any }> => {
+        return fetchAPI<{ assessment: any }>(`/eu-regulations/ai-act/systems/${systemId}/assessments`, {
+          method: 'POST',
+          body: JSON.stringify(assessmentData),
+        });
+      },
+      generateTransparencyReport: async (reportingPeriod: { start: Date; end: Date }): Promise<{ report: any }> => {
+        return fetchAPI<{ report: any }>('/eu-regulations/ai-act/transparency-reports', {
+          method: 'POST',
+          body: JSON.stringify({ reportingPeriod }),
+        });
+      },
+      getTransparencyReports: async (startDate?: Date, endDate?: Date): Promise<{ reports: any[] }> => {
+        const params = new URLSearchParams();
+        if (startDate) params.append('startDate', startDate.toISOString());
+        if (endDate) params.append('endDate', endDate.toISOString());
+        const query = params.toString();
+        return fetchAPI<{ reports: any[] }>(`/eu-regulations/ai-act/transparency-reports${query ? `?${query}` : ''}`);
+      },
+    },
+    // DMA
+    dma: {
+      registerGatekeeper: async (gatekeeperData: any): Promise<{ gatekeeper: any }> => {
+        return fetchAPI<{ gatekeeper: any }>('/eu-regulations/dma/gatekeepers', {
+          method: 'POST',
+          body: JSON.stringify(gatekeeperData),
+        });
+      },
+      getGatekeepers: async (): Promise<{ gatekeepers: any[] }> => {
+        return fetchAPI<{ gatekeepers: any[] }>('/eu-regulations/dma/gatekeepers');
+      },
+      getGatekeeper: async (id: string): Promise<{ gatekeeper: any }> => {
+        return fetchAPI<{ gatekeeper: any }>(`/eu-regulations/dma/gatekeepers/${id}`);
+      },
+      updateGatekeeper: async (id: string, updates: any): Promise<{ gatekeeper: any }> => {
+        return fetchAPI<{ gatekeeper: any }>(`/eu-regulations/dma/gatekeepers/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(updates),
+        });
+      },
+      getObligations: async (gatekeeperId: string): Promise<{ obligations: any[] }> => {
+        return fetchAPI<{ obligations: any[] }>(`/eu-regulations/dma/gatekeepers/${gatekeeperId}/obligations`);
+      },
+      getComplianceReports: async (gatekeeperId: string): Promise<{ reports: any[] }> => {
+        return fetchAPI<{ reports: any[] }>(`/eu-regulations/dma/gatekeepers/${gatekeeperId}/compliance-reports`);
+      },
+      getLatestComplianceReport: async (gatekeeperId: string): Promise<{ report: any | null }> => {
+        return fetchAPI<{ report: any | null }>(`/eu-regulations/dma/gatekeepers/${gatekeeperId}/compliance-reports/latest`);
+      },
+      deleteGatekeeper: async (id: string): Promise<void> => {
+        return fetchAPI(`/eu-regulations/dma/gatekeepers/${id}`, {
+          method: 'DELETE',
+        });
+      },
+      updateObligationCompliance: async (gatekeeperId: string, obligationType: string, complianceData: any): Promise<{ success: boolean }> => {
+        return fetchAPI<{ success: boolean }>(`/eu-regulations/dma/gatekeepers/${gatekeeperId}/obligations/${obligationType}`, {
+          method: 'PATCH',
+          body: JSON.stringify(complianceData),
+        });
+      },
+      generateComplianceReport: async (gatekeeperId: string, reportingPeriod: { start: Date; end: Date }): Promise<{ report: any }> => {
+        return fetchAPI<{ report: any }>(`/eu-regulations/dma/gatekeepers/${gatekeeperId}/compliance-reports`, {
+          method: 'POST',
+          body: JSON.stringify({ reportingPeriod }),
+        });
+      },
+    },
+    // DSA
+    dsa: {
+      registerPlatform: async (platformData: any): Promise<{ platform: any }> => {
+        return fetchAPI<{ platform: any }>('/eu-regulations/dsa/platforms', {
+          method: 'POST',
+          body: JSON.stringify(platformData),
+        });
+      },
+      getPlatforms: async (): Promise<{ platforms: any[] }> => {
+        return fetchAPI<{ platforms: any[] }>('/eu-regulations/dsa/platforms');
+      },
+      getPlatform: async (id: string): Promise<{ platform: any }> => {
+        return fetchAPI<{ platform: any }>(`/eu-regulations/dsa/platforms/${id}`);
+      },
+      updatePlatform: async (id: string, updates: any): Promise<{ platform: any }> => {
+        return fetchAPI<{ platform: any }>(`/eu-regulations/dsa/platforms/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(updates),
+        });
+      },
+      deletePlatform: async (id: string): Promise<void> => {
+        return fetchAPI(`/eu-regulations/dsa/platforms/${id}`, {
+          method: 'DELETE',
+        });
+      },
+      recordContentModeration: async (platformId: string, moderationData: any): Promise<{ moderation: any }> => {
+        return fetchAPI<{ moderation: any }>(`/eu-regulations/dsa/platforms/${platformId}/content-moderation`, {
+          method: 'POST',
+          body: JSON.stringify(moderationData),
+        });
+      },
+      reportIllegalContent: async (platformId: string, reportData: any): Promise<{ report: any }> => {
+        return fetchAPI<{ report: any }>(`/eu-regulations/dsa/platforms/${platformId}/illegal-content-reports`, {
+          method: 'POST',
+          body: JSON.stringify(reportData),
+        });
+      },
+      processIllegalContentReport: async (reportId: string, action: any): Promise<{ report: any }> => {
+        return fetchAPI<{ report: any }>(`/eu-regulations/dsa/illegal-content-reports/${reportId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(action),
+        });
+      },
+      addAdToRepository: async (platformId: string, adData: any): Promise<{ adEntry: any }> => {
+        return fetchAPI<{ adEntry: any }>(`/eu-regulations/dsa/platforms/${platformId}/ad-repository`, {
+          method: 'POST',
+          body: JSON.stringify(adData),
+        });
+      },
+      getAdsFromRepository: async (platformId: string): Promise<{ ads: any[] }> => {
+        return fetchAPI<{ ads: any[] }>(`/eu-regulations/dsa/platforms/${platformId}/ad-repository`);
+      },
+      getPlatform: async (platformId: string): Promise<{ platform: any }> => {
+        return fetchAPI<{ platform: any }>(`/eu-regulations/dsa/platforms/${platformId}`);
+      },
+      getPlatform: async (platformId: string): Promise<{ platform: any }> => {
+        return fetchAPI<{ platform: any }>(`/eu-regulations/dsa/platforms/${platformId}`);
+      },
+      getContentModerationHistory: async (platformId: string): Promise<{ history: any[] }> =>
+        fetchAPI<{ history: any[] }>(`/eu-regulations/dsa/platforms/${platformId}/content-moderation`),
+      getTransparencyReports: async (platformId: string): Promise<{ reports: any[] }> =>
+        fetchAPI<{ reports: any[] }>(`/eu-regulations/dsa/platforms/${platformId}/transparency-reports`),
+      generateTransparencyReport: async (platformId: string, reportingPeriod: { start: Date; end: Date }): Promise<{ report: any }> => {
+        return fetchAPI<{ report: any }>(`/eu-regulations/dsa/platforms/${platformId}/transparency-reports`, {
+          method: 'POST',
+          body: JSON.stringify({ reportingPeriod }),
+        });
+      },
+      conductRiskAssessment: async (platformId: string, assessmentData: any): Promise<{ assessment: any }> => {
+        return fetchAPI<{ assessment: any }>(`/eu-regulations/dsa/platforms/${platformId}/risk-assessments`, {
+          method: 'POST',
+          body: JSON.stringify(assessmentData),
+        });
+      },
+      getRiskAssessments: async (platformId: string): Promise<{ assessments: any[] }> => {
+        return fetchAPI<{ assessments: any[] }>(`/eu-regulations/dsa/platforms/${platformId}/risk-assessments`);
+      },
+      getLatestRiskAssessment: async (platformId: string): Promise<{ assessment: any | null }> => {
+        return fetchAPI<{ assessment: any | null }>(`/eu-regulations/dsa/platforms/${platformId}/risk-assessments/latest`);
+      },
+      updateRiskAssessment: async (assessmentId: string, updates: any): Promise<{ assessment: any }> => {
+        return fetchAPI<{ assessment: any }>(`/eu-regulations/dsa/risk-assessments/${assessmentId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(updates),
+        });
+      },
+      configureNonPersonalizedFeed: async (platformId: string, configData: any): Promise<{ feedConfig: any }> => {
+        return fetchAPI<{ feedConfig: any }>(`/eu-regulations/dsa/platforms/${platformId}/non-personalized-feed`, {
+          method: 'POST',
+          body: JSON.stringify(configData),
+        });
+      },
+      getNonPersonalizedFeed: async (platformId: string): Promise<{ feedConfig: any | null }> => {
+        return fetchAPI<{ feedConfig: any | null }>(`/eu-regulations/dsa/platforms/${platformId}/non-personalized-feed`);
+      },
+      updateNonPersonalizedFeedStatus: async (platformId: string, updates: any): Promise<{ feedConfig: any }> => {
+        return fetchAPI<{ feedConfig: any }>(`/eu-regulations/dsa/platforms/${platformId}/non-personalized-feed`, {
+          method: 'PATCH',
+          body: JSON.stringify(updates),
+        });
+      },
     },
   },
 };

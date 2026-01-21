@@ -6,7 +6,7 @@ import {
   CheckCircle, Clock, AlertTriangle, Edit, Save, X, Plus,
   TrendingUp, BarChart3, Target, AlertCircle, Trash2
 } from 'lucide-react';
-import { CreateRiskActivityModal, CreateActorModal } from './AISystemDetails_Modals';
+import { CreateRiskActivityModal, CreateActorModal, EditRiskActivityModal } from './AISystemDetails_Modals';
 
 interface AISystemDetailsProps {
   systemId: string;
@@ -23,6 +23,19 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
 
   useEffect(() => {
     loadSystemDetails();
+    
+    // Listen for trustworthiness updates from other instances
+    const handleTrustworthinessUpdate = (event: CustomEvent) => {
+      if (event.detail?.systemId === systemId) {
+        loadSystemDetails();
+      }
+    };
+    
+    window.addEventListener('aiSystemTrustworthinessUpdated', handleTrustworthinessUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('aiSystemTrustworthinessUpdated', handleTrustworthinessUpdate as EventListener);
+    };
   }, [systemId]);
 
   const loadSystemDetails = async () => {
@@ -63,6 +76,10 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
     try {
       await api.aiRmf.updateTrustworthinessCharacteristic(systemId, characteristic, updates);
       loadSystemDetails();
+      // Dispatch custom event to notify other components of trustworthiness update
+      window.dispatchEvent(new CustomEvent('aiSystemTrustworthinessUpdated', { 
+        detail: { systemId } 
+      }));
     } catch (error: any) {
       console.error('Failed to update trustworthiness:', error);
       alert(`Failed to update trustworthiness: ${error.message || 'Unknown error'}`);
@@ -326,7 +343,17 @@ const CoreFunctionsTab: React.FC<any> = ({ system, onSubcategoryUpdate }) => {
   const [expandedFunction, setExpandedFunction] = useState<string | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
-  const coreFunctions = system.coreFunctions || [];
+  // Maintain consistent order: GOVERN, MAP, MEASURE, MANAGE
+  const coreFunctionOrder = ['GOVERN', 'MAP', 'MEASURE', 'MANAGE'];
+  const coreFunctions = (system.coreFunctions || []).sort((a: any, b: any) => {
+    const indexA = coreFunctionOrder.indexOf(a.functionName);
+    const indexB = coreFunctionOrder.indexOf(b.functionName);
+    // If function name not in order array, put it at the end
+    if (indexA === -1 && indexB === -1) return 0;
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    return indexA - indexB;
+  });
 
   return (
     <div className="space-y-4">
@@ -368,11 +395,11 @@ const CoreFunctionsTab: React.FC<any> = ({ system, onSubcategoryUpdate }) => {
                       onClick={() => setExpandedCategory(expandedCategory === category.id ? null : category.id)}
                       className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
                     >
-                      <div>
+                      <div className="text-left flex-1 min-w-0">
                         <h5 className="font-medium text-gray-900">{category.categoryId}: {category.name}</h5>
                         <p className="text-sm text-gray-500">{category.description}</p>
                       </div>
-                      <div className="text-sm text-gray-500">{category.completionPercent}%</div>
+                      <div className="text-sm text-gray-500 flex-shrink-0 ml-4">{category.completionPercent}%</div>
                     </button>
                     {expandedCategory === category.id && (
                       <div className="p-3 border-t border-gray-200 space-y-2">
@@ -424,7 +451,7 @@ const SubcategoryItem: React.FC<any> = ({ subcategory, onUpdate }) => {
   return (
     <div className="p-3 bg-gray-50 rounded-lg">
       <div className="flex items-start justify-between mb-2">
-        <div className="flex-1">
+        <div className="flex-1 text-left min-w-0">
           <h6 className="font-medium text-gray-900">{subcategory.subcategoryId}: {subcategory.name}</h6>
           <p className="text-sm text-gray-500 mt-1">{subcategory.description}</p>
         </div>
@@ -434,7 +461,7 @@ const SubcategoryItem: React.FC<any> = ({ subcategory, onUpdate }) => {
             setStatus(e.target.value);
             if (!isEditing) setIsEditing(true);
           }}
-          className={`ml-2 px-2 py-1 rounded text-xs font-medium ${getStatusColor(status)}`}
+          className={`ml-2 px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${getStatusColor(status)}`}
         >
           <option value="Not_Started">Not Started</option>
           <option value="In_Progress">In Progress</option>
@@ -765,6 +792,7 @@ const LifecycleTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
 
 // Assessments Tab Component
 const AssessmentsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
+  const { user } = useAuth();
   const [assessments, setAssessments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -813,9 +841,32 @@ const AssessmentsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
             <div key={assessment.id} className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-bold text-gray-900">{assessment.assessmentType.replace(/_/g, ' ')}</h4>
-                <span className="text-sm text-gray-500">
-                  {new Date(assessment.assessmentDate).toLocaleDateString()}
-                </span>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-gray-500">
+                    {new Date(assessment.assessmentDate).toLocaleDateString()}
+                  </span>
+                  {user?.role === 'admin' && (
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Are you sure you want to delete this assessment?')) {
+                          return;
+                        }
+                        try {
+                          await api.aiRmf.deleteAssessment(assessment.id);
+                          loadAssessments();
+                          if (onRefresh) onRefresh();
+                        } catch (error: any) {
+                          console.error('Failed to delete assessment:', error);
+                          alert(`Failed to delete assessment: ${error.message || 'Unknown error'}`);
+                        }
+                      }}
+                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      title="Delete Assessment"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-2">
                 {assessment.overallScore !== null && (
@@ -902,6 +953,8 @@ const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
   const [riskActivities, setRiskActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<any>(null);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
 
   useEffect(() => {
@@ -988,13 +1041,21 @@ const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
                   }`}>
                     {activity.riskLevel}
                   </span>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    activity.status === 'Mitigated' ? 'bg-green-100 text-green-800' :
-                    activity.status === 'In_Progress' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                  <button
+                    onClick={() => {
+                      setSelectedActivity(activity);
+                      setShowEditModal(true);
+                    }}
+                    className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity ${
+                      activity.status === 'Mitigated' ? 'bg-green-100 text-green-800' :
+                      activity.status === 'In_Progress' ? 'bg-yellow-100 text-yellow-800' :
+                      activity.status === 'Open' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}
+                    title="Click to update status"
+                  >
                     {activity.status.replace(/_/g, ' ')}
-                  </span>
+                  </button>
                   {user?.role === 'admin' && (
                     <button
                       onClick={() => handleDelete(activity.id)}
@@ -1033,6 +1094,18 @@ const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
           teamMembers={teamMembers}
           onClose={() => {
             setShowCreateModal(false);
+            loadRiskActivities();
+            if (onRefresh) onRefresh();
+          }}
+        />
+      )}
+      {showEditModal && selectedActivity && (
+        <EditRiskActivityModal
+          activity={selectedActivity}
+          teamMembers={teamMembers}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedActivity(null);
             loadRiskActivities();
             if (onRefresh) onRefresh();
           }}

@@ -123,29 +123,109 @@ class TierService {
 
   /**
    * Check if organization has access to a specific feature
+   * Now checks both tier access and feature subscriptions
    */
   async checkFeatureAccess(
     organizationId: string,
     feature: keyof TierFeatures
   ): Promise<FeatureCheckResult> {
     const currentTier = await this.getOrganizationTier(organizationId);
-    const allowed = hasFeature(currentTier, feature);
+    const tierHasFeature = hasFeature(currentTier, feature);
     const displayName = FEATURE_DISPLAY_NAMES[feature];
 
+    // Check if feature is included in tier
+    if (tierHasFeature) {
+      return {
+        allowed: true,
+        currentTier,
+        feature,
+        displayName,
+      };
+    }
+
+    // Check if feature is purchased as add-on
+    // Map tier feature key to feature ID
+    const featureIdMap: Record<string, string> = {
+      aiContractAnalyzer: 'ai-contract-analyzer',
+      aiRfpGenerator: 'ai-rfp-generator',
+      aiPhishingSimulator: 'ai-phishing-simulator',
+      aiVendorScorer: 'ai-vendor-scorer',
+      aiDataMapper: 'ai-data-mapper',
+      aiBcpGenerator: 'ai-bcp-generator',
+      personnelManagement: 'personnel-management',
+      vendorRiskManagement: 'vendor-risk-management',
+      policyLibrary: 'policy-library',
+      trustCenter: 'trust-center',
+      multiWorkspace: 'multi-workspace',
+      advancedReporting: 'advanced-reporting',
+      issueManagement: 'issue-management',
+      acosGoals: 'acos-goals',
+      acosControlLoops: 'acos-control-loops',
+      acosDebtTracking: 'acos-debt-tracking',
+      acosChangeImpact: 'acos-change-impact',
+      acosAgenticActions: 'acos-agentic-actions',
+      acosEvidenceTruth: 'acos-evidence-truth',
+      acosRegulatoryIntelligence: 'acos-regulatory-intelligence',
+      acosTemporalGraphs: 'acos-temporal-graphs',
+      acosDigitalTwin: 'acos-digital-twin',
+      acosRedTeam: 'acos-red-team',
+      acosFederatedLearning: 'acos-federated-learning',
+      acosMultiModal: 'acos-multimodal',
+      acosPhysicalAi: 'physical-ai',
+      acosVrTraining: 'vr-training',
+      acosSwarmIntelligence: 'swarm-intelligence',
+      acosNeuroSymbolic: 'neuro-symbolic',
+      acosHomomorphicEncryption: 'homomorphic-encryption',
+      acosMonteCarlo: 'monte-carlo',
+      acosRiskPrediction: 'risk-prediction',
+      acosJitCompliance: 'jit-compliance',
+      acosRealTimeCompliance: 'real-time-compliance',
+      zeroTrustSecurity: 'zero-trust',
+      zkProofs: 'zk-proofs',
+      byokEncryption: 'byok-encryption',
+      complianceAsCode: 'compliance-as-code',
+      iotEdgeCompliance: 'iot-edge',
+      slaGuarantee: 'sla-guarantee',
+      prioritySupport: 'priority-support',
+      whiteGloveOnboarding: 'white-glove-onboarding',
+    };
+
+    const featureId = featureIdMap[feature];
+    if (featureId) {
+      const featureSubscription = await prisma.featureSubscription.findFirst({
+        where: {
+          organizationId,
+          featureId,
+          status: 'active',
+          OR: [
+            { endsAt: null },
+            { endsAt: { gt: new Date() } },
+          ],
+        },
+      });
+
+      if (featureSubscription) {
+        return {
+          allowed: true,
+          currentTier,
+          feature,
+          displayName,
+        };
+      }
+    }
+
+    // Feature not available
+    const requiredTier = TIER_ORDER.find(tier => hasFeature(tier, feature));
     const result: FeatureCheckResult = {
-      allowed,
+      allowed: false,
+      requiredTier,
       currentTier,
       feature,
       displayName,
     };
 
-    if (!allowed) {
-      // Find the minimum tier that has this feature
-      const requiredTier = TIER_ORDER.find(tier => hasFeature(tier, feature));
-      if (requiredTier) {
-        result.requiredTier = requiredTier;
-        result.upgradeMessage = `Upgrade to ${requiredTier} to access ${displayName}`;
-      }
+    if (requiredTier) {
+      result.upgradeMessage = `Purchase ${displayName} as add-on or upgrade to ${requiredTier} tier`;
     }
 
     return result;

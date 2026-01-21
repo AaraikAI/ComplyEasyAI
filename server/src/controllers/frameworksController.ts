@@ -5,6 +5,21 @@ import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
 import { ComplianceStatus } from '@prisma/client';
+import controlTemplatesService from '../services/euRegulations/controlTemplatesService';
+
+// FrameworkType enum values - matching frontend types.ts
+enum FrameworkType {
+  SOC2 = 'SOC 2 Type II',
+  GDPR = 'GDPR',
+  HIPAA = 'HIPAA',
+  ISO27001 = 'ISO 27001',
+  PCI_DSS = 'PCI DSS',
+  CCPA = 'CCPA',
+  NIST = 'NIST 800-53',
+  EU_AI_ACT = 'EU AI Act',
+  DMA = 'Digital Markets Act (DMA)',
+  DSA = 'Digital Services Act (DSA)'
+}
 
 class FrameworksController {
   // Sanitize input to prevent XSS
@@ -132,6 +147,36 @@ class FrameworksController {
           organizationId,
         },
       });
+
+      // Auto-create controls for EU regulations frameworks
+      const euFrameworkTypes = [FrameworkType.EU_AI_ACT, FrameworkType.DMA, FrameworkType.DSA];
+      if (euFrameworkTypes.includes(sanitizedName as FrameworkType)) {
+        try {
+          const controlTemplates = controlTemplatesService.getControlsForFramework(sanitizedName);
+          const controlsCreated = await Promise.all(
+            controlTemplates.map(template =>
+              prisma.frameworkControl.create({
+                data: {
+                  frameworkId: framework.id,
+                  name: template.name,
+                  description: template.description,
+                  category: template.category,
+                  evidenceRequired: template.evidenceRequired,
+                  status: template.status,
+                  mappedControls: template.mappedControls,
+                },
+              })
+            )
+          );
+          logger.info(`Auto-created ${controlsCreated.length} controls for EU framework: ${sanitizedName}`, {
+            frameworkId: framework.id,
+            organizationId,
+          });
+        } catch (controlError) {
+          logger.error(`Failed to auto-create controls for EU framework: ${sanitizedName}`, controlError);
+          // Don't fail framework creation if control creation fails
+        }
+      }
 
       // Log audit
       await prisma.auditLog.create({
@@ -577,6 +622,15 @@ class FrameworksController {
       // Recalculate framework progress if status changed
       if (updateData.status) {
         await this.recalculateFrameworkProgress(frameworkId, organizationId);
+        
+        // Update confidence for all control loops associated with this control
+        try {
+          const acosService = (await import('../services/advanced/acosService')).default;
+          await acosService.updateControlLoopConfidence(controlId, organizationId);
+        } catch (acosError) {
+          logger.warn('Failed to update control loop confidence', acosError);
+          // Don't fail the request if confidence update fails
+        }
       }
 
       // Send notification if owner was assigned/changed

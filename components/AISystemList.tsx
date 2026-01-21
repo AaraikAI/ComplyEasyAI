@@ -22,6 +22,17 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
 
   useEffect(() => {
     loadSystems();
+    
+    // Listen for trustworthiness updates
+    const handleTrustworthinessUpdate = () => {
+      loadSystems();
+    };
+    
+    window.addEventListener('aiSystemTrustworthinessUpdated', handleTrustworthinessUpdate);
+    
+    return () => {
+      window.removeEventListener('aiSystemTrustworthinessUpdated', handleTrustworthinessUpdate);
+    };
   }, [statusFilter, lifecycleFilter]);
 
   const loadSystems = async () => {

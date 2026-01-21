@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
+import crypto from 'crypto';
 import config, { validateConfig } from './config';
 import logger from './config/logger';
 import prisma, { testConnection } from './config/database';
@@ -49,6 +50,9 @@ import evidenceVersionsRoutes from './routes/evidenceVersions';
 // NIST AI RMF Routes
 import aiRmfRoutes from './routes/aiRmf';
 
+// EU Regulations Routes
+import euRegulationsRoutes from './routes/euRegulations';
+
 // aCOS Services
 import mqttService from './services/advanced/mqttService';
 
@@ -75,19 +79,49 @@ try {
   process.exit(1);
 }
 
-// Security middleware with enhanced headers
+// Security middleware with enhanced headers and CSP nonces
+// Generate nonce per request for stricter CSP (replaces 'unsafe-inline')
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Generate cryptographically secure nonce for this request
+  const nonce = crypto.randomBytes(16).toString('base64');
+  (req as any).nonce = nonce;
+  res.locals.nonce = nonce;
+  next();
+});
+
 app.use(helmet({
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      // Use nonces for inline styles (stricter than 'unsafe-inline')
+      styleSrc: [
+        "'self'",
+        (req: Request) => `'nonce-${(req as any).nonce}'`,
+        // Allow Tailwind CDN in development (consider self-hosting in production)
+        ...(process.env.NODE_ENV === 'development' ? ["'unsafe-inline'", "https://cdn.tailwindcss.com"] : []),
+      ],
+      // Use nonces for inline scripts (stricter than 'unsafe-inline')
+      scriptSrc: [
+        "'self'",
+        (req: Request) => `'nonce-${(req as any).nonce}'`,
+        // Allow Vite HMR and Tailwind CDN in development
+        ...(process.env.NODE_ENV === 'development' ? ["'unsafe-eval'", "https://cdn.tailwindcss.com"] : []),
+      ],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", config.server.apiUrl],
-      fontSrc: ["'self'"],
+      connectSrc: [
+        "'self'",
+        config.server.apiUrl,
+        // Allow Vite HMR in development
+        ...(process.env.NODE_ENV === 'development' ? ["ws://localhost:*", "http://localhost:*"] : []),
+      ],
+      fontSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
     },
   },
   hsts: {
@@ -198,6 +232,7 @@ app.use('/api/frameworks', apiLimiter, frameworksRoutes);
 app.use('/api/ai', aiRoutes); // Has its own rate limiter
 app.use('/api/billing', billingRoutes);
 app.use('/api/integrations', apiLimiter, integrationsRoutes);
+app.use('/api/eu-regulations', apiLimiter, euRegulationsRoutes);
 app.use('/api/team', apiLimiter, teamRoutes);
 app.use('/api/audit', apiLimiter, auditRoutes);
 app.use('/api/organization', apiLimiter, organizationRoutes);

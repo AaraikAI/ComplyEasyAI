@@ -8,121 +8,126 @@ datasource db {
 }
 
 model Organization {
-  id                   String                @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  name                 String
-  plan                 Plan                  @default(Foundation)
-  stripeCustomerId     String?               @unique
-  stripeSubscriptionId String?               @unique
-  subscriptionStatus   SubscriptionStatus    @default(trialing)
-  billingCycle         BillingCycle          @default(annual)
-  trialEndsAt          DateTime?
-  subscriptionStartedAt DateTime?
-  subscriptionEndsAt   DateTime?
-  cancelAtPeriodEnd    Boolean               @default(false)
-  activeAddOns         String[]              @default([])
-  usageMetrics         Json?
-  parentOrganizationId String?
-  isParent             Boolean               @default(false)
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @default(now()) @updatedAt
-  webhooks             Webhook[]
-  webhookEvents        WebhookEvent[]
-  accessReviews        AccessReview[]
-  auditLogs            AuditLog[]
-  frameworks           ComplianceFramework[]
-  monitors             ContinuousMonitor[]
-  reports              CustomReport[]
-  integrations         Integration[]
-  issues               Issue[]
-  parentOrganization   Organization?         @relation("OrgHierarchy", fields: [parentOrganizationId], references: [id])
-  childOrganizations   Organization[]        @relation("OrgHierarchy")
-  personnel            Personnel[]
-  policies             Policy[]
-  questionnaires       Questionnaire[]
-  riskAssessments      RiskAssessment[]
-  risks                RiskItem[]
-  trustCertificates    TrustCertificate[]
-  users                User[]
-  vendors              Vendor[]
-  complianceGoals      ComplianceGoal[]
-  controlLoops         ControlLoop[]
-  controlLoopHistory   ControlLoopHistory[]
-  complianceDebts      ComplianceDebt[]
-  aiSuggestions        AISuggestion[]
-  changeImpacts        ChangeImpact[]
-  agenticActions       AgenticAction[]
-  evidenceAnalyses     EvidenceAnalysis[]
-  regulatoryChanges    RegulatoryChange[]
-  regulatoryFeeds      RegulatoryFeed[]
-  riskPredictions      RiskPrediction[]
-  vrTrainingScenarios  VRTrainingScenario[]
-  vrTrainingSessions   VRTrainingSession[]
-  vrCollaborativeSessions VRCollaborativeSession[]
-  neuroSymbolicReasonings NeuroSymbolicReasoning[]
-  ruleInferences       RuleInference[]
-  federatedSwarmPeers  FederatedSwarmPeer[]
+  id                         String                      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name                       String
+  plan                       Plan                        @default(Foundation)
+  stripeCustomerId           String?                     @unique
+  stripeSubscriptionId       String?                     @unique
+  subscriptionStatus         SubscriptionStatus          @default(trialing)
+  billingCycle               BillingCycle                @default(annual)
+  trialEndsAt                DateTime?
+  subscriptionStartedAt      DateTime?
+  subscriptionEndsAt         DateTime?
+  cancelAtPeriodEnd          Boolean                     @default(false)
+  activeAddOns               String[]                    @default([])
+  usageMetrics               Json?
+  parentOrganizationId       String?
+  isParent                   Boolean                     @default(false)
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @default(now()) @updatedAt
+  webhooks                   Webhook[]
+  webhookEvents              WebhookEvent[]
+  accessReviews              AccessReview[]
+  auditLogs                  AuditLog[]
+  frameworks                 ComplianceFramework[]
+  monitors                   ContinuousMonitor[]
+  reports                    CustomReport[]
+  integrations               Integration[]
+  issues                     Issue[]
+  parentOrganization         Organization?               @relation("OrgHierarchy", fields: [parentOrganizationId], references: [id])
+  childOrganizations         Organization[]              @relation("OrgHierarchy")
+  personnel                  Personnel[]
+  policies                   Policy[]
+  questionnaires             Questionnaire[]
+  riskAssessments            RiskAssessment[]
+  risks                      RiskItem[]
+  trustCertificates          TrustCertificate[]
+  users                      User[]
+  vendors                    Vendor[]
+  complianceGoals            ComplianceGoal[]
+  controlLoops               ControlLoop[]
+  controlLoopHistory         ControlLoopHistory[]
+  complianceDebts            ComplianceDebt[]
+  aiSuggestions              AISuggestion[]
+  featureSubscriptions       FeatureSubscription[]
+  changeImpacts              ChangeImpact[]
+  agenticActions             AgenticAction[]
+  evidenceAnalyses           EvidenceAnalysis[]
+  regulatoryChanges          RegulatoryChange[]
+  regulatoryFeeds            RegulatoryFeed[]
+  riskPredictions            RiskPrediction[]
+  vrTrainingScenarios        VRTrainingScenario[]
+  vrTrainingSessions         VRTrainingSession[]
+  vrCollaborativeSessions    VRCollaborativeSession[]
+  neuroSymbolicReasonings    NeuroSymbolicReasoning[]
+  ruleInferences             RuleInference[]
+  federatedSwarmPeers        FederatedSwarmPeer[]
   federatedSwarmAggregations FederatedSwarmAggregation[]
-  notifications        Notification[]
-  complianceTrajectories ComplianceTrajectory[]
-  simulationScenarios  SimulationScenario[]
-  simulationResults    SimulationResult[]
-  redTeamResults       RedTeamResult[]
-  swarmInsights        SwarmInsight[]
-  iotDevices           IoTDevice[]
-  edgeComplianceChecks EdgeComplianceCheck[]
-  transcriptionResults TranscriptionResult[]
-  deviceTrusts         DeviceTrust[]
-  zeroTrustPolicies    ZeroTrustPolicy[]
-  networkSegments      NetworkSegment[]
-  keyUsages            KeyUsage[]
-  keyRotationPolicies  KeyRotationPolicy[]
-  compliancePolicies   CompliancePolicy[]
-  chatConversations    ChatConversation[]
-  aiSystems            AISystem[]
+  notifications              Notification[]
+  complianceTrajectories     ComplianceTrajectory[]
+  simulationScenarios        SimulationScenario[]
+  simulationResults          SimulationResult[]
+  redTeamResults             RedTeamResult[]
+  swarmInsights              SwarmInsight[]
+  iotDevices                 IoTDevice[]
+  edgeComplianceChecks       EdgeComplianceCheck[]
+  transcriptionResults       TranscriptionResult[]
+  deviceTrusts               DeviceTrust[]
+  zeroTrustPolicies          ZeroTrustPolicy[]
+  networkSegments            NetworkSegment[]
+  keyUsages                  KeyUsage[]
+  keyRotationPolicies        KeyRotationPolicy[]
+  compliancePolicies         CompliancePolicy[]
+  chatConversations          ChatConversation[]
+  aiSystems                  AISystem[]
+  euAiActSystems             EUAIActSystem[]
+  euAiActTransparencyReports EUAIActTransparencyReport[]
+  dmaGatekeepers             DMAGatekeeper[]
+  dsaPlatforms               DSAPlatform[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
 }
 
 model User {
-  id                    String                @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  email                 String                @unique
-  name                  String
-  role                  Role                  @default(viewer)
-  avatar                String?
-  passwordHash          String?
-  emailVerified         Boolean               @default(false)
-  lastLogin             DateTime?
-  employeeId            String?               @unique
-  department            String?
-  jobTitle              String?
-  manager               String?
-  startDate             DateTime?
-  endDate               DateTime?
-  active                Boolean               @default(true)
-  twoFactorEnabled      Boolean               @default(false)
-  twoFactorSecret       String?
-  twoFactorVerified     Boolean               @default(false)
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @default(now()) @updatedAt
-  organizationId        String
-  accessReviewsReviewer AccessReview[]        @relation("Reviewer")
-  auditLogs             AuditLog[]
-  assignedIssues        Issue[]               @relation("AssignedTo")
-  createdIssues         Issue[]               @relation("CreatedBy")
-  personnelRecord       Personnel?
-  assignedRisks         RiskItem[]
-  backupCodes           TwoFactorBackupCode[]
-  notifications         Notification[]
-  notificationPreference NotificationPreference?
-  ownedControls         FrameworkControl[]
+  id                       String                  @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  email                    String                  @unique
+  name                     String
+  role                     Role                    @default(viewer)
+  avatar                   String?
+  passwordHash             String?
+  emailVerified            Boolean                 @default(false)
+  lastLogin                DateTime?
+  employeeId               String?                 @unique
+  department               String?
+  jobTitle                 String?
+  manager                  String?
+  startDate                DateTime?
+  endDate                  DateTime?
+  active                   Boolean                 @default(true)
+  twoFactorEnabled         Boolean                 @default(false)
+  twoFactorSecret          String?
+  twoFactorVerified        Boolean                 @default(false)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @default(now()) @updatedAt
+  organizationId           String
+  accessReviewsReviewer    AccessReview[]          @relation("Reviewer")
+  auditLogs                AuditLog[]
+  assignedIssues           Issue[]                 @relation("AssignedTo")
+  createdIssues            Issue[]                 @relation("CreatedBy")
+  personnelRecord          Personnel?
+  assignedRisks            RiskItem[]
+  backupCodes              TwoFactorBackupCode[]
+  notifications            Notification[]
+  notificationPreference   NotificationPreference?
+  ownedControls            FrameworkControl[]
   uploadedEvidenceVersions EvidenceVersion[]
-  aiSuggestions        AISuggestion[]
-  chatConversations    ChatConversation[]
-  aiRmfSubcategoryOwner AIRMFSubcategory[]   @relation("AIRMFSubcategoryOwner")
-  aiRmfActorUser        AIRMFActor[]         @relation("AIRMFActorUser")
-  aiRmfRiskActivityOwner AIRMFRiskActivity[] @relation("AIRMFRiskActivityOwner")
-  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aiSuggestions            AISuggestion[]
+  chatConversations        ChatConversation[]
+  aiRmfSubcategoryOwner    AIRMFSubcategory[]      @relation("AIRMFSubcategoryOwner")
+  aiRmfActorUser           AIRMFActor[]            @relation("AIRMFActorUser")
+  aiRmfRiskActivityOwner   AIRMFRiskActivity[]     @relation("AIRMFRiskActivityOwner")
+  organization             Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([email])
   @@index([organizationId])
@@ -295,24 +300,24 @@ model RiskAssessment {
 }
 
 model ComplianceFramework {
-  id             String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  name           String
-  status         ComplianceStatus   @default(In_Review)
-  progress       Int                @default(0)
-  nextAuditDate  DateTime
-  region         String?
-  notes          String?            @db.Text
-  version        Int                @default(1) // For concurrent edit tracking
-  lastModifiedBy String?
-  lastModifiedAt DateTime?          @updatedAt
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @default(now()) @updatedAt
-  organizationId String
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  controls       FrameworkControl[]
-  complianceDebts ComplianceDebt[]
+  id                     String                 @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name                   String
+  status                 ComplianceStatus       @default(In_Review)
+  progress               Int                    @default(0)
+  nextAuditDate          DateTime
+  region                 String?
+  notes                  String?                @db.Text
+  version                Int                    @default(1) // For concurrent edit tracking
+  lastModifiedBy         String?
+  lastModifiedAt         DateTime?              @updatedAt
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @default(now()) @updatedAt
+  organizationId         String
+  organization           Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  controls               FrameworkControl[]
+  complianceDebts        ComplianceDebt[]
   complianceTrajectories ComplianceTrajectory[]
-  aiSuggestions  AISuggestion[]
+  aiSuggestions          AISuggestion[]
 
   @@index([organizationId])
   @@index([status])
@@ -332,12 +337,12 @@ model FrameworkControl {
   frameworkId      String
   mappedControls   Json?
   framework        ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  owner             User?               @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  owner            User?               @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   controlLoops     ControlLoop[]
   complianceDebts  ComplianceDebt[]    @relation("ComplianceDebtControl")
   sourceMappings   ControlMapping[]    @relation("SourceMappings")
   targetMappings   ControlMapping[]    @relation("TargetMappings")
-  evidenceVersions  EvidenceVersion[]
+  evidenceVersions EvidenceVersion[]
   aiSuggestions    AISuggestion[]
 
   @@index([frameworkId])
@@ -345,30 +350,30 @@ model FrameworkControl {
 }
 
 model RiskItem {
-  id               String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id               String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
   title            String
   severity         RiskSeverity
   description      String
   category         String
-  status           RiskStatus      @default(Open)
-  likelihood       Int             @default(3)
-  impact           Int             @default(3)
+  status           RiskStatus       @default(Open)
+  likelihood       Int              @default(3)
+  impact           Int              @default(3)
   riskScore        Int?
   aiPriorityScore  Int?
   aiRationale      String?
   mitigationPlan   String?
   remediationOwner String?
   targetDate       DateTime?
-  detectedAt       DateTime        @default(now())
+  detectedAt       DateTime         @default(now())
   resolvedAt       DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @default(now()) @updatedAt
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @default(now()) @updatedAt
   organizationId   String
   assignedToId     String?
   assessmentId     String?
-  assessment       RiskAssessment? @relation("AssessmentRisks", fields: [assessmentId], references: [id])
-  assignedTo       User?           @relation(fields: [assignedToId], references: [id])
-  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assessment       RiskAssessment?  @relation("AssessmentRisks", fields: [assessmentId], references: [id])
+  assignedTo       User?            @relation(fields: [assignedToId], references: [id])
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   riskPredictions  RiskPrediction[]
 
   @@index([organizationId])
@@ -725,9 +730,9 @@ enum BillingCycle {
 }
 
 enum Plan {
-  Basic        // Legacy value - will be migrated
-  Pro          // Legacy value - will be migrated
-  Enterprise   // Legacy value - will be migrated
+  Basic // Legacy value - will be migrated
+  Pro // Legacy value - will be migrated
+  Enterprise // Legacy value - will be migrated
   Foundation
   Essentials
   Growth
@@ -788,50 +793,50 @@ enum MonitorStatus {
 
 // aCOS v3.0 Models
 model ComplianceGoal {
-  id              String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  organizationId  String
-  name            String?
-  goalType        String
-  frameworks      String[]
-  riskTolerance   String
-  horizon         Int
+  id               String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String
+  name             String?
+  goalType         String
+  frameworks       String[]
+  riskTolerance    String
+  horizon          Int
   autoActionPolicy String
-  targetScore     Int?
-  deadline        DateTime?
-  status          String   @default("active")
-  createdBy       String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  targetScore      Int?
+  deadline         DateTime?
+  status           String       @default("active")
+  createdBy        String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([status])
 }
 
 model ControlLoop {
-  id            String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id             String               @id @default(dbgenerated("(uuid_generate_v4())::text"))
   organizationId String
-  controlId     String
-  observeAgent String
-  actAgent     String
-  verifyAgent  String
-  confidence   Float    @default(0.5)
-  status       String   @default("active")
-  lastObserved DateTime @default(now())
-  lastActed    DateTime @default(now())
-  lastVerified DateTime @default(now())
-  cycleCount   Int      @default(0)
-  triggerType   String?  @default("manual")
-  triggerConfig Json?
-  timeoutSeconds Int?    @default(300)
-  parentLoopId  String?
-  configuration Json?
+  controlId      String
+  observeAgent   String
+  actAgent       String
+  verifyAgent    String
+  confidence     Float                @default(0.5)
+  status         String               @default("active")
+  lastObserved   DateTime             @default(now())
+  lastActed      DateTime             @default(now())
+  lastVerified   DateTime             @default(now())
+  cycleCount     Int                  @default(0)
+  triggerType    String?              @default("manual")
+  triggerConfig  Json?
+  timeoutSeconds Int?                 @default(300)
+  parentLoopId   String?
+  configuration  Json?
   lastError      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  control      FrameworkControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
-  history      ControlLoopHistory[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  control        FrameworkControl     @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  history        ControlLoopHistory[]
 
   @@index([organizationId])
   @@index([controlId])
@@ -841,17 +846,17 @@ model ControlLoop {
 }
 
 model ControlLoopHistory {
-  id            String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  loopId        String
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  loopId         String
   organizationId String
   executionPhase String
-  phaseResult   Json
-  durationMs    Int
-  success       Boolean  @default(true)
-  error         String?
-  timestamp     DateTime @default(now())
-  loop          ControlLoop @relation(fields: [loopId], references: [id], onDelete: Cascade)
-  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  phaseResult    Json
+  durationMs     Int
+  success        Boolean      @default(true)
+  error          String?
+  timestamp      DateTime     @default(now())
+  loop           ControlLoop  @relation(fields: [loopId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([loopId])
   @@index([organizationId])
@@ -859,22 +864,22 @@ model ControlLoopHistory {
 }
 
 model ComplianceDebt {
-  id                      String    @id @default(uuid())
-  organizationId          String
-  frameworkId             String
-  controlId               String?   // Link to control
-  debtType                String
-  severity                String
-  description             String
+  id                        String              @id @default(uuid())
+  organizationId            String
+  frameworkId               String
+  controlId                 String? // Link to control
+  debtType                  String
+  severity                  String
+  description               String
   estimatedRemediationHours Int
-  deadline                DateTime? // Optional deadline
-  accumulatedAt           DateTime  @default(now())
-  resolvedAt             DateTime?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  framework               ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  control                 FrameworkControl? @relation("ComplianceDebtControl", fields: [controlId], references: [id], onDelete: SetNull)
+  deadline                  DateTime? // Optional deadline
+  accumulatedAt             DateTime            @default(now())
+  resolvedAt                DateTime?
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  organization              Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  framework                 ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  control                   FrameworkControl?   @relation("ComplianceDebtControl", fields: [controlId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([frameworkId])
@@ -884,22 +889,22 @@ model ComplianceDebt {
 }
 
 model ChangeImpact {
-  id                      String    @id @default(uuid())
-  organizationId          String
-  changeType              String
-  changeId                String
-  affectedControls        String[]
-  affectedFrameworks      String[]
-  downstreamDependencies  String[]  @default([])
-  impactScore             Int
-  riskIncrease            Float
+  id                        String       @id @default(uuid())
+  organizationId            String
+  changeType                String
+  changeId                  String
+  affectedControls          String[]
+  affectedFrameworks        String[]
+  downstreamDependencies    String[]     @default([])
+  impactScore               Int
+  riskIncrease              Float
   estimatedComplianceChange Float
-  severity                String?
-  estimatedResolutionDays Int?
-  resolvedAt              DateTime?
-  forecastedAt            DateTime  @default(now())
-  createdAt               DateTime  @default(now())
-  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  severity                  String?
+  estimatedResolutionDays   Int?
+  resolvedAt                DateTime?
+  forecastedAt              DateTime     @default(now())
+  createdAt                 DateTime     @default(now())
+  organization              Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([changeType])
@@ -908,21 +913,21 @@ model ChangeImpact {
 }
 
 model AgenticAction {
-  id              String    @id @default(uuid())
-  organizationId  String
-  actionType      String
-  targetId        String
-  parameters      Json
-  blastRadius     Json
-  requiresApproval Boolean  @default(false)
-  status          String    @default("pending")
-  rollbackData    Json?
-  executedAt      DateTime?
-  rolledBackAt    DateTime?
-  createdBy       String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id               String       @id @default(uuid())
+  organizationId   String
+  actionType       String
+  targetId         String
+  parameters       Json
+  blastRadius      Json
+  requiresApproval Boolean      @default(false)
+  status           String       @default("pending")
+  rollbackData     Json?
+  executedAt       DateTime?
+  rolledBackAt     DateTime?
+  createdBy        String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([status])
@@ -930,7 +935,7 @@ model AgenticAction {
 }
 
 model EvidenceAnalysis {
-  id                  String    @id @default(uuid())
+  id                  String       @id @default(uuid())
   evidenceId          String
   organizationId      String
   deepfakeScore       Float
@@ -939,8 +944,8 @@ model EvidenceAnalysis {
   humanLiveness       Json?
   overallConfidence   Float
   verificationStatus  String
-  analyzedAt          DateTime  @default(now())
-  createdAt           DateTime  @default(now())
+  analyzedAt          DateTime     @default(now())
+  createdAt           DateTime     @default(now())
   organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([evidenceId])
@@ -949,23 +954,23 @@ model EvidenceAnalysis {
 }
 
 model RegulatoryFeed {
-  id                String    @id @default(uuid())
-  organizationId    String
-  name              String
-  url               String
-  feedType          String    // rss, api, website
-  jurisdiction      String
-  pollingInterval   Int       @default(60) // minutes
-  status            String    @default("active") // active, paused, error
-  lastPolledAt      DateTime?
-  lastHash          String?   // For change detection
-  errorCount        Int       @default(0)
-  lastError         String?
-  metadata          Json?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  changes           RegulatoryChange[]
+  id              String             @id @default(uuid())
+  organizationId  String
+  name            String
+  url             String
+  feedType        String // rss, api, website
+  jurisdiction    String
+  pollingInterval Int                @default(60) // minutes
+  status          String             @default("active") // active, paused, error
+  lastPolledAt    DateTime?
+  lastHash        String? // For change detection
+  errorCount      Int                @default(0)
+  lastError       String?
+  metadata        Json?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  changes         RegulatoryChange[]
 
   @@index([organizationId])
   @@index([status])
@@ -974,7 +979,7 @@ model RegulatoryFeed {
 }
 
 model RegulatoryChange {
-  id                    String    @id @default(uuid())
+  id                    String          @id @default(uuid())
   organizationId        String
   regulationName        String
   jurisdiction          String
@@ -983,14 +988,14 @@ model RegulatoryChange {
   affectedFrameworks    String[]
   extractedRequirements String[]
   autoGeneratedControls Json?
-  status                String    @default("pending")
-  regulationText        String?   @db.Text
+  status                String          @default("pending")
+  regulationText        String?         @db.Text
   source                String?
-  feedId                String?   // Link to RegulatoryFeed if from feed
+  feedId                String? // Link to RegulatoryFeed if from feed
   createdBy             String
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  organization          Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   feed                  RegulatoryFeed? @relation(fields: [feedId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
@@ -1000,19 +1005,19 @@ model RegulatoryChange {
 }
 
 model RiskPrediction {
-  id                  String    @id @default(uuid())
-  organizationId      String
-  riskId             String?
-  riskType           String
+  id                   String       @id @default(uuid())
+  organizationId       String
+  riskId               String?
+  riskType             String
   predictedProbability Float
-  predictedSeverity  String
-  predictedDate       DateTime
-  confidence         Float
-  factors            String[]
-  timeHorizonMonths  Int
-  createdAt          DateTime  @default(now())
-  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  risk               RiskItem? @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  predictedSeverity    String
+  predictedDate        DateTime
+  confidence           Float
+  factors              String[]
+  timeHorizonMonths    Int
+  createdAt            DateTime     @default(now())
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  risk                 RiskItem?    @relation(fields: [riskId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([predictedDate])
@@ -1020,16 +1025,16 @@ model RiskPrediction {
 }
 
 model ComplianceTrajectory {
-  id                String    @id @default(uuid())
+  id                String              @id @default(uuid())
   organizationId    String
   frameworkId       String
   currentScore      Int
   predictedScores   Json
   trend             String
   timeHorizonMonths Int
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   framework         ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
@@ -1037,88 +1042,88 @@ model ComplianceTrajectory {
 }
 
 model SimulationScenario {
-  id              String    @id @default(uuid())
-  organizationId  String
-  name            String
-  description     String
-  scenarioType    String
-  parameters      Json
-  createdBy       String
-  createdAt       DateTime  @default(now())
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  results         SimulationResult[]
+  id             String             @id @default(uuid())
+  organizationId String
+  name           String
+  description    String
+  scenarioType   String
+  parameters     Json
+  createdBy      String
+  createdAt      DateTime           @default(now())
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  results        SimulationResult[]
 
   @@index([organizationId])
   @@index([scenarioType])
 }
 
 model SimulationResult {
-  id                    String    @id @default(uuid())
-  scenarioId            String
-  organizationId        String
-  baselineScore         Int
-  simulatedScore        Int
-  scoreChange           Int
-  affectedControls      Int
-  affectedFrameworks    Int
-  riskChanges           Json
-  confidence            Float
-  recommendations       String[]
-  createdAt             DateTime  @default(now())
-  scenario              SimulationScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
-  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                 String             @id @default(uuid())
+  scenarioId         String
+  organizationId     String
+  baselineScore      Int
+  simulatedScore     Int
+  scoreChange        Int
+  affectedControls   Int
+  affectedFrameworks Int
+  riskChanges        Json
+  confidence         Float
+  recommendations    String[]
+  createdAt          DateTime           @default(now())
+  scenario           SimulationScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([scenarioId])
   @@index([organizationId])
 }
 
 model RedTeamResult {
-  id                        String    @id @default(uuid())
-  organizationId            String
-  scenarioId                String
-  success                   Boolean
-  attackPath                String[]
-  vulnerabilitiesFound      Json
+  id                         String       @id @default(uuid())
+  organizationId             String
+  scenarioId                 String
+  success                    Boolean
+  attackPath                 String[]
+  vulnerabilitiesFound       Json
   remediationRecommendations String[]
-  executionTime             Int
-  createdBy                 String
-  createdAt                 DateTime  @default(now())
-  organization              Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  executionTime              Int
+  createdBy                  String
+  createdAt                  DateTime     @default(now())
+  organization               Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([createdAt])
 }
 
 model SwarmInsight {
-  id                    String    @id @default(uuid())
-  organizationId        String
-  insightType           String
-  description           String    @db.Text
-  confidence            Float
-  sourceCount           Int
-  applicableFrameworks  String[]
-  recommendations       String[]
-  createdAt             DateTime  @default(now())
-  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                   String       @id @default(uuid())
+  organizationId       String
+  insightType          String
+  description          String       @db.Text
+  confidence           Float
+  sourceCount          Int
+  applicableFrameworks String[]
+  recommendations      String[]
+  createdAt            DateTime     @default(now())
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([insightType])
 }
 
 model IoTDevice {
-  id                String    @id @default(uuid())
-  organizationId    String
-  deviceId          String
-  deviceType        String
-  location          String
-  complianceStatus  String    @default("unknown")
-  lastSeen          DateTime  @default(now())
-  sensorData        Json?
-  mqttTopic         String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  complianceChecks  EdgeComplianceCheck[]
+  id               String                @id @default(uuid())
+  organizationId   String
+  deviceId         String
+  deviceType       String
+  location         String
+  complianceStatus String                @default("unknown")
+  lastSeen         DateTime              @default(now())
+  sensorData       Json?
+  mqttTopic        String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  organization     Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  complianceChecks EdgeComplianceCheck[]
 
   @@unique([deviceId, organizationId])
   @@index([organizationId])
@@ -1126,16 +1131,16 @@ model IoTDevice {
 }
 
 model EdgeComplianceCheck {
-  id              String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  deviceId        String
-  organizationId  String
-  checkType       String
-  status          String
-  severity        String?   @default("medium")
-  details         String
-  timestamp       DateTime  @default(now())
-  device          IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  deviceId       String
+  organizationId String
+  checkType      String
+  status         String
+  severity       String?      @default("medium")
+  details        String
+  timestamp      DateTime     @default(now())
+  device         IoTDevice    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([deviceId])
   @@index([organizationId])
@@ -1143,17 +1148,17 @@ model EdgeComplianceCheck {
 }
 
 model TranscriptionResult {
-  id              String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  organizationId  String
-  evidenceId      String?
-  text            String    @db.Text
-  confidence      Float
-  language        String
-  duration        Int?
-  segments        Json?
-  sourceType      String
-  createdAt       DateTime  @default(now())
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  evidenceId     String?
+  text           String       @db.Text
+  confidence     Float
+  language       String
+  duration       Int?
+  segments       Json?
+  sourceType     String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([evidenceId])
@@ -1162,18 +1167,18 @@ model TranscriptionResult {
 
 // Zero Trust Security Models
 model DeviceTrust {
-  id            String    @id @default(uuid())
-  deviceId      String
+  id             String       @id @default(uuid())
+  deviceId       String
   organizationId String
-  deviceType    String
-  fingerprint   String
-  trustScore    Float
-  isTrusted     Boolean   @default(false)
-  lastVerified  DateTime  @default(now())
-  metadata      Json?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deviceType     String
+  fingerprint    String
+  trustScore     Float
+  isTrusted      Boolean      @default(false)
+  lastVerified   DateTime     @default(now())
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([deviceId, organizationId])
   @@index([organizationId])
@@ -1182,32 +1187,32 @@ model DeviceTrust {
 }
 
 model ZeroTrustPolicy {
-  id            String    @id @default(uuid())
+  id             String       @id @default(uuid())
   organizationId String
-  name          String
-  description   String    @db.Text
-  rules         Json
-  enabled       Boolean   @default(true)
-  priority      Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String       @db.Text
+  rules          Json
+  enabled        Boolean      @default(true)
+  priority       Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([enabled])
 }
 
 model NetworkSegment {
-  id            String    @id @default(uuid())
+  id             String       @id @default(uuid())
   organizationId String
-  name          String
-  cidr          String?
-  resources     Json
-  trustLevel    String    @default("medium")
-  policies      Json
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  cidr           String?
+  resources      Json
+  trustLevel     String       @default("medium")
+  policies       Json
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([trustLevel])
@@ -1215,17 +1220,17 @@ model NetworkSegment {
 
 // BYOK Key Usage Tracking
 model KeyUsage {
-  id            String    @id @default(uuid())
+  id             String       @id @default(uuid())
   organizationId String
-  keyId         String
-  provider      String    // aws_kms, azure_kv, gcp_kms, hashicorp_vault
-  operation     String    // encrypt, decrypt, generate
-  dataSize      Int?      // Size of data in bytes
-  success       Boolean   @default(true)
-  errorMessage  String?
-  metadata      Json?
-  timestamp     DateTime  @default(now())
-  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  keyId          String
+  provider       String // aws_kms, azure_kv, gcp_kms, hashicorp_vault
+  operation      String // encrypt, decrypt, generate
+  dataSize       Int? // Size of data in bytes
+  success        Boolean      @default(true)
+  errorMessage   String?
+  metadata       Json?
+  timestamp      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([keyId])
@@ -1236,19 +1241,19 @@ model KeyUsage {
 
 // Key Rotation Policies
 model KeyRotationPolicy {
-  id            String    @id @default(uuid())
-  organizationId String
-  keyId         String
-  provider      String
-  rotationIntervalDays Int @default(90)
-  lastRotation  DateTime?
-  nextRotation  DateTime
-  autoRotate    Boolean   @default(false)
-  notifyDaysBefore Int    @default(7)
-  enabled       Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                   String       @id @default(uuid())
+  organizationId       String
+  keyId                String
+  provider             String
+  rotationIntervalDays Int          @default(90)
+  lastRotation         DateTime?
+  nextRotation         DateTime
+  autoRotate           Boolean      @default(false)
+  notifyDaysBefore     Int          @default(7)
+  enabled              Boolean      @default(true)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([keyId, organizationId])
   @@index([organizationId])
@@ -1258,22 +1263,22 @@ model KeyRotationPolicy {
 
 // Compliance-as-Code Policy Storage
 model CompliancePolicy {
-  id            String    @id @default(uuid())
-  organizationId String
-  name          String
-  framework     String    // SOC2, ISO27001, HIPAA, etc.
-  rego          String    @db.Text // OPA Rego policy code
-  severity      String    @default("high") // critical, high, medium, low
-  tags          String[]
-  version       Int       @default(1)
+  id                String             @id @default(uuid())
+  organizationId    String
+  name              String
+  framework         String // SOC2, ISO27001, HIPAA, etc.
+  rego              String             @db.Text // OPA Rego policy code
+  severity          String             @default("high") // critical, high, medium, low
+  tags              String[]
+  version           Int                @default(1)
   previousVersionId String?
-  enabled       Boolean   @default(true)
-  metadata      Json?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  previousVersion CompliancePolicy? @relation("PolicyVersions", fields: [previousVersionId], references: [id])
-  nextVersions   CompliancePolicy[] @relation("PolicyVersions")
+  enabled           Boolean            @default(true)
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  previousVersion   CompliancePolicy?  @relation("PolicyVersions", fields: [previousVersionId], references: [id])
+  nextVersions      CompliancePolicy[] @relation("PolicyVersions")
 
   @@index([organizationId])
   @@index([framework])
@@ -1284,40 +1289,40 @@ model CompliancePolicy {
 
 // VR Training Scenarios
 model VRTrainingScenario {
-  id              String    @id @default(uuid())
-  organizationId  String
-  name            String
-  description     String
-  framework       String
-  difficulty      String
+  id                String              @id @default(uuid())
+  organizationId    String
+  name              String
+  description       String
+  framework         String
+  difficulty        String
   estimatedDuration Int
-  objectives      String[]
-  scenarioData    Json
-  createdBy       String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  sessions        VRTrainingSession[]
+  objectives        String[]
+  scenarioData      Json
+  createdBy         String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sessions          VRTrainingSession[]
 
   @@index([organizationId])
   @@index([framework])
 }
 
 model VRTrainingSession {
-  id              String    @id @default(uuid())
-  scenarioId      String
-  organizationId  String
-  userId          String
-  sessionId       String    @unique
-  status          String
-  currentScene    String?
-  completedTasks  String[]
-  score           Int       @default(0)
-  startedAt       DateTime  @default(now())
-  endedAt         DateTime?
-  lastUpdated     DateTime  @updatedAt
-  scenario        VRTrainingScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                 String                 @id @default(uuid())
+  scenarioId         String
+  organizationId     String
+  userId             String
+  sessionId          String                 @unique
+  status             String
+  currentScene       String?
+  completedTasks     String[]
+  score              Int                    @default(0)
+  startedAt          DateTime               @default(now())
+  endedAt            DateTime?
+  lastUpdated        DateTime               @updatedAt
+  scenario           VRTrainingScenario     @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   performanceMetrics VRSessionPerformance[]
 
   @@index([scenarioId])
@@ -1327,13 +1332,13 @@ model VRTrainingSession {
 }
 
 model VRSessionPerformance {
-  id              String    @id @default(uuid())
-  sessionId       String
-  fps             Float
-  renderTime      Float
-  latency         Float?
-  timestamp       DateTime  @default(now())
-  session         VRTrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id         String            @id @default(uuid())
+  sessionId  String
+  fps        Float
+  renderTime Float
+  latency    Float?
+  timestamp  DateTime          @default(now())
+  session    VRTrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([timestamp])
@@ -1341,29 +1346,29 @@ model VRSessionPerformance {
 
 // VR Collaborative Review Sessions
 model VRCollaborativeSession {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  sessionId         String    @unique
-  organizationId    String
-  sessionName       String
-  description       String?
-  sessionType       String    // 'review' | 'training' | 'simulation' | 'audit'
-  status            String    @default("pending") // 'pending' | 'active' | 'paused' | 'completed'
-  hostUserId        String
-  maxParticipants   Int?
-  scheduledTime     DateTime?
-  startedAt         DateTime?
-  endedAt           DateTime?
-  expiresAt         DateTime? // Session expiration time
-  lastActivityAt    DateTime  @default(now()) @updatedAt
-  environment       Json      // VREnvironment data
-  complianceData    Json      // VRComplianceData
-  participants      Json      @default("[]") // Array of VRParticipant
-  permissions       Json?     // Permissions object
-  recording         Json?     // VRRecording data
-  metadata          Json?     // Additional metadata
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id              String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sessionId       String       @unique
+  organizationId  String
+  sessionName     String
+  description     String?
+  sessionType     String // 'review' | 'training' | 'simulation' | 'audit'
+  status          String       @default("pending") // 'pending' | 'active' | 'paused' | 'completed'
+  hostUserId      String
+  maxParticipants Int?
+  scheduledTime   DateTime?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  expiresAt       DateTime? // Session expiration time
+  lastActivityAt  DateTime     @default(now()) @updatedAt
+  environment     Json // VREnvironment data
+  complianceData  Json // VRComplianceData
+  participants    Json         @default("[]") // Array of VRParticipant
+  permissions     Json? // Permissions object
+  recording       Json? // VRRecording data
+  metadata        Json? // Additional metadata
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([sessionId])
@@ -1375,34 +1380,34 @@ model VRCollaborativeSession {
 
 // NeuroSymbolic AI Reasoning
 model NeuroSymbolicReasoning {
-  id              String    @id @default(uuid())
-  organizationId  String
-  input           Json
+  id               String          @id @default(uuid())
+  organizationId   String
+  input            Json
   neuralPrediction Json
-  symbolicRules   Json
-  finalDecision   Json
-  confidence      Float
-  explanation     String?
-  createdAt       DateTime  @default(now())
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  inferences      RuleInference[]
+  symbolicRules    Json
+  finalDecision    Json
+  confidence       Float
+  explanation      String?
+  createdAt        DateTime        @default(now())
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inferences       RuleInference[]
 
   @@index([organizationId])
   @@index([createdAt])
 }
 
 model RuleInference {
-  id              String    @id @default(uuid())
-  reasoningId     String
-  organizationId  String
-  inferredRule    Json
+  id                 String                 @id @default(uuid())
+  reasoningId        String
+  organizationId     String
+  inferredRule       Json
   supportingEvidence Json
-  validationStatus String
-  validatedBy     String?
-  validatedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  reasoning       NeuroSymbolicReasoning @relation(fields: [reasoningId], references: [id], onDelete: Cascade)
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  validationStatus   String
+  validatedBy        String?
+  validatedAt        DateTime?
+  createdAt          DateTime               @default(now())
+  reasoning          NeuroSymbolicReasoning @relation(fields: [reasoningId], references: [id], onDelete: Cascade)
+  organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([reasoningId])
   @@index([organizationId])
@@ -1411,15 +1416,15 @@ model RuleInference {
 
 // Federated Swarm
 model FederatedSwarmPeer {
-  id              String    @id @default(uuid())
-  organizationId  String
-  peerId          String    @unique
-  peerName        String?
-  joinedAt        DateTime  @default(now())
-  lastSeen        DateTime  @default(now())
-  status          String
+  id                String       @id @default(uuid())
+  organizationId    String
+  peerId            String       @unique
+  peerName          String?
+  joinedAt          DateTime     @default(now())
+  lastSeen          DateTime     @default(now())
+  status            String
   aggregatedMetrics Json?
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([peerId])
@@ -1427,13 +1432,13 @@ model FederatedSwarmPeer {
 }
 
 model FederatedSwarmAggregation {
-  id              String    @id @default(uuid())
-  organizationId  String
-  aggregationType String
-  aggregatedData  Json
+  id               String       @id @default(uuid())
+  organizationId   String
+  aggregationType  String
+  aggregatedData   Json
   participantCount Int
-  timestamp       DateTime  @default(now())
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  timestamp        DateTime     @default(now())
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([aggregationType])
@@ -1442,25 +1447,25 @@ model FederatedSwarmAggregation {
 
 // Notification System
 model Notification {
-  id              String    @id @default(uuid())
-  userId          String
-  organizationId  String
-  type            String
-  category        String
-  title           String
-  message         String    @db.Text
-  channels        String[]
-  templateId      String?
-  metadata        Json?
-  link            String?
-  sentAt          DateTime?
-  deliveredAt     DateTime?
-  readAt          DateTime?
-  status          String
-  retryCount      Int       @default(0)
-  createdAt       DateTime  @default(now())
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(uuid())
+  userId         String
+  organizationId String
+  type           String
+  category       String
+  title          String
+  message        String       @db.Text
+  channels       String[]
+  templateId     String?
+  metadata       Json?
+  link           String?
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  status         String
+  retryCount     Int          @default(0)
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([organizationId])
@@ -1470,16 +1475,16 @@ model Notification {
 }
 
 model NotificationPreference {
-  id              String    @id @default(uuid())
-  userId          String    @unique
-  email           Boolean   @default(true)
-  slack           Boolean   @default(true)
-  websocket       Boolean   @default(true)
-  sms             Boolean   @default(false)
-  categories      Json?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  email      Boolean  @default(true)
+  slack      Boolean  @default(true)
+  websocket  Boolean  @default(true)
+  sms        Boolean  @default(false)
+  categories Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -1489,21 +1494,21 @@ model NotificationPreference {
 // ============================================================================
 
 model Webhook {
-  id              String    @id @default(uuid())
+  id              String         @id @default(uuid())
   organizationId  String
   name            String
   url             String
-  secret          String    // HMAC signing secret
-  events          String[]  // Array of event types to subscribe to
-  headers         Json?     // Custom headers to include
-  enabled         Boolean   @default(true)
-  retryPolicy     Json?     // Retry configuration
+  secret          String // HMAC signing secret
+  events          String[] // Array of event types to subscribe to
+  headers         Json? // Custom headers to include
+  enabled         Boolean        @default(true)
+  retryPolicy     Json? // Retry configuration
   lastTriggeredAt DateTime?
-  failureCount    Int       @default(0)
+  failureCount    Int            @default(0)
   createdBy       String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   webhookEvents   WebhookEvent[]
 
   @@unique([organizationId, name])
@@ -1513,23 +1518,23 @@ model Webhook {
 }
 
 model WebhookEvent {
-  id              String    @id @default(uuid())
-  webhookId       String?
-  organizationId  String
-  eventType       String
-  payload         Json
-  status          WebhookEventStatus @default(pending)
-  attempts        Int       @default(0)
-  maxAttempts     Int       @default(5)
-  lastAttemptAt   DateTime?
-  nextAttemptAt   DateTime?
-  responseCode    Int?
-  responseBody    String?   @db.Text
-  errorMessage    String?
-  processedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  webhook         Webhook?  @relation(fields: [webhookId], references: [id], onDelete: SetNull)
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String             @id @default(uuid())
+  webhookId      String?
+  organizationId String
+  eventType      String
+  payload        Json
+  status         WebhookEventStatus @default(pending)
+  attempts       Int                @default(0)
+  maxAttempts    Int                @default(5)
+  lastAttemptAt  DateTime?
+  nextAttemptAt  DateTime?
+  responseCode   Int?
+  responseBody   String?            @db.Text
+  errorMessage   String?
+  processedAt    DateTime?
+  createdAt      DateTime           @default(now())
+  webhook        Webhook?           @relation(fields: [webhookId], references: [id], onDelete: SetNull)
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([webhookId])
   @@index([organizationId])
@@ -1549,18 +1554,18 @@ enum WebhookEventStatus {
 
 // Subscription change history for audit trail
 model SubscriptionHistory {
-  id              String    @id @default(uuid())
-  organizationId  String
-  previousPlan    Plan?
-  newPlan         Plan
-  previousStatus  SubscriptionStatus?
-  newStatus       SubscriptionStatus
-  changeType      SubscriptionChangeType
-  reason          String?
-  changedBy       String?   // User ID or 'system' for automated changes
-  stripeEventId   String?   // Reference to Stripe event if applicable
-  metadata        Json?
-  createdAt       DateTime  @default(now())
+  id             String                 @id @default(uuid())
+  organizationId String
+  previousPlan   Plan?
+  newPlan        Plan
+  previousStatus SubscriptionStatus?
+  newStatus      SubscriptionStatus
+  changeType     SubscriptionChangeType
+  reason         String?
+  changedBy      String? // User ID or 'system' for automated changes
+  stripeEventId  String? // Reference to Stripe event if applicable
+  metadata       Json?
+  createdAt      DateTime               @default(now())
 
   @@index([organizationId])
   @@index([changeType])
@@ -1583,15 +1588,15 @@ enum SubscriptionChangeType {
 
 // Usage tracking for tier limits enforcement
 model UsageTracking {
-  id              String    @id @default(uuid())
-  organizationId  String
-  metricType      String    // e.g., 'ai_requests', 'storage_gb', 'api_calls'
-  period          String    // e.g., '2024-01' for monthly, '2024-01-01' for daily
-  count           Int       @default(0)
-  limit           Int       @default(-1) // -1 = unlimited
-  resetAt         DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(uuid())
+  organizationId String
+  metricType     String // e.g., 'ai_requests', 'storage_gb', 'api_calls'
+  period         String // e.g., '2024-01' for monthly, '2024-01-01' for daily
+  count          Int       @default(0)
+  limit          Int       @default(-1) // -1 = unlimited
+  resetAt        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@unique([organizationId, metricType, period])
   @@index([organizationId])
@@ -1601,18 +1606,18 @@ model UsageTracking {
 
 // API keys for webhook authentication and external integrations
 model ApiKey {
-  id              String    @id @default(uuid())
-  organizationId  String
-  name            String
-  keyHash         String    @unique // Hashed API key
-  keyPrefix       String    // First 8 chars of key for identification
-  scopes          String[]  // Allowed API scopes
-  rateLimit       Int       @default(1000) // Requests per hour
-  expiresAt       DateTime?
-  lastUsedAt      DateTime?
-  createdBy       String
-  createdAt       DateTime  @default(now())
-  revokedAt       DateTime?
+  id             String    @id @default(uuid())
+  organizationId String
+  name           String
+  keyHash        String    @unique // Hashed API key
+  keyPrefix      String // First 8 chars of key for identification
+  scopes         String[] // Allowed API scopes
+  rateLimit      Int       @default(1000) // Requests per hour
+  expiresAt      DateTime?
+  lastUsedAt     DateTime?
+  createdBy      String
+  createdAt      DateTime  @default(now())
+  revokedAt      DateTime?
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -1629,30 +1634,30 @@ model DemoRequest {
   company             String
   jobTitle            String?
   phone               String?
-  companySize         String?           // e.g., '1-10', '11-50', '51-200', '201-1000', '1000+'
+  companySize         String? // e.g., '1-10', '11-50', '51-200', '201-1000', '1000+'
   industry            String?
   country             String?
-  interestedTier      String?           // Which tier they're interested in
-  currentChallenge    String?           // Their main compliance challenge
-  howDidYouHear       String?           // Marketing attribution
-  message             String?           // Additional notes/questions
+  interestedTier      String? // Which tier they're interested in
+  currentChallenge    String? // Their main compliance challenge
+  howDidYouHear       String? // Marketing attribution
+  message             String? // Additional notes/questions
   status              DemoRequestStatus @default(pending)
-  scheduledAt         DateTime?         // When the demo is scheduled
-  completedAt         DateTime?         // When the demo was completed
-  assignedTo          String?           // Sales rep assigned
-  welcomeEmailSentAt  DateTime?         // When welcome email was sent via webhook
-  followUpEmailSentAt DateTime?         // When follow-up email was sent
-  notes               String?           // Internal notes
-  source              String?           // e.g., 'pricing_page', 'landing_page', 'referral'
-  utmSource           String?           // UTM parameters for tracking
+  scheduledAt         DateTime? // When the demo is scheduled
+  completedAt         DateTime? // When the demo was completed
+  assignedTo          String? // Sales rep assigned
+  welcomeEmailSentAt  DateTime? // When welcome email was sent via webhook
+  followUpEmailSentAt DateTime? // When follow-up email was sent
+  notes               String? // Internal notes
+  source              String? // e.g., 'pricing_page', 'landing_page', 'referral'
+  utmSource           String? // UTM parameters for tracking
   utmMedium           String?
   utmCampaign         String?
-  ipAddress           String?           // For basic fraud prevention
-  userAgent           String?           // Browser info
-  referrer            String?           // Where they came from
-  convertedToUserId   String?           // If they sign up, link to user
-  convertedAt         DateTime?         // When they converted to a user
-  metadata            Json?             // Additional custom data
+  ipAddress           String? // For basic fraud prevention
+  userAgent           String? // Browser info
+  referrer            String? // Where they came from
+  convertedToUserId   String? // If they sign up, link to user
+  convertedAt         DateTime? // When they converted to a user
+  metadata            Json? // Additional custom data
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
 
@@ -1664,29 +1669,55 @@ model DemoRequest {
   @@index([scheduledAt])
 }
 
+// Feature subscriptions for a-la-carte feature sales
+model FeatureSubscription {
+  id                       String             @id @default(uuid())
+  organizationId           String
+  featureId                String // Feature ID from features catalog
+  status                   SubscriptionStatus @default(active)
+  billingCycle             BillingCycle       @default(annual)
+  price                    Decimal            @db.Decimal(10, 2) // Calculated price based on tier
+  stripeSubscriptionItemId String?            @unique // Stripe subscription item ID
+  stripePriceId            String? // Stripe price ID
+  startsAt                 DateTime           @default(now())
+  endsAt                   DateTime? // For cancelled subscriptions
+  cancelledAt              DateTime? // When cancellation was requested
+  cancelAtPeriodEnd        Boolean            @default(false)
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, featureId, status])
+  @@index([organizationId])
+  @@index([featureId])
+  @@index([status])
+  @@index([stripeSubscriptionItemId])
+}
+
 enum DemoRequestStatus {
-  pending             // Just submitted
-  contacted           // Initial outreach made
-  scheduled           // Demo scheduled
-  completed           // Demo completed
-  qualified           // Qualified lead
-  proposal_sent       // Proposal sent
-  negotiation         // In negotiation
-  converted           // Converted to customer
-  disqualified        // Not a fit
-  no_response         // No response after follow-up
+  pending // Just submitted
+  contacted // Initial outreach made
+  scheduled // Demo scheduled
+  completed // Demo completed
+  qualified // Qualified lead
+  proposal_sent // Proposal sent
+  negotiation // In negotiation
+  converted // Converted to customer
+  disqualified // Not a fit
+  no_response // No response after follow-up
 }
 
 model ControlMapping {
-  id              String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id              String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
   sourceControlId String
   targetControlId String
-  mappingType     String            @default("equivalent") // 'equivalent', 'related', 'superset', 'subset'
+  mappingType     String           @default("equivalent") // 'equivalent', 'related', 'superset', 'subset'
   confidence      Float?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @default(now()) @updatedAt
-  sourceControl   FrameworkControl  @relation("SourceMappings", fields: [sourceControlId], references: [id], onDelete: Cascade)
-  targetControl   FrameworkControl  @relation("TargetMappings", fields: [targetControlId], references: [id], onDelete: Cascade)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @default(now()) @updatedAt
+  sourceControl   FrameworkControl @relation("SourceMappings", fields: [sourceControlId], references: [id], onDelete: Cascade)
+  targetControl   FrameworkControl @relation("TargetMappings", fields: [targetControlId], references: [id], onDelete: Cascade)
 
   @@unique([sourceControlId, targetControlId])
   @@index([sourceControlId])
@@ -1694,25 +1725,25 @@ model ControlMapping {
 }
 
 model AISuggestion {
-  id              String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  frameworkId     String
-  fileName        String
-  fileUrl         String
-  s3Key           String
-  classification  String
-  description     String?
-  confidence      Float
-  status          AISuggestionStatus @default(pending)
-  feedback        String?           // User feedback when rejected
-  controlId       String?           // Created control ID if accepted
-  suggestedBy     String
-  organizationId  String
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @default(now()) @updatedAt
-  framework       ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  suggester       User              @relation(fields: [suggestedBy], references: [id], onDelete: Restrict)
-  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  control         FrameworkControl? @relation(fields: [controlId], references: [id], onDelete: SetNull)
+  id             String              @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  frameworkId    String
+  fileName       String
+  fileUrl        String
+  s3Key          String
+  classification String
+  description    String?
+  confidence     Float
+  status         AISuggestionStatus  @default(pending)
+  feedback       String? // User feedback when rejected
+  controlId      String? // Created control ID if accepted
+  suggestedBy    String
+  organizationId String
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @default(now()) @updatedAt
+  framework      ComplianceFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  suggester      User                @relation(fields: [suggestedBy], references: [id], onDelete: Restrict)
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  control        FrameworkControl?   @relation(fields: [controlId], references: [id], onDelete: SetNull)
 
   @@index([frameworkId])
   @@index([status])
@@ -1728,33 +1759,33 @@ enum AISuggestionStatus {
 }
 
 model EvidenceVersion {
-  id            String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id            String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
   controlId     String
   versionNumber Int
   fileUrl       String
   fileName      String
   uploadedBy    String?
-  uploadedAt    DateTime        @default(now())
+  uploadedAt    DateTime         @default(now())
   fileSize      BigInt?
   mimeType      String?
-  isCurrent     Boolean         @default(false)
+  isCurrent     Boolean          @default(false)
   control       FrameworkControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
-  uploader      User?           @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
+  uploader      User?            @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
 
   @@index([controlId])
   @@index([controlId, versionNumber])
 }
 
 model ChatConversation {
-  id             String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
   organizationId String
   userId         String
-  messages       Json     @default("[]")
+  messages       Json         @default("[]")
   fileContext    Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([userId])
@@ -1765,29 +1796,29 @@ model ChatConversation {
 // ============================================================================
 
 model AISystem {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  organizationId    String
-  name               String
-  description        String?   @db.Text
-  systemType         String    // e.g., "Machine Learning", "Generative AI", "Decision Support"
-  useCase            String?   @db.Text
-  deploymentContext  String?   // e.g., "Healthcare", "Finance", "Manufacturing"
-  lifecycleStage     String    @default("Plan_and_Design") // Plan_and_Design, Collect_and_Process, Build_and_Validate, Deploy_and_Operate, Monitor_and_Maintain
-  autonomyLevel      String    @default("Human_in_Loop") // Fully_Autonomous, Human_in_Loop, Human_Override, Fully_Manual
-  status             String    @default("In_Development") // In_Development, Deployed, Retired, Under_Review
-  riskLevel          String?   // Critical, High, Medium, Low
-  overallTrustworthinessScore Int? // 0-100
-  metadata           Json?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  coreFunctions      AIRMFCoreFunction[]
+  id                             String                               @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId                 String
+  name                           String
+  description                    String?                              @db.Text
+  systemType                     String // e.g., "Machine Learning", "Generative AI", "Decision Support"
+  useCase                        String?                              @db.Text
+  deploymentContext              String? // e.g., "Healthcare", "Finance", "Manufacturing"
+  lifecycleStage                 String                               @default("Plan_and_Design") // Plan_and_Design, Collect_and_Process, Build_and_Validate, Deploy_and_Operate, Monitor_and_Maintain
+  autonomyLevel                  String                               @default("Human_in_Loop") // Fully_Autonomous, Human_in_Loop, Human_Override, Fully_Manual
+  status                         String                               @default("In_Development") // In_Development, Deployed, Retired, Under_Review
+  riskLevel                      String? // Critical, High, Medium, Low
+  overallTrustworthinessScore    Int? // 0-100
+  metadata                       Json?
+  createdAt                      DateTime                             @default(now())
+  updatedAt                      DateTime                             @updatedAt
+  organization                   Organization                         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  coreFunctions                  AIRMFCoreFunction[]
   trustworthinessCharacteristics AIRMFTrustworthinessCharacteristic[]
-  lifecycleStages    AIRMFLifecycleStage[]
-  actors              AIRMFActor[]
-  assessments         AIRMFAssessment[]
-  profiles            AIRMFProfile[]
-  riskActivities      AIRMFRiskActivity[]
+  lifecycleStages                AIRMFLifecycleStage[]
+  actors                         AIRMFActor[]
+  assessments                    AIRMFAssessment[]
+  profiles                       AIRMFProfile[]
+  riskActivities                 AIRMFRiskActivity[]
 
   @@index([organizationId])
   @@index([status])
@@ -1796,17 +1827,17 @@ model AISystem {
 }
 
 model AIRMFCoreFunction {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id                String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
   aiSystemId        String
-  functionName      String    // GOVERN, MAP, MEASURE, MANAGE
-  description       String?   @db.Text
-  status            String    @default("Not_Started") // Not_Started, In_Progress, Completed, Under_Review
-  completionPercent Int       @default(0)
+  functionName      String // GOVERN, MAP, MEASURE, MANAGE
+  description       String?         @db.Text
+  status            String          @default("Not_Started") // Not_Started, In_Progress, Completed, Under_Review
+  completionPercent Int             @default(0)
   lastAssessed      DateTime?
   categories        AIRMFCategory[]
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  aiSystem          AISystem        @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
 
   @@unique([aiSystemId, functionName])
   @@index([aiSystemId])
@@ -1815,17 +1846,17 @@ model AIRMFCoreFunction {
 }
 
 model AIRMFCategory {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id                String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
   coreFunctionId    String
-  categoryId        String    // e.g., "GOV-1", "MAP-1", "MEAS-1", "MAN-1"
+  categoryId        String // e.g., "GOV-1", "MAP-1", "MEAS-1", "MAN-1"
   name              String
-  description       String?   @db.Text
-  status            String    @default("Not_Started")
-  completionPercent Int       @default(0)
+  description       String?            @db.Text
+  status            String             @default("Not_Started")
+  completionPercent Int                @default(0)
   subcategories     AIRMFSubcategory[]
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  coreFunction      AIRMFCoreFunction @relation(fields: [coreFunctionId], references: [id], onDelete: Cascade)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  coreFunction      AIRMFCoreFunction  @relation(fields: [coreFunctionId], references: [id], onDelete: Cascade)
 
   @@unique([coreFunctionId, categoryId])
   @@index([coreFunctionId])
@@ -1834,21 +1865,21 @@ model AIRMFCategory {
 }
 
 model AIRMFSubcategory {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  categoryId        String
-  subcategoryId     String    // e.g., "GOV-1.1", "MAP-1.1"
-  name              String
-  description       String?   @db.Text
-  status            String    @default("Not_Started") // Not_Started, In_Progress, Completed, Non_Applicable
-  evidence          String?   @db.Text
-  evidenceUrl       String?
-  ownerId           String?
-  notes             String?   @db.Text
-  lastReviewed      DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  category          AIRMFCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  owner              User?    @relation("AIRMFSubcategoryOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  id            String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  categoryId    String
+  subcategoryId String // e.g., "GOV-1.1", "MAP-1.1"
+  name          String
+  description   String?       @db.Text
+  status        String        @default("Not_Started") // Not_Started, In_Progress, Completed, Non_Applicable
+  evidence      String?       @db.Text
+  evidenceUrl   String?
+  ownerId       String?
+  notes         String?       @db.Text
+  lastReviewed  DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  category      AIRMFCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  owner         User?         @relation("AIRMFSubcategoryOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   @@unique([categoryId, subcategoryId])
   @@index([categoryId])
@@ -1858,18 +1889,18 @@ model AIRMFSubcategory {
 }
 
 model AIRMFTrustworthinessCharacteristic {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  aiSystemId        String
-  characteristic    String    // Valid_and_Reliable, Safe, Secure_and_Resilient, Accountable_and_Transparent, Explainable_and_Interpretable, Privacy_Enhanced, Fair_with_Bias_Managed
-  description       String?   @db.Text
-  score             Int?      // 0-100
-  status            String    @default("Not_Assessed") // Not_Assessed, Assessed, Needs_Improvement, Compliant
-  assessmentNotes   String?   @db.Text
-  lastAssessed      DateTime?
-  evidence          Json?     // Evidence and documentation
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  id              String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId      String
+  characteristic  String // Valid_and_Reliable, Safe, Secure_and_Resilient, Accountable_and_Transparent, Explainable_and_Interpretable, Privacy_Enhanced, Fair_with_Bias_Managed
+  description     String?   @db.Text
+  score           Int? // 0-100
+  status          String    @default("Not_Assessed") // Not_Assessed, Assessed, Needs_Improvement, Compliant
+  assessmentNotes String?   @db.Text
+  lastAssessed    DateTime?
+  evidence        Json? // Evidence and documentation
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  aiSystem        AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
 
   @@unique([aiSystemId, characteristic])
   @@index([aiSystemId])
@@ -1878,18 +1909,18 @@ model AIRMFTrustworthinessCharacteristic {
 }
 
 model AIRMFLifecycleStage {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  aiSystemId        String
-  stage             String    // Plan_and_Design, Collect_and_Process, Build_and_Validate, Deploy_and_Operate, Monitor_and_Maintain
-  status            String    @default("Not_Started")
-  startDate         DateTime?
-  completionDate    DateTime?
-  notes             String?   @db.Text
-  risks             Json?     // Risks identified at this stage
-  activities        Json?     // Activities performed
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  id             String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId     String
+  stage          String // Plan_and_Design, Collect_and_Process, Build_and_Validate, Deploy_and_Operate, Monitor_and_Maintain
+  status         String    @default("Not_Started")
+  startDate      DateTime?
+  completionDate DateTime?
+  notes          String?   @db.Text
+  risks          Json? // Risks identified at this stage
+  activities     Json? // Activities performed
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  aiSystem       AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
 
   @@unique([aiSystemId, stage])
   @@index([aiSystemId])
@@ -1898,18 +1929,18 @@ model AIRMFLifecycleStage {
 }
 
 model AIRMFActor {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id                String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
   aiSystemId        String
-  actorType         String    // Developer, Operator, Evaluator, Decision_Maker, End_User, Regulator, etc.
-  userId             String?   // Link to User if applicable
-  name               String
-  role               String
-  responsibilities  String[]  @default([])
-  involvementStages  String[]  @default([]) // Lifecycle stages where this actor is involved
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  aiSystem           AISystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
-  user               User?    @relation("AIRMFActorUser", fields: [userId], references: [id], onDelete: SetNull)
+  actorType         String // Developer, Operator, Evaluator, Decision_Maker, End_User, Regulator, etc.
+  userId            String? // Link to User if applicable
+  name              String
+  role              String
+  responsibilities  String[] @default([])
+  involvementStages String[] @default([]) // Lifecycle stages where this actor is involved
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  aiSystem          AISystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  user              User?    @relation("AIRMFActorUser", fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([aiSystemId])
   @@index([actorType])
@@ -1917,22 +1948,22 @@ model AIRMFActor {
 }
 
 model AIRMFAssessment {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  aiSystemId        String
-  assessmentType    String    // Initial, Periodic, Post_Incident, Pre_Deployment
-  assessedBy        String
-  assessmentDate    DateTime  @default(now())
-  overallScore      Int?      // 0-100
-  functionScores    Json?     // Scores for each core function
-  characteristicScores Json?  // Scores for each trustworthiness characteristic
-  findings          Json?     // Assessment findings
-  recommendations   String[]  @default([])
-  status            String    @default("Draft") // Draft, Completed, Approved
-  approvedBy        String?
-  approvedAt        DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  id                   String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId           String
+  assessmentType       String // Initial, Periodic, Post_Incident, Pre_Deployment
+  assessedBy           String
+  assessmentDate       DateTime  @default(now())
+  overallScore         Int? // 0-100
+  functionScores       Json? // Scores for each core function
+  characteristicScores Json? // Scores for each trustworthiness characteristic
+  findings             Json? // Assessment findings
+  recommendations      String[]  @default([])
+  status               String    @default("Draft") // Draft, Completed, Approved
+  approvedBy           String?
+  approvedAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  aiSystem             AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
 
   @@index([aiSystemId])
   @@index([assessmentType])
@@ -1941,18 +1972,18 @@ model AIRMFAssessment {
 }
 
 model AIRMFProfile {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id                String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
   aiSystemId        String
-  profileName       String    // e.g., "High-Risk Healthcare AI", "Consumer-Facing AI", "Internal Decision Support"
-  profileType       String    // Context_Profile, Sector_Profile, Use_Case_Profile
-  description       String?   @db.Text
-  selectedFunctions Json      // Selected functions, categories, and subcategories
-  priorities        Json?     // Prioritized risks and characteristics
-  customizations    Json?     // Custom subcategories or modifications
-  status            String    @default("Draft")
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  profileName       String // e.g., "High-Risk Healthcare AI", "Consumer-Facing AI", "Internal Decision Support"
+  profileType       String // Context_Profile, Sector_Profile, Use_Case_Profile
+  description       String?  @db.Text
+  selectedFunctions Json // Selected functions, categories, and subcategories
+  priorities        Json? // Prioritized risks and characteristics
+  customizations    Json? // Custom subcategories or modifications
+  status            String   @default("Draft")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  aiSystem          AISystem @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
 
   @@index([aiSystemId])
   @@index([profileType])
@@ -1960,24 +1991,24 @@ model AIRMFProfile {
 }
 
 model AIRMFRiskActivity {
-  id                String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  aiSystemId        String
-  activityType      String    // Risk_Identification, Risk_Analysis, Risk_Evaluation, Risk_Treatment, Risk_Monitoring
-  relatedFunction   String?   // GOVERN, MAP, MEASURE, MANAGE
-  relatedCategory   String?   // Category ID
-  relatedSubcategory String?  // Subcategory ID
-  description       String    @db.Text
-  riskLevel         String    // Critical, High, Medium, Low
-  status            String    @default("Open") // Open, In_Progress, Mitigated, Accepted, Transferred
-  mitigationPlan    String?   @db.Text
-  ownerId           String?
-  targetDate        DateTime?
-  completedDate     DateTime?
-  evidence          Json?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  aiSystem          AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
-  owner             User?     @relation("AIRMFRiskActivityOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  id                 String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  aiSystemId         String
+  activityType       String // Risk_Identification, Risk_Analysis, Risk_Evaluation, Risk_Treatment, Risk_Monitoring
+  relatedFunction    String? // GOVERN, MAP, MEASURE, MANAGE
+  relatedCategory    String? // Category ID
+  relatedSubcategory String? // Subcategory ID
+  description        String    @db.Text
+  riskLevel          String // Critical, High, Medium, Low
+  status             String    @default("Open") // Open, In_Progress, Mitigated, Accepted, Transferred
+  mitigationPlan     String?   @db.Text
+  ownerId            String?
+  targetDate         DateTime?
+  completedDate      DateTime?
+  evidence           Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  aiSystem           AISystem  @relation(fields: [aiSystemId], references: [id], onDelete: Cascade)
+  owner              User?     @relation("AIRMFRiskActivityOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   @@index([aiSystemId])
   @@index([activityType])
@@ -1985,4 +2016,320 @@ model AIRMFRiskActivity {
   @@index([riskLevel])
   @@index([status])
   @@index([ownerId])
+}
+
+// ============================================================================
+// EU REGULATIONS COMPLIANCE MODELS
+// ============================================================================
+
+// EU AI Act (Regulation 2024/1689)
+model EUAIActSystem {
+  id                       String                      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId           String
+  name                     String
+  description              String?                     @db.Text
+  riskLevel                String // unacceptable, high, limited, minimal
+  highRiskCategory         String? // critical_infrastructure, education_training, etc.
+  isGeneralPurpose         Boolean                     @default(false)
+  isGenerative             Boolean                     @default(false)
+  prohibitedPractices      String[] // Array of prohibited practice types
+  transparencyRequirements Json // AI labeling, copyright, illegal content prevention
+  complianceStatus         String                      @default("in_review") // compliant, non_compliant, in_review, at_risk
+  lastAssessmentDate       DateTime?
+  nextAssessmentDate       DateTime?
+  registeredInEUDatabase   Boolean                     @default(false)
+  euDatabaseRegistrationId String?
+  createdBy                String
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
+  organization             Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  riskAssessments          EUAIActRiskAssessment[]
+  transparencyReports      EUAIActTransparencyReport[]
+
+  @@index([organizationId])
+  @@index([riskLevel])
+  @@index([complianceStatus])
+  @@index([highRiskCategory])
+  @@index([registeredInEUDatabase])
+}
+
+model EUAIActRiskAssessment {
+  id                 String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  systemId           String
+  organizationId     String
+  assessedBy         String
+  assessmentDate     DateTime      @default(now())
+  riskLevel          String
+  findings           Json // safetyRisks, fundamentalRightsRisks, discriminationRisks, privacyRisks
+  mitigationMeasures String[]
+  complianceScore    Int // 0-100
+  recommendations    String[]
+  status             String        @default("pending") // pending, approved, rejected, requires_action
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  system             EUAIActSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+
+  @@index([systemId])
+  @@index([organizationId])
+  @@index([assessmentDate])
+  @@index([status])
+}
+
+model EUAIActTransparencyReport {
+  id                          String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId              String
+  reportingPeriodStart        DateTime
+  reportingPeriodEnd          DateTime
+  generativeAISystems         Json // Array of system reports
+  highRiskSystems             Json // Array of high-risk system reports
+  prohibitedPracticesDetected Int            @default(0)
+  complaintsReceived          Int            @default(0)
+  complaintsResolved          Int            @default(0)
+  submittedToCommission       Boolean        @default(false)
+  submittedAt                 DateTime?
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
+  organization                Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  EUAIActSystem               EUAIActSystem? @relation(fields: [eUAIActSystemId], references: [id])
+  eUAIActSystemId             String?
+
+  @@index([organizationId])
+  @@index([reportingPeriodStart])
+  @@index([reportingPeriodEnd])
+  @@index([submittedToCommission])
+}
+
+// Digital Markets Act (DMA) - Regulation 2022/1925
+model DMAGatekeeper {
+  id                   String                  @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId       String
+  platformName         String
+  corePlatformServices String[] // Array of CPS types
+  designationDate      DateTime?
+  designationStatus    String                  @default("not_designated") // not_designated, designated, under_review
+  annualRevenue        Decimal?                @db.Decimal(15, 2)
+  marketCapitalization Decimal?                @db.Decimal(15, 2)
+  monthlyActiveUsers   Int?
+  obligations          Json // Array of DMA obligations
+  complianceStatus     String                  @default("in_review") // compliant, non_compliant, in_review
+  lastReviewDate       DateTime?
+  nextReviewDate       DateTime?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  organization         Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  complianceReports    DMAComplianceReport[]
+  obligationsTracking  DMAObligationTracking[]
+
+  @@index([organizationId])
+  @@index([designationStatus])
+  @@index([complianceStatus])
+}
+
+model DMAComplianceReport {
+  id                    String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  gatekeeperId          String
+  organizationId        String
+  reportingPeriod       Json // start, end dates
+  obligationsStatus     Json // Status of each obligation
+  violations            Json? // Any violations detected
+  remediation           Json? // Remediation actions taken
+  submittedToCommission Boolean       @default(false)
+  submittedAt           DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  gatekeeper            DMAGatekeeper @relation(fields: [gatekeeperId], references: [id], onDelete: Cascade)
+
+  @@index([gatekeeperId])
+  @@index([organizationId])
+  @@index([submittedToCommission])
+}
+
+model DMAObligationTracking {
+  id                    String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  gatekeeperId          String
+  organizationId        String
+  obligationType        String // Article number or obligation name
+  obligationDescription String        @db.Text
+  complianceStatus      String        @default("pending") // pending, compliant, non_compliant, in_progress
+  evidence              Json? // Evidence of compliance
+  lastVerified          DateTime?
+  nextReviewDate        DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  gatekeeper            DMAGatekeeper @relation(fields: [gatekeeperId], references: [id], onDelete: Cascade)
+
+  @@index([gatekeeperId])
+  @@index([organizationId])
+  @@index([obligationType])
+  @@index([complianceStatus])
+}
+
+// Digital Services Act (DSA) - Regulation 2022/2065
+model DSAPlatform {
+  id                    String                    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  platformName          String
+  platformType          String // online_platform, very_large_online_platform, very_large_search_engine
+  monthlyActiveUsers    Int?
+  isVLOP                Boolean                   @default(false) // Very Large Online Platform (>45M users)
+  isVLOSE               Boolean                   @default(false) // Very Large Online Search Engine
+  designationDate       DateTime?
+  complianceStatus      String                    @default("in_review") // compliant, non_compliant, in_review
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  organization          Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contentModeration     DSAContentModeration[]
+  transparencyReports   DSATransparencyReport[]
+  illegalContentReports DSAIllegalContentReport[]
+  adRepositories        DSAAdRepository[]
+  riskAssessments       DSARiskAssessment[]
+  nonPersonalizedFeed   DSANonPersonalizedFeed?
+
+  @@index([organizationId])
+  @@index([platformType])
+  @@index([isVLOP])
+  @@index([isVLOSE])
+  @@index([complianceStatus])
+}
+
+model DSAContentModeration {
+  id                String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  platformId        String
+  organizationId    String
+  actionType        String // removal, suspension, restriction, appeal
+  contentType       String // post, comment, video, image, etc.
+  reason            String      @db.Text
+  automatedDecision Boolean     @default(false)
+  appealAvailable   Boolean     @default(true)
+  appealStatus      String? // pending, approved, rejected
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  platform          DSAPlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([organizationId])
+  @@index([actionType])
+  @@index([createdAt])
+}
+
+model DSATransparencyReport {
+  id                     String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  platformId             String
+  organizationId         String
+  reportingPeriodStart   DateTime
+  reportingPeriodEnd     DateTime
+  contentModerationStats Json // removals, suspensions, appeals, etc.
+  userReports            Json // User-reported content statistics
+  trustedFlaggerReports  Json? // Trusted flagger statistics
+  automatedDetection     Json? // Automated content detection stats
+  appealsProcessed       Json? // Appeals statistics
+  submittedToCommission  Boolean     @default(false)
+  submittedAt            DateTime?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+  platform               DSAPlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([organizationId])
+  @@index([reportingPeriodStart])
+  @@index([submittedToCommission])
+}
+
+model DSAIllegalContentReport {
+  id               String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  platformId       String
+  organizationId   String
+  reportedBy       String // user_id or "trusted_flagger"
+  isTrustedFlagger Boolean     @default(false)
+  contentType      String
+  contentUrl       String?     @db.Text
+  reason           String      @db.Text
+  status           String      @default("pending") // pending, reviewed, action_taken, dismissed
+  actionTaken      String? // removal, restriction, no_action
+  responseTime     Int? // Hours to respond
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  platform         DSAPlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([isTrustedFlagger])
+  @@index([createdAt])
+}
+
+model DSAAdRepository {
+  id                 String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  platformId         String
+  organizationId     String
+  adId               String
+  advertiserName     String
+  adContent          Json // Ad content details
+  targetingCriteria  Json? // Targeting parameters
+  displayPeriod      Json // start, end dates
+  impressions        Int?
+  clicks             Int?
+  isPoliticalAd      Boolean     @default(false)
+  isTargetedToMinors Boolean     @default(false)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  platform           DSAPlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([organizationId])
+  @@index([advertiserName])
+  @@index([isPoliticalAd])
+  @@index([displayPeriod])
+}
+
+model DSARiskAssessment {
+  id                    String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  platformId            String
+  organizationId        String
+  assessmentDate        DateTime    @default(now())
+  assessedBy            String
+  riskCategory          String // illegal_content, fundamental_rights, public_security, protection_of_minors
+  systemicRisks         Json // Detailed risk findings
+  illegalContentRisks   Json? // Specific risks related to illegal content
+  fundamentalRightsRisks Json? // Risks to fundamental rights
+  publicSecurityRisks   Json? // Public security concerns
+  protectionOfMinorsRisks Json? // Risks to protection of minors
+  overallRiskLevel      String // low, medium, high, critical
+  mitigationMeasures     Json // Array of mitigation measures with status
+  nextReviewDate        DateTime?
+  status                String      @default("draft") // draft, in_review, approved, requires_action
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  platform              DSAPlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@index([platformId])
+  @@index([organizationId])
+  @@index([assessmentDate])
+  @@index([riskCategory])
+  @@index([status])
+  @@index([overallRiskLevel])
+}
+
+model DSANonPersonalizedFeed {
+  id                    String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  platformId            String
+  organizationId        String
+  isEnabled             Boolean     @default(false)
+  implementationDate    DateTime?
+  userOptInMethod       String // toggle, settings_page, onboarding
+  feedAlgorithmType     String // chronological, popularity, random
+  description           String?     @db.Text
+  userDocumentationUrl  String?     @db.Text
+  technicalSpecs        Json? // Technical implementation details
+  complianceStatus      String      @default("not_implemented") // not_implemented, in_progress, implemented, compliant
+  lastAuditDate         DateTime?
+  notes                 String?     @db.Text
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  platform              DSAPlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([platformId])
+  @@index([organizationId])
+  @@index([isEnabled])
+  @@index([complianceStatus])
 }

@@ -17,11 +17,22 @@ interface MulterFile {
   buffer: Buffer;
 }
 
-// Configure AWS SDK
+// Configure AWS SDK with region validation (security fix for GHSA-j965-2qgj-vjmq)
+const validateRegion = (region: string): string => {
+  if (!region || typeof region !== 'string') {
+    throw new Error('AWS region must be a non-empty string');
+  }
+  // Basic validation - allow alphanumeric, hyphens, underscores
+  if (!/^[a-zA-Z0-9_-]+$/.test(region)) {
+    throw new Error('Invalid AWS region format');
+  }
+  return region;
+};
+
 AWS.config.update({
   accessKeyId: config.aws.accessKeyId,
   secretAccessKey: config.aws.secretAccessKey,
-  region: config.aws.region,
+  region: validateRegion(config.aws.region || 'us-east-1'),
 });
 
 const s3 = new AWS.S3();

@@ -83,13 +83,19 @@ interface Config {
   openai: {
     apiKey: string;
   };
+  euAiDb: {
+    apiBaseUrl: string;
+    clientId: string;
+    clientSecret: string;
+    orgId: string;
+  };
 }
 
 const config: Config = {
   server: {
-    port: parseInt(process.env.PORT || '5000', 10),
+    port: parseInt(process.env.PORT || '3001', 10),
     env: process.env.NODE_ENV || 'development',
-    apiUrl: process.env.API_URL || 'http://localhost:5000',
+    apiUrl: process.env.API_URL || 'http://localhost:3001',
     clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
   },
   database: {
@@ -163,6 +169,12 @@ const config: Config = {
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',
+  },
+  euAiDb: {
+    apiBaseUrl: process.env.EU_AI_DB_API_BASE_URL || '',
+    clientId: process.env.EU_AI_DB_CLIENT_ID || '',
+    clientSecret: process.env.EU_AI_DB_CLIENT_SECRET || '',
+    orgId: process.env.EU_AI_DB_ORG_ID || '',
   },
 };
 

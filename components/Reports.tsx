@@ -4,7 +4,7 @@ import { ComplianceFramework } from '../types';
 import { FileText, Loader2, Download, Calendar, CheckSquare, AlertTriangle, X, Settings } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateComplianceReport } from '../services/geminiService';
-import * as DOMPurify from 'dompurify';
+import DOMPurify from 'dompurify';
 
 type ReportFormat = 'PDF' | 'JSON';
 type ReportSection = 'executive_summary' | 'frameworks' | 'controls' | 'risks' | 'evidence' | 'recommendations' | 'audit_trail';
@@ -296,7 +296,14 @@ export const Reports: React.FC = () => {
             </html>
           `;
 
-          printWindow.document.write(pdfContent);
+          // SECURITY: Sanitize entire HTML content before writing to prevent XSS
+          const sanitizedPdfContent = DOMPurify.sanitize(pdfContent, {
+            ALLOWED_TAGS: ['html', 'head', 'body', 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'strong', 'em', 'br', 'style', 'canvas', 'title'],
+            ALLOWED_ATTR: ['class', 'style', 'width', 'height'],
+            ALLOW_DATA_ATTR: false
+          });
+          
+          printWindow.document.write(sanitizedPdfContent);
           printWindow.document.close();
 
           // Wait for content to load, then trigger print

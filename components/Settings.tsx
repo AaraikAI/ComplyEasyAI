@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { User, Integration, Role, TierName, SubscriptionDetails, UsageMetrics, TIER_ORDER } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Save, User as UserIcon, Users, CreditCard, Layers, Power, Plus, X, Trash2, CheckCircle, RefreshCw, Upload, Lock, Loader2, Shield, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Save, User as UserIcon, Users, CreditCard, Layers, Power, Plus, X, Trash2, CheckCircle, RefreshCw, Upload, Lock, Loader2, Shield, AlertTriangle, ExternalLink, Sparkles } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
 import PricingSection from './PricingSection';
+import FeatureMarketplace from './FeatureMarketplace';
 
 interface SettingsProps {
   onNavigateToIntegrations?: () => void;
@@ -13,7 +14,7 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) => {
   const { user: currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'organization' | 'team' | 'integrations' | 'billing'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'organization' | 'team' | 'integrations' | 'billing' | 'features'>('profile');
   
   // --- Team State ---
   const [users, setUsers] = useState<User[]>([]);
@@ -45,6 +46,16 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     nextBillingDate: Date;
   } | null>(null);
   const [isLoadingProration, setIsLoadingProration] = useState(false);
+  const [activeFeatureSubscriptions, setActiveFeatureSubscriptions] = useState<Array<{
+    id: string;
+    featureId: string;
+    featureName: string;
+    billingCycle: 'monthly' | 'annual';
+    price: number;
+    status: string;
+  }>>([]);
+  const [totalFeatureCost, setTotalFeatureCost] = useState<{ annual: number; monthly: number }>({ annual: 0, monthly: 0 });
+  const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
 
   // --- Profile State ---
   const [profileName, setProfileName] = useState(currentUser?.name || '');
@@ -85,7 +96,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     // Check if there's a tab to navigate to from chatbot
     const checkTab = () => {
       const settingsTab = sessionStorage.getItem('settingsActiveTab');
-      if (settingsTab && ['profile', 'security', 'organization', 'team', 'integrations', 'billing'].includes(settingsTab)) {
+      if (settingsTab && ['profile', 'security', 'organization', 'team', 'integrations', 'billing', 'features'].includes(settingsTab)) {
         setActiveTab(settingsTab as any);
         sessionStorage.removeItem('settingsActiveTab'); // Clear after use
       }
@@ -100,7 +111,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     // Listen for custom event from chatbot
     const handleTabChange = (event: CustomEvent) => {
       const tab = event.detail?.tab;
-      if (tab && ['profile', 'security', 'organization', 'team', 'integrations', 'billing'].includes(tab)) {
+      if (tab && ['profile', 'security', 'organization', 'team', 'integrations', 'billing', 'features'].includes(tab)) {
         setActiveTab(tab as any);
         sessionStorage.removeItem('settingsActiveTab');
       }
@@ -250,8 +261,28 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       }
     };
 
+    const loadFeatureSubscriptions = async () => {
+      try {
+        setIsLoadingFeatures(true);
+        const response = await api.billing.getFeatureSubscriptions();
+        if (response.subscriptions) {
+          setActiveFeatureSubscriptions(response.subscriptions);
+          setTotalFeatureCost({
+            annual: response.totalAnnualCost || 0,
+            monthly: response.totalMonthlyCost || 0,
+          });
+        }
+      } catch (error: any) {
+        console.error('Failed to load feature subscriptions:', error);
+        // Don't show error - feature subscriptions are optional
+      } finally {
+        setIsLoadingFeatures(false);
+      }
+    };
+
     if (activeTab === 'billing') {
       loadBillingDetails();
+      loadFeatureSubscriptions();
     }
   }, [activeTab]);
 
@@ -494,6 +525,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
             { id: 'team', label: 'Team Members', icon: Users },
             { id: 'integrations', label: 'Integrations', icon: Layers },
             { id: 'billing', label: 'Billing & Plan', icon: CreditCard },
+            { id: 'features', label: 'Feature Marketplace', icon: Sparkles, adminOnly: true },
           ].filter(item => !item.adminOnly || currentUser?.role === 'admin').map(item => (
             <button
               key={item.id}
@@ -620,6 +652,88 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
               <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white opacity-5 rounded-full blur-3xl"></div>
             </div>
 
+            {/* Active Feature Subscriptions Summary */}
+            {activeFeatureSubscriptions.length > 0 && (
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <Sparkles className="mr-2 text-brand-600" size={20} />
+                      Active Feature Subscriptions
+                    </h4>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Additional features purchased beyond your base plan
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('features')}
+                    className="text-sm text-brand-600 hover:text-brand-700 font-medium"
+                  >
+                    Manage Features →
+                  </button>
+                </div>
+
+                {isLoadingFeatures ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="animate-spin text-brand-600 mr-3" size={20} />
+                    <span className="text-gray-600">Loading features...</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-3 mb-4">
+                      {activeFeatureSubscriptions.map((sub) => (
+                        <div
+                          key={sub.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-900">{sub.featureName}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                sub.status === 'active' ? 'bg-green-100 text-green-800' :
+                                sub.status === 'canceled' ? 'bg-red-100 text-red-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {sub.status === 'active' ? 'Active' :
+                                 sub.status === 'canceled' ? 'Canceled' :
+                                 'Pending'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {sub.billingCycle === 'annual' ? 'Annual' : 'Monthly'} billing
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-gray-900">
+                              ${sub.price.toFixed(2)}
+                              <span className="text-xs text-gray-500 font-normal">
+                                /{sub.billingCycle === 'annual' ? 'year' : 'month'}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Total Additional Cost:</span>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-900">
+                            ${totalFeatureCost.annual.toFixed(2)}
+                            <span className="text-xs text-gray-500 font-normal">/year</span>
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            ${totalFeatureCost.monthly.toFixed(2)}/month
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Pricing Section */}
             <PricingSection
               currentTier={currentTier}
@@ -673,6 +787,18 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                 <span className="text-gray-600">Calculating proration...</span>
               </div>
             )}
+
+            {/* Feature Marketplace */}
+            <div className="mt-8">
+              <FeatureMarketplace />
+            </div>
+          </div>
+        )}
+
+        {/* --- Features Tab (Feature Marketplace) --- */}
+        {activeTab === 'features' && (
+          <div className="animate-fadeIn">
+            <FeatureMarketplace />
           </div>
         )}
         

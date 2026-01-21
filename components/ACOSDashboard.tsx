@@ -349,108 +349,185 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Active Goals</p>
-                    <p className="text-2xl font-bold mt-1">{goals.length}</p>
-                  </div>
-                  <Target className="text-blue-500" size={24} />
-                </div>
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="animate-spin text-blue-500 mb-4" size={48} />
+                <p className="text-gray-600 text-lg">Loading aCOS Dashboard...</p>
+                <p className="text-gray-500 text-sm mt-2">Fetching Active Goals, Control Loops, and Early Warnings</p>
               </div>
-              <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Control Loops</p>
-                    <p className="text-2xl font-bold mt-1">{loops.length}</p>
-                  </div>
-                  <Zap className="text-yellow-500" size={24} />
-                </div>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Early Warnings</p>
-                    <p className="text-2xl font-bold mt-1">{warnings.length}</p>
-                  </div>
-                  <AlertTriangle className="text-red-500" size={24} />
-                </div>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">System Status</p>
-                    <p className="text-2xl font-bold mt-1 text-green-600">Active</p>
-                  </div>
-                  <CheckCircle className="text-green-500" size={24} />
-                </div>
-              </div>
-            </div>
-
-            {/* Early Warnings */}
-            {warnings.length > 0 && (
-              <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <AlertTriangle className="text-red-500 mr-2" size={20} />
-                  Early Warnings
-                </h2>
-                <div className="space-y-3">
-                  {warnings.slice(0, 5).map((warning, idx) => (
-                    <div key={idx} className="border-l-4 border-red-500 pl-4 py-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{warning.description}</p>
-                          <p className="text-sm text-gray-600 mt-1">{warning.recommendedAction}</p>
-                        </div>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          warning.severity === 'Critical' ? 'bg-red-100 text-red-800' :
-                          warning.severity === 'High' ? 'bg-orange-100 text-orange-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {warning.severity}
-                        </span>
+            ) : (
+              <>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">Active Goals</p>
+                        <p className="text-2xl font-bold mt-1">{goals.length}</p>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Predicted: {new Date(warning.predictedDate).toLocaleDateString()} • Confidence: {Math.round(warning.confidence * 100)}%
-                      </p>
+                      <Target className="text-blue-500" size={24} />
                     </div>
-                  ))}
+                  </div>
+                  <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">Control Loops</p>
+                        <p className="text-2xl font-bold mt-1">{loops.length}</p>
+                      </div>
+                      <Zap className="text-yellow-500" size={24} />
+                    </div>
+                  </div>
+                  <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">Early Warnings</p>
+                        <p className="text-2xl font-bold mt-1">{warnings.length}</p>
+                      </div>
+                      <AlertTriangle className="text-red-500" size={24} />
+                    </div>
+                  </div>
+                  <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">System Status</p>
+                        <p className="text-2xl font-bold mt-1 text-green-600">Active</p>
+                      </div>
+                      <CheckCircle className="text-green-500" size={24} />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button
-                  onClick={handleCreateGoal}
-                  className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
-                >
-                  <Target className="text-blue-500 mb-2" size={24} />
-                  <p className="font-medium">Create Compliance Goal</p>
-                  <p className="text-sm text-gray-600 mt-1">Set intent-driven compliance objectives</p>
-                </button>
-                <button
-                  onClick={() => setActiveTab('simulations')}
-                  className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
-                >
-                  <Network className="text-blue-500 mb-2" size={24} />
-                  <p className="font-medium">Run Simulation</p>
-                  <p className="text-sm text-gray-600 mt-1">Test "what-if" scenarios</p>
-                </button>
-                <button
-                  onClick={() => setActiveTab('redteam')}
-                  className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
-                >
-                  <Shield className="text-blue-500 mb-2" size={24} />
-                  <p className="font-medium">Red Team Scan</p>
-                  <p className="text-sm text-gray-600 mt-1">Automated security testing</p>
-                </button>
-              </div>
-            </div>
+                {/* Active Goals Details */}
+                {goals.length > 0 && (
+                  <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+                    <h2 className="text-xl font-semibold mb-4 flex items-center">
+                      <Target className="text-blue-500 mr-2" size={20} />
+                      Active Goals
+                    </h2>
+                    <div className="space-y-3">
+                      {goals.slice(0, 5).map((goal) => (
+                        <div key={goal.id} className="border-l-4 border-blue-500 pl-4 py-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{goal.goalType}</p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Frameworks: {goal.frameworks.join(', ')}
+                              </p>
+                              {goal.targetScore && (
+                                <p className="text-sm text-gray-500 mt-1">
+                                  Target Score: {goal.targetScore}%
+                                </p>
+                              )}
+                            </div>
+                            <span className={`ml-4 px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${
+                              goal.status === 'Active' ? 'bg-green-100 text-green-800' :
+                              goal.status === 'Paused' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {goal.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Control Loops Details */}
+                {loops.length > 0 && (
+                  <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+                    <h2 className="text-xl font-semibold mb-4 flex items-center">
+                      <Zap className="text-yellow-500 mr-2" size={20} />
+                      Control Loops
+                    </h2>
+                    <div className="space-y-3">
+                      {loops.slice(0, 5).map((loop) => (
+                        <div key={loop.id} className="border-l-4 border-yellow-500 pl-4 py-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">Control: {loop.controlId}</p>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Cycles: {loop.cycleCount} • Confidence: {Math.round(loop.confidence * 100)}%
+                              </p>
+                            </div>
+                            <span className={`ml-4 px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${
+                              loop.status === 'Active' ? 'bg-green-100 text-green-800' :
+                              loop.status === 'Paused' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {loop.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Early Warnings */}
+                {warnings.length > 0 && (
+                  <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+                    <h2 className="text-xl font-semibold mb-4 flex items-center">
+                      <AlertTriangle className="text-red-500 mr-2" size={20} />
+                      Early Warnings
+                    </h2>
+                    <div className="space-y-3">
+                      {warnings.slice(0, 5).map((warning, idx) => (
+                        <div key={idx} className="border-l-4 border-red-500 pl-4 py-2">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{warning.description}</p>
+                              <p className="text-sm text-gray-600 mt-1">{warning.recommendedAction}</p>
+                            </div>
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              warning.severity === 'Critical' ? 'bg-red-100 text-red-800' :
+                              warning.severity === 'High' ? 'bg-orange-100 text-orange-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {warning.severity}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Predicted: {new Date(warning.predictedDate).toLocaleDateString()} • Confidence: {Math.round(warning.confidence * 100)}%
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Actions */}
+                <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+                  <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button
+                      onClick={handleCreateGoal}
+                      className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                    >
+                      <Target className="text-blue-500 mb-2" size={24} />
+                      <p className="font-medium">Create Compliance Goal</p>
+                      <p className="text-sm text-gray-600 mt-1">Set intent-driven compliance objectives</p>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('simulations')}
+                      className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                    >
+                      <Network className="text-blue-500 mb-2" size={24} />
+                      <p className="font-medium">Run Simulation</p>
+                      <p className="text-sm text-gray-600 mt-1">Test "what-if" scenarios</p>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('redteam')}
+                      className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                    >
+                      <Shield className="text-blue-500 mb-2" size={24} />
+                      <p className="font-medium">Red Team Scan</p>
+                      <p className="text-sm text-gray-600 mt-1">Automated security testing</p>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -872,9 +949,25 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
         <div className="space-y-4">
           {loops.map((loop) => {
             const control = availableControls.find(c => c.id === loop.controlId);
+            const isExpanded = showHistory === loop.id;
             return (
               <div key={loop.id} className="bg-white p-6 rounded-lg shadow border border-gray-200">
-                <div className="flex items-center justify-between">
+                <div 
+                  className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -m-2 rounded transition-colors"
+                  onClick={async () => {
+                    if (!isExpanded) {
+                      try {
+                        const historyData = await api.acos.getControlLoopHistory(loop.id);
+                        setHistory(historyData);
+                        setShowHistory(loop.id);
+                      } catch (error) {
+                        alert('Failed to load execution history');
+                      }
+                    } else {
+                      setShowHistory(null);
+                    }
+                  }}
+                >
                   <div className="flex-1">
                     <h3 className="font-semibold">
                       {control ? `${control.name} (${control.frameworkName})` : `Control: ${loop.controlId.substring(0, 8)}...`}
@@ -1017,33 +1110,168 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                   </div>
                 )}
 
-                {/* Show history if expanded */}
-                {showHistory === loop.id && history.length > 0 && (
+                {/* Show detailed execution history if expanded */}
+                {isExpanded && history.length > 0 && (
                   <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    <h4 className="font-semibold text-gray-900 mb-2">Execution History</h4>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {history.map((h: any, idx: number) => (
-                        <div key={idx} className="p-2 bg-white rounded text-sm">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium capitalize">{h.executionPhase}</span>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs text-gray-600">{h.durationMs}ms</span>
-                              <span className="text-xs text-gray-500">
-                                {new Date(h.timestamp).toLocaleString()}
-                              </span>
-                              {h.success ? (
-                                <CheckCircle className="text-green-600" size={14} />
-                              ) : (
-                                <AlertTriangle className="text-red-600" size={14} />
-                              )}
-                            </div>
-                          </div>
-                          {h.error && (
-                            <p className="text-xs text-red-600 mt-1">Error: {h.error}</p>
-                          )}
-                        </div>
-                      ))}
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-semibold text-gray-900">Execution History</h4>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowHistory(null);
+                        }}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <X size={20} />
+                      </button>
                     </div>
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {(() => {
+                        // Group history by execution (group consecutive phases within 5 seconds)
+                        const executions: Array<Array<any>> = [];
+                        let currentExecution: any[] = [];
+                        let lastTimestamp: number | null = null;
+
+                        history.forEach((h: any) => {
+                          const timestamp = new Date(h.timestamp).getTime();
+                          if (lastTimestamp === null || (timestamp - lastTimestamp) > 5000) {
+                            // New execution (more than 5 seconds gap)
+                            if (currentExecution.length > 0) {
+                              executions.push([...currentExecution]);
+                            }
+                            currentExecution = [h];
+                          } else {
+                            // Same execution
+                            currentExecution.push(h);
+                          }
+                          lastTimestamp = timestamp;
+                        });
+                        if (currentExecution.length > 0) {
+                          executions.push(currentExecution);
+                        }
+
+                        return executions.map((execution, execIdx) => {
+                          const executionTime = new Date(execution[0].timestamp).toLocaleString();
+                          const phases = ['sense', 'analyze', 'plan', 'act', 'verify', 'learn'];
+                          const executionPhases = execution.filter((h: any) => phases.includes(h.executionPhase));
+                          
+                          return (
+                            <div key={execIdx} className="p-4 bg-white rounded-lg border border-gray-200">
+                              <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+                                <h5 className="font-semibold text-gray-900">Execution #{executions.length - execIdx}</h5>
+                                <span className="text-xs text-gray-500">{executionTime}</span>
+                              </div>
+                              <div className="space-y-3">
+                                {executionPhases.map((h: any, phaseIdx: number) => {
+                                  const phaseResult = typeof h.phaseResult === 'string' 
+                                    ? JSON.parse(h.phaseResult) 
+                                    : h.phaseResult;
+                                  
+                                  return (
+                                    <div key={phaseIdx} className="p-3 bg-gray-50 rounded border-l-4 border-blue-500">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="font-medium capitalize text-blue-700">
+                                          {h.executionPhase === 'sense' ? 'Observe' : 
+                                           h.executionPhase === 'analyze' ? 'Predict' :
+                                           h.executionPhase === 'plan' ? 'Plan' :
+                                           h.executionPhase === 'act' ? 'Act' :
+                                           h.executionPhase === 'verify' ? 'Verify' :
+                                           h.executionPhase === 'learn' ? 'Learn' :
+                                           h.executionPhase}
+                                        </span>
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-xs text-gray-600">{h.durationMs}ms</span>
+                                          {h.success ? (
+                                            <CheckCircle className="text-green-600" size={16} />
+                                          ) : (
+                                            <AlertTriangle className="text-red-600" size={16} />
+                                          )}
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Show phase-specific details */}
+                                      {h.executionPhase === 'sense' && phaseResult && (
+                                        <div className="text-xs text-gray-700 space-y-1">
+                                          <p><strong>Control:</strong> {phaseResult.controlName || phaseResult.controlId}</p>
+                                          <p><strong>Status:</strong> {phaseResult.currentStatus}</p>
+                                          <p><strong>Framework:</strong> {phaseResult.frameworkName}</p>
+                                          {phaseResult.evidenceCount !== undefined && (
+                                            <p><strong>Evidence Count:</strong> {phaseResult.evidenceCount}</p>
+                                          )}
+                                        </div>
+                                      )}
+                                      
+                                      {h.executionPhase === 'analyze' && phaseResult && (
+                                        <div className="text-xs text-gray-700 space-y-1">
+                                          <p><strong>Risk Level:</strong> {phaseResult.riskLevel}</p>
+                                          <p><strong>Needs Action:</strong> {phaseResult.needsAction ? 'Yes' : 'No'}</p>
+                                          {phaseResult.confidence !== undefined && (
+                                            <p><strong>Prediction Confidence:</strong> {Math.round(phaseResult.confidence * 100)}%</p>
+                                          )}
+                                        </div>
+                                      )}
+                                      
+                                      {h.executionPhase === 'plan' && phaseResult && (
+                                        <div className="text-xs text-gray-700 space-y-1">
+                                          <p><strong>Action Type:</strong> {phaseResult.actionType}</p>
+                                          <p><strong>Target Status:</strong> {phaseResult.targetStatus}</p>
+                                          <p><strong>Estimated Impact:</strong> {phaseResult.estimatedImpact}</p>
+                                        </div>
+                                      )}
+                                      
+                                      {h.executionPhase === 'act' && phaseResult && (
+                                        <div className="text-xs text-gray-700 space-y-1">
+                                          <p><strong>Action Taken:</strong> {phaseResult.acted ? 'Yes' : 'No'}</p>
+                                          {phaseResult.scoreChange !== undefined && (
+                                            <p><strong>Score Change:</strong> {phaseResult.scoreChange > 0 ? '+' : ''}{phaseResult.scoreChange}%</p>
+                                          )}
+                                          {phaseResult.error && (
+                                            <p className="text-red-600"><strong>Error:</strong> {phaseResult.error}</p>
+                                          )}
+                                        </div>
+                                      )}
+                                      
+                                      {h.executionPhase === 'verify' && phaseResult && (
+                                        <div className="text-xs text-gray-700 space-y-1">
+                                          <p><strong>Verified:</strong> {phaseResult.verified ? 'Yes' : 'No'}</p>
+                                        </div>
+                                      )}
+                                      
+                                      {h.executionPhase === 'learn' && phaseResult && (
+                                        <div className="text-xs text-gray-700 space-y-1">
+                                          <p><strong>Action Taken:</strong> {phaseResult.actionTaken ? 'Yes' : 'No'}</p>
+                                          <p><strong>Action Successful:</strong> {phaseResult.actionSuccessful ? 'Yes' : 'No'}</p>
+                                          {phaseResult.insights && Array.isArray(phaseResult.insights) && (
+                                            <div>
+                                              <p><strong>Insights:</strong></p>
+                                              <ul className="list-disc list-inside ml-2">
+                                                {phaseResult.insights.map((insight: string, idx: number) => (
+                                                  <li key={idx}>{insight}</li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                      
+                                      {h.error && (
+                                        <p className="text-xs text-red-600 mt-2"><strong>Error:</strong> {h.error}</p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                )}
+                
+                {isExpanded && history.length === 0 && (
+                  <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg text-center text-gray-500">
+                    <p>No execution history available for this control loop.</p>
                   </div>
                 )}
               </div>

@@ -2,6 +2,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import { NIST_AI_RMF_DATA } from '../data/nistAiRmfData';
+import { AuditLogger } from '../utils/auditLogger';
 
 /**
  * NIST AI RMF 1.0 Service
@@ -25,7 +26,7 @@ class AIRMFService {
     lifecycleStage?: string;
     autonomyLevel?: string;
     metadata?: any;
-  }) {
+  }, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const aiSystem = await prisma.aISystem.create({
         data: {
@@ -49,6 +50,27 @@ class AIRMFService {
 
       // Initialize lifecycle stages
       await this.initializeLifecycleStages(aiSystem.id);
+
+      // Log audit event
+      if (userId) {
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.system.create',
+          resourceType: 'AI_RMF_System',
+          resourceId: aiSystem.id,
+          metadata: {
+            systemName: aiSystem.name,
+            systemType: aiSystem.systemType,
+            lifecycleStage: aiSystem.lifecycleStage,
+            autonomyLevel: aiSystem.autonomyLevel,
+            useCase: aiSystem.useCase,
+            deploymentContext: aiSystem.deploymentContext,
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
 
       return aiSystem;
     } catch (error: any) {
@@ -106,8 +128,14 @@ class AIRMFService {
           coreFunctions: {
             include: {
               categories: {
+                orderBy: {
+                  categoryId: 'asc',
+                },
                 include: {
                   subcategories: {
+                    orderBy: {
+                      subcategoryId: 'asc',
+                    },
                     include: {
                       owner: {
                         select: {
@@ -170,7 +198,7 @@ class AIRMFService {
   /**
    * Update AI system
    */
-  async updateAISystem(organizationId: string, aiSystemId: string, updates: any) {
+  async updateAISystem(organizationId: string, aiSystemId: string, updates: any, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const aiSystem = await prisma.aISystem.findFirst({
         where: { id: aiSystemId, organizationId },
@@ -180,10 +208,51 @@ class AIRMFService {
         throw new AppError('AI system not found', 404);
       }
 
-      return await prisma.aISystem.update({
+      // Capture old values for audit log
+      const oldValues = {
+        name: aiSystem.name,
+        description: aiSystem.description,
+        systemType: aiSystem.systemType,
+        lifecycleStage: aiSystem.lifecycleStage,
+        autonomyLevel: aiSystem.autonomyLevel,
+        status: aiSystem.status,
+        riskLevel: aiSystem.riskLevel,
+      };
+
+      const updated = await prisma.aISystem.update({
         where: { id: aiSystemId },
         data: updates,
       });
+
+      // Log audit event with detailed changes
+      if (userId) {
+        const changes: Record<string, any> = {};
+        Object.keys(updates).forEach(key => {
+          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
+            changes[key] = {
+              old: oldValues[key as keyof typeof oldValues],
+              new: updates[key],
+            };
+          }
+        });
+
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.system.update',
+          resourceType: 'AI_RMF_System',
+          resourceId: aiSystemId,
+          metadata: {
+            systemName: updated.name,
+            changes,
+            updatedFields: Object.keys(updates),
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
+
+      return updated;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
       logger.error('Error updating AI system:', error);
@@ -194,7 +263,7 @@ class AIRMFService {
   /**
    * Delete AI system
    */
-  async deleteAISystem(organizationId: string, aiSystemId: string) {
+  async deleteAISystem(organizationId: string, aiSystemId: string, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const aiSystem = await prisma.aISystem.findFirst({
         where: { id: aiSystemId, organizationId },
@@ -202,6 +271,25 @@ class AIRMFService {
 
       if (!aiSystem) {
         throw new AppError('AI system not found', 404);
+      }
+
+      // Log audit event before deletion
+      if (userId) {
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.system.delete',
+          resourceType: 'AI_RMF_System',
+          resourceId: aiSystemId,
+          metadata: {
+            systemName: aiSystem.name,
+            systemType: aiSystem.systemType,
+            lifecycleStage: aiSystem.lifecycleStage,
+            overallTrustworthinessScore: aiSystem.overallTrustworthinessScore,
+          },
+          ipAddress,
+          userAgent,
+        });
       }
 
       await prisma.aISystem.delete({
@@ -313,7 +401,7 @@ class AIRMFService {
   /**
    * Update core function
    */
-  async updateCoreFunction(organizationId: string, aiSystemId: string, functionName: string, updates: any) {
+  async updateCoreFunction(organizationId: string, aiSystemId: string, functionName: string, updates: any, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const aiSystem = await prisma.aISystem.findFirst({
         where: { id: aiSystemId, organizationId },
@@ -331,10 +419,49 @@ class AIRMFService {
         throw new AppError('Core function not found', 404);
       }
 
-      return await prisma.aIRMFCoreFunction.update({
+      // Capture old values for audit log
+      const oldValues = {
+        status: coreFunction.status,
+        completionPercent: coreFunction.completionPercent,
+        notes: coreFunction.notes,
+      };
+
+      const updated = await prisma.aIRMFCoreFunction.update({
         where: { id: coreFunction.id },
         data: updates,
       });
+
+      // Log audit event
+      if (userId) {
+        const changes: Record<string, any> = {};
+        Object.keys(updates).forEach(key => {
+          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
+            changes[key] = {
+              old: oldValues[key as keyof typeof oldValues],
+              new: updates[key],
+            };
+          }
+        });
+
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.core_function.update',
+          resourceType: 'AI_RMF_CoreFunction',
+          resourceId: coreFunction.id,
+          metadata: {
+            aiSystemId,
+            aiSystemName: aiSystem.name,
+            functionName,
+            changes,
+            updatedFields: Object.keys(updates),
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
+
+      return updated;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
       logger.error('Error updating core function:', error);
@@ -349,7 +476,7 @@ class AIRMFService {
   /**
    * Update category
    */
-  async updateCategory(organizationId: string, categoryId: string, updates: any) {
+  async updateCategory(organizationId: string, categoryId: string, updates: any, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const category = await prisma.aIRMFCategory.findFirst({
         where: { id: categoryId },
@@ -366,10 +493,50 @@ class AIRMFService {
         throw new AppError('Category not found', 404);
       }
 
-      return await prisma.aIRMFCategory.update({
+      // Capture old values for audit log
+      const oldValues = {
+        completionPercent: category.completionPercent,
+        notes: category.notes,
+      };
+
+      const updated = await prisma.aIRMFCategory.update({
         where: { id: categoryId },
         data: updates,
       });
+
+      // Log audit event
+      if (userId) {
+        const changes: Record<string, any> = {};
+        Object.keys(updates).forEach(key => {
+          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
+            changes[key] = {
+              old: oldValues[key as keyof typeof oldValues],
+              new: updates[key],
+            };
+          }
+        });
+
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.category.update',
+          resourceType: 'AI_RMF_Category',
+          resourceId: categoryId,
+          metadata: {
+            aiSystemId: category.coreFunction.aiSystem.id,
+            aiSystemName: category.coreFunction.aiSystem.name,
+            coreFunctionName: category.coreFunction.functionName,
+            categoryId: category.categoryId,
+            categoryName: category.name,
+            changes,
+            updatedFields: Object.keys(updates),
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
+
+      return updated;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
       logger.error('Error updating category:', error);
@@ -380,7 +547,7 @@ class AIRMFService {
   /**
    * Update subcategory
    */
-  async updateSubcategory(organizationId: string, subcategoryId: string, updates: any) {
+  async updateSubcategory(organizationId: string, subcategoryId: string, updates: any, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const subcategory = await prisma.aIRMFSubcategory.findFirst({
         where: { id: subcategoryId },
@@ -402,6 +569,14 @@ class AIRMFService {
         throw new AppError('Subcategory not found', 404);
       }
 
+      // Capture old values for audit log
+      const oldValues = {
+        status: subcategory.status,
+        evidence: subcategory.evidence,
+        notes: subcategory.notes,
+        ownerId: subcategory.ownerId,
+      };
+
       const updated = await prisma.aIRMFSubcategory.update({
         where: { id: subcategoryId },
         data: updates,
@@ -409,6 +584,40 @@ class AIRMFService {
 
       // Recalculate category completion
       await this.recalculateCategoryCompletion(subcategory.categoryId);
+
+      // Log audit event
+      if (userId) {
+        const changes: Record<string, any> = {};
+        Object.keys(updates).forEach(key => {
+          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
+            changes[key] = {
+              old: oldValues[key as keyof typeof oldValues],
+              new: updates[key],
+            };
+          }
+        });
+
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.subcategory.update',
+          resourceType: 'AI_RMF_Subcategory',
+          resourceId: subcategoryId,
+          metadata: {
+            aiSystemId: subcategory.category.coreFunction.aiSystem.id,
+            aiSystemName: subcategory.category.coreFunction.aiSystem.name,
+            coreFunctionName: subcategory.category.coreFunction.functionName,
+            categoryId: subcategory.category.categoryId,
+            categoryName: subcategory.category.name,
+            subcategoryId: subcategory.subcategoryId,
+            subcategoryName: subcategory.name,
+            changes,
+            updatedFields: Object.keys(updates),
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
 
       return updated;
     } catch (error: any) {
@@ -557,7 +766,7 @@ class AIRMFService {
   /**
    * Update trustworthiness characteristic
    */
-  async updateTrustworthinessCharacteristic(organizationId: string, aiSystemId: string, characteristic: string, updates: any) {
+  async updateTrustworthinessCharacteristic(organizationId: string, aiSystemId: string, characteristic: string, updates: any, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const aiSystem = await prisma.aISystem.findFirst({
         where: { id: aiSystemId, organizationId },
@@ -575,10 +784,54 @@ class AIRMFService {
         throw new AppError('Trustworthiness characteristic not found', 404);
       }
 
-      return await prisma.aIRMFTrustworthinessCharacteristic.update({
+      // Capture old values for audit log
+      const oldValues = {
+        score: trustworthiness.score,
+        notes: trustworthiness.notes,
+        evidence: trustworthiness.evidence,
+      };
+
+      const updated = await prisma.aIRMFTrustworthinessCharacteristic.update({
         where: { id: trustworthiness.id },
         data: updates,
       });
+
+      // Automatically recalculate overall trustworthiness score after update
+      const newOverallScore = await this.calculateTrustworthinessScore(organizationId, aiSystemId);
+
+      // Log audit event
+      if (userId) {
+        const changes: Record<string, any> = {};
+        Object.keys(updates).forEach(key => {
+          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
+            changes[key] = {
+              old: oldValues[key as keyof typeof oldValues],
+              new: updates[key],
+            };
+          }
+        });
+
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.trustworthiness.update',
+          resourceType: 'AI_RMF_TrustworthinessCharacteristic',
+          resourceId: trustworthiness.id,
+          metadata: {
+            aiSystemId,
+            aiSystemName: aiSystem.name,
+            characteristic,
+            changes,
+            updatedFields: Object.keys(updates),
+            newOverallTrustworthinessScore: newOverallScore,
+            previousOverallTrustworthinessScore: aiSystem.overallTrustworthinessScore,
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
+
+      return updated;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
       logger.error('Error updating trustworthiness characteristic:', error);
@@ -629,7 +882,7 @@ class AIRMFService {
   /**
    * Update lifecycle stage
    */
-  async updateLifecycleStage(organizationId: string, aiSystemId: string, stage: string, updates: any) {
+  async updateLifecycleStage(organizationId: string, aiSystemId: string, stage: string, updates: any, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const aiSystem = await prisma.aISystem.findFirst({
         where: { id: aiSystemId, organizationId },
@@ -647,10 +900,49 @@ class AIRMFService {
         throw new AppError('Lifecycle stage not found', 404);
       }
 
-      return await prisma.aIRMFLifecycleStage.update({
+      // Capture old values for audit log
+      const oldValues = {
+        status: lifecycleStage.status,
+        notes: lifecycleStage.notes,
+        completionDate: lifecycleStage.completionDate,
+      };
+
+      const updated = await prisma.aIRMFLifecycleStage.update({
         where: { id: lifecycleStage.id },
         data: updates,
       });
+
+      // Log audit event
+      if (userId) {
+        const changes: Record<string, any> = {};
+        Object.keys(updates).forEach(key => {
+          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
+            changes[key] = {
+              old: oldValues[key as keyof typeof oldValues],
+              new: updates[key],
+            };
+          }
+        });
+
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.lifecycle_stage.update',
+          resourceType: 'AI_RMF_LifecycleStage',
+          resourceId: lifecycleStage.id,
+          metadata: {
+            aiSystemId,
+            aiSystemName: aiSystem.name,
+            stage,
+            changes,
+            updatedFields: Object.keys(updates),
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
+
+      return updated;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
       logger.error('Error updating lifecycle stage:', error);
@@ -758,7 +1050,7 @@ class AIRMFService {
     characteristicScores?: any;
     findings?: any;
     recommendations?: string[];
-  }) {
+  }, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const aiSystem = await prisma.aISystem.findFirst({
         where: { id: aiSystemId, organizationId },
@@ -789,7 +1081,7 @@ class AIRMFService {
         }
       }
 
-      return await prisma.aIRMFAssessment.create({
+      const assessment = await prisma.aIRMFAssessment.create({
         data: {
           aiSystemId,
           assessmentType: data.assessmentType,
@@ -801,10 +1093,83 @@ class AIRMFService {
           recommendations: data.recommendations || [],
         },
       });
+
+      // Log audit event
+      if (userId) {
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.assessment.create',
+          resourceType: 'AI_RMF_Assessment',
+          resourceId: assessment.id,
+          metadata: {
+            aiSystemId,
+            aiSystemName: aiSystem.name,
+            assessmentType: data.assessmentType,
+            overallScore,
+            functionScores,
+            characteristicScores: data.characteristicScores,
+            assessedBy: data.assessedBy,
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
+
+      return assessment;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
       logger.error('Error creating assessment:', error);
       throw new AppError(`Failed to create assessment: ${error.message}`, 500);
+    }
+  }
+
+  /**
+   * Delete assessment
+   */
+  async deleteAssessment(organizationId: string, assessmentId: string, userId?: string, ipAddress?: string, userAgent?: string) {
+    try {
+      const assessment = await prisma.aIRMFAssessment.findFirst({
+        where: { id: assessmentId },
+        include: {
+          aiSystem: true,
+        },
+      });
+
+      if (!assessment || assessment.aiSystem.organizationId !== organizationId) {
+        throw new AppError('Assessment not found', 404);
+      }
+
+      // Log audit event before deletion
+      if (userId) {
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.assessment.delete',
+          resourceType: 'AI_RMF_Assessment',
+          resourceId: assessmentId,
+          metadata: {
+            aiSystemId: assessment.aiSystem.id,
+            aiSystemName: assessment.aiSystem.name,
+            assessmentType: assessment.assessmentType,
+            overallScore: assessment.overallScore,
+            assessedBy: assessment.assessedBy,
+            assessmentDate: assessment.assessmentDate,
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
+
+      await prisma.aIRMFAssessment.delete({
+        where: { id: assessmentId },
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      if (error instanceof AppError) throw error;
+      logger.error('Error deleting assessment:', error);
+      throw new AppError(`Failed to delete assessment: ${error.message}`, 500);
     }
   }
 
@@ -936,7 +1301,7 @@ class AIRMFService {
     ownerId?: string;
     targetDate?: Date;
     evidence?: any;
-  }) {
+  }, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const aiSystem = await prisma.aISystem.findFirst({
         where: { id: aiSystemId, organizationId },
@@ -961,7 +1326,7 @@ class AIRMFService {
         ownerId = data.ownerId;
       }
 
-      return await prisma.aIRMFRiskActivity.create({
+      const riskActivity = await prisma.aIRMFRiskActivity.create({
         data: {
           aiSystemId,
           activityType: data.activityType,
@@ -976,6 +1341,32 @@ class AIRMFService {
           evidence: data.evidence || null,
         },
       });
+
+      // Log audit event
+      if (userId) {
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.risk_activity.create',
+          resourceType: 'AI_RMF_RiskActivity',
+          resourceId: riskActivity.id,
+          metadata: {
+            aiSystemId,
+            aiSystemName: aiSystem.name,
+            activityType: data.activityType,
+            riskLevel: data.riskLevel,
+            relatedFunction: data.relatedFunction,
+            relatedCategory: data.relatedCategory,
+            relatedSubcategory: data.relatedSubcategory,
+            ownerId,
+            targetDate: data.targetDate,
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
+
+      return riskActivity;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
       logger.error('Error creating risk activity:', error);
@@ -986,7 +1377,7 @@ class AIRMFService {
   /**
    * Update risk activity
    */
-  async updateRiskActivity(organizationId: string, riskActivityId: string, updates: any) {
+  async updateRiskActivity(organizationId: string, riskActivityId: string, updates: any, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
       const riskActivity = await prisma.aIRMFRiskActivity.findFirst({
         where: { id: riskActivityId },
@@ -999,10 +1390,55 @@ class AIRMFService {
         throw new AppError('Risk activity not found', 404);
       }
 
-      return await prisma.aIRMFRiskActivity.update({
+      // Capture old values for audit log
+      const oldValues = {
+        status: riskActivity.status,
+        riskLevel: riskActivity.riskLevel,
+        mitigationPlan: riskActivity.mitigationPlan,
+        ownerId: riskActivity.ownerId,
+        targetDate: riskActivity.targetDate,
+        description: riskActivity.description,
+      };
+
+      const updated = await prisma.aIRMFRiskActivity.update({
         where: { id: riskActivityId },
         data: updates,
       });
+
+      // Log audit event
+      if (userId) {
+        const changes: Record<string, any> = {};
+        Object.keys(updates).forEach(key => {
+          if (oldValues[key as keyof typeof oldValues] !== updates[key]) {
+            changes[key] = {
+              old: oldValues[key as keyof typeof oldValues],
+              new: updates[key],
+            };
+          }
+        });
+
+        await AuditLogger.log({
+          userId,
+          organizationId,
+          action: 'ai_rmf.risk_activity.update',
+          resourceType: 'AI_RMF_RiskActivity',
+          resourceId: riskActivityId,
+          metadata: {
+            aiSystemId: riskActivity.aiSystem.id,
+            aiSystemName: riskActivity.aiSystem.name,
+            activityType: riskActivity.activityType,
+            relatedFunction: riskActivity.relatedFunction,
+            relatedCategory: riskActivity.relatedCategory,
+            relatedSubcategory: riskActivity.relatedSubcategory,
+            changes,
+            updatedFields: Object.keys(updates),
+          },
+          ipAddress,
+          userAgent,
+        });
+      }
+
+      return updated;
     } catch (error: any) {
       if (error instanceof AppError) throw error;
       logger.error('Error updating risk activity:', error);
