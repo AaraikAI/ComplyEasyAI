@@ -808,8 +808,23 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
             <h3 className="text-xl font-bold text-gray-900">My Profile</h3>
             
             <div className="flex items-center space-x-6 mb-8">
-              <div className="w-24 h-24 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 text-3xl font-bold border-4 border-white shadow-md">
-                {profileName.substring(0, 2).toUpperCase()}
+              <div className="w-24 h-24 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 text-3xl font-bold border-4 border-white shadow-md overflow-hidden">
+                {currentUser?.avatar && currentUser.avatar.startsWith('http') ? (
+                  <img 
+                    src={currentUser.avatar} 
+                    alt={profileName} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      if (target.parentElement) {
+                        target.parentElement.innerHTML = profileName.substring(0, 2).toUpperCase();
+                      }
+                    }}
+                  />
+                ) : (
+                  profileName.substring(0, 2).toUpperCase()
+                )}
               </div>
               <div>
                  <label className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">
@@ -1354,8 +1369,23 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                   users.map((u, idx) => (
                     <div key={u.id} className={`p-4 flex justify-between items-center ${idx !== users.length - 1 ? 'border-b border-gray-100' : ''} hover:bg-gray-50 transition-colors`}>
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-sm font-bold text-gray-600">
-                          {u.avatar}
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-sm font-bold text-gray-600 overflow-hidden">
+                          {u.avatar && u.avatar.startsWith('http') ? (
+                            <img 
+                              src={u.avatar} 
+                              alt={u.name} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                if (target.parentElement) {
+                                  target.parentElement.innerHTML = u.name.substring(0, 2).toUpperCase();
+                                }
+                              }}
+                            />
+                          ) : (
+                            u.avatar || u.name.substring(0, 2).toUpperCase()
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-gray-900">{u.name}</p>

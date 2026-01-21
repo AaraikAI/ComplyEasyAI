@@ -290,8 +290,22 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                 <p className="text-sm font-medium text-gray-900">{user.name}</p>
                 <p className="text-xs text-gray-500 capitalize">{user.role}</p>
               </div>
-              <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center border border-brand-200 text-brand-700 font-bold shadow-sm">
-                {user.avatar}
+              <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center border border-brand-200 text-brand-700 font-bold shadow-sm overflow-hidden">
+                {user.avatar && user.avatar.startsWith('http') ? (
+                  <img 
+                    src={user.avatar} 
+                    alt={user.name} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to initials if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.parentElement!.innerHTML = user.name.substring(0, 2).toUpperCase();
+                    }}
+                  />
+                ) : (
+                  user.avatar || user.name.substring(0, 2).toUpperCase()
+                )}
               </div>
             </div>
           </div>

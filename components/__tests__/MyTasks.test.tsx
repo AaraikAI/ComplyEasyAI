@@ -2,12 +2,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MyTasks } from '../MyTasks';
-import { AuthProvider } from '../../contexts/AuthContext';
-import { api } from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
-
-
-
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 // Mock dependencies
@@ -23,8 +17,11 @@ vi.mock('../../services/api', () => ({
   }
 }));
 
+const mockUser = { id: 'user-1', name: 'Sarah Connor', email: 'sarah@test.com' };
+
 vi.mock('../../contexts/AuthContext', () => ({
-  useAuth: vi.fn()
+  useAuth: () => ({ user: mockUser, isAuthenticated: true }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>
 }));
 
 vi.mock('../../services/geminiService', () => ({
@@ -32,7 +29,6 @@ vi.mock('../../services/geminiService', () => ({
 }));
 
 describe('MyTasks Component', () => {
-  const mockUser = { name: 'Sarah Connor', email: 'sarah@test.com' };
   const mockTasks = [
     { 
       id: 't1', 
@@ -54,17 +50,14 @@ describe('MyTasks Component', () => {
     }
   ];
 
-  beforeEach(() => {
-    (useAuth as any).mockReturnValue({ user: mockUser });
-    (api.risks.list as any).mockResolvedValue(mockTasks);
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const { api } = await import('../../services/api');
+    vi.mocked(api.risks.list).mockResolvedValue(mockTasks);
   });
 
   it('renders tasks assigned to user', async () => {
-    render(
-      <AuthProvider>
-        <MyTasks />
-      </AuthProvider>
-    );
+    render(<MyTasks />);
     await waitFor(() => {
       expect(screen.getByText('High Severity Task')).toBeInTheDocument();
       expect(screen.getByText('Low Severity Task')).toBeInTheDocument();
@@ -72,11 +65,7 @@ describe('MyTasks Component', () => {
   });
 
   it('filters tasks by severity', async () => {
-    render(
-      <AuthProvider>
-        <MyTasks />
-      </AuthProvider>
-    );
+    render(<MyTasks />);
     await waitFor(() => screen.getByText('High Severity Task'));
 
     const filter = screen.getByDisplayValue('All Severities');
@@ -87,11 +76,7 @@ describe('MyTasks Component', () => {
   });
 
   it('opens action modal on button click', async () => {
-    render(
-      <AuthProvider>
-        <MyTasks />
-      </AuthProvider>
-    );
+    render(<MyTasks />);
 
     // Wait for tasks to load
     await screen.findByText('High Severity Task');
