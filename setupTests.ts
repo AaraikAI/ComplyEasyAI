@@ -3,8 +3,9 @@ import { vi, beforeAll, afterEach, afterAll } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import React from 'react';
 
-// Suppress React act() warnings - configure before any React operations
+// Suppress React act() warnings and other test-specific console output
 const originalError = console.error;
+const originalWarn = console.warn;
 beforeAll(() => {
   console.error = (...args: unknown[]) => {
     const message = args[0]?.toString() || '';
@@ -13,16 +14,26 @@ beforeAll(() => {
       message.includes('not wrapped in act') ||
       message.includes('Warning: ReactDOM.render') ||
       message.includes('Warning: An update to') ||
-      message.includes('inside a test was not wrapped in act')
+      message.includes('inside a test was not wrapped in act') ||
+      message.includes('Failed to load') ||
+      message.includes('AI Error')
     ) {
       return;
     }
     originalError.apply(console, args);
   };
+  console.warn = (...args: unknown[]) => {
+    const message = args[0]?.toString() || '';
+    if (message.includes('Failed to load')) {
+      return;
+    }
+    originalWarn.apply(console, args);
+  };
 });
 
 afterAll(() => {
   console.error = originalError;
+  console.warn = originalWarn;
 });
 
 // Clean up after each test to prevent state leakage

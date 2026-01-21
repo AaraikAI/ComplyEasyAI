@@ -242,6 +242,53 @@ export const api = {
     logout: () => {
       clearAuthToken();
     },
+
+    uploadAvatar: async (file: File) => {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      const token = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/auth/profile/avatar`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(error.message || 'Failed to upload avatar');
+      }
+
+      const result = await response.json();
+      
+      // Update local user data with new avatar
+      if (result.user) {
+        const existingUser = localStorage.getItem('user_data');
+        if (existingUser) {
+          const userData = JSON.parse(existingUser);
+          userData.avatar = result.user.avatar;
+          localStorage.setItem('user_data', JSON.stringify(userData));
+        }
+      }
+      
+      return result;
+    },
+
+    updateProfile: async (updates: { name?: string; email?: string }) => {
+      return fetchAPI<{ user: any }>('/auth/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    changePassword: async (currentPassword: string, newPassword: string) => {
+      return fetchAPI<{ success: boolean; message: string }>('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+    },
   },
 
   // --- Risks ---
@@ -655,6 +702,29 @@ export const api = {
       return fetchAPI<{ quoteId: string; message: string }>('/billing/quote', {
         method: 'POST',
         body: JSON.stringify({ tier, requirements }),
+      });
+    },
+
+    getFeatureSubscriptions: async () => {
+      return fetchAPI<{
+        subscriptions: Array<{
+          id: string;
+          featureId: string;
+          featureName: string;
+          status: string;
+          billingCycle: 'monthly' | 'annual';
+          price: number;
+          startDate: string;
+          endDate?: string;
+        }>;
+        totalAnnualCost: number;
+        totalMonthlyCost: number;
+      }>('/billing/feature-subscriptions');
+    },
+
+    cancelFeatureSubscription: async (subscriptionId: string) => {
+      return fetchAPI<{ success: boolean; message: string }>(`/billing/feature-subscriptions/${subscriptionId}`, {
+        method: 'DELETE',
       });
     },
   },

@@ -128,6 +128,31 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:nist\s+)?(?:ai\s+)?rmf\s+(?:ai\s+)?systems?/i, view: 'ai-rmf-systems' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:nist\s+)?(?:ai\s+)?rmf\s+create/i, view: 'ai-rmf-create' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:nist\s+)?(?:ai\s+)?rmf\s+assessments?/i, view: 'ai-rmf-assessments' },
+      // EU AI Act navigation
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:eu\s+)?ai\s+act/i, view: 'eu-ai-act' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:eu\s+)?ai\s+act\s+(?:ai\s+)?systems?/i, view: 'eu-ai-act' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:eu\s+)?ai\s+act\s+risk\s+assess/i, view: 'eu-ai-act' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:eu\s+)?ai\s+act\s+transparency/i, view: 'eu-ai-act' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:eu\s+)?ai\s+act\s+compliance/i, view: 'eu-ai-act' },
+      // DMA (Digital Markets Act) navigation
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dma/i, view: 'dma' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:digital\s+)?markets?\s+act/i, view: 'dma' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+gatekeeper/i, view: 'dma' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dma\s+gatekeeper/i, view: 'dma' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dma\s+obligations?/i, view: 'dma' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dma\s+compliance/i, view: 'dma' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:core\s+)?platform\s+services?/i, view: 'dma' },
+      // DSA (Digital Services Act) navigation
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dsa/i, view: 'dsa' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:digital\s+)?services?\s+act/i, view: 'dsa' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dsa\s+platforms?/i, view: 'dsa' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dsa\s+content\s+moderation/i, view: 'dsa' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dsa\s+(?:illegal\s+)?content/i, view: 'dsa' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dsa\s+(?:ad|ads|advertisement)\s+repository/i, view: 'dsa' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dsa\s+transparency/i, view: 'dsa' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+dsa\s+risk\s+assess/i, view: 'dsa' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+vlop/i, view: 'dsa' },
+      { pattern: /(?:go to|open|show|navigate to|switch to)\s+vlose/i, view: 'dsa' },
       // Real Time Analytics navigation
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+(?:real\s*time\s+)?analytics?/i, view: 'analytics' },
       { pattern: /(?:go to|open|show|navigate to|switch to)\s+audit/i, view: 'audit' },
@@ -295,6 +320,24 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
         return '✅ Navigating to NIST AI RMF Dashboard...';
       }
 
+      // Handle EU AI Act navigation
+      if (view === 'eu-ai-act') {
+        onNavigate('eu-ai-act');
+        return '✅ Navigating to EU AI Act Dashboard. Here you can manage AI system registration, risk assessments, and transparency reports.';
+      }
+
+      // Handle DMA (Digital Markets Act) navigation
+      if (view === 'dma') {
+        onNavigate('dma');
+        return '✅ Navigating to DMA Gatekeeper Management. Here you can manage gatekeeper designations, obligations, and compliance reports.';
+      }
+
+      // Handle DSA (Digital Services Act) navigation
+      if (view === 'dsa') {
+        onNavigate('dsa');
+        return '✅ Navigating to DSA Platform Management. Here you can manage platform registration, content moderation, illegal content reports, ad repository, and risk assessments.';
+      }
+
       // Handle Settings sub-tabs
       if (view.startsWith('settings-')) {
         const settingsTab = view.replace('settings-', '');
@@ -332,6 +375,12 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
         'my-tasks': 'My Tasks',
         'integrations': 'Integrations',
         'settings': 'Settings',
+        'ai-rmf': 'NIST AI RMF',
+        'eu-ai-act': 'EU AI Act',
+        'dma': 'DMA Gatekeeper Management',
+        'dsa': 'DSA Platform Management',
+        'analytics': 'Real-time Analytics',
+        'security': 'Security Features',
         'ai-policy': 'Policy Generator',
         'ai-contract': 'Contract Analyzer',
         'ai-gap': 'Gap Analysis',
