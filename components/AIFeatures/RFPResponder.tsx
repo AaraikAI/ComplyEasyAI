@@ -3,7 +3,7 @@ import { generateRFPResponse } from '../../services/geminiService';
 import { FileText, Loader2, ArrowLeft, Send, AlertTriangle, X, Download, Edit2, Save, XCircle, CheckCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../../services/api';
-import * as DOMPurify from 'dompurify';
+import DOMPurify from 'dompurify';
 
 const MAX_QUESTION_LENGTH = 10000; // 10k characters
 

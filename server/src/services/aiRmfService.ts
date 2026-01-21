@@ -423,7 +423,6 @@ class AIRMFService {
       const oldValues = {
         status: coreFunction.status,
         completionPercent: coreFunction.completionPercent,
-        notes: coreFunction.notes,
       };
 
       const updated = await prisma.aIRMFCoreFunction.update({
@@ -496,7 +495,6 @@ class AIRMFService {
       // Capture old values for audit log
       const oldValues = {
         completionPercent: category.completionPercent,
-        notes: category.notes,
       };
 
       const updated = await prisma.aIRMFCategory.update({
@@ -787,7 +785,7 @@ class AIRMFService {
       // Capture old values for audit log
       const oldValues = {
         score: trustworthiness.score,
-        notes: trustworthiness.notes,
+        assessmentNotes: trustworthiness.assessmentNotes,
         evidence: trustworthiness.evidence,
       };
 

@@ -543,7 +543,7 @@ class EUAIActService {
     const system = await prisma.eUAIActSystem.findFirst({
       where: { id: systemId, organizationId },
       include: {
-        assessments: {
+        riskAssessments: {
           orderBy: { assessmentDate: 'desc' },
           take: 1,
         },

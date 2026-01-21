@@ -126,9 +126,9 @@ class DMAService {
     }
 
     // All three criteria must be met
-    isGatekeeper = hasSignificantImpact && 
+    isGatekeeper = !!(hasSignificantImpact && 
                    criteria.corePlatformServices.length > 0 && 
-                   hasStrongPosition;
+                   hasStrongPosition);
 
     if (isGatekeeper) {
       reasons.push('Organization qualifies as gatekeeper under DMA');
@@ -449,11 +449,15 @@ class DMAService {
     }
 
     // Return obligations with their tracking status
-    return gatekeeper.obligations.map(obligation => {
+    const obligations = gatekeeper.obligations as string[] | null;
+    if (!obligations || !Array.isArray(obligations)) {
+      return [];
+    }
+    return obligations.map((obligation: string) => {
       const tracking = gatekeeper.obligationsTracking.find(t => t.obligationType === obligation);
       return {
         obligationType: obligation,
-        description: this.getObligationDescription(obligation),
+        description: this.getObligationDescription(obligation as DMAObligation),
         complianceStatus: tracking?.complianceStatus || 'pending',
         evidence: tracking?.evidence || [],
         lastVerified: tracking?.lastVerified,
