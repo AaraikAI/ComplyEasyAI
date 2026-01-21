@@ -76,4 +76,33 @@ router.delete('/addons/:addOnId', authorize('admin'), asyncHandler(billingContro
 // Request custom quote
 router.post('/quote', authorize('admin'), asyncHandler(billingController.requestQuote.bind(billingController)));
 
+// ============================================================================
+// FEATURE SUBSCRIPTIONS (A-La-Carte)
+// ============================================================================
+
+// Get all available features for organization's tier
+router.get('/features', asyncHandler(billingController.getAvailableFeatures.bind(billingController)));
+
+// Get active feature subscriptions
+router.get('/features/subscriptions', asyncHandler(billingController.getFeatureSubscriptions.bind(billingController)));
+
+// Subscribe to a feature
+router.post('/features/:featureId/subscribe', authorize('admin'), asyncHandler(billingController.subscribeToFeature.bind(billingController)));
+
+// Unsubscribe from a feature
+router.delete('/features/:featureId/unsubscribe', authorize('admin'), asyncHandler(billingController.unsubscribeFromFeature.bind(billingController)));
+
+// Check feature access
+router.get('/features/:featureId/access', asyncHandler(billingController.checkFeatureAccess.bind(billingController)));
+
+// ============================================================================
+// FEATURE BUNDLES
+// ============================================================================
+
+// Get available feature bundles
+router.get('/bundles', asyncHandler(billingController.getAvailableBundles.bind(billingController)));
+
+// Subscribe to a feature bundle
+router.post('/bundles/:bundleId/subscribe', authorize('admin'), asyncHandler(billingController.subscribeToBundle.bind(billingController)));
+
 export default router;

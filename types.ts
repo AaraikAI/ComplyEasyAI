@@ -13,7 +13,10 @@ export enum FrameworkType {
   ISO27001 = 'ISO 27001',
   PCI_DSS = 'PCI DSS',
   CCPA = 'CCPA',
-  NIST = 'NIST 800-53'
+  NIST = 'NIST 800-53',
+  EU_AI_ACT = 'EU AI Act',
+  DMA = 'Digital Markets Act (DMA)',
+  DSA = 'Digital Services Act (DSA)'
 }
 
 export type Role = 'admin' | 'editor' | 'viewer';
@@ -436,7 +439,10 @@ export type ViewState =
   | 'ai-vendor'
   | 'ai-data-map'
   | 'ai-bcp'
-  | 'acos';
+  | 'acos'
+  | 'eu-ai-act'
+  | 'dma'
+  | 'dsa';
 
 // ============================================================================
 // TIER CONFIGURATION (Frontend copy of backend tiers)

@@ -125,6 +125,11 @@ export const AVAILABLE_FRAMEWORKS = [
   // Regional Compliance
   { name: 'APEC CBPR', region: 'APAC', description: 'Asia-Pacific Economic Cooperation Cross-Border Privacy Rules' },
   { name: 'Adequacy Decision', region: 'EU', description: 'EU Adequacy Decision for data transfers' },
+  
+  // EU Digital Regulations (2022-2025)
+  { name: FrameworkType.EU_AI_ACT, region: 'EU', description: 'EU AI Act (Regulation 2024/1689) - World\'s first comprehensive AI law regulating artificial intelligence systems with risk-based classification' },
+  { name: FrameworkType.DMA, region: 'EU', description: 'Digital Markets Act (Regulation 2022/1925) - Rules for gatekeeper platforms and core platform services to ensure fair competition' },
+  { name: FrameworkType.DSA, region: 'EU', description: 'Digital Services Act (Regulation 2022/2065) - Rules for online platforms, content moderation, transparency, and user protection' },
 ];
 
 export const MOCK_RISKS: RiskItem[] = [
@@ -200,7 +205,7 @@ export const MOCK_INTEGRATIONS: Integration[] = [
 export const PRICING_TIERS = [
   {
     name: 'Basic',
-    price: '$150',
+    price: 'Contact Us',
     period: '/mo',
     features: ['Core reports', '5 Frameworks', '20 Integrations', 'Email Support'],
     target: 'Small Teams',

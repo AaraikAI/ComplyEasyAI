@@ -23,6 +23,9 @@ import { AISystemList } from './components/AISystemList';
 import { AISystemDetails } from './components/AISystemDetails';
 import { AISystemCreate } from './components/AISystemCreate';
 import { AIRMFAssessments } from './components/AIRMFAssessments';
+import { EUAIActDashboard } from './components/EUAIActDashboard';
+import { DMAGatekeeperManagement } from './components/DMAGatekeeperManagement';
+import { DSAPlatformManagement } from './components/DSAPlatformManagement';
 
 const PolicyGenerator = lazy(() => import('./components/AIFeatures/PolicyGenerator').then(m => ({ default: m.PolicyGenerator })));
 const ContractAnalyzer = lazy(() => import('./components/AIFeatures/ContractAnalyzer').then(m => ({ default: m.ContractAnalyzer })));
@@ -221,6 +224,12 @@ const MainApp: React.FC = () => {
             }}
           />
         );
+      case 'eu-ai-act':
+        return <EUAIActDashboard />;
+      case 'dma':
+        return <DMAGatekeeperManagement />;
+      case 'dsa':
+        return <DSAPlatformManagement />;
       default:
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }

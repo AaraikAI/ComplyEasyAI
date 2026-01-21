@@ -11,6 +11,7 @@ import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import webhookService from '../services/webhookService';
+import emailService from '../services/emailService';
 import { DemoRequestStatus } from '@prisma/client';
 
 // ============================================================================
@@ -107,6 +108,9 @@ class DemoController {
       });
 
       logger.info(`Demo request submitted: ${demoRequest.email} (${demoRequest.company})`);
+
+      // Send email notification to contact@complyeasyai.com
+      await this.sendDemoRequestEmail(demoRequest);
 
       // Dispatch webhook event for welcome email automation
       await this.dispatchWelcomeEmail(demoRequest);
@@ -459,6 +463,178 @@ class DemoController {
       });
     } catch (error) {
       next(error);
+    }
+  }
+
+  // ============================================================================
+  // EMAIL NOTIFICATIONS
+  // ============================================================================
+
+  /**
+   * Send demo request notification email to contact@complyeasyai.com
+   */
+  private async sendDemoRequestEmail(demoRequest: any) {
+    try {
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+            .info-row { margin: 15px 0; padding: 10px; background: white; border-radius: 4px; }
+            .label { font-weight: bold; color: #0284c7; }
+            .value { color: #333; margin-top: 5px; }
+            .footer { margin-top: 30px; font-size: 12px; color: #666; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>New Demo Request</h1>
+            </div>
+            <div class="content">
+              <p><strong>A new demo request has been submitted:</strong></p>
+              
+              <div class="info-row">
+                <div class="label">Name:</div>
+                <div class="value">${demoRequest.firstName} ${demoRequest.lastName}</div>
+              </div>
+              
+              <div class="info-row">
+                <div class="label">Email:</div>
+                <div class="value">${demoRequest.email}</div>
+              </div>
+              
+              <div class="info-row">
+                <div class="label">Company:</div>
+                <div class="value">${demoRequest.company}</div>
+              </div>
+              
+              ${demoRequest.jobTitle ? `
+              <div class="info-row">
+                <div class="label">Job Title:</div>
+                <div class="value">${demoRequest.jobTitle}</div>
+              </div>
+              ` : ''}
+              
+              ${demoRequest.phone ? `
+              <div class="info-row">
+                <div class="label">Phone:</div>
+                <div class="value">${demoRequest.phone}</div>
+              </div>
+              ` : ''}
+              
+              ${demoRequest.companySize ? `
+              <div class="info-row">
+                <div class="label">Company Size:</div>
+                <div class="value">${demoRequest.companySize}</div>
+              </div>
+              ` : ''}
+              
+              ${demoRequest.industry ? `
+              <div class="info-row">
+                <div class="label">Industry:</div>
+                <div class="value">${demoRequest.industry}</div>
+              </div>
+              ` : ''}
+              
+              ${demoRequest.country ? `
+              <div class="info-row">
+                <div class="label">Country:</div>
+                <div class="value">${demoRequest.country}</div>
+              </div>
+              ` : ''}
+              
+              ${demoRequest.interestedTier ? `
+              <div class="info-row">
+                <div class="label">Interested Plan:</div>
+                <div class="value">${demoRequest.interestedTier}</div>
+              </div>
+              ` : ''}
+              
+              ${demoRequest.currentChallenge ? `
+              <div class="info-row">
+                <div class="label">Main Challenge:</div>
+                <div class="value">${demoRequest.currentChallenge}</div>
+              </div>
+              ` : ''}
+              
+              ${demoRequest.howDidYouHear ? `
+              <div class="info-row">
+                <div class="label">How did they hear about us:</div>
+                <div class="value">${demoRequest.howDidYouHear}</div>
+              </div>
+              ` : ''}
+              
+              ${demoRequest.message ? `
+              <div class="info-row">
+                <div class="label">Additional Message:</div>
+                <div class="value">${demoRequest.message}</div>
+              </div>
+              ` : ''}
+              
+              <div class="info-row">
+                <div class="label">Source:</div>
+                <div class="value">${demoRequest.source || 'Unknown'}</div>
+              </div>
+              
+              <div class="info-row">
+                <div class="label">Request ID:</div>
+                <div class="value">${demoRequest.id}</div>
+              </div>
+              
+              <div class="info-row">
+                <div class="label">Submitted At:</div>
+                <div class="value">${new Date(demoRequest.createdAt).toLocaleString()}</div>
+              </div>
+              
+              <div class="footer">
+                <p>This is an automated notification from ComplyEasyAI.</p>
+                <p>Please respond to this demo request within 24 hours.</p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await emailService.sendEmail({
+        to: 'contact@complyeasyai.com',
+        subject: `New Demo Request: ${demoRequest.firstName} ${demoRequest.lastName} from ${demoRequest.company}`,
+        html: emailHtml,
+        text: `
+New Demo Request
+
+Name: ${demoRequest.firstName} ${demoRequest.lastName}
+Email: ${demoRequest.email}
+Company: ${demoRequest.company}
+${demoRequest.jobTitle ? `Job Title: ${demoRequest.jobTitle}` : ''}
+${demoRequest.phone ? `Phone: ${demoRequest.phone}` : ''}
+${demoRequest.companySize ? `Company Size: ${demoRequest.companySize}` : ''}
+${demoRequest.industry ? `Industry: ${demoRequest.industry}` : ''}
+${demoRequest.country ? `Country: ${demoRequest.country}` : ''}
+${demoRequest.interestedTier ? `Interested Plan: ${demoRequest.interestedTier}` : ''}
+${demoRequest.currentChallenge ? `Main Challenge: ${demoRequest.currentChallenge}` : ''}
+${demoRequest.howDidYouHear ? `How did they hear about us: ${demoRequest.howDidYouHear}` : ''}
+${demoRequest.message ? `Additional Message: ${demoRequest.message}` : ''}
+Source: ${demoRequest.source || 'Unknown'}
+Request ID: ${demoRequest.id}
+Submitted At: ${new Date(demoRequest.createdAt).toLocaleString()}
+        `.trim(),
+      });
+
+      logger.info(`Demo request email sent to contact@complyeasyai.com for ${demoRequest.email}`);
+    } catch (error: any) {
+      logger.error('Failed to send demo request email', error);
+      // Log detailed error for debugging
+      if (error.message) {
+        logger.error(`Email error details: ${error.message}`);
+      }
+      // Don't throw - this is a non-critical operation, but log it for admin awareness
+      // The demo request is still saved successfully
     }
   }
 

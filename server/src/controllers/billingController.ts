@@ -29,6 +29,8 @@ import {
   tierAddOns,
   getAvailableAddOns,
 } from '../config/tiers';
+import featureService from '../services/featureService';
+import { FEATURES, FEATURE_BUNDLES, getFeature, getBundle } from '../config/features';
 
 class BillingController {
   /**
@@ -545,6 +547,207 @@ class BillingController {
 
     return org?.id || null;
   }
+
+  // ============================================================================
+  // FEATURE SUBSCRIPTION ENDPOINTS
+  // ============================================================================
+
+  /**
+   * Get all available features for the organization's tier
+   * GET /api/billing/features
+   */
+  getAvailableFeatures: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
+
+      const features = await featureService.getAvailableFeaturesForOrganization(organizationId);
+
+      res.json({ features });
+    } catch (error) {
+      logger.error('Get available features error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to get available features', 500);
+    }
+  };
+
+  /**
+   * Get active feature subscriptions
+   * GET /api/billing/features/subscriptions
+   */
+  getFeatureSubscriptions: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
+
+      const subscriptions = await featureService.getActiveFeatureSubscriptions(organizationId);
+      const totalCost = await featureService.getTotalFeatureCost(organizationId, 'annual');
+
+      // Enrich subscriptions with feature names
+      const enrichedSubscriptions = subscriptions.map(sub => {
+        const feature = getFeature(sub.featureId);
+        return {
+          id: sub.id,
+          featureId: sub.featureId,
+          featureName: feature?.name || sub.featureId,
+          billingCycle: sub.billingCycle,
+          price: Number(sub.price),
+          status: sub.status,
+          startsAt: sub.startsAt,
+          endsAt: sub.endsAt,
+        };
+      });
+
+      res.json({
+        subscriptions: enrichedSubscriptions,
+        totalAnnualCost: totalCost,
+        totalMonthlyCost: totalCost / 12,
+      });
+    } catch (error) {
+      logger.error('Get feature subscriptions error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to get feature subscriptions', 500);
+    }
+  };
+
+  /**
+   * Subscribe to a feature
+   * POST /api/billing/features/:featureId/subscribe
+   */
+  subscribeToFeature: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { featureId } = req.params;
+      const { billingCycle = 'annual' } = req.body;
+      const organizationId = authReq.user!.organizationId;
+
+      if (!['monthly', 'annual'].includes(billingCycle)) {
+        throw new AppError('Invalid billing cycle. Use "monthly" or "annual"', 400);
+      }
+
+      const subscription = await featureService.subscribeToFeature(
+        organizationId,
+        featureId,
+        billingCycle
+      );
+
+      res.json({ subscription });
+    } catch (error) {
+      logger.error('Subscribe to feature error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError(error instanceof Error ? error.message : 'Failed to subscribe to feature', 500);
+    }
+  };
+
+  /**
+   * Unsubscribe from a feature
+   * DELETE /api/billing/features/:featureId/unsubscribe
+   */
+  unsubscribeFromFeature: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { featureId } = req.params;
+      const organizationId = authReq.user!.organizationId;
+
+      await featureService.unsubscribeFromFeature(organizationId, featureId);
+
+      res.json({ message: 'Feature subscription cancelled' });
+    } catch (error) {
+      logger.error('Unsubscribe from feature error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError(error instanceof Error ? error.message : 'Failed to unsubscribe from feature', 500);
+    }
+  };
+
+  /**
+   * Subscribe to a feature bundle
+   * POST /api/billing/bundles/:bundleId/subscribe
+   */
+  subscribeToBundle: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { bundleId } = req.params;
+      const { billingCycle = 'annual' } = req.body;
+      const organizationId = authReq.user!.organizationId;
+
+      if (!['monthly', 'annual'].includes(billingCycle)) {
+        throw new AppError('Invalid billing cycle. Use "monthly" or "annual"', 400);
+      }
+
+      const subscriptions = await featureService.subscribeToBundle(
+        organizationId,
+        bundleId,
+        billingCycle
+      );
+
+      res.json({ subscriptions, count: subscriptions.length });
+    } catch (error) {
+      logger.error('Subscribe to bundle error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError(error instanceof Error ? error.message : 'Failed to subscribe to bundle', 500);
+    }
+  };
+
+  /**
+   * Get available feature bundles
+   * GET /api/billing/bundles
+   */
+  getAvailableBundles: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
+
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { plan: true },
+      });
+
+      if (!org) {
+        throw new AppError('Organization not found', 404);
+      }
+
+      const tier = org.plan as TierName;
+      const bundles = Object.values(FEATURE_BUNDLES).filter(bundle => {
+        if (!bundle.availableAsAddOn) return false;
+        if (!bundle.requiresTier) return true;
+        return getTierIndex(tier) >= getTierIndex(bundle.requiresTier);
+      });
+
+      res.json({ bundles });
+    } catch (error) {
+      logger.error('Get available bundles error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to get available bundles', 500);
+    }
+  };
+
+  /**
+   * Check feature access
+   * GET /api/billing/features/:featureId/access
+   */
+  checkFeatureAccess: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { featureId } = req.params;
+      const organizationId = authReq.user!.organizationId;
+
+      const hasAccess = await featureService.hasFeatureAccess(organizationId, featureId);
+      const feature = getFeature(featureId);
+
+      res.json({
+        hasAccess,
+        feature: feature ? {
+          id: feature.id,
+          name: feature.name,
+          description: feature.description,
+        } : null,
+      });
+    } catch (error) {
+      logger.error('Check feature access error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to check feature access', 500);
+    }
+  };
 }
 
 export default new BillingController();

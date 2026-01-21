@@ -13,8 +13,15 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
 
-      const aiSystem = await aiRmfService.createAISystem(organizationId, req.body);
+      const aiSystem = await aiRmfService.createAISystem(
+        organizationId,
+        req.body,
+        userId,
+        req.ip,
+        req.headers['user-agent']
+      );
 
       res.status(201).json(aiSystem);
     } catch (error: any) {
@@ -74,9 +81,17 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
       const { id } = req.params;
 
-      const aiSystem = await aiRmfService.updateAISystem(organizationId, id, req.body);
+      const aiSystem = await aiRmfService.updateAISystem(
+        organizationId,
+        id,
+        req.body,
+        userId,
+        req.ip,
+        req.headers['user-agent']
+      );
 
       res.json(aiSystem);
     } catch (error: any) {
@@ -93,9 +108,16 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
       const { id } = req.params;
 
-      await aiRmfService.deleteAISystem(organizationId, id);
+      await aiRmfService.deleteAISystem(
+        organizationId,
+        id,
+        userId,
+        req.ip,
+        req.headers['user-agent']
+      );
 
       res.json({ success: true });
     } catch (error: any) {
@@ -116,13 +138,17 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
       const { aiSystemId, functionName } = req.params;
 
       const coreFunction = await aiRmfService.updateCoreFunction(
         organizationId,
         aiSystemId,
         functionName,
-        req.body
+        req.body,
+        userId,
+        req.ip,
+        req.headers['user-agent']
       );
 
       res.json(coreFunction);
@@ -144,9 +170,17 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
       const { categoryId } = req.params;
 
-      const category = await aiRmfService.updateCategory(organizationId, categoryId, req.body);
+      const category = await aiRmfService.updateCategory(
+        organizationId,
+        categoryId,
+        req.body,
+        userId,
+        req.ip,
+        req.headers['user-agent']
+      );
 
       res.json(category);
     } catch (error: any) {
@@ -163,9 +197,17 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
       const { subcategoryId } = req.params;
 
-      const subcategory = await aiRmfService.updateSubcategory(organizationId, subcategoryId, req.body);
+      const subcategory = await aiRmfService.updateSubcategory(
+        organizationId,
+        subcategoryId,
+        req.body,
+        userId,
+        req.ip,
+        req.headers['user-agent']
+      );
 
       res.json(subcategory);
     } catch (error: any) {
@@ -186,13 +228,17 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
       const { aiSystemId, characteristic } = req.params;
 
       const trustworthiness = await aiRmfService.updateTrustworthinessCharacteristic(
         organizationId,
         aiSystemId,
         characteristic,
-        req.body
+        req.body,
+        userId,
+        req.ip,
+        req.headers['user-agent']
       );
 
       res.json(trustworthiness);
@@ -214,13 +260,17 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
       const { aiSystemId, stage } = req.params;
 
       const lifecycleStage = await aiRmfService.updateLifecycleStage(
         organizationId,
         aiSystemId,
         stage,
-        req.body
+        req.body,
+        userId,
+        req.ip,
+        req.headers['user-agent']
       );
 
       res.json(lifecycleStage);
@@ -284,9 +334,17 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
       const { aiSystemId } = req.params;
 
-      const assessment = await aiRmfService.createAssessment(organizationId, aiSystemId, req.body);
+      const assessment = await aiRmfService.createAssessment(
+        organizationId,
+        aiSystemId,
+        req.body,
+        userId,
+        req.ip,
+        req.headers['user-agent']
+      );
 
       res.status(201).json(assessment);
     } catch (error: any) {
@@ -314,6 +372,32 @@ class AIRMFController {
         res.status(error.statusCode).json({ error: error.message });
       } else {
         res.status(500).json({ error: 'Failed to fetch assessments' });
+      }
+    }
+  };
+
+  deleteAssessment: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
+      const { assessmentId } = req.params;
+
+      await aiRmfService.deleteAssessment(
+        organizationId,
+        assessmentId,
+        userId,
+        req.ip,
+        req.headers['user-agent']
+      );
+
+      res.json({ success: true });
+    } catch (error: any) {
+      logger.error('Delete assessment error:', error);
+      if (error instanceof AppError) {
+        res.status(error.statusCode).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Failed to delete assessment' });
       }
     }
   };
@@ -349,9 +433,17 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
       const { aiSystemId } = req.params;
 
-      const riskActivity = await aiRmfService.createRiskActivity(organizationId, aiSystemId, req.body);
+      const riskActivity = await aiRmfService.createRiskActivity(
+        organizationId,
+        aiSystemId,
+        req.body,
+        userId,
+        req.ip,
+        req.headers['user-agent']
+      );
 
       res.status(201).json(riskActivity);
     } catch (error: any) {
@@ -368,9 +460,17 @@ class AIRMFController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
+      const userId = authReq.user!.id;
       const { riskActivityId } = req.params;
 
-      const riskActivity = await aiRmfService.updateRiskActivity(organizationId, riskActivityId, req.body);
+      const riskActivity = await aiRmfService.updateRiskActivity(
+        organizationId,
+        riskActivityId,
+        req.body,
+        userId,
+        req.ip,
+        req.headers['user-agent']
+      );
 
       res.json(riskActivity);
     } catch (error: any) {

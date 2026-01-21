@@ -106,6 +106,12 @@ class RegulatoryIntelligenceFabricService {
       // 1. Ingest from URL
       if (input.url) {
         try {
+          // SECURITY: SSRF Protection - Validate URL before fetching
+          const { isUrlSafe } = await import('../../utils/urlValidator');
+          if (!isUrlSafe(input.url)) {
+            throw new Error('URL is not allowed for security reasons (SSRF protection)');
+          }
+
           const response = await axios.get(input.url, {
             timeout: 30000,
             headers: {
@@ -2157,6 +2163,12 @@ Return only the resolution text, no JSON or formatting.`;
     organizationId: string
   ): Promise<Array<{ title: string; url: string; description: string; published: Date }>> {
     try {
+      // SECURITY: SSRF Protection - Validate URL before fetching
+      const { isUrlSafe } = await import('../../utils/urlValidator');
+      if (!isUrlSafe(feed.url)) {
+        throw new Error('Feed URL is not allowed for security reasons (SSRF protection)');
+      }
+
       const response = await axios.get(feed.url, {
         timeout: 30000,
         headers: {
@@ -2205,6 +2217,12 @@ Return only the resolution text, no JSON or formatting.`;
     organizationId: string
   ): Promise<Array<{ title: string; url: string; description: string; published: Date }>> {
     try {
+      // SECURITY: SSRF Protection - Validate URL before fetching
+      const { isUrlSafe } = await import('../../utils/urlValidator');
+      if (!isUrlSafe(feed.url)) {
+        throw new Error('Feed URL is not allowed for security reasons (SSRF protection)');
+      }
+
       const headers: any = {
         'User-Agent': 'ComplyEasyAI-RIF/1.0',
       };
@@ -2249,6 +2267,12 @@ Return only the resolution text, no JSON or formatting.`;
     organizationId: string
   ): Promise<Array<{ title: string; url: string; description: string; published: Date }>> {
     try {
+      // SECURITY: SSRF Protection - Validate URL before fetching
+      const { isUrlSafe } = await import('../../utils/urlValidator');
+      if (!isUrlSafe(feed.url)) {
+        throw new Error('Feed URL is not allowed for security reasons (SSRF protection)');
+      }
+
       const response = await axios.get(feed.url, {
         timeout: 30000,
         headers: {
@@ -2302,6 +2326,14 @@ Return only the resolution text, no JSON or formatting.`;
       let fullText = item.description;
       if (item.url) {
         try {
+          // SECURITY: SSRF Protection - Validate URL before fetching
+          const { isUrlSafe } = await import('../../utils/urlValidator');
+          if (!isUrlSafe(item.url)) {
+            logger.warn(`[RIF] Blocked SSRF attempt: ${item.url}`);
+            // Use description if URL is not safe
+            return null;
+          }
+
           const response = await axios.get(item.url, { timeout: 30000 });
           fullText = response.data;
         } catch (e) {

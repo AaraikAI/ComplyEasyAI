@@ -491,11 +491,19 @@ class WebhookService {
     const startTime = Date.now();
     const payloadString = JSON.stringify(payload);
 
+    // SECURITY: SSRF Protection - Validate webhook URL before making request
+    const { isWebhookUrlSafe } = await import('../utils/urlValidator');
+    if (!isWebhookUrlSafe(webhook.url)) {
+      throw new Error('Webhook URL is not allowed for security reasons (SSRF protection)');
+    }
+
     // Generate HMAC signature
     const signature = this.generateSignature(payloadString, webhook.secret);
 
     try {
-      const response = await fetch(webhook.url, {
+      // Use safeFetch for additional SSRF protection
+      const { safeFetch } = await import('../utils/urlValidator');
+      const response = await safeFetch(webhook.url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

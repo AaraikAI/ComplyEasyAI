@@ -695,73 +695,109 @@ class TemporalGraphNetworkService {
       }
 
       // Check compliance trajectories for decline warnings
+      // Limit to top 10 most recent/active frameworks to improve performance
       const frameworks = await prisma.complianceFramework.findMany({
         where: { organizationId },
+        orderBy: { updatedAt: 'desc' },
+        take: 10, // Limit to 10 frameworks to reduce computation time
       });
 
-      for (const framework of frameworks) {
-        try {
-          const trajectory = await this.predictComplianceTrajectory(
-            framework.id,
-            organizationId,
-            timeHorizonMonths
-          );
+      // Process frameworks in parallel instead of sequentially for better performance
+      const frameworkWarnings = await Promise.allSettled(
+        frameworks.map(async (framework) => {
+          try {
+            const trajectory = await this.predictComplianceTrajectory(
+              framework.id,
+              organizationId,
+              timeHorizonMonths
+            );
 
-          if (trajectory.trend === 'declining') {
-            const predictedDate = trajectory.predictedScores[trajectory.predictedScores.length - 1].date;
-            const now = new Date();
-            const leadTimeDays = Math.floor((predictedDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            if (trajectory.trend === 'declining') {
+              const predictedDate = trajectory.predictedScores[trajectory.predictedScores.length - 1].date;
+              const now = new Date();
+              const leadTimeDays = Math.floor((predictedDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-            warnings.push({
-              type: 'compliance_decline' as const,
-              severity: 'High' as const,
-              description: `${framework.name} compliance is predicted to decline from ${trajectory.currentScore}% to ${trajectory.predictedScores[trajectory.predictedScores.length - 1].score}%`,
-              predictedDate,
-              leadTimeDays,
-              confidence: trajectory.predictedScores[trajectory.predictedScores.length - 1].confidence,
-              recommendedAction: `Review and address gaps in ${framework.name}. Focus on: ${trajectory.sensitivityAnalysis?.slice(0, 3).map(s => s.factor).join(', ')}`,
-            });
+              return {
+                type: 'compliance_decline' as const,
+                severity: 'High' as const,
+                description: `${framework.name} compliance is predicted to decline from ${trajectory.currentScore}% to ${trajectory.predictedScores[trajectory.predictedScores.length - 1].score}%`,
+                predictedDate,
+                leadTimeDays,
+                confidence: trajectory.predictedScores[trajectory.predictedScores.length - 1].confidence,
+                recommendedAction: `Review and address gaps in ${framework.name}. Focus on: ${trajectory.sensitivityAnalysis?.slice(0, 3).map(s => s.factor).join(', ')}`,
+              };
+            }
+            return null;
+          } catch (error: any) {
+            logger.warn(`[TGN] Error predicting trajectory for framework ${framework.id}`, error);
+            return null;
           }
-        } catch (error: any) {
-          logger.warn(`[TGN] Error predicting trajectory for framework ${framework.id}`, error);
-          // Continue with other frameworks
+        })
+      );
+
+      // Add successful warnings to the warnings array
+      for (const result of frameworkWarnings) {
+        if (result.status === 'fulfilled' && result.value) {
+          warnings.push(result.value);
         }
       }
 
       // Check for control failures
+      // Limit to top 15 controls to improve performance
       const controls = await prisma.frameworkControl.findMany({
         where: {
           framework: { organizationId },
           status: { in: ['Pending', 'Not_Implemented'] },
         },
-        take: 20,
+        take: 15, // Reduced from 20 to 15 for better performance
+        orderBy: { updatedAt: 'desc' }, // Prioritize recently updated controls
       });
 
-      for (const control of controls) {
-        // Predict if control will fail based on historical data
-        const controlRisks = await prisma.riskItem.findMany({
+      // Batch query risks for all controls at once to reduce database queries
+      if (controls.length > 0) {
+        const controlNames = controls.map(c => c.name);
+        const allControlRisks = await prisma.riskItem.findMany({
           where: {
             organizationId,
-            category: { contains: control.name },
+            OR: controlNames.map(name => ({
+              category: { contains: name },
+            })),
           },
-          take: 5,
+          take: 50, // Limit total risks fetched
         });
 
-        if (controlRisks.length > 0) {
-          const predictedDate = new Date();
-          predictedDate.setDate(predictedDate.getDate() + 30); // Predict failure in 30 days
-          const now = new Date();
-          const leadTimeDays = Math.floor((predictedDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        // Group risks by control name
+        const risksByControl = new Map<string, typeof allControlRisks>();
+        for (const risk of allControlRisks) {
+          for (const controlName of controlNames) {
+            if (risk.category?.includes(controlName)) {
+              if (!risksByControl.has(controlName)) {
+                risksByControl.set(controlName, []);
+              }
+              risksByControl.get(controlName)!.push(risk);
+            }
+          }
+        }
 
-          warnings.push({
-            type: 'control_failure' as const,
-            severity: controlRisks[0].severity === 'Critical' ? 'Critical' : 'High' as const,
-            description: `Control "${control.name}" is at risk of failure based on historical patterns`,
-            predictedDate,
-            leadTimeDays,
-            confidence: 0.7,
-            recommendedAction: `Implement control "${control.name}" immediately. Review related risks: ${controlRisks.map(r => r.title).join(', ')}`,
-          });
+        // Generate warnings for controls with risks
+        for (const control of controls) {
+          const controlRisks = risksByControl.get(control.name) || [];
+          if (controlRisks.length > 0) {
+            const predictedDate = new Date();
+            predictedDate.setDate(predictedDate.getDate() + 30); // Predict failure in 30 days
+            const now = new Date();
+            const leadTimeDays = Math.floor((predictedDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+            warnings.push({
+              type: 'control_failure' as const,
+              severity: controlRisks[0].severity === 'Critical' ? 'Critical' : 'High' as const,
+              description: `Control "${control.name}" is at risk of failure based on historical patterns`,
+              predictedDate,
+              leadTimeDays,
+              confidence: 0.7,
+              recommendedAction: `Implement control "${control.name}" immediately. Review related risks: ${controlRisks.slice(0, 3).map(r => r.title).join(', ')}`,
+            });
+          }
         }
       }
 
@@ -811,59 +847,83 @@ class TemporalGraphNetworkService {
       });
 
       // Check for unacknowledged warnings and apply escalation logic
-      const warningsWithEscalation = await Promise.all(
-        filteredWarnings.map(async (warning) => {
-          // Generate unique warning ID
-          const warningId = `warn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          
-          // Check if warning was previously acknowledged
-          const acknowledgmentLogs = await prisma.auditLog.findMany({
-            where: {
-              organizationId,
-              action: 'tgn.warning_acknowledged',
-              details: { contains: warningId },
-            },
-            orderBy: { timestamp: 'desc' },
-            take: 1,
-          });
+      // Generate unique warning IDs first
+      const warningsWithIds = filteredWarnings.map((warning) => ({
+        ...warning,
+        id: `warn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      }));
 
-          const acknowledged = acknowledgmentLogs.length > 0;
-          const acknowledgedAt = acknowledged ? acknowledgmentLogs[0].timestamp : undefined;
-          const acknowledgedBy = acknowledged ? acknowledgmentLogs[0].userId : undefined;
-          
-          // Check if marked as false positive
-          let falsePositive = false;
-          if (acknowledged) {
-            try {
-              const details = JSON.parse(acknowledgmentLogs[0].details || '{}');
-              falsePositive = details.falsePositive === true;
-            } catch (e) {
-              // Ignore parse errors
-            }
+      // Batch query all acknowledgment logs at once instead of per-warning
+      const warningIds = warningsWithIds.map(w => w.id);
+      const allAcknowledgmentLogs = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: 'tgn.warning_acknowledged',
+          OR: warningIds.map(id => ({
+            details: { contains: id },
+          })),
+        },
+        orderBy: { timestamp: 'desc' },
+      });
+
+      // Create a map of warning IDs to their acknowledgment status
+      const acknowledgmentMap = new Map<string, typeof allAcknowledgmentLogs[0]>();
+      for (const log of allAcknowledgmentLogs) {
+        try {
+          const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+          const logWarningId = details?.warningId || (log.details as string)?.match(/warn_\d+_\w+/)?.[0];
+          if (logWarningId && !acknowledgmentMap.has(logWarningId)) {
+            acknowledgmentMap.set(logWarningId, log);
           }
-
-          // Escalation logic: escalate if unacknowledged for >24 hours (Critical) or >72 hours (High)
-          let escalated = false;
-          if (!acknowledged && warning.predictedDate) {
-            const hoursUntilPredicted = (warning.predictedDate.getTime() - Date.now()) / (1000 * 60 * 60);
-            const escalationThreshold = warning.severity === 'Critical' ? 24 : 72;
-            
-            // Check if warning was generated more than threshold hours ago
-            const warningAge = (Date.now() - (warning.predictedDate.getTime() - warning.leadTimeDays * 24 * 60 * 60 * 1000)) / (1000 * 60 * 60);
-            escalated = warningAge > escalationThreshold;
+        } catch (e) {
+          // Try to extract warning ID from details string
+          const match = (log.details as string)?.match(/warn_\d+_\w+/);
+          if (match && !acknowledgmentMap.has(match[0])) {
+            acknowledgmentMap.set(match[0], log);
           }
+        }
+      }
 
-          return {
-            ...warning,
-            id: warningId,
-            acknowledged,
-            acknowledgedAt,
-            acknowledgedBy,
-            escalated,
-            falsePositive,
-          };
-        })
-      );
+      // Apply acknowledgment and escalation logic
+      const warningsWithEscalation = warningsWithIds.map((warning) => {
+        const acknowledgmentLog = acknowledgmentMap.get(warning.id);
+        const acknowledged = !!acknowledgmentLog;
+        const acknowledgedAt = acknowledged ? acknowledgmentLog!.timestamp : undefined;
+        const acknowledgedBy = acknowledged ? acknowledgmentLog!.userId : undefined;
+        
+        // Check if marked as false positive
+        let falsePositive = false;
+        if (acknowledged) {
+          try {
+            const details = typeof acknowledgmentLog!.details === 'string' 
+              ? JSON.parse(acknowledgmentLog!.details) 
+              : acknowledgmentLog!.details;
+            falsePositive = details?.falsePositive === true;
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+
+        // Escalation logic: escalate if unacknowledged for >24 hours (Critical) or >72 hours (High)
+        let escalated = false;
+        if (!acknowledged && warning.predictedDate) {
+          const hoursUntilPredicted = (warning.predictedDate.getTime() - Date.now()) / (1000 * 60 * 60);
+          const escalationThreshold = warning.severity === 'Critical' ? 24 : 72;
+          
+          // Check if warning was generated more than threshold hours ago
+          const warningAge = (Date.now() - (warning.predictedDate.getTime() - warning.leadTimeDays * 24 * 60 * 60 * 1000)) / (1000 * 60 * 60);
+          escalated = warningAge > escalationThreshold;
+        }
+
+        return {
+          ...warning,
+          acknowledged,
+          acknowledgedAt,
+          acknowledgedBy,
+          escalated,
+          falsePositive,
+        };
+      });
 
       // Send notifications for new unacknowledged warnings
       await this.sendWarningNotifications(organizationId, warningsWithEscalation.filter(w => !w.acknowledged));

@@ -723,6 +723,18 @@ class StripeService {
           await this.handleTrialEnding(event.data.object as Stripe.Subscription);
           break;
 
+        case 'customer.subscription_item.created':
+          await this.handleSubscriptionItemCreated(event.data.object as Stripe.SubscriptionItem);
+          break;
+
+        case 'customer.subscription_item.updated':
+          await this.handleSubscriptionItemUpdated(event.data.object as Stripe.SubscriptionItem);
+          break;
+
+        case 'customer.subscription_item.deleted':
+          await this.handleSubscriptionItemDeleted(event.data.object as Stripe.SubscriptionItem);
+          break;
+
         default:
           logger.info(`Unhandled event type: ${event.type}`);
       }
@@ -1106,6 +1118,170 @@ class StripeService {
     } catch (error) {
       logger.error('[Stripe] Error sending trial ending notifications', error);
       // Don't throw - notification failure shouldn't break the webhook handler
+    }
+  }
+
+  /**
+   * Handle subscription item created (for feature subscriptions)
+   */
+  private async handleSubscriptionItemCreated(subscriptionItem: Stripe.SubscriptionItem): Promise<void> {
+    try {
+      // Find the feature subscription by stripeSubscriptionItemId
+      const featureSubscription = await prisma.featureSubscription.findUnique({
+        where: { stripeSubscriptionItemId: subscriptionItem.id },
+        include: { organization: true },
+      });
+
+      if (!featureSubscription) {
+        // This might be a regular subscription item, not a feature subscription
+        // Check if it's a feature subscription by looking at metadata or price
+        const subscription = await stripe.subscriptions.retrieve(subscriptionItem.subscription as string);
+        const customerId = typeof subscription.customer === 'string'
+          ? subscription.customer
+          : subscription.customer.id;
+
+        const organization = await prisma.organization.findUnique({
+          where: { stripeCustomerId: customerId },
+        });
+
+        if (!organization) {
+          logger.warn(`[Stripe] Organization not found for subscription item: ${subscriptionItem.id}`);
+          return;
+        }
+
+        // Check if this is a feature subscription by checking price metadata
+        const price = subscriptionItem.price;
+        if (price.metadata?.featureId) {
+          // This is a feature subscription created directly in Stripe
+          // Create the feature subscription record
+          await prisma.featureSubscription.create({
+            data: {
+              organizationId: organization.id,
+              featureId: price.metadata.featureId,
+              status: 'active',
+              billingCycle: price.recurring?.interval === 'year' ? 'annual' : 'monthly',
+              price: (price.unit_amount || 0) / 100,
+              stripeSubscriptionItemId: subscriptionItem.id,
+              stripePriceId: price.id,
+              startsAt: new Date(),
+            },
+          });
+
+          logger.info(`[Stripe] Feature subscription created via webhook: ${price.metadata.featureId} for org ${organization.id}`);
+        }
+        return;
+      }
+
+      // Update status if needed
+      if (featureSubscription.status !== 'active') {
+        await prisma.featureSubscription.update({
+          where: { id: featureSubscription.id },
+          data: { status: 'active' },
+        });
+
+        logger.info(`[Stripe] Feature subscription activated: ${featureSubscription.featureId} for org ${featureSubscription.organizationId}`);
+      }
+    } catch (error) {
+      logger.error('[Stripe] Error handling subscription item created', error);
+      // Don't throw - webhook processing should continue
+    }
+  }
+
+  /**
+   * Handle subscription item updated (for feature subscriptions)
+   */
+  private async handleSubscriptionItemUpdated(subscriptionItem: Stripe.SubscriptionItem): Promise<void> {
+    try {
+      const featureSubscription = await prisma.featureSubscription.findUnique({
+        where: { stripeSubscriptionItemId: subscriptionItem.id },
+      });
+
+      if (!featureSubscription) {
+        // Not a feature subscription, ignore
+        return;
+      }
+
+      // Update price if it changed
+      const newPrice = (subscriptionItem.price.unit_amount || 0) / 100;
+      const newBillingCycle = subscriptionItem.price.recurring?.interval === 'year' ? 'annual' : 'monthly';
+
+      await prisma.featureSubscription.update({
+        where: { id: featureSubscription.id },
+        data: {
+          price: newPrice,
+          billingCycle: newBillingCycle,
+          stripePriceId: subscriptionItem.price.id,
+        },
+      });
+
+      logger.info(`[Stripe] Feature subscription updated: ${featureSubscription.featureId} for org ${featureSubscription.organizationId}`);
+    } catch (error) {
+      logger.error('[Stripe] Error handling subscription item updated', error);
+      // Don't throw - webhook processing should continue
+    }
+  }
+
+  /**
+   * Handle subscription item deleted (for feature subscriptions)
+   */
+  private async handleSubscriptionItemDeleted(subscriptionItem: Stripe.SubscriptionItem): Promise<void> {
+    try {
+      const featureSubscription = await prisma.featureSubscription.findUnique({
+        where: { stripeSubscriptionItemId: subscriptionItem.id },
+      });
+
+      if (!featureSubscription) {
+        // Not a feature subscription, ignore
+        return;
+      }
+
+      // Check if subscription was canceled at period end or immediately
+      const subscription = await stripe.subscriptions.retrieve(subscriptionItem.subscription as string);
+      const wasCanceledAtPeriodEnd = subscription.cancel_at_period_end;
+
+      if (wasCanceledAtPeriodEnd) {
+        // Mark as canceling at period end
+        await prisma.featureSubscription.update({
+          where: { id: featureSubscription.id },
+          data: {
+            cancelAtPeriodEnd: true,
+            cancelledAt: new Date(),
+          },
+        });
+      } else {
+        // Immediate cancellation - mark as canceled
+        await prisma.featureSubscription.update({
+          where: { id: featureSubscription.id },
+          data: {
+            status: 'canceled',
+            endsAt: new Date(),
+            cancelledAt: new Date(),
+            cancelAtPeriodEnd: false,
+          },
+        });
+
+        // Record subscription history
+        await prisma.subscriptionHistory.create({
+          data: {
+            organizationId: featureSubscription.organizationId,
+            previousPlan: 'Foundation' as Plan, // Placeholder
+            newPlan: 'Foundation' as Plan,
+            previousStatus: featureSubscription.status as SubscriptionStatus,
+            newStatus: 'canceled',
+            changeType: 'addon_removed',
+            reason: `Feature subscription canceled: ${featureSubscription.featureId}`,
+            changedBy: 'system',
+            metadata: {
+              featureId: featureSubscription.featureId,
+            },
+          },
+        });
+      }
+
+      logger.info(`[Stripe] Feature subscription ${wasCanceledAtPeriodEnd ? 'scheduled for cancellation' : 'canceled'}: ${featureSubscription.featureId} for org ${featureSubscription.organizationId}`);
+    } catch (error) {
+      logger.error('[Stripe] Error handling subscription item deleted', error);
+      // Don't throw - webhook processing should continue
     }
   }
 

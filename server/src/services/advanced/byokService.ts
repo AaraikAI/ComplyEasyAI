@@ -19,10 +19,11 @@ import {
 } from '@azure/keyvault-keys';
 import { DefaultAzureCredential } from '@azure/identity';
 import { KeyManagementServiceClient } from '@google-cloud/kms';
-import vault from 'node-vault';
+import axios, { AxiosInstance } from 'axios';
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { isUrlSafe } from '../../utils/urlValidator';
 
 type KeyProvider = 'aws_kms' | 'azure_kv' | 'gcp_kms' | 'hashicorp_vault';
 
@@ -97,7 +98,7 @@ class BYOKService {
   private kmsClients: Map<string, KMSClient> = new Map();
   private azureKeyClients: Map<string, KeyClient> = new Map();
   private gcpKmsClients: Map<string, KeyManagementServiceClient> = new Map();
-  private vaultClients: Map<string, any> = new Map();
+  private vaultClients: Map<string, AxiosInstance> = new Map();
 
   /**
    * Initialize AWS KMS client
@@ -166,14 +167,30 @@ class BYOKService {
   }
 
   /**
-   * Initialize HashiCorp Vault client
+   * Initialize HashiCorp Vault client using axios (replaces node-vault to eliminate postman-request vulnerabilities)
+   * SECURITY: Uses axios with SSRF protection instead of node-vault/postman-request
    */
-  private getVaultClient(vaultUrl: string, token?: string): any {
+  private getVaultClient(vaultUrl: string, token?: string): AxiosInstance {
     if (!this.vaultClients.has(vaultUrl)) {
-      const client = vault({
-        endpoint: vaultUrl,
-        token: token || process.env.VAULT_TOKEN,
+      // SECURITY: Validate Vault URL to prevent SSRF
+      if (!isUrlSafe(vaultUrl)) {
+        throw new Error('Invalid Vault URL for security reasons (SSRF protection)');
+      }
+
+      const vaultToken = token || process.env.VAULT_TOKEN;
+      if (!vaultToken) {
+        throw new Error('HashiCorp Vault token is required');
+      }
+
+      const client = axios.create({
+        baseURL: vaultUrl,
+        headers: {
+          'X-Vault-Token': vaultToken,
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
       });
+
       this.vaultClients.set(vaultUrl, client);
     }
 
@@ -340,15 +357,15 @@ class BYOKService {
     // Generate random DEK
     const dek = crypto.randomBytes(32);
 
-    // Encrypt DEK with Vault transit key
+    // Encrypt DEK with Vault transit key using direct API call (replaces node-vault)
     const mountPoint = config.credentials?.mountPoint || 'transit';
     const keyName = config.keyId;
 
-    const encryptResponse = await vaultClient.write(`${mountPoint}/encrypt/${keyName}`, {
+    const encryptResponse = await vaultClient.post(`/v1/${mountPoint}/encrypt/${keyName}`, {
       plaintext: dek.toString('base64'),
     });
 
-    if (!encryptResponse.data?.ciphertext) {
+    if (!encryptResponse.data?.data?.ciphertext) {
       throw new Error('Vault did not return encrypted key');
     }
 
@@ -356,7 +373,7 @@ class BYOKService {
 
     return {
       plaintext: dek,
-      encrypted: encryptResponse.data.ciphertext,
+      encrypted: encryptResponse.data.data.ciphertext,
     };
   }
 
@@ -553,15 +570,15 @@ class BYOKService {
     const mountPoint = config.credentials?.mountPoint || 'transit';
     const keyName = config.keyId;
 
-    const decryptResponse = await vaultClient.write(`${mountPoint}/decrypt/${keyName}`, {
+    const decryptResponse = await vaultClient.post(`/v1/${mountPoint}/decrypt/${keyName}`, {
       ciphertext: encryptedKey,
     });
 
-    if (!decryptResponse.data?.plaintext) {
+    if (!decryptResponse.data?.data?.plaintext) {
       throw new Error('Vault did not return decrypted key');
     }
 
-    return Buffer.from(decryptResponse.data.plaintext, 'base64');
+    return Buffer.from(decryptResponse.data.data.plaintext, 'base64');
   }
 
   /**
@@ -739,8 +756,8 @@ class BYOKService {
       const vaultClient = this.getVaultClient(vaultUrl, token);
       const mountPoint = 'transit';
 
-      // Create transit key
-      await vaultClient.write(`${mountPoint}/keys/${keyName}`, {
+      // Create transit key using direct API call (replaces node-vault)
+      await vaultClient.post(`/v1/${mountPoint}/keys/${keyName}`, {
         type: 'aes256-gcm96',
         exportable: false,
         allow_plaintext_backup: false,
@@ -845,8 +862,8 @@ class BYOKService {
     const keyName = config.keyId;
 
     try {
-      const response = await vaultClient.read(`${mountPoint}/keys/${keyName}`);
-      return response.data !== undefined;
+      const response = await vaultClient.get(`/v1/${mountPoint}/keys/${keyName}`);
+      return response.data?.data !== undefined;
     } catch {
       return false;
     }
@@ -1119,11 +1136,11 @@ class BYOKService {
         const vaultClient = this.getVaultClient(config.vaultUrl, config.credentials?.vaultToken);
         const mountPoint = config.credentials?.mountPoint || 'transit';
 
-        await vaultClient.write(`${mountPoint}/keys/${config.keyId}/config`, {
+        await vaultClient.post(`/v1/${mountPoint}/keys/${config.keyId}/config`, {
           deletion_allowed: true,
         });
 
-        await vaultClient.delete(`${mountPoint}/keys/${config.keyId}`);
+        await vaultClient.delete(`/v1/${mountPoint}/keys/${config.keyId}`);
 
         logger.info(`Deleted HashiCorp Vault key: ${config.keyId}`);
       }
