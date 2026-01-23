@@ -106,6 +106,12 @@ export interface TierFeatures {
   complianceAsCode: boolean;
   iotEdgeCompliance: boolean;
 
+  // EU Regulations & AI Governance (Visionary)
+  nistAiRmf: boolean;
+  euAiAct: boolean;
+  dsa: boolean;
+  dma: boolean;
+
   // Support & SLA
   slaGuarantee: boolean;
   dedicatedSupport: boolean;
@@ -153,13 +159,13 @@ const foundationTier: Tier = {
   targetAudience: 'Startups/SMBs worldwide (e.g., tech/AI firms testing regulations)',
 
   pricing: {
-    annualMin: 4250,
+    annualMin: 8500,
     annualMax: 8500,
-    monthlyMultiplier: 1.0, // Monthly billed annually: $354-$708/mo
-    monthlyMin: 354,
-    monthlyMax: 708,
-    netAfterStripeMin: 4125,
-    netAfterStripeMax: 8250,
+    monthlyMultiplier: 2.0, // Monthly billing: (8500 * 2) / 12 = $1,417/mo
+    monthlyMin: 1417,
+    monthlyMax: 1417,
+    netAfterStripeMin: 8253, // Annual: 8500 - (8500 * 0.029 + 0.30) = 8253.20
+    netAfterStripeMax: 8253,
     margin: '>92% margins (covers minimal costs)',
   },
 
@@ -244,6 +250,12 @@ const foundationTier: Tier = {
     complianceAsCode: false,
     iotEdgeCompliance: false,
 
+    // EU Regulations & AI Governance - NOT INCLUDED
+    nistAiRmf: false,
+    euAiAct: false,
+    dsa: false,
+    dma: false,
+
     // Support & SLA - BASIC
     slaGuarantee: false,
     dedicatedSupport: false,
@@ -287,14 +299,13 @@ const essentialsTier: Tier = {
   targetAudience: 'Growing SMBs (10-100 users; tech/finance/healthcare)',
 
   pricing: {
-    annualMin: 5100,
-    annualMax: 12750,
-    monthlyMultiplier: 1.0, // Monthly billed annually: $425-$1,063/mo
-    monthlyMin: 425,
-    monthlyMax: 1063,
-    perUserIncrement: 510, // +$510 per 10 users
-    netAfterStripeMin: 4950,
-    netAfterStripeMax: 12370,
+    annualMin: 17000,
+    annualMax: 17000,
+    monthlyMultiplier: 1.5, // Monthly billing: (17000 * 1.5) / 12 = $2,125/mo
+    monthlyMin: 2125,
+    monthlyMax: 2125,
+    netAfterStripeMin: 16507, // Annual: 17000 - (17000 * 0.029 + 0.30) = 16506.70
+    netAfterStripeMax: 16507,
     margin: '90%+ margins (absorb ~3% fees)',
   },
 
@@ -378,6 +389,12 @@ const essentialsTier: Tier = {
     byokEncryption: false,
     complianceAsCode: false,
     iotEdgeCompliance: false,
+
+    // EU Regulations & AI Governance - NOT INCLUDED
+    nistAiRmf: false,
+    euAiAct: false,
+    dsa: false,
+    dma: false,
 
     // Support & SLA
     slaGuarantee: false,
@@ -512,6 +529,12 @@ const growthTier: Tier = {
     byokEncryption: false,
     complianceAsCode: false,
     iotEdgeCompliance: false,
+
+    // EU Regulations & AI Governance - NOT INCLUDED
+    nistAiRmf: false,
+    euAiAct: false,
+    dsa: false,
+    dma: false,
 
     // Support & SLA
     slaGuarantee: true,
@@ -649,6 +672,12 @@ const visionaryTier: Tier = {
     complianceAsCode: true,
     iotEdgeCompliance: true,
 
+    // EU Regulations & AI Governance - ALL INCLUDED
+    nistAiRmf: true,
+    euAiAct: true,
+    dsa: true,
+    dma: true,
+
     // Support & SLA - ALL INCLUDED
     slaGuarantee: true,
     dedicatedSupport: true,
@@ -665,16 +694,17 @@ const visionaryTier: Tier = {
 
   highlights: [
     'Everything in Growth',
+    'NIST AI RMF Framework',
+    'EU AI Act Compliance',
+    'Digital Services Act (DSA)',
+    'Digital Markets Act (DMA)',
     'Physical AI & VR Training',
     'Swarm Intelligence & Neuro-Symbolic AI',
-    'Homomorphic Encryption & Monte Carlo Simulations',
-    'Real-time JIT Compliance',
+    'Homomorphic Encryption & Monte Carlo',
     'Zero Trust Security & ZK Proofs',
-    'BYOK Encryption',
-    'Compliance-as-Code (OPA/Rego)',
+    'BYOK Encryption & Compliance-as-Code',
     'IoT/Edge Compliance',
     'On-premises deployment option',
-    'Custom AI models',
     'Dedicated support & SLA',
     'Unlimited users & resources',
   ],
@@ -905,6 +935,10 @@ export const FEATURE_DISPLAY_NAMES: Record<keyof TierFeatures, string> = {
   byokEncryption: 'BYOK Encryption',
   complianceAsCode: 'Compliance-as-Code',
   iotEdgeCompliance: 'IoT/Edge Compliance',
+  nistAiRmf: 'NIST AI RMF Framework',
+  euAiAct: 'EU AI Act Compliance',
+  dsa: 'Digital Services Act (DSA)',
+  dma: 'Digital Markets Act (DMA)',
   slaGuarantee: 'SLA Guarantee',
   dedicatedSupport: 'Dedicated Support',
   onPremDeployment: 'On-Premises Deployment',

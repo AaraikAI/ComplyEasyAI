@@ -69,7 +69,7 @@
 - Ensure device clock is synced (TOTP codes are time-based)
 - Try generating new code (codes expire every 30 seconds)
 - Use backup codes if saved during 2FA setup
-- Contact support to disable 2FA temporarily: support@complyeasy.ai
+- Contact support to disable 2FA temporarily: support@complyeasyai.com
 
 **4. Account lockout**
 - After 5 failed login attempts, account locks for 15 minutes
@@ -108,20 +108,20 @@
 4. Click **"Verify Domain"** (takes 5-60 mins for DNS propagation)
 
 **3. Okta SSO configuration**
-- **ACS URL**: https://app.complyeasy.ai/auth/saml/callback
-- **Entity ID**: https://app.complyeasy.ai
+- **ACS URL**: https://app.complyeasyai.com/auth/saml/callback
+- **Entity ID**: https://app.complyeasyai.com
 - **Name ID format**: EmailAddress
 - **Attributes**: email, firstName, lastName
 
 **4. Azure AD SSO configuration**
-- **Reply URL**: https://app.complyeasy.ai/auth/saml/callback
-- **Identifier**: https://app.complyeasy.ai
+- **Reply URL**: https://app.complyeasyai.com/auth/saml/callback
+- **Identifier**: https://app.complyeasyai.com
 - **User attributes**: email, given_name, surname
 
 **5. Google Workspace SSO configuration**
-- **ACS URL**: https://app.complyeasy.ai/auth/saml/callback
-- **Entity ID**: https://app.complyeasy.ai
-- **Start URL**: https://app.complyeasy.ai/login
+- **ACS URL**: https://app.complyeasyai.com/auth/saml/callback
+- **Entity ID**: https://app.complyeasyai.com
+- **Start URL**: https://app.complyeasyai.com/login
 - **Name ID**: Basic Information > Primary email
 
 **Testing SSO**:
@@ -196,7 +196,7 @@
 - Request database optimization from support
 
 **5. Check system status**
-- Visit status.complyeasy.ai
+- Visit status.complyeasyai.com
 - Check for ongoing incidents or degraded performance
 - Subscribe to status updates
 
@@ -221,7 +221,7 @@
 - Try hard refresh: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
 
 **2. Check status page**
-- Visit status.complyeasy.ai
+- Visit status.complyeasyai.com
 - If incident in progress, error is likely platform-wide
 - Subscribe to updates
 
@@ -239,7 +239,7 @@ If error persists:
 2. Note exact steps to reproduce
 3. Open browser console (F12 → Console tab)
 4. Copy any error messages
-5. Send to support@complyeasy.ai with details
+5. Send to support@complyeasyai.com with details
 
 **Include**:
 - Date/time of error
@@ -520,13 +520,13 @@ If using GitHub App (not OAuth):
 - Ensure your network allows:
   - `api.github.com` (GitHub API)
   - `github.com` (OAuth redirects)
-  - `app.complyeasy.ai` (OAuth callback)
+  - `app.complyeasyai.com` (OAuth callback)
 - Corporate firewalls may block OAuth redirects
 - Try from different network or contact IT
 
 **5. Browser issues**
 
-- Clear cookies for `github.com` and `complyeasy.ai`
+- Clear cookies for `github.com` and `complyeasyai.com`
 - Disable browser extensions (especially privacy/ad blockers)
 - Try incognito/private mode
 - Try different browser
@@ -996,7 +996,7 @@ AI improves with more data:
 
 For unique industries or highly customized needs:
 
-- Contact success@complyeasy.ai
+- Contact success@complyeasyai.com
 - Request custom risk model
 - Our team will:
   - Interview your team
@@ -1085,7 +1085,7 @@ If generation consistently fails:
 1. Note exact error message
 2. Specify report type and parameters
 3. Check browser console (F12) for errors
-4. Email support@complyeasy.ai with details
+4. Email support@complyeasyai.com with details
 
 Our team can generate report server-side and send to you.
 
@@ -1138,7 +1138,7 @@ If card continues to fail:
 
 If automatic payments don't work for your organization:
 
-1. Contact billing@complyeasy.ai
+1. Contact billing@complyeasyai.com
 2. Request invoice billing
 3. We'll send invoice (NET 30 terms)
 4. Pay via:
@@ -1157,7 +1157,7 @@ If payment fails multiple times, account may be suspended:
    - Click **"Retry Payment"**
    - Account reactivates within 1 hour
 
-**Or contact billing@complyeasy.ai** to:
+**Or contact billing@complyeasyai.com** to:
 - Extend payment deadline
 - Set up payment plan
 - Discuss billing options
@@ -1256,7 +1256,7 @@ If you have discount codes:
 
 If charges still unclear:
 
-1. Email billing@complyeasy.ai
+1. Email billing@complyeasyai.com
 2. Include:
    - Invoice number
    - Expected amount vs. actual amount
@@ -1321,7 +1321,7 @@ If you need features from higher tier:
 **No sales call required** for self-service tiers (Foundation → Growth).
 
 **Visionary tier**: Requires sales consultation
-- Click **"Contact Sales"** or email sales@complyeasy.ai
+- Click **"Contact Sales"** or email sales@complyeasyai.com
 - Schedule demo and pricing discussion
 
 **4. Alternative: Add-ons**
@@ -1343,7 +1343,7 @@ Purchase add-ons:
 
 If you want to test feature before upgrading:
 
-1. Email support@complyeasy.ai
+1. Email support@complyeasyai.com
 2. Request: "Trial access to [feature name]"
 3. We can enable feature for 14-day trial
 4. No commitment, no credit card required
@@ -1382,7 +1382,7 @@ If you want to test feature before upgrading:
 ## How to Contact Support
 
 ### Email
-- **Address**: support@complyeasy.ai
+- **Address**: support@complyeasyai.com
 - **Response time**:
   - Foundation: 48 hours
   - Essentials: 24 hours
@@ -1400,12 +1400,12 @@ If you want to test feature before upgrading:
 - **24/7 emergency**: Visionary tier only
 
 ### Community Forum
-- **URL**: community.complyeasy.ai
+- **URL**: community.complyeasyai.com
 - **Best for**: General questions, best practices, feature discussions
 - **Response**: Community members + ComplyEasyAI team
 
 ### Status Page
-- **URL**: status.complyeasy.ai
+- **URL**: status.complyeasyai.com
 - **Check for**: Platform outages, degraded performance, maintenance windows
 - **Subscribe**: Get email/SMS alerts for incidents
 
@@ -1463,16 +1463,16 @@ If you want to test feature before upgrading:
 
 Before contacting support, try:
 
-**Knowledge Base**: docs.complyeasy.ai
+**Knowledge Base**: docs.complyeasyai.com
 - Searchable documentation
 - Step-by-step guides
 - Video tutorials
 
-**Community Forum**: community.complyeasy.ai
+**Community Forum**: community.complyeasyai.com
 - Search previous questions (likely already answered)
 - Ask community (response within hours)
 
-**Status Page**: status.complyeasy.ai
+**Status Page**: status.complyeasyai.com
 - Check if issue is platform-wide
 
 **This Troubleshooting Guide**: You're here!

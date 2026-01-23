@@ -35,38 +35,29 @@ ComplyEasyAI is designed for:
 - **Audit-ready status**: 30-90 days depending on framework and maturity
 
 ### Do you offer a free trial?
-Yes! We offer a **14-day free trial** with no credit card required. You get full access to Foundation tier features including:
-- 1 compliance framework
+Yes! We offer a **3-day free trial** with no credit card required. You get full access to Foundation tier features including:
+- 3 compliance framework
 - Up to 10 users
 - Automated evidence collection
 - AI Risk Analyzer
 - Basic reporting
 
 ### What happens after my trial ends?
-Your trial automatically ends after 14 days. You can:
+Your trial automatically ends after 3 days. You can:
 - **Upgrade** to a paid tier to continue (all data preserved)
 - **Request extension** for evaluation purposes (contact sales)
-- **Export data** before trial ends
-- **Downgrade** to free tier (limited features, data retained for 90 days)
 
 ---
 
 ## Pricing & Billing
 
 ### How does your pricing work?
-We use **tier-based pricing** with volume discounts:
-- **Foundation**: $4,250-$8,500/year (10 users, 1 framework)
-- **Essentials**: $5,100-$12,750/year (100 users, 3 frameworks)
-- **Growth**: $8,500-$25,500/year (1,000 users, 10 frameworks)
-- **Visionary**: $17,000-$85,000/year (unlimited users, unlimited frameworks)
+We use **tier-based pricing**:
+- **Foundation**: $$8,500/year (upto 10 users, 3 framework)
+- **Essentials**: $17000/year (10-100 users, 10 frameworks)
+- **Growth**: Contact sales@complyeasyai.com (100-1,000 users, 50 frameworks)
+- **Visionary**: Contact sales@complyeasyai.com (unlimited users, unlimited frameworks)
 
-**Volume discounts**:
-- 10 users: Base price
-- 100 users: 1.5x multiplier
-- 1,000 users: 2x multiplier
-- 5,000+ users: Custom enterprise pricing
-
-See our [Pricing Guide](PRICING_GUIDE.md) for complete details.
 
 ### Can I switch tiers?
 **Yes, anytime!**
@@ -76,13 +67,10 @@ See our [Pricing Guide](PRICING_GUIDE.md) for complete details.
 
 ### Do you offer discounts?
 Yes, we offer several discount programs:
-- **Education**: 40% off for accredited educational institutions
-- **Nonprofit**: 50% off for registered nonprofits
-- **Startups**: 75% off for first year (companies < 2 years old, < $1M funding)
 - **Annual payment**: 2 months free (16% discount)
 - **Multi-year**: Custom discounts available
 
-Contact sales@complyeasy.ai for discount codes.
+Contact sales@complyeasyai.com for discount codes.
 
 ### What payment methods do you accept?
 - **Credit/Debit Cards**: Visa, Mastercard, Amex, Discover
@@ -93,7 +81,6 @@ Contact sales@complyeasy.ai for discount codes.
 
 ### What's your refund policy?
 - **Trial period**: Cancel anytime, no charges
-- **First 30 days**: Full refund if not satisfied
 - **After 30 days**: Prorated refund for unused months (annual plans only)
 - **Enterprise contracts**: Per negotiated terms
 
@@ -110,7 +97,7 @@ Contact sales@complyeasy.ai for discount codes.
 - **Industry**: PCI DSS, HITRUST, 21 CFR Part 11, ITAR
 - **EU Digital**: DMA, DSA
 
-**Custom frameworks**: Available with Growth tier and above ($660/framework add-on).
+**Custom frameworks**: Available with Growth tier and above (framework add-on).
 
 ### What is aCOS (Autonomous Compliance Operations System)?
 aCOS is our breakthrough autonomous compliance engine that:
@@ -123,7 +110,7 @@ aCOS is our breakthrough autonomous compliance engine that:
 
 **Think of it as**: Self-driving car for compliance. It handles routine operations autonomously while alerting you to critical decisions.
 
-**Available in**: Essentials tier and above.
+**Available in**: Essentials tier and above, or as Add on Features (billed Separately)
 
 ### How does automated evidence collection work?
 Our AI agents automatically collect evidence from:
@@ -134,7 +121,7 @@ Our AI agents automatically collect evidence from:
 - **HR Systems**: BambooHR, Workday, Rippling
 
 **Process**:
-1. Connect integrations (OAuth, API keys, or read-only access)
+1. Connect integrations (OAuth, API keys, PAT or read-only access)
 2. AI maps evidence to controls automatically
 3. Evidence collected on schedule (daily/weekly/monthly)
 4. Version control and immutability via blockchain
@@ -167,7 +154,10 @@ Our AI agents automatically collect evidence from:
 - **Homomorphic Encryption**: AI on encrypted data
 - **Multi-Modal AI**: Process documents, images, audio, video
 - **AI Governance**: Full AI lifecycle management
-
+- **NIST AI RMF**: NIST AI Risk Management Framework
+- **EU AI Act**: EU AI Act Compliance
+- **DSA**: Digital Services Act
+- **DMA**: Digital Markets Act
 ---
 
 ## Security & Privacy
@@ -257,12 +247,13 @@ We practice what we preach:
 **Monitoring & Logging**:
 - Datadog, Splunk, Elasticsearch, Prometheus, Grafana
 
-**See complete list**: [Integration Directory](https://complyeasy.ai/integrations)
+**See complete list**: [Integration Directory](https://complyeasyai.com/integrations)
 
 ### How do integrations work?
 **Connection methods**:
 1. **OAuth**: One-click authorization (preferred)
 2. **API Keys**: Read-only access tokens
+2. **PAT**: Read-only Personal access tokens
 3. **Webhooks**: Real-time event notifications
 4. **Agentless**: No software installation required
 
@@ -293,7 +284,7 @@ We practice what we preach:
 ### What if you don't support my tool?
 **Options**:
 1. **Generic integrations**: Use our Webhook API, CSV import, or Email forwarding
-2. **Request integration**: Vote on our [Integration Roadmap](https://roadmap.complyeasy.ai)
+2. **Request integration**: Vote on our [Integration Roadmap](https://roadmap.complyeasyai.com)
 3. **Build yourself**: Use Integration Builder or SDK
 4. **We build it**: Professional services team can build custom integration
 
@@ -332,7 +323,7 @@ We practice what we preach:
 - Third-party risk assessment
 - Compliance program leadership
 
-**Result**: Same compliance outcomes with 60% less manual effort.
+**Result**: Same compliance outcomes with 60-80% less manual effort.
 
 ### What is AI Red Team?
 **AI Red Team** is our breakthrough feature that simulates adversarial attacks on your compliance program:
@@ -466,7 +457,7 @@ We practice what we preach:
 - **Accuracy Metrics**: Model performance monitoring
 - **Cybersecurity**: AI-specific security controls
 
-**Available in**: Growth tier and above (included), or as add-on for lower tiers.
+**Available in**: Visionary tier (included), or as add-on for lower tiers.
 
 ### What about DMA (Digital Markets Act)?
 **Full DMA compliance for digital gatekeepers**:
@@ -506,7 +497,7 @@ We practice what we preach:
 - **Standard Contractual Clauses (SCCs)**: For international transfers
 - **Data Subject Rights**: Automated workflows for access, deletion, portability
 - **DPIA Support**: We provide Data Protection Impact Assessments
-- **EU Representative**: Appointed in Ireland
+- **EU Representative**: Appointed in Netherlands
 - **Breach Notification**: 24-hour notification to customers, 72-hour to DPAs
 
 **Our GDPR toolkit helps you**:
@@ -530,16 +521,16 @@ We practice what we preach:
 
 **SLA credits**: If we miss uptime target:
 - 99.5-99%: 10% monthly credit
-- 99-98%: 25% monthly credit
-- <98%: 50% monthly credit
+- 99-98%: 20% monthly credit
+- <98%: 30% monthly credit
 
 **Current uptime**: 99.97% over last 12 months.
 
-**Status page**: status.complyeasy.ai
+**Status page**: status.complyeasyai.com
 
 ### Can I deploy on-premise?
 **Yes!** On-Premise deployment available with:
-- **Visionary tier** + On-Prem add-on ($3,200/year)
+- **Visionary tier** + $19,997/year (one-time setup) + $9,997/year maintenance
 - **Requirements**: Kubernetes cluster, PostgreSQL, Redis, MinIO/S3
 - **Deployment**: Docker containers, Helm charts provided
 - **Updates**: Quarterly releases, security patches as needed
@@ -727,10 +718,10 @@ complyeasy report generate --type executive
 
 ### How do I contact sales?
 **Sales channels**:
-- **Email**: sales@complyeasy.ai
+- **Email**: sales@complyeasyai.com
 - **Phone**: +1 (555) 123-4567
-- **Website**: complyeasy.ai/contact
-- **Book demo**: complyeasy.ai/demo (live demo with solutions engineer)
+- **Website**: complyeasyai.com/contact
+- **Book demo**: complyeasyai.com/demo (live demo with solutions engineer)
 
 **Response time**: Within 4 business hours.
 
@@ -779,27 +770,126 @@ Our team includes certified professionals:
 - **ISO 27001** (certified by accredited body)
 - **GDPR compliance** (EU representative, DPA on file)
 
-**Reports available**: Contact security@complyeasy.ai for latest SOC 2 report.
+**Reports available**: Contact security@complyeasyai.com for latest SOC 2 report.
 
 ### Do you have a bug bounty program?
 **Yes!** Public bug bounty program:
 - **Platform**: HackerOne
 - **Rewards**: $100 - $10,000 depending on severity
-- **Scope**: complyeasy.ai, api.complyeasy.ai, app.complyeasy.ai
+- **Scope**: complyeasyai.com, api.complyeasyai.com, app.complyeasyai.com
 - **Response time**: 48 hours for critical, 5 days for others
 
 **Hall of Fame**: Top researchers recognized on our security page.
 
 ---
 
+## Enterprise Add-Ons & Services
+
+### Custom Frameworks Add-On
+**Price:** $2,997/year per framework
+
+**What It Is:** Build unlimited proprietary compliance frameworks tailored to your specific industry regulations, internal policies, or custom security standards. Get full control mapping, evidence requirements, and automated monitoring for your unique compliance needs.
+
+**Who Needs This:**
+- **Regulated Industries**: Defense contractors, aerospace companies, pharmaceutical manufacturers
+- **Organizations with Internal Standards**: Companies that need frameworks for internal policies
+- **Multi-jurisdictional Operations**: Businesses operating under region-specific regulations
+- **Specialized Compliance**: Any organization with unique regulatory requirements not covered by standard frameworks
+
+**Available For:** Growth and Visionary tiers
+
+---
+
+### On-Premises Deployment
+**Price:** $19,997/year (one-time setup) + $9,997/year maintenance
+
+**What It Is:** Deploy ComplyEasyAI entirely within your own AWS, Azure, or GCP infrastructure. Maintain complete control over your data, meet strict data residency requirements, and integrate seamlessly with your existing security stack. Includes dedicated support, quarterly updates, and custom security configurations.
+
+**Who Needs This:**
+- **Government Agencies**: Federal, state, and local government organizations with FedRAMP/StateRAMP requirements
+- **Financial Institutions**: Banks, insurance companies, and investment firms with strict data sovereignty rules
+- **Healthcare Organizations**: Hospitals and health systems requiring HIPAA-compliant on-premise deployment
+- **Defense Contractors**: Companies handling classified or sensitive government contracts
+- **Organizations with Air-Gapped Networks**: Environments requiring complete network isolation
+
+**Available For:** Visionary tier only
+
+---
+
+### Custom AI Models
+**Price:** $14,997 one-time + $4,997/year maintenance
+
+**What It Is:** Fine-tuned AI models trained specifically on your organization's data, terminology, workflows, and compliance patterns. Get more accurate risk assessments, better policy generation, and AI recommendations that understand your unique business context.
+
+**Who Needs This:**
+- **Large Enterprises**: Organizations with unique terminology, products, or services
+- **Specialized Industries**: Companies with industry-specific jargon and compliance requirements
+- **High-Volume Users**: Organizations processing thousands of compliance queries monthly
+- **Custom Workflow Needs**: Businesses with non-standard compliance processes
+
+**Available For:** Visionary tier only
+
+---
+
+### Dedicated vCISO Service
+**Price:** $9,997/year (10 hours/month consulting)
+
+**What It Is:** Access to certified compliance and security experts who serve as your virtual Chief Information Security Officer. Get strategic guidance, audit preparation support, board presentation assistance, and expert advice on compliance strategy from professionals with CISSP, CISA, and CIPP certifications.
+
+**Services Include:**
+- Monthly compliance strategy sessions
+- Audit preparation and support
+- Board/executive presentation assistance
+- Vendor security assessment reviews
+- Incident response guidance
+- Compliance roadmap development
+- Policy review and approval
+
+**Who Needs This:**
+- **Companies Without Internal GRC Teams**: Startups and SMBs lacking dedicated compliance staff
+- **Organizations Preparing for Major Audits**: Companies needing expert guidance for SOC 2, ISO 27001, etc.
+- **Rapidly Scaling Companies**: Businesses outpacing their internal compliance capabilities
+- **Budget-Conscious Enterprises**: Organizations wanting CISO-level expertise without full-time hire costs
+
+**Available For:** All tiers
+
+---
+
+### Audit Bundling (Partner Network)
+**Price:** Variable ($8,000-$30,000 depending on audit type and scope)
+
+**What It Is:** Pre-negotiated rates with our network of certified audit firms. Get discounted pricing on SOC 2, ISO 27001, HIPAA, and other compliance audits through our established partnerships with reputable auditors.
+
+**Typical Audit Pricing:**
+- **SOC 2 Type I**: $8,000-$15,000 (vs. market rate $15,000-$25,000)
+- **SOC 2 Type II**: $15,000-$30,000 (vs. market rate $25,000-$75,000)
+- **ISO 27001 Certification**: $12,000-$25,000 (vs. market rate $20,000-$50,000)
+- **HIPAA Assessment**: $10,000-$20,000 (vs. market rate $15,000-$35,000)
+
+**Who Needs This:**
+- **Everyone Getting Certified**: Any organization pursuing compliance certifications
+- **First-Time Audit Candidates**: Companies new to the audit process
+- **Multi-Framework Audits**: Organizations pursuing multiple certifications
+- **Budget-Optimizing Enterprises**: Companies wanting best value on audit engagements
+
+**How It Works:**
+1. Contact sales@complyeasyai.com to discuss your audit needs
+2. We match you with appropriate audit partners from our network
+3. Receive competitive quotes with ComplyEasyAI customer discounts
+4. Our platform integrates directly with auditors for seamless evidence sharing
+
+**Available For:** All tiers
+
+---
+
 ## Still Have Questions?
 
 **Contact Us**:
-- **General inquiries**: hello@complyeasy.ai
-- **Sales**: sales@complyeasy.ai
-- **Support**: support@complyeasy.ai
-- **Security**: security@complyeasy.ai
-- **Privacy**: privacy@complyeasy.ai
+- **General inquiries**: contact@complyeasyai.com
+- **Sales**: sales@complyeasyai.com
+- **Support**: support@complyeasyai.com
+- **Security**: security@complyeasyai.com
+- **Privacy**: privacy@complyeasyai.com
 
 **Response Times**:
 - Sales: 4 business hours
@@ -808,11 +898,11 @@ Our team includes certified professionals:
 - Privacy: 72 hours
 
 **Self-Service Resources**:
-- **Knowledge Base**: docs.complyeasy.ai
-- **Community Forum**: community.complyeasy.ai
-- **Video Tutorials**: learn.complyeasy.ai
-- **API Docs**: developers.complyeasy.ai
-- **Status Page**: status.complyeasy.ai
+- **Knowledge Base**: docs.complyeasyai.com
+- **Community Forum**: community.complyeasyai.com
+- **Video Tutorials**: learn.complyeasyai.com
+- **API Docs**: developers.complyeasyai.com
+- **Status Page**: status.complyeasyai.com
 
 ---
 

@@ -39,13 +39,13 @@ const TIERS: Record<TierName, Tier> = {
     description: 'Perfect for startups and SMBs beginning their compliance journey.',
     targetAudience: 'Startups/SMBs worldwide',
     pricing: {
-      annualMin: 4250,
+      annualMin: 8500,
       annualMax: 8500,
-      monthlyMultiplier: 1.0,
-      monthlyMin: 354,
-      monthlyMax: 708,
-      netAfterStripeMin: 4125,
-      netAfterStripeMax: 8250,
+      monthlyMultiplier: 2,
+      monthlyMin: 1417, // (8500 * 2) / 12 = 1416.67
+      monthlyMax: 1417,
+      netAfterStripeMin: 8253, // Annual: 8500 - (8500 * 0.029 + 0.30) = 8253.20
+      netAfterStripeMax: 8253,
       margin: '>92%',
     },
     limits: {
@@ -84,6 +84,7 @@ const TIERS: Record<TierName, Tier> = {
       acosRiskPrediction: false, acosJitCompliance: false, acosRealTimeCompliance: false,
       zeroTrustSecurity: false, zkProofs: false, byokEncryption: false,
       complianceAsCode: false, iotEdgeCompliance: false,
+      nistAiRmf: false, euAiAct: false, dsa: false, dma: false,
       slaGuarantee: false, dedicatedSupport: false, onPremDeployment: false,
       customAiModels: false, prioritySupport: false, whiteGloveOnboarding: false,
       customFrameworksAddOn: false, onPremAddOn: false, customAiAddOn: false,
@@ -98,14 +99,13 @@ const TIERS: Record<TierName, Tier> = {
     description: 'Full-featured compliance platform with advanced AI.',
     targetAudience: 'Growing SMBs (10-100 users)',
     pricing: {
-      annualMin: 5100,
-      annualMax: 12750,
-      monthlyMultiplier: 1.0,
-      monthlyMin: 425,
-      monthlyMax: 1063,
-      perUserIncrement: 510,
-      netAfterStripeMin: 4950,
-      netAfterStripeMax: 12370,
+      annualMin: 17000,
+      annualMax: 17000,
+      monthlyMultiplier: 1.5,
+      monthlyMin: 2125, // (17000 * 1.5) / 12 = 2125
+      monthlyMax: 2125,
+      netAfterStripeMin: 16507, // Annual: 17000 - (17000 * 0.029 + 0.30) = 16506.70
+      netAfterStripeMax: 16507,
       margin: '90%+',
     },
     limits: {
@@ -144,6 +144,7 @@ const TIERS: Record<TierName, Tier> = {
       acosRiskPrediction: false, acosJitCompliance: false, acosRealTimeCompliance: false,
       zeroTrustSecurity: false, zkProofs: false, byokEncryption: false,
       complianceAsCode: false, iotEdgeCompliance: false,
+      nistAiRmf: false, euAiAct: false, dsa: false, dma: false,
       slaGuarantee: false, dedicatedSupport: false, onPremDeployment: false,
       customAiModels: false, prioritySupport: true, whiteGloveOnboarding: false,
       customFrameworksAddOn: false, onPremAddOn: false, customAiAddOn: false,
@@ -203,6 +204,7 @@ const TIERS: Record<TierName, Tier> = {
       acosRiskPrediction: false, acosJitCompliance: false, acosRealTimeCompliance: false,
       zeroTrustSecurity: false, zkProofs: false, byokEncryption: false,
       complianceAsCode: false, iotEdgeCompliance: false,
+      nistAiRmf: false, euAiAct: false, dsa: false, dma: false,
       slaGuarantee: true, dedicatedSupport: false, onPremDeployment: false,
       customAiModels: false, prioritySupport: true, whiteGloveOnboarding: true,
       customFrameworksAddOn: true, onPremAddOn: false, customAiAddOn: false,
@@ -262,11 +264,12 @@ const TIERS: Record<TierName, Tier> = {
       acosRiskPrediction: true, acosJitCompliance: true, acosRealTimeCompliance: true,
       zeroTrustSecurity: true, zkProofs: true, byokEncryption: true,
       complianceAsCode: true, iotEdgeCompliance: true,
+      nistAiRmf: true, euAiAct: true, dsa: true, dma: true,
       slaGuarantee: true, dedicatedSupport: true, onPremDeployment: true,
       customAiModels: true, prioritySupport: true, whiteGloveOnboarding: true,
       customFrameworksAddOn: true, onPremAddOn: true, customAiAddOn: true,
     },
-    highlights: ['All features', 'VR training', 'Zero Trust', 'On-prem option'],
+    highlights: ['NIST AI RMF', 'EU AI Act', 'DSA & DMA', 'Zero Trust', 'On-prem'],
     growthDrivers: ['Enterprise positioning', 'Thought leadership'],
   },
 };
@@ -506,6 +509,17 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                 <FeatureRow feature="Agentic Actions" tiers={TIERS} featureKey="acosAgenticActions" />
                 <FeatureRow feature="Digital Twin" tiers={TIERS} featureKey="acosDigitalTwin" />
                 <FeatureRow feature="Red Team Simulations" tiers={TIERS} featureKey="acosRedTeam" />
+
+                {/* EU Regulations & AI Governance */}
+                <tr className="bg-gray-50">
+                  <td colSpan={5} className="px-6 py-3 text-sm font-bold text-gray-700">
+                    EU Regulations & AI Governance
+                  </td>
+                </tr>
+                <FeatureRow feature="NIST AI RMF Framework" tiers={TIERS} featureKey="nistAiRmf" />
+                <FeatureRow feature="EU AI Act Compliance" tiers={TIERS} featureKey="euAiAct" />
+                <FeatureRow feature="Digital Services Act (DSA)" tiers={TIERS} featureKey="dsa" />
+                <FeatureRow feature="Digital Markets Act (DMA)" tiers={TIERS} featureKey="dma" />
 
                 {/* Visionary Features */}
                 <tr className="bg-gray-50">
