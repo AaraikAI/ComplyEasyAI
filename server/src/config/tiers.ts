@@ -439,13 +439,13 @@ const growthTier: Tier = {
   targetAudience: 'Mid-market/MSPs (100-1k users; multi-region)',
 
   pricing: {
-    annualMin: 8500,
-    annualMax: 25500,
-    monthlyMultiplier: 1.0, // Monthly billed annually: $708-$2,125/mo
-    monthlyMin: 708,
-    monthlyMax: 2125,
-    netAfterStripeMin: 8250,
-    netAfterStripeMax: 24735,
+    annualMin: 42500,
+    annualMax: 51000,
+    monthlyMultiplier: 1.0, // Monthly billed annually: $3,542-$4,250/mo
+    monthlyMin: 3542,
+    monthlyMax: 4250,
+    netAfterStripeMin: 41233, // 42500 - (42500 * 0.029 + 0.30) = 41232.80
+    netAfterStripeMax: 49490, // 51000 - (51000 * 0.029 + 0.30) = 49490.40
     margin: '88% margins',
   },
 
@@ -581,13 +581,13 @@ const visionaryTier: Tier = {
   targetAudience: 'Large corps/gov (1k+ users; energy/manufacturing/crypto)',
 
   pricing: {
-    annualMin: 17000,
-    annualMax: 85000,
-    monthlyMultiplier: 1.0, // Monthly billed annually: $1,417-$7,083/mo
-    monthlyMin: 1417,
-    monthlyMax: 7083,
-    netAfterStripeMin: 16490,
-    netAfterStripeMax: 82450,
+    annualMin: 68000,
+    annualMax: 170000,
+    monthlyMultiplier: 1.0, // Monthly billed annually: $5,667-$14,167/mo
+    monthlyMin: 5667,
+    monthlyMax: 14167,
+    netAfterStripeMin: 66012, // 68000 - (68000 * 0.029 + 0.30) = 66011.70
+    netAfterStripeMax: 165022, // 170000 - (170000 * 0.029 + 0.30) = 165069.70
     margin: '85%+ margins (optimized costs)',
   },
 

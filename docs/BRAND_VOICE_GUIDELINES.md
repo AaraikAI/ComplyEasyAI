@@ -331,7 +331,7 @@
 > While other tools help you manage compliance, ComplyEasyAI *operates* compliance autonomously. Our aCOS (Autonomous Compliance Operations System) doesn't just collect evidence—it monitors for drift, predicts risks, and even auto-remediates issues. Think self-driving car for compliance.
 
 **Against "Build Your Own"**:
-> Building compliance automation in-house takes 2+ years and costs $500K+ in engineering time—and you still won't have cutting-edge AI. ComplyEasyAI gives you enterprise-grade automation starting at $4,250/year with continuous updates and expert support.
+> Building compliance automation in-house takes 2+ years and costs $500K+ in engineering time—and you still won't have cutting-edge AI. ComplyEasyAI gives you enterprise-grade automation starting at $8,500/year with continuous updates and expert support.
 
 ### Key Messages by Feature
 

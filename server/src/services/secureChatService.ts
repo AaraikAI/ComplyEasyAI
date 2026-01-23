@@ -47,49 +47,53 @@ const KNOWLEDGE_BASE = {
   // Pricing Information
   pricing: {
     foundation: {
-      price: '$8,500/year',
+      price: '$8,500/year ($708/month billed annually)',
       users: 'Up to 10 users',
       frameworks: '3 compliance frameworks',
       description: 'Perfect for startups and SMBs beginning their compliance journey',
       tier: 'Foundation' as TierName,
+      showPrice: true,
     },
     essentials: {
-      price: '$17,000/year',
-      users: '10-100 users',
+      price: '$17,000/year ($1,417/month billed annually)',
+      users: 'Up to 100 users',
       frameworks: '10 frameworks',
       description: 'Full-featured compliance platform with advanced AI for growing organizations',
       tier: 'Essentials' as TierName,
+      showPrice: true,
     },
     growth: {
-      price: 'Contact sales@complyeasyai.com',
+      price: 'Contact - sales@complyeasyai.com',
       users: '100-1,000 users',
       frameworks: '50 frameworks',
       description: 'Advanced aCOS capabilities for mid-market companies and MSPs',
       tier: 'Growth' as TierName,
+      showPrice: false,
     },
     visionary: {
-      price: 'Contact sales@complyeasyai.com',
+      price: 'Contact - sales@complyeasyai.com',
       users: 'Unlimited users',
       frameworks: 'Unlimited frameworks',
       description: 'Cutting-edge compliance technology with full aCOS and enterprise-grade security',
       tier: 'Visionary' as TierName,
+      showPrice: false,
     },
   },
 
   // Add-Ons
   addOns: {
     customFrameworks: {
-      price: '$2,997/year per framework',
+      price: '$660/year',
       description: 'Build unlimited proprietary compliance frameworks for regulated industries like defense, aerospace, pharma',
       availableFor: ['Growth', 'Visionary'] as TierName[],
     },
     onPremises: {
-      price: '$19,997/year (one-time setup) + $9,997/year maintenance',
+      price: '$3,200/year',
       description: 'Deploy ComplyEasyAI on your own AWS/Azure/GCP infrastructure. For government, financial institutions, healthcare.',
       availableFor: ['Visionary'] as TierName[],
     },
     customAiModels: {
-      price: '$14,997 one-time + $4,997/year maintenance',
+      price: '$1,920/year',
       description: 'Fine-tuned AI models trained on your data for enterprises with unique terminology/workflows',
       availableFor: ['Visionary'] as TierName[],
     },
@@ -547,12 +551,29 @@ class SecureChatService {
     if (lowerMessage.includes('pricing') || lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('how much')) {
       const pricingInfo = KNOWLEDGE_BASE.pricing;
       let response = `**ComplyEasyAI Pricing:**\n\n`;
-      response += `📦 **Foundation**: ${pricingInfo.foundation.price}\n   - ${pricingInfo.foundation.users}, ${pricingInfo.foundation.frameworks}\n   - ${pricingInfo.foundation.description}\n\n`;
-      response += `📦 **Essentials**: ${pricingInfo.essentials.price}\n   - ${pricingInfo.essentials.users}, ${pricingInfo.essentials.frameworks}\n   - ${pricingInfo.essentials.description}\n\n`;
-      response += `📦 **Growth**: ${pricingInfo.growth.price}\n   - ${pricingInfo.growth.users}, ${pricingInfo.growth.frameworks}\n   - ${pricingInfo.growth.description}\n\n`;
-      response += `📦 **Visionary**: ${pricingInfo.visionary.price}\n   - ${pricingInfo.visionary.users}, ${pricingInfo.visionary.frameworks}\n   - ${pricingInfo.visionary.description}\n\n`;
+      
+      // Foundation - Show price
+      response += `📦 **Foundation**: ${pricingInfo.foundation.price}\n`;
+      response += `   - ${pricingInfo.foundation.users}, ${pricingInfo.foundation.frameworks}\n`;
+      response += `   - ${pricingInfo.foundation.description}\n\n`;
+      
+      // Essentials - Show price
+      response += `📦 **Essentials**: ${pricingInfo.essentials.price}\n`;
+      response += `   - ${pricingInfo.essentials.users}, ${pricingInfo.essentials.frameworks}\n`;
+      response += `   - ${pricingInfo.essentials.description}\n\n`;
+      
+      // Growth - Contact sales only
+      response += `📦 **Growth**: Contact - sales@complyeasyai.com\n`;
+      response += `   - ${pricingInfo.growth.users}, ${pricingInfo.growth.frameworks}\n`;
+      response += `   - ${pricingInfo.growth.description}\n\n`;
+      
+      // Visionary - Contact sales only
+      response += `📦 **Visionary**: Contact - sales@complyeasyai.com\n`;
+      response += `   - ${pricingInfo.visionary.users}, ${pricingInfo.visionary.frameworks}\n`;
+      response += `   - ${pricingInfo.visionary.description}\n\n`;
+      
       response += `**You're currently on: ${userTier}**\n\n`;
-      response += `Contact sales@complyeasyai.com for custom quotes or to upgrade.`;
+      response += `For Growth and Visionary tier pricing, contact sales@complyeasyai.com for a custom quote.`;
       return response;
     }
 

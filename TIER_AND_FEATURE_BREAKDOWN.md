@@ -26,8 +26,8 @@ ComplyEasyAI currently has **4 subscription tiers** with **60+ features** organi
 
 ### Tier 1: Foundation
 **Target:** Startups/SMBs worldwide  
-**Pricing:** $4,250 - $8,500/year ($354 - $708/month)  
-**Users:** Up to 2  
+**Pricing:** $8,500/year ($708/month billed annually)  
+**Users:** Up to 10  
 **Frameworks:** Up to 3  
 **Storage:** 5 GB  
 **Data Retention:** 1 year
@@ -42,8 +42,8 @@ ComplyEasyAI currently has **4 subscription tiers** with **60+ features** organi
 
 ### Tier 2: Essentials
 **Target:** Growing SMBs (10-100 users)  
-**Pricing:** $5,100 - $12,750/year ($425 - $1,063/month)  
-**Users:** Up to 5  
+**Pricing:** $17,000/year ($1,417/month billed annually)  
+**Users:** Up to 100  
 **Frameworks:** Up to 10  
 **Storage:** 50 GB  
 **Data Retention:** 2 years
@@ -59,8 +59,8 @@ ComplyEasyAI currently has **4 subscription tiers** with **60+ features** organi
 
 ### Tier 3: Growth
 **Target:** Mid-market/MSPs (100-1k users)  
-**Pricing:** $8,500 - $25,500/year ($708 - $2,125/month)  
-**Users:** Up to 100  
+**Pricing:** $42,500 - $51,000/year ($3,542 - $4,250/month billed annually)  
+**Users:** Up to 1,000  
 **Frameworks:** Up to 50  
 **Storage:** 500 GB  
 **Data Retention:** 5 years
@@ -77,7 +77,7 @@ ComplyEasyAI currently has **4 subscription tiers** with **60+ features** organi
 
 ### Tier 4: Visionary
 **Target:** Large corps/gov (1k+ users)  
-**Pricing:** $17,000 - $85,000/year ($1,417 - $7,083/month)  
+**Pricing:** $68,000 - $170,000/year ($5,667 - $14,167/month billed annually)  
 **Users:** Unlimited  
 **Frameworks:** Unlimited  
 **Storage:** Unlimited  

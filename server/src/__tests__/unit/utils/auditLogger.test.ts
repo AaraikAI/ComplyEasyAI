@@ -24,8 +24,8 @@ jest.mock('../../../config/logger', () => ({
 }));
 
 // Import after mocking
-import { AuditLogger } from '../../../../utils/auditLogger';
-import logger from '../../../../config/logger';
+import { AuditLogger } from '../../../utils/auditLogger';
+import logger from '../../../config/logger';
 
 describe('AuditLogger', () => {
   beforeEach(() => {
