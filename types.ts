@@ -131,6 +131,12 @@ export interface TierFeatures {
   complianceAsCode: boolean;
   iotEdgeCompliance: boolean;
 
+  // EU Regulations & AI Governance (Visionary)
+  nistAiRmf: boolean;
+  euAiAct: boolean;
+  dsa: boolean;
+  dma: boolean;
+
   // Support & SLA
   slaGuarantee: boolean;
   dedicatedSupport: boolean;

@@ -44,7 +44,7 @@
 
 ### Sign Up
 
-1. Visit [app.complyeasy.ai/signup](https://app.complyeasy.ai/signup)
+1. Visit [app.complyeasyai.com/signup](https://app.complyeasyai.com/signup)
 2. Enter your business email (we'll verify this)
 3. Choose a strong password (12+ characters, mixed case, numbers, symbols)
 4. Click **"Start Free Trial"**
@@ -1644,7 +1644,7 @@ See the separate **TROUBLESHOOTING_GUIDE.md** for comprehensive troubleshooting 
 - **AI Features**: 30-minute guide to AI Risk Analyzer, Red Team, Digital Twin
 - **Audit Preparation**: 45-minute webinar on passing your first audit
 
-**Access**: learn.complyeasy.ai
+**Access**: learn.complyeasyai.com
 
 ## Live Training
 
@@ -1652,23 +1652,23 @@ See the separate **TROUBLESHOOTING_GUIDE.md** for comprehensive troubleshooting 
 - **Monthly Webinars**: Deep-dives on specific topics
 - **Custom Training**: On-site or virtual for Growth/Visionary customers
 
-**Register**: training.complyeasy.ai
+**Register**: training.complyeasyai.com
 
 ## Documentation
 
-- **Knowledge Base**: docs.complyeasy.ai
-- **API Documentation**: developers.complyeasy.ai
-- **Integration Guides**: docs.complyeasy.ai/integrations
+- **Knowledge Base**: docs.complyeasyai.com
+- **API Documentation**: developers.complyeasyai.com
+- **Integration Guides**: docs.complyeasyai.com/integrations
 
 ## Community
 
-- **Community Forum**: community.complyeasy.ai
+- **Community Forum**: community.complyeasyai.com
 - **Slack Community**: Join #complyeasyai-users (3,000+ members)
 - **LinkedIn Group**: ComplyEasyAI Practitioners
 
 ## Support
 
-- **Email**: support@complyeasy.ai
+- **Email**: support@complyeasyai.com
 - **Chat**: In-app chat (bottom-right corner)
 - **Phone** (Growth/Visionary): +1 (555) 123-4567
 

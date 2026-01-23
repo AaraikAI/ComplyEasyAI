@@ -1540,12 +1540,12 @@ Run thousands of simulations to understand compliance risks and probabilities.
 ### 📞 Contact Us
 
 **Sales:**
-- 📧 sales@complyeasy.ai
+- 📧 sales@complyeasyai.com
 - 📞 1-800-COMPLY-AI
 - 💬 Live chat on website
 
 **Support:**
-- 📧 support@complyeasy.ai
+- 📧 support@complyeasyai.com
 - 📚 docs.complyeasy.ai
 - 💬 Community forum
 
