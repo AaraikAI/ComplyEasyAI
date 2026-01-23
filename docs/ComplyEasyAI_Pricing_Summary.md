@@ -3,26 +3,26 @@
 ## Pricing Strategy Update (10-15% Below Competitors)
 
 ### **TIER 1: FOUNDATION**
-**Price:** $8,500/year ($850/month)
+**Price:** $8,500/year ($708/month billed annually)
 - **Competitive Positioning:** 15% below Vanta Essentials ($10,000)
 - **Target:** 10-50 employees, pre-Series A
 - **Features:** 3 frameworks, 10 users, basic AI (Policy Gen + Gap Analysis)
 
 ### **TIER 2: ESSENTIALS**
-**Price:** $17,000/year ($1,700/month)
+**Price:** $17,000/year ($1,417/month billed annually)
 - **Competitive Positioning:** 15% below Vanta Growth ($20,000), 13% below Drata Foundation ($19,500)
 - **Target:** 50-200 employees, Series A/B
 - **Features:** 10 frameworks, 100 users, full AI suite, enterprise features (VRM, Trust Center, Policy Library)
 
 ### **TIER 3: GROWTH**
-**Price:** $42,500/year ($4,250/month)
-- **Competitive Positioning:** 15% below Vanta Scale ($50,000), 10% below Drata Advanced ($47,000)
+**Price:** $42,500-$51,000/year ($3,542-$4,250/month billed annually)
+- **Competitive Positioning:** 15% below Vanta Scale ($60,000), 10% below Drata Advanced ($55,000)
 - **Target:** 200-1000 employees, Series C+
 - **Features:** 50 frameworks, 1,000 users, complete aCOS suite (Digital Twin, Auto-remediation, Predictive Analytics)
 
 ### **TIER 4: VISIONARY**
-**Price:** $68,000/year ($6,800/month)
-- **Competitive Positioning:** 15% below Vanta Enterprise ($80,000), 32% below Drata Enterprise ($100,000)
+**Price:** $68,000-$170,000/year ($5,667-$14,167/month billed annually)
+- **Competitive Positioning:** 15% below Vanta Enterprise ($200,000), 32% below Drata Enterprise ($250,000)
 - **Target:** 1000+ employees, Enterprise, Critical Infrastructure
 - **Features:** Unlimited everything + Zero Trust, ZK-proofs, IoT, VR, EU AI Act/DMA/DSA, on-premises option
 
@@ -34,9 +34,9 @@
 |------|-------|------------------|---------|
 | Foundation | $8,500 | 500 | $4.25M |
 | Essentials | $17,000 | 300 | $5.1M |
-| Growth | $42,500 | 150 | $6.375M |
-| Visionary | $68,000 | 50 | $3.4M |
-| **TOTAL** | - | **1,000** | **$19.125M** |
+| Growth | $46,750 (avg) | 150 | $7.01M |
+| Visionary | $119,000 (avg) | 50 | $5.95M |
+| **TOTAL** | - | **1,000** | **$22.31M** |
 
 **Gross Margin:** 92.2%  
 **Net Margin:** ~58% (after CAC + ops)

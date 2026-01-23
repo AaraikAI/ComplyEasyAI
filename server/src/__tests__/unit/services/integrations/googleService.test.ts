@@ -5,14 +5,20 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
-// Mock Google APIs
-const mockOAuth2Client = jest.fn().mockImplementation(() => ({
-  generateAuthUrl: jest.fn().mockReturnValue('https://accounts.google.com/o/oauth2/auth?state=test-state'),
+// Mock OAuth2 client instance
+const mockOAuth2Instance = {
+  generateAuthUrl: jest.fn().mockReturnValue('https://accounts.google.com/o/oauth2/auth?client_id=test&state=test-state'),
   getToken: jest.fn(),
   setCredentials: jest.fn(),
-}));
+  on: jest.fn(),
+};
+
+// Mock OAuth2 constructor
+const MockOAuth2 = jest.fn().mockImplementation(() => mockOAuth2Instance);
+
 const mockListProjects = jest.fn();
 
+// Mock googleapis BEFORE any imports that use it
 jest.mock('googleapis', () => ({
   google: {
     cloudresourcemanager: jest.fn().mockReturnValue({
@@ -21,7 +27,32 @@ jest.mock('googleapis', () => ({
       },
     }),
     auth: {
-      OAuth2Client: mockOAuth2Client,
+      OAuth2: MockOAuth2,
+    },
+    oauth2: jest.fn().mockReturnValue({
+      userinfo: {
+        get: jest.fn().mockResolvedValue({
+          data: {
+            id: 'user-123',
+            email: 'test@example.com',
+            name: 'Test User',
+          },
+        }),
+      },
+    }),
+  },
+  Auth: {},
+}));
+
+jest.mock('../../../../config', () => ({
+  __esModule: true,
+  default: {
+    oauth: {
+      google: {
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        callbackUrl: 'http://localhost:3001/api/auth/google/callback',
+      },
     },
   },
 }));
@@ -31,6 +62,8 @@ jest.mock('../../../../config/logger', () => ({
   default: {
     info: jest.fn(),
     error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 

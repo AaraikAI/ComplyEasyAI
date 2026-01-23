@@ -1188,27 +1188,26 @@ If payment fails multiple times, account may be suspended:
 
 **Tier-based pricing**:
 ```
-Total = (Base Price × User Multiplier) + Add-ons - Discounts + Tax
+Total = Base Price + Add-ons - Discounts + Tax
 ```
 
 **Example**:
 
 **Essentials tier**:
-- Base price: $5,100/year
-- User multiplier: 1.5× (for 100 users)
+- Base price: $17,000/year (flat rate for up to 100 users)
 - Add-on: Custom Framework ($660)
 - Discount: 16% (annual payment)
 - Tax: 8% (CA sales tax)
 
 **Calculation**:
 ```
-Base: $5,100 × 1.5 = $7,650
+Base: $17,000
 Add-on: $660
-Subtotal: $8,310
-Discount: $8,310 × 0.16 = $1,330
-After discount: $8,310 - $1,330 = $6,980
-Tax: $6,980 × 0.08 = $558
-Total: $7,538/year
+Subtotal: $17,660
+Discount: $17,660 × 0.16 = $2,826
+After discount: $17,660 - $2,826 = $14,834
+Tax: $14,834 × 0.08 = $1,187
+Total: $16,021/year
 ```
 
 **3. Understand prorations**
@@ -1216,11 +1215,11 @@ Total: $7,538/year
 If you upgrade/downgrade mid-cycle:
 
 **Upgrade example** (Foundation → Essentials):
-- You paid: $4,250 for Foundation (annual)
+- You paid: $8,500 for Foundation (annual)
 - Used: 3 months
-- Unused: 9 months × ($4,250 / 12) = $3,187.50 credit
-- New plan: $5,100/year Essentials = $3,825 for 9 months
-- You pay: $3,825 - $3,187.50 = **$637.50** prorated charge
+- Unused: 9 months × ($8,500 / 12) = $6,375 credit
+- New plan: $17,000/year Essentials = $12,750 for 9 months
+- You pay: $12,750 - $6,375 = **$6,375** prorated charge
 
 **Downgrade example** (Essentials → Foundation):
 - Downgrade takes effect at next billing cycle
@@ -1237,22 +1236,7 @@ Some features may incur usage charges:
 
 Check: **Settings → Billing → Usage**
 
-**5. Verify discounts applied**
-
-If you have discount codes:
-
-1. Go to **Settings → Billing → Discounts**
-2. Verify discount is active:
-   - Education: 40% off
-   - Nonprofit: 50% off
-   - Startup program: 75% off (first year)
-3. If missing:
-   - Click **"Apply Discount Code"**
-   - Enter code
-   - Click **"Apply"**
-   - Next invoice will reflect discount
-
-**6. Request invoice review**
+**5. Request invoice review**
 
 If charges still unclear:
 
@@ -1303,9 +1287,10 @@ Full comparison: [Pricing Guide](PRICING_GUIDE.md)
 
 1. Go to **Settings → Account → Subscription**
 2. View current tier and limits:
-   - Frameworks: 1 (Foundation), 3 (Essentials), 10 (Growth), Unlimited (Visionary)
-   - Users: 10, 100, 1,000, Unlimited
-   - Features: List of available features
+   - **Foundation ($8,500/yr)**: 3 frameworks, 10 users
+   - **Essentials ($17,000/yr)**: 10 frameworks, 100 users
+   - **Growth ($42,500-$51,000/yr)**: 50 frameworks, 1,000 users
+   - **Visionary ($68,000-$170,000/yr)**: Unlimited frameworks, Unlimited users
 3. Click **"View All Tiers"** to compare
 
 **3. Upgrade tier**

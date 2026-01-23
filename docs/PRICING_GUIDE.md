@@ -23,10 +23,10 @@ At ComplyEasyAI, we believe in **transparent, predictable pricing** that scales 
 
 | Tier | Best For | Users | Annual Price | Monthly* |
 |------|----------|-------|--------------|----------|
-| **Foundation** | Startups & SMBs | Up to 10 | $4,250 - $8,500 | $354 - $708 |
-| **Essentials** | Growing Companies | 10 - 100 | $5,100 - $12,750 | $425 - $1,063 |
-| **Growth** | Mid-Market & MSPs | 100 - 1,000 | $8,500 - $25,500 | $708 - $2,125 |
-| **Visionary** | Enterprises | Unlimited | $17,000 - $85,000 | $1,417 - $7,083 |
+| **Foundation** | Startups & SMBs | Up to 10 | $8,500 | $708 |
+| **Essentials** | Growing Companies | 10 - 100 | $17,000 | $1,417 |
+| **Growth** | Mid-Market & MSPs | 100 - 1,000 | $42,500 - $51,000 | $3,542 - $4,250 |
+| **Visionary** | Enterprises | Unlimited | $68,000 - $170,000 | $5,667 - $14,167 |
 
 *Monthly prices shown are for annual billing (billed annually, paid monthly)
 
@@ -42,10 +42,11 @@ At ComplyEasyAI, we believe in **transparent, predictable pricing** that scales 
 
 ### Pricing
 ```
-Annual:  $4,250 - $8,500
-Monthly: $354 - $708/month (billed annually)
+Annual:  $8,500 (flat rate)
+Monthly: $708/month (billed annually)
+Monthly: $1,417/month (billed monthly - 2x premium)
 
-Per User: $425 - $850/year
+Per User: $850/year (up to 10 users)
 ```
 
 ### What's Included
@@ -88,7 +89,7 @@ Per User: $425 - $850/year
 - Company: 8-person SaaS startup
 - Need: SOC 2 Type I for first customer
 - Duration: 6 months to certification
-- Cost: $4,250/year
+- Cost: $8,500/year
 - ROI: Won $250K contract requiring SOC 2
 
 ---
@@ -103,26 +104,24 @@ Per User: $425 - $850/year
 
 ### Pricing
 ```
-Annual:  $5,100 - $12,750
-Monthly: $425 - $1,063/month (billed annually)
+Annual:  $17,000 (flat rate)
+Monthly: $1,417/month (billed annually)
+Monthly: $2,125/month (billed monthly - 1.5x premium)
 
-Base:     $5,100 (10 users)
-Scaling:  +$510 per 10 additional users
-Max:      $12,750 (100 users)
-
-Per User: $51 - $128/year
+Per User: $170/year (up to 100 users)
 ```
 
-### Volume Pricing Examples
-| Users | Annual Cost | Monthly* | Per User/Year |
-|-------|-------------|----------|---------------|
-| 10 | $5,100 | $425 | $510 |
-| 25 | $6,120 | $510 | $245 |
-| 50 | $7,650 | $638 | $153 |
-| 75 | $9,180 | $765 | $122 |
-| 100 | $12,750 | $1,063 | $128 |
+### What's Included at $17,000/year
+| Feature | Included |
+|---------|----------|
+| Users | Up to 100 |
+| Frameworks | Up to 10 |
+| Workspaces | Up to 5 |
+| Full AI Suite | ✅ All 8 AI features |
+| Enterprise Features | ✅ All included |
+| Support | Priority (24-hour response) |
 
-*Billed annually, paid monthly
+*Flat-rate pricing - no complicated volume calculations*
 
 ### What's Included
 
@@ -170,17 +169,17 @@ Per User: $51 - $128/year
 - Company: 45-person healthcare SaaS
 - Need: HIPAA + SOC 2 + GDPR
 - Team: 45 users
-- Cost: $7,650/year ($170/user)
+- Cost: $17,000/year ($378/user)
 - ROI: Saved $30K vs. hiring compliance consultant
 - Time: Achieved all 3 certifications in 8 months
 
 **Competitor Comparison:**
 | Vendor | Price (50 users) | Difference |
 |--------|------------------|------------|
-| ComplyEasyAI | $7,650/year | Baseline |
-| Vanta | $9,600/year | +$1,950 (25% more) |
-| Drata | $10,200/year | +$2,550 (33% more) |
-| Secureframe | $9,000/year | +$1,350 (18% more) |
+| ComplyEasyAI | $17,000/year | Baseline |
+| Vanta | $24,000/year | +$7,000 (41% more) |
+| Drata | $26,000/year | +$9,000 (53% more) |
+| Secureframe | $22,000/year | +$5,000 (29% more) |
 
 ---
 
@@ -194,20 +193,20 @@ Per User: $51 - $128/year
 
 ### Pricing
 ```
-Annual:  $8,500 - $25,500
-Monthly: $708 - $2,125/month (billed annually)
+Annual:  $42,500 - $51,000
+Monthly: $3,542 - $4,250/month (billed annually)
 
-Per User: $9 - $26/year
+Per User: $43 - $51/year
 ```
 
 ### Volume Pricing Examples
 | Users | Annual Cost | Monthly* | Per User/Year |
 |-------|-------------|----------|---------------|
-| 100 | $8,500 | $708 | $85 |
-| 250 | $12,750 | $1,063 | $51 |
-| 500 | $17,000 | $1,417 | $34 |
-| 750 | $21,250 | $1,771 | $28 |
-| 1,000 | $25,500 | $2,125 | $26 |
+| 100 | $42,500 | $3,542 | $425 |
+| 250 | $44,625 | $3,719 | $179 |
+| 500 | $46,750 | $3,896 | $94 |
+| 750 | $48,875 | $4,073 | $65 |
+| 1,000 | $51,000 | $4,250 | $51 |
 
 *Billed annually, paid monthly
 
@@ -260,7 +259,7 @@ Per User: $9 - $26/year
 - Company: MSP managing 15 clients
 - Users: 350 across all clients
 - Need: Multi-tenant compliance management
-- Cost: $14,875/year ($43/user)
+- Cost: $45,688/year ($131/user)
 - ROI: $180K revenue from compliance services
 - Features Used: Digital Twin, Red Team, Regulatory Intelligence
 
@@ -285,8 +284,8 @@ Per User: $9 - $26/year
 
 ### Pricing
 ```
-Annual:  $17,000 - $85,000
-Monthly: $1,417 - $7,083/month (billed annually)
+Annual:  $68,000 - $170,000
+Monthly: $5,667 - $14,167/month (billed annually)
 
 Custom pricing for 5,000+ users
 ```
@@ -294,11 +293,11 @@ Custom pricing for 5,000+ users
 ### Volume Pricing Examples
 | Users | Annual Cost | Monthly* | Per User/Year |
 |-------|-------------|----------|---------------|
-| 1,000 | $17,000 | $1,417 | $17 |
-| 2,500 | $34,000 | $2,833 | $14 |
-| 5,000 | $51,000 | $4,250 | $10 |
-| 10,000 | $68,000 | $5,667 | $7 |
-| 15,000+ | Custom | Custom | $5-6 |
+| 1,000 | $68,000 | $5,667 | $68 |
+| 2,500 | $93,500 | $7,792 | $37 |
+| 5,000 | $119,000 | $9,917 | $24 |
+| 10,000 | $153,000 | $12,750 | $15 |
+| 15,000+ | Custom | Custom | $10-12 |
 
 *Billed annually, paid monthly
 
@@ -364,7 +363,7 @@ Custom pricing for 5,000+ users
 - Company: 5,000-employee utility company
 - Need: IoT compliance for smart grid
 - Users: 5,000 (unlimited)
-- Cost: $51,000/year ($10/user)
+- Cost: $119,000/year ($24/user)
 - Devices: 50,000 IoT sensors monitored
 - Features Used: Physical AI, Zero Trust, BYOK, On-Prem
 - ROI: $2M saved vs. building internal system
@@ -373,7 +372,7 @@ Custom pricing for 5,000+ users
 - Agency: Federal healthcare agency
 - Users: 3,200 employees
 - Deployment: On-premises (air-gapped)
-- Cost: $34,000 base + $3,200 on-prem = $37,200/year
+- Cost: $106,400 base + $3,200 on-prem = $109,600/year
 - Compliance: HIPAA + FedRAMP + FISMA
 - Result: First agency to achieve all three simultaneously
 
@@ -494,30 +493,30 @@ Time savings: 75% reduction in manual work = 15 hours/week saved
 
 | Feature | ComplyEasyAI | Vanta | Drata | Secureframe |
 |---------|--------------|-------|-------|-------------|
-| **Base Price** | **$7,650** | $9,600 | $10,200 | $9,000 |
-| Frameworks | Unlimited | 5 included | 3 included | 4 included |
+| **Base Price** | **$17,000** | $24,000 | $26,000 | $22,000 |
+| Frameworks | 10 included | 5 included | 3 included | 4 included |
 | AI Features | 8 included | 2 ($3K extra) | 1 ($2K extra) | 2 ($2.5K extra) |
 | Integrations | 15 included | 10 included | 12 included | 10 included |
 | Vendor Management | ✅ Included | ✅ Included | ✅ Included | ✅ Included |
 | Advanced Reporting | ✅ Included | ❌ ($1.5K extra) | ❌ ($1K extra) | ✅ Included |
 | API Access | ✅ Included | ❌ ($2K extra) | ✅ Included | ❌ ($1.5K extra) |
 | Multi-Workspace | ✅ 5 workspaces | ❌ ($5K extra) | ❌ ($4K extra) | ❌ ($4.5K extra) |
-| **Total Cost** | **$7,650** | **$21,100** | **$17,200** | **$17,000** |
-| **Savings** | **Baseline** | **-64%** | **-56%** | **-55%** |
+| **Total Cost** | **$17,000** | **$35,500** | **$33,000** | **$30,000** |
+| **Savings** | **Baseline** | **-52%** | **-48%** | **-43%** |
 
 ### Growth Tier Comparison (500 users, annual)
 
 | Feature | ComplyEasyAI | Competitor A | Competitor B |
 |---------|--------------|--------------|--------------|
-| **Base Price** | **$17,000** | $36,000 | $42,000 |
+| **Base Price** | **$46,750** | $72,000 | $84,000 |
 | aCOS Features | ✅ All included | ❌ Not offered | ❌ Not offered |
 | Blockchain | ✅ Included | ❌ Not offered | ❌ ($8K extra) |
 | Digital Twin | ✅ Included | ❌ Not offered | ❌ Not offered |
 | Red Team | ✅ Included | ❌ ($10K extra) | ❌ Not offered |
 | AI Suite | ✅ 8 features | ✅ 3 features | ✅ 2 features |
 | Support | White-glove | Standard | Standard |
-| **Effective Cost** | **$17,000** | **$46,000+** | **$50,000+** |
-| **Savings** | **Baseline** | **-63%** | **-66%** |
+| **Effective Cost** | **$46,750** | **$82,000+** | **$92,000+** |
+| **Savings** | **Baseline** | **-43%** | **-49%** |
 
 ---
 
@@ -562,24 +561,24 @@ Time savings: 75% reduction in manual work = 15 hours/week saved
 
 ## 📈 Volume Discounts
 
-### Team Growth Discounts
-As you add users, per-user cost decreases:
+### Flat-Rate Simplicity
+Our Foundation and Essentials tiers offer simple flat-rate pricing:
 
-**Essentials Tier:**
-| Users | Per User/Year | Discount |
-|-------|---------------|----------|
-| 10 | $510 | Baseline |
-| 25 | $245 | 52% off |
-| 50 | $153 | 70% off |
-| 100 | $128 | 75% off |
+**Foundation Tier:** $8,500/year (flat)
+- Up to 10 users included
+- No per-user calculations
 
-**Growth Tier:**
-| Users | Per User/Year | Discount |
-|-------|---------------|----------|
-| 100 | $85 | Baseline |
-| 250 | $51 | 40% off |
-| 500 | $34 | 60% off |
-| 1,000 | $26 | 70% off |
+**Essentials Tier:** $17,000/year (flat)
+- Up to 100 users included
+- No per-user calculations
+
+**Growth Tier:** Volume pricing based on user count
+| Users | Per User/Year | Total Annual |
+|-------|---------------|--------------|
+| 100 | $255 | $25,500 |
+| 250 | $128 | $31,875 |
+| 500 | $77 | $38,250 |
+| 1,000 | $51 | $51,000 |
 
 ### Multi-Year Discounts
 Lock in pricing with multi-year commitments:
@@ -589,84 +588,9 @@ Lock in pricing with multi-year commitments:
 - 📅 **5-Year Commitment:** 20% discount
 
 **Example:**
-- Essentials (50 users): $7,650/year
-- 3-year commitment: $7,650 x 0.85 = $6,503/year
-- **Total savings:** $3,441 over 3 years
-
----
-
-## 🎓 Education & Nonprofit Pricing
-
-### Education Discount (50% off)
-**Who Qualifies:**
-- K-12 schools
-- Universities and colleges
-- Educational nonprofits
-- Student organizations
-
-**Pricing:**
-- Foundation: $2,125/year (50% off)
-- Essentials: $2,550 - $6,375/year (50% off)
-- Growth: $4,250 - $12,750/year (50% off)
-
-**Verification Required:**
-- Valid .edu email domain OR
-- IRS 501(c)(3) determination letter OR
-- Government education registration
-
----
-
-### Nonprofit Discount (40% off)
-**Who Qualifies:**
-- 501(c)(3) organizations
-- Registered charities
-- NGOs
-- Religious organizations
-
-**Pricing:**
-- Foundation: $2,550/year (40% off)
-- Essentials: $3,060 - $7,650/year (40% off)
-- Growth: $5,100 - $15,300/year (40% off)
-
-**Verification Required:**
-- IRS 501(c)(3) letter OR
-- Charity Navigator registration OR
-- Government nonprofit registration
-
----
-
-## 🚀 Startup Program
-
-### Eligibility
-- ✅ Company <2 years old
-- ✅ Raised <$5M total funding
-- ✅ <25 employees
-- ✅ First-time compliance certification
-
-### Benefits
-- 🎉 **75% off Foundation tier** - $1,063/year (normally $4,250)
-- 🎉 **First 3 months free**
-- 🎉 **Free SOC 2 audit prep** (normally $2,500 value)
-- 🎉 **Dedicated startup advisor**
-- 🎉 **Investor-ready templates**
-- 🎉 **Grow with no commitment** - upgrade anytime
-
-### Application Process
-1. Apply at complyeasy.ai/startups
-2. Submit proof (incorporation docs, funding info)
-3. Approval within 2 business days
-4. Instant access upon approval
-
-### Program Duration
-- 12-month initial term
-- Can extend if still eligible
-- Smooth graduation to standard pricing
-
-**Example:**
-- Startup: 8 employees, raised $1M, need SOC 2
-- Normal price: $4,250/year
-- Startup price: $1,063/year (75% off)
-- Savings: $3,187 + $2,500 audit prep = $5,687
+- Essentials: $17,000/year
+- 3-year commitment: $17,000 x 0.85 = $14,450/year
+- **Total savings:** $7,650 over 3 years
 
 ---
 
@@ -739,9 +663,9 @@ Visit: **complyeasy.ai/trial**
 **With ComplyEasyAI (Essentials):**
 - ⚡ Time to SOC 2: 4-6 months (67% faster)
 - 👥 Resources needed: 0.5 FTE
-- 💰 Annual cost: $7,650 + $75K (part-time) = $82,650
+- 💰 Annual cost: $17,000 + $75K (part-time) = $92,000
 
-**Total Savings:** $217K - $367K per year
+**Total Savings:** $208K - $358K per year
 
 ### Consultant Replacement
 
@@ -753,9 +677,9 @@ Visit: **complyeasy.ai/trial**
 - 💰 **Total:** $38K - $75K per year
 
 **With ComplyEasyAI:**
-- 💰 Essentials Tier: $7,650/year
+- 💰 Essentials Tier: $17,000/year
 - 🤖 AI does policy writing, gap analysis, evidence mapping
-- 💰 **Savings:** $30K - $67K per year
+- 💰 **Savings:** $21K - $58K per year
 
 ### Opportunity Cost
 
@@ -771,9 +695,9 @@ Visit: **complyeasy.ai/trial**
 - 📈 Win deals 8 months earlier
 - 💰 Additional revenue: $330K - $1.3M
 
-**Your cost to get there:** $7,650
+**Your cost to get there:** $17,000
 
-**ROI: 4,300% - 17,000%**
+**ROI: 1,900% - 7,600%**
 
 ---
 

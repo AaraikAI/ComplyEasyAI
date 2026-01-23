@@ -52,11 +52,11 @@ Your trial automatically ends after 3 days. You can:
 ## Pricing & Billing
 
 ### How does your pricing work?
-We use **tier-based pricing**:
-- **Foundation**: $$8,500/year (upto 10 users, 3 framework)
-- **Essentials**: $17000/year (10-100 users, 10 frameworks)
-- **Growth**: Contact sales@complyeasyai.com (100-1,000 users, 50 frameworks)
-- **Visionary**: Contact sales@complyeasyai.com (unlimited users, unlimited frameworks)
+We use **tier-based pricing** with simple flat rates:
+- **Foundation**: $8,500/year (up to 10 users, 3 frameworks) - $708/month billed annually
+- **Essentials**: $17,000/year (up to 100 users, 10 frameworks) - $1,417/month billed annually
+- **Growth**: $42,500-$51,000/year (100-1,000 users, 50 frameworks) - Contact sales@complyeasyai.com
+- **Visionary**: $68,000-$170,000/year (unlimited users, unlimited frameworks) - Contact sales@complyeasyai.com
 
 
 ### Can I switch tiers?
@@ -64,13 +64,6 @@ We use **tier-based pricing**:
 - **Upgrade**: Immediate access to new features, prorated billing
 - **Downgrade**: Takes effect at next billing cycle, features remain active until then
 - **No penalties** for switching tiers
-
-### Do you offer discounts?
-Yes, we offer several discount programs:
-- **Annual payment**: 2 months free (16% discount)
-- **Multi-year**: Custom discounts available
-
-Contact sales@complyeasyai.com for discount codes.
 
 ### What payment methods do you accept?
 - **Credit/Debit Cards**: Visa, Mastercard, Amex, Discover
@@ -530,7 +523,7 @@ We practice what we preach:
 
 ### Can I deploy on-premise?
 **Yes!** On-Premise deployment available with:
-- **Visionary tier** + $19,997/year (one-time setup) + $9,997/year maintenance
+- **Visionary tier** + $3,200/year on-premises add-on
 - **Requirements**: Kubernetes cluster, PostgreSQL, Redis, MinIO/S3
 - **Deployment**: Docker containers, Helm charts provided
 - **Updates**: Quarterly releases, security patches as needed
@@ -801,7 +794,7 @@ Our team includes certified professionals:
 ---
 
 ### On-Premises Deployment
-**Price:** $19,997/year (one-time setup) + $9,997/year maintenance
+**Price:** $3,200/year
 
 **What It Is:** Deploy ComplyEasyAI entirely within your own AWS, Azure, or GCP infrastructure. Maintain complete control over your data, meet strict data residency requirements, and integrate seamlessly with your existing security stack. Includes dedicated support, quarterly updates, and custom security configurations.
 
@@ -817,7 +810,7 @@ Our team includes certified professionals:
 ---
 
 ### Custom AI Models
-**Price:** $14,997 one-time + $4,997/year maintenance
+**Price:** $1,920/year
 
 **What It Is:** Fine-tuned AI models trained specifically on your organization's data, terminology, workflows, and compliance patterns. Get more accurate risk assessments, better policy generation, and AI recommendations that understand your unique business context.
 

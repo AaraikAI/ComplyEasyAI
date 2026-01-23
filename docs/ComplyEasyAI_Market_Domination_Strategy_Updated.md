@@ -410,7 +410,7 @@ ComplyEasyAI possesses **unprecedented technological superiority** with 343+ fea
 ---
 
 ### TIER 3: GROWTH  
-**Price:** $42,500/year (or $4,250/month)  
+**Price:** $42,500-$51,000/year (or $2,125-$4,250/month billed annually)  
 **Positioning:** "Autonomous Compliance Operations System"  
 **Target:** 200-1000 employees, Series C+, regulatory-heavy
 
@@ -456,8 +456,8 @@ ComplyEasyAI possesses **unprecedented technological superiority** with 343+ fea
 ❌ On-premises deployment
 
 **Market Positioning:**
-- **15% cheaper** than Vanta Scale ($42,500 vs $50,000)
-- **10% cheaper** than Drata Advanced ($42,500 vs $47,000)
+- **15% cheaper** than Vanta Scale ($38,250 avg vs $60,000)
+- **10% cheaper** than Drata Advanced ($38,250 avg vs $55,000)
 - **First true "autonomous"** compliance platform in market
 
 **Ideal For:**
@@ -476,7 +476,7 @@ ComplyEasyAI possesses **unprecedented technological superiority** with 343+ fea
 ---
 
 ### TIER 4: VISIONARY  
-**Price:** $68,000/year (or $6,800/month)  
+**Price:** $68,000-$170,000/year (or $6,800-$14,167/month billed annually)  
 **Positioning:** "The Compliance OS for the AI Era"  
 **Target:** 1000+ employees, Enterprise, Regulated Industries, Critical Infrastructure
 
@@ -624,15 +624,15 @@ ComplyEasyAI possesses **unprecedented technological superiority** with 343+ fea
 - **LTV (3-year):** $51,000
 - **LTV:CAC:** 14.6:1
 
-### Growth Tier ($42,500/year):
+### Growth Tier ($42,500/year avg):
 - **Target:** 150 customers in Year 1
-- **Revenue:** $6.375M
+- **Revenue:** $5.74M
 - **COGS:** $525K (92% margin)
 - **CAC:** ~$8,000 per customer (5.3x payback in Year 1)
 - **LTV (3-year):** $127,500
 - **LTV:CAC:** 15.9:1
 
-### Visionary Tier ($68,000/year):
+### Visionary Tier ($68,000/year avg):
 - **Target:** 50 customers in Year 1
 - **Revenue:** $3.4M
 - **COGS:** $350K (90% margin)
