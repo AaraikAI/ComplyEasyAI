@@ -611,8 +611,9 @@ class SecureChatService {
     // ACOS FEATURE QUERIES (Tier-Restricted: Growth+)
     // ========================================================================
     if (lowerMessage.includes('acos') || lowerMessage.includes('autonomous') || lowerMessage.includes('control loop') || 
-        lowerMessage.includes('digital twin') || lowerMessage.includes('red team')) {
-      const acosFeatures = [
+        lowerMessage.includes('digital twin') || lowerMessage.includes('red team') || lowerMessage.includes('debt tracking') ||
+        lowerMessage.includes('change impact') || lowerMessage.includes('agentic') || lowerMessage.includes('federated learning')) {
+      const acosCoreFeatures = [
         KNOWLEDGE_BASE.features.acosGoals,
         KNOWLEDGE_BASE.features.acosControlLoops,
         KNOWLEDGE_BASE.features.acosDigitalTwin,
@@ -622,7 +623,8 @@ class SecureChatService {
       let response = `**aCOS (Autonomous Compliance Operations System):**\n\n`;
       response += `aCOS is our breakthrough autonomous compliance engine that monitors your infrastructure 24/7 with AI agents, detects compliance drift in real-time, and auto-heals issues.\n\n`;
       
-      for (const feature of acosFeatures) {
+      response += `**Core aCOS Features (Growth+):**\n`;
+      for (const feature of acosCoreFeatures) {
         const hasAccess = this.hasFeatureAccess(userTier, feature.featureKey);
         response += `${hasAccess ? '✅' : '🔒'} **${feature.name}**: ${feature.description}\n`;
         if (!hasAccess) {
@@ -631,10 +633,34 @@ class SecureChatService {
         response += '\n';
       }
 
+      // Advanced aCOS features (Visionary tier)
+      if (userTier === 'Visionary') {
+        response += `**Advanced aCOS Features (Visionary):**\n`;
+        response += `- 📊 Compliance Debt Tracking - Track and prioritize technical debt\n`;
+        response += `- 🔄 Change Impact Analysis - Predict compliance impact of changes\n`;
+        response += `- 🤖 Agentic Actions - AI agents that take autonomous actions\n`;
+        response += `- ✅ Evidence Truth - Verify evidence authenticity and integrity\n`;
+        response += `- 📰 Regulatory Intelligence - Real-time regulatory updates\n`;
+        response += `- 📈 Temporal Graphs - Time-series compliance analysis\n`;
+        response += `- 🌐 Federated Learning - Privacy-preserving ML across organizations\n`;
+        response += `- 🎭 Multi-Modal AI - Process text, images, and structured data\n`;
+        response += `- 🏭 Physical AI - IoT and edge device compliance\n`;
+        response += `- 🥽 VR Training - Immersive compliance training\n`;
+        response += `- 🐝 Swarm Intelligence - Collaborative AI agents\n`;
+        response += `- 🧠 Neuro-Symbolic AI - Combining neural and symbolic reasoning\n`;
+        response += `- 🔐 Homomorphic Encryption - Compute on encrypted data\n`;
+        response += `- 🎲 Monte Carlo Simulation - Risk prediction modeling\n`;
+        response += `- ⚡ JIT Compliance - Just-in-time compliance verification\n`;
+        response += `- 📊 Real-Time Compliance - Continuous real-time verification\n\n`;
+      }
+
       if (!this.hasFeatureAccess(userTier, 'acosGoals')) {
         response += this.getUpgradeMessage('aCOS features', userTier, ['Growth', 'Visionary']);
       } else {
-        response += `\nYou have full access to aCOS features with your ${userTier} tier! Navigate to aCOS Dashboard to get started.`;
+        response += `\n✅ You have access to aCOS features with your ${userTier} tier! Navigate to **aCOS Dashboard** to get started.`;
+        if (userTier === 'Growth') {
+          response += `\n\n💡 **Upgrade to Visionary** for advanced aCOS features like Compliance Debt Tracking, Change Impact Analysis, Agentic Actions, and more!`;
+        }
       }
 
       return response;
@@ -770,9 +796,74 @@ class SecureChatService {
     }
 
     // ========================================================================
+    // NIST AI RMF QUERIES (Tier-Restricted: Visionary)
+    // ========================================================================
+    if (lowerMessage.includes('nist ai rmf') || lowerMessage.includes('nist ai risk management') || 
+        lowerMessage.includes('ai rmf') || lowerMessage.includes('ai risk management framework') ||
+        (lowerMessage.includes('nist') && (lowerMessage.includes('rmf') || lowerMessage.includes('risk management framework'))) ||
+        lowerMessage.includes('nist rmf')) {
+      const feature = KNOWLEDGE_BASE.features.nistAiRmf;
+      const hasAccess = this.hasFeatureAccess(userTier, 'nistAiRmf');
+      
+      let response = `**NIST AI Risk Management Framework (AI RMF 1.0)**\n\n`;
+      response += `The NIST AI RMF is a voluntary framework developed by the National Institute of Standards and Technology to help organizations manage risks associated with AI systems throughout their lifecycle.\n\n`;
+      
+      response += `**What is the NIST AI RMF?**\n`;
+      response += `The AI RMF provides a structured approach to managing AI risks, focusing on trustworthy AI systems that are valid, reliable, safe, secure, resilient, accountable, transparent, explainable, privacy-enhanced, and fair.\n\n`;
+      
+      response += `**4 Core Functions:**\n`;
+      response += `- 🏛️ **GOVERN** - Develop organizational culture and structure to manage AI risks\n`;
+      response += `- 🗺️ **MAP** - Understand context and characterize risks\n`;
+      response += `- 📊 **MEASURE** - Quantify, benchmark, and monitor risks\n`;
+      response += `- 🎯 **MANAGE** - Prioritize and respond to risks\n\n`;
+      
+      response += `**7 Trustworthiness Characteristics:**\n`;
+      response += `- ✅ Valid and Reliable - AI systems perform as intended\n`;
+      response += `- 🛡️ Safe - AI systems operate without causing harm\n`;
+      response += `- 🔒 Secure and Resilient - AI systems are protected from threats\n`;
+      response += `- 📋 Accountable and Transparent - Clear responsibility and visibility\n`;
+      response += `- 🔍 Explainable and Interpretable - Understandable AI decisions\n`;
+      response += `- 🔐 Privacy-Enhanced - Protects individual privacy\n`;
+      response += `- ⚖️ Fair with Harmful Bias Managed - Reduces unfair outcomes\n\n`;
+      
+      response += `**AI System Lifecycle Stages:**\n`;
+      response += `- 📐 Plan and Design - Initial planning and design phase\n`;
+      response += `- 📥 Collect and Process - Data collection and processing\n`;
+      response += `- 🔨 Build and Validate - System development and validation\n`;
+      response += `- 🚀 Deploy and Operate - Deployment and operational use\n`;
+      response += `- 📈 Monitor and Maintain - Ongoing monitoring and maintenance\n\n`;
+      
+      response += `**Key Benefits:**\n`;
+      response += `- Comprehensive risk management across AI lifecycle\n`;
+      response += `- Structured approach to trustworthy AI\n`;
+      response += `- Flexible implementation for different use cases\n`;
+      response += `- Supports compliance with AI regulations\n`;
+      response += `- Enables continuous improvement of AI systems\n\n`;
+
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('NIST AI RMF Compliance', userTier, feature.tiers);
+      } else {
+        response += `✅ You have access to NIST AI RMF Compliance with your ${userTier} tier!\n\n`;
+        response += `**ComplyEasyAI NIST AI RMF Features:**\n`;
+        response += `- Complete framework implementation (all 4 core functions)\n`;
+        response += `- 16 categories and 60+ subcategories tracking\n`;
+        response += `- 7 trustworthiness characteristics scoring\n`;
+        response += `- AI system lifecycle management\n`;
+        response += `- Risk assessment and mitigation tracking\n`;
+        response += `- Evidence collection and documentation\n`;
+        response += `- Custom profiles for different use cases\n`;
+        response += `- Comprehensive reporting and analytics\n\n`;
+        response += `Navigate to **NIST AI RMF Dashboard** to manage your AI systems and risks.`;
+      }
+
+      return response;
+    }
+
+    // ========================================================================
     // SECURITY FEATURES QUERIES (Zero Trust, ZK Proofs, BYOK - Visionary)
     // ========================================================================
-    if (lowerMessage.includes('zero trust') || lowerMessage.includes('zkp') || lowerMessage.includes('zero knowledge') || 
+    if (lowerMessage.includes('security features') || lowerMessage.includes('security feature') ||
+        lowerMessage.includes('zero trust') || lowerMessage.includes('zkp') || lowerMessage.includes('zero knowledge') || 
         lowerMessage.includes('byok') || lowerMessage.includes('bring your own key') || lowerMessage.includes('compliance as code')) {
       const securityFeatures = [
         KNOWLEDGE_BASE.features.zeroTrustSecurity,
@@ -782,6 +873,7 @@ class SecureChatService {
       ];
 
       let response = `**Advanced Security Features:**\n\n`;
+      response += `ComplyEasyAI offers enterprise-grade security features designed for organizations with the highest security requirements.\n\n`;
       
       for (const feature of securityFeatures) {
         const hasAccess = this.hasFeatureAccess(userTier, feature.featureKey);
@@ -794,6 +886,15 @@ class SecureChatService {
 
       if (!this.hasFeatureAccess(userTier, 'zeroTrustSecurity')) {
         response += this.getUpgradeMessage('Advanced Security Features', userTier, ['Visionary']);
+      } else {
+        response += `✅ You have access to all Advanced Security Features with your ${userTier} tier!\n\n`;
+        response += `**Additional Security Capabilities:**\n`;
+        response += `- 🔐 End-to-end encryption\n`;
+        response += `- 🛡️ Role-based access control (RBAC)\n`;
+        response += `- 📋 Audit logging and compliance tracking\n`;
+        response += `- 🔒 Data encryption at rest and in transit\n`;
+        response += `- 🚨 Security monitoring and alerts\n\n`;
+        response += `Navigate to **Settings** → **Security** to configure these features.`;
       }
 
       return response;
@@ -976,9 +1077,37 @@ class SecureChatService {
     }
 
     // ========================================================================
+    // ISSUE MANAGEMENT QUERIES (Check before risk queries to avoid conflicts)
+    // ========================================================================
+    if (lowerMessage.includes('issue management') || lowerMessage.includes('issue tracking') || 
+        (lowerMessage.includes('issue') && (lowerMessage.includes('management') || lowerMessage.includes('tracking') || lowerMessage.includes('ticket')))) {
+      const hasAccess = this.hasFeatureAccess(userTier, 'issueManagement');
+      
+      let response = `**Issue Management:**\n\n`;
+      response += `Track and manage compliance issues, findings, and remediation tasks.\n\n`;
+      response += `**Key Features:**\n`;
+      response += `- 📋 Issue creation and tracking\n`;
+      response += `- 🎯 Prioritization and assignment\n`;
+      response += `- ✅ Resolution workflows\n`;
+      response += `- 📊 Issue analytics and reporting\n`;
+      response += `- 🔗 Link to controls and frameworks\n`;
+      response += `- 📧 Automated notifications\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('Issue Management', userTier, ['Essentials', 'Growth', 'Visionary']);
+      } else {
+        response += `✅ You have access to Issue Management with your ${userTier} tier! Navigate to **Issues** to track compliance findings.`;
+      }
+      
+      return response;
+    }
+
+    // ========================================================================
     // RISK-RELATED QUERIES (Original)
     // ========================================================================
-    if (lowerMessage.includes('risk') || lowerMessage.includes('threat') || lowerMessage.includes('vulnerability') || lowerMessage.includes('issue')) {
+    // Note: Check for 'issue' only if NOT about issue management (handled above)
+    if (lowerMessage.includes('risk') || lowerMessage.includes('threat') || lowerMessage.includes('vulnerability') || 
+        (lowerMessage.includes('issue') && !lowerMessage.includes('management') && !lowerMessage.includes('tracking'))) {
       if (context.risks.length === 0) {
         return "Great news! You don't have any open risks at the moment. Your compliance posture looks good.";
       }
@@ -1075,20 +1204,514 @@ class SecureChatService {
     }
 
     // ========================================================================
+    // ENTERPRISE FEATURES QUERIES (Personnel, Vendor, Policy Library, Trust Center)
+    // ========================================================================
+    if (lowerMessage.includes('personnel') || lowerMessage.includes('employee management') || lowerMessage.includes('access review') ||
+        lowerMessage.includes('onboarding') || lowerMessage.includes('offboarding')) {
+      const hasAccess = this.hasFeatureAccess(userTier, 'personnelManagement');
+      
+      let response = `**Personnel & Access Management:**\n\n`;
+      response += `Comprehensive personnel management system for tracking employees, access rights, and compliance requirements.\n\n`;
+      response += `**Key Features:**\n`;
+      response += `- 👤 Employee onboarding/offboarding workflows\n`;
+      response += `- 🔐 Access reviews and certification\n`;
+      response += `- 🔗 SSO/SCIM integration ready\n`;
+      response += `- 📋 Compliance tracking (background checks, training)\n`;
+      response += `- ⚡ Automated access revocation\n`;
+      response += `- 📊 Personnel compliance summary and reporting\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('Personnel Management', userTier, ['Essentials', 'Growth', 'Visionary']);
+      } else {
+        response += `✅ You have access to Personnel Management with your ${userTier} tier! Navigate to **Personnel Dashboard** to manage your team.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('vendor') || lowerMessage.includes('third party') || lowerMessage.includes('supplier') ||
+        lowerMessage.includes('vendor risk') || lowerMessage.includes('vendor assessment')) {
+      const hasAccess = this.hasFeatureAccess(userTier, 'vendorRiskManagement');
+      
+      let response = `**Vendor & Third-Party Risk Management:**\n\n`;
+      response += `Comprehensive vendor risk management system for assessing, monitoring, and managing third-party security risks.\n\n`;
+      response += `**Key Features:**\n`;
+      response += `- 📦 Vendor inventory management\n`;
+      response += `- 📋 Vendor onboarding workflows\n`;
+      response += `- 🔍 Security assessments & questionnaires\n`;
+      response += `- 📊 Continuous vendor monitoring\n`;
+      response += `- 📈 Vendor scorecards & dashboards\n`;
+      response += `- ✅ Compliance certification tracking (SOC 2, ISO 27001, GDPR, HIPAA)\n`;
+      response += `- 🎯 Risk-based vendor categorization\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('Vendor Risk Management', userTier, ['Essentials', 'Growth', 'Visionary']);
+      } else {
+        response += `✅ You have access to Vendor Risk Management with your ${userTier} tier! Navigate to **Vendor Dashboard** to manage your third-party risks.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('policy library') || lowerMessage.includes('policy management') || lowerMessage.includes('policy template')) {
+      const hasAccess = this.hasFeatureAccess(userTier, 'policyLibrary');
+      
+      let response = `**Policy Library:**\n\n`;
+      response += `Centralized policy management system with version control, approval workflows, and cross-framework control mapping.\n\n`;
+      response += `**Key Features:**\n`;
+      response += `- 📚 100+ pre-built policy templates\n`;
+      response += `- 📝 Policy version control and history\n`;
+      response += `- ✅ Approval workflows\n`;
+      response += `- 🔗 Cross-framework control mapping\n`;
+      response += `- 📊 Policy analytics and usage tracking\n`;
+      response += `- 🔍 Search and categorization\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('Policy Library', userTier, ['Essentials', 'Growth', 'Visionary']);
+      } else {
+        response += `✅ You have access to Policy Library with your ${userTier} tier! Navigate to **Policy Library** to manage your compliance policies.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('trust center') || lowerMessage.includes('trust portal') || lowerMessage.includes('public portal')) {
+      const hasAccess = this.hasFeatureAccess(userTier, 'trustCenter');
+      
+      let response = `**Trust Center:**\n\n`;
+      response += `Public-facing trust portal to showcase your security posture and compliance certifications to customers and prospects.\n\n`;
+      response += `**Key Features:**\n`;
+      response += `- 🌐 Public-facing security portal\n`;
+      response += `- 🏆 Certificate management and display\n`;
+      response += `- 📄 Document sharing (SOC 2 reports, ISO certificates)\n`;
+      response += `- 📊 Status page integration\n`;
+      response += `- 🔗 Customizable branding\n`;
+      response += `- 📈 Compliance metrics dashboard\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('Trust Center', userTier, ['Essentials', 'Growth', 'Visionary']);
+      } else {
+        response += `✅ You have access to Trust Center with your ${userTier} tier! Navigate to **Trust Center** to configure your public portal.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('workspace') || lowerMessage.includes('multi workspace') || lowerMessage.includes('organization hierarchy')) {
+      const hasAccess = this.hasFeatureAccess(userTier, 'multiWorkspace');
+      
+      let response = `**Multi-Workspace Support:**\n\n`;
+      response += `Manage multiple workspaces and organizational hierarchies for enterprise deployments.\n\n`;
+      response += `**Key Features:**\n`;
+      response += `- 🏢 Multiple workspace management\n`;
+      response += `- 🌳 Organization hierarchy support\n`;
+      response += `- 🔄 Cross-workspace operations\n`;
+      response += `- 👥 Centralized user management\n`;
+      response += `- 📊 Consolidated reporting\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('Multi-Workspace Support', userTier, ['Essentials', 'Growth', 'Visionary']);
+      } else {
+        response += `✅ You have access to Multi-Workspace Support with your ${userTier} tier! Navigate to **Workspace Settings** to manage your workspaces.`;
+      }
+      
+      return response;
+    }
+
+    // ========================================================================
+    // INDIVIDUAL AI FEATURE QUERIES (Detailed responses for each)
+    // ========================================================================
+    if (lowerMessage.includes('policy generator') || lowerMessage.includes('generate policy')) {
+      const feature = KNOWLEDGE_BASE.features.aiPolicyGeneration;
+      const hasAccess = this.hasFeatureAccess(userTier, 'aiPolicyGeneration');
+      
+      let response = `**AI Policy Generator:**\n\n`;
+      response += `${feature.description}\n\n`;
+      response += `**How it works:**\n`;
+      response += `- Select a policy template (SOC 2, ISO 27001, GDPR, etc.)\n`;
+      response += `- AI analyzes your organization's context\n`;
+      response += `- Generates customized policy in minutes\n`;
+      response += `- Review and edit as needed\n`;
+      response += `- Export to Word, PDF, or markdown\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('AI Policy Generator', userTier, feature.tiers);
+      } else {
+        response += `✅ You have access to AI Policy Generator with your ${userTier} tier! Navigate to **AI Tools** → **Policy Generator** to get started.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('gap analysis') || lowerMessage.includes('compliance gap')) {
+      const feature = KNOWLEDGE_BASE.features.aiGapAnalysis;
+      const hasAccess = this.hasFeatureAccess(userTier, 'aiGapAnalysis');
+      
+      let response = `**AI Gap Analysis:**\n\n`;
+      response += `${feature.description}\n\n`;
+      response += `**How it works:**\n`;
+      response += `- Upload your existing documentation\n`;
+      response += `- AI analyzes against target framework requirements\n`;
+      response += `- Identifies missing controls and evidence\n`;
+      response += `- Provides prioritized remediation roadmap\n`;
+      response += `- Tracks progress toward compliance\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('AI Gap Analysis', userTier, feature.tiers);
+      } else {
+        response += `✅ You have access to AI Gap Analysis with your ${userTier} tier! Navigate to **AI Tools** → **Gap Analysis** to get started.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('contract analyzer') || lowerMessage.includes('analyze contract')) {
+      const feature = KNOWLEDGE_BASE.features.aiContractAnalyzer;
+      const hasAccess = this.hasFeatureAccess(userTier, 'aiContractAnalyzer');
+      
+      let response = `**AI Contract Analyzer:**\n\n`;
+      response += `${feature.description}\n\n`;
+      response += `**What it detects:**\n`;
+      response += `- Non-compliant clauses and terms\n`;
+      response += `- Data protection and privacy issues\n`;
+      response += `- Liability and risk concerns\n`;
+      response += `- Missing security requirements\n`;
+      response += `- GDPR/CCPA compliance issues\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('AI Contract Analyzer', userTier, feature.tiers);
+      } else {
+        response += `✅ You have access to AI Contract Analyzer with your ${userTier} tier! Navigate to **AI Tools** → **Contract Analyzer** to analyze contracts.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('rfp') || lowerMessage.includes('security questionnaire') || lowerMessage.includes('sig') || 
+        lowerMessage.includes('caiq') || lowerMessage.includes('vsa')) {
+      const feature = KNOWLEDGE_BASE.features.aiRfpGenerator;
+      const hasAccess = this.hasFeatureAccess(userTier, 'aiRfpGenerator');
+      
+      let response = `**AI RFP Responder:**\n\n`;
+      response += `${feature.description}\n\n`;
+      response += `**Supported formats:**\n`;
+      response += `- SIG (Standard Information Gathering)\n`;
+      response += `- CAIQ (Consensus Assessments Initiative Questionnaire)\n`;
+      response += `- VSA (Vendor Security Assessment)\n`;
+      response += `- Custom questionnaire formats\n\n`;
+      response += `**Benefits:**\n`;
+      response += `- 90% time reduction in questionnaire completion\n`;
+      response += `- Consistent, accurate responses\n`;
+      response += `- Automatic evidence linking\n`;
+      response += `- Response library for reuse\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('AI RFP Responder', userTier, feature.tiers);
+      } else {
+        response += `✅ You have access to AI RFP Responder with your ${userTier} tier! Navigate to **AI Tools** → **RFP Responder** to get started.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('vendor scorer') || lowerMessage.includes('vendor risk scorer') || lowerMessage.includes('vendor assessment')) {
+      const feature = KNOWLEDGE_BASE.features.aiVendorScorer;
+      const hasAccess = this.hasFeatureAccess(userTier, 'aiVendorScorer');
+      
+      let response = `**AI Vendor Scorer:**\n\n`;
+      response += `${feature.description}\n\n`;
+      response += `**What it evaluates:**\n`;
+      response += `- Security posture and certifications\n`;
+      response += `- Compliance with frameworks (SOC 2, ISO 27001, etc.)\n`;
+      response += `- Data handling and privacy practices\n`;
+      response += `- Incident history and response\n`;
+      response += `- Financial stability indicators\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('AI Vendor Scorer', userTier, feature.tiers);
+      } else {
+        response += `✅ You have access to AI Vendor Scorer with your ${userTier} tier! Navigate to **Vendor Management** → **AI Scoring** to evaluate vendors.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('data mapper') || lowerMessage.includes('data mapping') || lowerMessage.includes('data discovery')) {
+      const feature = KNOWLEDGE_BASE.features.aiDataMapper;
+      const hasAccess = this.hasFeatureAccess(userTier, 'aiDataMapper');
+      
+      let response = `**AI Data Mapper:**\n\n`;
+      response += `${feature.description}\n\n`;
+      response += `**What it discovers:**\n`;
+      response += `- Sensitive data across databases\n`;
+      response += `- Data in cloud storage (S3, Azure Blob, GCP)\n`;
+      response += `- Data in file systems and applications\n`;
+      response += `- Automatic classification (PII, PHI, PCI)\n`;
+      response += `- Data flow mapping\n`;
+      response += `- GDPR Article 30 record of processing\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('AI Data Mapper', userTier, feature.tiers);
+      } else {
+        response += `✅ You have access to AI Data Mapper with your ${userTier} tier! Navigate to **AI Tools** → **Data Mapper** to discover your data.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('phishing') || lowerMessage.includes('phishing simulator') || lowerMessage.includes('security training')) {
+      const feature = KNOWLEDGE_BASE.features.aiPhishingSimulator;
+      const hasAccess = this.hasFeatureAccess(userTier, 'aiPhishingSimulator');
+      
+      let response = `**AI Phishing Simulator:**\n\n`;
+      response += `${feature.description}\n\n`;
+      response += `**Campaign types:**\n`;
+      response += `- 📧 Email phishing campaigns\n`;
+      response += `- 💬 SMS phishing (smishing)\n`;
+      response += `- 📱 Social media phishing\n`;
+      response += `- 📞 Voice phishing (vishing)\n\n`;
+      response += `**Features:**\n`;
+      response += `- Realistic, AI-generated phishing templates\n`;
+      response += `- Automated campaign management\n`;
+      response += `- Click and response tracking\n`;
+      response += `- Training assignment for users who click\n`;
+      response += `- Detailed reporting and analytics\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('AI Phishing Simulator', userTier, feature.tiers);
+      } else {
+        response += `✅ You have access to AI Phishing Simulator with your ${userTier} tier! Navigate to **Security Training** → **Phishing Simulator** to create campaigns.`;
+      }
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('bcp') || lowerMessage.includes('business continuity') || lowerMessage.includes('disaster recovery')) {
+      const feature = KNOWLEDGE_BASE.features.aiBcpGenerator;
+      const hasAccess = this.hasFeatureAccess(userTier, 'aiBcpGenerator');
+      
+      let response = `**AI BCP Generator:**\n\n`;
+      response += `${feature.description}\n\n`;
+      response += `**What it includes:**\n`;
+      response += `- Business Impact Analysis (BIA)\n`;
+      response += `- Recovery Time Objectives (RTO)\n`;
+      response += `- Recovery Point Objectives (RPO)\n`;
+      response += `- Recovery strategies and procedures\n`;
+      response += `- Communication plans\n`;
+      response += `- Testing and maintenance schedules\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('AI BCP Generator', userTier, feature.tiers);
+      } else {
+        response += `✅ You have access to AI BCP Generator with your ${userTier} tier! Navigate to **AI Tools** → **BCP Generator** to create your plan.`;
+      }
+      
+      return response;
+    }
+
+    // ========================================================================
+    // SPECIFIC FRAMEWORK QUERIES
+    // ========================================================================
+    if (lowerMessage.includes('soc 2') || lowerMessage.includes('soc2') || lowerMessage.includes('soc type')) {
+      let response = `**SOC 2 Type I & II Compliance:**\n\n`;
+      response += `Service Organization Control 2 (SOC 2) is a framework for managing data security, availability, processing integrity, confidentiality, and privacy.\n\n`;
+      response += `**Trust Service Criteria (TSC):**\n`;
+      response += `- 🔒 Security - Protection against unauthorized access\n`;
+      response += `- ⚡ Availability - System availability for operation\n`;
+      response += `- ✅ Processing Integrity - Complete, valid, accurate processing\n`;
+      response += `- 🔐 Confidentiality - Confidential information protection\n`;
+      response += `- 👤 Privacy - Personal information collection and use\n\n`;
+      response += `**ComplyEasyAI SOC 2 Features:**\n`;
+      response += `- Automated evidence collection\n`;
+      response += `- Control implementation tracking\n`;
+      response += `- Gap analysis and remediation\n`;
+      response += `- Audit preparation and reporting\n`;
+      response += `- Continuous monitoring\n\n`;
+      response += `✅ SOC 2 is available in all tiers! Navigate to **Frameworks** → **SOC 2** to get started.`;
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('iso 27001') || lowerMessage.includes('iso27001')) {
+      let response = `**ISO 27001 Information Security Management:**\n\n`;
+      response += `ISO/IEC 27001 is the international standard for information security management systems (ISMS).\n\n`;
+      response += `**Key Domains:**\n`;
+      response += `- Information Security Policies\n`;
+      response += `- Organization of Information Security\n`;
+      response += `- Human Resource Security\n`;
+      response += `- Asset Management\n`;
+      response += `- Access Control\n`;
+      response += `- Cryptography\n`;
+      response += `- Physical and Environmental Security\n`;
+      response += `- Operations Security\n`;
+      response += `- Communications Security\n`;
+      response += `- System Acquisition, Development, and Maintenance\n`;
+      response += `- Supplier Relationships\n`;
+      response += `- Information Security Incident Management\n`;
+      response += `- Business Continuity Management\n`;
+      response += `- Compliance\n\n`;
+      response += `**ComplyEasyAI ISO 27001 Features:**\n`;
+      response += `- Complete control mapping (114 controls)\n`;
+      response += `- Statement of Applicability (SOA) generation\n`;
+      response += `- Risk assessment and treatment\n`;
+      response += `- Continuous improvement tracking\n`;
+      response += `- Certification audit support\n\n`;
+      response += `✅ ISO 27001 is available in all tiers! Navigate to **Frameworks** → **ISO 27001** to get started.`;
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('gdpr') && !lowerMessage.includes('dsa') && !lowerMessage.includes('dma')) {
+      let response = `**GDPR (General Data Protection Regulation):**\n\n`;
+      response += `EU Regulation 2016/679 governing data protection and privacy for EU citizens.\n\n`;
+      response += `**Key Requirements:**\n`;
+      response += `- 📋 Lawful basis for processing\n`;
+      response += `- 👤 Data subject rights (access, rectification, erasure, portability)\n`;
+      response += `- 🔐 Data protection by design and by default\n`;
+      response += `- 📊 Data Protection Impact Assessments (DPIA)\n`;
+      response += `- 🚨 Breach notification (72 hours)\n`;
+      response += `- 📝 Records of processing activities (Article 30)\n`;
+      response += `- 🛡️ Technical and organizational measures\n`;
+      response += `- 🌍 Data transfer mechanisms (SCCs, adequacy decisions)\n\n`;
+      response += `**ComplyEasyAI GDPR Features:**\n`;
+      response += `- Data mapping and classification\n`;
+      response += `- DPIA automation\n`;
+      response += `- Consent management tracking\n`;
+      response += `- Data subject request handling\n`;
+      response += `- Breach notification workflows\n`;
+      response += `- Article 30 record generation\n\n`;
+      response += `✅ GDPR is available in all tiers! Navigate to **Frameworks** → **GDPR** to get started.`;
+      
+      return response;
+    }
+
+    if (lowerMessage.includes('hipaa') || lowerMessage.includes('hitech')) {
+      let response = `**HIPAA & HITECH Compliance:**\n\n`;
+      response += `Health Insurance Portability and Accountability Act (HIPAA) and HITECH Act govern protected health information (PHI) in the US.\n\n`;
+      response += `**Key Requirements:**\n`;
+      response += `- 🔐 Administrative Safeguards (policies, procedures)\n`;
+      response += `- 🛡️ Physical Safeguards (facility access, workstation security)\n`;
+      response += `- 🔒 Technical Safeguards (access control, encryption, audit logs)\n`;
+      response += `- 📋 Breach notification requirements\n`;
+      response += `- 📝 Business Associate Agreements (BAAs)\n`;
+      response += `- 👤 Patient rights and access\n\n`;
+      response += `**ComplyEasyAI HIPAA Features:**\n`;
+      response += `- PHI discovery and classification\n`;
+      response += `- BAA management and tracking\n`;
+      response += `- Access control monitoring\n`;
+      response += `- Breach notification workflows\n`;
+      response += `- Risk assessment automation\n\n`;
+      response += `✅ HIPAA is available in all tiers! Navigate to **Frameworks** → **HIPAA** to get started.`;
+      
+      return response;
+    }
+
+    // ========================================================================
+    // INTEGRATIONS QUERIES
+    // ========================================================================
+    if (lowerMessage.includes('integration') || lowerMessage.includes('integrate') || lowerMessage.includes('connect')) {
+      let response = `**Integrations:**\n\n`;
+      response += `ComplyEasyAI integrates with 20+ services for automated evidence collection and monitoring.\n\n`;
+      response += `**Cloud & Infrastructure:**\n`;
+      response += `- ☁️ AWS (EC2, S3, IAM, CloudTrail, Config)\n`;
+      response += `- ☁️ Azure (Virtual Machines, Storage, AD, Monitor)\n`;
+      response += `- ☁️ GCP (Compute, Storage, IAM, Cloud Logging)\n\n`;
+      response += `**Development & DevOps:**\n`;
+      response += `- 🔧 GitHub (repositories, commits, pull requests)\n`;
+      response += `- 🔧 GitLab (repositories, CI/CD pipelines)\n`;
+      response += `- 🔧 Jira (issues, workflows, compliance tracking)\n\n`;
+      response += `**Communication & Collaboration:**\n`;
+      response += `- 💬 Slack (notifications, channel monitoring)\n`;
+      response += `- 📧 Email (SMTP for notifications)\n\n`;
+      response += `**Identity & Access:**\n`;
+      response += `- 🔐 Okta (SSO, user provisioning)\n`;
+      response += `- 🔐 Azure AD (SSO, directory sync)\n`;
+      response += `- 🔐 Google Workspace (SSO, user management)\n\n`;
+      response += `**Security & Monitoring:**\n`;
+      response += `- 🛡️ SIEM integrations\n`;
+      response += `- 📊 Monitoring tools (Datadog, New Relic)\n\n`;
+      response += `Navigate to **Settings** → **Integrations** to connect your services.`;
+      
+      return response;
+    }
+
+    // ========================================================================
+    // CONTINUOUS MONITORING QUERIES
+    // ========================================================================
+    if (lowerMessage.includes('monitoring') || lowerMessage.includes('continuous monitoring') || lowerMessage.includes('real-time monitoring')) {
+      const hasAccess = this.hasFeatureAccess(userTier, 'continuousMonitoring');
+      
+      let response = `**Continuous Monitoring:**\n\n`;
+      response += `24/7 automated monitoring of your infrastructure, applications, and compliance controls.\n\n`;
+      response += `**Key Features:**\n`;
+      response += `- ⏰ Real-time control monitoring\n`;
+      response += `- 🚨 Automated alerts and notifications\n`;
+      response += `- 📊 Compliance dashboard updates\n`;
+      response += `- 🔍 Evidence collection automation\n`;
+      response += `- 📈 Trend analysis and reporting\n`;
+      response += `- 🔄 Auto-remediation (with aCOS)\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('Continuous Monitoring', userTier, ['Essentials', 'Growth', 'Visionary']);
+      } else {
+        response += `✅ You have access to Continuous Monitoring with your ${userTier} tier! Navigate to **Monitoring** to view real-time compliance status.`;
+      }
+      
+      return response;
+    }
+
+    // ========================================================================
+    // ADVANCED REPORTING QUERIES
+    // ========================================================================
+    if (lowerMessage.includes('report') || lowerMessage.includes('reporting') || lowerMessage.includes('analytics')) {
+      const hasAccess = this.hasFeatureAccess(userTier, 'advancedReporting');
+      
+      let response = `**Advanced Reporting & Analytics:**\n\n`;
+      response += `Comprehensive reporting and analytics for compliance, risk, and security metrics.\n\n`;
+      response += `**Report Types:**\n`;
+      response += `- 📊 Compliance status reports\n`;
+      response += `- ⚠️ Risk assessment reports\n`;
+      response += `- 📈 Trend analysis and forecasting\n`;
+      response += `- 🎯 Control effectiveness reports\n`;
+      response += `- 📋 Audit-ready reports\n`;
+      response += `- 📉 Executive dashboards\n\n`;
+      response += `**Features:**\n`;
+      response += `- Custom report builder\n`;
+      response += `- Scheduled report delivery\n`;
+      response += `- Export to PDF, Excel, CSV\n`;
+      response += `- Interactive dashboards\n`;
+      response += `- Data visualization\n\n`;
+      
+      if (!hasAccess) {
+        response += this.getUpgradeMessage('Advanced Reporting', userTier, ['Essentials', 'Growth', 'Visionary']);
+      } else {
+        response += `✅ You have access to Advanced Reporting with your ${userTier} tier! Navigate to **Reports** to create and view analytics.`;
+      }
+      
+      return response;
+    }
+
+    // ========================================================================
     // GENERAL HELP (Enhanced)
     // ========================================================================
     if (lowerMessage.includes('help') || lowerMessage.includes('what can you do')) {
       return `I'm your secure compliance assistant for ${context.organization?.name || 'your organization'}! I can help you with:\n\n` +
-        `📋 **Compliance Frameworks** - Status, progress, setup guidance\n` +
+        `📋 **Compliance Frameworks** - Status, progress, setup guidance (SOC 2, ISO 27001, GDPR, HIPAA, etc.)\n` +
         `⚠️ **Risk Management** - View, prioritize, and remediate risks\n` +
         `📊 **Status & Progress** - Overall compliance dashboard\n` +
         `🔒 **Controls & Evidence** - Implementation tracking\n` +
+        `🤖 **AI Features** - Policy Generator, Gap Analysis, Contract Analyzer, RFP Responder, Vendor Scorer, Data Mapper, Phishing Simulator, BCP Generator\n` +
+        `🏢 **Enterprise Features** - Personnel Management, Vendor Risk, Policy Library, Trust Center\n` +
+        `🚀 **aCOS** - Autonomous Compliance Operations System\n` +
+        `🌍 **EU Regulations** - AI Act, DMA, DSA, NIST AI RMF\n` +
+        `🔐 **Security Features** - Zero Trust, ZK Proofs, BYOK, Compliance-as-Code\n` +
+        `🔗 **Integrations** - AWS, Azure, GCP, GitHub, Slack, Jira, Okta, etc.\n` +
         `💰 **Pricing & Plans** - Tier information, add-ons\n` +
         `🛠️ **Troubleshooting** - Common issues and solutions\n` +
         `📚 **Tutorials** - Getting started guides\n\n` +
         `**Your tier: ${userTier}** - I'll let you know if features require an upgrade.\n\n` +
         `🔐 All data processed locally - no external AI transmission.\n\n` +
-        `Try: "What's my compliance status?" | "Tell me about aCOS" | "How much does ComplyEasyAI cost?"`;
+        `Try: "What's my compliance status?" | "Tell me about aCOS" | "How does AI Policy Generator work?" | "What integrations are available?"`;
     }
 
     // ========================================================================

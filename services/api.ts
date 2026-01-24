@@ -737,11 +737,11 @@ export const api = {
         }>;
         totalAnnualCost: number;
         totalMonthlyCost: number;
-      }>('/billing/feature-subscriptions');
+      }>('/billing/features/subscriptions');
     },
 
-    cancelFeatureSubscription: async (subscriptionId: string) => {
-      return fetchAPI<{ success: boolean; message: string }>(`/billing/feature-subscriptions/${subscriptionId}`, {
+    cancelFeatureSubscription: async (featureId: string) => {
+      return fetchAPI<{ success: boolean; message: string }>(`/billing/features/${featureId}/unsubscribe`, {
         method: 'DELETE',
       });
     },
