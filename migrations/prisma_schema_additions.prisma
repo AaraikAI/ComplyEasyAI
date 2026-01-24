@@ -1,0 +1,799 @@
+// ============================================
+// PRISMA SCHEMA ADDITIONS
+// For: Signup, Learn, Community, Status Pages
+// ============================================
+// Add these models to your existing schema.prisma file
+// ============================================
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum CourseLevel {
+  beginner
+  intermediate
+  advanced
+  expert
+}
+
+enum ContentType {
+  video
+  article
+  interactive
+  quiz
+  webinar
+  hands_on_lab
+}
+
+enum EnrollmentStatus {
+  enrolled
+  in_progress
+  completed
+  dropped
+}
+
+enum WebinarStatus {
+  scheduled
+  live
+  completed
+  cancelled
+}
+
+enum CertificationStatus {
+  in_progress
+  exam_scheduled
+  passed
+  failed
+  expired
+  revoked
+}
+
+enum ForumPostStatus {
+  published
+  draft
+  hidden
+  deleted
+  locked
+}
+
+enum CommunityEventType {
+  conference
+  workshop
+  meetup
+  hackathon
+  webinar
+  ama
+  other
+}
+
+enum CommunityEventStatus {
+  draft
+  published
+  ongoing
+  completed
+  cancelled
+}
+
+enum ResourceType {
+  template
+  integration
+  plugin
+  script
+  guide
+  checklist
+  policy
+  other
+}
+
+enum ServiceStatusType {
+  operational
+  degraded_performance
+  partial_outage
+  major_outage
+  maintenance
+}
+
+enum IncidentSeverity {
+  minor
+  major
+  critical
+}
+
+enum IncidentStatusType {
+  investigating
+  identified
+  monitoring
+  resolved
+  postmortem
+}
+
+enum MaintenanceStatusType {
+  scheduled
+  in_progress
+  completed
+  cancelled
+}
+
+// ============================================
+// SIGNUP PAGE - Email Verification
+// ============================================
+
+model EmailVerificationToken {
+  id         String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId     String
+  token      String    @unique
+  expiresAt  DateTime
+  verified   Boolean   @default(false)
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ============================================
+// LEARN PAGE - Courses
+// ============================================
+
+model Course {
+  id                 String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  title              String
+  slug               String             @unique
+  description        String?            @db.Text
+  shortDescription   String?
+  thumbnailUrl       String?
+  category           String
+  level              CourseLevel        @default(beginner)
+  durationMinutes    Int                @default(0)
+  lessonCount        Int                @default(0)
+  isFeatured         Boolean            @default(false)
+  isFree             Boolean            @default(false)
+  price              Decimal?           @db.Decimal(10, 2)
+  requiredTier       String             @default("Foundation")
+  instructor         String?
+  instructorAvatar   String?
+  syllabus           Json?
+  learningObjectives String[]           @default([])
+  prerequisites      String[]           @default([])
+  tags               String[]           @default([])
+  rating             Decimal            @default(0) @db.Decimal(2, 1)
+  reviewCount        Int                @default(0)
+  enrollmentCount    Int                @default(0)
+  publishedAt        DateTime?
+  isPublished        Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  lessons            CourseLesson[]
+  enrollments        CourseEnrollment[]
+
+  @@index([category])
+  @@index([level])
+  @@index([isFeatured])
+  @@index([isPublished])
+  @@index([slug])
+}
+
+model CourseLesson {
+  id              String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  courseId        String
+  title           String
+  description     String?     @db.Text
+  contentType     ContentType @default(video)
+  contentUrl      String?
+  content         String?     @db.Text
+  durationMinutes Int         @default(0)
+  sortOrder       Int         @default(0)
+  moduleNumber    Int         @default(1)
+  lessonNumber    Int         @default(1)
+  isFreePreview   Boolean     @default(false)
+  resources       Json?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  course          Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([sortOrder])
+}
+
+model CourseEnrollment {
+  id               String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId           String
+  courseId         String
+  status           EnrollmentStatus @default(enrolled)
+  progress         Int              @default(0)
+  completedLessons String[]         @default([])
+  currentLessonId  String?
+  lastAccessedAt   DateTime?
+  completedAt      DateTime?
+  certificateIssued Boolean         @default(false)
+  certificateUrl   String?
+  rating           Int?
+  review           String?          @db.Text
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course           Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+}
+
+// ============================================
+// LEARN PAGE - Tutorials
+// ============================================
+
+model Tutorial {
+  id              String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  title           String
+  slug            String      @unique
+  description     String?     @db.Text
+  content         String      @db.Text
+  thumbnailUrl    String?
+  contentType     ContentType @default(article)
+  videoUrl        String?
+  category        String
+  tags            String[]    @default([])
+  authorId        String?
+  authorName      String?
+  readTimeMinutes Int         @default(5)
+  viewCount       Int         @default(0)
+  likeCount       Int         @default(0)
+  isPublished     Boolean     @default(false)
+  publishedAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([category])
+  @@index([isPublished])
+  @@index([slug])
+}
+
+// ============================================
+// LEARN PAGE - Webinars
+// ============================================
+
+model Webinar {
+  id                String                @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  title             String
+  slug              String                @unique
+  description       String?               @db.Text
+  thumbnailUrl      String?
+  category          String
+  hostName          String
+  hostTitle         String?
+  hostAvatar        String?
+  guestSpeakers     Json?
+  scheduledAt       DateTime
+  durationMinutes   Int                   @default(60)
+  timezone          String                @default("UTC")
+  status            WebinarStatus         @default(scheduled)
+  registrationUrl   String?
+  meetingUrl        String?
+  recordingUrl      String?
+  maxAttendees      Int?
+  registrationCount Int                   @default(0)
+  attendeeCount     Int                   @default(0)
+  isPublished       Boolean               @default(false)
+  tags              String[]              @default([])
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  registrations     WebinarRegistration[]
+
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([category])
+  @@index([slug])
+}
+
+model WebinarRegistration {
+  id                   String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  webinarId            String
+  userId               String?
+  email                String
+  name                 String
+  company              String?
+  jobTitle             String?
+  attended             Boolean   @default(false)
+  joinedAt             DateTime?
+  leftAt               DateTime?
+  watchDurationMinutes Int?
+  reminderSent         Boolean   @default(false)
+  feedbackRating       Int?
+  feedbackComment      String?   @db.Text
+  createdAt            DateTime  @default(now())
+  webinar              Webinar   @relation(fields: [webinarId], references: [id], onDelete: Cascade)
+  user                 User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([webinarId, email])
+  @@index([webinarId])
+  @@index([userId])
+  @@index([email])
+}
+
+// ============================================
+// LEARN PAGE - Certifications
+// ============================================
+
+model CertificationProgram {
+  id                 String              @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name               String
+  slug               String              @unique
+  description        String?             @db.Text
+  shortDescription   String?
+  thumbnailUrl       String?
+  badgeUrl           String?
+  category           String
+  level              CourseLevel         @default(intermediate)
+  requiredCourses    String[]            @default([])
+  requiredScore      Int                 @default(70)
+  examDurationMinutes Int                @default(90)
+  examQuestionCount  Int                 @default(50)
+  price              Decimal?            @db.Decimal(10, 2)
+  isFree             Boolean             @default(false)
+  validityMonths     Int                 @default(24)
+  renewalRequired    Boolean             @default(true)
+  isPublished        Boolean             @default(false)
+  enrollmentCount    Int                 @default(0)
+  passRate           Decimal?            @db.Decimal(4, 2)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  userCertifications UserCertification[]
+
+  @@index([category])
+  @@index([isPublished])
+  @@index([slug])
+}
+
+model UserCertification {
+  id                String               @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId            String
+  certificationId   String
+  status            CertificationStatus  @default(in_progress)
+  examAttempts      Int                  @default(0)
+  lastExamDate      DateTime?
+  lastExamScore     Int?
+  passedAt          DateTime?
+  expiresAt         DateTime?
+  certificateNumber String?              @unique
+  certificateUrl    String?
+  badgeUrl          String?
+  verificationUrl   String?
+  linkedInAdded     Boolean              @default(false)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certification     CertificationProgram @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, certificationId])
+  @@index([userId])
+  @@index([certificationId])
+  @@index([status])
+  @@index([certificateNumber])
+}
+
+// ============================================
+// COMMUNITY PAGE - Forum
+// ============================================
+
+model ForumCategory {
+  id          String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name        String
+  slug        String      @unique
+  description String?     @db.Text
+  icon        String?
+  color       String?
+  sortOrder   Int         @default(0)
+  postCount   Int         @default(0)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  posts       ForumPost[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model ForumPost {
+  id               String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  categoryId       String
+  authorId         String
+  title            String
+  slug             String
+  content          String          @db.Text
+  status           ForumPostStatus @default(published)
+  isPinned         Boolean         @default(false)
+  isSolved         Boolean         @default(false)
+  solvedCommentId  String?
+  viewCount        Int             @default(0)
+  likeCount        Int             @default(0)
+  commentCount     Int             @default(0)
+  tags             String[]        @default([])
+  lastActivityAt   DateTime        @default(now())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  category         ForumCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  author           User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments         ForumComment[]
+  votes            ForumVote[]     @relation("PostVotes")
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([status])
+  @@index([isPinned])
+  @@index([isSolved])
+  @@index([lastActivityAt])
+  @@index([createdAt])
+}
+
+model ForumComment {
+  id               String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  postId           String
+  authorId         String
+  parentCommentId  String?
+  content          String         @db.Text
+  isAcceptedAnswer Boolean        @default(false)
+  likeCount        Int            @default(0)
+  isEdited         Boolean        @default(false)
+  isHidden         Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  post             ForumPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author           User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentComment    ForumComment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies          ForumComment[] @relation("CommentReplies")
+  votes            ForumVote[]    @relation("CommentVotes")
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentCommentId])
+  @@index([isAcceptedAnswer])
+}
+
+model ForumVote {
+  id        String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId    String
+  postId    String?
+  commentId String?
+  voteType  Int
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      ForumPost?    @relation("PostVotes", fields: [postId], references: [id], onDelete: Cascade)
+  comment   ForumComment? @relation("CommentVotes", fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@index([userId])
+  @@index([postId])
+  @@index([commentId])
+}
+
+// ============================================
+// COMMUNITY PAGE - Events
+// ============================================
+
+model CommunityEvent {
+  id                   String               @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  title                String
+  slug                 String               @unique
+  description          String?              @db.Text
+  shortDescription     String?
+  thumbnailUrl         String?
+  eventType            CommunityEventType
+  status               CommunityEventStatus @default(draft)
+  isVirtual            Boolean              @default(false)
+  location             String?
+  address              String?
+  city                 String?
+  country              String?
+  virtualUrl           String?
+  startDate            DateTime
+  endDate              DateTime
+  timezone             String               @default("UTC")
+  maxAttendees         Int?
+  registrationCount    Int                  @default(0)
+  attendeeCount        Int                  @default(0)
+  price                Decimal              @default(0) @db.Decimal(10, 2)
+  currency             String               @default("USD")
+  isFree               Boolean              @default(true)
+  registrationDeadline DateTime?
+  organizerName        String?
+  organizerEmail       String?
+  speakers             Json?
+  agenda               Json?
+  sponsors             Json?
+  tags                 String[]             @default([])
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  registrations        EventRegistration[]
+
+  @@index([eventType])
+  @@index([status])
+  @@index([startDate])
+  @@index([slug])
+}
+
+model EventRegistration {
+  id                  String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  eventId             String
+  userId              String?
+  email               String
+  name                String
+  company             String?
+  jobTitle            String?
+  dietaryRestrictions String?
+  specialRequirements String?
+  ticketType          String          @default("general")
+  attended            Boolean         @default(false)
+  checkedInAt         DateTime?
+  confirmationSent    Boolean         @default(false)
+  reminderSent        Boolean         @default(false)
+  feedbackSubmitted   Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  event               CommunityEvent  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user                User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([eventId, email])
+  @@index([eventId])
+  @@index([userId])
+  @@index([email])
+}
+
+// ============================================
+// COMMUNITY PAGE - Shared Resources
+// ============================================
+
+model SharedResource {
+  id            String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  authorId      String
+  title         String
+  slug          String             @unique
+  description   String?            @db.Text
+  resourceType  ResourceType
+  category      String?
+  thumbnailUrl  String?
+  fileUrl       String?
+  fileSize      Int?
+  fileName      String?
+  externalUrl   String?
+  sourceCodeUrl String?
+  version       String?
+  compatibility String[]           @default([])
+  downloadCount Int                @default(0)
+  viewCount     Int                @default(0)
+  likeCount     Int                @default(0)
+  rating        Decimal            @default(0) @db.Decimal(2, 1)
+  reviewCount   Int                @default(0)
+  isFeatured    Boolean            @default(false)
+  isVerified    Boolean            @default(false)
+  isPublished   Boolean            @default(false)
+  tags          String[]           @default([])
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  author        User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  downloads     ResourceDownload[]
+
+  @@index([authorId])
+  @@index([resourceType])
+  @@index([category])
+  @@index([isFeatured])
+  @@index([isPublished])
+  @@index([slug])
+}
+
+model ResourceDownload {
+  id         String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  resourceId String
+  userId     String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime       @default(now())
+  resource   SharedResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  user       User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([resourceId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============================================
+// COMMUNITY PAGE - User Contributions
+// ============================================
+
+model UserContribution {
+  id              String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId          String    @unique
+  totalPoints     Int       @default(0)
+  forumPosts      Int       @default(0)
+  forumComments   Int       @default(0)
+  acceptedAnswers Int       @default(0)
+  resourcesShared Int       @default(0)
+  eventsAttended  Int       @default(0)
+  helpfulVotes    Int       @default(0)
+  badgeCount      Int       @default(0)
+  badges          Json      @default("[]")
+  rank            String    @default("newcomer")
+  streak          Int       @default(0)
+  lastActivityAt  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([totalPoints])
+  @@index([rank])
+}
+
+model ContributionActivity {
+  id            String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId        String
+  activityType  String
+  points        Int
+  referenceId   String?
+  referenceType String?
+  description   String?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([activityType])
+  @@index([createdAt])
+}
+
+// ============================================
+// STATUS PAGE
+// ============================================
+
+model ServiceStatus {
+  id              String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  name            String
+  slug            String            @unique
+  description     String?
+  category        String?
+  status          ServiceStatusType @default(operational)
+  uptimePercent   Decimal           @default(100.00) @db.Decimal(5, 2)
+  lastIncidentAt  DateTime?
+  isPublic        Boolean           @default(true)
+  sortOrder       Int               @default(0)
+  healthCheckUrl  String?
+  lastHealthCheck DateTime?
+  responseTimeMs  Int?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  history         StatusHistory[]
+
+  @@index([status])
+  @@index([category])
+  @@index([isPublic])
+  @@index([slug])
+}
+
+model StatusHistory {
+  id             String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  serviceId      String
+  status         ServiceStatusType
+  uptimePercent  Decimal?          @db.Decimal(5, 2)
+  responseTimeMs Int?
+  date           DateTime          @db.Date
+  createdAt      DateTime          @default(now())
+  service        ServiceStatus     @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, date])
+  @@index([serviceId])
+  @@index([date])
+}
+
+model Incident {
+  id                 String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  title              String
+  slug               String             @unique
+  severity           IncidentSeverity   @default(minor)
+  status             IncidentStatusType @default(investigating)
+  description        String?            @db.Text
+  affectedServices   String[]           @default([])
+  startedAt          DateTime           @default(now())
+  identifiedAt       DateTime?
+  resolvedAt         DateTime?
+  postmortemUrl      String?
+  postmortemPublished Boolean           @default(false)
+  isPublic           Boolean            @default(true)
+  notificationsSent  Boolean            @default(false)
+  createdBy          String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  updates            IncidentUpdate[]
+
+  @@index([severity])
+  @@index([status])
+  @@index([startedAt])
+  @@index([isPublic])
+  @@index([slug])
+}
+
+model IncidentUpdate {
+  id         String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  incidentId String
+  status     IncidentStatusType
+  message    String             @db.Text
+  isInternal Boolean            @default(false)
+  createdBy  String?
+  createdAt  DateTime           @default(now())
+  incident   Incident           @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+  @@index([createdAt])
+}
+
+model MaintenanceWindow {
+  id                String                @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  title             String
+  description       String?               @db.Text
+  affectedServices  String[]              @default([])
+  status            MaintenanceStatusType @default(scheduled)
+  scheduledStart    DateTime
+  scheduledEnd      DateTime
+  actualStart       DateTime?
+  actualEnd         DateTime?
+  impact            String?
+  notificationsSent Boolean               @default(false)
+  reminderSent      Boolean               @default(false)
+  createdBy         String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([status])
+  @@index([scheduledStart])
+}
+
+model StatusSubscription {
+  id                String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  email             String   @unique
+  userId            String?
+  services          String[] @default([])
+  notifyIncidents   Boolean  @default(true)
+  notifyMaintenance Boolean  @default(true)
+  notifyResolutions Boolean  @default(true)
+  isVerified        Boolean  @default(false)
+  verificationToken String?
+  unsubscribeToken  String   @unique
+  createdAt         DateTime @default(now())
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([userId])
+  @@index([isVerified])
+}
+
+// ============================================
+// UPDATE USER MODEL - Add these relations
+// ============================================
+// Add these fields to your existing User model:
+//
+// emailVerificationTokens EmailVerificationToken[]
+// courseEnrollments       CourseEnrollment[]
+// webinarRegistrations    WebinarRegistration[]
+// userCertifications      UserCertification[]
+// forumPosts              ForumPost[]
+// forumComments           ForumComment[]
+// forumVotes              ForumVote[]
+// eventRegistrations      EventRegistration[]
+// sharedResources         SharedResource[]
+// resourceDownloads       ResourceDownload[]
+// contribution            UserContribution?
+// contributionActivities  ContributionActivity[]
+// statusSubscriptions     StatusSubscription[]
+
+// ============================================
+// UPDATE ORGANIZATION MODEL - Add these fields
+// ============================================
+// Add these fields to your existing Organization model:
+//
+// industry              String?
+// companySize           String?
+// primaryComplianceGoal String?
+// howDidYouHear         String?
+// onboardingCompleted   Boolean @default(false)
+// onboardingStep        Int     @default(0)

@@ -621,9 +621,9 @@ Contact our enterprise team for custom pricing if:
 - ❌ Security standards (no compromises)
 
 ### Contact Enterprise Sales
-- 📧 enterprise@complyeasy.ai
+- 📧 enterprise@complyeasyai.com
 - 📞 1-800-COMPLY-AI ext. 2
-- 💬 Schedule call: complyeasy.ai/contact
+- 💬 Schedule call: complyeasyai.com/contact
 
 ---
 
@@ -647,7 +647,7 @@ Contact our enterprise team for custom pricing if:
 - 📥 Export your data before deletion
 
 ### Start Free Trial
-Visit: **complyeasy.ai/trial**
+Visit: **complyeasyai.com/trial**
 
 ---
 
@@ -728,7 +728,7 @@ Partial. Foundation offers monthly (20% premium). Other tiers are annual only fo
 ✅ Self-service (free), we provide docs, videos, templates. White-glove onboarding included in Growth+ tiers.
 
 ### Can I get a demo?
-✅ Absolutely! Book at complyeasy.ai/demo or start free trial immediately.
+✅ Absolutely! Book at complyeasyai.com/demo or start free trial immediately.
 
 ### Do prices increase?
 📈 Never for existing customers (price lock). New customers may see annual 3-5% increases for inflation.
@@ -739,11 +739,11 @@ Partial. Foundation offers monthly (20% premium). Other tiers are annual only fo
 
 **Questions about pricing?**
 
-- 📧 Email: sales@complyeasy.ai
+- 📧 Email: sales@complyeasyai.com
 - 📞 Phone: 1-800-COMPLY-AI
-- 💬 Live Chat: complyeasy.ai
-- 📅 Schedule Call: complyeasy.ai/contact
-- 🧮 ROI Calculator: complyeasy.ai/roi
+- 💬 Live Chat: complyeasyai.com
+- 📅 Schedule Call: complyeasyai.com/contact
+- 🧮 ROI Calculator: complyeasyai.com/roi
 
 **We're here to help you find the right tier for your needs!**
 

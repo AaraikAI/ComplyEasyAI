@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ViewState, ComplianceFramework, RiskItem } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
@@ -13,8 +14,6 @@ import { RiskManagement } from './components/RiskManagement';
 import { MyTasks } from './components/MyTasks';
 import { Integrations } from './components/Integrations';
 import { Settings } from './components/Settings';
-// Lazy load AI features for code splitting and bundle optimization
-import { lazy, Suspense } from 'react';
 import ACOSDashboard from './components/ACOSDashboard';
 import SecurityFeatures from './components/SecurityFeatures';
 import RealTimeAnalytics from './components/RealTimeAnalytics';
@@ -26,6 +25,13 @@ import { AIRMFAssessments } from './components/AIRMFAssessments';
 import { EUAIActDashboard } from './components/EUAIActDashboard';
 import { DMAGatekeeperManagement } from './components/DMAGatekeeperManagement';
 import { DSAPlatformManagement } from './components/DSAPlatformManagement';
+
+// Lazy load public pages for code splitting
+const SignupPage = lazy(() => import('./components/SignupPage'));
+const LearnPage = lazy(() => import('./components/LearnPage'));
+const CommunityPage = lazy(() => import('./components/CommunityPage'));
+const StatusPage = lazy(() => import('./components/StatusPage'));
+const DocsPage = lazy(() => import('./components/DocsPage'));
 
 const PolicyGenerator = lazy(() => import('./components/AIFeatures/PolicyGenerator').then(m => ({ default: m.PolicyGenerator })));
 const ContractAnalyzer = lazy(() => import('./components/AIFeatures/ContractAnalyzer').then(m => ({ default: m.ContractAnalyzer })));
@@ -242,11 +248,64 @@ const MainApp: React.FC = () => {
   );
 };
 
+// Public page wrapper component for lazy-loaded pages
+const PublicPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-white flex items-center gap-2">
+          <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+          <span>Loading...</span>
+        </div>
+      </div>
+    }>
+      {children}
+    </Suspense>
+  );
+};
+
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          {/* Public Routes - accessible without authentication */}
+          <Route path="/signup" element={
+            <PublicPageWrapper>
+              <SignupPage />
+            </PublicPageWrapper>
+          } />
+          <Route path="/learn" element={
+            <PublicPageWrapper>
+              <LearnPage />
+            </PublicPageWrapper>
+          } />
+          <Route path="/community" element={
+            <PublicPageWrapper>
+              <CommunityPage />
+            </PublicPageWrapper>
+          } />
+          <Route path="/status" element={
+            <PublicPageWrapper>
+              <StatusPage />
+            </PublicPageWrapper>
+          } />
+          <Route path="/docs" element={
+            <PublicPageWrapper>
+              <DocsPage />
+            </PublicPageWrapper>
+          } />
+          <Route path="/docs/*" element={
+            <PublicPageWrapper>
+              <DocsPage />
+            </PublicPageWrapper>
+          } />
+          
+          {/* Main App Route - handles authentication */}
+          <Route path="/*" element={<MainApp />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 };
 

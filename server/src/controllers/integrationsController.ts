@@ -15,6 +15,7 @@ import githubService from '../services/integrations/githubService';
 import slackService from '../services/integrations/slackService';
 import jiraService from '../services/integrations/jiraService';
 import awsService from '../services/integrations/awsService';
+import azureService from '../services/integrations/azureService';
 import prisma from '../config/database';
 
 // Store OAuth states temporarily (in production, use Redis)
@@ -824,6 +825,7 @@ export const syncAzureData: RequestHandler = async (req: Request, res: Response)
   try {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
+    const { type } = req.body;
 
     const integration = await prisma.integration.findUnique({
       where: {
@@ -839,16 +841,42 @@ export const syncAzureData: RequestHandler = async (req: Request, res: Response)
       return;
     }
 
-    // TODO: Implement actual Azure data sync
-    await prisma.integration.update({
-      where: { id: integration.id },
-      data: { lastSync: new Date() },
-    });
+    let result;
 
-    res.json({ message: 'Azure data synced successfully' });
-  } catch (error) {
+    switch (type) {
+      case 'resources':
+        result = await azureService.getResources(organizationId);
+        break;
+      case 'resource-groups':
+        result = await azureService.getResourceGroups(organizationId);
+        break;
+      case 'security-recommendations':
+        result = await azureService.getSecurityRecommendations(organizationId);
+        break;
+      case 'security-alerts':
+        result = await azureService.getSecurityAlerts(organizationId);
+        break;
+      case 'policy-compliance':
+        result = await azureService.getPolicyCompliance(organizationId);
+        break;
+      case 'users':
+        result = await azureService.getUsers(organizationId);
+        break;
+      case 'subscription':
+        result = await azureService.getSubscriptionDetails(organizationId);
+        break;
+      case 'compliance-scan':
+        result = await azureService.runComplianceScan(organizationId);
+        break;
+      default:
+        res.status(400).json({ error: 'Invalid sync type. Valid types: resources, resource-groups, security-recommendations, security-alerts, policy-compliance, users, subscription, compliance-scan' });
+        return;
+    }
+
+    res.json({ success: true, data: result });
+  } catch (error: any) {
     logger.error('Error syncing Azure data', error);
-    res.status(500).json({ error: 'Failed to sync Azure data' });
+    res.status(500).json({ error: error.message || 'Failed to sync Azure data' });
   }
 };
 
