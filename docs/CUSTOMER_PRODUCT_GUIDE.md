@@ -1546,13 +1546,13 @@ Run thousands of simulations to understand compliance risks and probabilities.
 
 **Support:**
 - 📧 support@complyeasyai.com
-- 📚 docs.complyeasy.ai
+- 📚 docs.complyeasyai.com
 - 💬 Community forum
 
 **Follow Us:**
 - 🐦 Twitter: @ComplyEasyAI
 - 💼 LinkedIn: ComplyEasyAI
-- 📘 Blog: blog.complyeasy.ai
+- 📘 Blog: blog.complyeasyai.com
 
 ---
 

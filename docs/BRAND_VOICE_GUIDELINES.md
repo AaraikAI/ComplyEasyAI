@@ -716,8 +716,8 @@ If no → revise for clarity, honesty, or helpfulness.
 - **Frontify**: Brand asset management
 
 **Contact**:
-- Brand questions: brand@complyeasy.ai
-- Marketing lead: marketing@complyeasy.ai
+- Brand questions: brand@complyeasyai.com
+- Marketing lead: marketing@complyeasyai.com
 - Voice feedback: Slack #brand-voice
 
 ---

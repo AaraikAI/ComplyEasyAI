@@ -190,10 +190,28 @@ export const api = {
       throw new Error('No access token received');
     },
 
-    register: async (name: string, email: string, organizationName?: string, password?: string) => {
+    register: async (
+      name: string, 
+      email: string, 
+      organizationName?: string, 
+      password?: string,
+      industry?: string,
+      companySize?: string,
+      primaryComplianceGoal?: string,
+      howDidYouHear?: string
+    ) => {
       return fetchAPI('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ name, email, organizationName, password }),
+        body: JSON.stringify({ 
+          name, 
+          email, 
+          organizationName, 
+          password,
+          industry,
+          companySize,
+          primaryComplianceGoal,
+          howDidYouHear
+        }),
       });
     },
 

@@ -430,7 +430,16 @@ class AuthController {
 
   async register(req: Request, res: Response): Promise<void> {
     try {
-      const { email, name, organizationName, password } = req.body;
+      const { 
+        email, 
+        name, 
+        organizationName, 
+        password,
+        industry,
+        companySize,
+        primaryComplianceGoal,
+        howDidYouHear
+      } = req.body;
 
       if (!email || !name) {
         throw new AppError('Email and name are required', 400);
@@ -503,11 +512,17 @@ class AuthController {
         return;
       }
 
-      // Create organization
+      // Create organization with signup details
       const organization = await prisma.organization.create({
         data: {
           name: organizationName || `${name}'s Organization`,
           plan: 'Foundation',
+          industry: industry || null,
+          companySize: companySize || null,
+          primaryComplianceGoal: primaryComplianceGoal || null,
+          howDidYouHear: howDidYouHear || null,
+          onboardingCompleted: false,
+          onboardingStep: 0,
         },
       });
 

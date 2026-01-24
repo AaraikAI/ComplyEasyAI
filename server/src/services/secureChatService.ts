@@ -540,9 +540,16 @@ class SecureChatService {
    * Process query using local AI with user context
    * Uses rule-based system with homomorphic encryption for sensitive data
    * Now includes knowledge base from documentation and tier-based access control
+   * 
+   * @param message - The full message including conversation history for context
+   * @param context - User context including tier and organization info
+   * @param currentQuery - Optional: The current user query WITHOUT history (for accurate intent detection)
    */
-  private async processQueryLocally(message: string, context: UserContext): Promise<string> {
-    const lowerMessage = message.toLowerCase();
+  private async processQueryLocally(message: string, context: UserContext, currentQuery?: string): Promise<string> {
+    // IMPORTANT: Use currentQuery (without history) for intent detection to avoid
+    // false matches from conversation history. Fall back to message if not provided.
+    const queryForIntent = (currentQuery || message).toLowerCase();
+    const lowerMessage = queryForIntent; // Use clean query for all keyword matching
     const userTier = context.tier;
 
     // ========================================================================
@@ -664,16 +671,51 @@ class SecureChatService {
       const feature = KNOWLEDGE_BASE.features.dma;
       const hasAccess = this.hasFeatureAccess(userTier, 'dma');
       
-      let response = `**Digital Markets Act (DMA) Compliance:**\n\n`;
-      response += `${feature.description}\n\n`;
-      response += `**Gatekeeper Thresholds:**\n`;
-      response += `- Revenue: €75B+ or Market Cap: €750B+\n`;
-      response += `- User Base: 45M+ EU users\n\n`;
+      let response = `**Digital Markets Act (DMA) - EU Regulation**\n\n`;
+      response += `The Digital Markets Act is an EU regulation (Regulation 2022/1925) that came into force in November 2022, designed to ensure fair and open digital markets.\n\n`;
+      
+      response += `**What is the DMA?**\n`;
+      response += `The DMA establishes rules for large digital platforms ("gatekeepers") to prevent anti-competitive practices and ensure a level playing field for businesses and consumers in the EU.\n\n`;
+      
+      response += `**Gatekeeper Designation Thresholds:**\n`;
+      response += `- 📊 **Revenue:** €7.5B+ EU turnover (3 years) OR €75B+ market cap\n`;
+      response += `- 👥 **User Base:** 45M+ monthly active end users AND 10K+ business users in EU\n`;
+      response += `- ⏱️ **Persistence:** Must meet thresholds for 3 consecutive years\n\n`;
+      
+      response += `**Core Platform Services Covered:**\n`;
+      response += `- Online intermediation services (marketplaces, app stores)\n`;
+      response += `- Search engines\n`;
+      response += `- Social networking services\n`;
+      response += `- Video-sharing platform services\n`;
+      response += `- Number-independent interpersonal communication services\n`;
+      response += `- Operating systems & cloud computing services\n`;
+      response += `- Advertising services\n\n`;
+      
+      response += `**Key Gatekeeper Obligations:**\n`;
+      response += `- ✅ Allow third-party interoperability\n`;
+      response += `- ✅ Allow users to uninstall pre-installed apps\n`;
+      response += `- ✅ Allow third-party app stores\n`;
+      response += `- ✅ Provide data portability\n`;
+      response += `- ✅ Fair access to ranking and search data\n`;
+      response += `- ❌ Cannot favor own services over third parties\n`;
+      response += `- ❌ Cannot prevent users from un-subscribing\n`;
+      response += `- ❌ Cannot use business user data to compete against them\n\n`;
+      
+      response += `**Penalties for Non-Compliance:**\n`;
+      response += `- Up to 10% of worldwide annual turnover\n`;
+      response += `- Up to 20% for repeated infringements\n`;
+      response += `- Periodic penalties up to 5% of average daily turnover\n\n`;
 
       if (!hasAccess) {
         response += this.getUpgradeMessage('DMA Compliance', userTier, feature.tiers);
       } else {
-        response += `✅ You have access to DMA Compliance with your ${userTier} tier! Navigate to DMA Dashboard to manage gatekeeper obligations.`;
+        response += `✅ You have access to DMA Compliance with your ${userTier} tier!\n\n`;
+        response += `**ComplyEasyAI DMA Features:**\n`;
+        response += `- Gatekeeper designation tracking\n`;
+        response += `- 20+ obligation management and monitoring\n`;
+        response += `- Compliance evidence collection\n`;
+        response += `- Reporting and audit trail\n\n`;
+        response += `Navigate to **DMA Dashboard** to manage your gatekeeper obligations.`;
       }
 
       return response;
@@ -683,17 +725,45 @@ class SecureChatService {
       const feature = KNOWLEDGE_BASE.features.dsa;
       const hasAccess = this.hasFeatureAccess(userTier, 'dsa');
       
-      let response = `**Digital Services Act (DSA) Compliance:**\n\n`;
-      response += `${feature.description}\n\n`;
+      let response = `**Digital Services Act (DSA) - EU Regulation**\n\n`;
+      response += `The Digital Services Act is an EU regulation (Regulation 2022/2065) that establishes rules for online intermediaries and platforms, focusing on user safety and transparency.\n\n`;
+      
+      response += `**What is the DSA?**\n`;
+      response += `The DSA creates a comprehensive framework for online platforms operating in the EU, with obligations around content moderation, transparency, and user protection.\n\n`;
+      
       response += `**Platform Classifications:**\n`;
-      response += `- VLOP: Very Large Online Platform (45M+ EU users)\n`;
-      response += `- VLOSE: Very Large Online Search Engine (45M+ EU users)\n`;
-      response += `- Other platforms: All online intermediaries\n\n`;
+      response += `- 🔵 **VLOP (Very Large Online Platform):** 45M+ monthly active EU users\n`;
+      response += `- 🔵 **VLOSE (Very Large Online Search Engine):** 45M+ monthly active EU users\n`;
+      response += `- 🟢 **Online Platforms:** Hosting services that store and disseminate content\n`;
+      response += `- ⚪ **Hosting Services:** Services that store information\n`;
+      response += `- ⚪ **Intermediary Services:** All other online intermediaries\n\n`;
+      
+      response += `**Key DSA Obligations:**\n`;
+      response += `- 📋 Transparency reporting (content moderation, algorithmic systems)\n`;
+      response += `- ⚠️ Illegal content reporting mechanisms\n`;
+      response += `- 🔍 Risk assessments for systemic risks (VLOPs/VLOSEs)\n`;
+      response += `- 📢 Advertisement repository requirements\n`;
+      response += `- 👤 Trusted flaggers program\n`;
+      response += `- 🛡️ Protection of minors\n`;
+      response += `- 🤖 Recommender system transparency\n\n`;
+      
+      response += `**Penalties for Non-Compliance:**\n`;
+      response += `- Up to 6% of worldwide annual turnover\n`;
+      response += `- Periodic penalties up to 5% of average daily turnover\n`;
+      response += `- Potential service restrictions in severe cases\n\n`;
 
       if (!hasAccess) {
         response += this.getUpgradeMessage('DSA Compliance', userTier, feature.tiers);
       } else {
-        response += `✅ You have access to DSA Compliance with your ${userTier} tier! Navigate to DSA Dashboard to manage platform compliance.`;
+        response += `✅ You have access to DSA Compliance with your ${userTier} tier!\n\n`;
+        response += `**ComplyEasyAI DSA Features:**\n`;
+        response += `- Platform registration and classification\n`;
+        response += `- Content moderation tracking\n`;
+        response += `- Illegal content report management\n`;
+        response += `- Advertisement repository\n`;
+        response += `- Risk assessment tools\n`;
+        response += `- Transparency report generation\n\n`;
+        response += `Navigate to **DSA Dashboard** to manage your platform compliance.`;
       }
 
       return response;
@@ -1105,8 +1175,9 @@ class SecureChatService {
         : '';
 
       // Process query locally with context
+      // Pass the original message separately for accurate intent detection (without history contamination)
       const enhancedMessage = message + historyContext + fileContextStr;
-      const response = await this.processQueryLocally(enhancedMessage, context);
+      const response = await this.processQueryLocally(enhancedMessage, context, message);
 
       // Update conversation with new messages
       if (conversation) {
