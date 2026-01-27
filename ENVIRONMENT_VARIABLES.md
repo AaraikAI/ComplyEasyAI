@@ -57,13 +57,13 @@ This document provides a comprehensive guide to all environment variables used i
 - **`SENDGRID_FROM_EMAIL`** ⚠️
   - **Description:** Email address to send emails from
   - **Format:** Valid email address
-  - **Example:** `noreply@complyeasy.ai`
+  - **Example:** `noreply@complyeasyai.com`
   - **Note:** Must be verified in SendGrid
 
 - **`CORS_ORIGIN`** ⚠️
   - **Description:** Allowed origin for CORS requests
   - **Format:** URL
-  - **Example:** `http://localhost:3000` (development) or `https://app.complyeasy.ai` (production)
+  - **Example:** `http://localhost:3000` (development) or `https://app.complyeasyai.com` (production)
   - **Security:** Restrict to your frontend domain in production
 
 ---
@@ -85,12 +85,12 @@ This document provides a comprehensive guide to all environment variables used i
 - **`API_URL`**
   - **Description:** Base URL of the API
   - **Default:** `http://localhost:5000`
-  - **Example:** `https://api.complyeasy.ai`
+  - **Example:** `https://api.complyeasyai.com`
 
 - **`CLIENT_URL`**
   - **Description:** Frontend application URL
   - **Default:** `http://localhost:3000`
-  - **Example:** `https://app.complyeasy.ai`
+  - **Example:** `https://app.complyeasyai.com`
 
 #### JWT Configuration
 - **`JWT_EXPIRES_IN`**
@@ -174,7 +174,7 @@ This document provides a comprehensive guide to all environment variables used i
 
 - **`GOOGLE_CALLBACK_URL`**
   - **Description:** OAuth callback URL
-  - **Format:** `https://api.complyeasy.ai/api/auth/google/callback`
+  - **Format:** `https://api.complyeasyai.com/api/auth/google/callback`
 
 ##### GitHub OAuth
 - **`GITHUB_CLIENT_ID`**
@@ -185,7 +185,7 @@ This document provides a comprehensive guide to all environment variables used i
   - **Description:** GitHub OAuth app client secret
 
 - **`GITHUB_CALLBACK_URL`**
-  - **Format:** `https://api.complyeasy.ai/api/auth/github/callback`
+  - **Format:** `https://api.complyeasyai.com/api/auth/github/callback`
 
 ##### Slack OAuth
 - **`SLACK_CLIENT_ID`**
@@ -196,7 +196,7 @@ This document provides a comprehensive guide to all environment variables used i
   - **Description:** Slack app client secret
 
 - **`SLACK_CALLBACK_URL`**
-  - **Format:** `https://api.complyeasy.ai/api/auth/slack/callback`
+  - **Format:** `https://api.complyeasyai.com/api/auth/slack/callback`
 
 ##### Jira OAuth
 - **`JIRA_CLIENT_ID`**
@@ -207,7 +207,7 @@ This document provides a comprehensive guide to all environment variables used i
   - **Description:** Jira OAuth app client secret
 
 - **`JIRA_CALLBACK_URL`**
-  - **Format:** `https://api.complyeasy.ai/api/auth/jira/callback`
+  - **Format:** `https://api.complyeasyai.com/api/auth/jira/callback`
 
 #### Security Configuration
 - **`RATE_LIMIT_WINDOW_MS`**
@@ -234,7 +234,7 @@ Frontend variables are prefixed with `VITE_` and are located in `.env.local` (ro
 ### Required
 - **`VITE_API_URL`** ⚠️
   - **Description:** Backend API URL
-  - **Example:** `http://localhost:3001/api` (development) or `https://api.complyeasy.ai/api` (production)
+  - **Example:** `http://localhost:3001/api` (development) or `https://api.complyeasyai.com/api` (production)
 
 ### Optional
 - **`GEMINI_API_KEY`**
@@ -257,7 +257,7 @@ LOG_LEVEL=debug
 ```bash
 NODE_ENV=production
 PORT=3001
-CORS_ORIGIN=https://app.complyeasy.ai
+CORS_ORIGIN=https://app.complyeasyai.com
 LOG_LEVEL=warn
 ```
 

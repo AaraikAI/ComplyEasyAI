@@ -93,7 +93,7 @@ heroku config:set \
   ENCRYPTION_KEY="$(openssl rand -hex 32)" \
   GEMINI_API_KEY="your-gemini-api-key" \
   SENDGRID_API_KEY="your-sendgrid-key" \
-  FROM_EMAIL="noreply@complyeasy.ai" \
+  FROM_EMAIL="noreply@complyeasyai.com" \
   AWS_ACCESS_KEY_ID="your-aws-key" \
   AWS_SECRET_ACCESS_KEY="your-aws-secret" \
   AWS_REGION="us-east-1" \
@@ -146,15 +146,15 @@ git push heroku main
 
 ```bash
 # Add custom domain
-heroku domains:add www.complyeasy.ai --app complyeasy-backend
-heroku domains:add www.complyeasy.ai --app complyeasy-frontend
+heroku domains:add www.complyeasyai.com --app complyeasy-backend
+heroku domains:add www.complyeasyai.com --app complyeasy-frontend
 
 # Get DNS targets
 heroku domains --app complyeasy-backend
 
 # Add CNAME records in your DNS provider:
-# api.complyeasy.ai → <heroku-dns-target>
-# www.complyeasy.ai → <heroku-dns-target>
+# api.complyeasyai.com → <heroku-dns-target>
+# www.complyeasyai.com → <heroku-dns-target>
 ```
 
 ---
@@ -266,7 +266,7 @@ sudo nano /etc/nginx/sites-available/complyeasy
 # Add configuration:
 server {
     listen 80;
-    server_name api.complyeasy.ai;
+    server_name api.complyeasyai.com;
 
     location / {
         proxy_pass http://localhost:3001;
@@ -303,7 +303,7 @@ sudo systemctl restart nginx
 sudo apt install -y certbot python3-certbot-nginx
 
 # Get SSL certificate
-sudo certbot --nginx -d api.complyeasy.ai
+sudo certbot --nginx -d api.complyeasyai.com
 
 # Auto-renewal is configured automatically
 # Test renewal
@@ -498,7 +498,7 @@ Create comprehensive `.env.production`:
 # Server
 NODE_ENV=production
 PORT=3001
-FRONTEND_URL=https://www.complyeasy.ai
+FRONTEND_URL=https://www.complyeasyai.com
 
 # Database
 DATABASE_URL=postgresql://user:password@host:5432/complyeasy?sslmode=require
@@ -512,7 +512,7 @@ GEMINI_API_KEY=<your-gemini-api-key>
 
 # Email
 SENDGRID_API_KEY=<your-sendgrid-key>
-FROM_EMAIL=noreply@complyeasy.ai
+FROM_EMAIL=noreply@complyeasyai.com
 
 # Storage
 AWS_ACCESS_KEY_ID=<your-aws-key>
@@ -527,19 +527,19 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 # OAuth (if enabled)
 GOOGLE_CLIENT_ID=<google-client-id>
 GOOGLE_CLIENT_SECRET=<google-client-secret>
-GOOGLE_REDIRECT_URI=https://api.complyeasy.ai/api/integrations/google/callback
+GOOGLE_REDIRECT_URI=https://api.complyeasyai.com/api/integrations/google/callback
 
 GITHUB_CLIENT_ID=<github-client-id>
 GITHUB_CLIENT_SECRET=<github-client-secret>
-GITHUB_REDIRECT_URI=https://api.complyeasy.ai/api/integrations/github/callback
+GITHUB_REDIRECT_URI=https://api.complyeasyai.com/api/integrations/github/callback
 
 SLACK_CLIENT_ID=<slack-client-id>
 SLACK_CLIENT_SECRET=<slack-client-secret>
-SLACK_REDIRECT_URI=https://api.complyeasy.ai/api/integrations/slack/callback
+SLACK_REDIRECT_URI=https://api.complyeasyai.com/api/integrations/slack/callback
 
 JIRA_CLIENT_ID=<jira-client-id>
 JIRA_CLIENT_SECRET=<jira-client-secret>
-JIRA_REDIRECT_URI=https://api.complyeasy.ai/api/integrations/jira/callback
+JIRA_REDIRECT_URI=https://api.complyeasyai.com/api/integrations/jira/callback
 
 # Advanced Features (optional)
 ETHEREUM_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/your-api-key
@@ -576,12 +576,12 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ```bash
 # Test API health
-curl https://api.complyeasy.ai/health
+curl https://api.complyeasyai.com/health
 
 # Expected: { "status": "ok", "database": "connected", ... }
 
 # Test authentication
-curl -X POST https://api.complyeasy.ai/api/auth/register \
+curl -X POST https://api.complyeasyai.com/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
@@ -595,11 +595,11 @@ curl -X POST https://api.complyeasy.ai/api/auth/register \
 
 ```bash
 # Point DNS records to your server:
-# A record: api.complyeasy.ai → <server-ip>
-# A record: www.complyeasy.ai → <server-ip>
+# A record: api.complyeasyai.com → <server-ip>
+# A record: www.complyeasyai.com → <server-ip>
 
 # Verify DNS propagation
-dig api.complyeasy.ai +short
+dig api.complyeasyai.com +short
 
 # SSL should be configured via:
 # - Heroku: Automatic with paid dynos
@@ -649,8 +649,8 @@ Sentry.init({
 ```bash
 # Use UptimeRobot or similar
 # Monitor endpoints:
-# - https://api.complyeasy.ai/health (every 5 minutes)
-# - https://www.complyeasy.ai (every 5 minutes)
+# - https://api.complyeasyai.com/health (every 5 minutes)
+# - https://www.complyeasyai.com (every 5 minutes)
 
 # Configure alerts via email/SMS/Slack
 ```
