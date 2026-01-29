@@ -1,16 +1,17 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
 } from 'recharts';
 import { Shield, AlertTriangle, CheckCircle, TrendingUp, ChevronRight } from 'lucide-react';
 import { ComplianceFramework, ViewState, RiskItem } from '../types';
+import { useOnboardingTrigger } from '../hooks/useOnboarding';
 
 interface DashboardProps {
   frameworks: ComplianceFramework[];
@@ -69,6 +70,9 @@ const generateTrendData = (frameworks: ComplianceFramework[]) => {
 export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavigate }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartReady, setChartReady] = useState(false);
+
+  // Onboarding: auto-trigger welcome flow for first-time users (handled in context)
+  // Dashboard-level trigger not needed since context auto-starts welcome on mount
 
   // Wait for container to be ready before rendering chart
   useEffect(() => {

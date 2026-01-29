@@ -5,6 +5,7 @@ import { ComplianceFramework, ComplianceStatus } from '../types';
 import { CheckCircle, AlertTriangle, Clock, ArrowRight, Plus, X, Search, Trash2, Download } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useOnboardingTrigger } from '../hooks/useOnboarding';
 
 interface FrameworksProps {
   activeFrameworks: ComplianceFramework[];
@@ -18,6 +19,9 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingFramework, setDeletingFramework] = useState<string | null>(null);
+
+  // Onboarding: trigger first_framework flow when user visits with no frameworks
+  useOnboardingTrigger('first_framework', activeFrameworks.length === 0);
 
   // Check if we need to navigate to a specific control (from Red Team)
   useEffect(() => {
@@ -157,7 +161,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-onboarding="frameworks-page">
       <div className="flex justify-between items-center">
         <div>
            <h2 className="text-lg font-bold text-gray-900">Active Frameworks</h2>
@@ -172,8 +176,9 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
             <Download size={18} />
             <span>Export</span>
           </button>
-          <button 
+          <button
             onClick={() => setIsModalOpen(true)}
+            data-onboarding="add-framework-btn"
             className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors shadow-sm"
           >
             <Plus size={18} />

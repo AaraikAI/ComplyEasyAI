@@ -26,7 +26,38 @@
                 800: '#075985',
                 900: '#0c4a6e',
               }
-            }
+            },
+            animation: {
+              'fadeIn': 'fadeIn 0.3s ease-out',
+              'confetti-fall': 'confettiFall 3s ease-in forwards',
+              'checkmark-draw': 'checkmarkDraw 0.6s ease-out 0.3s forwards',
+              'onboarding-modal-in': 'onboardingModalIn 0.3s ease-out',
+              'onboarding-slide-up': 'onboardingSlideUp 0.25s ease-out',
+              'pulse-slow': 'pulse 4s ease-in-out infinite',
+              'pulse-slow-delay': 'pulse 4s ease-in-out 2s infinite',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              confettiFall: {
+                '0%': { transform: 'translateY(0) rotate(0deg)', opacity: '1' },
+                '100%': { transform: 'translateY(100vh) rotate(720deg)', opacity: '0' },
+              },
+              checkmarkDraw: {
+                '0%': { strokeDashoffset: '24' },
+                '100%': { strokeDashoffset: '0' },
+              },
+              onboardingModalIn: {
+                '0%': { opacity: '0', transform: 'scale(0.95)' },
+                '100%': { opacity: '1', transform: 'scale(1)' },
+              },
+              onboardingSlideUp: {
+                '0%': { opacity: '0', transform: 'translateY(8px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+            },
           }
         }
       }

@@ -90,6 +90,8 @@ model Organization {
   webhooks                   Webhook[]
   webhookEvents              WebhookEvent[]
   zeroTrustPolicies          ZeroTrustPolicy[]
+  onboardingProgress         OnboardingProgress[]
+  onboardingChecklist        OnboardingChecklist?
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -147,6 +149,7 @@ model User {
   userCertifications       UserCertification[]
   contribution             UserContribution?
   webinarRegistrations     WebinarRegistration[]
+  onboardingProgress       OnboardingProgress[]
 
   @@index([email])
   @@index([organizationId])
@@ -3037,4 +3040,92 @@ enum MaintenanceStatus {
   in_progress
   completed
   cancelled
+}
+
+// ============================================================================
+// ONBOARDING SYSTEM
+// ============================================================================
+
+model OnboardingProgress {
+  id              String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Flow tracking
+  currentFlow     String   @default("welcome")
+  currentStep     Int      @default(0)
+
+  // Milestone completions
+  welcomeCompleted          Boolean @default(false)
+  tierTourCompleted         Boolean @default(false)
+  firstFrameworkCompleted   Boolean @default(false)
+  firstEvidenceCompleted    Boolean @default(false)
+  firstControlPassCompleted Boolean @default(false)
+  inviteTeamCompleted       Boolean @default(false)
+  integrationSetupCompleted Boolean @default(false)
+  aiFeatureTrialCompleted   Boolean @default(false)
+
+  // Tier-specific milestones
+  acosDigitalTwinTourCompleted    Boolean @default(false)
+  advancedFeaturesTourCompleted   Boolean @default(false)
+
+  // Engagement tracking
+  tooltipsShown       Json     @default("[]")
+  skippedFlows        Json     @default("[]")
+  completedAt         DateTime?
+  lastActiveFlow      String?
+  lastActiveStep      Int?
+
+  // Preferences
+  showHints           Boolean  @default(true)
+  reducedMotion       Boolean  @default(false)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @default(now()) @updatedAt
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+model OnboardingEvent {
+  id              String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId          String
+  organizationId  String
+  eventType       String
+  flowName        String?
+  stepIndex       Int?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([eventType])
+}
+
+model OnboardingChecklist {
+  id              String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Setup checklist items
+  profileCompleted        Boolean @default(false)
+  teamInvited             Boolean @default(false)
+  firstFrameworkAdded     Boolean @default(false)
+  firstEvidenceUploaded   Boolean @default(false)
+  firstControlPassed      Boolean @default(false)
+  integrationConnected    Boolean @default(false)
+  aiFeatureUsed           Boolean @default(false)
+  firstReportGenerated    Boolean @default(false)
+
+  // Growth-tier specific
+  acosConfigured          Boolean @default(false)
+  digitalTwinActivated    Boolean @default(false)
+
+  completedAt             DateTime?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @default(now()) @updatedAt
+
+  @@unique([organizationId])
 }

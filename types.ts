@@ -477,6 +477,87 @@ export const formatLimit = (value: number): string => {
   return value.toString();
 };
 
+// ============================================================================
+// ONBOARDING SYSTEM
+// ============================================================================
+
+export type OnboardingFlowName =
+  | 'welcome'
+  | 'tier_tour'
+  | 'first_framework'
+  | 'first_evidence'
+  | 'first_control'
+  | 'invite_team'
+  | 'integration_setup'
+  | 'ai_feature_trial'
+  | 'acos_digital_twin'
+  | 'advanced_features'
+  | 'complete';
+
+export interface OnboardingProgress {
+  id: string;
+  userId: string;
+  organizationId: string;
+  currentFlow: OnboardingFlowName;
+  currentStep: number;
+  welcomeCompleted: boolean;
+  tierTourCompleted: boolean;
+  firstFrameworkCompleted: boolean;
+  firstEvidenceCompleted: boolean;
+  firstControlPassCompleted: boolean;
+  inviteTeamCompleted: boolean;
+  integrationSetupCompleted: boolean;
+  aiFeatureTrialCompleted: boolean;
+  acosDigitalTwinTourCompleted: boolean;
+  advancedFeaturesTourCompleted: boolean;
+  tooltipsShown: string[];
+  skippedFlows: string[];
+  completedAt: string | null;
+  lastActiveFlow: string | null;
+  lastActiveStep: number | null;
+  showHints: boolean;
+  reducedMotion: boolean;
+}
+
+export interface OnboardingChecklist {
+  id: string;
+  organizationId: string;
+  profileCompleted: boolean;
+  teamInvited: boolean;
+  firstFrameworkAdded: boolean;
+  firstEvidenceUploaded: boolean;
+  firstControlPassed: boolean;
+  integrationConnected: boolean;
+  aiFeatureUsed: boolean;
+  firstReportGenerated: boolean;
+  acosConfigured: boolean;
+  digitalTwinActivated: boolean;
+  completedAt: string | null;
+}
+
+export interface OnboardingStepConfig {
+  id: string;
+  title: string;
+  description: string;
+  targetSelector?: string;
+  targetRoute?: string;
+  position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
+  action?: 'click' | 'input' | 'navigate' | 'observe';
+  requiredTier?: TierName[];
+  showConfetti?: boolean;
+}
+
+export interface OnboardingFlowConfig {
+  id: OnboardingFlowName;
+  name: string;
+  description: string;
+  requiredTier?: TierName[];
+  steps: OnboardingStepConfig[];
+  triggerCondition?: string;
+  skippable: boolean;
+  estimatedMinutes: number;
+}
+
 export const formatPrice = (amount: number, showCents = false): string => {
   if (showCents) {
     return new Intl.NumberFormat('en-US', {
