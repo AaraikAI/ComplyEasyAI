@@ -8,6 +8,7 @@ import {
   Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare, Layers, Brain
 } from 'lucide-react';
 import { ComplianceChat } from './ComplianceChat';
+import { OnboardingOverlay, OnboardingChecklistWidget } from './Onboarding';
 
 interface LayoutProps {
   currentView: ViewState;
@@ -149,7 +150,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
           </button>
         </div>
 
-        <nav className="p-4 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+        <nav className="p-4 space-y-6 flex-1 overflow-y-auto custom-scrollbar" data-onboarding="sidebar-nav">
           <div className="space-y-1">
              <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Platform</p>
              {navItems.filter(item => item.roles.includes(user.role)).map((item) => {
@@ -159,6 +160,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                 <button
                   key={item.id}
                   onClick={() => { onNavigate(item.id as ViewState); setSidebarOpen(false); }}
+                  data-onboarding={`${item.id}-nav`}
                   className={`
                     w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors cursor-pointer
                     ${isActive ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
@@ -182,6 +184,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                 <button
                   key={item.id}
                   onClick={() => { onNavigate(item.id as ViewState); setSidebarOpen(false); }}
+                  data-onboarding={`${item.id}-nav`}
                   className={`
                     w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors cursor-pointer
                     ${isActive ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
@@ -199,6 +202,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                 <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Admin</p>
                 <button
                   onClick={() => { onNavigate('settings'); setSidebarOpen(false); }}
+                  data-onboarding="settings-nav"
                   className={`
                     w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors cursor-pointer
                     ${currentView === 'settings' ? 'bg-brand-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
@@ -236,7 +240,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
             >
               <Menu size={24} />
             </button>
-            <h1 className="text-2xl font-semibold text-gray-800 capitalize">
+            <h1 className="text-2xl font-semibold text-gray-800 capitalize" data-onboarding="dashboard-header">
               {currentView.replace('ai-', 'AI ').replace('-', ' ')}
             </h1>
           </div>
@@ -312,13 +316,17 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
         </header>
 
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50 relative">
-          <div className="max-w-7xl mx-auto animate-fadeIn pb-20">
+          <div className="max-w-7xl mx-auto animate-fadeIn pb-20" data-onboarding="dashboard-content">
             {children}
           </div>
         </main>
         
         <ComplianceChat onNavigate={onNavigate} currentView={currentView} />
       </div>
+
+      {/* Onboarding system */}
+      <OnboardingOverlay />
+      <OnboardingChecklistWidget />
     </div>
   );
 };

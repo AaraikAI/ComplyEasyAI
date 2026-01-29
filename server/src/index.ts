@@ -50,6 +50,9 @@ import evidenceVersionsRoutes from './routes/evidenceVersions';
 // NIST AI RMF Routes
 import aiRmfRoutes from './routes/aiRmf';
 
+// Onboarding Routes
+import onboardingRoutes from './routes/onboarding';
+
 // EU Regulations Routes
 import euRegulationsRoutes from './routes/euRegulations';
 
@@ -256,6 +259,9 @@ app.use('/api/security', apiLimiter, securityRoutes);
 // Webhook routes (Zapier, automation)
 app.use('/api/webhooks', apiLimiter, webhooksRoutes);
 app.use('/api/demo', apiLimiter, demoRoutes);
+
+// Onboarding routes
+app.use('/api/onboarding', apiLimiter, onboardingRoutes);
 
 // 404 handler
 app.use(notFound);

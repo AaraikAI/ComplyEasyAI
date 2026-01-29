@@ -3,6 +3,7 @@ import { Integration } from '../types';
 import { CheckCircle, Power, Search, X, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import { IntegrationModal } from './IntegrationModal';
+import { useOnboardingTrigger } from '../hooks/useOnboarding';
 
 // Comprehensive list of ALL available integrations
 const ALL_INTEGRATIONS: Integration[] = [
@@ -84,6 +85,9 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
   const [integrations, setIntegrations] = useState<Integration[]>(ALL_INTEGRATIONS);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Onboarding: trigger integration_setup flow on first visit (Essentials+ only)
+  useOnboardingTrigger('integration_setup', true);
 
   // Load real integration status from API
   useEffect(() => {
@@ -366,7 +370,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
   const totalCount = integrations.length;
 
   return (
-    <div className="p-6 space-y-6 animate-fadeIn">
+    <div className="p-6 space-y-6 animate-fadeIn" data-onboarding="integrations-page">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Integrations Catalog</h1>
