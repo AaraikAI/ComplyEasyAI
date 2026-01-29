@@ -3,6 +3,7 @@ import { ComplianceFramework, ComplianceStatus, ViewState } from '../types';
 import { ArrowLeft, CheckCircle, Circle, FileText, Upload, AlertTriangle, Loader2, Download, Plus, X, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useOnboarding } from '../hooks/useOnboarding';
 
 interface FrameworkControl {
   id: string;
@@ -25,6 +26,7 @@ interface FrameworkDetailsProps {
 
 export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, onBack, onDataChanged }) => {
   const { user } = useAuth();
+  const { completeMilestone, triggerCelebration, progress } = useOnboarding();
   const [controls, setControls] = useState<FrameworkControl[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [readinessScore, setReadinessScore] = useState(0);
@@ -312,6 +314,12 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
           setUploadSuccess(null);
         }, 5000);
       }
+
+      // Onboarding: trigger first_evidence milestone on first upload
+      if (progress && !progress.firstEvidenceCompleted) {
+        completeMilestone('first_evidence');
+        triggerCelebration('First Evidence Uploaded!');
+      }
     } catch (error: any) {
       console.error('Evidence upload failed:', error);
       const errorMessage = error.message || error.error || 'Unknown error';
@@ -384,6 +392,16 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       // Notify parent to refresh data
       if (onDataChanged) {
         onDataChanged();
+      }
+
+      // Onboarding: trigger first_control milestone when first control passes
+      if (
+        (newStatus === 'Compliant' || newStatus === 'Implemented') &&
+        progress &&
+        !progress.firstControlPassCompleted
+      ) {
+        completeMilestone('first_control');
+        triggerCelebration('First Control Passed!');
       }
     } catch (error: any) {
       console.error('Failed to update control status:', error);

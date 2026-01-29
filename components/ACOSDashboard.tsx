@@ -32,6 +32,7 @@ import {
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { GoalModal } from './GoalModal';
+import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { Plus, X } from 'lucide-react';
 import { HomomorphicAI } from './AIFeatures/HomomorphicAI';
 
@@ -70,6 +71,9 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
   const [warnings, setWarnings] = useState<EarlyWarning[]>([]);
   const [loading, setLoading] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
+
+  // Onboarding: trigger aCOS Digital Twin flow on first visit (Growth+ only)
+  useOnboardingTrigger('acos_digital_twin', true);
   const [editingGoal, setEditingGoal] = useState<any>(null);
   const [goalFilters, setGoalFilters] = useState<{ status?: string; framework?: string }>({});
 

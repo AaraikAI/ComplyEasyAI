@@ -3,6 +3,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ViewState, ComplianceFramework, RiskItem } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { OnboardingProvider } from './contexts/OnboardingContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
@@ -268,6 +269,7 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <OnboardingProvider>
         <Routes>
           {/* Public Routes - accessible without authentication */}
           <Route path="/signup" element={
@@ -304,6 +306,7 @@ const App: React.FC = () => {
           {/* Main App Route - handles authentication */}
           <Route path="/*" element={<MainApp />} />
         </Routes>
+        </OnboardingProvider>
       </AuthProvider>
     </BrowserRouter>
   );

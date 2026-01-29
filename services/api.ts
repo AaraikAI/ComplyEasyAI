@@ -1,4 +1,4 @@
-import { User, RiskItem, ComplianceFramework, AuditLog, Integration, TierName, SubscriptionDetails, UsageMetrics, Tier, TierComparison, UpgradePreview, Webhook, WebhookEvent, ApiKey, BillingCycle } from '../types';
+import { User, RiskItem, ComplianceFramework, AuditLog, Integration, TierName, SubscriptionDetails, UsageMetrics, Tier, TierComparison, UpgradePreview, Webhook, WebhookEvent, ApiKey, BillingCycle, OnboardingProgress, OnboardingChecklist } from '../types';
 
 // Backend API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -1743,6 +1743,78 @@ export const api = {
           body: JSON.stringify(updates),
         });
       },
+    },
+  },
+
+  // --- Onboarding ---
+  onboarding: {
+    getProgress: async (): Promise<{
+      progress: OnboardingProgress;
+      organizationPlan: TierName;
+      organizationName: string;
+      onboardingCompleted: boolean;
+    }> => {
+      return fetchAPI('/onboarding/progress');
+    },
+
+    updateProgress: async (updates: Partial<OnboardingProgress>): Promise<{ progress: OnboardingProgress }> => {
+      return fetchAPI('/onboarding/progress', {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
+    },
+
+    trackEvent: async (data: {
+      eventType: string;
+      flowName?: string;
+      stepIndex?: number;
+      metadata?: Record<string, any>;
+    }): Promise<{ event: any }> => {
+      return fetchAPI('/onboarding/event', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    completeMilestone: async (milestone: string): Promise<{ progress: OnboardingProgress }> => {
+      return fetchAPI('/onboarding/complete-milestone', {
+        method: 'POST',
+        body: JSON.stringify({ milestone }),
+      });
+    },
+
+    updatePreferences: async (prefs: {
+      showHints?: boolean;
+      reducedMotion?: boolean;
+    }): Promise<{ progress: OnboardingProgress }> => {
+      return fetchAPI('/onboarding/preferences', {
+        method: 'PUT',
+        body: JSON.stringify(prefs),
+      });
+    },
+
+    skipFlow: async (flowName: string): Promise<{ progress: OnboardingProgress }> => {
+      return fetchAPI('/onboarding/skip-flow', {
+        method: 'POST',
+        body: JSON.stringify({ flowName }),
+      });
+    },
+
+    reset: async (): Promise<{ progress: OnboardingProgress }> => {
+      return fetchAPI('/onboarding/reset', {
+        method: 'POST',
+      });
+    },
+
+    getChecklist: async (): Promise<{ checklist: OnboardingChecklist }> => {
+      return fetchAPI('/onboarding/checklist');
+    },
+
+    updateChecklist: async (updates: Partial<OnboardingChecklist>): Promise<{ checklist: OnboardingChecklist }> => {
+      return fetchAPI('/onboarding/checklist', {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      });
     },
   },
 };
