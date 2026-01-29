@@ -7,6 +7,7 @@ import { Save, User as UserIcon, Users, CreditCard, Layers, Power, Plus, X, Tras
 import { PaymentModal } from './PaymentModal';
 import PricingSection from './PricingSection';
 import FeatureMarketplace from './FeatureMarketplace';
+import { useOnboardingTrigger } from '../hooks/useOnboarding';
 
 interface SettingsProps {
   onNavigateToIntegrations?: () => void;
@@ -15,6 +16,9 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) => {
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'organization' | 'team' | 'integrations' | 'billing' | 'features'>('profile');
+
+  // Onboarding: trigger invite_team flow when user visits team tab
+  useOnboardingTrigger('invite_team', activeTab === 'team');
   
   // --- Team State ---
   const [users, setUsers] = useState<User[]>([]);

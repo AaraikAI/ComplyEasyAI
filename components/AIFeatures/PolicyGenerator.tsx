@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { generatePolicy } from '../../services/geminiService';
 import { FileText, Loader2, Save, ArrowLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { useOnboardingTrigger } from '../../hooks/useOnboarding';
 
 export const PolicyGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  // Onboarding: trigger ai_feature_trial flow on first use
+  useOnboardingTrigger('ai_feature_trial', true);
   // Check for preselected policy type from sessionStorage (e.g., from Red Team)
   const preselectedType = typeof window !== 'undefined' ? sessionStorage.getItem('preselectedPolicyType') : null;
   const [type, setType] = useState(preselectedType || 'Data Retention');
