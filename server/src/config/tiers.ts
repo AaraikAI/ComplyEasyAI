@@ -131,6 +131,8 @@ export interface TierAddOn {
   name: string;
   description: string;
   priceAnnual: number;
+  /** Optional one-time setup fee (e.g. On-Prem, Custom AI) */
+  priceOneTime?: number;
   stripePriceId?: string;
   availableForTiers: TierName[];
 }
@@ -440,12 +442,12 @@ const growthTier: Tier = {
 
   pricing: {
     annualMin: 42500,
-    annualMax: 51000,
-    monthlyMultiplier: 1.0, // Monthly billed annually: $3,542-$4,250/mo
+    annualMax: 65000,
+    monthlyMultiplier: 1.0, // Monthly billed annually: $3,542-$5,417/mo
     monthlyMin: 3542,
-    monthlyMax: 4250,
+    monthlyMax: 5417,
     netAfterStripeMin: 41233, // 42500 - (42500 * 0.029 + 0.30) = 41232.80
-    netAfterStripeMax: 49490, // 51000 - (51000 * 0.029 + 0.30) = 49490.40
+    netAfterStripeMax: 63115, // 65000 - (65000 * 0.029 + 0.30) = 63114.70
     margin: '88% margins',
   },
 
@@ -717,29 +719,47 @@ const visionaryTier: Tier = {
 };
 
 // ============================================================================
-// ADD-ONS
+// ADD-ONS (All Tiers unless noted)
 // ============================================================================
+const ALL_TIERS: TierName[] = ['Foundation', 'Essentials', 'Growth', 'Visionary'];
+
 export const tierAddOns: TierAddOn[] = [
   {
     id: 'custom-frameworks',
-    name: 'Custom Frameworks',
-    description: 'Create unlimited custom compliance frameworks tailored to your industry',
-    priceAnnual: 660, // Mid-point of $640-680 (10-15% below comp)
-    availableForTiers: ['Growth', 'Visionary'],
+    name: 'Custom Frameworks Add-On',
+    description: 'Build unlimited proprietary compliance frameworks. For regulated industries (defense, aerospace, pharma).',
+    priceAnnual: 2997,
+    availableForTiers: [...ALL_TIERS],
   },
   {
     id: 'on-prem-deployment',
     name: 'On-Premises Deployment',
-    description: 'Deploy ComplyEasyAI on your own infrastructure with full data control',
-    priceAnnual: 3200, // Mid-point of $3,000-3,400 (10-15% below comp)
-    availableForTiers: ['Visionary'],
+    description: 'Deploy on customer\'s AWS/Azure/GCP. Government, financial institutions, healthcare.',
+    priceOneTime: 19997,
+    priceAnnual: 9997,
+    availableForTiers: [...ALL_TIERS],
   },
   {
     id: 'custom-ai-models',
     name: 'Custom AI Models',
-    description: 'Fine-tuned AI models trained on your compliance data and requirements',
-    priceAnnual: 1920, // Mid-point of $1,800-2,040 (10-15% below comp)
-    availableForTiers: ['Visionary'],
+    description: 'Fine-tuned models on customer data. Enterprises with unique terminology/workflows.',
+    priceOneTime: 14997,
+    priceAnnual: 4997,
+    availableForTiers: [...ALL_TIERS],
+  },
+  {
+    id: 'vciso-service',
+    name: 'Dedicated vCISO Service',
+    description: 'Compliance advisory from certified experts. 10 hours/month consulting. For companies without internal GRC teams.',
+    priceAnnual: 9997,
+    availableForTiers: [...ALL_TIERS],
+  },
+  {
+    id: 'audit-bundling',
+    name: 'Audit Bundling (Partner Network)',
+    description: 'Pre-negotiated rates with audit firms. Variable $8,000–$30,000 depending on audit. Everyone getting certified.',
+    priceAnnual: 0, // Variable; contact sales
+    availableForTiers: [...ALL_TIERS],
   },
 ];
 

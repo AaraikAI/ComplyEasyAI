@@ -156,6 +156,8 @@ export interface TierAddOn {
   name: string;
   description: string;
   priceAnnual: number;
+  /** Optional one-time setup fee (e.g. On-Prem, Custom AI) */
+  priceOneTime?: number;
   availableForTiers: TierName[];
 }
 
@@ -340,6 +342,8 @@ export interface User {
   avatar: string;
   organizationId: string;
   lastLogin?: string;
+  /** Set by login/verify; used for tier-based feature gating */
+  organization?: { id: string; name: string; plan: TierName | string };
 }
 
 // Database Schema: Organization

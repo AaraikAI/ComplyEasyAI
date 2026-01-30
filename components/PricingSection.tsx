@@ -160,12 +160,12 @@ const TIERS: Record<TierName, Tier> = {
     targetAudience: 'Mid-market/MSPs (100-1k users)',
     pricing: {
       annualMin: 42500,
-      annualMax: 51000,
+      annualMax: 65000,
       monthlyMultiplier: 1.0,
       monthlyMin: 3542,
-      monthlyMax: 4250,
+      monthlyMax: 5417,
       netAfterStripeMin: 41233,
-      netAfterStripeMax: 49490,
+      netAfterStripeMax: 63115,
       margin: '88%',
     },
     limits: {
@@ -274,27 +274,45 @@ const TIERS: Record<TierName, Tier> = {
   },
 };
 
+const ALL_TIERS: TierName[] = ['Foundation', 'Essentials', 'Growth', 'Visionary'];
+
 const TIER_ADD_ONS: TierAddOn[] = [
   {
     id: 'custom-frameworks',
-    name: 'Custom Frameworks',
-    description: 'Create custom compliance frameworks',
-    priceAnnual: 660, // $640-680 (10-15% below comp)
-    availableForTiers: ['Growth', 'Visionary'],
+    name: 'Custom Frameworks Add-On',
+    description: 'Build unlimited proprietary compliance frameworks. For regulated industries (defense, aerospace, pharma).',
+    priceAnnual: 2997,
+    availableForTiers: [...ALL_TIERS],
   },
   {
     id: 'on-prem-deployment',
     name: 'On-Premises Deployment',
-    description: 'Deploy on your infrastructure',
-    priceAnnual: 3200, // $3,000-3,400 (10-15% below comp)
-    availableForTiers: ['Visionary'],
+    description: "Deploy on customer's AWS/Azure/GCP. Government, financial institutions, healthcare.",
+    priceOneTime: 19997,
+    priceAnnual: 9997,
+    availableForTiers: [...ALL_TIERS],
   },
   {
     id: 'custom-ai-models',
     name: 'Custom AI Models',
-    description: 'Fine-tuned AI for your data',
-    priceAnnual: 1920, // $1,800-2,040 (10-15% below comp)
-    availableForTiers: ['Visionary'],
+    description: 'Fine-tuned models on customer data. Enterprises with unique terminology/workflows.',
+    priceOneTime: 14997,
+    priceAnnual: 4997,
+    availableForTiers: [...ALL_TIERS],
+  },
+  {
+    id: 'vciso-service',
+    name: 'Dedicated vCISO Service',
+    description: 'Compliance advisory from certified experts. 10 hours/month consulting. For companies without internal GRC teams.',
+    priceAnnual: 9997,
+    availableForTiers: [...ALL_TIERS],
+  },
+  {
+    id: 'audit-bundling',
+    name: 'Audit Bundling (Partner Network)',
+    description: 'Pre-negotiated rates with audit firms. Variable $8,000–$30,000 depending on audit. Everyone getting certified.',
+    priceAnnual: 0,
+    availableForTiers: [...ALL_TIERS],
   },
 ];
 
@@ -555,6 +573,13 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                     <h4 className="text-lg font-semibold text-gray-900">{addon.name}</h4>
                   </div>
                   <p className="text-gray-600 mb-4">{addon.description}</p>
+                  <p className="text-sm font-medium text-gray-900 mb-1">
+                    {addon.priceOneTime != null && addon.priceOneTime > 0
+                      ? `${formatPrice(addon.priceOneTime)} one-time + ${formatPrice(addon.priceAnnual)}/yr`
+                      : addon.priceAnnual === 0
+                        ? 'Variable (contact sales)'
+                        : `${formatPrice(addon.priceAnnual)}/yr`}
+                  </p>
                   <p className="text-sm text-gray-500">
                     Available for: {addon.availableForTiers.join(', ')}
                   </p>

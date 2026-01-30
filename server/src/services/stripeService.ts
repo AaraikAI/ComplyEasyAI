@@ -2,10 +2,10 @@
  * Stripe Service
  *
  * Production-level Stripe integration for the 4-tier subscription system:
- * - Foundation: $1,500-$3,000/year
- * - Essentials: $4,500-$11,250/year
- * - Growth: $7,500-$22,500/year
- * - Visionary: $15,000-$75,000+/year (custom)
+ * - Foundation: $8,500/year
+ * - Essentials: $17,000/year
+ * - Growth: $42,500–$65,000/year
+ * - Visionary: $68,000–$170,000/year
  *
  * Handles:
  * - Customer creation
@@ -97,11 +97,13 @@ const PRICE_IDS: Record<TierName, { monthly: string; annual: string }> = {
   },
 };
 
-// Add-on price IDs
+// Add-on price IDs (optional; Audit Bundling is variable/contact-sales)
 const ADDON_PRICE_IDS: Record<string, string> = {
   'custom-frameworks': process.env.STRIPE_ADDON_CUSTOM_FRAMEWORKS_PRICE_ID || '',
   'on-prem-deployment': process.env.STRIPE_ADDON_ON_PREM_PRICE_ID || '',
   'custom-ai-models': process.env.STRIPE_ADDON_CUSTOM_AI_PRICE_ID || '',
+  'vciso-service': process.env.STRIPE_ADDON_VCISO_PRICE_ID || '',
+  'audit-bundling': process.env.STRIPE_ADDON_AUDIT_BUNDLING_PRICE_ID || '', // Variable; often quote-based
 };
 
 // ============================================================================
@@ -1299,12 +1301,14 @@ class StripeService {
       const userMultiplier = Math.ceil(options.userCount / 1000);
       const featureMultiplier = 1 + (options.features.length * 0.1);
       const addOnTotal = options.addOns.reduce((sum, addOn) => {
-        const addOnInfo = {
-          'custom-frameworks': 775,
-          'on-prem-deployment': 3875,
-          'custom-ai-models': 2325,
-        }[addOn];
-        return sum + (addOnInfo || 0);
+        const addOnInfo: Record<string, number> = {
+          'custom-frameworks': 2997,
+          'on-prem-deployment': 9997,
+          'custom-ai-models': 4997,
+          'vciso-service': 9997,
+          'audit-bundling': 0, // Variable; contact sales
+        };
+        return sum + (addOnInfo[addOn] ?? 0);
       }, 0);
 
       const totalAnnual = Math.round(basePrice * userMultiplier * featureMultiplier + addOnTotal);

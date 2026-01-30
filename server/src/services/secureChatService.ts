@@ -80,31 +80,31 @@ const KNOWLEDGE_BASE = {
     },
   },
 
-  // Add-Ons
+  // Add-Ons (All Tiers)
   addOns: {
     customFrameworks: {
-      price: '$660/year',
-      description: 'Build unlimited proprietary compliance frameworks for regulated industries like defense, aerospace, pharma',
-      availableFor: ['Growth', 'Visionary'] as TierName[],
+      price: '$2,997/year per framework',
+      description: 'Build unlimited proprietary compliance frameworks. Regulated industries (defense, aerospace, pharma).',
+      availableFor: ['Foundation', 'Essentials', 'Growth', 'Visionary'] as TierName[],
     },
     onPremises: {
-      price: '$3,200/year',
-      description: 'Deploy ComplyEasyAI on your own AWS/Azure/GCP infrastructure. For government, financial institutions, healthcare.',
-      availableFor: ['Visionary'] as TierName[],
+      price: '$19,997 one-time setup + $9,997/year maintenance',
+      description: 'Deploy on customer\'s AWS/Azure/GCP. Government, financial institutions, healthcare.',
+      availableFor: ['Foundation', 'Essentials', 'Growth', 'Visionary'] as TierName[],
     },
     customAiModels: {
-      price: '$1,920/year',
-      description: 'Fine-tuned AI models trained on your data for enterprises with unique terminology/workflows',
-      availableFor: ['Visionary'] as TierName[],
+      price: '$14,997 one-time + $4,997/year maintenance',
+      description: 'Fine-tuned models on customer data. Enterprises with unique terminology/workflows.',
+      availableFor: ['Foundation', 'Essentials', 'Growth', 'Visionary'] as TierName[],
     },
     vcisoService: {
       price: '$9,997/year (10 hours/month consulting)',
-      description: 'Compliance advisory from certified experts (CISSP, CISA, CIPP). For companies without internal GRC teams.',
+      description: 'Compliance advisory from certified experts. For companies without internal GRC teams.',
       availableFor: ['Foundation', 'Essentials', 'Growth', 'Visionary'] as TierName[],
     },
     auditBundling: {
-      price: '$8,000-$30,000 depending on audit',
-      description: 'Pre-negotiated rates with audit firms. Everyone getting certified can benefit.',
+      price: 'Variable $8,000–$30,000 depending on audit',
+      description: 'Pre-negotiated rates with audit firms. Everyone getting certified.',
       availableFor: ['Foundation', 'Essentials', 'Growth', 'Visionary'] as TierName[],
     },
   },

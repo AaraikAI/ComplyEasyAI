@@ -4,6 +4,8 @@ import { api } from '../services/api';
 import { generateRemediationPlan, prioritizeRisks } from '../services/geminiService';
 import { RiskItem, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
+import { TierLimitBanner } from './TierLimitBanner';
 import { 
   ArrowLeft, Filter, CheckSquare, Loader2, Play, CheckCircle, X, SortAsc, SortDesc, BrainCircuit, ListFilter, Plus, Grid3x3, Table
 } from 'lucide-react';
@@ -291,6 +293,10 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         riskData.targetDate = newRisk.targetDate;
       }
 
+      if (isAtLimit(user?.organization?.plan, 'maxIssues', risks.length)) {
+        alert(getUpgradeMessage(user?.organization?.plan, 'maxIssues', risks.length) || 'Issue limit reached. Upgrade in Settings → Billing.');
+        return;
+      }
       const createdRisk = await api.risks.create(riskData);
       
       // Note: Audit logging is handled by the backend to prevent duplicate entries
@@ -315,8 +321,13 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
   if (isLoadingData) return <div className="p-8 text-center text-gray-500">Loading risks data from database...</div>;
 
+  const issuesLimitReached = isAtLimit(user?.organization?.plan, 'maxIssues', risks.length);
+
   return (
     <div className="space-y-6 animate-fadeIn relative pb-20">
+      {issuesLimitReached && (
+        <TierLimitBanner message={getUpgradeMessage(user?.organization?.plan, 'maxIssues', risks.length)} />
+      )}
       {/* Assessment Overlay */}
       {isScanning && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm">
@@ -479,8 +490,10 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
             </div>
             {(user?.role === 'admin' || user?.role === 'editor') && (
               <button 
-                onClick={() => setShowAddRiskModal(true)} 
-                className="bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 shadow-md flex items-center transition-colors"
+                onClick={() => !issuesLimitReached && setShowAddRiskModal(true)} 
+                disabled={issuesLimitReached}
+                title={issuesLimitReached ? getUpgradeMessage(user?.organization?.plan, 'maxIssues', risks.length) : undefined}
+                className="bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 shadow-md flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="mr-2" size={16} />
                 Add Risk

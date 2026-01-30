@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { authenticate, authorize } from '../middleware/auth';
+import { enforceLimit } from '../middleware/tierMiddleware';
 import * as integrationsController from '../controllers/integrationsController';
 import { asyncHandler } from '../types/express';
 
@@ -209,6 +210,7 @@ router.post(
   '/:provider/connect',
   authenticate,
   authorize('admin', 'editor'),
+  enforceLimit('maxIntegrations'),
   asyncHandler(integrationsController.connectProvider)
 );
 

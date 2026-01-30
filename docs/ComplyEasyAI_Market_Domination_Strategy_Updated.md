@@ -410,7 +410,7 @@ ComplyEasyAI possesses **unprecedented technological superiority** with 343+ fea
 ---
 
 ### TIER 3: GROWTH  
-**Price:** $42,500-$51,000/year (or $2,125-$4,250/month billed annually)  
+**Price:** $42,500-$65,000/year (or $2,125-$4,250/month billed annually)  
 **Positioning:** "Autonomous Compliance Operations System"  
 **Target:** 200-1000 employees, Series C+, regulatory-heavy
 

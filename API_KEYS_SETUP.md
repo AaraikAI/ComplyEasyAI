@@ -94,7 +94,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 **Create Price IDs (for subscriptions):**
 1. Go to Products → Add Product
-2. Create three products: Basic, Pro, Enterprise
+2. Create products for each tier: Foundation, Essentials, Growth, Visionary (annual and optionally monthly)
 3. Copy the Price IDs (start with `price_`)
 
 **Where to Add:**
@@ -103,10 +103,25 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
   STRIPE_SECRET_KEY=sk_test_your-secret-key
   STRIPE_PUBLISHABLE_KEY=pk_test_your-publishable-key
   STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret (get from webhook settings)
-  STRIPE_BASIC_PRICE_ID=price_xxx
-  STRIPE_PRO_PRICE_ID=price_xxx
-  STRIPE_ENTERPRISE_PRICE_ID=price_xxx
+  STRIPE_FOUNDATION_ANNUAL_PRICE_ID=price_xxx
+  STRIPE_ESSENTIALS_ANNUAL_PRICE_ID=price_xxx
+  STRIPE_GROWTH_ANNUAL_PRICE_ID=price_xxx
+  STRIPE_VISIONARY_ANNUAL_PRICE_ID=price_xxx
   ```
+  Without these price IDs, "Continue to Secure Checkout" will return 503 with a message to configure Stripe.
+
+---
+
+### 5b. API Rate Limits
+**Purpose:** Prevent abuse; 429 = too many requests.
+
+**Current defaults (server `.env` optional overrides):**
+- **General API:** 100 requests per 15 minutes per IP (`RATE_LIMIT_WINDOW_MS=900000`, `RATE_LIMIT_MAX_REQUESTS=100`)
+- **Auth (login):** 5 attempts per 15 min per IP
+- **AI:** 10 requests per minute
+- **Team invite:** In development, POST `/api/team/invite` is **excluded** from the general limit so testing does not hit 429.
+
+If you see "Too many requests" (429), wait a few minutes or increase `RATE_LIMIT_MAX_REQUESTS`. A 429 with message like "You have reached your Maximum Users limit" is a **tier limit**, not rate limit—upgrade in Settings → Billing.
 
 ---
 

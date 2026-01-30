@@ -1086,7 +1086,8 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
               </button>
             </div>
           ) : (
-            controls.map((control) => (
+            <div data-onboarding="control-list" className="space-y-0">
+            {controls.map((control) => (
               <div 
                 key={control.id}
                 id={`control-${control.id}`}
@@ -1181,6 +1182,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                   </div>
                   <div className="flex flex-col items-center">
                     <label 
+                      data-onboarding="upload-evidence-btn"
                       className="p-2 text-gray-400 hover:text-brand-600 transition-colors cursor-pointer flex flex-col items-center"
                       title="Upload Evidence"
                     >
@@ -1202,7 +1204,8 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                   </div>
                 </div>
               </div>
-            ))
+            ))}
+            </div>
           )}
         </div>
         

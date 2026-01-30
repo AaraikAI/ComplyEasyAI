@@ -4,6 +4,8 @@ import { CheckCircle, Power, Search, X, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import { IntegrationModal } from './IntegrationModal';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
+import { useAuth } from '../contexts/AuthContext';
+import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 
 // Comprehensive list of ALL available integrations
 const ALL_INTEGRATIONS: Integration[] = [
@@ -80,11 +82,15 @@ interface IntegrationsProps {
 }
 
 export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>(ALL_INTEGRATIONS);
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const connectedCount = integrations.filter(i => i.connected).length;
+  const integrationLimitReached = isAtLimit(user?.organization?.plan, 'maxIntegrations', connectedCount);
 
   // Onboarding: trigger integration_setup flow on first visit (Essentials+ only)
   useOnboardingTrigger('integration_setup', true);
@@ -144,6 +150,10 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
   });
 
   const handleIntegrationClick = (integration: Integration) => {
+    if (!integration.connected && integrationLimitReached) {
+      alert(getUpgradeMessage(user?.organization?.plan, 'maxIntegrations', connectedCount) || 'Integration limit reached. Upgrade in Settings → Billing.');
+      return;
+    }
     setSelectedIntegration(integration);
   };
 
@@ -366,11 +376,15 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
     }
   };
 
-  const connectedCount = integrations.filter(i => i.connected).length;
   const totalCount = integrations.length;
 
   return (
     <div className="p-6 space-y-6 animate-fadeIn" data-onboarding="integrations-page">
+      {integrationLimitReached && (
+        <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-4 py-3 rounded-lg">
+          {getUpgradeMessage(user?.organization?.plan, 'maxIntegrations', connectedCount)} <a href="/settings?tab=billing" className="font-medium underline">Upgrade</a>
+        </div>
+      )}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Integrations Catalog</h1>
@@ -450,10 +464,14 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
                 )}
                 <button
                   onClick={() => handleIntegrationClick(int)}
+                  disabled={!int.connected && integrationLimitReached}
+                  title={!int.connected && integrationLimitReached ? getUpgradeMessage(user?.organization?.plan, 'maxIntegrations', connectedCount) : undefined}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     int.connected
                       ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                      : 'bg-brand-600 text-white hover:bg-brand-700'
+                      : integrationLimitReached
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-brand-600 text-white hover:bg-brand-700'
                   }`}
                 >
                   {int.connected ? 'Manage' : 'Connect'}

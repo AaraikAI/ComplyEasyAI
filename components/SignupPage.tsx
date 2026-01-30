@@ -81,7 +81,7 @@ export const SignupPage: React.FC = () => {
     companySize: '',
     primaryGoal: '',
     acceptTerms: false,
-    acceptMarketing: false,
+    acceptMarketing: true,
   });
 
   const updateField = (field: keyof FormData, value: string | boolean) => {

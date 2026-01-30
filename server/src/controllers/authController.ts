@@ -355,11 +355,15 @@ class AuthController {
         return;
       }
 
-      // Update last login
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLogin: new Date() },
-      });
+      // Update last login (non-blocking on failure)
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLogin: new Date() },
+        });
+      } catch (err: any) {
+        logger.warn('[Auth] Failed to update lastLogin', err?.message);
+      }
 
       // Generate JWT tokens
       const accessToken = generateToken({
@@ -371,7 +375,7 @@ class AuthController {
 
       const refreshToken = generateRefreshToken(user.id);
 
-      // Create session with session management (ENHANCED)
+      // Create session with session management (ENHANCED) — non-blocking
       let sessionInfo: { existingSessionsTerminated?: number } = {};
       try {
         const sessionManagement = await import('../services/sessionManagementService');
@@ -389,21 +393,25 @@ class AuthController {
           );
           sessionInfo = { existingSessionsTerminated: result.existingSessionsTerminated };
         }
-      } catch (error) {
-        logger.warn('[Auth] Session management not available, continuing without it', error);
+      } catch (error: any) {
+        logger.warn('[Auth] Session management not available, continuing without it', error?.message);
       }
 
-      // Log authentication
-      await prisma.auditLog.create({
-        data: {
-          action: 'Password Login Success',
-          userId: user.id,
-          organizationId: user.organizationId,
-          hash: uuidv4(),
-          ipAddress: req.ip,
-          userAgent: req.headers['user-agent'],
-        },
-      });
+      // Log authentication — non-blocking so login still succeeds if audit fails
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: 'Password Login Success',
+            userId: user.id,
+            organizationId: user.organizationId,
+            hash: uuidv4(),
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent'],
+          },
+        });
+      } catch (auditErr: any) {
+        logger.warn('[Auth] Failed to write audit log', auditErr?.message);
+      }
 
       res.json({
         accessToken,
@@ -417,14 +425,16 @@ class AuthController {
           organization: {
             id: user.organization.id,
             name: user.organization.name,
+            plan: user.organization.plan,
           },
         },
         ...sessionInfo, // Include session info if sessions were terminated
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Login error', error);
       if (error instanceof AppError) throw error;
-      throw new AppError('Failed to login', 500);
+      const message = error?.message || 'Failed to login';
+      throw new AppError(message, 500);
     }
   }
 
@@ -540,10 +550,7 @@ class AuthController {
         },
       });
 
-      // Send welcome email
-      await emailService.sendWelcomeEmail(email, name);
-
-      // Generate magic link for instant login
+      // Generate magic link for instant login (create before sending so we can return token even if email fails)
       const token = uuidv4();
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -555,8 +562,16 @@ class AuthController {
         },
       });
 
-      // Send magic link
-      await emailService.sendMagicLink(email, token);
+      // Send welcome email and magic link; in development allow registration to succeed if email is not configured
+      try {
+        await emailService.sendWelcomeEmail(email, name);
+        await emailService.sendMagicLink(email, token);
+      } catch (emailError: any) {
+        logger.warn('Registration: email send failed', { email, error: emailError?.message });
+        if (process.env.NODE_ENV !== 'development') {
+          throw new AppError('Failed to send welcome email. Please try again or contact support.', 500);
+        }
+      }
 
       // In development, also return the token for testing (remove in production!)
       const response: any = {

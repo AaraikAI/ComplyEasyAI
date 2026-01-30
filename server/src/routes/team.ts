@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { AuthRequest } from '../middleware/auth';
+import { enforceLimit } from '../middleware/tierMiddleware';
 import prisma from '../config/database';
 import { asyncHandler } from '../types/express';
 import logger from '../config/logger';
@@ -45,6 +46,7 @@ router.get(
 router.post(
   '/invite',
   authorize('admin', 'editor'),
+  enforceLimit('maxUsers'),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const { email, name, role } = authReq.body;

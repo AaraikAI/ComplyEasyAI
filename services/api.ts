@@ -1,7 +1,8 @@
 import { User, RiskItem, ComplianceFramework, AuditLog, Integration, TierName, SubscriptionDetails, UsageMetrics, Tier, TierComparison, UpgradePreview, Webhook, WebhookEvent, ApiKey, BillingCycle, OnboardingProgress, OnboardingChecklist } from '../types';
 
-// Backend API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Backend API Configuration — ensure base always ends with /api so /auth/register etc. resolve correctly
+const rawBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = rawBase.endsWith('/api') ? rawBase : rawBase.replace(/\/?$/, '') + '/api';
 
 // Log API URL in development (Vite uses import.meta.env, not process.env)
 if (import.meta.env.DEV) {
@@ -181,6 +182,7 @@ export const api = {
           role: response.user.role,
           avatar: response.user.avatar || response.user.name.substring(0, 2).toUpperCase(),
           organizationId: response.user.organization?.id || response.user.organizationId,
+          organization: response.user.organization ? { id: response.user.organization.id, name: response.user.organization.name, plan: response.user.organization.plan } : undefined,
         };
         
         localStorage.setItem('user_data', JSON.stringify(user));
@@ -232,6 +234,7 @@ export const api = {
           role: response.user.role,
           avatar: response.user.avatar || response.user.name.substring(0, 2).toUpperCase(),
           organizationId: response.user.organization?.id || response.user.organizationId,
+          organization: response.user.organization ? { id: response.user.organization.id, name: response.user.organization.name, plan: response.user.organization.plan } : undefined,
         };
         
         localStorage.setItem('user_data', JSON.stringify(user));
@@ -941,6 +944,60 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(data),
       });
+    },
+  },
+
+  // --- Vendors (for tier gating: use list().length with maxVendors) ---
+  vendors: {
+    list: async (params?: Record<string, string>) => {
+      const query = params ? new URLSearchParams(params).toString() : '';
+      const res = await fetchAPI<any>(`/vendors${query ? `?${query}` : ''}`);
+      return Array.isArray(res) ? res : res?.vendors ?? res?.data ?? [];
+    },
+  },
+
+  // --- Enterprise (for tier gating: use list counts with getLimit/isAtLimit) ---
+  enterprise: {
+    questionnaires: {
+      list: async (params?: Record<string, string>) => {
+        const query = params ? new URLSearchParams(params).toString() : '';
+        const res = await fetchAPI<any>(`/enterprise/questionnaires${query ? `?${query}` : ''}`);
+        return res?.questionnaires ?? res?.data ?? (Array.isArray(res) ? res : []);
+      },
+    },
+    policies: {
+      list: async (params?: Record<string, string>) => {
+        const query = params ? new URLSearchParams(params).toString() : '';
+        const res = await fetchAPI<any>(`/enterprise/policies${query ? `?${query}` : ''}`);
+        return res?.policies ?? res?.data ?? (Array.isArray(res) ? res : []);
+      },
+    },
+    workspaces: {
+      getHierarchy: async () => fetchAPI<any>('/enterprise/workspace/hierarchy'),
+    },
+    reports: {
+      // Custom reports creation is gated by maxCustomReports (POST /enterprise/reports).
+      // No list endpoint in current backend; use for gating when save-report UI is added.
+      list: async (): Promise<any[]> => [],
+    },
+    monitoring: {
+      list: async (params?: Record<string, string>) => {
+        const query = params ? new URLSearchParams(params).toString() : '';
+        const res = await fetchAPI<any>(`/enterprise/monitoring${query ? `?${query}` : ''}`);
+        return Array.isArray(res) ? res : res?.monitors ?? res?.data ?? [];
+      },
+    },
+    issues: {
+      list: async (params?: Record<string, string>) => {
+        const query = params ? new URLSearchParams(params).toString() : '';
+        const res = await fetchAPI<any>(`/enterprise/issues${query ? `?${query}` : ''}`);
+        return res?.issues ?? res?.data ?? (Array.isArray(res) ? res : []);
+      },
+    },
+    riskAssessments: {
+      // Risk assessments: create is gated; list via risk-management dashboard/register if needed
+      create: async (data: any) =>
+        fetchAPI<any>('/enterprise/risk-management/assessments', { method: 'POST', body: JSON.stringify(data) }),
     },
   },
 

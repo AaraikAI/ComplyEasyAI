@@ -399,6 +399,14 @@ export const firstEvidenceFlow: OnboardingFlowConfig = {
   estimatedMinutes: 3,
   steps: [
     {
+      id: 'ev-intro',
+      title: 'Next: Upload Evidence',
+      description:
+        'Open any framework to view its controls, then select a control and upload your first piece of evidence. Evidence can be documents, screenshots, configuration exports, or any file that demonstrates compliance.',
+      position: 'center',
+      action: 'observe',
+    },
+    {
       id: 'ev-controls',
       title: 'Framework Controls',
       description:

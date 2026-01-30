@@ -1,8 +1,8 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { ViewState } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
+import { normalizePlan, canAccessView } from '../constants/tierFeatures';
 import { 
   LayoutDashboard, FileText, ShieldCheck, Settings, LogOut, Menu, X,
   Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare, Layers, Brain
@@ -119,6 +119,16 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     { id: 'ai-bcp', label: 'BCP Generator', icon: LifeBuoy },
   ];
 
+  const userPlan = normalizePlan(user?.organization?.plan);
+  const navItemsFiltered = useMemo(
+    () => navItems.filter((item) => canAccessView(userPlan, item.id)),
+    [userPlan]
+  );
+  const aiToolsFiltered = useMemo(
+    () => aiTools.filter((item) => canAccessView(userPlan, item.id)),
+    [userPlan]
+  );
+
   if (!user) return null;
 
   return (
@@ -153,7 +163,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
         <nav className="p-4 space-y-6 flex-1 overflow-y-auto custom-scrollbar" data-onboarding="sidebar-nav">
           <div className="space-y-1">
              <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Platform</p>
-             {navItems.filter(item => item.roles.includes(user.role)).map((item) => {
+             {navItemsFiltered.filter(item => item.roles.includes(user.role)).map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id || item.relatedViews.includes(currentView);
               return (
@@ -177,7 +187,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
              <p className="px-4 text-xs font-semibold text-brand-400 uppercase tracking-wider mb-2 flex items-center">
                 <Sparkles size={10} className="mr-1"/> AI Tools
              </p>
-             {aiTools.map((item) => {
+             {aiToolsFiltered.map((item) => {
               const Icon = item.icon;
               const isActive = currentView === item.id;
               return (

@@ -218,6 +218,7 @@ class OnboardingController {
 
       // Also update the checklist if relevant
       const checklistFieldMap: Record<string, string> = {
+        welcome: 'profileCompleted',
         first_framework: 'firstFrameworkAdded',
         first_evidence: 'firstEvidenceUploaded',
         first_control: 'firstControlPassed',

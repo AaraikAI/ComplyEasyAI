@@ -44,7 +44,7 @@ interface OnboardingContextType {
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
-export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigate?: (view: string) => void }> = ({ children, onNavigate }) => {
   const { user, isAuthenticated } = useAuth();
 
   const [progress, setProgress] = useState<OnboardingProgress | null>(null);
@@ -104,7 +104,56 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       } catch (error) {
         console.error('Failed to load onboarding progress:', error);
         if (isMounted) {
-          setIsLoaded(true); // Mark as loaded even on error so app isn't blocked
+          setIsLoaded(true);
+          // Use default progress so onboarding flow still loads (e.g. when backend/DB not ready)
+          const defaultProgress: OnboardingProgress = {
+            id: '',
+            userId: user!.id,
+            organizationId: user!.organizationId!,
+            currentFlow: 'welcome',
+            currentStep: 0,
+            welcomeCompleted: false,
+            tierTourCompleted: false,
+            firstFrameworkCompleted: false,
+            firstEvidenceCompleted: false,
+            firstControlPassCompleted: false,
+            inviteTeamCompleted: false,
+            integrationSetupCompleted: false,
+            aiFeatureTrialCompleted: false,
+            acosDigitalTwinTourCompleted: false,
+            advancedFeaturesTourCompleted: false,
+            tooltipsShown: [],
+            skippedFlows: [],
+            completedAt: null,
+            lastActiveFlow: null,
+            lastActiveStep: null,
+            showHints: true,
+            reducedMotion: false,
+          };
+          const defaultChecklist: OnboardingChecklist = {
+            id: '',
+            organizationId: user!.organizationId!,
+            profileCompleted: false,
+            teamInvited: false,
+            firstFrameworkAdded: false,
+            firstEvidenceUploaded: false,
+            firstControlPassed: false,
+            integrationConnected: false,
+            aiFeatureUsed: false,
+            firstReportGenerated: false,
+            acosConfigured: false,
+            digitalTwinActivated: false,
+            completedAt: null,
+          };
+          setProgress(defaultProgress);
+          setChecklist(defaultChecklist);
+          setOrganizationPlan('Foundation');
+          setOrganizationName('');
+          const welcomeConfig = getFlowConfig('welcome', 'Foundation');
+          if (welcomeConfig) {
+            setCurrentFlow(welcomeConfig);
+            setCurrentStep(0);
+          }
         }
       }
     };
@@ -145,6 +194,17 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return;
       }
 
+      // Navigate to the right tab when starting flow that requires it
+      if (flowName === 'first_framework' && onNavigate) {
+        onNavigate('frameworks');
+      } else if (flowName === 'first_evidence' && onNavigate) {
+        onNavigate('frameworks');
+      } else if (flowName === 'integration_setup' && onNavigate) {
+        onNavigate('integrations');
+      } else if (flowName === 'acos_digital_twin' && onNavigate) {
+        onNavigate('acos');
+      }
+
       setCurrentFlow(config);
       setCurrentStep(0);
 
@@ -163,7 +223,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         lastActiveStep: 0,
       });
     },
-    [progress, organizationPlan, saveProgress]
+    [progress, organizationPlan, saveProgress, onNavigate]
   );
 
   const nextStep = useCallback(() => {
@@ -234,9 +294,12 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setCurrentFlow(null);
     setCurrentStep(0);
 
-    // Mark milestone and track completion
+    // Mark milestone and refresh progress + checklist so Setup Progress updates
     api.onboarding.completeMilestone(flowName).then((res) => {
       setProgress(res.progress);
+      return api.onboarding.getChecklist();
+    }).then((checklistRes) => {
+      if (checklistRes?.checklist) setChecklist(checklistRes.checklist);
     }).catch(() => {});
 
     api.onboarding.trackEvent({

@@ -45,11 +45,14 @@ export const OnboardingOverlay: React.FC = () => {
   const [spotlightStyle, setSpotlightStyle] = useState<React.CSSProperties>({});
 
   const step = currentFlow?.steps[currentStep] || null;
-  const isCenteredStep = !step?.targetSelector;
+  const hasTargetSelector = Boolean(step?.targetSelector);
+  const targetNotFound = hasTargetSelector && !targetRect;
+  // Show centered modal when step has no target, or when target element is not in DOM (e.g. user not yet on framework details)
+  const isCenteredStep = !hasTargetSelector || targetNotFound;
   const isWelcomeStep = currentFlow?.id === 'welcome' && currentStep === 0;
   const reducedMotion = progress?.reducedMotion ?? false;
 
-  // Find the target element and compute spotlight
+  // Find the target element, compute spotlight, and scroll target into view
   const updateTarget = useCallback(() => {
     if (!step?.targetSelector) {
       setTargetRect(null);
@@ -59,6 +62,7 @@ export const OnboardingOverlay: React.FC = () => {
 
     const el = document.querySelector(step.targetSelector);
     if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       const rect = el.getBoundingClientRect();
       setTargetRect(rect);
       const padding = 8;
@@ -71,7 +75,7 @@ export const OnboardingOverlay: React.FC = () => {
         borderRadius: '12px',
         boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
         pointerEvents: 'none' as const,
-        zIndex: 50,
+        zIndex: 10000,
         transition: reducedMotion ? 'none' : 'all 0.4s ease-out',
       });
     } else {
@@ -146,15 +150,15 @@ export const OnboardingOverlay: React.FC = () => {
 
   return (
     <>
-      {/* Backdrop / spotlight */}
+      {/* Backdrop / spotlight — above header and sidebar */}
       {isCenteredStep ? (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={skipFlow} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000]" onClick={skipFlow} aria-hidden />
       ) : (
-        <div style={spotlightStyle} />
+        <div style={spotlightStyle} aria-hidden />
       )}
 
-      {/* Progress bar */}
-      <div className="fixed top-0 left-0 right-0 z-[55] px-4 pt-3">
+      {/* Progress bar — compact, top-right, with solid background for readability */}
+      <div className="fixed top-4 right-4 z-[10001] w-64 max-w-[calc(100vw-2rem)] bg-slate-800/95 backdrop-blur border border-slate-600 rounded-xl shadow-xl px-3 py-2">
         <OnboardingProgressBar
           currentStep={currentStep}
           totalSteps={currentFlow.steps.length}

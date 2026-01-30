@@ -88,10 +88,12 @@ class BillingController {
       });
 
       res.json({ url: checkoutUrl });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Create checkout error', error);
       if (error instanceof AppError) throw error;
-      throw new AppError('Failed to create checkout session', 500);
+      const message = error?.message || 'Failed to create checkout session';
+      const isConfigError = /not configured|Stripe is not configured|Price ID/i.test(message);
+      throw new AppError(message, isConfigError ? 503 : 500);
     }
   };
 
