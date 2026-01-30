@@ -630,7 +630,7 @@ Contact our enterprise team for custom pricing if:
 ## 🎁 Free Trial
 
 ### What You Get
-- ✅ **14 days free** - No credit card required
+- ✅ **3 days free** - No credit card required
 - ✅ **Full Foundation features** - Not a limited demo
 - ✅ **Unlimited frameworks** - Test with your actual frameworks
 - ✅ **Real data** - Upload actual evidence, not sandbox

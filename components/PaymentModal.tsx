@@ -6,11 +6,12 @@ import { api } from '../services/api';
 interface PaymentModalProps {
   plan: string;
   price: string;
+  billingCycle?: 'monthly' | 'annual';
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, onClose, onSuccess }) => {
+export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billingCycle = 'annual', onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'processing' | 'success'>('form');
   const [cardNumber, setCardNumber] = useState('');
@@ -23,18 +24,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, onClose
     setStep('processing');
 
     try {
-      // Create Stripe checkout session and redirect
-      const response: any = await api.billing.createCheckout(plan as 'Basic' | 'Pro' | 'Enterprise');
-      
-      if (response.url) {
-        // Redirect to Stripe Checkout
+      const response: any = await api.billing.createCheckout(plan as import('../types').TierName, billingCycle);
+      if (response?.url) {
         window.location.href = response.url;
       } else {
         throw new Error('No checkout URL received');
       }
     } catch (error: any) {
       console.error('Payment failed:', error);
-      alert(error.message || 'Failed to create checkout session. Please try again.');
+      const msg = error?.message || 'Failed to create checkout session.';
+      const hint = msg.includes('not configured') || msg.includes('Stripe is not configured')
+        ? ' Add Stripe price IDs to server .env (see API_KEYS_SETUP.md) or contact support.'
+        : '';
+      alert(msg + hint);
       setLoading(false);
       setStep('form');
     }

@@ -42,6 +42,11 @@ export const apiLimiter = rateLimit({
     )) {
       return true;
     }
+
+    // In development, skip rate limit for team invite to avoid 429 during testing
+    if (process.env.NODE_ENV === 'development' && method === 'POST' && path.includes('/team/invite')) {
+      return true;
+    }
     
     // Apply rate limiting to write operations (POST, PUT, PATCH, DELETE)
     return false;

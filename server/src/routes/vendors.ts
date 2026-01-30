@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import vendorRiskService from '../services/vendorRiskService';
 import { authenticate } from '../middleware/auth';
+import { enforceLimit } from '../middleware/tierMiddleware';
 import { authAsyncHandler, AuthenticatedRequest } from '../types/express';
 
 const router = Router();
@@ -9,6 +10,7 @@ router.use(authenticate);
 // Create vendor
 router.post(
   '/',
+  enforceLimit('maxVendors'),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const vendor = await vendorRiskService.createVendor({
       ...req.body,

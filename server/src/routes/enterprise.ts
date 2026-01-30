@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
+import { enforceLimit } from '../middleware/tierMiddleware';
 import { authAsyncHandler, asyncHandler, AuthenticatedRequest } from '../types/express';
 
 // Import all enterprise services
@@ -25,6 +26,7 @@ riskRouter.use(authenticate);
 
 riskRouter.post(
   '/assessments',
+  enforceLimit('maxRiskAssessments'),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const assessment = await riskManagementService.createRiskAssessment({
       ...req.body,
@@ -75,6 +77,7 @@ questionnaireRouter.use(authenticate);
 
 questionnaireRouter.post(
   '/',
+  enforceLimit('maxQuestionnairesPerMonth'),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const questionnaire = await questionnaireService.createQuestionnaire({
       ...req.body,
@@ -139,6 +142,7 @@ policyRouter.use(authenticate);
 
 policyRouter.post(
   '/',
+  enforceLimit('maxPolicies'),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const policy = await policyLibraryService.createPolicy({
       ...req.body,
@@ -235,6 +239,7 @@ workspaceRouter.use(authenticate);
 
 workspaceRouter.post(
   '/child-organizations',
+  enforceLimit('maxWorkspaces'),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const child = await multiWorkspaceService.createChildOrganization(
       req.user.organizationId,
@@ -275,6 +280,7 @@ reportRouter.use(authenticate);
 
 reportRouter.post(
   '/',
+  enforceLimit('maxCustomReports'),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const report = await reportingService.createReport({
       ...req.body,
@@ -335,6 +341,7 @@ monitorRouter.use(authenticate);
 
 monitorRouter.post(
   '/',
+  enforceLimit('maxMonitors'),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const monitor = await monitoringService.createMonitor({
       ...req.body,
@@ -387,6 +394,7 @@ issueRouter.use(authenticate);
 
 issueRouter.post(
   '/',
+  enforceLimit('maxIssues'),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const issue = await issueManagementService.createIssue({
       ...req.body,

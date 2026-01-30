@@ -43,6 +43,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []); // Empty dependency array - runs only once on mount
 
+  // When user has no organization.plan (e.g. from old session), fetch org to get plan for tier gating
+  useEffect(() => {
+    if (!user || user.organization?.plan) return;
+    let isMounted = true;
+    api.organization.get().then((org: any) => {
+      if (!isMounted || !org?.id) return;
+      const updated = { ...user, organization: { id: org.id, name: org.name || '', plan: org.plan || 'Foundation' } };
+      setUser(updated);
+      try {
+        localStorage.setItem('user_data', JSON.stringify(updated));
+      } catch (_) {}
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, [user?.id, user?.organization?.plan]);
+
   // Periodic token refresh - runs when user is set and refreshes every 6 hours
   useEffect(() => {
     if (!user) {

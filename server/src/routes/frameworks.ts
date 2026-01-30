@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import frameworksController from '../controllers/frameworksController';
 import { authenticate, authorize } from '../middleware/auth';
+import { enforceLimit } from '../middleware/tierMiddleware';
 import { asyncHandler } from '../types/express';
 import { frameworkLimiter } from '../middleware/rateLimiter';
 
@@ -13,7 +14,7 @@ router.use(frameworkLimiter); // Apply rate limiting to all framework routes
 
 router.get('/', asyncHandler(frameworksController.list.bind(frameworksController)));
 router.get('/:id', asyncHandler(frameworksController.getById.bind(frameworksController)));
-router.post('/', authorize('admin', 'editor'), asyncHandler(frameworksController.create.bind(frameworksController)));
+router.post('/', authorize('admin', 'editor'), enforceLimit('maxFrameworks'), asyncHandler(frameworksController.create.bind(frameworksController)));
 router.patch('/:id', authorize('admin', 'editor'), asyncHandler(frameworksController.update.bind(frameworksController)));
 router.delete('/:id', authorize('admin'), asyncHandler(frameworksController.delete.bind(frameworksController)));
 router.get('/:frameworkId/controls/:controlId/export', authorize('admin', 'editor'), asyncHandler(frameworksController.exportControl.bind(frameworksController)));

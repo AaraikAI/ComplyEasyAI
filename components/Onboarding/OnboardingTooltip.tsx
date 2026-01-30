@@ -76,15 +76,17 @@ export const OnboardingTooltip: React.FC<OnboardingTooltipProps> = ({
         arrow = 'top';
     }
 
-    // Clamp to viewport
+    // Clamp to viewport — keep tooltip below header (minTop ~72px) so it's never cut off
+    const minTop = 72;
     if (left < padding) left = padding;
     if (left + tooltip.width > viewportW - padding) left = viewportW - tooltip.width - padding;
-    if (top < padding) {
-      top = targetRect.bottom + arrowSize + padding;
+    if (top < minTop) {
+      top = Math.min(targetRect.bottom + arrowSize + padding, viewportH - tooltip.height - padding);
+      if (top < minTop) top = minTop;
       arrow = 'top';
     }
     if (top + tooltip.height > viewportH - padding) {
-      top = targetRect.top - tooltip.height - arrowSize - padding;
+      top = Math.max(targetRect.top - tooltip.height - arrowSize - padding, minTop);
       arrow = 'bottom';
     }
 
@@ -125,7 +127,7 @@ export const OnboardingTooltip: React.FC<OnboardingTooltipProps> = ({
   return (
     <div
       ref={tooltipRef}
-      className={`fixed z-[60] w-80 max-w-[calc(100vw-2rem)] ${
+      className={`fixed z-[10002] w-80 max-w-[calc(100vw-2rem)] ${
         reducedMotion
           ? 'opacity-100'
           : `transition-all duration-300 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`

@@ -12,9 +12,11 @@ interface FrameworksProps {
   onAddFramework: (name: string, region?: string) => void;
   onSelectFramework: (id: string) => void;
   onFrameworkDeleted?: () => void;
+  /** Max frameworks for current plan (-1 = unlimited). Used to disable Add when at limit. */
+  maxFrameworks?: number;
 }
 
-export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddFramework, onSelectFramework, onFrameworkDeleted }) => {
+export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddFramework, onSelectFramework, onFrameworkDeleted, maxFrameworks = -1 }) => {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -151,6 +153,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
     }
   };
 
+  const frameworkLimitReached = maxFrameworks !== -1 && activeFrameworks.length >= maxFrameworks;
   const availableToAdd = AVAILABLE_FRAMEWORKS.filter(
     af => !activeFrameworks.find(active => active.name === af.name)
   );
@@ -168,6 +171,11 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
            <p className="text-sm text-gray-500">Monitor and manage your compliance standards.</p>
         </div>
         <div className="flex items-center space-x-3">
+          {frameworkLimitReached && (
+            <span className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
+              Framework limit reached ({activeFrameworks.length}/{maxFrameworks}). Upgrade to add more.
+            </span>
+          )}
           <button 
             onClick={handleExportControlReport}
             className="flex items-center space-x-2 bg-white text-brand-600 border border-brand-200 px-4 py-2 rounded-lg hover:bg-brand-50 transition-colors shadow-sm"
@@ -177,9 +185,11 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
             <span>Export</span>
           </button>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => !frameworkLimitReached && setIsModalOpen(true)}
+            disabled={frameworkLimitReached}
             data-onboarding="add-framework-btn"
-            className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors shadow-sm"
+            className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            title={frameworkLimitReached ? 'Framework limit reached. Upgrade in Settings → Billing.' : undefined}
           >
             <Plus size={18} />
             <span>Add Framework</span>
@@ -250,14 +260,15 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
         ))}
         
         <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-brand-300 hover:bg-brand-50 transition-colors group h-full min-h-[200px]"
+          onClick={() => !frameworkLimitReached && setIsModalOpen(true)}
+          disabled={frameworkLimitReached}
+          className="bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-brand-300 hover:bg-brand-50 transition-colors group h-full min-h-[200px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
             <Plus className="text-gray-400 group-hover:text-brand-500" size={24} />
           </div>
           <h3 className="text-sm font-bold text-gray-900">Add Framework</h3>
-          <p className="text-xs text-gray-500 mt-1">Browse catalog...</p>
+          <p className="text-xs text-gray-500 mt-1">{frameworkLimitReached ? 'Limit reached — upgrade to add more' : 'Browse catalog...'}</p>
         </button>
       </div>
 

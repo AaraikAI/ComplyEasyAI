@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, ListChecks, Sparkles } from 'lucide-react';
 import { useOnboardingChecklist } from '../../hooks/useOnboarding';
+import { useOnboardingContext } from '../../contexts/OnboardingContext';
 
 export interface OnboardingChecklistWidgetProps {
   reducedMotion?: boolean;
@@ -11,8 +12,14 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
 }) => {
   const { items, completedCount, totalCount, percentage, isComplete, startFlowForItem } =
     useOnboardingChecklist();
+  const { isOnboarding, currentStep } = useOnboardingContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasNewItems, setHasNewItems] = useState(false);
+
+  // Auto-close when user advances onboarding step (clicks Next)
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [currentStep]);
 
   // Pulse when new items become available
   useEffect(() => {
@@ -34,7 +41,11 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="fixed bottom-6 right-6 z-40" role="complementary" aria-label="Setup checklist">
+    <div
+      className={`fixed bottom-6 z-[9998] ${isOnboarding ? 'left-6' : 'right-[8.5rem]'}`}
+      role="complementary"
+      aria-label="Setup checklist"
+    >
       {/* Expanded checklist */}
       {isExpanded && (
         <div

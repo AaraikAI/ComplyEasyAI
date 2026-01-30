@@ -8,6 +8,7 @@ import { PaymentModal } from './PaymentModal';
 import PricingSection from './PricingSection';
 import FeatureMarketplace from './FeatureMarketplace';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
+import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 
 interface SettingsProps {
   onNavigateToIntegrations?: () => void;
@@ -300,6 +301,12 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       return;
     }
 
+    const plan = currentUser?.organization?.plan;
+    if (isAtLimit(plan, 'maxUsers', users.length)) {
+      alert(getUpgradeMessage(plan, 'maxUsers', users.length) || 'User limit reached. Upgrade in Settings → Billing.');
+      return;
+    }
+
     try {
       // API call to invite new team member
       await api.team.invite(newMember.name, newMember.email, newMember.role);
@@ -316,6 +323,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       const errorMessage = error.message || 'Failed to invite team member. Please try again.';
       if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
         alert('This email is already in use. Please use a different email.');
+      } else if (errorMessage.includes('limit') || errorMessage.includes('Limit exceeded') || errorMessage.includes('Maximum Users')) {
+        alert(getUpgradeMessage(currentUser?.organization?.plan, 'maxUsers', users.length) || errorMessage);
+      } else if (errorMessage.includes('Too many requests')) {
+        alert('Too many requests from this IP. Please wait a few minutes and try again.');
       } else {
         alert(errorMessage);
       }
@@ -1343,16 +1354,29 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         {/* --- Team Tab --- */}
         {activeTab === 'team' && (
           <div className="animate-fadeIn space-y-6">
+            {isAtLimit(currentUser?.organization?.plan, 'maxUsers', users.length) && (
+              <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-4 py-3 rounded-lg">
+                {getUpgradeMessage(currentUser?.organization?.plan, 'maxUsers', users.length)} <a href="/settings?tab=billing" className="font-medium underline">Upgrade</a>
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="font-bold text-xl text-gray-900">Team Members</h3>
                 <p className="text-sm text-gray-500">Manage access and roles for your organization.</p>
               </div>
               <div className="flex items-center space-x-2">
-                <button onClick={() => setShowBulkInviteModal(true)} className="flex items-center space-x-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 shadow-sm transition-colors">
+                <button
+                  onClick={() => !isAtLimit(currentUser?.organization?.plan, 'maxUsers', users.length) && setShowBulkInviteModal(true)}
+                  disabled={isAtLimit(currentUser?.organization?.plan, 'maxUsers', users.length)}
+                  className="flex items-center space-x-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <Upload size={16} /> <span>Bulk Invite (CSV)</span>
                 </button>
-                <button onClick={() => setShowInviteModal(true)} className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-sm transition-colors">
+                <button
+                  onClick={() => !isAtLimit(currentUser?.organization?.plan, 'maxUsers', users.length) && setShowInviteModal(true)}
+                  disabled={isAtLimit(currentUser?.organization?.plan, 'maxUsers', users.length)}
+                  className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <Plus size={16} /> <span>Invite Member</span>
                 </button>
               </div>
@@ -1625,6 +1649,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         <PaymentModal
           plan={selectedTier}
           price={selectedBillingCycle === 'annual' ? 'Annual billing' : 'Monthly billing'}
+          billingCycle={selectedBillingCycle}
           onClose={() => setShowPaymentModal(false)}
           onSuccess={handlePaymentSuccess}
         />

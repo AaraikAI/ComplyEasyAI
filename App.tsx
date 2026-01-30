@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ViewState, ComplianceFramework, RiskItem } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
+import { normalizePlan, canAccessView } from './constants/tierFeatures';
+import { getLimit, isAtLimit, getUpgradeMessage } from './constants/tierLimits';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
@@ -57,6 +59,13 @@ const MainApp: React.FC = () => {
     }
   }, [isAuthenticated]);
 
+  const userPlan = normalizePlan(user?.organization?.plan);
+  useEffect(() => {
+    if (user && !canAccessView(userPlan, currentView)) {
+      setCurrentView('dashboard');
+    }
+  }, [user, userPlan, currentView]);
+
   const loadData = async () => {
     // Load all core data
     const fwData = await api.frameworks.list();
@@ -66,10 +75,14 @@ const MainApp: React.FC = () => {
   };
 
   const handleAddFramework = async (name: string, region?: string) => {
+    const maxFrameworks = getLimit(user?.organization?.plan, 'maxFrameworks');
+    if (isAtLimit(user?.organization?.plan, 'maxFrameworks', frameworks.length)) {
+      alert(getUpgradeMessage(user?.organization?.plan, 'maxFrameworks', frameworks.length) || 'Framework limit reached. Upgrade in Settings → Billing.');
+      return;
+    }
     // Optimistic Update
     const newFw: any = { id: 'temp', name, region, status: 'In Review', progress: 0, nextAuditDate: '2025-01-01' };
     setFrameworks([...frameworks, newFw]);
-    
     // API Call
     await api.frameworks.create(newFw);
     loadData(); // Refresh to get real ID and sync
@@ -101,6 +114,7 @@ const MainApp: React.FC = () => {
             onAddFramework={handleAddFramework} 
             onSelectFramework={handleSelectFramework}
             onFrameworkDeleted={loadData}
+            maxFrameworks={getLimit(user?.organization?.plan, 'maxFrameworks')}
           />
         );
       case 'framework-details':
@@ -243,9 +257,11 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <Layout currentView={currentView} onNavigate={setCurrentView}>
-      {renderContent()}
-    </Layout>
+    <OnboardingProvider onNavigate={setCurrentView}>
+      <Layout currentView={currentView} onNavigate={setCurrentView}>
+        {renderContent()}
+      </Layout>
+    </OnboardingProvider>
   );
 };
 
@@ -269,7 +285,6 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <OnboardingProvider>
         <Routes>
           {/* Public Routes - accessible without authentication */}
           <Route path="/signup" element={
@@ -306,7 +321,6 @@ const App: React.FC = () => {
           {/* Main App Route - handles authentication */}
           <Route path="/*" element={<MainApp />} />
         </Routes>
-        </OnboardingProvider>
       </AuthProvider>
     </BrowserRouter>
   );

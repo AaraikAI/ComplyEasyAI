@@ -34,15 +34,15 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}>
+    <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4 pt-20" role="dialog" aria-modal="true" aria-label={title}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
+      {/* Modal — pt-20 keeps content below fixed header when layered above */}
       <div
         ref={modalRef}
         tabIndex={-1}
-        className={`relative w-full max-w-lg bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl overflow-hidden ${
+        className={`relative w-full max-w-lg bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl overflow-hidden max-h-[calc(100vh-6rem)] overflow-y-auto ${
           reducedMotion ? '' : 'animate-onboarding-modal-in'
         }`}
       >

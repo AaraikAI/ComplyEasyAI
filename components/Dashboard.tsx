@@ -196,7 +196,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all" data-onboarding="compliance-score">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500">Compliance Score</p>
