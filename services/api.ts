@@ -968,6 +968,38 @@ export const api = {
       const res = await fetchAPI<any>(`/vendors${query ? `?${query}` : ''}`);
       return Array.isArray(res) ? res : res?.vendors ?? res?.data ?? [];
     },
+    getById: async (id: string) => {
+      return fetchAPI<any>(`/vendors/${encodeURIComponent(id)}`);
+    },
+    create: async (data: Record<string, any>) => {
+      return fetchAPI<any>('/vendors', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    update: async (id: string, data: Record<string, any>) => {
+      return fetchAPI<any>(`/vendors/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+    delete: async (id: string) => {
+      return fetchAPI<any>(`/vendors/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+    },
+    createAssessment: async (vendorId: string, data: Record<string, any>) => {
+      return fetchAPI<any>(`/vendors/${encodeURIComponent(vendorId)}/assessments`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    getScorecard: async (vendorId: string) => {
+      return fetchAPI<any>(`/vendors/${encodeURIComponent(vendorId)}/scorecard`);
+    },
+    getDashboard: async () => {
+      return fetchAPI<any>('/vendors/dashboard');
+    },
   },
 
   // --- Enterprise (for tier gating: use list counts with getLimit/isAtLimit) ---
