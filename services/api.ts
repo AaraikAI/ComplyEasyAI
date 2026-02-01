@@ -549,6 +549,20 @@ export const api = {
         method: 'DELETE',
       });
     },
+
+    // Framework Templates
+    getTemplates: async () => {
+      return fetchAPI<{ templates: Array<{ frameworkType: string; displayName: string; description: string; controlCount: number; categories: string[] }> }>('/frameworks/templates');
+    },
+    getTemplateControls: async (frameworkType: string) => {
+      return fetchAPI<{ frameworkType: string; controlCount: number; categories: any[]; controls: any[] }>(`/frameworks/templates/${encodeURIComponent(frameworkType)}`);
+    },
+    applyTemplate: async (frameworkId: string, frameworkType: string) => {
+      return fetchAPI<{ message: string; applied: number; skipped: number; total: number }>(`/frameworks/${frameworkId}/apply-template`, {
+        method: 'POST',
+        body: JSON.stringify({ frameworkType }),
+      });
+    },
   },
 
   // --- AI ---
