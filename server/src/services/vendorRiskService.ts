@@ -456,6 +456,101 @@ export class VendorRiskService {
   }
 
   /**
+   * Get single vendor by ID
+   */
+  async getVendorById(vendorId: string, organizationId: string) {
+    const vendor = await prisma.vendor.findFirst({
+      where: { id: vendorId, organizationId },
+      include: {
+        assessments: { orderBy: { createdAt: 'desc' } },
+        reviews: { orderBy: { reviewDate: 'desc' } },
+        monitors: true,
+      },
+    });
+    if (!vendor) throw new Error('Vendor not found');
+    return vendor;
+  }
+
+  /**
+   * Update vendor
+   */
+  async updateVendor(
+    vendorId: string,
+    data: Partial<{
+      name: string;
+      website: string;
+      contactName: string;
+      contactEmail: string;
+      contactPhone: string;
+      category: string;
+      serviceDescription: string;
+      contractStart: Date;
+      contractEnd: Date;
+      annualSpend: number;
+      hasDataAccess: boolean;
+      dataTypes: Prisma.InputJsonValue;
+      riskLevel: VendorRiskLevel;
+      riskScore: number;
+      status: VendorStatus;
+      securityContact: string;
+      soc2Report: boolean;
+      iso27001Certified: boolean;
+      gdprCompliant: boolean;
+      hipaaBaa: boolean;
+    }>,
+    userId: string,
+    organizationId: string
+  ) {
+    // Verify vendor belongs to org
+    const existing = await prisma.vendor.findFirst({
+      where: { id: vendorId, organizationId },
+    });
+    if (!existing) throw new Error('Vendor not found');
+
+    const vendor = await prisma.vendor.update({
+      where: { id: vendorId },
+      data,
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'vendor.updated',
+      resourceType: 'Vendor',
+      resourceId: vendorId,
+      metadata: { vendorName: vendor.name, updatedFields: Object.keys(data) },
+    });
+
+    return vendor;
+  }
+
+  /**
+   * Archive (soft-delete) vendor by setting status to Inactive
+   */
+  async archiveVendor(vendorId: string, userId: string, organizationId: string) {
+    const existing = await prisma.vendor.findFirst({
+      where: { id: vendorId, organizationId },
+    });
+    if (!existing) throw new Error('Vendor not found');
+
+    const vendor = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: { status: 'Inactive' },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'vendor.archived',
+      resourceType: 'Vendor',
+      resourceId: vendorId,
+      metadata: { vendorName: vendor.name },
+    });
+
+    return vendor;
+  }
+
+  /**
    * Get vendors by organization
    */
   async getVendorsByOrganization(

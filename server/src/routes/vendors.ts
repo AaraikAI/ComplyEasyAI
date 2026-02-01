@@ -48,16 +48,7 @@ router.post(
   })
 );
 
-// Get vendor scorecard
-router.get(
-  '/:id/scorecard',
-  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
-    const scorecard = await vendorRiskService.getVendorScorecard(req.params.id);
-    res.json(scorecard);
-  })
-);
-
-// Get vendor risk dashboard
+// Get vendor risk dashboard (must be before /:id to avoid matching "dashboard" as ID)
 router.get(
   '/dashboard',
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
@@ -77,6 +68,54 @@ router.get(
       req.query as any
     );
     res.json(vendors);
+  })
+);
+
+// Get vendor scorecard
+router.get(
+  '/:id/scorecard',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const scorecard = await vendorRiskService.getVendorScorecard(req.params.id);
+    res.json(scorecard);
+  })
+);
+
+// Get single vendor
+router.get(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const vendor = await vendorRiskService.getVendorById(
+      req.params.id,
+      req.user.organizationId
+    );
+    res.json(vendor);
+  })
+);
+
+// Update vendor
+router.put(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const vendor = await vendorRiskService.updateVendor(
+      req.params.id,
+      req.body,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(vendor);
+  })
+);
+
+// Archive vendor (soft-delete)
+router.delete(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const vendor = await vendorRiskService.archiveVendor(
+      req.params.id,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(vendor);
   })
 );
 
