@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import api from '../services/api';
+import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
@@ -328,7 +328,7 @@ const PolicyManagement: React.FC<PolicyManagementProps> = ({ onBack }) => {
     setAiGenLoading(true);
     setAiGenResult('');
     try {
-      const result = await api.ai.generatePolicy(aiGenType, aiGenCompany || 'My Company', aiGenTone);
+      const result = await api.ai.generatePolicy(aiGenType, aiGenCompany || 'My Company', aiGenTone) as any;
       setAiGenResult(typeof result === 'string' ? result : result?.policy || result?.content || JSON.stringify(result));
     } catch (err: any) {
       setAiGenResult(`Error: ${err.message}`);
@@ -403,7 +403,7 @@ Framework: ${policy.framework || 'General'}
 Policy Content:
 ${policy.content.substring(0, 3000)}`;
 
-      const result = await api.ai.chat(prompt);
+      const result = await api.ai.chat(prompt) as any;
       setAiReviewResult(typeof result === 'string' ? result : result?.response || result?.message || JSON.stringify(result));
     } catch (err: any) {
       setAiReviewResult(`Error: ${err.message}`);
@@ -422,7 +422,7 @@ ${policy.content.substring(0, 3000)}`;
     try {
       const existingCategories = [...new Set(policies.map(p => p.category))];
       const requiredCategories = POLICY_CATEGORIES.filter(c => c !== 'Other');
-      const result = await api.ai.performGapAnalysis(existingCategories, requiredCategories.join(', '));
+      const result = await api.ai.performGapAnalysis(existingCategories, requiredCategories.join(', ')) as any;
       setAiGapResult(typeof result === 'string' ? result : result?.analysis || JSON.stringify(result));
     } catch (err: any) {
       setAiGapResult(`Error: ${err.message}`);

@@ -80,7 +80,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 export const Reports: React.FC = () => {
   const { user } = useAuth();
-  const plan = user?.tier || user?.plan || 'Foundation';
+  const plan = user?.organization?.plan || 'Foundation';
 
   // View state
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');

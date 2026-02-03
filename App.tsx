@@ -28,6 +28,12 @@ import { AIRMFAssessments } from './components/AIRMFAssessments';
 import { EUAIActDashboard } from './components/EUAIActDashboard';
 import { DMAGatekeeperManagement } from './components/DMAGatekeeperManagement';
 import { DSAPlatformManagement } from './components/DSAPlatformManagement';
+import VendorManagement from './components/VendorManagement';
+import PolicyManagement from './components/PolicyManagement';
+import MonitoringDashboard from './components/MonitoringDashboard';
+import WorkspaceManagement from './components/WorkspaceManagement';
+import QuestionnaireManagement from './components/QuestionnaireManagement';
+import IssueManagement from './components/IssueManagement';
 
 // Lazy load public pages for code splitting
 const SignupPage = lazy(() => import('./components/SignupPage'));
@@ -251,6 +257,18 @@ const MainApp: React.FC = () => {
         return <DMAGatekeeperManagement />;
       case 'dsa':
         return <DSAPlatformManagement />;
+      case 'vendors':
+        return <VendorManagement onBack={() => setCurrentView('dashboard')} />;
+      case 'policies':
+        return <PolicyManagement onBack={() => setCurrentView('dashboard')} />;
+      case 'monitoring':
+        return <MonitoringDashboard />;
+      case 'workspaces':
+        return <WorkspaceManagement />;
+      case 'questionnaires':
+        return <QuestionnaireManagement />;
+      case 'issues':
+        return <IssueManagement />;
       default:
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }

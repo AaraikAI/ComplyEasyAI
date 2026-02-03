@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import api from '../services/api';
+import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
@@ -88,7 +88,7 @@ const CHART_COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#6
 // ---------------------------------------------------------------------------
 export default function WorkspaceManagement() {
   const { user } = useAuth();
-  const plan = user?.tier || user?.plan || 'Foundation';
+  const plan = user?.organization?.plan || 'Foundation';
 
   // Core state
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
