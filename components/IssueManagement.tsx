@@ -135,7 +135,7 @@ const STATUSES: Array<Issue['status']> = ['Open', 'In_Progress', 'Resolved', 'Cl
 // ---------------------------------------------------------------------------
 export default function IssueManagement() {
   const { user } = useAuth();
-  const plan = user?.tier || user?.plan || 'Foundation';
+  const plan = user?.organization?.plan || 'Foundation';
 
   // Core state
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
@@ -206,7 +206,7 @@ export default function IssueManagement() {
 
   const loadUsers = useCallback(async () => {
     try {
-      const data = await api.users.list();
+      const data = await api.team.list();
       setUsers(Array.isArray(data) ? data : []);
     } catch {
       // Users list is supplementary
@@ -401,7 +401,7 @@ Return a JSON object with:
 - confidenceScore: number (0-100)
 - reasoning: string`;
 
-      const result = await api.ai.chat(prompt);
+      const result = await api.ai.chat(prompt) as any;
       const response = result?.response || result?.message || '';
 
       // Try to parse JSON from response
@@ -463,7 +463,7 @@ Return a JSON object with:
 - recommendedFixes: string[]
 - analysisConfidence: number (0-100)`;
 
-      const result = await api.ai.chat(prompt);
+      const result = await api.ai.chat(prompt) as any;
       const response = result?.response || result?.message || '';
 
       try {
@@ -519,7 +519,7 @@ Return a JSON object with:
 - criticalPath: string[]
 - risks: string[]`;
 
-      const result = await api.ai.chat(prompt);
+      const result = await api.ai.chat(prompt) as any;
       const response = result?.response || result?.message || '';
 
       try {
@@ -571,7 +571,7 @@ Return a JSON object with:
 - systemicFixes: string[]
 - summary: string`;
 
-      const result = await api.ai.chat(prompt);
+      const result = await api.ai.chat(prompt) as any;
       const response = result?.response || result?.message || '';
 
       try {

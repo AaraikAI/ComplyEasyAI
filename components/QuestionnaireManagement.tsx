@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import api from '../services/api';
+import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
@@ -117,7 +117,7 @@ const ConfidenceBadge: React.FC<{ confidence: number }> = ({ confidence }) => {
 // ---------------------------------------------------------------------------
 export default function QuestionnaireManagement() {
   const { user } = useAuth();
-  const plan = user?.tier || user?.plan || 'Foundation';
+  const plan = user?.organization?.plan || 'Foundation';
 
   // Core state
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');

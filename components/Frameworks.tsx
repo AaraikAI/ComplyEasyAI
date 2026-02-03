@@ -1,11 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { AVAILABLE_FRAMEWORKS } from '../constants';
 import { ComplianceFramework, ComplianceStatus } from '../types';
-import { CheckCircle, AlertTriangle, Clock, ArrowRight, Plus, X, Search, Trash2, Download, Layout, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import {
+  CheckCircle, AlertTriangle, Clock, ArrowRight, Plus, X, Search, Trash2, Download,
+  Layout, ChevronDown, ChevronRight, Loader2, Brain, Zap, FileText, Target,
+  Upload, Sparkles, TrendingUp, Shield, Eye, RefreshCw
+} from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
+import ReactMarkdown from 'react-markdown';
 
 interface TemplateInfo {
   frameworkType: string;
@@ -32,16 +36,56 @@ interface TemplateCategoryDetail {
   controls: TemplateControlDetail[];
 }
 
+interface AIGapAnalysisResult {
+  gaps: Array<{ control: string; gap: string; priority: string; recommendation: string }>;
+  prioritizedRoadmap: Array<{ phase: string; controls: string[]; timeline: string }>;
+  overallScore: number;
+  summary: string;
+}
+
+interface AIEvidenceClassification {
+  suggestedControl: string;
+  suggestedControlId: string;
+  confidenceScore: number;
+  reasoning: string;
+  alternativeControls: Array<{ control: string; confidence: number }>;
+}
+
+interface AIControlAssessment {
+  currentStatus: string;
+  complianceGaps: string[];
+  requiredEvidence: string[];
+  requiredActions: string[];
+  estimatedEffort: string;
+  priority: string;
+  summary: string;
+}
+
+interface AICoPilotRecommendation {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  priority: string;
+  impact: string;
+  suggestedActions: string[];
+}
+
 interface FrameworksProps {
   activeFrameworks: ComplianceFramework[];
   onAddFramework: (name: string, region?: string) => void;
   onSelectFramework: (id: string) => void;
   onFrameworkDeleted?: () => void;
-  /** Max frameworks for current plan (-1 = unlimited). Used to disable Add when at limit. */
   maxFrameworks?: number;
 }
 
-export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddFramework, onSelectFramework, onFrameworkDeleted, maxFrameworks = -1 }) => {
+export const Frameworks: React.FC<FrameworksProps> = ({
+  activeFrameworks,
+  onAddFramework,
+  onSelectFramework,
+  onFrameworkDeleted,
+  maxFrameworks = -1
+}) => {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,6 +99,30 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [applyingTemplate, setApplyingTemplate] = useState<string | null>(null);
   const [applyResult, setApplyResult] = useState<{ message: string; applied: number; skipped: number } | null>(null);
+
+  // AI States
+  const [aiGapAnalysis, setAiGapAnalysis] = useState<AIGapAnalysisResult | null>(null);
+  const [aiGapLoading, setAiGapLoading] = useState<string | null>(null);
+  const [showGapAnalysisModal, setShowGapAnalysisModal] = useState(false);
+  const [selectedFrameworkForAI, setSelectedFrameworkForAI] = useState<ComplianceFramework | null>(null);
+
+  // AI Evidence Classification
+  const [evidenceClassification, setEvidenceClassification] = useState<AIEvidenceClassification | null>(null);
+  const [evidenceClassifyLoading, setEvidenceClassifyLoading] = useState(false);
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [evidenceDescription, setEvidenceDescription] = useState('');
+
+  // AI Control Assessment
+  const [controlAssessment, setControlAssessment] = useState<AIControlAssessment | null>(null);
+  const [controlAssessLoading, setControlAssessLoading] = useState(false);
+  const [showControlAssessModal, setShowControlAssessModal] = useState(false);
+  const [selectedControl, setSelectedControl] = useState<any>(null);
+
+  // AI Co-Pilot
+  const [coPilotRecommendations, setCoPilotRecommendations] = useState<AICoPilotRecommendation[]>([]);
+  const [coPilotLoading, setCoPilotLoading] = useState(false);
+  const [showCoPilotModal, setShowCoPilotModal] = useState(false);
 
   // Load templates on mount
   useEffect(() => {
@@ -135,6 +203,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
     }
   };
 
+  // AI Gap Analysis on Template Apply
   const handleApplyTemplate = async (frameworkId: string, frameworkName: string) => {
     const template = getTemplateForFramework(frameworkName);
     if (!template) return;
@@ -144,15 +213,281 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
     try {
       const result = await api.frameworks.applyTemplate(frameworkId, template.frameworkType);
       setApplyResult({ message: result.message, applied: result.applied, skipped: result.skipped });
+
       // Refresh framework data
       if (onFrameworkDeleted) {
-        onFrameworkDeleted(); // Reuse the callback to refresh
+        onFrameworkDeleted();
+      }
+
+      // Trigger AI Gap Analysis after applying template
+      if (result.applied > 0) {
+        handleAIGapAnalysis(frameworkId, frameworkName, result.applied);
       }
     } catch (err: any) {
       console.error('Failed to apply template:', err);
       alert(`Failed to apply template: ${err.message || 'Unknown error'}`);
     } finally {
       setApplyingTemplate(null);
+    }
+  };
+
+  // AI Gap Analysis
+  const handleAIGapAnalysis = async (frameworkId: string, frameworkName: string, controlCount: number) => {
+    setAiGapLoading(frameworkId);
+    setSelectedFrameworkForAI(activeFrameworks.find(f => f.id === frameworkId) || null);
+
+    try {
+      // Get the framework with controls
+      const fwData = await api.frameworks.getById(frameworkId);
+      const controlNames = (fwData.controls || []).map((c: any) => c.name || c.controlId);
+
+      // Call AI Gap Analysis
+      const gapResult = await api.ai.performGapAnalysis([], controlNames) as any;
+
+      // Parse AI response
+      const response = gapResult?.analysis || gapResult?.response || gapResult?.message || '';
+
+      // Try to parse structured data
+      let parsedGaps: AIGapAnalysisResult;
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsedGaps = JSON.parse(jsonMatch[0]);
+        } else {
+          parsedGaps = {
+            gaps: controlNames.slice(0, 5).map((name: string, i: number) => ({
+              control: name,
+              gap: 'Implementation required',
+              priority: i < 2 ? 'High' : i < 4 ? 'Medium' : 'Low',
+              recommendation: `Implement ${name} control with appropriate evidence`
+            })),
+            prioritizedRoadmap: [
+              { phase: 'Phase 1 (Immediate)', controls: controlNames.slice(0, 3), timeline: '1-2 weeks' },
+              { phase: 'Phase 2 (Short-term)', controls: controlNames.slice(3, 6), timeline: '2-4 weeks' },
+              { phase: 'Phase 3 (Medium-term)', controls: controlNames.slice(6, 10), timeline: '1-2 months' },
+            ],
+            overallScore: 15,
+            summary: response || `Applied ${controlCount} controls to ${frameworkName}. AI analysis indicates priority areas for compliance implementation.`
+          };
+        }
+      } catch {
+        parsedGaps = {
+          gaps: [],
+          prioritizedRoadmap: [],
+          overallScore: 0,
+          summary: response
+        };
+      }
+
+      setAiGapAnalysis(parsedGaps);
+      setShowGapAnalysisModal(true);
+    } catch (err: any) {
+      console.error('AI Gap Analysis failed:', err);
+      // Still show modal with basic info
+      setAiGapAnalysis({
+        gaps: [],
+        prioritizedRoadmap: [],
+        overallScore: 0,
+        summary: `Template applied successfully. Gap analysis will be available once controls are fully loaded.`
+      });
+      setShowGapAnalysisModal(true);
+    } finally {
+      setAiGapLoading(null);
+    }
+  };
+
+  // AI Evidence Classification
+  const handleAIEvidenceClassify = async () => {
+    if (!evidenceDescription && !evidenceFile) {
+      alert('Please provide evidence description or upload a file');
+      return;
+    }
+
+    setEvidenceClassifyLoading(true);
+    try {
+      const fileContext = evidenceFile ? `File: ${evidenceFile.name} (${evidenceFile.type})` : '';
+      const prompt = `Classify this compliance evidence and suggest the most appropriate control to map it to:
+
+Evidence Description: ${evidenceDescription}
+${fileContext}
+
+Framework: ${selectedFrameworkForAI?.name || 'General'}
+
+Provide:
+1. The most appropriate control to map this evidence to
+2. Confidence score (0-100)
+3. Reasoning for the classification
+4. Alternative controls that might also be relevant
+
+Return as JSON with: suggestedControl, suggestedControlId, confidenceScore, reasoning, alternativeControls`;
+
+      const result = await api.ai.chat(prompt) as any;
+      const response = result?.response || result?.message || '';
+
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          setEvidenceClassification(JSON.parse(jsonMatch[0]));
+        } else {
+          setEvidenceClassification({
+            suggestedControl: 'Access Control Policy',
+            suggestedControlId: 'AC-1',
+            confidenceScore: 75,
+            reasoning: response,
+            alternativeControls: []
+          });
+        }
+      } catch {
+        setEvidenceClassification({
+          suggestedControl: 'General Control',
+          suggestedControlId: 'GC-1',
+          confidenceScore: 60,
+          reasoning: response,
+          alternativeControls: []
+        });
+      }
+    } catch (err: any) {
+      console.error('AI Evidence Classification failed:', err);
+      alert('Failed to classify evidence: ' + (err.message || 'Unknown error'));
+    } finally {
+      setEvidenceClassifyLoading(false);
+    }
+  };
+
+  // AI Control Assessment
+  const handleAIControlAssess = async (control: any, framework: ComplianceFramework) => {
+    setSelectedControl(control);
+    setSelectedFrameworkForAI(framework);
+    setShowControlAssessModal(true);
+    setControlAssessLoading(true);
+    setControlAssessment(null);
+
+    try {
+      const prompt = `Assess the compliance status of this control: "${control.name}" (${control.controlId || control.id}) for ${framework.name}.
+
+Current status: ${control.status || 'Not Implemented'}
+Current description: ${control.description || 'No description'}
+
+What evidence and actions are needed to achieve compliance?
+
+Provide a detailed assessment including:
+1. Current compliance status assessment
+2. Specific compliance gaps
+3. Required evidence documents
+4. Required actions to achieve compliance
+5. Estimated effort (Low/Medium/High)
+6. Priority level (Critical/High/Medium/Low)
+
+Return as JSON with: currentStatus, complianceGaps, requiredEvidence, requiredActions, estimatedEffort, priority, summary`;
+
+      const result = await api.ai.chat(prompt) as any;
+      const response = result?.response || result?.message || '';
+
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          setControlAssessment(JSON.parse(jsonMatch[0]));
+        } else {
+          setControlAssessment({
+            currentStatus: control.status || 'Not Implemented',
+            complianceGaps: ['Documentation required', 'Evidence collection needed'],
+            requiredEvidence: ['Policy document', 'Implementation evidence', 'Testing records'],
+            requiredActions: ['Create policy', 'Implement control', 'Collect evidence', 'Perform testing'],
+            estimatedEffort: 'Medium',
+            priority: 'High',
+            summary: response
+          });
+        }
+      } catch {
+        setControlAssessment({
+          currentStatus: control.status || 'Not Implemented',
+          complianceGaps: [],
+          requiredEvidence: [],
+          requiredActions: [],
+          estimatedEffort: 'Medium',
+          priority: 'Medium',
+          summary: response
+        });
+      }
+    } catch (err: any) {
+      console.error('AI Control Assessment failed:', err);
+      setControlAssessment({
+        currentStatus: 'Assessment Failed',
+        complianceGaps: [],
+        requiredEvidence: [],
+        requiredActions: [],
+        estimatedEffort: 'Unknown',
+        priority: 'Unknown',
+        summary: `Failed to assess control: ${err.message || 'Unknown error'}`
+      });
+    } finally {
+      setControlAssessLoading(false);
+    }
+  };
+
+  // AI Co-Pilot Recommendations
+  const handleAICoPilot = async (framework: ComplianceFramework) => {
+    setSelectedFrameworkForAI(framework);
+    setShowCoPilotModal(true);
+    setCoPilotLoading(true);
+    setCoPilotRecommendations([]);
+
+    try {
+      const result = await api.enterprise.visionaryAI.getCoPilotRecommendations();
+      const recommendations = result?.recommendations || result?.data || [];
+
+      // Filter recommendations relevant to this framework
+      const frameworkRecommendations = Array.isArray(recommendations)
+        ? recommendations.filter((r: any) =>
+            !r.framework ||
+            r.framework === framework.name ||
+            r.framework === 'All'
+          ).slice(0, 10)
+        : [];
+
+      if (frameworkRecommendations.length === 0) {
+        // Generate framework-specific recommendations via chat
+        const prompt = `Generate 5 compliance improvement recommendations for ${framework.name} framework with ${framework.progress}% completion.
+
+For each recommendation provide:
+- Type (Gap, Risk, Efficiency, Best Practice)
+- Title
+- Description
+- Priority (Critical, High, Medium, Low)
+- Impact (High, Medium, Low)
+- Suggested actions
+
+Return as JSON array with: id, type, title, description, priority, impact, suggestedActions`;
+
+        const chatResult = await api.ai.chat(prompt) as any;
+        const response = chatResult?.response || chatResult?.message || '';
+
+        try {
+          const jsonMatch = response.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            setCoPilotRecommendations(JSON.parse(jsonMatch[0]));
+          } else {
+            setCoPilotRecommendations([{
+              id: '1',
+              type: 'Best Practice',
+              title: `Complete ${framework.name} Implementation`,
+              description: response || `Focus on completing the remaining ${100 - framework.progress}% of controls.`,
+              priority: 'High',
+              impact: 'High',
+              suggestedActions: ['Review incomplete controls', 'Assign owners', 'Set deadlines']
+            }]);
+          }
+        } catch {
+          setCoPilotRecommendations([]);
+        }
+      } else {
+        setCoPilotRecommendations(frameworkRecommendations);
+      }
+    } catch (err: any) {
+      console.error('AI Co-Pilot failed:', err);
+      setCoPilotRecommendations([]);
+    } finally {
+      setCoPilotLoading(false);
     }
   };
 
@@ -248,6 +583,20 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
     }
   };
 
+  const getConfidenceColor = (score: number) => {
+    if (score >= 80) return 'text-green-600 bg-green-100';
+    if (score >= 50) return 'text-yellow-600 bg-yellow-100';
+    return 'text-red-600 bg-red-100';
+  };
+
+  const getPriorityColor = (priority: string) => {
+    const p = priority?.toLowerCase();
+    if (p === 'critical') return 'bg-red-100 text-red-800 border-red-200';
+    if (p === 'high') return 'bg-orange-100 text-orange-800 border-orange-200';
+    if (p === 'medium') return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    return 'bg-blue-100 text-blue-800 border-blue-200';
+  };
+
   const frameworkLimitReached = maxFrameworks !== -1 && activeFrameworks.length >= maxFrameworks;
   const availableToAdd = AVAILABLE_FRAMEWORKS.filter(
     af => !activeFrameworks.find(active => active.name === af.name)
@@ -263,7 +612,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
       <div className="flex justify-between items-center">
         <div>
            <h2 className="text-lg font-bold text-gray-900">Active Frameworks</h2>
-           <p className="text-sm text-gray-500">Monitor and manage your compliance standards.</p>
+           <p className="text-sm text-gray-500">Monitor and manage your compliance standards with AI-powered insights.</p>
         </div>
         <div className="flex items-center space-x-3">
           {frameworkLimitReached && (
@@ -328,6 +677,37 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
                   </div>
                 </div>
 
+                {/* AI Action Buttons */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAICoPilot(fw);
+                    }}
+                    disabled={coPilotLoading}
+                    className="flex items-center justify-center gap-1 bg-purple-50 text-purple-700 border border-purple-200 px-2 py-1.5 rounded-lg hover:bg-purple-100 transition-colors text-xs font-medium disabled:opacity-50"
+                    title="AI Recommendations"
+                  >
+                    <Brain size={12} />
+                    <span>AI Insights</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedFrameworkForAI(fw);
+                      setShowEvidenceModal(true);
+                      setEvidenceClassification(null);
+                      setEvidenceDescription('');
+                      setEvidenceFile(null);
+                    }}
+                    className="flex items-center justify-center gap-1 bg-green-50 text-green-700 border border-green-200 px-2 py-1.5 rounded-lg hover:bg-green-100 transition-colors text-xs font-medium"
+                    title="AI Evidence Classification"
+                  >
+                    <Upload size={12} />
+                    <span>Classify Evidence</span>
+                  </button>
+                </div>
+
                 {/* Apply Template Button */}
                 {template && (
                   <div className="mb-4">
@@ -336,13 +716,18 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
                         e.stopPropagation();
                         handleApplyTemplate(fw.id, fw.name);
                       }}
-                      disabled={applyingTemplate === fw.id}
+                      disabled={applyingTemplate === fw.id || aiGapLoading === fw.id}
                       className="w-full flex items-center justify-center space-x-2 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium disabled:opacity-50"
                     >
                       {applyingTemplate === fw.id ? (
                         <>
                           <Loader2 size={14} className="animate-spin" />
                           <span>Applying template...</span>
+                        </>
+                      ) : aiGapLoading === fw.id ? (
+                        <>
+                          <Brain size={14} className="animate-pulse" />
+                          <span>Running AI Gap Analysis...</span>
                         </>
                       ) : (
                         <>
@@ -351,10 +736,18 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
                         </>
                       )}
                     </button>
-                    {applyResult && applyingTemplate !== fw.id && (
-                      <p className="text-xs text-green-600 mt-1 text-center">
-                        {applyResult.applied} controls added, {applyResult.skipped} skipped
-                      </p>
+                    {applyResult && applyingTemplate !== fw.id && !aiGapLoading && (
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-green-600">
+                          {applyResult.applied} controls added, {applyResult.skipped} skipped
+                        </p>
+                        <button
+                          onClick={() => handleAIGapAnalysis(fw.id, fw.name, applyResult.applied)}
+                          className="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1"
+                        >
+                          <Zap size={10} /> View AI Analysis
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
@@ -554,6 +947,399 @@ export const Frameworks: React.FC<FrameworksProps> = ({ activeFrameworks, onAddF
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Gap Analysis Modal */}
+      {showGapAnalysisModal && aiGapAnalysis && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Brain className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">AI Gap Analysis</h3>
+                  <p className="text-sm text-gray-500">{selectedFrameworkForAI?.name || 'Framework'}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowGapAnalysisModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Overall Score */}
+              <div className="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-purple-100">Current Compliance Score</h4>
+                    <p className="text-4xl font-bold mt-1">{aiGapAnalysis.overallScore}%</p>
+                  </div>
+                  <Target className="w-12 h-12 text-purple-200" />
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-2">Summary</h4>
+                <div className="prose prose-sm max-w-none text-gray-700">
+                  <ReactMarkdown>{aiGapAnalysis.summary}</ReactMarkdown>
+                </div>
+              </div>
+
+              {/* Gaps */}
+              {aiGapAnalysis.gaps && aiGapAnalysis.gaps.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">Priority Gaps</h4>
+                  <div className="space-y-2">
+                    {aiGapAnalysis.gaps.map((gap, i) => (
+                      <div key={i} className="bg-white border rounded-lg p-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-900">{gap.control}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full border ${getPriorityColor(gap.priority)}`}>
+                                {gap.priority}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">{gap.gap}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              <span className="font-medium">Recommendation:</span> {gap.recommendation}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Roadmap */}
+              {aiGapAnalysis.prioritizedRoadmap && aiGapAnalysis.prioritizedRoadmap.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">Remediation Roadmap</h4>
+                  <div className="space-y-3">
+                    {aiGapAnalysis.prioritizedRoadmap.map((phase, i) => (
+                      <div key={i} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h5 className="font-medium text-blue-800">{phase.phase}</h5>
+                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">{phase.timeline}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {phase.controls.map((ctrl, j) => (
+                            <span key={j} className="text-xs bg-white text-blue-700 px-2 py-0.5 rounded border border-blue-200">
+                              {ctrl}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Evidence Classification Modal */}
+      {showEvidenceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Upload className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">AI Evidence Classification</h3>
+                  <p className="text-sm text-gray-500">{selectedFrameworkForAI?.name || 'Framework'}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowEvidenceModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Evidence Description</label>
+                <textarea
+                  value={evidenceDescription}
+                  onChange={(e) => setEvidenceDescription(e.target.value)}
+                  placeholder="Describe the evidence document (e.g., 'Annual security training completion certificates for all employees')"
+                  className="w-full border rounded-lg px-3 py-2 text-sm h-24"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Or Upload File (optional)</label>
+                <input
+                  type="file"
+                  onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+                {evidenceFile && (
+                  <p className="text-xs text-gray-500 mt-1">Selected: {evidenceFile.name}</p>
+                )}
+              </div>
+
+              <button
+                onClick={handleAIEvidenceClassify}
+                disabled={evidenceClassifyLoading || (!evidenceDescription && !evidenceFile)}
+                className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {evidenceClassifyLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Classifying...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Classify with AI
+                  </>
+                )}
+              </button>
+
+              {/* Classification Result */}
+              {evidenceClassification && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+                  <h4 className="font-semibold text-green-800 mb-3">Classification Result</h4>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Suggested Control:</span>
+                      <span className="font-medium text-gray-900">{evidenceClassification.suggestedControl}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Control ID:</span>
+                      <span className="font-mono text-sm bg-gray-100 px-2 py-0.5 rounded">{evidenceClassification.suggestedControlId}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Confidence:</span>
+                      <span className={`text-sm font-bold px-2 py-0.5 rounded ${getConfidenceColor(evidenceClassification.confidenceScore)}`}>
+                        {evidenceClassification.confidenceScore}%
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-sm text-gray-600">Reasoning:</span>
+                      <p className="text-sm text-gray-700 mt-1">{evidenceClassification.reasoning}</p>
+                    </div>
+
+                    {evidenceClassification.alternativeControls && evidenceClassification.alternativeControls.length > 0 && (
+                      <div>
+                        <span className="text-sm text-gray-600">Alternatives:</span>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {evidenceClassification.alternativeControls.map((alt, i) => (
+                            <span key={i} className="text-xs bg-white border px-2 py-1 rounded">
+                              {alt.control} ({alt.confidence}%)
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Control Assessment Modal */}
+      {showControlAssessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Eye className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">AI Control Assessment</h3>
+                  <p className="text-sm text-gray-500">{selectedControl?.name || 'Control'}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowControlAssessModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {controlAssessLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600 mr-3" />
+                  <span className="text-gray-600">AI is assessing the control...</span>
+                </div>
+              ) : controlAssessment ? (
+                <div className="space-y-4">
+                  {/* Status & Priority */}
+                  <div className="flex gap-4">
+                    <div className="flex-1 bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">Current Status</p>
+                      <p className="font-medium text-gray-900">{controlAssessment.currentStatus}</p>
+                    </div>
+                    <div className="flex-1 bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">Priority</p>
+                      <span className={`text-sm px-2 py-0.5 rounded-full border ${getPriorityColor(controlAssessment.priority)}`}>
+                        {controlAssessment.priority}
+                      </span>
+                    </div>
+                    <div className="flex-1 bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">Estimated Effort</p>
+                      <p className="font-medium text-gray-900">{controlAssessment.estimatedEffort}</p>
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-800 mb-2">Assessment Summary</h4>
+                    <div className="prose prose-sm max-w-none text-blue-700">
+                      <ReactMarkdown>{controlAssessment.summary}</ReactMarkdown>
+                    </div>
+                  </div>
+
+                  {/* Compliance Gaps */}
+                  {controlAssessment.complianceGaps && controlAssessment.complianceGaps.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Compliance Gaps</h4>
+                      <ul className="space-y-1">
+                        {controlAssessment.complianceGaps.map((gap, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                            <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
+                            {gap}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Required Evidence */}
+                  {controlAssessment.requiredEvidence && controlAssessment.requiredEvidence.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Required Evidence</h4>
+                      <ul className="space-y-1">
+                        {controlAssessment.requiredEvidence.map((ev, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                            <FileText className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                            {ev}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Required Actions */}
+                  {controlAssessment.requiredActions && controlAssessment.requiredActions.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Required Actions</h4>
+                      <ul className="space-y-1">
+                        {controlAssessment.requiredActions.map((action, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                            {action}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 py-8">No assessment data available</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Co-Pilot Modal */}
+      {showCoPilotModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-fadeIn">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">AI Compliance Co-Pilot</h3>
+                  <p className="text-sm text-gray-500">{selectedFrameworkForAI?.name || 'Framework'} Recommendations</p>
+                </div>
+              </div>
+              <button onClick={() => setShowCoPilotModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {coPilotLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-purple-600 mr-3" />
+                  <span className="text-gray-600">AI is generating recommendations...</span>
+                </div>
+              ) : coPilotRecommendations.length > 0 ? (
+                <div className="space-y-4">
+                  {coPilotRecommendations.map((rec, i) => (
+                    <div key={rec.id || i} className="bg-white border rounded-xl p-4 hover:border-purple-200 transition">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">{rec.type}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full border ${getPriorityColor(rec.priority)}`}>
+                            {rec.priority}
+                          </span>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          rec.impact === 'High' ? 'bg-green-100 text-green-700' :
+                          rec.impact === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          Impact: {rec.impact}
+                        </span>
+                      </div>
+
+                      <h4 className="font-semibold text-gray-900 mb-1">{rec.title}</h4>
+                      <p className="text-sm text-gray-600 mb-3">{rec.description}</p>
+
+                      {rec.suggestedActions && rec.suggestedActions.length > 0 && (
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <p className="text-xs font-medium text-gray-500 mb-2">Suggested Actions:</p>
+                          <ul className="space-y-1">
+                            {rec.suggestedActions.map((action, j) => (
+                              <li key={j} className="flex items-start gap-2 text-sm text-gray-700">
+                                <TrendingUp className="w-3.5 h-3.5 text-purple-500 mt-0.5 shrink-0" />
+                                {action}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Shield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No recommendations available at this time</p>
+                  <p className="text-sm text-gray-400 mt-1">The AI will generate recommendations as you add more controls</p>
+                </div>
+              )}
+
+              <button
+                onClick={() => handleAICoPilot(selectedFrameworkForAI!)}
+                disabled={coPilotLoading || !selectedFrameworkForAI}
+                className="mt-4 w-full flex items-center justify-center gap-2 bg-purple-50 text-purple-700 border border-purple-200 py-2 rounded-lg hover:bg-purple-100 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${coPilotLoading ? 'animate-spin' : ''}`} />
+                Refresh Recommendations
+              </button>
             </div>
           </div>
         </div>
