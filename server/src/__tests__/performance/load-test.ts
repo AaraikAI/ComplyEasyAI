@@ -241,5 +241,6 @@ describe('Load Testing', () => {
   });
 });
 
-export { LoadTester, LoadTestResult };
+export { LoadTester };
+export type { LoadTestResult };
 

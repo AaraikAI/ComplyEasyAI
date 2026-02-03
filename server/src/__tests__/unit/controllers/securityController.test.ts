@@ -112,7 +112,7 @@ import securityController from '../../../controllers/securityController';
 import { AppError } from '../../../middleware/errorHandler';
 
 describe('SecurityController', () => {
-  let mockRequest: Partial<Request>;
+  let mockRequest: any;
   let mockResponse: Partial<Response>;
 
   beforeEach(() => {

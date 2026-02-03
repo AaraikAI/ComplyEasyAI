@@ -6,11 +6,11 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
 // Mock Slack WebClient
-const mockChatPostMessage = jest.fn();
-const mockConversationsList = jest.fn();
+const mockChatPostMessage = jest.fn() as jest.Mock<any>;
+const mockConversationsList = jest.fn() as jest.Mock<any>;
 
 jest.mock('@slack/web-api', () => ({
-  WebClient: jest.fn().mockImplementation(() => ({
+  WebClient: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
     chat: {
       postMessage: mockChatPostMessage,
     },
@@ -40,16 +40,14 @@ describe('SlackService', () => {
     jest.clearAllMocks();
   });
 
-  describe('sendMessage()', () => {
-    it('should send message to Slack channel', async () => {
-      const integrationId = 'integration-123';
-      const message = {
-        channel: '#compliance',
-        text: 'Test message',
-      };
+  describe('postMessage()', () => {
+    it('should post message to Slack channel', async () => {
+      const organizationId = 'org-123';
+      const channel = '#compliance';
+      const text = 'Test message';
 
-      prismaMock.integration.findUnique.mockResolvedValue({
-        id: integrationId,
+      prismaMock.integration.findFirst.mockResolvedValue({
+        id: 'integration-123',
         accessToken: 'xoxb-test-token',
       } as any);
 
@@ -58,7 +56,7 @@ describe('SlackService', () => {
         ts: '1234567890.123456',
       });
 
-      const result = await slackService.sendMessage(integrationId, message);
+      const result = await slackService.postMessage(organizationId, channel, text);
 
       expect(result).toHaveProperty('ok', true);
       expect(result).toHaveProperty('ts');

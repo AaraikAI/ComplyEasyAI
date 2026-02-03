@@ -11,13 +11,6 @@ export default defineConfig({
     css: true,
     // Optimize test execution
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: false,
-        maxThreads: 4,
-        minThreads: 1,
-      },
-    },
     // Test timeout
     testTimeout: 10000,
     hookTimeout: 10000,

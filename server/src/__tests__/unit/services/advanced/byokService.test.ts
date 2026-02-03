@@ -61,7 +61,7 @@ describe('BYOKService', () => {
         region: 'us-east-1',
       };
 
-      const result = await byokService.generateDataKey(config);
+      const result = await byokService.generateDataKey(config, 'org-123');
 
       expect(result).toHaveProperty('plaintext');
       expect(result).toHaveProperty('encrypted');
@@ -75,7 +75,7 @@ describe('BYOKService', () => {
         vaultUrl: 'https://test-vault.vault.azure.net/',
       };
 
-      const result = await byokService.generateDataKey(config);
+      const result = await byokService.generateDataKey(config, 'org-123');
 
       expect(result).toHaveProperty('plaintext');
       expect(result).toHaveProperty('encrypted');

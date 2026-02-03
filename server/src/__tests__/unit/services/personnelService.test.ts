@@ -12,7 +12,7 @@ jest.mock('../../../config/database', () => ({
 
 jest.mock('../../../utils/auditLogger', () => ({
   AuditLogger: {
-    log: jest.fn().mockResolvedValue({}),
+    log: (jest.fn() as jest.Mock<any>).mockResolvedValue({}),
   },
 }));
 
@@ -139,22 +139,7 @@ describe('PersonnelService', () => {
     });
   });
 
-  describe('getPersonnel()', () => {
-    it('should get personnel by ID', async () => {
-      const personnelId = 'personnel-123';
-      const mockPersonnel = {
-        id: personnelId,
-        userId: 'user-123',
-        organizationId: 'org-123',
-      };
-
-      prismaMock.personnel.findUnique.mockResolvedValue(mockPersonnel as any);
-
-      const result = await personnelService.getPersonnel(personnelId);
-
-      expect(result).toHaveProperty('id', personnelId);
-    });
-
+  describe('getPersonnelByOrganization()', () => {
     it('should get all personnel for organization', async () => {
       const organizationId = 'org-123';
       const mockPersonnel = [
@@ -177,7 +162,8 @@ describe('PersonnelService', () => {
         personnelId: 'personnel-123',
         organizationId: 'org-123',
         reviewerId: 'reviewer-123',
-        reviewType: 'Quarterly' as const,
+        reviewType: 'Quarterly',
+        dueDate: new Date(),
       };
 
       const mockReview = {

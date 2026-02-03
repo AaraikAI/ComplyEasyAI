@@ -205,7 +205,7 @@ describe('API Endpoints Integration Tests', () => {
       jest.mock('../../../services/geminiService', () => ({
         __esModule: true,
         default: {
-          generateComplianceReport: jest.fn().mockResolvedValue({
+          generateComplianceReport: (jest.fn() as jest.Mock<any>).mockResolvedValue({
             summary: 'Test report',
             score: 85,
           }),

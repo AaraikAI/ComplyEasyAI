@@ -171,7 +171,7 @@ import billingController from '../../../controllers/billingController';
 import { AppError } from '../../../middleware/errorHandler';
 
 describe('BillingController', () => {
-  let mockRequest: Partial<Request>;
+  let mockRequest: any;
   let mockResponse: Partial<Response>;
   const mockNext = jest.fn() as any;
 

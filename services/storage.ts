@@ -24,7 +24,10 @@ const initDB = () => {
       id: 'org1',
       name: 'Acme Corp',
       plan: 'Essentials',
-      subscriptionStatus: 'active'
+      subscriptionStatus: 'active',
+      billingCycle: 'monthly',
+      cancelAtPeriodEnd: false,
+      activeAddOns: [],
     };
     localStorage.setItem(DB_KEYS.ORGS, JSON.stringify([org]));
   }

@@ -90,11 +90,11 @@ jest.mock('../../../services/advanced/jitAccessService', () => ({
 jest.mock('../../../services/advanced/zeroKnowledgeService', () => ({
   __esModule: true,
   default: {
-    generateComplianceProof: jest.fn().mockResolvedValue({
+    generateComplianceProof: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       proof: { pi_a: ['1'], pi_b: [['2']], pi_c: ['3'] },
       publicSignals: ['100'],
     }),
-    verifyComplianceProof: jest.fn().mockResolvedValue({
+    verifyComplianceProof: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       isValid: true,
     }),
   },
@@ -103,11 +103,11 @@ jest.mock('../../../services/advanced/zeroKnowledgeService', () => ({
 jest.mock('../../../services/advanced/complianceAsCodeService', () => ({
   __esModule: true,
   default: {
-    createPolicy: jest.fn().mockResolvedValue({
+    createPolicy: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       id: 'policy-123',
       name: 'Test Policy',
     }),
-    evaluatePolicy: jest.fn().mockResolvedValue({
+    evaluatePolicy: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       allowed: true,
       violations: [],
     }),

@@ -64,7 +64,7 @@ import webhookController from '../../../controllers/webhookController';
 import { AppError } from '../../../middleware/errorHandler';
 
 describe('WebhookController', () => {
-  let mockRequest: Partial<Request>;
+  let mockRequest: any;
   let mockResponse: Partial<Response>;
   let mockNext: NextFunction;
 
