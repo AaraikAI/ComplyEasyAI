@@ -53,15 +53,15 @@ export const BCPGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         }
       } else if (result && typeof result === 'object') {
         // If result is an object, extract plan and contactTree
-        if (typeof result.plan === 'string') {
-          planText = result.plan;
-        } else if (result.plan && typeof result.plan === 'object') {
+        if (typeof (result as any).plan === 'string') {
+          planText = (result as any).plan;
+        } else if ((result as any).plan && typeof (result as any).plan === 'object') {
           // If plan is an object, stringify it (shouldn't happen, but handle it)
-          planText = JSON.stringify(result.plan, null, 2);
+          planText = JSON.stringify((result as any).plan, null, 2);
         } else {
           planText = '';
         }
-        contactTreeData = Array.isArray(result.contactTree) ? result.contactTree : [];
+        contactTreeData = Array.isArray((result as any).contactTree) ? (result as any).contactTree : [];
       }
       
       // Clean up planText - remove any JSON structure if it's embedded

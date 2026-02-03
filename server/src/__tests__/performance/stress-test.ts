@@ -236,7 +236,7 @@ describe('Stress Testing', () => {
 
   describe('Burst Traffic', () => {
     it('should handle sudden burst of traffic', async () => {
-      const result = await stressTester.loadTester.testEndpoint('get', '/health', {
+      const result = await (stressTester as any).loadTester.testEndpoint('get', '/health', {
         totalRequests: 1000,
         concurrency: 200, // Very high concurrency
       });
@@ -249,7 +249,7 @@ describe('Stress Testing', () => {
   describe('System Recovery', () => {
     it('should recover after high load', async () => {
       // Apply high load
-      await stressTester.loadTester.testEndpoint('get', '/health', {
+      await (stressTester as any).loadTester.testEndpoint('get', '/health', {
         totalRequests: 500,
         concurrency: 100,
       });

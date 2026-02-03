@@ -34,17 +34,17 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
       const [systemsData] = await Promise.all([
         api.aiRmf.getAISystems()
       ]);
-      setSystems(systemsData);
+      setSystems(systemsData as any[]);
 
       // Load assessments for all systems
-      const assessmentsPromises = systemsData.map((system: any) =>
+      const assessmentsPromises = (systemsData as any[]).map((system: any) =>
         api.aiRmf.getAssessments(system.id).catch(() => [])
       );
-      const assessmentsArrays = await Promise.all(assessmentsPromises);
+      const assessmentsArrays = await Promise.all(assessmentsPromises) as any[][];
       const allAssessments = assessmentsArrays.flat().map((assessment: any, idx: number) => ({
         ...assessment,
-        systemId: systemsData[Math.floor(idx / assessmentsArrays[0]?.length || 1)]?.id,
-        systemName: systemsData[Math.floor(idx / assessmentsArrays[0]?.length || 1)]?.name,
+        systemId: (systemsData as any[])[Math.floor(idx / (assessmentsArrays[0]?.length || 1))]?.id,
+        systemName: (systemsData as any[])[Math.floor(idx / (assessmentsArrays[0]?.length || 1))]?.name,
       }));
       setAllAssessments(allAssessments);
     } catch (error: any) {
@@ -627,11 +627,11 @@ const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect
                   try {
                     const systemData = await api.aiRmf.getAISystemById(systemId);
                     setSelectedSystemData(systemData);
-                    
+
                     // Auto-populate function scores from core functions
-                    if (systemData.coreFunctions) {
+                    if ((systemData as any).coreFunctions) {
                       const functionScores: any = {};
-                      systemData.coreFunctions.forEach((func: any) => {
+                      (systemData as any).coreFunctions.forEach((func: any) => {
                         functionScores[func.functionName] = func.completionPercent || 0;
                       });
                       

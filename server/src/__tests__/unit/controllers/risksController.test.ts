@@ -3,7 +3,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
 jest.mock('../../../config/logger', () => ({
@@ -23,10 +23,10 @@ jest.mock('../../../config/database', () => ({
 jest.mock('../../../services/geminiService', () => ({
   __esModule: true,
   default: {
-    prioritizeRisks: jest.fn().mockResolvedValue([
+    prioritizeRisks: jest.fn<any>().mockResolvedValue([
       { id: 'risk-1', score: 95, rationale: 'Critical' },
-    ]),
-    generateRemediationPlan: jest.fn().mockResolvedValue('# Remediation Plan\n\n...'),
+    ] as never),
+    generateRemediationPlan: jest.fn<any>().mockResolvedValue('# Remediation Plan\n\n...' as never),
   },
 }));
 
@@ -36,6 +36,7 @@ import { AppError } from '../../../middleware/errorHandler';
 describe('RisksController', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
+  let mockNext: NextFunction;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -49,12 +50,14 @@ describe('RisksController', () => {
         email: 'test@example.com',
         organizationId: 'org-123',
       },
-    };
+    } as any;
 
     mockResponse = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis() as any,
+      status: jest.fn().mockReturnThis() as any,
     };
+
+    mockNext = jest.fn() as unknown as NextFunction;
   });
 
   describe('list()', () => {
@@ -64,9 +67,9 @@ describe('RisksController', () => {
         { id: 'risk-2', title: 'Risk 2', severity: 'Medium' },
       ];
 
-      prismaMock.riskItem.findMany.mockResolvedValue(mockRisks as any);
+      (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue(mockRisks as any);
 
-      await risksController.list(mockRequest as Request, mockResponse as Response);
+      await risksController.list(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.json).toHaveBeenCalledWith(mockRisks);
     });
@@ -74,9 +77,9 @@ describe('RisksController', () => {
     it('should filter by status', async () => {
       mockRequest.query = { status: 'Open' };
 
-      prismaMock.riskItem.findMany.mockResolvedValue([]);
+      (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([] as any);
 
-      await risksController.list(mockRequest as Request, mockResponse as Response);
+      await risksController.list(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(prismaMock.riskItem.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -103,10 +106,10 @@ describe('RisksController', () => {
         organizationId: 'org-123',
       };
 
-      prismaMock.riskItem.create.mockResolvedValue(mockRisk as any);
-      prismaMock.auditLog.create.mockResolvedValue({} as any);
+      (prismaMock.riskItem.create as jest.Mock<any>).mockResolvedValue(mockRisk as any);
+      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as any);
 
-      await risksController.create(mockRequest as Request, mockResponse as Response);
+      await risksController.create(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalled();
@@ -116,7 +119,7 @@ describe('RisksController', () => {
       mockRequest.body = { title: 'Risk' };
 
       await expect(
-        risksController.create(mockRequest as Request, mockResponse as Response)
+        risksController.create(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -127,12 +130,11 @@ describe('RisksController', () => {
         { id: 'risk-1', description: 'Risk 1', severity: 'High' },
       ];
 
-      prismaMock.riskItem.findMany.mockResolvedValue(risks as any);
+      (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue(risks as any);
 
-      await risksController.prioritize(mockRequest as Request, mockResponse as Response);
+      await risksController.prioritize(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.json).toHaveBeenCalled();
     });
   });
 });
-

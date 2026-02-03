@@ -54,11 +54,11 @@ describe('E2E: Authentication Flow', () => {
         })
         .expect(201);
 
-      expect(requestResponse.body).toHaveProperty('message');
-      
+      expect(registerResponse.body).toHaveProperty('message');
+
       // Step 2: Verify magic link
-      const token = process.env.NODE_ENV === 'development' 
-        ? requestResponse.body.devToken 
+      const token = process.env.NODE_ENV === 'development'
+        ? registerResponse.body.devToken
         : 'test-token';
       
       prismaMock.magicLink.findUnique.mockResolvedValueOnce({

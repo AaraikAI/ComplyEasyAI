@@ -137,7 +137,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
     
     try {
       // Call backend scan endpoint which uses AI to discover risks
-      const result = await api.risks.scan();
+      const result = await api.risks.scan() as { newRisks?: RiskItem[] };
       
       // Simulate progress updates
       const steps = [
@@ -212,7 +212,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       setLoadingRemediation(true);
       try {
         // Call backend API to generate remediation plan
-        const result = await api.risks.generateRemediation(risk.id);
+        const result = await api.risks.generateRemediation(risk.id) as { plan?: string };
         setRemediationPlan(result.plan || '');
       } catch (error: any) {
         console.error('Failed to generate remediation plan:', error);

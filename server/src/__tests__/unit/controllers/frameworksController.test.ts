@@ -3,7 +3,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
 jest.mock('../../../config/logger', () => ({
@@ -26,6 +26,7 @@ import { AppError } from '../../../middleware/errorHandler';
 describe('FrameworksController', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
+  let mockNext: NextFunction;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -38,12 +39,14 @@ describe('FrameworksController', () => {
         email: 'test@example.com',
         organizationId: 'org-123',
       },
-    };
+    } as any;
 
     mockResponse = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis() as any,
+      status: jest.fn().mockReturnThis() as any,
     };
+
+    mockNext = jest.fn() as unknown as NextFunction;
   });
 
   describe('list()', () => {
@@ -53,11 +56,12 @@ describe('FrameworksController', () => {
         { id: 'framework-2', name: 'ISO 27001', organizationId: 'org-123' },
       ];
 
-      prismaMock.complianceFramework.findMany.mockResolvedValue(mockFrameworks as any);
+      (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue(mockFrameworks as any);
 
       await frameworksController.list(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(mockFrameworks);
@@ -81,11 +85,12 @@ describe('FrameworksController', () => {
         controls: [],
       };
 
-      prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework as any);
+      (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(mockFramework as any);
 
       await frameworksController.getById(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(mockFramework);
@@ -93,10 +98,10 @@ describe('FrameworksController', () => {
 
     it('should throw error if framework not found', async () => {
       mockRequest.params = { id: 'invalid-id' };
-      prismaMock.complianceFramework.findFirst.mockResolvedValue(null);
+      (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
-        frameworksController.getById(mockRequest as Request, mockResponse as Response)
+        frameworksController.getById(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -115,12 +120,13 @@ describe('FrameworksController', () => {
         organizationId: 'org-123',
       };
 
-      prismaMock.complianceFramework.create.mockResolvedValue(mockFramework as any);
-      prismaMock.auditLog.create.mockResolvedValue({} as any);
+      (prismaMock.complianceFramework.create as jest.Mock<any>).mockResolvedValue(mockFramework as any);
+      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as any);
 
       await frameworksController.create(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.status).toHaveBeenCalledWith(201);
@@ -131,7 +137,7 @@ describe('FrameworksController', () => {
       mockRequest.body = { name: 'SOC 2' };
 
       await expect(
-        frameworksController.create(mockRequest as Request, mockResponse as Response)
+        frameworksController.create(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -142,22 +148,22 @@ describe('FrameworksController', () => {
       mockRequest.params = { id: frameworkId };
       mockRequest.body = { name: 'Updated Framework' };
 
-      prismaMock.complianceFramework.findFirst.mockResolvedValue({
+      (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue({
         id: frameworkId,
         organizationId: 'org-123',
       } as any);
-      prismaMock.complianceFramework.update.mockResolvedValue({
+      (prismaMock.complianceFramework.update as jest.Mock<any>).mockResolvedValue({
         id: frameworkId,
         ...mockRequest.body,
       } as any);
 
       await frameworksController.update(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalled();
     });
   });
 });
-

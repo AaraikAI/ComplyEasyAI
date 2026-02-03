@@ -42,7 +42,7 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
       if (statusFilter !== 'all') filters.status = statusFilter;
       if (lifecycleFilter !== 'all') filters.lifecycleStage = lifecycleFilter;
       const data = await api.aiRmf.getAISystems(filters);
-      setSystems(data);
+      setSystems(data as any[]);
     } catch (error: any) {
       console.error('Failed to load AI systems:', error);
     } finally {

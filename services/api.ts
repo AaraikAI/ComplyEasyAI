@@ -1,11 +1,11 @@
 import { User, RiskItem, ComplianceFramework, AuditLog, Integration, TierName, SubscriptionDetails, UsageMetrics, Tier, TierComparison, UpgradePreview, Webhook, WebhookEvent, ApiKey, BillingCycle, OnboardingProgress, OnboardingChecklist } from '../types';
 
 // Backend API Configuration — ensure base always ends with /api so /auth/register etc. resolve correctly
-const rawBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const rawBase = (import.meta as ImportMeta & { env: Record<string, string> }).env.VITE_API_URL || 'http://localhost:3001/api';
 const API_BASE_URL = rawBase.endsWith('/api') ? rawBase : rawBase.replace(/\/?$/, '') + '/api';
 
 // Log API URL in development (Vite uses import.meta.env, not process.env)
-if (import.meta.env.DEV) {
+if ((import.meta as ImportMeta & { env: { DEV: boolean } }).env.DEV) {
   console.log('API Base URL:', API_BASE_URL);
 }
 
@@ -100,7 +100,7 @@ async function fetchAPI<T>(
       }
       
       // Log detailed error for debugging
-      if (import.meta.env.DEV) {
+      if ((import.meta as ImportMeta & { env: { DEV: boolean } }).env.DEV) {
         console.error('API Error:', {
           endpoint,
           status: response.status,
@@ -1154,11 +1154,6 @@ export const api = {
         return fetchAPI<any>(`/enterprise/visionary-ai/benchmarking?industry=${encodeURIComponent(industry)}`);
       },
     },
-    reports: {
-      // Custom reports creation is gated by maxCustomReports (POST /enterprise/reports).
-      // No list endpoint in current backend; use for gating when save-report UI is added.
-      list: async (): Promise<any[]> => [],
-    },
     monitoring: {
       list: async (params?: Record<string, string>) => {
         const query = params ? new URLSearchParams(params).toString() : '';
@@ -1278,6 +1273,9 @@ export const api = {
       },
     },
     reports: {
+      // Custom reports creation is gated by maxCustomReports (POST /enterprise/reports).
+      // No list endpoint in current backend; use for gating when save-report UI is added.
+      list: async (): Promise<any[]> => [],
       getExecutiveSummary: async () => {
         return fetchAPI<any>('/enterprise/reports/executive-summary');
       },
