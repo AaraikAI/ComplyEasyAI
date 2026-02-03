@@ -12,7 +12,7 @@ jest.mock('../../../config/database', () => ({
 
 jest.mock('../../../utils/auditLogger', () => ({
   AuditLogger: {
-    log: jest.fn().mockResolvedValue({}),
+    log: (jest.fn() as jest.Mock<any>).mockResolvedValue({}),
   },
 }));
 

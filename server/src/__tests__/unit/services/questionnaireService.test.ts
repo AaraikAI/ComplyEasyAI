@@ -12,16 +12,16 @@ jest.mock('../../../config/database', () => ({
 
 jest.mock('../../../utils/auditLogger', () => ({
   AuditLogger: {
-    log: jest.fn().mockResolvedValue({}),
+    log: (jest.fn() as jest.Mock<any>).mockResolvedValue({}),
   },
 }));
 
 jest.mock('@google/generative-ai', () => ({
-  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
-    getGenerativeModel: jest.fn().mockReturnValue({
-      generateContent: jest.fn().mockResolvedValue({
+  GoogleGenerativeAI: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
+    getGenerativeModel: (jest.fn() as jest.Mock<any>).mockReturnValue({
+      generateContent: (jest.fn() as jest.Mock<any>).mockResolvedValue({
         response: {
-          text: jest.fn().mockReturnValue('AI response'),
+          text: (jest.fn() as jest.Mock<any>).mockReturnValue('AI response'),
         },
       }),
     }),
@@ -87,9 +87,11 @@ describe('QuestionnaireService', () => {
 
   describe('submitResponse()', () => {
     it('should submit questionnaire response', async () => {
+      const questionnaireId = 'questionnaire-123';
+      const questionId = 'q-1';
       const responseData = {
-        questionnaireId: 'questionnaire-123',
-        responses: [{ questionId: 'q-1', answer: 'Yes' }],
+        responseText: 'Yes',
+        responseData: { answer: 'Yes' },
       };
 
       prismaMock.questionnaireResponse.create.mockResolvedValue({
@@ -98,8 +100,9 @@ describe('QuestionnaireService', () => {
       prismaMock.questionnaire.update.mockResolvedValue({} as any);
 
       const result = await service.submitResponse(
-        responseData.questionnaireId,
-        responseData.responses,
+        questionnaireId,
+        questionId,
+        responseData,
         'user-123',
         'org-123'
       );

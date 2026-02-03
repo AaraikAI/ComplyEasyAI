@@ -10,7 +10,7 @@ import { prismaMock } from '../mocks/prisma';
 jest.mock('../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
-  testConnection: jest.fn().mockResolvedValue(true),
+  testConnection: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
 }));
 
 jest.mock('../../config/logger', () => ({
@@ -25,10 +25,10 @@ jest.mock('../../config/logger', () => ({
 jest.mock('../../services/geminiService', () => ({
   __esModule: true,
   default: {
-    prioritizeRisks: jest.fn().mockResolvedValue([
+    prioritizeRisks: (jest.fn() as jest.Mock<any>).mockResolvedValue([
       { id: 'r1', score: 95, rationale: 'High severity' },
     ]),
-    generateRemediationPlan: jest.fn().mockResolvedValue('Remediation plan'),
+    generateRemediationPlan: (jest.fn() as jest.Mock<any>).mockResolvedValue('Remediation plan'),
   },
 }));
 

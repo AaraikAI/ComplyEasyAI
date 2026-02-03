@@ -201,5 +201,6 @@ export function createQueryProfilingMiddleware(profiler: QueryProfiler) {
   };
 }
 
-export { QueryProfiler, QueryProfile, QueryStats };
+export { QueryProfiler };
+export type { QueryProfile, QueryStats };
 

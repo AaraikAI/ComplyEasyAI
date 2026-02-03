@@ -287,5 +287,6 @@ describe('Stress Testing', () => {
   });
 });
 
-export { StressTester, StressTestResult };
+export { StressTester };
+export type { StressTestResult };
 

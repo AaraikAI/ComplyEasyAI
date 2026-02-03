@@ -596,7 +596,7 @@ const ChartCard: React.FC<{ title: string; type: 'line' | 'bar' | 'pie'; data: C
                 <Bar
                   key={index}
                   dataKey={dataset.label || 'value'}
-                  fill={dataset.backgroundColor || COLORS[index % COLORS.length]}
+                  fill={Array.isArray(dataset.backgroundColor) ? dataset.backgroundColor[0] : (dataset.backgroundColor || COLORS[index % COLORS.length])}
                 />
               ))}
             </BarChart>

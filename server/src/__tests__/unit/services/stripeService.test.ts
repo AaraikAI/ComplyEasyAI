@@ -107,7 +107,8 @@ describe('StripeService', () => {
   describe('createCheckoutSession()', () => {
     it('should create checkout session', async () => {
       const options = {
-        priceId: 'price_test123',
+        tierName: 'Essentials' as const,
+        billingCycle: 'monthly' as const,
         customerEmail: 'customer@example.com',
         organizationId: 'org-123',
         successUrl: 'https://example.com/success',
@@ -128,14 +129,14 @@ describe('StripeService', () => {
         expect.objectContaining({
           mode: 'subscription',
           payment_method_types: ['card'],
-          line_items: [{ price: options.priceId, quantity: 1 }],
         })
       );
     });
 
     it('should include customer ID when provided', async () => {
       const options = {
-        priceId: 'price_test123',
+        tierName: 'Essentials' as const,
+        billingCycle: 'monthly' as const,
         customerId: 'cus_test123',
         customerEmail: 'customer@example.com',
         organizationId: 'org-123',

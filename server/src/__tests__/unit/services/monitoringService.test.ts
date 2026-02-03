@@ -12,7 +12,7 @@ jest.mock('../../../config/database', () => ({
 
 jest.mock('../../../utils/auditLogger', () => ({
   AuditLogger: {
-    log: jest.fn().mockResolvedValue({}),
+    log: (jest.fn() as jest.Mock<any>).mockResolvedValue({}),
   },
 }));
 
@@ -147,7 +147,7 @@ describe('MonitoringService', () => {
     });
   });
 
-  describe('getMonitors()', () => {
+  describe('getMonitorsByOrganization()', () => {
     it('should get all monitors for organization', async () => {
       const organizationId = 'org-123';
       const mockMonitors = [
@@ -157,7 +157,7 @@ describe('MonitoringService', () => {
 
       prismaMock.continuousMonitor.findMany.mockResolvedValue(mockMonitors as any);
 
-      const result = await monitoringService.getMonitors(organizationId);
+      const result = await monitoringService.getMonitorsByOrganization(organizationId);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(2);
@@ -171,7 +171,7 @@ describe('MonitoringService', () => {
     it('should filter by active status', async () => {
       prismaMock.continuousMonitor.findMany.mockResolvedValue([] as any);
 
-      await monitoringService.getMonitors('org-123', { active: true });
+      await monitoringService.getMonitorsByOrganization('org-123', { active: true });
 
       expect(prismaMock.continuousMonitor.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -202,7 +202,7 @@ describe('MonitoringService', () => {
     it('should limit results when limit provided', async () => {
       prismaMock.monitorResult.findMany.mockResolvedValue([] as any);
 
-      await monitoringService.getMonitorResults('monitor-123', { limit: 10 });
+      await monitoringService.getMonitorResults('monitor-123', 10);
 
       expect(prismaMock.monitorResult.findMany).toHaveBeenCalledWith(
         expect.objectContaining({

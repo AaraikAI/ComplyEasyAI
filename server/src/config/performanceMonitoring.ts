@@ -309,5 +309,6 @@ defaultThresholds.forEach((threshold) => {
 });
 
 export default performanceMonitor;
-export { PerformanceMonitor, PerformanceMetric, PerformanceThreshold };
+export { PerformanceMonitor };
+export type { PerformanceMetric, PerformanceThreshold };
 

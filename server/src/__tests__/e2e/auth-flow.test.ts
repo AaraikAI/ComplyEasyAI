@@ -11,7 +11,7 @@ import { prismaMock } from '../mocks/prisma';
 jest.mock('../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
-  testConnection: jest.fn().mockResolvedValue(true),
+  testConnection: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
 }));
 
 jest.mock('../../config/logger', () => ({
@@ -26,8 +26,8 @@ jest.mock('../../config/logger', () => ({
 jest.mock('../../services/emailService', () => ({
   __esModule: true,
   default: {
-    sendMagicLink: jest.fn().mockResolvedValue(true),
-    sendWelcomeEmail: jest.fn().mockResolvedValue(true),
+    sendMagicLink: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
+    sendWelcomeEmail: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
   },
 }));
 

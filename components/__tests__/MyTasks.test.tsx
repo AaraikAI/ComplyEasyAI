@@ -30,23 +30,25 @@ vi.mock('../../services/geminiService', () => ({
 
 describe('MyTasks Component', () => {
   const mockTasks = [
-    { 
-      id: 't1', 
-      description: 'High Severity Task', 
-      severity: 'High', 
-      status: 'Open', 
-      assignedTo: 'Sarah Connor', 
+    {
+      id: 't1',
+      description: 'High Severity Task',
+      severity: 'High' as const,
+      status: 'Open' as const,
+      assignedTo: 'Sarah Connor',
       detectedAt: '2024-01-01',
-      aiPriorityScore: 90 
+      aiPriorityScore: 90,
+      category: 'Security'
     },
-    { 
-      id: 't2', 
-      description: 'Low Severity Task', 
-      severity: 'Low', 
-      status: 'Resolved', 
-      assignedTo: 'Sarah Connor', 
+    {
+      id: 't2',
+      description: 'Low Severity Task',
+      severity: 'Low' as const,
+      status: 'Resolved' as const,
+      assignedTo: 'Sarah Connor',
       detectedAt: '2024-01-02',
-      aiPriorityScore: 20 
+      aiPriorityScore: 20,
+      category: 'Compliance'
     }
   ];
 
