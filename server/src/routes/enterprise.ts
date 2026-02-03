@@ -174,6 +174,17 @@ policyRouter.get(
   })
 );
 
+// Get policy metrics (before /:id to avoid matching "metrics" as ID)
+policyRouter.get(
+  '/metrics',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const metrics = await policyLibraryService.getPolicyMetrics(
+      req.user.organizationId
+    );
+    res.json(metrics);
+  })
+);
+
 policyRouter.get(
   '/',
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
@@ -182,6 +193,85 @@ policyRouter.get(
       req.query as any
     );
     res.json(policies);
+  })
+);
+
+// Get single policy
+policyRouter.get(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const policy = await policyLibraryService.getPolicyById(
+      req.params.id,
+      req.user.organizationId
+    );
+    res.json(policy);
+  })
+);
+
+// Update policy
+policyRouter.put(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const policy = await policyLibraryService.updatePolicy(
+      req.params.id,
+      req.body,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(policy);
+  })
+);
+
+// Archive policy
+policyRouter.delete(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const policy = await policyLibraryService.archivePolicy(
+      req.params.id,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(policy);
+  })
+);
+
+// Approve policy
+policyRouter.post(
+  '/:id/approve',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const policy = await policyLibraryService.approvePolicy(
+      req.params.id,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(policy);
+  })
+);
+
+// Submit policy for review
+policyRouter.post(
+  '/:id/submit-review',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const policy = await policyLibraryService.submitForReview(
+      req.params.id,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(policy);
+  })
+);
+
+// Duplicate policy
+policyRouter.post(
+  '/:id/duplicate',
+  enforceLimit('maxPolicies'),
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const policy = await policyLibraryService.duplicatePolicy(
+      req.params.id,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.status(201).json(policy);
   })
 );
 
