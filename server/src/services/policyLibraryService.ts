@@ -282,6 +282,105 @@ Manage risks associated with third-party relationships.
   }
 
   /**
+   * Get single policy by ID
+   */
+  async getPolicyById(policyId: string, organizationId: string) {
+    const policy = await prisma.policy.findFirst({
+      where: { id: policyId, organizationId },
+    });
+    if (!policy) throw new Error('Policy not found');
+    return policy;
+  }
+
+  /**
+   * Archive policy (soft status change)
+   */
+  async archivePolicy(policyId: string, userId: string, organizationId: string) {
+    const existing = await prisma.policy.findFirst({
+      where: { id: policyId, organizationId },
+    });
+    if (!existing) throw new Error('Policy not found');
+
+    const policy = await prisma.policy.update({
+      where: { id: policyId },
+      data: { status: 'Archived' },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'policy.archived',
+      resourceType: 'Policy',
+      resourceId: policyId,
+      metadata: { title: policy.title },
+    });
+
+    return policy;
+  }
+
+  /**
+   * Submit policy for review
+   */
+  async submitForReview(policyId: string, userId: string, organizationId: string) {
+    const existing = await prisma.policy.findFirst({
+      where: { id: policyId, organizationId },
+    });
+    if (!existing) throw new Error('Policy not found');
+
+    const policy = await prisma.policy.update({
+      where: { id: policyId },
+      data: { status: 'In_Review' },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'policy.submitted_for_review',
+      resourceType: 'Policy',
+      resourceId: policyId,
+      metadata: { title: policy.title },
+    });
+
+    return policy;
+  }
+
+  /**
+   * Duplicate policy
+   */
+  async duplicatePolicy(policyId: string, userId: string, organizationId: string) {
+    const original = await prisma.policy.findFirst({
+      where: { id: policyId, organizationId },
+    });
+    if (!original) throw new Error('Policy not found');
+
+    const duplicate = await prisma.policy.create({
+      data: {
+        organizationId,
+        title: `${original.title} (Copy)`,
+        category: original.category,
+        content: original.content,
+        summary: original.summary,
+        framework: original.framework,
+        version: '1.0',
+        status: 'Draft',
+        owner: original.owner,
+        tags: original.tags as Prisma.InputJsonValue,
+      },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'policy.duplicated',
+      resourceType: 'Policy',
+      resourceId: duplicate.id,
+      metadata: { originalId: policyId, title: duplicate.title },
+    });
+
+    return duplicate;
+  }
+
+  /**
    * Get policies by organization
    */
   async getPoliciesByOrganization(
