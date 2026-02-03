@@ -794,6 +794,100 @@ issueRouter.get(
   })
 );
 
+// Get single issue
+issueRouter.get(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const prisma = require('../config/database').default;
+    const issue = await prisma.issue.findFirst({
+      where: {
+        id: req.params.id,
+        organizationId: req.user.organizationId,
+      },
+      include: {
+        assignedTo: { select: { id: true, name: true, email: true } },
+        createdBy: { select: { id: true, name: true, email: true } },
+        comments: {
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        },
+      },
+    });
+    if (!issue) {
+      return res.status(404).json({ error: 'Issue not found' });
+    }
+    res.json(issue);
+  })
+);
+
+// Update issue
+issueRouter.patch(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const prisma = require('../config/database').default;
+    const issue = await prisma.issue.update({
+      where: { id: req.params.id },
+      data: {
+        title: req.body.title,
+        description: req.body.description,
+        issueType: req.body.issueType,
+        category: req.body.category,
+        priority: req.body.priority,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+        slaTarget: req.body.slaTarget ? new Date(req.body.slaTarget) : undefined,
+        remediationPlan: req.body.remediationPlan,
+        remediationSteps: req.body.remediationSteps,
+        tags: req.body.tags,
+      },
+      include: {
+        assignedTo: true,
+        createdBy: true,
+      },
+    });
+    res.json(issue);
+  })
+);
+
+// Update issue status
+issueRouter.patch(
+  '/:id/status',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const issue = await issueManagementService.updateIssueStatus(
+      req.params.id,
+      req.body.status,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(issue);
+  })
+);
+
+// Delete issue
+issueRouter.delete(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const prisma = require('../config/database').default;
+    // Delete comments first
+    await prisma.issueComment.deleteMany({ where: { issueId: req.params.id } });
+    // Delete the issue
+    await prisma.issue.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  })
+);
+
+// Get issue comments
+issueRouter.get(
+  '/:id/comments',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const prisma = require('../config/database').default;
+    const comments = await prisma.issueComment.findMany({
+      where: { issueId: req.params.id },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(comments);
+  })
+);
+
 /**
  * ═══════════════════════════════════════════════════════════════
  * VISIONARY AI ROUTES
