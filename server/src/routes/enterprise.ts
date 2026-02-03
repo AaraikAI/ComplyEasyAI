@@ -132,6 +132,128 @@ questionnaireRouter.get(
   })
 );
 
+// Get questionnaire templates
+questionnaireRouter.get(
+  '/templates',
+  authAsyncHandler(async (_req: AuthenticatedRequest, res) => {
+    const { questionnaireTemplates } = require('../data/questionnaireTemplates');
+    res.json(questionnaireTemplates);
+  })
+);
+
+// Create questionnaire from template
+questionnaireRouter.post(
+  '/from-template',
+  enforceLimit('maxQuestionnairesPerMonth'),
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const { questionnaireTemplates } = require('../data/questionnaireTemplates');
+    const template = questionnaireTemplates.find((t: any) => t.id === req.body.templateId);
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    const questionnaire = await questionnaireService.createQuestionnaire({
+      organizationId: req.user.organizationId,
+      title: req.body.title || template.title,
+      description: template.description,
+      questionnaireType: template.type,
+      requestedBy: req.body.requestedBy,
+      dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+      userId: req.user.id,
+    });
+    await questionnaireService.addQuestions(
+      questionnaire.id,
+      template.questions,
+      req.user.id,
+      req.user.organizationId
+    );
+    const full = await questionnaireService.getQuestionnairesByOrganization(
+      req.user.organizationId, {}
+    );
+    const created = full.find((q: any) => q.id === questionnaire.id);
+    res.status(201).json(created || questionnaire);
+  })
+);
+
+// Get single questionnaire
+questionnaireRouter.get(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const questionnaires = await questionnaireService.getQuestionnairesByOrganization(
+      req.user.organizationId
+    );
+    const questionnaire = questionnaires.find((q: any) => q.id === req.params.id);
+    if (!questionnaire) {
+      return res.status(404).json({ error: 'Questionnaire not found' });
+    }
+    res.json(questionnaire);
+  })
+);
+
+// Update questionnaire
+questionnaireRouter.put(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const prisma = require('../config/database').default;
+    const updated = await prisma.questionnaire.update({
+      where: { id: req.params.id },
+      data: {
+        title: req.body.title,
+        description: req.body.description,
+        questionnaireType: req.body.questionnaireType,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+        requestedBy: req.body.requestedBy,
+      },
+      include: { questions: true, responses: true },
+    });
+    res.json(updated);
+  })
+);
+
+// Delete questionnaire
+questionnaireRouter.delete(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const prisma = require('../config/database').default;
+    await prisma.questionnaireResponse.deleteMany({ where: { questionnaireId: req.params.id } });
+    await prisma.questionnaireQuestion.deleteMany({ where: { questionnaireId: req.params.id } });
+    await prisma.questionnaire.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  })
+);
+
+// Add questions
+questionnaireRouter.post(
+  '/:id/questions',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const questions = await questionnaireService.addQuestions(
+      req.params.id,
+      req.body.questions,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(questions);
+  })
+);
+
+// Submit response
+questionnaireRouter.post(
+  '/:id/responses',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const response = await questionnaireService.submitResponse(
+      req.params.id,
+      req.body.questionId,
+      {
+        responseText: req.body.responseText,
+        responseData: req.body.responseData,
+        attachments: req.body.attachments,
+      },
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(response);
+  })
+);
+
 /**
  * ═══════════════════════════════════════════════════════════════
  * POLICY LIBRARY ROUTES
@@ -357,6 +479,33 @@ workspaceRouter.get(
       req.user.organizationId
     );
     res.json(metrics);
+  })
+);
+
+// Move user between organizations
+workspaceRouter.post(
+  '/move-user',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const result = await multiWorkspaceService.moveUserToOrganization(
+      req.body.userId,
+      req.body.targetOrganizationId,
+      req.user.id
+    );
+    res.json(result);
+  })
+);
+
+// Clone framework to child organizations
+workspaceRouter.post(
+  '/clone-framework',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const result = await multiWorkspaceService.cloneFrameworkToChildren(
+      req.body.frameworkId,
+      req.user.organizationId,
+      req.body.targetOrganizationIds,
+      req.user.id
+    );
+    res.json(result);
   })
 );
 
