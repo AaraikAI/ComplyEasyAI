@@ -452,7 +452,20 @@ export type ViewState =
   | 'acos'
   | 'eu-ai-act'
   | 'dma'
-  | 'dsa';
+  | 'dsa'
+  | 'security'
+  | 'analytics'
+  | 'ai-rmf'
+  | 'ai-rmf-systems'
+  | 'ai-rmf-create'
+  | 'ai-rmf-details'
+  | 'ai-rmf-assessments'
+  | 'vendors'
+  | 'policies'
+  | 'monitoring'
+  | 'workspaces'
+  | 'questionnaires'
+  | 'issues';
 
 // ============================================================================
 // TIER CONFIGURATION (Frontend copy of backend tiers)

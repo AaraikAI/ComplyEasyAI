@@ -3,9 +3,10 @@ import { ViewState } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { normalizePlan, canAccessView } from '../constants/tierFeatures';
-import { 
+import {
   LayoutDashboard, FileText, ShieldCheck, Settings, LogOut, Menu, X,
-  Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare, Layers, Brain
+  Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare, Layers, Brain,
+  Users, FileCheck, Monitor, Building2, ClipboardList, AlertTriangle
 } from 'lucide-react';
 import { ComplianceChat } from './ComplianceChat';
 import { OnboardingOverlay, OnboardingChecklistWidget } from './Onboarding';
@@ -95,6 +96,9 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'editor', 'viewer'], relatedViews: ['risks'] },
     { id: 'my-tasks', label: 'My Tasks', icon: CheckSquare, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'risks', label: 'Risk Management', icon: ShieldAlert, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'issues', label: 'Issue Management', icon: AlertTriangle, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'vendors', label: 'Vendor Management', icon: Users, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'policies', label: 'Policy Management', icon: FileCheck, roles: ['admin', 'editor'], relatedViews: [] },
     { id: 'integrations', label: 'Integrations', icon: Layers, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'frameworks', label: 'Frameworks', icon: ShieldCheck, roles: ['admin', 'editor'], relatedViews: ['framework-details'] },
     { id: 'ai-rmf', label: 'NIST AI RMF', icon: Brain, roles: ['admin', 'editor', 'viewer'], relatedViews: ['ai-rmf-systems', 'ai-rmf-create', 'ai-rmf-details', 'ai-rmf-assessments'] },
@@ -103,7 +107,10 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     { id: 'dsa', label: 'DSA', icon: ShieldCheck, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'reports', label: 'Report Generator', icon: FileText, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'audit', label: 'Audit Trail', icon: Activity, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'monitoring', label: 'Monitoring', icon: Monitor, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'analytics', label: 'Real-time Analytics', icon: Activity, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'workspaces', label: 'Workspaces', icon: Building2, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'questionnaires', label: 'Questionnaires', icon: ClipboardList, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'security', label: 'Security Features', icon: Lock, roles: ['admin', 'editor'], relatedViews: [] },
     { id: 'acos', label: 'aCOS', icon: Brain, roles: ['admin', 'editor'], relatedViews: [] },
   ];
