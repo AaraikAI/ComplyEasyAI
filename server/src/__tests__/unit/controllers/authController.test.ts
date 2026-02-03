@@ -7,7 +7,7 @@ import { Request, Response } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
 // Mock dependencies
-const mockSendMagicLink = jest.fn();
+const mockSendMagicLink = jest.fn<any>();
 jest.mock('../../../services/emailService', () => ({
   __esModule: true,
   default: {
@@ -35,28 +35,28 @@ jest.mock('../../../middleware/auth', () => ({
   verifyRefreshToken: jest.fn().mockReturnValue({ userId: 'user-123' }),
 }));
 
-import { AuthController } from '../../../controllers/authController';
+import AuthController from '../../../controllers/authController';
 import { AppError } from '../../../middleware/errorHandler';
 
 describe('AuthController', () => {
-  let authController: AuthController;
+  let authController: typeof AuthController;
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    authController = new AuthController();
+    authController = AuthController;
 
     mockRequest = {
       body: {},
-    };
+    } as any;
 
     mockResponse = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis() as any,
+      status: jest.fn().mockReturnThis() as any,
     };
 
-    mockSendMagicLink.mockResolvedValue(true);
+    mockSendMagicLink.mockResolvedValue(true as never);
   });
 
   describe('requestMagicLink()', () => {
@@ -70,8 +70,8 @@ describe('AuthController', () => {
         organization: { id: 'org-123' },
       };
 
-      prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
-      prismaMock.magicLink.create.mockResolvedValue({
+      (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUser as any);
+      (prismaMock.magicLink.create as jest.Mock<any>).mockResolvedValue({
         email,
         token: 'test-token',
         expiresAt: new Date(),
@@ -90,16 +90,16 @@ describe('AuthController', () => {
       const email = 'newuser@example.com';
       mockRequest.body = { email };
 
-      prismaMock.user.findUnique.mockResolvedValue(null);
-      prismaMock.organization.create.mockResolvedValue({
+      (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.organization.create as jest.Mock<any>).mockResolvedValue({
         id: 'org-123',
         name: "newuser's Organization",
       } as any);
-      prismaMock.user.create.mockResolvedValue({
+      (prismaMock.user.create as jest.Mock<any>).mockResolvedValue({
         id: 'user-123',
         email,
       } as any);
-      prismaMock.magicLink.create.mockResolvedValue({
+      (prismaMock.magicLink.create as jest.Mock<any>).mockResolvedValue({
         email,
         token: 'test-token',
       } as any);
@@ -127,12 +127,12 @@ describe('AuthController', () => {
       const email = 'test@example.com';
       mockRequest.body = { email };
 
-      prismaMock.user.findUnique.mockResolvedValue({
+      (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'user-123',
         email,
         organization: { id: 'org-123' },
       } as any);
-      prismaMock.magicLink.create.mockResolvedValue({
+      (prismaMock.magicLink.create as jest.Mock<any>).mockResolvedValue({
         email,
         token: 'dev-token',
       } as any);
@@ -168,9 +168,9 @@ describe('AuthController', () => {
         organization: { id: 'org-123' },
       };
 
-      prismaMock.magicLink.findUnique.mockResolvedValue(mockMagicLink as any);
-      prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
-      prismaMock.magicLink.update.mockResolvedValue({} as any);
+      (prismaMock.magicLink.findUnique as jest.Mock<any>).mockResolvedValue(mockMagicLink as any);
+      (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUser as any);
+      (prismaMock.magicLink.update as jest.Mock<any>).mockResolvedValue({} as any);
 
       await authController.verifyMagicLink(
         mockRequest as Request,
@@ -188,7 +188,7 @@ describe('AuthController', () => {
 
     it('should reject invalid token', async () => {
       mockRequest.body = { token: 'invalid-token' };
-      prismaMock.magicLink.findUnique.mockResolvedValue(null);
+      (prismaMock.magicLink.findUnique as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         authController.verifyMagicLink(mockRequest as Request, mockResponse as Response)
@@ -204,7 +204,7 @@ describe('AuthController', () => {
       };
 
       mockRequest.body = { token: 'expired-token' };
-      prismaMock.magicLink.findUnique.mockResolvedValue(expiredLink as any);
+      (prismaMock.magicLink.findUnique as jest.Mock<any>).mockResolvedValue(expiredLink as any);
 
       await expect(
         authController.verifyMagicLink(mockRequest as Request, mockResponse as Response)
@@ -220,7 +220,7 @@ describe('AuthController', () => {
       };
 
       mockRequest.body = { token: 'used-token' };
-      prismaMock.magicLink.findUnique.mockResolvedValue(usedLink as any);
+      (prismaMock.magicLink.findUnique as jest.Mock<any>).mockResolvedValue(usedLink as any);
 
       await expect(
         authController.verifyMagicLink(mockRequest as Request, mockResponse as Response)
@@ -237,7 +237,7 @@ describe('AuthController', () => {
         email: 'user@example.com',
       };
 
-      prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
+      (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUser as any);
 
       await authController.refreshToken(
         mockRequest as Request,
@@ -255,7 +255,7 @@ describe('AuthController', () => {
       mockRequest.body = { refreshToken: 'invalid-token' };
 
       const { verifyRefreshToken } = require('../../../middleware/auth');
-      verifyRefreshToken.mockReturnValue(null);
+      (verifyRefreshToken as jest.Mock<any>).mockReturnValue(null);
 
       await expect(
         authController.refreshToken(mockRequest as Request, mockResponse as Response)
@@ -263,4 +263,3 @@ describe('AuthController', () => {
     });
   });
 });
-

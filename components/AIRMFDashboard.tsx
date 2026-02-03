@@ -85,8 +85,8 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
         api.aiRmf.getDashboardData(),
         api.aiRmf.getAISystems()
       ]);
-      setStats(dashboardData);
-      setRecentSystems(systems.slice(0, 5));
+      setStats(dashboardData as DashboardStats);
+      setRecentSystems((systems as any[]).slice(0, 5));
     } catch (error: any) {
       console.error('Failed to load dashboard data:', error);
     } finally {

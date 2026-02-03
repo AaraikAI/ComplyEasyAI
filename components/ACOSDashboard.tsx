@@ -127,9 +127,9 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
         api.acos.getEarlyWarnings(3).catch(() => []),
         api.acos.getControlLoops().catch(() => []),
       ]);
-      setGoals(goalsData || []);
-      setWarnings(warningsData || []);
-      setLoops(loopsData || []);
+      setGoals((goalsData || []) as any);
+      setWarnings((warningsData || []) as any);
+      setLoops((loopsData || []) as any);
     } catch (error) {
       console.error('Error loading aCOS data:', error);
     } finally {
@@ -576,7 +576,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
           <ControlLoopsTab loops={loops} onRefresh={() => {
             loadData();
             // Also refresh loops specifically
-            api.acos.getControlLoops().then(l => setLoops(l || [])).catch(() => {});
+            api.acos.getControlLoops().then(l => setLoops((l || []) as any)).catch(() => {});
           }} setLoops={setLoops} />
         )}
 
@@ -801,15 +801,15 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
     }
     setLoading(true);
     try {
-      const result = await api.acos.createControlLoop({ 
+      const result = await api.acos.createControlLoop({
         controlId: selectedControlId,
         triggerType: triggerType,
-      });
+      }) as any;
       console.log('Control loop created:', result);
-      
+
       // If the API returns the created loop, add it to the list immediately
       if (result && result.id) {
-        setLoops(prevLoops => [...prevLoops, result]);
+        setLoops(((prevLoops: any) => [...prevLoops, result]) as any);
         // Also update parent state
         if (onRefresh) {
           onRefresh();
@@ -961,7 +961,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                   onClick={async () => {
                     if (!isExpanded) {
                       try {
-                        const historyData = await api.acos.getControlLoopHistory(loop.id);
+                        const historyData = await api.acos.getControlLoopHistory(loop.id) as any;
                         setHistory(historyData);
                         setShowHistory(loop.id);
                       } catch (error) {
@@ -989,7 +989,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                       <button
                         onClick={async () => {
                           try {
-                            const historyData = await api.acos.getControlLoopHistory(loop.id);
+                            const historyData = await api.acos.getControlLoopHistory(loop.id) as any;
                             setHistory(historyData);
                             setShowHistory(showHistory === loop.id ? null : loop.id);
                           } catch (error) {
@@ -1294,7 +1294,7 @@ const PredictionsTab: React.FC = () => {
   const loadPredictions = async () => {
     setLoading(true);
     try {
-      const data = await api.acos.predictFutureRisks(6);
+      const data = await api.acos.predictFutureRisks(6) as any;
       setPredictions(data || []);
     } catch (error) {
       console.error('Error loading predictions:', error);
@@ -1508,7 +1508,7 @@ const RedTeamTab: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
   const handleRunScan = async () => {
     setScanning(true);
     try {
-      const data = await api.acos.runAutomatedScan();
+      const data = await api.acos.runAutomatedScan() as any;
       setResults(data || []);
     } catch (error) {
       console.error('Error running scan:', error);
@@ -1651,7 +1651,7 @@ const SwarmTab: React.FC = () => {
   const loadInsights = async () => {
     setLoading(true);
     try {
-      const data = await api.acos.getSwarmInsights(selectedFrameworks.length > 0 ? selectedFrameworks : undefined);
+      const data = await api.acos.getSwarmInsights(selectedFrameworks.length > 0 ? selectedFrameworks : undefined) as any;
       setInsights(data || []);
     } catch (error) {
       console.error('Error loading swarm insights:', error);
@@ -1800,7 +1800,7 @@ const IoTTab: React.FC = () => {
   const loadDevices = async () => {
     setLoading(true);
     try {
-      const data = await api.acos.getDevices();
+      const data = await api.acos.getDevices() as any;
       setDevices(data || []);
     } catch (error) {
       console.error('Error loading devices:', error);
@@ -1959,7 +1959,7 @@ const NeuroSymbolicTab: React.FC = () => {
 
   const loadHistory = async () => {
     try {
-      const history = await api.acos.getReasoningHistory(20);
+      const history = await api.acos.getReasoningHistory(20) as any;
       setReasoningHistory(history.history || []);
     } catch (error) {
       console.error('Error loading reasoning history:', error);
@@ -2009,7 +2009,7 @@ const NeuroSymbolicTab: React.FC = () => {
     }
     setLoading(true);
     try {
-      const result = await api.acos.inferRulesFromPatterns(validPatterns);
+      const result = await api.acos.inferRulesFromPatterns(validPatterns) as any;
       alert(`Inferred ${result.inferences?.length || 0} new rules from patterns`);
       await loadHistory();
     } catch (error: any) {
@@ -2343,27 +2343,27 @@ const VRCollaborationsTab: React.FC = () => {
   const loadSessions = async () => {
     setLoading(true);
     try {
-      const data = await api.acos.getActiveVRSessions();
+      const data = await api.acos.getActiveVRSessions() as any;
       // Perform health checks in parallel for better performance
       if (data && data.length > 0) {
         const healthChecks = await Promise.allSettled(
-          data.map(session => api.acos.checkVRSessionHealth(session.id))
+          data.map((session: any) => api.acos.checkVRSessionHealth(session.id))
         );
-        
-        const validSessions = data.filter((session, index) => {
+
+        const validSessions = data.filter((session: any, index: number) => {
           const checkResult = healthChecks[index];
-          if (checkResult.status === 'fulfilled' && checkResult.value.valid) {
+          if (checkResult.status === 'fulfilled' && (checkResult.value as any).valid) {
             return true;
           }
           // Log failed health checks
           if (checkResult.status === 'rejected') {
             console.warn(`Session ${session.id} health check failed:`, checkResult.reason);
-          } else if (checkResult.value && !checkResult.value.valid) {
-            console.warn(`Session ${session.id} is invalid:`, checkResult.value.reason);
+          } else if ((checkResult as any).value && !(checkResult as any).value.valid) {
+            console.warn(`Session ${session.id} is invalid:`, (checkResult as any).value.reason);
           }
           return false;
         });
-        
+
         setSessions(validSessions);
       } else {
         setSessions([]);
@@ -2627,7 +2627,7 @@ const JITAccessTab: React.FC = () => {
   const loadSessions = async () => {
     setLoading(true);
     try {
-      const data = await api.acos.getJITAccessSessions();
+      const data = await api.acos.getJITAccessSessions() as any;
       setSessions(data || []);
     } catch (error) {
       console.error('Error loading JIT access sessions:', error);
@@ -2640,7 +2640,7 @@ const JITAccessTab: React.FC = () => {
   const loadPendingRequests = async () => {
     setLoadingPending(true);
     try {
-      const data = await api.acos.getPendingJITAccessRequests();
+      const data = await api.acos.getPendingJITAccessRequests() as any;
       setPendingRequests(data || []);
     } catch (error) {
       console.error('Error loading pending requests:', error);
@@ -2652,7 +2652,7 @@ const JITAccessTab: React.FC = () => {
 
   const loadAllRequests = async () => {
     try {
-      const data = await api.acos.getAllJITAccessRequests();
+      const data = await api.acos.getAllJITAccessRequests() as any;
       setAllRequests(data || []);
     } catch (error) {
       console.error('Error loading all requests:', error);

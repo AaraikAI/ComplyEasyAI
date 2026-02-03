@@ -369,6 +369,7 @@ export interface Organization {
 // Database Schema: Risk
 export interface RiskItem {
   id: string;
+  title?: string;
   severity: 'High' | 'Medium' | 'Low';
   description: string;
   category: string;
@@ -380,6 +381,10 @@ export interface RiskItem {
   aiRationale?: string;
   mitigationPlan?: string;
   organizationId?: string;
+  riskScore?: number;
+  likelihood?: number;
+  impact?: number;
+  targetDate?: string;
 }
 
 // Database Schema: Framework

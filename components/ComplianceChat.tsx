@@ -440,7 +440,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
           targetScore: 85,
         };
 
-        const created = await api.acos.createGoal(goalData);
+        const created = await api.acos.createGoal(goalData) as any;
         return `✅ Compliance goal created successfully!\n\n**Goal:** ${created.name || name}\n**Framework:** ${frameworks.join(', ')}\n**Target Score:** ${created.targetScore || 85}%\n\nYou can view it in the aCOS Dashboard > Goals tab.`;
       }
 
@@ -484,7 +484,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
             },
           };
 
-          const created = await api.acos.createControlLoop(loopData);
+          const created = await api.acos.createControlLoop(loopData) as any;
           return `✅ Control loop created successfully!\n\n**Control:** ${foundControl.name}\n**Trigger Type:** ${triggerType}\n**Loop ID:** ${created.id}\n\nYou can view and manage it in the aCOS Dashboard > Control Loops tab.`;
         } catch (error: any) {
           return `❌ Failed to create control loop: ${error.message || 'Unknown error'}. Please navigate to aCOS Dashboard > Control Loops tab to create it manually.`;
@@ -512,12 +512,12 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
           description: params.query || 'Simulation run via chatbot',
         };
 
-        const result = await api.acos.runSimulation(simulationData);
+        const result = await api.acos.runSimulation(simulationData) as any;
         return `✅ Simulation completed!\n\n**Type:** ${result.scenarioType || 'Control Change'}\n**Impact:** ${result.impact || 'Analyzed'}\n**Recommendations:** ${result.recommendations?.length || 0} provided\n\nCheck the Simulations tab in aCOS Dashboard for detailed results.`;
       }
 
       if (entity === 'scan') {
-        const result = await api.acos.runAutomatedScan();
+        const result = await api.acos.runAutomatedScan() as any;
         return `✅ Automated compliance scan completed!\n\n**Gaps Found:** ${result.gaps?.length || 0}\n**Misconfigurations:** ${result.misconfigurations?.length || 0}\n**Policy Violations:** ${result.violations?.length || 0}\n\nCheck the Red Team tab in aCOS Dashboard for detailed results.`;
       }
 
@@ -529,7 +529,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
         }
 
         const loopId = loopIdMatch[1];
-        const result = await api.acos.executeControlLoop(loopId);
+        const result = await api.acos.executeControlLoop(loopId) as any;
         return `✅ Control loop executed!\n\n**Loop ID:** ${loopId}\n**Status:** ${result.status || 'Completed'}\n**Confidence:** ${((result.confidence || 0) * 100).toFixed(0)}%\n\nCheck the Control Loops tab for execution history.`;
       }
 
@@ -681,7 +681,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
 
           // Call backend API for multi-turn context support
           try {
-            const response = await api.ai.chat(userInput, fileContext);
+            const response = await api.ai.chat(userInput, fileContext) as any;
             responseText = response.response || await chatWithComplianceBot(userInput);
           } catch (error: any) {
             // Fallback to frontend service if backend fails

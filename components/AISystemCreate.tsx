@@ -40,7 +40,7 @@ export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSucces
     try {
       setSubmitting(true);
       const system = await api.aiRmf.createAISystem(formData);
-      onSuccess(system.id);
+      onSuccess((system as any).id);
     } catch (error: any) {
       console.error('Failed to create AI system:', error);
       alert(`Failed to create AI system: ${error.message || 'Unknown error'}`);
