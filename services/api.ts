@@ -1010,6 +1010,60 @@ export const api = {
         const res = await fetchAPI<any>(`/enterprise/questionnaires${query ? `?${query}` : ''}`);
         return res?.questionnaires ?? res?.data ?? (Array.isArray(res) ? res : []);
       },
+      getById: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/questionnaires/${encodeURIComponent(id)}`);
+      },
+      getMetrics: async () => {
+        return fetchAPI<any>('/enterprise/questionnaires/metrics');
+      },
+      getTemplates: async () => {
+        return fetchAPI<any>('/enterprise/questionnaires/templates');
+      },
+      create: async (data: Record<string, any>) => {
+        return fetchAPI<any>('/enterprise/questionnaires', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      createFromTemplate: async (data: { templateId: string; title?: string; requestedBy?: string; dueDate?: string }) => {
+        return fetchAPI<any>('/enterprise/questionnaires/from-template', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      update: async (id: string, data: Record<string, any>) => {
+        return fetchAPI<any>(`/enterprise/questionnaires/${encodeURIComponent(id)}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+      delete: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/questionnaires/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+      },
+      addQuestions: async (id: string, questions: any[]) => {
+        return fetchAPI<any>(`/enterprise/questionnaires/${encodeURIComponent(id)}/questions`, {
+          method: 'POST',
+          body: JSON.stringify({ questions }),
+        });
+      },
+      submitResponse: async (id: string, data: { questionId: string; responseText: string; responseData?: any; attachments?: any }) => {
+        return fetchAPI<any>(`/enterprise/questionnaires/${encodeURIComponent(id)}/responses`, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      aiGenerate: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/questionnaires/${encodeURIComponent(id)}/ai-generate`, {
+          method: 'POST',
+        });
+      },
+      complete: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/questionnaires/${encodeURIComponent(id)}/complete`, {
+          method: 'POST',
+        });
+      },
     },
     policies: {
       list: async (params?: Record<string, string>) => {
@@ -1068,6 +1122,37 @@ export const api = {
     },
     workspaces: {
       getHierarchy: async () => fetchAPI<any>('/enterprise/workspace/hierarchy'),
+      getConsolidatedMetrics: async () => fetchAPI<any>('/enterprise/workspace/consolidated-metrics'),
+      createChild: async (data: { name: string; plan?: string }) => {
+        return fetchAPI<any>('/enterprise/workspace/child-organizations', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      moveUser: async (userId: string, targetOrganizationId: string) => {
+        return fetchAPI<any>('/enterprise/workspace/move-user', {
+          method: 'POST',
+          body: JSON.stringify({ userId, targetOrganizationId }),
+        });
+      },
+      cloneFramework: async (frameworkId: string, targetOrganizationIds: string[]) => {
+        return fetchAPI<any>('/enterprise/workspace/clone-framework', {
+          method: 'POST',
+          body: JSON.stringify({ frameworkId, targetOrganizationIds }),
+        });
+      },
+    },
+    visionaryAI: {
+      getCoPilotRecommendations: async () => fetchAPI<any>('/enterprise/visionary-ai/copilot/recommendations'),
+      predictRisks: async (timeHorizonDays = 90) => {
+        return fetchAPI<any>('/enterprise/visionary-ai/predict-risks', {
+          method: 'POST',
+          body: JSON.stringify({ timeHorizonDays }),
+        });
+      },
+      getBenchmarking: async (industry = 'Technology') => {
+        return fetchAPI<any>(`/enterprise/visionary-ai/benchmarking?industry=${encodeURIComponent(industry)}`);
+      },
     },
     reports: {
       // Custom reports creation is gated by maxCustomReports (POST /enterprise/reports).
