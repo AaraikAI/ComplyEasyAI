@@ -30,7 +30,7 @@
   "devDependencies": {
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^22.14.0",
+    "@types/node": "^22.19.7",
     "@vitejs/plugin-react": "^5.0.0",
     "@vitest/ui": "^4.0.15",
     "identity-obj-proxy": "^3.0.0",
