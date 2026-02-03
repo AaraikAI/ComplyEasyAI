@@ -1224,6 +1224,79 @@ export const api = {
         const res = await fetchAPI<any>(`/enterprise/issues${query ? `?${query}` : ''}`);
         return res?.issues ?? res?.data ?? (Array.isArray(res) ? res : []);
       },
+      getById: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/issues/${encodeURIComponent(id)}`);
+      },
+      getDashboard: async () => {
+        return fetchAPI<any>('/enterprise/issues/dashboard');
+      },
+      create: async (data: Record<string, any>) => {
+        return fetchAPI<any>('/enterprise/issues', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      update: async (id: string, data: Record<string, any>) => {
+        return fetchAPI<any>(`/enterprise/issues/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+      updateStatus: async (id: string, status: string) => {
+        return fetchAPI<any>(`/enterprise/issues/${encodeURIComponent(id)}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status }),
+        });
+      },
+      delete: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/issues/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+      },
+      assign: async (id: string, assignedToId: string) => {
+        return fetchAPI<any>(`/enterprise/issues/${encodeURIComponent(id)}/assign`, {
+          method: 'POST',
+          body: JSON.stringify({ assignedToId }),
+        });
+      },
+      addComment: async (id: string, content: string) => {
+        return fetchAPI<any>(`/enterprise/issues/${encodeURIComponent(id)}/comments`, {
+          method: 'POST',
+          body: JSON.stringify({ content }),
+        });
+      },
+      getComments: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/issues/${encodeURIComponent(id)}/comments`);
+      },
+    },
+    autopilot: {
+      run: async (options?: Record<string, any>) => {
+        return fetchAPI<any>('/enterprise/visionary-ai/autopilot/run', {
+          method: 'POST',
+          body: JSON.stringify({ options: options || {} }),
+        });
+      },
+    },
+    reports: {
+      getExecutiveSummary: async () => {
+        return fetchAPI<any>('/enterprise/reports/executive-summary');
+      },
+      getRiskReport: async () => {
+        return fetchAPI<any>('/enterprise/reports/risk');
+      },
+      getVendorRiskReport: async () => {
+        return fetchAPI<any>('/enterprise/reports/vendor-risk');
+      },
+      getComplianceReport: async (frameworkId?: string) => {
+        const query = frameworkId ? `?frameworkId=${encodeURIComponent(frameworkId)}` : '';
+        return fetchAPI<any>(`/enterprise/reports/compliance${query}`);
+      },
+      create: async (data: Record<string, any>) => {
+        return fetchAPI<any>('/enterprise/reports', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
     },
     riskAssessments: {
       // Risk assessments: create is gated; list via risk-management dashboard/register if needed
