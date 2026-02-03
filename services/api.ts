@@ -1080,6 +1080,58 @@ export const api = {
         const res = await fetchAPI<any>(`/enterprise/monitoring${query ? `?${query}` : ''}`);
         return Array.isArray(res) ? res : res?.monitors ?? res?.data ?? [];
       },
+      getById: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/monitoring/${encodeURIComponent(id)}`);
+      },
+      getDashboard: async () => {
+        return fetchAPI<any>('/enterprise/monitoring/dashboard');
+      },
+      create: async (data: Record<string, any>) => {
+        return fetchAPI<any>('/enterprise/monitoring', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      update: async (id: string, data: Record<string, any>) => {
+        return fetchAPI<any>(`/enterprise/monitoring/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        });
+      },
+      delete: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/monitoring/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+      },
+      execute: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/monitoring/${encodeURIComponent(id)}/execute`, {
+          method: 'POST',
+        });
+      },
+      getResults: async (id: string, limit = 30) => {
+        return fetchAPI<any>(`/enterprise/monitoring/${encodeURIComponent(id)}/results?limit=${limit}`);
+      },
+      toggle: async (id: string, active: boolean) => {
+        return fetchAPI<any>(`/enterprise/monitoring/${encodeURIComponent(id)}/toggle`, {
+          method: 'PATCH',
+          body: JSON.stringify({ active }),
+        });
+      },
+      aiSuggest: async () => {
+        return fetchAPI<any>('/enterprise/monitoring/ai-suggest', {
+          method: 'POST',
+        });
+      },
+      aiAnalyze: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/monitoring/${encodeURIComponent(id)}/ai-analyze`, {
+          method: 'POST',
+        });
+      },
+      aiTriage: async () => {
+        return fetchAPI<any>('/enterprise/monitoring/ai-triage', {
+          method: 'POST',
+        });
+      },
     },
     issues: {
       list: async (params?: Record<string, string>) => {

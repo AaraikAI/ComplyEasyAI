@@ -474,6 +474,108 @@ monitorRouter.get(
   })
 );
 
+// Get single monitor
+monitorRouter.get(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const monitor = await monitoringService.getMonitorById(
+      req.params.id,
+      req.user.organizationId
+    );
+    res.json(monitor);
+  })
+);
+
+// Update monitor
+monitorRouter.patch(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const monitor = await monitoringService.updateMonitor(
+      req.params.id,
+      req.body,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(monitor);
+  })
+);
+
+// Delete monitor
+monitorRouter.delete(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const result = await monitoringService.deleteMonitor(
+      req.params.id,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(result);
+  })
+);
+
+// Get monitor results
+monitorRouter.get(
+  '/:id/results',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const results = await monitoringService.getMonitorResults(
+      req.params.id,
+      Number(req.query.limit) || 30
+    );
+    res.json(results);
+  })
+);
+
+// Toggle monitor active status
+monitorRouter.patch(
+  '/:id/toggle',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const monitor = await monitoringService.toggleMonitorActive(
+      req.params.id,
+      req.body.active,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(monitor);
+  })
+);
+
+// AI: Suggest monitors
+monitorRouter.post(
+  '/ai-suggest',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const suggestions = await monitoringService.suggestMonitors(
+      req.user.organizationId,
+      req.user.id
+    );
+    res.json(suggestions);
+  })
+);
+
+// AI: Analyze monitor trends
+monitorRouter.post(
+  '/:id/ai-analyze',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const analysis = await monitoringService.analyzeMonitorTrends(
+      req.params.id,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(analysis);
+  })
+);
+
+// AI: Triage alerts
+monitorRouter.post(
+  '/ai-triage',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const triage = await monitoringService.triageAlerts(
+      req.user.organizationId,
+      req.user.id
+    );
+    res.json(triage);
+  })
+);
+
 /**
  * ═══════════════════════════════════════════════════════════════
  * ISSUE MANAGEMENT ROUTES

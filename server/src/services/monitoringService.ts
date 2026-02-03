@@ -1,6 +1,7 @@
 import { MonitorStatus } from '@prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
+import geminiService from './geminiService';
 
 
 /**
@@ -391,6 +392,290 @@ export class MonitoringService {
     });
 
     return monitor;
+  }
+
+  /**
+   * Get a single monitor by ID
+   */
+  async getMonitorById(monitorId: string, organizationId: string) {
+    const monitor = await prisma.continuousMonitor.findFirst({
+      where: { id: monitorId, organizationId },
+      include: {
+        results: {
+          orderBy: { runDate: 'desc' },
+          take: 30,
+        },
+      },
+    });
+
+    if (!monitor) {
+      throw new Error('Monitor not found');
+    }
+
+    return monitor;
+  }
+
+  /**
+   * Update a monitor
+   */
+  async updateMonitor(
+    monitorId: string,
+    data: {
+      name?: string;
+      monitorType?: string;
+      configuration?: any;
+      testScript?: string;
+      frequency?: string;
+      active?: boolean;
+    },
+    userId: string,
+    organizationId: string
+  ) {
+    const monitor = await prisma.continuousMonitor.update({
+      where: { id: monitorId },
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'monitor.updated',
+      resourceType: 'ContinuousMonitor',
+      resourceId: monitorId,
+      metadata: { fields: Object.keys(data) },
+    });
+
+    return monitor;
+  }
+
+  /**
+   * Delete a monitor
+   */
+  async deleteMonitor(monitorId: string, userId: string, organizationId: string) {
+    await prisma.monitorResult.deleteMany({ where: { monitorId } });
+    await prisma.continuousMonitor.delete({ where: { id: monitorId } });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'monitor.deleted',
+      resourceType: 'ContinuousMonitor',
+      resourceId: monitorId,
+      metadata: {},
+    });
+
+    return { success: true };
+  }
+
+  /**
+   * Get monitor execution results
+   */
+  async getMonitorResults(monitorId: string, limit = 30) {
+    return prisma.monitorResult.findMany({
+      where: { monitorId },
+      orderBy: { runDate: 'desc' },
+      take: limit,
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // AI-POWERED METHODS
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * AI: Analyze monitor trends - predict failures and identify root causes
+   */
+  async analyzeMonitorTrends(monitorId: string, userId: string, organizationId: string) {
+    const monitor = await this.getMonitorById(monitorId, organizationId);
+    const results = monitor.results || [];
+
+    const resultsSummary = results.map((r: any) => ({
+      date: r.runDate,
+      status: r.status,
+      passed: r.passedTests,
+      failed: r.failedTests,
+      autoRemediated: r.autoRemediated,
+    }));
+
+    const prompt = `You are a compliance monitoring AI analyst. Analyze the following continuous monitor execution history and provide insights.
+
+Monitor: "${monitor.name}"
+Type: ${monitor.monitorType}
+Frequency: ${monitor.frequency}
+Current Status: ${monitor.status}
+Active: ${monitor.active}
+
+Last ${results.length} execution results (newest first):
+${JSON.stringify(resultsSummary, null, 2)}
+
+Provide your analysis in the following JSON format (return ONLY valid JSON, no markdown):
+{
+  "trendDirection": "improving" | "degrading" | "stable",
+  "trendSummary": "Brief 1-2 sentence summary of the trend",
+  "predictedNextFailureWindow": "e.g., 'Within 48 hours' or 'Low risk in next 7 days'",
+  "failureRiskScore": 0-100,
+  "rootCauseAnalysis": ["array of identified root causes"],
+  "recommendedActions": ["array of specific recommended actions"],
+  "anomalies": ["array of unusual patterns detected"],
+  "healthScore": 0-100
+}`;
+
+    const aiResponse = await geminiService.chatWithBot(prompt, userId);
+
+    try {
+      const parsed = JSON.parse(aiResponse.replace(/```json?\n?/g, '').replace(/```/g, '').trim());
+      return parsed;
+    } catch {
+      return {
+        trendDirection: 'stable',
+        trendSummary: aiResponse,
+        predictedNextFailureWindow: 'Unable to determine',
+        failureRiskScore: 50,
+        rootCauseAnalysis: [],
+        recommendedActions: [],
+        anomalies: [],
+        healthScore: 50,
+      };
+    }
+  }
+
+  /**
+   * AI: Suggest monitors based on compliance frameworks and risk profile
+   */
+  async suggestMonitors(organizationId: string, userId: string) {
+    const frameworks = await prisma.complianceFramework.findMany({
+      where: { organizationId },
+      select: { name: true, frameworkType: true },
+    });
+
+    const existingMonitors = await prisma.continuousMonitor.findMany({
+      where: { organizationId },
+      select: { name: true, monitorType: true },
+    });
+
+    const frameworkNames = frameworks.map((f: any) => f.name || f.frameworkType).join(', ') || 'General compliance';
+    const existingNames = existingMonitors.map((m: any) => m.name).join(', ') || 'None';
+
+    const prompt = `Based on these compliance frameworks: ${frameworkNames} and the existing monitors (${existingNames}), suggest the most critical continuous monitors to set up. For each, provide: name, type (Infrastructure/Cloud/Identity/Device/Code), frequency, and why it's needed.
+
+Return ONLY valid JSON in this format (no markdown):
+{
+  "suggestions": [
+    {
+      "name": "Monitor name",
+      "monitorType": "Infrastructure|Cloud|Identity|Device|Code",
+      "frequency": "Hourly|Daily|Weekly|Monthly",
+      "reason": "Why this monitor is important",
+      "priority": "Critical|High|Medium",
+      "configuration": {
+        "description": "What this monitor checks",
+        "tests": ["test1", "test2"]
+      }
+    }
+  ],
+  "summary": "Brief overall recommendation summary"
+}`;
+
+    const aiResponse = await geminiService.chatWithBot(prompt, userId);
+
+    try {
+      const parsed = JSON.parse(aiResponse.replace(/```json?\n?/g, '').replace(/```/g, '').trim());
+      return parsed;
+    } catch {
+      return {
+        suggestions: [],
+        summary: aiResponse,
+      };
+    }
+  }
+
+  /**
+   * AI: Triage alerts by prioritizing and categorizing them
+   */
+  async triageAlerts(organizationId: string, userId: string) {
+    const failingMonitors = await prisma.continuousMonitor.findMany({
+      where: {
+        organizationId,
+        status: { in: ['Failing', 'Warning'] },
+      },
+      include: {
+        results: {
+          orderBy: { runDate: 'desc' },
+          take: 5,
+        },
+      },
+    });
+
+    if (failingMonitors.length === 0) {
+      return {
+        triageResult: [],
+        summary: 'No failing or warning monitors to triage.',
+        totalAlerts: 0,
+      };
+    }
+
+    const alertsSummary = failingMonitors.map((m: any) => ({
+      monitorId: m.id,
+      name: m.name,
+      type: m.monitorType,
+      status: m.status,
+      alerts: m.alerts,
+      findings: m.findings,
+      lastRun: m.lastRun,
+      recentResults: m.results.map((r: any) => ({
+        status: r.status,
+        failed: r.failedTests,
+        passed: r.passedTests,
+        date: r.runDate,
+      })),
+    }));
+
+    const prompt = `You are a compliance monitoring triage specialist. Analyze these failing/warning monitors and prioritize them by business impact.
+
+Current alerts:
+${JSON.stringify(alertsSummary, null, 2)}
+
+Provide triage results in this JSON format (return ONLY valid JSON, no markdown):
+{
+  "triageResult": [
+    {
+      "monitorId": "id",
+      "monitorName": "name",
+      "priority": 1,
+      "severity": "Critical|High|Medium|Low",
+      "businessImpact": "Description of business impact",
+      "category": "Security|Compliance|Operational|Data Protection",
+      "suggestedRemediation": "Step-by-step remediation",
+      "estimatedEffort": "Quick Fix|Hours|Days",
+      "relatedMonitors": ["names of related monitors if any"]
+    }
+  ],
+  "summary": "Overall triage summary",
+  "remediationOrder": ["ordered list of monitor names to fix first"],
+  "groupedAlerts": {
+    "Security": ["monitor names"],
+    "Compliance": ["monitor names"],
+    "Operational": ["monitor names"]
+  }
+}`;
+
+    const aiResponse = await geminiService.chatWithBot(prompt, userId);
+
+    try {
+      const parsed = JSON.parse(aiResponse.replace(/```json?\n?/g, '').replace(/```/g, '').trim());
+      return { ...parsed, totalAlerts: failingMonitors.length };
+    } catch {
+      return {
+        triageResult: [],
+        summary: aiResponse,
+        totalAlerts: failingMonitors.length,
+        remediationOrder: [],
+        groupedAlerts: {},
+      };
+    }
   }
 }
 
