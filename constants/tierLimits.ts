@@ -81,7 +81,7 @@ const VISIONARY = {
   dataRetentionDays: 365 * 10,
 } as const;
 
-const TIER_LIMITS_MAP: Record<TierName, typeof FOUNDATION> = {
+const TIER_LIMITS_MAP: Record<TierName, Record<TierLimitKey, number>> = {
   Foundation: FOUNDATION,
   Essentials: ESSENTIALS,
   Growth: GROWTH,
