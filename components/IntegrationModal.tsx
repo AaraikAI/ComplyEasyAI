@@ -646,9 +646,9 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
       const provider = getProviderId();
       await api.integrations.disconnect(provider);
       
-      // Call onDisconnect callback with the integration to refresh parent
+      // Call onDisconnect callback to refresh parent
       if (onDisconnect) {
-        onDisconnect(integration);
+        onDisconnect();
       }
       onClose();
       

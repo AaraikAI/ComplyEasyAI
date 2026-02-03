@@ -22,38 +22,38 @@ jest.mock('../../../../config/database', () => ({
 
 jest.mock('ethers', () => ({
   ethers: {
-    JsonRpcProvider: jest.fn().mockImplementation(() => ({
-      getBlockNumber: jest.fn().mockResolvedValue(12345),
+    JsonRpcProvider: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
+      getBlockNumber: (jest.fn() as jest.Mock<any>).mockResolvedValue(12345),
     })),
-    Wallet: jest.fn().mockImplementation(() => ({
+    Wallet: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
       address: '0x1234567890123456789012345678901234567890',
     })),
-    Contract: jest.fn().mockImplementation(() => ({
-      recordAuditLog: jest.fn().mockResolvedValue({
+    Contract: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
+      recordAuditLog: (jest.fn() as jest.Mock<any>).mockResolvedValue({
         hash: '0xabc123',
-        wait: jest.fn().mockResolvedValue({
+        wait: (jest.fn() as jest.Mock<any>).mockResolvedValue({
           blockNumber: 12345,
           hash: '0xtx123',
         }),
       }),
-      recordCompliance: jest.fn().mockResolvedValue({
-        wait: jest.fn().mockResolvedValue({
-          blockNumber: 12345,
-          hash: '0xtx123',
-          logs: [],
-        }),
-      }),
-      issueComplianceCertificate: jest.fn().mockResolvedValue({
-        wait: jest.fn().mockResolvedValue({
+      recordCompliance: (jest.fn() as jest.Mock<any>).mockResolvedValue({
+        wait: (jest.fn() as jest.Mock<any>).mockResolvedValue({
           blockNumber: 12345,
           hash: '0xtx123',
           logs: [],
         }),
       }),
-      verifyComplianceCertificate: jest.fn().mockResolvedValue([true, 'SOC2', Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60]),
-      verifyAuditLog: jest.fn().mockResolvedValue([true, 12345, '0x123']),
+      issueComplianceCertificate: (jest.fn() as jest.Mock<any>).mockResolvedValue({
+        wait: (jest.fn() as jest.Mock<any>).mockResolvedValue({
+          blockNumber: 12345,
+          hash: '0xtx123',
+          logs: [],
+        }),
+      }),
+      verifyComplianceCertificate: (jest.fn() as jest.Mock<any>).mockResolvedValue([true, 'SOC2', Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60]),
+      verifyAuditLog: (jest.fn() as jest.Mock<any>).mockResolvedValue([true, 12345, '0x123']),
       interface: {
-        parseLog: jest.fn().mockReturnValue({
+        parseLog: (jest.fn() as jest.Mock<any>).mockReturnValue({
           name: 'CertificateIssued',
           args: {
             certId: '0x' + 'c'.repeat(64),

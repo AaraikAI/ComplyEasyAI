@@ -216,7 +216,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     const loadOrganization = async () => {
       if (currentUser?.role !== 'admin') return;
       try {
-        const org = await api.organization.get();
+        const org = await api.organization.get() as any;
         setOrganizationName(org.name || '');
         // Map old plan names to new tier names if needed
         const tierMap: Record<string, TierName> = {
@@ -1120,7 +1120,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                       onClick={async () => {
                         try {
                           setIsLoading2FA(true);
-                          const result = await api.twoFactor.regenerateCodes();
+                          const result = await api.twoFactor.regenerateCodes() as any;
                           setBackupCodes(result.backupCodes || result.data?.backupCodes || []);
                           alert('New backup codes generated. Please save them securely.');
                         } catch (error: any) {
