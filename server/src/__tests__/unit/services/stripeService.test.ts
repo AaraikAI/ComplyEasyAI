@@ -6,11 +6,11 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../mocks/prisma';
 
 // Mock Stripe
-const mockCustomersCreate = jest.fn();
-const mockCheckoutSessionsCreate = jest.fn();
-const mockBillingPortalSessionsCreate = jest.fn();
-const mockWebhooksConstructEvent = jest.fn();
-const mockSubscriptionsRetrieve = jest.fn();
+const mockCustomersCreate = jest.fn() as jest.Mock<any>;
+const mockCheckoutSessionsCreate = jest.fn() as jest.Mock<any>;
+const mockBillingPortalSessionsCreate = jest.fn() as jest.Mock<any>;
+const mockWebhooksConstructEvent = jest.fn() as jest.Mock<any>;
+const mockSubscriptionsRetrieve = jest.fn() as jest.Mock<any>;
 
 jest.mock('stripe', () => {
   return jest.fn().mockImplementation(() => ({

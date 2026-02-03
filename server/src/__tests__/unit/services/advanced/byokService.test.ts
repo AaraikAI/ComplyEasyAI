@@ -18,13 +18,13 @@ jest.mock('@aws-sdk/client-kms', () => ({
 
 // Mock Azure SDK
 jest.mock('@azure/keyvault-keys', () => ({
-  KeyClient: jest.fn().mockImplementation(() => ({
-    getKey: jest.fn().mockResolvedValue({ name: 'test-key' }),
-    createKey: jest.fn().mockResolvedValue({ name: 'test-key' }),
+  KeyClient: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
+    getKey: (jest.fn() as jest.Mock<any>).mockResolvedValue({ name: 'test-key' }),
+    createKey: (jest.fn() as jest.Mock<any>).mockResolvedValue({ name: 'test-key' }),
   })),
-  CryptographyClient: jest.fn().mockImplementation(() => ({
-    encrypt: jest.fn().mockResolvedValue({ result: Buffer.from('encrypted') }),
-    decrypt: jest.fn().mockResolvedValue({ result: Buffer.from('decrypted') }),
+  CryptographyClient: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
+    encrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue({ result: Buffer.from('encrypted') }),
+    decrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue({ result: Buffer.from('decrypted') }),
   })),
 }));
 
