@@ -3,21 +3,21 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
 // Mock integration services
-const mockGetAuthorizationUrl = jest.fn();
-const mockGetAccessToken = jest.fn();
-const mockSaveIntegration = jest.fn();
-const mockDisconnect = jest.fn();
+const mockGetAuthorizationUrl = jest.fn<() => string>();
+const mockGetAccessToken = jest.fn<() => Promise<{ access_token: string; refresh_token: string }>>();
+const mockSaveIntegration = jest.fn<() => Promise<void>>();
+const mockDisconnect = jest.fn<() => Promise<void>>();
 
 jest.mock('../../../services/integrations/googleService', () => ({
   __esModule: true,
   default: {
     getAuthorizationUrl: mockGetAuthorizationUrl,
     getTokensFromCode: mockGetAccessToken,
-    getUserInfo: jest.fn().mockResolvedValue({ email: 'test@example.com' }),
+    getUserInfo: jest.fn().mockResolvedValue({ email: 'test@example.com' } as never),
     saveIntegration: mockSaveIntegration,
     disconnect: mockDisconnect,
   },
@@ -28,7 +28,7 @@ jest.mock('../../../services/integrations/githubService', () => ({
   default: {
     getAuthorizationUrl: mockGetAuthorizationUrl,
     getAccessToken: mockGetAccessToken,
-    getUserInfo: jest.fn().mockResolvedValue({ login: 'testuser' }),
+    getUserInfo: jest.fn().mockResolvedValue({ login: 'testuser' } as never),
     saveIntegration: mockSaveIntegration,
     disconnect: mockDisconnect,
   },
@@ -52,6 +52,7 @@ import * as integrationsController from '../../../controllers/integrationsContro
 describe('IntegrationsController', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
+  let mockNext: NextFunction;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -66,26 +67,29 @@ describe('IntegrationsController', () => {
         email: 'test@example.com',
         organizationId: 'org-123',
       },
-    };
+    } as any;
 
     mockResponse = {
-      json: jest.fn().mockReturnThis(),
-      redirect: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis() as any,
+      redirect: jest.fn().mockReturnThis() as any,
+      status: jest.fn().mockReturnThis() as any,
     };
 
-    mockGetAuthorizationUrl.mockReturnValue('https://oauth.example.com/auth');
+    mockNext = jest.fn() as unknown as NextFunction;
+
+    mockGetAuthorizationUrl.mockReturnValue('https://oauth.example.com/auth' as never);
     mockGetAccessToken.mockResolvedValue({
       access_token: 'test-token',
       refresh_token: 'test-refresh',
-    });
+    } as never);
   });
 
   describe('authorizeGoogle()', () => {
     it('should generate Google authorization URL', async () => {
       await integrationsController.authorizeGoogle(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -106,7 +110,8 @@ describe('IntegrationsController', () => {
       // Mock state verification (would need to mock the state map)
       await integrationsController.callbackGoogle(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       // Should redirect
@@ -121,11 +126,12 @@ describe('IntegrationsController', () => {
         { id: 'int-2', provider: 'github', connected: false },
       ];
 
-      prismaMock.integration.findMany.mockResolvedValue(mockIntegrations as any);
+      (prismaMock.integration.findMany as jest.Mock<any>).mockResolvedValue(mockIntegrations as any);
 
       await integrationsController.listIntegrations(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -145,15 +151,16 @@ describe('IntegrationsController', () => {
       };
 
       const mockAwsService = require('../../../services/integrations/awsService').default;
-      mockAwsService.validateCredentials = jest.fn().mockResolvedValue({
+      mockAwsService.validateCredentials = jest.fn<any>().mockResolvedValue({
         valid: true,
         accountId: '123456789012',
-      });
-      mockAwsService.saveIntegration = jest.fn().mockResolvedValue(undefined);
+      } as never);
+      mockAwsService.saveIntegration = jest.fn<any>().mockResolvedValue(undefined as never);
 
       await integrationsController.connectAWS(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -164,4 +171,3 @@ describe('IntegrationsController', () => {
     });
   });
 });
-

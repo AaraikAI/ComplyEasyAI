@@ -35,7 +35,7 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
         relatedCategory: formData.relatedCategory && formData.relatedCategory.trim() ? formData.relatedCategory : undefined,
         relatedSubcategory: formData.relatedSubcategory && formData.relatedSubcategory.trim() ? formData.relatedSubcategory : undefined,
         mitigationPlan: formData.mitigationPlan && formData.mitigationPlan.trim() ? formData.mitigationPlan : undefined,
-        targetDate: formData.targetDate ? new Date(formData.targetDate) : undefined,
+        targetDate: formData.targetDate ? new Date(formData.targetDate) as any : undefined,
       });
       onClose();
     } catch (error: any) {

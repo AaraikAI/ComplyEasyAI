@@ -806,7 +806,7 @@ const AssessmentsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       setLoading(true);
       const data = await api.aiRmf.getAssessments(systemId);
       // Data should already include assessedByUser from backend
-      setAssessments(data);
+      setAssessments(data as any[]);
     } catch (error: any) {
       console.error('Failed to load assessments:', error);
     } finally {
@@ -966,7 +966,7 @@ const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
     try {
       setLoading(true);
       const systemData = await api.aiRmf.getAISystemById(systemId);
-      setRiskActivities(systemData.riskActivities || []);
+      setRiskActivities((systemData as any).riskActivities || []);
     } catch (error: any) {
       console.error('Failed to load risk activities:', error);
     } finally {
@@ -1132,7 +1132,7 @@ const ActorsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
     try {
       setLoading(true);
       const systemData = await api.aiRmf.getAISystemById(systemId);
-      setActors(systemData.actors || []);
+      setActors((systemData as any).actors || []);
     } catch (error: any) {
       console.error('Failed to load actors:', error);
     } finally {

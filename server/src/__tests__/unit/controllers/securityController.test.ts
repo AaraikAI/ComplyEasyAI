@@ -112,7 +112,7 @@ import securityController from '../../../controllers/securityController';
 import { AppError } from '../../../middleware/errorHandler';
 
 describe('SecurityController', () => {
-  let mockRequest: Partial<Request>;
+  let mockRequest: any;
   let mockResponse: Partial<Response>;
 
   beforeEach(() => {
@@ -133,10 +133,12 @@ describe('SecurityController', () => {
     };
 
     mockResponse = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis() as any,
+      status: jest.fn().mockReturnThis() as any,
     };
   });
+
+  const mockNext = jest.fn() as any;
 
   // ==================== Zero Trust Security Tests ====================
 
@@ -150,9 +152,9 @@ describe('SecurityController', () => {
           ipAddress: '192.168.1.100',
         };
 
-        mockZeroTrustInitialize.mockResolvedValue(undefined);
-        mockGenerateDeviceFingerprint.mockReturnValue('fingerprint-123');
-        mockVerifyDeviceTrust.mockResolvedValue({
+        (mockZeroTrustInitialize as any).mockResolvedValue(undefined);
+        (mockGenerateDeviceFingerprint as any).mockReturnValue('fingerprint-123');
+        (mockVerifyDeviceTrust as any).mockResolvedValue({
           trusted: true,
           trustScore: 95,
           deviceId: 'device-123',
@@ -160,7 +162,8 @@ describe('SecurityController', () => {
 
         await securityController.verifyDeviceTrust(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -175,7 +178,7 @@ describe('SecurityController', () => {
         mockRequest.body = {};
 
         await expect(
-          securityController.verifyDeviceTrust(mockRequest as Request, mockResponse as Response)
+          securityController.verifyDeviceTrust(mockRequest as Request, mockResponse as Response, mockNext)
         ).rejects.toThrow(AppError);
       });
 
@@ -185,15 +188,16 @@ describe('SecurityController', () => {
           fingerprint: 'custom-fingerprint',
         };
 
-        mockZeroTrustInitialize.mockResolvedValue(undefined);
-        mockVerifyDeviceTrust.mockResolvedValue({
+        (mockZeroTrustInitialize as any).mockResolvedValue(undefined);
+        (mockVerifyDeviceTrust as any).mockResolvedValue({
           trusted: true,
           trustScore: 90,
         });
 
         await securityController.verifyDeviceTrust(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockVerifyDeviceTrust).toHaveBeenCalledWith(
@@ -214,15 +218,16 @@ describe('SecurityController', () => {
           context: { department: 'engineering' },
         };
 
-        mockZeroTrustInitialize.mockResolvedValue(undefined);
-        mockEvaluateAccessRequest.mockResolvedValue({
+        (mockZeroTrustInitialize as any).mockResolvedValue(undefined);
+        (mockEvaluateAccessRequest as any).mockResolvedValue({
           allowed: true,
           reason: 'Access granted based on policy',
         });
 
         await securityController.evaluateAccessRequest(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -236,7 +241,7 @@ describe('SecurityController', () => {
         mockRequest.body = { resourceId: 'resource-123' };
 
         await expect(
-          securityController.evaluateAccessRequest(mockRequest as Request, mockResponse as Response)
+          securityController.evaluateAccessRequest(mockRequest as Request, mockResponse as Response, mockNext)
         ).rejects.toThrow(AppError);
       });
     });
@@ -249,7 +254,7 @@ describe('SecurityController', () => {
           actions: ['read', 'write'],
         };
 
-        mockCreatePolicy.mockResolvedValue({
+        (mockCreatePolicy as any).mockResolvedValue({
           id: 'policy-123',
           name: 'Engineering Policy',
           enabled: true,
@@ -257,7 +262,8 @@ describe('SecurityController', () => {
 
         await securityController.createZeroTrustPolicy(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -271,14 +277,15 @@ describe('SecurityController', () => {
 
     describe('getZeroTrustPolicies()', () => {
       it('should return all Zero Trust policies', async () => {
-        mockGetPolicies.mockResolvedValue([
+        (mockGetPolicies as any).mockResolvedValue([
           { id: 'policy-1', name: 'Policy 1' },
           { id: 'policy-2', name: 'Policy 2' },
         ]);
 
         await securityController.getZeroTrustPolicies(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -293,13 +300,14 @@ describe('SecurityController', () => {
       it('should return specific policy', async () => {
         mockRequest.params = { policyId: 'policy-123' };
 
-        mockGetPolicies.mockResolvedValue([
+        (mockGetPolicies as any).mockResolvedValue([
           { id: 'policy-123', name: 'Test Policy' },
         ]);
 
         await securityController.getZeroTrustPolicy(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -309,10 +317,10 @@ describe('SecurityController', () => {
 
       it('should throw error if policy not found', async () => {
         mockRequest.params = { policyId: 'nonexistent' };
-        mockGetPolicies.mockResolvedValue([]);
+        (mockGetPolicies as any).mockResolvedValue([]);
 
         await expect(
-          securityController.getZeroTrustPolicy(mockRequest as Request, mockResponse as Response)
+          securityController.getZeroTrustPolicy(mockRequest as Request, mockResponse as Response, mockNext)
         ).rejects.toThrow(AppError);
       });
     });
@@ -324,7 +332,8 @@ describe('SecurityController', () => {
 
         await securityController.updateZeroTrustPolicy(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -339,7 +348,8 @@ describe('SecurityController', () => {
 
         await securityController.deleteZeroTrustPolicy(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith({ success: true });
@@ -348,15 +358,16 @@ describe('SecurityController', () => {
 
     describe('getDeviceTrusts()', () => {
       it('should return all device trusts', async () => {
-        mockZeroTrustInitialize.mockResolvedValue(undefined);
-        mockGetAllDeviceTrusts.mockResolvedValue([
+        (mockZeroTrustInitialize as any).mockResolvedValue(undefined);
+        (mockGetAllDeviceTrusts as any).mockResolvedValue([
           { deviceId: 'device-1', trusted: true },
           { deviceId: 'device-2', trusted: false },
         ]);
 
         await securityController.getDeviceTrusts(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -371,7 +382,7 @@ describe('SecurityController', () => {
       it('should return device trust', async () => {
         mockRequest.params = { deviceId: 'device-123' };
 
-        mockGetDeviceTrust.mockResolvedValue({
+        (mockGetDeviceTrust as any).mockResolvedValue({
           deviceId: 'device-123',
           trusted: true,
           trustScore: 90,
@@ -379,7 +390,8 @@ describe('SecurityController', () => {
 
         await securityController.getDeviceTrust(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -389,10 +401,10 @@ describe('SecurityController', () => {
 
       it('should throw error if device trust not found', async () => {
         mockRequest.params = { deviceId: 'nonexistent' };
-        mockGetDeviceTrust.mockResolvedValue(null);
+        (mockGetDeviceTrust as any).mockResolvedValue(null);
 
         await expect(
-          securityController.getDeviceTrust(mockRequest as Request, mockResponse as Response)
+          securityController.getDeviceTrust(mockRequest as Request, mockResponse as Response, mockNext)
         ).rejects.toThrow(AppError);
       });
     });
@@ -401,11 +413,12 @@ describe('SecurityController', () => {
       it('should perform continuous verification', async () => {
         mockRequest.body = { deviceId: 'device-123' };
 
-        mockContinuousVerification.mockResolvedValue(true);
+        (mockContinuousVerification as any).mockResolvedValue(true);
 
         await securityController.continuousVerification(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith({ isTrusted: true });
@@ -426,15 +439,16 @@ describe('SecurityController', () => {
           },
         };
 
-        mockGenerateComplianceProof.mockResolvedValue({
+        (mockGenerateComplianceProof as any).mockResolvedValue({
           proof: 'proof-data',
           publicSignals: ['signal-1', 'signal-2'],
         });
-        prismaMock.auditLog.create.mockResolvedValue({} as any);
+        (prismaMock.auditLog.create as any).mockResolvedValue({} as any);
 
         await securityController.generateComplianceProof(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -450,7 +464,7 @@ describe('SecurityController', () => {
         mockRequest.body = { frameworkId: 'soc2' };
 
         await expect(
-          securityController.generateComplianceProof(mockRequest as Request, mockResponse as Response)
+          securityController.generateComplianceProof(mockRequest as Request, mockResponse as Response, mockNext)
         ).rejects.toThrow(AppError);
       });
     });
@@ -461,11 +475,12 @@ describe('SecurityController', () => {
           proof: { proof: 'proof-data', publicSignals: [] },
         };
 
-        mockVerifyComplianceProof.mockResolvedValue(true);
+        (mockVerifyComplianceProof as any).mockResolvedValue(true);
 
         await securityController.verifyComplianceProof(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith({ isValid: true });
@@ -475,7 +490,7 @@ describe('SecurityController', () => {
         mockRequest.body = {};
 
         await expect(
-          securityController.verifyComplianceProof(mockRequest as Request, mockResponse as Response)
+          securityController.verifyComplianceProof(mockRequest as Request, mockResponse as Response, mockNext)
         ).rejects.toThrow(AppError);
       });
     });
@@ -491,15 +506,16 @@ describe('SecurityController', () => {
           secret: 'secret-123',
         };
 
-        mockGenerateCredentialProof.mockResolvedValue({
+        (mockGenerateCredentialProof as any).mockResolvedValue({
           proof: 'credential-proof',
           publicSignals: ['signal'],
         });
-        prismaMock.auditLog.create.mockResolvedValue({} as any);
+        (prismaMock.auditLog.create as any).mockResolvedValue({} as any);
 
         await securityController.generateCredentialProof(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -515,7 +531,7 @@ describe('SecurityController', () => {
         mockRequest.body = { credential: {} };
 
         await expect(
-          securityController.generateCredentialProof(mockRequest as Request, mockResponse as Response)
+          securityController.generateCredentialProof(mockRequest as Request, mockResponse as Response, mockNext)
         ).rejects.toThrow(AppError);
       });
     });
@@ -527,11 +543,12 @@ describe('SecurityController', () => {
           requiredLevel: 2,
         };
 
-        mockVerifyCredentialProof.mockResolvedValue(true);
+        (mockVerifyCredentialProof as any).mockResolvedValue(true);
 
         await securityController.verifyCredentialProof(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith({ isValid: true });
@@ -547,15 +564,16 @@ describe('SecurityController', () => {
           assetType: 'document',
         };
 
-        mockGenerateOwnershipProof.mockResolvedValue({
+        (mockGenerateOwnershipProof as any).mockResolvedValue({
           proof: 'ownership-proof',
           publicSignals: ['signal'],
         });
-        prismaMock.auditLog.create.mockResolvedValue({} as any);
+        (prismaMock.auditLog.create as any).mockResolvedValue({} as any);
 
         await securityController.generateOwnershipProof(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -570,7 +588,7 @@ describe('SecurityController', () => {
         mockRequest.body = { dataHash: 'hash-123' };
 
         await expect(
-          securityController.generateOwnershipProof(mockRequest as Request, mockResponse as Response)
+          securityController.generateOwnershipProof(mockRequest as Request, mockResponse as Response, mockNext)
         ).rejects.toThrow(AppError);
       });
     });
@@ -582,11 +600,12 @@ describe('SecurityController', () => {
           dataHash: 'hash-123',
         };
 
-        mockVerifyOwnershipProof.mockResolvedValue(true);
+        (mockVerifyOwnershipProof as any).mockResolvedValue(true);
 
         await securityController.verifyOwnershipProof(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith({ isValid: true });
@@ -596,21 +615,22 @@ describe('SecurityController', () => {
         mockRequest.body = { proof: {} };
 
         await expect(
-          securityController.verifyOwnershipProof(mockRequest as Request, mockResponse as Response)
+          securityController.verifyOwnershipProof(mockRequest as Request, mockResponse as Response, mockNext)
         ).rejects.toThrow(AppError);
       });
     });
 
     describe('getZKProofs()', () => {
       it('should return all ZK proofs', async () => {
-        mockGetAllProofs.mockResolvedValue([
+        (mockGetAllProofs as any).mockResolvedValue([
           { id: 'proof-1', type: 'compliance' },
           { id: 'proof-2', type: 'credential' },
         ]);
 
         await securityController.getZKProofs(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -627,7 +647,8 @@ describe('SecurityController', () => {
 
         await securityController.getZKProof(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
@@ -646,7 +667,8 @@ describe('SecurityController', () => {
       it('should return BYOK configuration', async () => {
         await securityController.getBYOKConfig(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalled();
@@ -667,7 +689,8 @@ describe('SecurityController', () => {
         await expect(
           securityController.evaluateCompliancePolicy(
             mockRequest as Request,
-            mockResponse as Response
+            mockResponse as Response,
+            mockNext
           )
         ).rejects.toThrow();
       });
@@ -682,7 +705,8 @@ describe('SecurityController', () => {
         await expect(
           securityController.generateComplianceReport(
             mockRequest as Request,
-            mockResponse as Response
+            mockResponse as Response,
+            mockNext
           )
         ).rejects.toThrow();
       });
@@ -692,7 +716,8 @@ describe('SecurityController', () => {
       it('should return all compliance reports', async () => {
         await securityController.getComplianceReports(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalled();
@@ -703,7 +728,8 @@ describe('SecurityController', () => {
       it('should return CI/CD integrations', async () => {
         await securityController.getCICDIntegrations(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         );
 
         expect(mockResponse.json).toHaveBeenCalled();

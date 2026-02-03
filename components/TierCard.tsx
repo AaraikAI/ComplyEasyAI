@@ -175,7 +175,7 @@ const TierCard: React.FC<TierCardProps> = ({
           className="w-12 h-12 rounded-xl flex items-center justify-center"
           style={{ backgroundColor: colors.bg }}
         >
-          <TierIcon tierName={tier.name} className="w-6 h-6" style={{ color: colors.primary }} />
+          <TierIcon tierName={tier.name} className={`w-6 h-6 text-${tier.name.toLowerCase()}-600`} />
         </div>
         <div>
           <h3 className="text-xl font-bold text-gray-900">{tier.displayName}</h3>

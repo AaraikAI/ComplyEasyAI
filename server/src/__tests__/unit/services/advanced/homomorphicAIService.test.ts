@@ -8,32 +8,32 @@ import { prismaMock } from '../../../mocks/prisma';
 // Mock node-seal
 jest.mock('node-seal', () => {
   const mockPublicKey = {
-    save: jest.fn().mockReturnValue('public-key'),
+    save: (jest.fn() as jest.Mock<any>).mockReturnValue('public-key'),
     load: jest.fn(),
   };
   const mockSecretKey = {
-    save: jest.fn().mockReturnValue('secret-key'),
+    save: (jest.fn() as jest.Mock<any>).mockReturnValue('secret-key'),
     load: jest.fn(),
   };
   const mockRelinKeys = {
-    save: jest.fn().mockReturnValue('relin-keys'),
+    save: (jest.fn() as jest.Mock<any>).mockReturnValue('relin-keys'),
     load: jest.fn(),
   };
   const mockGaloisKeys = {
-    save: jest.fn().mockReturnValue('galois-keys'),
+    save: (jest.fn() as jest.Mock<any>).mockReturnValue('galois-keys'),
     load: jest.fn(),
   };
   const mockCiphertext = {
-    save: jest.fn().mockReturnValue('encrypted-data'),
+    save: (jest.fn() as jest.Mock<any>).mockReturnValue('encrypted-data'),
     load: jest.fn(),
     copy: jest.fn(),
-    invariantNoiseBudget: jest.fn().mockReturnValue(100),
+    invariantNoiseBudget: (jest.fn() as jest.Mock<any>).mockReturnValue(100),
   };
   const mockPlaintext = {
-    toBigInt: jest.fn().mockReturnValue(BigInt(100)),
+    toBigInt: (jest.fn() as jest.Mock<any>).mockReturnValue(BigInt(100)),
   };
 
-  return jest.fn().mockResolvedValue({
+  return (jest.fn() as jest.Mock<any>).mockResolvedValue({
     SchemeType: {
       bfv: 'bfv',
       ckks: 'ckks',

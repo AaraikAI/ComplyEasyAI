@@ -3,18 +3,18 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
 // Mock Gemini Service
-const mockGenerateComplianceReport = jest.fn();
-const mockGeneratePolicy = jest.fn();
-const mockAnalyzeContract = jest.fn();
-const mockPerformGapAnalysis = jest.fn();
-const mockGenerateRFPResponse = jest.fn();
-const mockGeneratePhishingSimulation = jest.fn();
-const mockScoreVendorRisk = jest.fn();
-const mockGenerateDataMap = jest.fn();
-const mockGenerateBCP = jest.fn();
+const mockGenerateComplianceReport = jest.fn<any>();
+const mockGeneratePolicy = jest.fn<any>();
+const mockAnalyzeContract = jest.fn<any>();
+const mockPerformGapAnalysis = jest.fn<any>();
+const mockGenerateRFPResponse = jest.fn<any>();
+const mockGeneratePhishingSimulation = jest.fn<any>();
+const mockScoreVendorRisk = jest.fn<any>();
+const mockGenerateDataMap = jest.fn<any>();
+const mockGenerateBCP = jest.fn<any>();
 
 jest.mock('../../../services/geminiService', () => ({
   __esModule: true,
@@ -32,7 +32,7 @@ jest.mock('../../../services/geminiService', () => ({
 }));
 
 // Mock Secure Chat Service
-const mockChatWithUser = jest.fn();
+const mockChatWithUser = jest.fn<any>();
 
 jest.mock('../../../services/secureChatService', () => ({
   __esModule: true,
@@ -56,6 +56,7 @@ import { AppError } from '../../../middleware/errorHandler';
 describe('AIController', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
+  let mockNext: NextFunction;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -67,12 +68,14 @@ describe('AIController', () => {
         email: 'test@example.com',
         organizationId: 'org-123',
       },
-    };
+    } as any;
 
     mockResponse = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis() as any,
+      status: jest.fn().mockReturnThis() as any,
     };
+
+    mockNext = jest.fn() as unknown as NextFunction;
   });
 
   describe('generateReport()', () => {
@@ -83,11 +86,12 @@ describe('AIController', () => {
         context: 'Annual audit',
       };
 
-      mockGenerateComplianceReport.mockResolvedValue('# Compliance Report\n\n...');
+      mockGenerateComplianceReport.mockResolvedValue('# Compliance Report\n\n...' as never);
 
       await aiController.generateReport(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockGenerateComplianceReport).toHaveBeenCalledWith(
@@ -107,7 +111,7 @@ describe('AIController', () => {
       mockRequest.body = { framework: 'SOC 2' };
 
       await expect(
-        aiController.generateReport(mockRequest as Request, mockResponse as Response)
+        aiController.generateReport(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -120,11 +124,12 @@ describe('AIController', () => {
         tone: 'professional',
       };
 
-      mockGeneratePolicy.mockResolvedValue('# Security Policy\n\n...');
+      mockGeneratePolicy.mockResolvedValue('# Security Policy\n\n...' as never);
 
       await aiController.generatePolicy(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockGeneratePolicy).toHaveBeenCalled();
@@ -138,11 +143,12 @@ describe('AIController', () => {
         text: 'Contract text here...',
       };
 
-      mockAnalyzeContract.mockResolvedValue('Contract analysis...');
+      mockAnalyzeContract.mockResolvedValue('Contract analysis...' as never);
 
       await aiController.analyzeContract(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockAnalyzeContract).toHaveBeenCalled();
@@ -157,11 +163,12 @@ describe('AIController', () => {
         target: 'Target state',
       };
 
-      mockPerformGapAnalysis.mockResolvedValue('Gap analysis...');
+      mockPerformGapAnalysis.mockResolvedValue('Gap analysis...' as never);
 
       await aiController.performGapAnalysis(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockPerformGapAnalysis).toHaveBeenCalled();
@@ -178,13 +185,12 @@ describe('AIController', () => {
         response: 'SOC 2 is a compliance framework...',
         sources: [],
         encrypted: true,
-      });
+      } as never);
 
-      await aiController.chat(mockRequest as Request, mockResponse as Response);
+      await aiController.chat(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockChatWithUser).toHaveBeenCalledWith('What is SOC 2?', 'user-123', 'org-123');
       expect(mockResponse.json).toHaveBeenCalled();
     });
   });
 });
-

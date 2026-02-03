@@ -66,9 +66,9 @@ export const PhishingGenerator: React.FC<{ onBack: () => void }> = ({ onBack }) 
     setShowAnswers({});
 
     try {
-      const result = await api.ai.generatePhishing(type, theme, department, difficulty);
-      setScenario(result.scenario || result.email || '');
-      setQuestions(result.questions || []);
+      const result = await api.ai.generatePhishing(type, theme, department, difficulty) as any;
+      setScenario((result as any).scenario || (result as any).email || '');
+      setQuestions((result as any).questions || []);
     } catch (err: any) {
       const errorMessage = err.message || 'AI generation failed. Please try again.';
       setError(errorMessage);

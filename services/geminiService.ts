@@ -54,7 +54,7 @@ export const chatWithComplianceBot = async (message: string): Promise<string> =>
     const errorMessage = e?.message || 'Unknown error';
     
     // Log full error details in development
-    if (import.meta.env.DEV) {
+    if ((import.meta as ImportMeta & { env: { DEV: boolean } }).env.DEV) {
       console.error('Full error details:', {
         message: errorMessage,
         error: e,
@@ -170,7 +170,7 @@ export const generateRFPResponse = async (q: string, ctx: string): Promise<{resp
 
 export const generatePhishingSim = async (t: string, d: string): Promise<string> => {
   try {
-    const response: any = await api.ai.generatePhishing(t, d);
+    const response: any = await api.ai.generatePhishing(t, d, 'General', 'Medium');
     return response.email || "Error.";
   } catch (e) {
     return "Error.";

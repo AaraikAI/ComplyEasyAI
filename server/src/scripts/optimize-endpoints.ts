@@ -230,5 +230,6 @@ class EndpointOptimizer {
   }
 }
 
-export { EndpointOptimizer, EndpointAnalysis, OptimizationReport };
+export { EndpointOptimizer };
+export type { EndpointAnalysis, OptimizationReport };
 

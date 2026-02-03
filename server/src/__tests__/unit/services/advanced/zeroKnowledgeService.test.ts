@@ -10,7 +10,7 @@ import * as path from 'path';
 // Mock snarkjs
 jest.mock('snarkjs', () => ({
   groth16: {
-    fullProve: jest.fn().mockResolvedValue({
+    fullProve: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       proof: {
         pi_a: ['1', '2'],
         pi_b: [['3', '4'], ['5', '6']],
@@ -18,10 +18,10 @@ jest.mock('snarkjs', () => ({
       },
       publicSignals: ['100', '200'],
     }),
-    verify: jest.fn().mockResolvedValue(true),
+    verify: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
   },
   plonk: {
-    fullProve: jest.fn().mockResolvedValue({
+    fullProve: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       proof: {
         A: '1',
         B: '2',
@@ -29,14 +29,14 @@ jest.mock('snarkjs', () => ({
       },
       publicSignals: ['100', '200'],
     }),
-    verify: jest.fn().mockResolvedValue(true),
+    verify: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
   },
 }));
 
 jest.mock('fs', () => ({
-  existsSync: jest.fn().mockReturnValue(true),
+  existsSync: (jest.fn() as jest.Mock<any>).mockReturnValue(true),
   mkdirSync: jest.fn(),
-  readFileSync: jest.fn().mockReturnValue('circuit-data'),
+  readFileSync: (jest.fn() as jest.Mock<any>).mockReturnValue('circuit-data'),
   writeFileSync: jest.fn(),
 }));
 

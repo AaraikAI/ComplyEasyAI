@@ -3,16 +3,16 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
-const mockSetupTwoFactor = jest.fn();
-const mockVerifyAndEnableTwoFactor = jest.fn();
-const mockVerifyTwoFactorToken = jest.fn();
-const mockVerifyBackupCode = jest.fn();
-const mockDisableTwoFactor = jest.fn();
-const mockRegenerateBackupCodes = jest.fn();
-const mockIsTwoFactorEnabled = jest.fn();
-const mockGetRemainingBackupCodesCount = jest.fn();
+const mockSetupTwoFactor = jest.fn<() => Promise<{ secret: string; qrCodeUrl: string; backupCodes: string[] }>>();
+const mockVerifyAndEnableTwoFactor = jest.fn<() => Promise<boolean>>();
+const mockVerifyTwoFactorToken = jest.fn<() => Promise<boolean>>();
+const mockVerifyBackupCode = jest.fn<() => Promise<boolean>>();
+const mockDisableTwoFactor = jest.fn<() => Promise<boolean>>();
+const mockRegenerateBackupCodes = jest.fn<() => Promise<string[]>>();
+const mockIsTwoFactorEnabled = jest.fn<() => Promise<boolean>>();
+const mockGetRemainingBackupCodesCount = jest.fn<() => Promise<number>>();
 
 jest.mock('../../../services/twoFactorService', () => ({
   __esModule: true,
@@ -41,6 +41,7 @@ import * as twoFactorController from '../../../controllers/twoFactorController';
 describe('TwoFactorController', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
+  let mockNext: NextFunction;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -51,12 +52,14 @@ describe('TwoFactorController', () => {
         id: 'user-123',
         email: 'test@example.com',
       },
-    };
+    } as any;
 
     mockResponse = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis() as any,
+      status: jest.fn().mockReturnThis() as any,
     };
+
+    mockNext = jest.fn() as unknown as NextFunction;
   });
 
   describe('setupTwoFactor()', () => {
@@ -65,11 +68,12 @@ describe('TwoFactorController', () => {
         secret: 'MFRGG43FMZQXIZLS',
         qrCodeUrl: 'data:image/png;base64,...',
         backupCodes: ['CODE1', 'CODE2'],
-      });
+      } as never);
 
       await twoFactorController.setupTwoFactor(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -88,11 +92,12 @@ describe('TwoFactorController', () => {
   describe('verifyAndEnable()', () => {
     it('should verify and enable 2FA', async () => {
       mockRequest.body = { token: '123456' };
-      mockVerifyAndEnableTwoFactor.mockResolvedValue(true);
+      mockVerifyAndEnableTwoFactor.mockResolvedValue(true as never);
 
       await twoFactorController.verifyAndEnable(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -104,11 +109,12 @@ describe('TwoFactorController', () => {
 
     it('should reject invalid token', async () => {
       mockRequest.body = { token: 'invalid' };
-      mockVerifyAndEnableTwoFactor.mockResolvedValue(false);
+      mockVerifyAndEnableTwoFactor.mockResolvedValue(false as never);
 
       await twoFactorController.verifyAndEnable(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
@@ -118,11 +124,12 @@ describe('TwoFactorController', () => {
   describe('disableTwoFactor()', () => {
     it('should disable 2FA', async () => {
       mockRequest.body = { token: '123456' };
-      mockDisableTwoFactor.mockResolvedValue(true);
+      mockDisableTwoFactor.mockResolvedValue(true as never);
 
       await twoFactorController.disableTwoFactor(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -135,12 +142,13 @@ describe('TwoFactorController', () => {
 
   describe('getTwoFactorStatus()', () => {
     it('should get 2FA status', async () => {
-      mockIsTwoFactorEnabled.mockResolvedValue(true);
-      mockGetRemainingBackupCodesCount.mockResolvedValue(5);
+      mockIsTwoFactorEnabled.mockResolvedValue(true as never);
+      mockGetRemainingBackupCodesCount.mockResolvedValue(5 as never);
 
       await twoFactorController.getTwoFactorStatus(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -155,4 +163,3 @@ describe('TwoFactorController', () => {
     });
   });
 });
-

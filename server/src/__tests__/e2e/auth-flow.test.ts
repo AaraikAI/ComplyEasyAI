@@ -11,7 +11,7 @@ import { prismaMock } from '../mocks/prisma';
 jest.mock('../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
-  testConnection: jest.fn().mockResolvedValue(true),
+  testConnection: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
 }));
 
 jest.mock('../../config/logger', () => ({
@@ -26,8 +26,8 @@ jest.mock('../../config/logger', () => ({
 jest.mock('../../services/emailService', () => ({
   __esModule: true,
   default: {
-    sendMagicLink: jest.fn().mockResolvedValue(true),
-    sendWelcomeEmail: jest.fn().mockResolvedValue(true),
+    sendMagicLink: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
+    sendWelcomeEmail: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
   },
 }));
 
@@ -54,11 +54,11 @@ describe('E2E: Authentication Flow', () => {
         })
         .expect(201);
 
-      expect(requestResponse.body).toHaveProperty('message');
-      
+      expect(registerResponse.body).toHaveProperty('message');
+
       // Step 2: Verify magic link
-      const token = process.env.NODE_ENV === 'development' 
-        ? requestResponse.body.devToken 
+      const token = process.env.NODE_ENV === 'development'
+        ? registerResponse.body.devToken
         : 'test-token';
       
       prismaMock.magicLink.findUnique.mockResolvedValueOnce({

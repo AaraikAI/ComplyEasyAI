@@ -9,7 +9,7 @@ import * as path from 'path';
 
 // Mock axios for OPA calls
 jest.mock('axios', () => ({
-  post: jest.fn().mockImplementation((url, data) => {
+  post: (jest.fn() as jest.Mock<any>).mockImplementation((url: string) => {
     // Handle policy evaluation
     if (url.includes('/v1/data/compliance/')) {
       return Promise.resolve({
@@ -31,19 +31,19 @@ jest.mock('axios', () => ({
       data: { result: {} },
     });
   }),
-  put: jest.fn().mockResolvedValue({
+  put: (jest.fn() as jest.Mock<any>).mockResolvedValue({
     data: {},
     status: 200,
   }),
-  get: jest.fn().mockResolvedValue({
+  get: (jest.fn() as jest.Mock<any>).mockResolvedValue({
     data: { policies: [] },
   }),
 }));
 
 jest.mock('fs', () => ({
-  existsSync: jest.fn().mockReturnValue(true),
+  existsSync: (jest.fn() as jest.Mock<any>).mockReturnValue(true),
   mkdirSync: jest.fn(),
-  readFileSync: jest.fn().mockReturnValue('package compliance\n\nallow if { true }'),
+  readFileSync: (jest.fn() as jest.Mock<any>).mockReturnValue('package compliance\n\nallow if { true }'),
   writeFileSync: jest.fn(),
 }));
 

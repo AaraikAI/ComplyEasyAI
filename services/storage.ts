@@ -23,8 +23,11 @@ const initDB = () => {
     const org: Organization = {
       id: 'org1',
       name: 'Acme Corp',
-      plan: 'Pro',
-      subscriptionStatus: 'active'
+      plan: 'Essentials',
+      subscriptionStatus: 'active',
+      billingCycle: 'monthly',
+      cancelAtPeriodEnd: false,
+      activeAddOns: [],
     };
     localStorage.setItem(DB_KEYS.ORGS, JSON.stringify([org]));
   }
@@ -123,7 +126,7 @@ export const db = {
   },
   org: {
     get: () => getTable<Organization>(DB_KEYS.ORGS)[0], // Single tenant simulation
-    updatePlan: (plan: 'Basic' | 'Pro' | 'Enterprise') => {
+    updatePlan: (plan: 'Foundation' | 'Essentials' | 'Growth' | 'Visionary') => {
       const orgs = getTable<Organization>(DB_KEYS.ORGS);
       if (orgs[0]) {
         orgs[0].plan = plan;

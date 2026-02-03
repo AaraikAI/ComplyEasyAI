@@ -6,9 +6,9 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../mocks/prisma';
 
 // Mock speakeasy
-const mockGenerateSecret = jest.fn();
-const mockTotpVerify = jest.fn();
-const mockTotpGenerate = jest.fn();
+const mockGenerateSecret = jest.fn() as jest.Mock<any>;
+const mockTotpVerify = jest.fn() as jest.Mock<any>;
+const mockTotpGenerate = jest.fn() as jest.Mock<any>;
 
 jest.mock('speakeasy', () => ({
   __esModule: true,
@@ -22,7 +22,7 @@ jest.mock('speakeasy', () => ({
 }));
 
 // Mock QRCode
-const mockToDataURL = jest.fn();
+const mockToDataURL = jest.fn() as jest.Mock<any>;
 jest.mock('qrcode', () => ({
   __esModule: true,
   default: {
@@ -31,8 +31,8 @@ jest.mock('qrcode', () => ({
 }));
 
 // Mock bcryptjs
-const mockBcryptCompare = jest.fn();
-const mockBcryptHash = jest.fn();
+const mockBcryptCompare = jest.fn() as jest.Mock<any>;
+const mockBcryptHash = jest.fn() as jest.Mock<any>;
 jest.mock('bcryptjs', () => ({
   __esModule: true,
   default: {

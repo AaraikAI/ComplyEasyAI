@@ -11,11 +11,11 @@ jest.mock('../../../config/database', () => ({
 }));
 
 jest.mock('@google/generative-ai', () => ({
-  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
-    getGenerativeModel: jest.fn().mockReturnValue({
-      generateContent: jest.fn().mockResolvedValue({
+  GoogleGenerativeAI: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
+    getGenerativeModel: (jest.fn() as jest.Mock<any>).mockReturnValue({
+      generateContent: (jest.fn() as jest.Mock<any>).mockResolvedValue({
         response: {
-          text: jest.fn().mockReturnValue('AI recommendation'),
+          text: (jest.fn() as jest.Mock<any>).mockReturnValue('AI recommendation'),
         },
       }),
     }),
@@ -24,7 +24,7 @@ jest.mock('@google/generative-ai', () => ({
 
 jest.mock('../../../utils/auditLogger', () => ({
   AuditLogger: {
-    log: jest.fn().mockResolvedValue({}),
+    log: (jest.fn() as jest.Mock<any>).mockResolvedValue({}),
   },
 }));
 
@@ -61,30 +61,37 @@ describe('VisionaryAIService', () => {
     });
   });
 
-  describe('predictRisk()', () => {
+  describe('predictFutureRisks()', () => {
     it('should predict future risks', async () => {
       const organizationId = 'org-123';
+      const userId = 'user-123';
+      const timeHorizonDays = 30;
 
       prismaMock.riskItem.findMany.mockResolvedValue([
         { id: 'risk-1', severity: 'High', category: 'Security' },
       ] as any);
 
-      const result = await service.predictRisk(organizationId);
+      const result = await service.predictFutureRisks(organizationId, timeHorizonDays, userId);
 
-      expect(result).toHaveProperty('predictedRisks');
-      expect(Array.isArray(result.predictedRisks)).toBe(true);
+      expect(result).toHaveProperty('predictions');
+      expect(Array.isArray(result.predictions)).toBe(true);
     });
   });
 
   describe('generatePolicyFromNaturalLanguage()', () => {
     it('should generate policy from natural language', async () => {
-      const prompt = 'Create a data encryption policy';
       const organizationId = 'org-123';
       const userId = 'user-123';
+      const policyData = {
+        description: 'Create a data encryption policy',
+        category: 'Security',
+        frameworkAlignment: ['SOC2'],
+        industry: 'Technology',
+      };
 
       const result = await service.generatePolicyFromNaturalLanguage(
-        prompt,
         organizationId,
+        policyData,
         userId
       );
 

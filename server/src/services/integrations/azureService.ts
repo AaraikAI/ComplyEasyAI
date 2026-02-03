@@ -119,7 +119,7 @@ class AzureService {
       const subscriptionClient = new SubscriptionClient(credential);
 
       // Try to get the subscription to validate credentials
-      const subscription = await subscriptionClient.subscriptions.get(credentials.subscriptionId);
+      const subscription = await (subscriptionClient as any).subscriptions.get(credentials.subscriptionId);
 
       return {
         valid: true,
@@ -319,11 +319,11 @@ class AzureService {
 
       // Note: For Graph API, we need Microsoft Graph client
       // This is a simplified implementation
-      const graphClient = new GraphRbacManagementClient(credential, credentials.tenantId);
+      const graphClient = new GraphRbacManagementClient(credential as any, credentials.tenantId);
 
       const users: AzureUser[] = [];
 
-      for await (const user of graphClient.users.list()) {
+      for await (const user of graphClient.users.list() as any) {
         users.push({
           id: user.objectId || '',
           displayName: user.displayName || '',
@@ -354,7 +354,7 @@ class AzureService {
       const credential = this.createCredential(credentials);
       const subscriptionClient = new SubscriptionClient(credential);
 
-      const subscription = await subscriptionClient.subscriptions.get(credentials.subscriptionId);
+      const subscription = await (subscriptionClient as any).subscriptions.get(credentials.subscriptionId);
 
       return {
         id: subscription.subscriptionId,

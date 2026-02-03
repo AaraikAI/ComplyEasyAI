@@ -5,6 +5,23 @@ import { useAuth } from '../contexts/AuthContext';
 import { ShieldCheck, Search, Filter, Download, Loader2, ArrowUpDown, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import crypto from 'crypto';
 
+// Extended type for transformed audit logs with Date timestamp and additional blockchain properties
+interface TransformedAuditLog extends Omit<AuditLog, 'timestamp'> {
+  timestamp: Date;
+  userId?: string;
+  transactionHash?: string | null;
+  network?: string | null;
+  blockNumber?: number | null;
+}
+
+// Type for API response that may include logs array
+interface AuditApiResponse {
+  logs?: AuditLog[];
+  total?: number;
+  limit?: number;
+  offset?: number;
+}
+
 // Helper function to generate blockchain explorer URLs
 const getBlockchainExplorerUrl = (transactionHash: string, network: string): string | null => {
   if (!transactionHash) return null;
@@ -31,7 +48,7 @@ export const AuditTrail: React.FC = () => {
   const [filterText, setFilterText] = useState('');
   const [filterUser, setFilterUser] = useState<string>('');
   const [filterAction, setFilterAction] = useState<string>('');
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditLogs, setAuditLogs] = useState<TransformedAuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>('timestamp');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -43,14 +60,15 @@ export const AuditTrail: React.FC = () => {
       try {
         setIsLoading(true);
         const response = await api.audit.list();
-        // Backend returns { logs, total, limit, offset }, extract logs array
-        const logs = Array.isArray(response) ? response : (response?.logs || []);
+        // Backend returns { logs, total, limit, offset } or array directly, extract logs array
+        const responseData = response as AuditLog[] | AuditApiResponse;
+        const logs: AuditLog[] = Array.isArray(responseData) ? responseData : (responseData?.logs || []);
         
         // Transform logs to match frontend format
-        const transformedLogs = logs.map((log: any) => ({
+        const transformedLogs: TransformedAuditLog[] = logs.map((log: any) => ({
           id: log.id,
           action: log.action,
-          user: log.user?.name || log.user?.email || 'System',
+          user: log.user?.name || log.user?.email || (typeof log.user === 'string' ? log.user : 'System'),
           timestamp: new Date(log.timestamp || log.createdAt || Date.now()),
           hash: log.hash || '',
           verified: log.hash ? verifyHash(log.hash, log) : false,
@@ -64,8 +82,8 @@ export const AuditTrail: React.FC = () => {
         setAuditLogs(transformedLogs);
 
         // Extract unique users and actions for filters
-        const uniqueUsers = [...new Set(transformedLogs.map((log: any) => log.user))].sort();
-        const uniqueActions = [...new Set(transformedLogs.map((log: any) => log.action))].sort();
+        const uniqueUsers = [...new Set(transformedLogs.map((log) => log.user))].sort() as string[];
+        const uniqueActions = [...new Set(transformedLogs.map((log) => log.action))].sort() as string[];
         setAllUsers(uniqueUsers);
         setAllActions(uniqueActions);
       } catch (error) {
