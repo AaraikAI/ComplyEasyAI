@@ -1017,6 +1017,54 @@ export const api = {
         const res = await fetchAPI<any>(`/enterprise/policies${query ? `?${query}` : ''}`);
         return res?.policies ?? res?.data ?? (Array.isArray(res) ? res : []);
       },
+      getById: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/policies/${encodeURIComponent(id)}`);
+      },
+      create: async (data: Record<string, any>) => {
+        return fetchAPI<any>('/enterprise/policies', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      update: async (id: string, data: Record<string, any>) => {
+        return fetchAPI<any>(`/enterprise/policies/${encodeURIComponent(id)}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+      delete: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/policies/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+      },
+      approve: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/policies/${encodeURIComponent(id)}/approve`, {
+          method: 'POST',
+        });
+      },
+      submitForReview: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/policies/${encodeURIComponent(id)}/submit-review`, {
+          method: 'POST',
+        });
+      },
+      duplicate: async (id: string) => {
+        return fetchAPI<any>(`/enterprise/policies/${encodeURIComponent(id)}/duplicate`, {
+          method: 'POST',
+        });
+      },
+      getTemplates: async (category?: string) => {
+        const query = category ? `?category=${encodeURIComponent(category)}` : '';
+        return fetchAPI<any>(`/enterprise/policies/templates${query}`);
+      },
+      getMetrics: async () => {
+        return fetchAPI<any>('/enterprise/policies/metrics');
+      },
+      generatePolicy: async (data: { description: string; category: string; frameworkAlignment?: string[]; industry?: string }) => {
+        return fetchAPI<any>('/enterprise/visionary-ai/generate-policy', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
     },
     workspaces: {
       getHierarchy: async () => fetchAPI<any>('/enterprise/workspace/hierarchy'),
