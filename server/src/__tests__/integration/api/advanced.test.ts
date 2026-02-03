@@ -33,13 +33,13 @@ jest.mock('../../../utils/auditLogger', () => ({
 jest.mock('../../../services/advanced/blockchainService', () => ({
   __esModule: true,
   default: {
-    initialize: jest.fn().mockResolvedValue(undefined),
-    recordAuditLog: jest.fn().mockResolvedValue({
+    initialize: (jest.fn() as jest.Mock<any>).mockResolvedValue(undefined),
+    recordAuditLog: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       id: 'blockchain-123',
       transactionHash: '0xtx123',
       blockNumber: 12345,
     }),
-    verifyAuditLog: jest.fn().mockResolvedValue({
+    verifyAuditLog: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       verified: true,
       blockNumber: 12345,
     }),
@@ -49,24 +49,24 @@ jest.mock('../../../services/advanced/blockchainService', () => ({
 jest.mock('../../../services/advanced/byokService', () => ({
   __esModule: true,
   default: {
-    encryptData: jest.fn().mockResolvedValue({
+    encryptData: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       ciphertext: 'encrypted-data',
       encryptedDataKey: 'encrypted-key',
       provider: 'aws_kms',
     }),
-    decryptData: jest.fn().mockResolvedValue(Buffer.from('decrypted-data')),
+    decryptData: (jest.fn() as jest.Mock<any>).mockResolvedValue(Buffer.from('decrypted-data')),
   },
 }));
 
 jest.mock('../../../services/advanced/homomorphicAIService', () => ({
   __esModule: true,
   default: {
-    initialize: jest.fn().mockResolvedValue(undefined),
-    generateKeys: jest.fn().mockResolvedValue({
+    initialize: (jest.fn() as jest.Mock<any>).mockResolvedValue(undefined),
+    generateKeys: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       publicKey: 'public-key',
       secretKey: 'secret-key',
     }),
-    encryptData: jest.fn().mockResolvedValue({
+    encryptData: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       ciphertext: 'encrypted',
       scheme: 'CKKS',
     }),
@@ -76,11 +76,11 @@ jest.mock('../../../services/advanced/homomorphicAIService', () => ({
 jest.mock('../../../services/advanced/jitAccessService', () => ({
   __esModule: true,
   default: {
-    requestAccess: jest.fn().mockResolvedValue({
+    requestAccess: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       id: 'jit-123',
       status: 'pending',
     }),
-    approveAccess: jest.fn().mockResolvedValue({
+    approveAccess: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       id: 'jit-123',
       status: 'approved',
     }),
@@ -90,11 +90,11 @@ jest.mock('../../../services/advanced/jitAccessService', () => ({
 jest.mock('../../../services/advanced/zeroKnowledgeService', () => ({
   __esModule: true,
   default: {
-    generateComplianceProof: jest.fn().mockResolvedValue({
+    generateComplianceProof: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       proof: { pi_a: ['1'], pi_b: [['2']], pi_c: ['3'] },
       publicSignals: ['100'],
     }),
-    verifyComplianceProof: jest.fn().mockResolvedValue({
+    verifyComplianceProof: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       isValid: true,
     }),
   },
@@ -103,11 +103,11 @@ jest.mock('../../../services/advanced/zeroKnowledgeService', () => ({
 jest.mock('../../../services/advanced/complianceAsCodeService', () => ({
   __esModule: true,
   default: {
-    createPolicy: jest.fn().mockResolvedValue({
+    createPolicy: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       id: 'policy-123',
       name: 'Test Policy',
     }),
-    evaluatePolicy: jest.fn().mockResolvedValue({
+    evaluatePolicy: (jest.fn() as jest.Mock<any>).mockResolvedValue({
       allowed: true,
       violations: [],
     }),

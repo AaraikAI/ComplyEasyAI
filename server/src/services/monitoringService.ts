@@ -548,7 +548,7 @@ Provide your analysis in the following JSON format (return ONLY valid JSON, no m
   async suggestMonitors(organizationId: string, userId: string) {
     const frameworks = await prisma.complianceFramework.findMany({
       where: { organizationId },
-      select: { name: true, frameworkType: true },
+      select: { id: true, name: true },
     });
 
     const existingMonitors = await prisma.continuousMonitor.findMany({

@@ -86,10 +86,10 @@ export const GapAnalysis: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       // Call backend API directly for enhanced response
       const response = await api.ai.performGapAnalysis(currentFrameworks, targetFrameworks);
-      
-      setResult(response.analysis || '');
-      setGaps(response.gaps || []);
-      setPrioritized(response.prioritized || []);
+
+      setResult((response as any).analysis || '');
+      setGaps((response as any).gaps || []);
+      setPrioritized((response as any).prioritized || []);
     } catch (err: any) {
       const errorMessage = err.message || 'Gap analysis failed. Please try again.';
       setError(errorMessage);

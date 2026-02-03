@@ -69,11 +69,11 @@ export const RFPResponder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       if (question.length > MAX_QUESTION_LENGTH) {
         setError(`Question is very long (${question.length} characters). Processing first ${MAX_QUESTION_LENGTH} characters...`);
         const truncatedQuestion = question.substring(0, MAX_QUESTION_LENGTH) + '\n\n[Question truncated due to length...]';
-        const result = await api.ai.generateRFPResponse(truncatedQuestion, context || 'Standard enterprise security posture.');
+        const result = await api.ai.generateRFPResponse(truncatedQuestion, context || 'Standard enterprise security posture.') as any;
         setAnswers([{
           question: truncatedQuestion,
-          answer: result.response || result.answer || result,
-          confidence: result.confidence || 0.75,
+          answer: (result as any).response || (result as any).answer || result,
+          confidence: (result as any).confidence || 0.75,
           edited: false,
         }]);
         return;
@@ -88,11 +88,11 @@ export const RFPResponder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         if (q.trim().length === 0) continue;
         
         try {
-          const result = await api.ai.generateRFPResponse(q, context || 'Standard enterprise security posture.');
+          const result = await api.ai.generateRFPResponse(q, context || 'Standard enterprise security posture.') as any;
           newAnswers.push({
             question: q,
-            answer: result.response || result,
-            confidence: result.confidence || 0.75,
+            answer: (result as any).response || result,
+            confidence: (result as any).confidence || 0.75,
             edited: false,
           });
         } catch (err: any) {

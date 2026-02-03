@@ -29,11 +29,11 @@ export const DataMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setLastUpdateDate(now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
     
     try {
-      const result = await api.ai.generateDataMap(process);
-      setMap(result.map || '');
-      setPiiIdentified(result.piiIdentified || []);
-      setCrossBorderTransfers(result.crossBorderTransfers || []);
-      setRetentionPeriods(result.retentionPeriods || []);
+      const result = await api.ai.generateDataMap(process) as any;
+      setMap((result as any).map || '');
+      setPiiIdentified((result as any).piiIdentified || []);
+      setCrossBorderTransfers((result as any).crossBorderTransfers || []);
+      setRetentionPeriods((result as any).retentionPeriods || []);
     } catch (error: any) {
       console.error('Error mapping data:', error);
       setMap('Error generating data map. Please try again.');

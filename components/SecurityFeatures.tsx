@@ -166,8 +166,8 @@ const ZeroTrustTab: React.FC = () => {
     setLoading(true);
     try {
       const [policiesData, devicesData] = await Promise.all([
-        api.security.getZeroTrustPolicies(),
-        api.security.getDeviceTrusts(),
+        api.security.getZeroTrustPolicies() as Promise<any[]>,
+        api.security.getDeviceTrusts() as Promise<any[]>,
       ]);
       setPolicies(policiesData || []);
       setDevices(devicesData || []);
@@ -203,7 +203,7 @@ const ZeroTrustTab: React.FC = () => {
         deviceType: deviceForm.deviceType,
         macAddress: deviceForm.macAddress,
         ipAddress: deviceForm.ipAddress,
-      });
+      }) as any;
       setShowDeviceModal(false);
       setDeviceForm({ deviceId: '', deviceType: 'laptop', macAddress: '', ipAddress: '' });
       // Optimistically add the device to the list
@@ -480,7 +480,7 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
   const loadProofs = async () => {
     setLoading(true);
     try {
-      const data = await api.security.getZKProofs();
+      const data = await api.security.getZKProofs() as any[];
       setProofs(data || []);
     } catch (error) {
       console.error('Error loading ZK proofs:', error);
@@ -500,7 +500,7 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
           totalControls: complianceForm.totalControls,
           evidenceHash: complianceForm.evidenceHash,
         }
-      );
+      ) as any;
       // Generate unique proof ID if not provided
       const proofWithId = {
         ...proof,
@@ -629,7 +629,7 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
                 hash: credentialForm.credentialHash,
                 issuer: credentialForm.issuer,
                 expirationDate: credentialForm.expirationDate,
-              }, 'user-secret-key');
+              }, 'user-secret-key') as any;
               // Generate unique proof ID if not provided
               const proofWithId = {
                 ...proof,
@@ -739,7 +739,7 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
                 'user-secret-key',
                 ownershipForm.assetId,
                 ownershipForm.assetType
-              );
+              ) as any;
               // Generate unique proof ID if not provided
               const proofWithId = {
                 ...proof,
@@ -864,7 +864,7 @@ const BYOKTab: React.FC = () => {
   const loadKeys = async () => {
     setLoading(true);
     try {
-      const data = await api.security.getBYOKKeys();
+      const data = await api.security.getBYOKKeys() as any[];
       setKeys(data || []);
     } catch (error) {
       console.error('Error loading BYOK keys:', error);
@@ -886,7 +886,7 @@ const BYOKTab: React.FC = () => {
         location: keyForm.location,
         keyRing: keyForm.keyRing,
         keyId: keyForm.keyId,
-      });
+      }) as any;
       setShowKeyModal(false);
       setKeyForm({ provider: 'aws_kms', region: '', vaultUrl: '', keyName: '', description: '', projectId: '', location: '', keyRing: '', keyId: '' });
       // Optimistically add the key to the list
@@ -1145,8 +1145,8 @@ const ComplianceAsCodeTab: React.FC = () => {
     setLoading(true);
     try {
       const [policiesData, reportsData] = await Promise.all([
-        api.security.getCompliancePolicies(),
-        api.security.getComplianceReports(),
+        api.security.getCompliancePolicies() as Promise<any[]>,
+        api.security.getComplianceReports() as Promise<any[]>,
       ]);
       setPolicies(policiesData || []);
       setReports(reportsData || []);
@@ -1161,7 +1161,7 @@ const ComplianceAsCodeTab: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const created = await api.security.createCompliancePolicy(policyForm);
+      const created = await api.security.createCompliancePolicy(policyForm) as any;
       setShowPolicyModal(false);
       setPolicyForm({ name: '', framework: 'SOC2', rego: '', severity: 'high', tags: [] });
       // Optimistically add the policy to the list

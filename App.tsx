@@ -59,6 +59,9 @@ const MainApp: React.FC = () => {
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [selectedFrameworkId, setSelectedFrameworkId] = useState<string | null>(null);
 
+  // Navigation helper that accepts string and casts to ViewState
+  const handleNavigate = (view: string) => setCurrentView(view as ViewState);
+
   useEffect(() => {
     if (isAuthenticated) {
       loadData();
@@ -192,7 +195,7 @@ const MainApp: React.FC = () => {
         if (user?.role !== 'admin') return <div>Access Denied</div>;
         return <Settings onNavigateToIntegrations={() => setCurrentView('integrations')} />;
       case 'acos':
-        return <ACOSDashboard onBack={() => setCurrentView('dashboard')} onNavigate={setCurrentView} />;
+        return <ACOSDashboard onBack={() => setCurrentView('dashboard')} onNavigate={handleNavigate} />;
       case 'security':
         return <SecurityFeatures onBack={() => setCurrentView('dashboard')} />;
       case 'analytics':
@@ -275,8 +278,8 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <OnboardingProvider onNavigate={setCurrentView}>
-      <Layout currentView={currentView} onNavigate={setCurrentView}>
+    <OnboardingProvider onNavigate={handleNavigate}>
+      <Layout currentView={currentView} onNavigate={handleNavigate}>
         {renderContent()}
       </Layout>
     </OnboardingProvider>

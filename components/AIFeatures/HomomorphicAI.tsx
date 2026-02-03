@@ -63,7 +63,7 @@ export const HomomorphicAI: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     
     try {
       const result = await api.acos.generateHomomorphicKeys(keyScheme, keySecurityLevel);
-      setKeys(result);
+      setKeys(result as any);
       setSuccess(`Successfully generated ${keyScheme} keys with ${keySecurityLevel}-bit security`);
     } catch (err: any) {
       setError(err.message || 'Failed to generate keys');
@@ -118,7 +118,7 @@ export const HomomorphicAI: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     try {
       const encryptedData = JSON.parse(decryptData);
       const result = await api.acos.decryptData(encryptedData, keys.secretKey);
-      setDecryptedResult(result.data);
+      setDecryptedResult((result as any).data);
       setSuccess('Data decrypted successfully');
     } catch (err: any) {
       setError(err.message || 'Failed to decrypt data. Make sure the encrypted data is valid JSON.');

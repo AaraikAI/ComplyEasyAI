@@ -12,7 +12,7 @@ jest.mock('../../../config/database', () => ({
 
 jest.mock('../../../utils/auditLogger', () => ({
   AuditLogger: {
-    log: jest.fn().mockResolvedValue({}),
+    log: (jest.fn() as jest.Mock<any>).mockResolvedValue({}),
   },
 }));
 
@@ -92,7 +92,7 @@ describe('PolicyLibraryService', () => {
     });
   });
 
-  describe('getPolicies()', () => {
+  describe('getPoliciesByOrganization()', () => {
     it('should get policies for organization', async () => {
       const mockPolicies = [
         { id: 'policy-1', title: 'Policy 1' },
@@ -101,7 +101,7 @@ describe('PolicyLibraryService', () => {
 
       prismaMock.policy.findMany.mockResolvedValue(mockPolicies as any);
 
-      const result = await service.getPolicies('org-123');
+      const result = await service.getPoliciesByOrganization('org-123');
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(2);

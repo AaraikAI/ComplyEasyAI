@@ -14,6 +14,7 @@ interface FrameworkControl {
   evidenceRequired?: boolean;
   ownerId?: string;
   owner?: { id: string; name: string; email: string };
+  category?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -439,8 +440,8 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       ]);
       
       // Handle both response formats: { mappings: [...] } or just [...]
-      const mappings = mappingsData?.mappings || (Array.isArray(mappingsData) ? mappingsData : []);
-      const versions = versionsData?.versions || (Array.isArray(versionsData) ? versionsData : []);
+      const mappings = (mappingsData as any)?.mappings || (Array.isArray(mappingsData) ? mappingsData : []);
+      const versions = (versionsData as any)?.versions || (Array.isArray(versionsData) ? versionsData : []);
       
       const mappingsArray = Array.isArray(mappings) ? mappings : [];
       const versionsArray = Array.isArray(versions) ? versions : [];
@@ -1474,7 +1475,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                                       try {
                                         const mappingsData = await api.frameworks.getControlMappings(selectedControl.id);
                                         // Handle both response formats: { mappings: [...] } or just [...]
-                                        const mappings = mappingsData?.mappings || (Array.isArray(mappingsData) ? mappingsData : []);
+                                        const mappings = (mappingsData as any)?.mappings || (Array.isArray(mappingsData) ? mappingsData : []);
                                         const mappingsArray = Array.isArray(mappings) ? mappings : [];
                                         setControlMappings(mappingsArray);
                                         console.log('Mappings reloaded after delete:', mappingsArray.length, mappingsArray);
@@ -1665,7 +1666,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                       try {
                         const mappingsData = await api.frameworks.getControlMappings(selectedControl.id);
                         // Handle both response formats: { mappings: [...] } or just [...]
-                        const mappings = mappingsData?.mappings || (Array.isArray(mappingsData) ? mappingsData : []);
+                        const mappings = (mappingsData as any)?.mappings || (Array.isArray(mappingsData) ? mappingsData : []);
                         const mappingsArray = Array.isArray(mappings) ? mappings : [];
                         setControlMappings(mappingsArray);
                         setShowMappings(true); // Automatically show mappings after creation

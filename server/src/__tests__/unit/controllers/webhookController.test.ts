@@ -4,7 +4,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
 // Mock webhook service
@@ -64,8 +64,9 @@ import webhookController from '../../../controllers/webhookController';
 import { AppError } from '../../../middleware/errorHandler';
 
 describe('WebhookController', () => {
-  let mockRequest: Partial<Request>;
+  let mockRequest: any;
   let mockResponse: Partial<Response>;
+  let mockNext: NextFunction;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -83,21 +84,24 @@ describe('WebhookController', () => {
     };
 
     mockResponse = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis() as any,
+      status: jest.fn().mockReturnThis() as any,
     };
+
+    mockNext = jest.fn() as unknown as NextFunction;
   });
 
   describe('getWebhooks()', () => {
     it('should return all webhooks for organization', async () => {
-      mockGetWebhooks.mockResolvedValue([
+      (mockGetWebhooks as any).mockResolvedValue([
         { id: 'webhook-1', name: 'Slack Notifications', url: 'https://example.com/webhook1' },
         { id: 'webhook-2', name: 'Zapier Integration', url: 'https://example.com/webhook2' },
       ]);
 
       await webhookController.getWebhooks(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -107,10 +111,10 @@ describe('WebhookController', () => {
     });
 
     it('should handle errors', async () => {
-      mockGetWebhooks.mockRejectedValue(new Error('Database error'));
+      (mockGetWebhooks as any).mockRejectedValue(new Error('Database error'));
 
       await expect(
-        webhookController.getWebhooks(mockRequest as Request, mockResponse as Response)
+        webhookController.getWebhooks(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -119,7 +123,7 @@ describe('WebhookController', () => {
     it('should return specific webhook with event history', async () => {
       mockRequest.params = { webhookId: 'webhook-123' };
 
-      mockGetWebhook.mockResolvedValue({
+      (mockGetWebhook as any).mockResolvedValue({
         id: 'webhook-123',
         name: 'Test Webhook',
         url: 'https://example.com/webhook',
@@ -130,7 +134,8 @@ describe('WebhookController', () => {
 
       await webhookController.getWebhook(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -143,10 +148,10 @@ describe('WebhookController', () => {
 
     it('should throw 404 if webhook not found', async () => {
       mockRequest.params = { webhookId: 'nonexistent' };
-      mockGetWebhook.mockRejectedValue(new Error('Webhook not found'));
+      (mockGetWebhook as any).mockRejectedValue(new Error('Webhook not found'));
 
       await expect(
-        webhookController.getWebhook(mockRequest as Request, mockResponse as Response)
+        webhookController.getWebhook(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -160,7 +165,7 @@ describe('WebhookController', () => {
         headers: { 'X-Custom': 'value' },
       };
 
-      mockCreateWebhook.mockResolvedValue({
+      (mockCreateWebhook as any).mockResolvedValue({
         id: 'webhook-new',
         name: 'New Webhook',
         url: 'https://example.com/webhook',
@@ -170,7 +175,8 @@ describe('WebhookController', () => {
 
       await webhookController.createWebhook(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.status).toHaveBeenCalledWith(201);
@@ -188,7 +194,7 @@ describe('WebhookController', () => {
       mockRequest.body = { name: 'Test' };
 
       await expect(
-        webhookController.createWebhook(mockRequest as Request, mockResponse as Response)
+        webhookController.createWebhook(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
@@ -200,7 +206,7 @@ describe('WebhookController', () => {
       };
 
       await expect(
-        webhookController.createWebhook(mockRequest as Request, mockResponse as Response)
+        webhookController.createWebhook(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
@@ -212,7 +218,7 @@ describe('WebhookController', () => {
       };
 
       await expect(
-        webhookController.createWebhook(mockRequest as Request, mockResponse as Response)
+        webhookController.createWebhook(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
@@ -223,10 +229,10 @@ describe('WebhookController', () => {
         events: ['risk.created'],
       };
 
-      mockCreateWebhook.mockRejectedValue(new Error('Webhook already exists'));
+      (mockCreateWebhook as any).mockRejectedValue(new Error('Webhook already exists'));
 
       await expect(
-        webhookController.createWebhook(mockRequest as Request, mockResponse as Response)
+        webhookController.createWebhook(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -241,7 +247,7 @@ describe('WebhookController', () => {
         enabled: false,
       };
 
-      mockUpdateWebhook.mockResolvedValue({
+      (mockUpdateWebhook as any).mockResolvedValue({
         id: 'webhook-123',
         name: 'Updated Webhook',
         enabled: false,
@@ -249,7 +255,8 @@ describe('WebhookController', () => {
 
       await webhookController.updateWebhook(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -264,7 +271,7 @@ describe('WebhookController', () => {
       mockRequest.body = { url: 'invalid-url' };
 
       await expect(
-        webhookController.updateWebhook(mockRequest as Request, mockResponse as Response)
+        webhookController.updateWebhook(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
@@ -273,7 +280,7 @@ describe('WebhookController', () => {
       mockRequest.body = { events: ['invalid.event'] };
 
       await expect(
-        webhookController.updateWebhook(mockRequest as Request, mockResponse as Response)
+        webhookController.updateWebhook(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
@@ -281,10 +288,10 @@ describe('WebhookController', () => {
       mockRequest.params = { webhookId: 'nonexistent' };
       mockRequest.body = { name: 'Test' };
 
-      mockUpdateWebhook.mockRejectedValue(new Error('Webhook not found'));
+      (mockUpdateWebhook as any).mockRejectedValue(new Error('Webhook not found'));
 
       await expect(
-        webhookController.updateWebhook(mockRequest as Request, mockResponse as Response)
+        webhookController.updateWebhook(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -293,11 +300,12 @@ describe('WebhookController', () => {
     it('should delete webhook successfully', async () => {
       mockRequest.params = { webhookId: 'webhook-123' };
 
-      mockDeleteWebhook.mockResolvedValue({ deleted: true });
+      (mockDeleteWebhook as any).mockResolvedValue({ deleted: true });
 
       await webhookController.deleteWebhook(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -310,10 +318,10 @@ describe('WebhookController', () => {
     it('should throw error if webhook not found', async () => {
       mockRequest.params = { webhookId: 'nonexistent' };
 
-      mockDeleteWebhook.mockRejectedValue(new Error('Webhook not found'));
+      (mockDeleteWebhook as any).mockRejectedValue(new Error('Webhook not found'));
 
       await expect(
-        webhookController.deleteWebhook(mockRequest as Request, mockResponse as Response)
+        webhookController.deleteWebhook(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -322,7 +330,7 @@ describe('WebhookController', () => {
     it('should send test webhook successfully', async () => {
       mockRequest.params = { webhookId: 'webhook-123' };
 
-      mockTestWebhook.mockResolvedValue({
+      (mockTestWebhook as any).mockResolvedValue({
         success: true,
         statusCode: 200,
         responseTime: 150,
@@ -330,7 +338,8 @@ describe('WebhookController', () => {
 
       await webhookController.testWebhook(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -344,7 +353,7 @@ describe('WebhookController', () => {
     it('should handle failed test webhook', async () => {
       mockRequest.params = { webhookId: 'webhook-123' };
 
-      mockTestWebhook.mockResolvedValue({
+      (mockTestWebhook as any).mockResolvedValue({
         success: false,
         statusCode: 500,
         error: 'Connection refused',
@@ -352,7 +361,8 @@ describe('WebhookController', () => {
 
       await webhookController.testWebhook(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -367,13 +377,14 @@ describe('WebhookController', () => {
     it('should regenerate webhook secret', async () => {
       mockRequest.params = { webhookId: 'webhook-123' };
 
-      mockRegenerateSecret.mockResolvedValue({
+      (mockRegenerateSecret as any).mockResolvedValue({
         newSecret: 'whsec_new123',
       });
 
       await webhookController.regenerateSecret(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -386,10 +397,10 @@ describe('WebhookController', () => {
     it('should throw error if webhook not found', async () => {
       mockRequest.params = { webhookId: 'nonexistent' };
 
-      mockRegenerateSecret.mockRejectedValue(new Error('Webhook not found'));
+      (mockRegenerateSecret as any).mockRejectedValue(new Error('Webhook not found'));
 
       await expect(
-        webhookController.regenerateSecret(mockRequest as Request, mockResponse as Response)
+        webhookController.regenerateSecret(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -399,7 +410,7 @@ describe('WebhookController', () => {
       mockRequest.params = { webhookId: 'webhook-123' };
       mockRequest.query = { limit: '20', offset: '0' };
 
-      mockGetEventHistory.mockResolvedValue({
+      (mockGetEventHistory as any).mockResolvedValue({
         events: [
           { id: 'event-1', type: 'risk.created', status: 'delivered', timestamp: new Date() },
           { id: 'event-2', type: 'risk.updated', status: 'failed', timestamp: new Date() },
@@ -409,7 +420,8 @@ describe('WebhookController', () => {
 
       await webhookController.getEventHistory(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -424,7 +436,7 @@ describe('WebhookController', () => {
       mockRequest.params = { webhookId: 'webhook-123' };
       mockRequest.query = { status: 'failed' };
 
-      mockGetEventHistory.mockResolvedValue({
+      (mockGetEventHistory as any).mockResolvedValue({
         events: [
           { id: 'event-2', type: 'risk.updated', status: 'failed' },
         ],
@@ -433,7 +445,8 @@ describe('WebhookController', () => {
 
       await webhookController.getEventHistory(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       // Just verify it was called - the service handles filtering
@@ -445,14 +458,15 @@ describe('WebhookController', () => {
     it('should retry failed event', async () => {
       mockRequest.params = { webhookId: 'webhook-123', eventId: 'event-456' };
 
-      mockRetryEvent.mockResolvedValue({
+      (mockRetryEvent as any).mockResolvedValue({
         success: true,
         statusCode: 200,
       });
 
       await webhookController.retryEvent(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -465,10 +479,10 @@ describe('WebhookController', () => {
     it('should throw error if event not found', async () => {
       mockRequest.params = { webhookId: 'webhook-123', eventId: 'nonexistent' };
 
-      mockRetryEvent.mockRejectedValue(new Error('Event not found'));
+      (mockRetryEvent as any).mockRejectedValue(new Error('Event not found'));
 
       await expect(
-        webhookController.retryEvent(mockRequest as Request, mockResponse as Response)
+        webhookController.retryEvent(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -477,7 +491,8 @@ describe('WebhookController', () => {
     it('should return available webhook event types', async () => {
       await webhookController.getEventTypes(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalled();
@@ -491,7 +506,8 @@ describe('WebhookController', () => {
     it('should test Zapier authentication', async () => {
       await webhookController.zapierAuthTest(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalled();
@@ -505,14 +521,15 @@ describe('WebhookController', () => {
         event: 'risk.created',
       };
 
-      mockCreateWebhook.mockResolvedValue({
+      (mockCreateWebhook as any).mockResolvedValue({
         id: 'zapier-webhook-123',
         url: 'https://hooks.zapier.com/test',
       });
 
       await webhookController.zapierSubscribe(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalled();
@@ -523,11 +540,12 @@ describe('WebhookController', () => {
     it('should remove Zapier subscription', async () => {
       mockRequest.params = { subscribeId: 'sub-123' };
 
-      mockDeleteWebhook.mockResolvedValue({ deleted: true });
+      (mockDeleteWebhook as any).mockResolvedValue({ deleted: true });
 
       await webhookController.zapierUnsubscribe(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalled();
@@ -540,7 +558,8 @@ describe('WebhookController', () => {
 
       await webhookController.zapierSampleData(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalled();
@@ -556,7 +575,8 @@ describe('WebhookController', () => {
       await expect(
         webhookController.receiveIncomingWebhook(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         )
       ).rejects.toThrow(AppError);
     });

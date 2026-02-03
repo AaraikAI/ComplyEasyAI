@@ -6,9 +6,9 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
 // Mock AWS SDK
-const mockGetCallerIdentity = jest.fn();
-const mockSTS = jest.fn().mockImplementation(() => ({
-  getCallerIdentity: jest.fn().mockReturnValue({ promise: mockGetCallerIdentity }),
+const mockGetCallerIdentity = jest.fn() as jest.Mock<any>;
+const mockSTS = (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
+  getCallerIdentity: (jest.fn() as jest.Mock<any>).mockReturnValue({ promise: mockGetCallerIdentity }),
 }));
 
 jest.mock('aws-sdk', () => ({

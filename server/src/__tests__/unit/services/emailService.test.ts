@@ -5,7 +5,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Mock SendGrid
-const mockSend = jest.fn();
+const mockSend = jest.fn() as jest.Mock<any>;
 jest.mock('@sendgrid/mail', () => ({
   __esModule: true,
   default: {
@@ -120,7 +120,7 @@ describe('EmailService', () => {
 
       await emailService.sendMagicLink(email, token);
 
-      const callArgs = mockSend.mock.calls[0][0];
+      const callArgs = mockSend.mock.calls[0][0] as any;
       expect(callArgs.html).toContain(token);
       expect(callArgs.text).toContain(token);
     });
@@ -156,17 +156,17 @@ describe('EmailService', () => {
 
       await emailService.sendWelcomeEmail(email, name);
 
-      const callArgs = mockSend.mock.calls[0][0];
+      const callArgs = mockSend.mock.calls[0][0] as any;
       expect(callArgs.html).toContain(name);
     });
   });
 
-  describe('sendPasswordResetEmail()', () => {
+  describe('sendPasswordReset()', () => {
     it('should send password reset email', async () => {
       const email = 'user@example.com';
       const resetToken = 'reset-token-123';
 
-      const result = await emailService.sendPasswordResetEmail(email, resetToken);
+      const result = await emailService.sendPasswordReset(email, resetToken);
 
       expect(result).toBe(true);
       expect(mockSend).toHaveBeenCalledWith(
@@ -181,9 +181,9 @@ describe('EmailService', () => {
       const email = 'user@example.com';
       const resetToken = 'reset-token-123';
 
-      await emailService.sendPasswordResetEmail(email, resetToken);
+      await emailService.sendPasswordReset(email, resetToken);
 
-      const callArgs = mockSend.mock.calls[0][0];
+      const callArgs = mockSend.mock.calls[0][0] as any;
       expect(callArgs.html).toContain(resetToken);
     });
   });

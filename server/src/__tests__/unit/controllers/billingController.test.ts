@@ -7,18 +7,22 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { Request, Response } from 'express';
 import { prismaMock } from '../../mocks/prisma';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MockFn = jest.Mock<(...args: any[]) => any>;
+const createMock = (): MockFn => jest.fn() as MockFn;
+
 // Mock services
-const mockCreateCheckoutSession = jest.fn();
-const mockCreatePortalSession = jest.fn();
-const mockHandleWebhook = jest.fn();
-const mockGetSubscriptionDetails = jest.fn();
-const mockPreviewTierChange = jest.fn();
-const mockChangeTier = jest.fn();
-const mockCancelSubscription = jest.fn();
-const mockReactivateSubscription = jest.fn();
-const mockAddAddOn = jest.fn();
-const mockRemoveAddOn = jest.fn();
-const mockCreateQuote = jest.fn();
+const mockCreateCheckoutSession = createMock();
+const mockCreatePortalSession = createMock();
+const mockHandleWebhook = createMock();
+const mockGetSubscriptionDetails = createMock();
+const mockPreviewTierChange = createMock();
+const mockChangeTier = createMock();
+const mockCancelSubscription = createMock();
+const mockReactivateSubscription = createMock();
+const mockAddAddOn = createMock();
+const mockRemoveAddOn = createMock();
+const mockCreateQuote = createMock();
 
 jest.mock('../../../services/stripeService', () => ({
   __esModule: true,
@@ -37,12 +41,12 @@ jest.mock('../../../services/stripeService', () => ({
   },
 }));
 
-const mockGetOrganizationTier = jest.fn();
-const mockGetAvailableTiers = jest.fn();
-const mockCompareTiers = jest.fn();
-const mockCanDowngrade = jest.fn();
-const mockGetAllUsageMetrics = jest.fn();
-const mockGetUsageVsLimits = jest.fn();
+const mockGetOrganizationTier = createMock();
+const mockGetAvailableTiers = createMock();
+const mockCompareTiers = createMock();
+const mockCanDowngrade = createMock();
+const mockGetAllUsageMetrics = createMock();
+const mockGetUsageVsLimits = createMock();
 
 jest.mock('../../../services/tierService', () => ({
   __esModule: true,
@@ -56,13 +60,13 @@ jest.mock('../../../services/tierService', () => ({
   },
 }));
 
-const mockGetAvailableFeaturesForOrg = jest.fn();
-const mockGetActiveFeatureSubscriptions = jest.fn();
-const mockGetTotalFeatureCost = jest.fn();
-const mockSubscribeToFeature = jest.fn();
-const mockUnsubscribeFromFeature = jest.fn();
-const mockSubscribeToBundle = jest.fn();
-const mockHasFeatureAccess = jest.fn();
+const mockGetAvailableFeaturesForOrg = createMock();
+const mockGetActiveFeatureSubscriptions = createMock();
+const mockGetTotalFeatureCost = createMock();
+const mockSubscribeToFeature = createMock();
+const mockUnsubscribeFromFeature = createMock();
+const mockSubscribeToBundle = createMock();
+const mockHasFeatureAccess = createMock();
 
 jest.mock('../../../services/featureService', () => ({
   __esModule: true,
@@ -80,7 +84,7 @@ jest.mock('../../../services/featureService', () => ({
 jest.mock('../../../services/webhookService', () => ({
   __esModule: true,
   default: {
-    dispatchEvent: jest.fn().mockResolvedValue(undefined),
+    dispatchEvent: createMock().mockResolvedValue(undefined),
   },
 }));
 
@@ -167,8 +171,9 @@ import billingController from '../../../controllers/billingController';
 import { AppError } from '../../../middleware/errorHandler';
 
 describe('BillingController', () => {
-  let mockRequest: Partial<Request>;
+  let mockRequest: any;
   let mockResponse: Partial<Response>;
+  const mockNext = jest.fn() as any;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -186,8 +191,8 @@ describe('BillingController', () => {
     };
 
     mockResponse = {
-      json: jest.fn().mockReturnThis(),
-      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis() as any,
+      status: jest.fn().mockReturnThis() as any,
     };
   });
 
@@ -196,7 +201,7 @@ describe('BillingController', () => {
       mockRequest.body = { tier: 'InvalidTier' };
 
       await expect(
-        billingController.createCheckout(mockRequest as Request, mockResponse as Response)
+        billingController.createCheckout(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
@@ -204,46 +209,47 @@ describe('BillingController', () => {
       mockRequest.body = { tier: 'Essentials', billingCycle: 'weekly' };
 
       await expect(
-        billingController.createCheckout(mockRequest as Request, mockResponse as Response)
+        billingController.createCheckout(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
     it('should throw error if organization not found', async () => {
       mockRequest.body = { tier: 'Essentials', billingCycle: 'annual' };
-      prismaMock.organization.findUnique.mockResolvedValue(null);
+      (prismaMock.organization.findUnique as any).mockResolvedValue(null);
 
       await expect(
-        billingController.createCheckout(mockRequest as Request, mockResponse as Response)
+        billingController.createCheckout(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
     it('should validate add-ons for tier', async () => {
       mockRequest.body = { tier: 'Foundation', addOns: ['invalid-addon'], billingCycle: 'annual' };
 
-      prismaMock.organization.findUnique.mockResolvedValue({
+      (prismaMock.organization.findUnique as any).mockResolvedValue({
         id: 'org-123',
         stripeCustomerId: null,
         users: [{ id: 'user-123' }],
-      } as any);
+      });
 
       await expect(
-        billingController.createCheckout(mockRequest as Request, mockResponse as Response)
+        billingController.createCheckout(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
 
   describe('createPortalSession()', () => {
     it('should create portal session', async () => {
-      prismaMock.organization.findUnique.mockResolvedValue({
+      (prismaMock.organization.findUnique as any).mockResolvedValue({
         id: 'org-123',
         stripeCustomerId: 'cus_test123',
-      } as any);
+      });
 
       mockCreatePortalSession.mockResolvedValue('https://billing.stripe.com/test');
 
       await billingController.createPortalSession(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -252,13 +258,13 @@ describe('BillingController', () => {
     });
 
     it('should throw error if no customer ID', async () => {
-      prismaMock.organization.findUnique.mockResolvedValue({
+      (prismaMock.organization.findUnique as any).mockResolvedValue({
         id: 'org-123',
         stripeCustomerId: null,
-      } as any);
+      });
 
       await expect(
-        billingController.createPortalSession(mockRequest as Request, mockResponse as Response)
+        billingController.createPortalSession(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -270,7 +276,7 @@ describe('BillingController', () => {
 
       mockHandleWebhook.mockResolvedValue({ processed: false, event: {} });
 
-      await billingController.webhook(mockRequest as Request, mockResponse as Response);
+      await billingController.webhook(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.json).toHaveBeenCalledWith({ received: true });
     });
@@ -279,7 +285,7 @@ describe('BillingController', () => {
       mockRequest.headers = {};
 
       await expect(
-        billingController.webhook(mockRequest as Request, mockResponse as Response)
+        billingController.webhook(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
@@ -287,9 +293,9 @@ describe('BillingController', () => {
       mockRequest.headers = { 'stripe-signature': 'test-signature' };
       (mockRequest as any).rawBody = Buffer.from('test payload');
 
-      prismaMock.organization.findUnique.mockResolvedValue({
+      (prismaMock.organization.findUnique as any).mockResolvedValue({
         id: 'org-123',
-      } as any);
+      });
 
       mockHandleWebhook.mockResolvedValue({
         processed: true,
@@ -304,7 +310,7 @@ describe('BillingController', () => {
         },
       });
 
-      await billingController.webhook(mockRequest as Request, mockResponse as Response);
+      await billingController.webhook(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.json).toHaveBeenCalledWith({ received: true });
     });
@@ -320,7 +326,8 @@ describe('BillingController', () => {
 
       await billingController.getSubscription(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -335,7 +342,7 @@ describe('BillingController', () => {
       mockGetSubscriptionDetails.mockResolvedValue(null);
 
       await expect(
-        billingController.getSubscription(mockRequest as Request, mockResponse as Response)
+        billingController.getSubscription(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -349,7 +356,8 @@ describe('BillingController', () => {
 
       await billingController.getAvailableTiers(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -374,7 +382,8 @@ describe('BillingController', () => {
 
       await billingController.previewTierChange(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -395,7 +404,8 @@ describe('BillingController', () => {
 
       await billingController.previewTierChange(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -410,7 +420,7 @@ describe('BillingController', () => {
       mockRequest.body = { tier: 'InvalidTier' };
 
       await expect(
-        billingController.previewTierChange(mockRequest as Request, mockResponse as Response)
+        billingController.previewTierChange(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -424,7 +434,8 @@ describe('BillingController', () => {
 
       await billingController.changeTier(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -441,7 +452,8 @@ describe('BillingController', () => {
 
       await billingController.changeTier(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockChangeTier).toHaveBeenCalled();
@@ -456,7 +468,8 @@ describe('BillingController', () => {
 
       await billingController.cancelSubscription(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -474,7 +487,8 @@ describe('BillingController', () => {
 
       await billingController.cancelSubscription(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -492,7 +506,8 @@ describe('BillingController', () => {
 
       await billingController.reactivateSubscription(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -511,7 +526,8 @@ describe('BillingController', () => {
 
       await billingController.addAddOn(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -526,7 +542,7 @@ describe('BillingController', () => {
       mockRequest.body = { addOnId: 'invalid-addon' };
 
       await expect(
-        billingController.addAddOn(mockRequest as Request, mockResponse as Response)
+        billingController.addAddOn(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
@@ -536,7 +552,7 @@ describe('BillingController', () => {
       mockGetOrganizationTier.mockResolvedValue('Foundation');
 
       await expect(
-        billingController.addAddOn(mockRequest as Request, mockResponse as Response)
+        billingController.addAddOn(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -549,7 +565,8 @@ describe('BillingController', () => {
 
       await billingController.removeAddOn(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith({ success: true });
@@ -569,7 +586,8 @@ describe('BillingController', () => {
 
       await billingController.getUsageMetrics(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -585,14 +603,15 @@ describe('BillingController', () => {
     it('should return subscription history', async () => {
       mockRequest.query = { limit: '20', offset: '0' };
 
-      prismaMock.subscriptionHistory.findMany.mockResolvedValue([
+      (prismaMock.subscriptionHistory.findMany as any).mockResolvedValue([
         { id: 'hist-1', event: 'upgraded', createdAt: new Date() },
-      ] as any);
-      prismaMock.subscriptionHistory.count.mockResolvedValue(1);
+      ]);
+      (prismaMock.subscriptionHistory.count as any).mockResolvedValue(1);
 
       await billingController.getSubscriptionHistory(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -621,7 +640,8 @@ describe('BillingController', () => {
 
       await billingController.requestQuote(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -635,7 +655,7 @@ describe('BillingController', () => {
       mockRequest.body = { userCount: 500 };
 
       await expect(
-        billingController.requestQuote(mockRequest as Request, mockResponse as Response)
+        billingController.requestQuote(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
 
@@ -644,7 +664,7 @@ describe('BillingController', () => {
       mockCreateQuote.mockResolvedValue(null);
 
       await expect(
-        billingController.requestQuote(mockRequest as Request, mockResponse as Response)
+        billingController.requestQuote(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -658,7 +678,8 @@ describe('BillingController', () => {
 
       await billingController.getAvailableFeatures(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -684,7 +705,8 @@ describe('BillingController', () => {
 
       await billingController.getFeatureSubscriptions(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -710,7 +732,8 @@ describe('BillingController', () => {
 
       await billingController.subscribeToFeature(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -725,7 +748,7 @@ describe('BillingController', () => {
       mockRequest.body = { billingCycle: 'weekly' };
 
       await expect(
-        billingController.subscribeToFeature(mockRequest as Request, mockResponse as Response)
+        billingController.subscribeToFeature(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -738,7 +761,8 @@ describe('BillingController', () => {
 
       await billingController.unsubscribeFromFeature(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -759,7 +783,8 @@ describe('BillingController', () => {
 
       await billingController.subscribeToBundle(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -773,21 +798,22 @@ describe('BillingController', () => {
       mockRequest.body = { billingCycle: 'weekly' };
 
       await expect(
-        billingController.subscribeToBundle(mockRequest as Request, mockResponse as Response)
+        billingController.subscribeToBundle(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
 
   describe('getAvailableBundles()', () => {
     it('should return available bundles for organization tier', async () => {
-      prismaMock.organization.findUnique.mockResolvedValue({
+      (prismaMock.organization.findUnique as any).mockResolvedValue({
         id: 'org-123',
         plan: 'Essentials',
-      } as any);
+      });
 
       await billingController.getAvailableBundles(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -796,10 +822,10 @@ describe('BillingController', () => {
     });
 
     it('should throw error if organization not found', async () => {
-      prismaMock.organization.findUnique.mockResolvedValue(null);
+      (prismaMock.organization.findUnique as any).mockResolvedValue(null);
 
       await expect(
-        billingController.getAvailableBundles(mockRequest as Request, mockResponse as Response)
+        billingController.getAvailableBundles(mockRequest as Request, mockResponse as Response, mockNext)
       ).rejects.toThrow(AppError);
     });
   });
@@ -812,7 +838,8 @@ describe('BillingController', () => {
 
       await billingController.checkFeatureAccess(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -830,7 +857,8 @@ describe('BillingController', () => {
 
       await billingController.checkFeatureAccess(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
 
       expect(mockResponse.json).toHaveBeenCalledWith(

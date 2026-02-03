@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import api from '../services/api';
+import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
@@ -323,7 +323,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
         vendor.name,
         vendor.serviceDescription || vendor.category || 'General Service',
         dataAccess
-      );
+      ) as any;
       const text = typeof result === 'string' ? result : result?.analysis || result?.result || JSON.stringify(result);
       setAiScoreResults(prev => ({ ...prev, [vendor.id]: text }));
 
@@ -349,7 +349,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
     setContractLoading(true);
     setContractAnalysis('');
     try {
-      const result = await api.ai.analyzeContract(contractText);
+      const result = await api.ai.analyzeContract(contractText) as any;
       setContractAnalysis(typeof result === 'string' ? result : result?.analysis || JSON.stringify(result));
     } catch (err: any) {
       setContractAnalysis(`Error: ${err.message}`);
@@ -367,7 +367,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
     setViewMode('ai-due-diligence');
     setSelectedVendor(vendor);
     try {
-      const result = await api.ai.generateReport('Vendor Risk', vendor.name, JSON.stringify(vendor));
+      const result = await api.ai.generateReport('Vendor Risk', vendor.name, JSON.stringify(vendor)) as any;
       setDueDiligenceReport(typeof result === 'string' ? result : result?.report || JSON.stringify(result));
     } catch (err: any) {
       setDueDiligenceReport(`Error: ${err.message}`);
@@ -386,7 +386,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
     setSelectedVendor(vendor);
     try {
       const prompt = `Suggest monitoring controls for a ${vendor.category || 'General'} vendor with ${vendor.hasDataAccess ? 'data access (' + (vendor.dataTypes || []).join(', ') + ')' : 'no data access'}. Vendor: ${vendor.name}. Service: ${vendor.serviceDescription || 'N/A'}. Format as a numbered checklist of specific monitors to set up.`;
-      const result = await api.ai.chat(prompt);
+      const result = await api.ai.chat(prompt) as any;
       setMonitoringSuggestions(typeof result === 'string' ? result : result?.response || result?.message || JSON.stringify(result));
     } catch (err: any) {
       setMonitoringSuggestions(`Error: ${err.message}`);

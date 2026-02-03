@@ -41,7 +41,7 @@ describe('Gemini AI Service', () => {
     vi.clearAllMocks();
     // Set test environment variables
     process.env.GEMINI_API_KEY = 'test-api-key';
-    import.meta.env.VITE_API_URL = 'http://localhost:3001/api';
+    // Note: import.meta.env is read-only in Vite, so we mock the API instead
   });
 
   it('generateComplianceReport returns text on success', async () => {

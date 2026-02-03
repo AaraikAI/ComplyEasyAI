@@ -6,8 +6,8 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
 // Mock axios
-const mockAxiosPost = jest.fn();
-const mockAxiosGet = jest.fn();
+const mockAxiosPost = jest.fn() as jest.Mock<any>;
+const mockAxiosGet = jest.fn() as jest.Mock<any>;
 
 jest.mock('axios', () => ({
   __esModule: true,
@@ -95,16 +95,16 @@ describe('JiraService', () => {
 
   describe('createIssue()', () => {
     it('should create Jira issue', async () => {
-      const integrationId = 'integration-123';
+      const organizationId = 'org-123';
+      const projectKey = 'TEST';
       const issueData = {
         summary: 'Test Issue',
         description: 'Test description',
         issueType: 'Bug',
-        projectKey: 'TEST',
       };
 
-      prismaMock.integration.findUnique.mockResolvedValue({
-        id: integrationId,
+      prismaMock.integration.findFirst.mockResolvedValue({
+        id: 'integration-123',
         accessToken: 'test-token',
         cloudId: 'cloud-123',
       } as any);
@@ -116,7 +116,7 @@ describe('JiraService', () => {
         },
       });
 
-      const result = await jiraService.createIssue(integrationId, issueData);
+      const result = await jiraService.createIssue(organizationId, projectKey, issueData);
 
       expect(result).toHaveProperty('id');
       expect(result).toHaveProperty('key');
