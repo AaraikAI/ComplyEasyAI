@@ -170,7 +170,7 @@ questionnaireRouter.post(
       req.user.organizationId, {}
     );
     const created = full.find((q: any) => q.id === questionnaire.id);
-    res.status(201).json(created || questionnaire);
+    return res.status(201).json(created || questionnaire);
   })
 );
 
@@ -185,7 +185,7 @@ questionnaireRouter.get(
     if (!questionnaire) {
       return res.status(404).json({ error: 'Questionnaire not found' });
     }
-    res.json(questionnaire);
+    return res.json(questionnaire);
   })
 );
 
@@ -816,7 +816,7 @@ issueRouter.get(
     if (!issue) {
       return res.status(404).json({ error: 'Issue not found' });
     }
-    res.json(issue);
+    return res.json(issue);
   })
 );
 
