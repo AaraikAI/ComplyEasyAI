@@ -1568,4 +1568,3070 @@ export const PCI_DSS_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started',
   },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 1 - Network Security Controls (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-1.1.1',
+    name: 'Formal Process for Network Security Changes',
+    description: 'All security policies and operational procedures identified in Requirement 1 are documented, kept up to date, in use, and known to all affected parties.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Establish a formal change management process that includes documentation requirements, approval workflows, and communication procedures for all network security changes. Ensure policies are reviewed at least annually and updated as needed.',
+    evidenceRequirements: [
+      'Network security change management policy and procedures',
+      'Evidence of annual policy review and approval',
+      'Training records for personnel on network security policies',
+      'Change management logs showing approval workflows'
+    ],
+    testProcedures: [
+      'Examine network security policies for completeness and currency',
+      'Verify policies are reviewed at least annually',
+      'Interview personnel to confirm awareness of policies',
+      'Review change logs for proper approval documentation'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.1.2',
+    name: 'Network Diagram Accuracy and Currency',
+    description: 'Network diagrams are maintained that show all connections between the CDE and other networks, including wireless networks. Diagrams accurately reflect the current network topology.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Create and maintain network diagrams using professional diagramming tools. Include all network segments, firewalls, routers, switches, and connection points. Update diagrams within 30 days of any network change.',
+    evidenceRequirements: [
+      'Current network diagrams showing all CDE connections',
+      'Diagram revision history and change tracking',
+      'Process documentation for diagram updates',
+      'Wireless network topology documentation'
+    ],
+    testProcedures: [
+      'Compare network diagrams against actual network topology',
+      'Verify all CDE connections are documented',
+      'Review diagram update process and recent changes',
+      'Confirm wireless networks are accurately depicted'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.1.3',
+    name: 'Data Flow Diagram Maintenance',
+    description: 'Current data flow diagrams are maintained that show all cardholder data flows across systems and networks, identifying all locations where cardholder data is transmitted, processed, or stored.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Document all cardholder data flows from point of entry through storage and disposal. Include all systems, applications, and transmission methods. Update diagrams when data flows change.',
+    evidenceRequirements: [
+      'Current data flow diagrams for all cardholder data',
+      'Inventory of all CHD storage locations',
+      'Documentation of data transmission methods',
+      'Process for updating data flow documentation'
+    ],
+    testProcedures: [
+      'Review data flow diagrams for completeness',
+      'Verify all CHD storage locations are identified',
+      'Trace sample data flows against documentation',
+      'Confirm diagrams reflect current data handling practices'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.2.1',
+    name: 'Inbound Traffic Restriction Configuration',
+    description: 'Inbound traffic to the CDE is restricted to only traffic that is necessary, and all other traffic is specifically denied.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Configure firewalls with explicit deny-all rules as the default, then add specific allow rules for required business traffic. Document business justification for each allowed connection.',
+    evidenceRequirements: [
+      'Firewall rule configurations with deny-all default',
+      'Business justification for each allow rule',
+      'Network traffic analysis reports',
+      'Rule review and approval documentation'
+    ],
+    testProcedures: [
+      'Examine firewall configurations for deny-all default',
+      'Verify each allow rule has documented business justification',
+      'Test that unauthorized traffic is blocked',
+      'Review traffic logs for policy violations'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.2.2',
+    name: 'Outbound Traffic Restriction Configuration',
+    description: 'Outbound traffic from the CDE is restricted to only traffic that is necessary, and all other traffic is specifically denied.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Implement egress filtering on all CDE network segments. Allow only necessary outbound connections with documented business justification. Monitor for unauthorized outbound traffic.',
+    evidenceRequirements: [
+      'Egress filtering rules and configurations',
+      'Business justification for outbound connections',
+      'Outbound traffic monitoring reports',
+      'Unauthorized connection attempt logs'
+    ],
+    testProcedures: [
+      'Examine egress filtering configurations',
+      'Verify outbound rules match documented business needs',
+      'Test that unauthorized outbound traffic is blocked',
+      'Review monitoring for suspicious outbound activity'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.2.3',
+    name: 'NSC Configuration Between Wireless and CDE',
+    description: 'Network security controls are implemented between all wireless networks and the CDE, regardless of whether the wireless network is a CDE component.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Deploy firewalls or equivalent controls between all wireless segments and the CDE. Treat wireless networks as untrusted by default and apply appropriate segmentation.',
+    evidenceRequirements: [
+      'Network diagrams showing wireless segmentation',
+      'Firewall rules between wireless and CDE',
+      'Wireless network security configurations',
+      'Segmentation validation test results'
+    ],
+    testProcedures: [
+      'Verify NSCs exist between wireless and CDE',
+      'Examine firewall rules for appropriate restrictions',
+      'Test wireless-to-CDE segmentation effectiveness',
+      'Review wireless security configurations'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.2.4',
+    name: 'Accurate Inventory of Trusted Connections',
+    description: 'An accurate inventory is maintained of all trusted connections to the CDE, including third-party connections and business justifications.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Create and maintain a comprehensive inventory of all connections to the CDE. Include connection owner, purpose, protocols used, and review dates. Review inventory quarterly.',
+    evidenceRequirements: [
+      'Inventory of all CDE connections with details',
+      'Business justification for each connection',
+      'Quarterly inventory review documentation',
+      'Third-party connection agreements'
+    ],
+    testProcedures: [
+      'Review connection inventory for completeness',
+      'Verify business justification for each connection',
+      'Confirm quarterly reviews are performed',
+      'Compare inventory against actual network connections'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.2.5',
+    name: 'Security Control Review for Allowed Services',
+    description: 'All services, protocols, and ports allowed are identified, approved, and have a defined business need with security features documented.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Document all allowed services with business justification. For insecure protocols, document compensating security measures. Review allowed services at least annually.',
+    evidenceRequirements: [
+      'Inventory of allowed services, protocols, and ports',
+      'Business justification documentation',
+      'Security measures for insecure protocols',
+      'Annual review and approval records'
+    ],
+    testProcedures: [
+      'Review inventory of allowed services',
+      'Verify business need for each allowed service',
+      'Examine security measures for insecure protocols',
+      'Confirm annual review process'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.2.6',
+    name: 'Security Features for Insecure Services',
+    description: 'Security features are defined and implemented for all services, protocols, and ports that are in use and considered to be insecure.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Identify all insecure services in use and implement compensating security controls. Document risk acceptance for any insecure services that cannot be secured or replaced.',
+    evidenceRequirements: [
+      'List of insecure services in use',
+      'Compensating security controls documentation',
+      'Risk acceptance documentation if applicable',
+      'Migration plans for insecure services'
+    ],
+    testProcedures: [
+      'Identify insecure services in the environment',
+      'Verify compensating controls are implemented',
+      'Review risk acceptance documentation',
+      'Examine migration plans for insecure services'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.2.7',
+    name: 'NSC Configuration Review Frequency',
+    description: 'Configurations of NSCs are reviewed at least every six months to confirm they are relevant and effective.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Establish a semi-annual review process for all network security control configurations. Document review findings, remediation actions, and approvals.',
+    evidenceRequirements: [
+      'Semi-annual NSC configuration review schedule',
+      'Review findings and remediation documentation',
+      'Management approval of configurations',
+      'Evidence of configuration changes based on reviews'
+    ],
+    testProcedures: [
+      'Verify semi-annual reviews are scheduled and performed',
+      'Examine review documentation for thoroughness',
+      'Confirm remediation of identified issues',
+      'Review management approval records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.2.8',
+    name: 'NSC Configuration Files Secured',
+    description: 'Configuration files for NSCs are secured from unauthorized access and kept consistent with active network configurations.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Store NSC configuration files in secure locations with access controls. Implement file integrity monitoring and version control. Regularly compare running configs against stored files.',
+    evidenceRequirements: [
+      'Secure storage location for configuration files',
+      'Access control lists for configuration files',
+      'File integrity monitoring configuration',
+      'Configuration comparison reports'
+    ],
+    testProcedures: [
+      'Verify secure storage of configuration files',
+      'Examine access controls on configuration files',
+      'Review file integrity monitoring alerts',
+      'Compare stored configs against running configs'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.3.1',
+    name: 'Inbound Traffic to CDE Restricted',
+    description: 'Inbound traffic to the CDE is restricted to only traffic necessary for the CDE. All other traffic is specifically denied.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Implement strict inbound filtering at all CDE entry points. Use allowlists for permitted traffic sources and destinations. Log and alert on denied traffic attempts.',
+    evidenceRequirements: [
+      'Inbound traffic filtering rules',
+      'Allowlist documentation with business justification',
+      'Denied traffic logs and alerts',
+      'Traffic analysis reports'
+    ],
+    testProcedures: [
+      'Examine inbound filtering configurations',
+      'Test that only authorized traffic is permitted',
+      'Review denied traffic logs',
+      'Verify alerting on unauthorized attempts'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.3.2',
+    name: 'Outbound Traffic from CDE Restricted',
+    description: 'Outbound traffic from the CDE is restricted to only traffic necessary. All other traffic is specifically denied.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Implement strict egress filtering from all CDE segments. Document and approve all outbound connections. Monitor for data exfiltration attempts.',
+    evidenceRequirements: [
+      'Egress filtering configurations',
+      'Approved outbound connections list',
+      'Data exfiltration monitoring reports',
+      'Outbound traffic analysis documentation'
+    ],
+    testProcedures: [
+      'Examine egress filtering rules',
+      'Verify outbound traffic matches approved list',
+      'Test that unauthorized outbound traffic is blocked',
+      'Review data exfiltration monitoring'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.3.3',
+    name: 'NSCs Between Wireless and CDE',
+    description: 'NSCs are installed between all wireless networks and the cardholder data environment.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Deploy dedicated network security controls between every wireless network segment and the CDE. Configure controls to deny all traffic by default.',
+    evidenceRequirements: [
+      'Network diagrams showing wireless segmentation',
+      'NSC configurations for wireless segments',
+      'Segmentation test results',
+      'Wireless access policies'
+    ],
+    testProcedures: [
+      'Verify NSCs exist between wireless and CDE',
+      'Examine NSC configurations',
+      'Perform segmentation testing',
+      'Review wireless access policies'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.4.1',
+    name: 'NSCs Between Trusted and Untrusted Networks',
+    description: 'NSCs are implemented between trusted and untrusted networks.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Define trust zones and implement appropriate security controls at each boundary. Ensure all traffic between zones passes through NSCs.',
+    evidenceRequirements: [
+      'Trust zone definitions and documentation',
+      'NSC placement diagrams',
+      'Boundary security configurations',
+      'Traffic flow documentation'
+    ],
+    testProcedures: [
+      'Review trust zone definitions',
+      'Verify NSC placement at boundaries',
+      'Examine boundary security configurations',
+      'Test traffic flow through NSCs'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.4.2',
+    name: 'Inbound Traffic Filtering to Untrusted Networks',
+    description: 'Inbound traffic from untrusted networks to trusted networks is restricted to communications with system components that are authorized to provide publicly accessible services.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Allow inbound traffic only to authorized DMZ services. Implement application-aware filtering where possible. Monitor and log all inbound connection attempts.',
+    evidenceRequirements: [
+      'DMZ architecture documentation',
+      'Authorized public service inventory',
+      'Inbound filtering rules',
+      'Connection attempt logs'
+    ],
+    testProcedures: [
+      'Review DMZ architecture',
+      'Verify authorized public services',
+      'Examine inbound filtering configurations',
+      'Review connection logs'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.4.3',
+    name: 'Anti-Spoofing Measures Implemented',
+    description: 'Anti-spoofing measures are implemented to detect and block forged source IP addresses from entering the trusted network.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Configure ingress and egress filtering on all boundary devices. Implement BCP 38/RFC 2827 anti-spoofing measures. Enable spoofing detection and logging.',
+    evidenceRequirements: [
+      'Anti-spoofing configurations on boundary devices',
+      'Ingress and egress filtering rules',
+      'Spoofing detection logs',
+      'BCP 38 compliance documentation'
+    ],
+    testProcedures: [
+      'Examine anti-spoofing configurations',
+      'Verify ingress/egress filtering',
+      'Review spoofing detection logs',
+      'Test anti-spoofing effectiveness'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.4.4',
+    name: 'CDE Not Directly Accessible from Untrusted Networks',
+    description: 'System components that store cardholder data are not directly accessible from untrusted networks.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Place all CHD storage systems in protected network segments with no direct untrusted network access. Use jump servers or bastion hosts for administrative access.',
+    evidenceRequirements: [
+      'Network diagrams showing CHD storage placement',
+      'Segmentation configurations',
+      'Jump server/bastion host documentation',
+      'Access path documentation'
+    ],
+    testProcedures: [
+      'Review CHD storage system placement',
+      'Verify no direct untrusted network access',
+      'Examine segmentation effectiveness',
+      'Test access paths to CHD systems'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.4.5',
+    name: 'Disclosure of Internal IP Addresses Prevented',
+    description: 'The disclosure of internal IP addresses and routing information is limited to only authorized parties.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Implement NAT or proxy services to hide internal IP addresses. Configure systems to prevent IP address disclosure in headers, errors, or logs visible externally.',
+    evidenceRequirements: [
+      'NAT/proxy configurations',
+      'Application configurations preventing IP disclosure',
+      'External-facing system hardening documentation',
+      'Penetration test results related to IP disclosure'
+    ],
+    testProcedures: [
+      'Examine NAT/proxy configurations',
+      'Test for IP address disclosure vulnerabilities',
+      'Review application configurations',
+      'Verify external systems do not reveal internal IPs'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-1.5.1',
+    name: 'Security Controls on Computing Devices Outside CDE',
+    description: 'Security controls are implemented on any computing devices that connect to both untrusted networks and the CDE.',
+    category: 'Network Security Controls',
+    implementationGuidance: 'Deploy endpoint protection, personal firewalls, and security software on all devices connecting to both untrusted networks and CDE. Enforce security policies through mobile device management.',
+    evidenceRequirements: [
+      'Endpoint protection deployment records',
+      'Personal firewall configurations',
+      'Mobile device management policies',
+      'Device compliance reports'
+    ],
+    testProcedures: [
+      'Verify endpoint protection on dual-homed devices',
+      'Examine personal firewall configurations',
+      'Review MDM policy enforcement',
+      'Check device compliance status'
+    ],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 2 - Secure Configurations (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-2.1.1',
+    name: 'Vendor Default Accounts Management',
+    description: 'All vendor-supplied default accounts are removed or disabled before a system is installed on the network, or default passwords are changed.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Create a checklist of all vendor default accounts for each system type. Remove or disable unnecessary default accounts. Change passwords for required default accounts using strong password requirements.',
+    evidenceRequirements: [
+      'Default account removal/change procedures',
+      'System hardening checklists',
+      'Configuration audit reports showing default accounts addressed',
+      'Password change records for retained default accounts'
+    ],
+    testProcedures: [
+      'Review system configurations for default accounts',
+      'Attempt authentication with known default credentials',
+      'Verify default account handling procedures are followed',
+      'Check password policy compliance for retained accounts'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-2.1.2',
+    name: 'Primary Functions Require Different Security Levels',
+    description: 'Primary functions requiring different security levels are managed as follows: Only one primary function exists on a system component, OR Primary functions with differing security levels are isolated.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Implement single-function servers where possible. When co-location is necessary, use virtualization, containers, or other isolation technologies. Document security boundaries between functions.',
+    evidenceRequirements: [
+      'System function inventory documentation',
+      'Isolation technology configurations',
+      'Security boundary documentation',
+      'Risk assessments for co-located functions'
+    ],
+    testProcedures: [
+      'Review system inventories for function co-location',
+      'Verify isolation between co-located functions',
+      'Examine security boundary effectiveness',
+      'Review risk assessments for co-location decisions'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-2.2.1',
+    name: 'Configuration Standards for System Components',
+    description: 'Configuration standards are developed, implemented, and maintained for all system components that are consistent with industry-accepted hardening standards.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Develop configuration standards based on CIS Benchmarks, DISA STIGs, or vendor hardening guides. Include all system types in the CDE. Review and update standards annually.',
+    evidenceRequirements: [
+      'Configuration standard documents for each system type',
+      'Industry hardening standard references (CIS, DISA)',
+      'Standard review and update records',
+      'Configuration compliance reports'
+    ],
+    testProcedures: [
+      'Compare configuration standards against industry benchmarks',
+      'Verify standards exist for all system types',
+      'Review annual update process',
+      'Examine compliance assessment results'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-2.2.2',
+    name: 'Vendor Default Accounts Managed',
+    description: 'Vendor default accounts are managed as follows: If used, default passwords are changed. If not used, the account is removed or disabled.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Inventory all vendor default accounts across all systems. Implement automated scanning for default credentials. Enforce password changes or account removal during system deployment.',
+    evidenceRequirements: [
+      'Vendor default account inventory',
+      'Automated credential scanning reports',
+      'Account removal/password change procedures',
+      'Deployment checklist with default account handling'
+    ],
+    testProcedures: [
+      'Scan systems for known default credentials',
+      'Review account inventories for default accounts',
+      'Verify removal or password change procedures',
+      'Test authentication with default credentials'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-2.2.3',
+    name: 'Primary Functions Isolated',
+    description: 'If primary functions requiring different security levels exist on the same system component, functions are isolated or implemented to provide the appropriate level of security.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Use virtualization, containerization, or logical separation for co-located functions. Implement separate authentication and access controls for each function. Monitor cross-function access.',
+    evidenceRequirements: [
+      'Function isolation architecture documentation',
+      'Virtualization/container configurations',
+      'Access control configurations per function',
+      'Cross-function access monitoring logs'
+    ],
+    testProcedures: [
+      'Verify isolation between functions',
+      'Test cross-function access restrictions',
+      'Review access control configurations',
+      'Examine monitoring for unauthorized cross-access'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-2.2.4',
+    name: 'Only Necessary Services Enabled',
+    description: 'Only necessary services, protocols, daemons, and functions are enabled, and all unnecessary functionality is removed or disabled.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Establish baseline configurations with minimal services. Document business justification for each enabled service. Implement automated compliance checking for unnecessary services.',
+    evidenceRequirements: [
+      'Approved service baseline for each system type',
+      'Business justification for enabled services',
+      'Service compliance scan results',
+      'Removal procedures for unnecessary services'
+    ],
+    testProcedures: [
+      'Compare running services against approved baselines',
+      'Verify business justification for enabled services',
+      'Review compliance scan results',
+      'Test for presence of unnecessary services'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-2.2.5',
+    name: 'Insecure Services Secured',
+    description: 'If any insecure services, protocols, or daemons are present, business justification is documented and additional security features are implemented.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Document all insecure services with business justification. Implement compensating controls such as encryption wrappers, network segmentation, or enhanced monitoring. Plan migration to secure alternatives.',
+    evidenceRequirements: [
+      'Inventory of insecure services with justification',
+      'Compensating control documentation',
+      'Enhanced monitoring configurations',
+      'Migration plans to secure alternatives'
+    ],
+    testProcedures: [
+      'Review inventory of insecure services',
+      'Verify compensating controls effectiveness',
+      'Examine enhanced monitoring implementation',
+      'Review migration timeline and progress'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-2.2.6',
+    name: 'System Security Parameters Configured',
+    description: 'System security parameters are configured to prevent misuse.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Configure security parameters according to hardening standards. Include password policies, audit settings, network parameters, and access controls. Validate configurations during deployment.',
+    evidenceRequirements: [
+      'Security parameter configuration standards',
+      'System configuration exports showing parameter settings',
+      'Configuration validation reports',
+      'Deployment verification checklists'
+    ],
+    testProcedures: [
+      'Review security parameter settings',
+      'Compare configurations against standards',
+      'Verify deployment validation process',
+      'Test parameter enforcement effectiveness'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-2.2.7',
+    name: 'Non-Console Administrative Access Encrypted',
+    description: 'All non-console administrative access is encrypted using strong cryptography.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Require SSH, HTTPS, or other encrypted protocols for all remote administration. Disable unencrypted protocols (telnet, HTTP, rlogin). Implement certificate-based authentication where possible.',
+    evidenceRequirements: [
+      'Administrative access protocol standards',
+      'System configurations showing encrypted protocols only',
+      'Network captures demonstrating encryption',
+      'Certificate management documentation'
+    ],
+    testProcedures: [
+      'Attempt connections using unencrypted protocols',
+      'Verify encrypted protocol configurations',
+      'Capture and verify encryption of admin traffic',
+      'Review certificate implementations'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-2.3.1',
+    name: 'Wireless Vendor Defaults Changed',
+    description: 'For wireless environments connected to the CDE or transmitting account data, all wireless vendor defaults are changed at installation.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Change all default SSIDs, encryption keys, passwords, and SNMP community strings. Disable unnecessary wireless management interfaces. Update firmware before deployment.',
+    evidenceRequirements: [
+      'Wireless deployment checklists',
+      'Configuration exports showing non-default settings',
+      'SNMP community string change records',
+      'Firmware update documentation'
+    ],
+    testProcedures: [
+      'Attempt authentication with known defaults',
+      'Verify SSID and encryption key changes',
+      'Review SNMP community strings',
+      'Check firmware versions'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-2.3.2',
+    name: 'Wireless Encryption Keys Changed',
+    description: 'For wireless environments connected to the CDE or transmitting account data, wireless encryption keys are changed when personnel with knowledge of the keys leave or change roles.',
+    category: 'Secure Configurations',
+    implementationGuidance: 'Implement procedures for key rotation upon personnel changes. Use enterprise wireless authentication (802.1X) to minimize key exposure. Document key holders and rotation events.',
+    evidenceRequirements: [
+      'Key rotation procedures documentation',
+      'Key holder inventory',
+      'Key change logs correlated with personnel changes',
+      'Enterprise authentication configurations'
+    ],
+    testProcedures: [
+      'Review key rotation procedures',
+      'Verify key changes following personnel departures',
+      'Examine key holder documentation',
+      'Test enterprise authentication implementation'
+    ],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 3 - Protect Stored Account Data (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-3.1.1',
+    name: 'Data Retention Policy Implementation',
+    description: 'All policies and procedures for protecting stored account data are documented, kept up to date, in use, and known to all affected parties.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Develop comprehensive data retention policies specifying storage duration, disposal methods, and legal requirements. Communicate policies to all personnel handling account data.',
+    evidenceRequirements: [
+      'Data retention policy documentation',
+      'Policy review and approval records',
+      'Personnel training records on data handling',
+      'Policy distribution acknowledgments'
+    ],
+    testProcedures: [
+      'Review data retention policies for completeness',
+      'Verify policies are current and approved',
+      'Interview personnel on policy awareness',
+      'Examine training documentation'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.1.2',
+    name: 'Data Storage Amount Minimized',
+    description: 'Storage of account data is kept to a minimum through implementation of data retention and disposal policies and procedures.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement automated data purging based on retention schedules. Regularly audit storage locations for unauthorized data retention. Document business justification for stored data.',
+    evidenceRequirements: [
+      'Data retention schedule documentation',
+      'Automated purging configuration records',
+      'Storage audit reports',
+      'Business justification for retained data'
+    ],
+    testProcedures: [
+      'Review retention schedules for appropriateness',
+      'Verify automated purging is functioning',
+      'Examine storage audit findings',
+      'Confirm business need for retained data'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.2.1',
+    name: 'Sensitive Authentication Data Not Stored After Authorization',
+    description: 'Account data storage is kept to a minimum. Sensitive authentication data (SAD) is not stored after authorization.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Configure systems to prevent storage of full track data, CAV2/CVC2/CVV2/CID, and PINs after authorization. Implement automated checks to detect unauthorized SAD storage.',
+    evidenceRequirements: [
+      'System configurations preventing SAD storage',
+      'Automated SAD detection scan results',
+      'Development standards prohibiting SAD storage',
+      'Code review records for SAD compliance'
+    ],
+    testProcedures: [
+      'Verify systems do not store SAD after authorization',
+      'Run SAD detection scans across storage',
+      'Review development standards',
+      'Examine code review procedures'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.3.1',
+    name: 'SAD Not Stored After Authorization Even If Encrypted',
+    description: 'Sensitive authentication data (SAD) is not retained after authorization, even if encrypted.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement immediate deletion of SAD upon authorization completion. Configure applications to clear SAD from memory and temporary storage. Audit all data stores for SAD.',
+    evidenceRequirements: [
+      'Application configurations for SAD handling',
+      'Memory clearing procedures documentation',
+      'Audit reports for SAD in storage',
+      'Transaction flow documentation showing SAD handling'
+    ],
+    testProcedures: [
+      'Trace transaction flows for SAD handling',
+      'Verify SAD is cleared from memory',
+      'Review audit reports for SAD findings',
+      'Test application behavior post-authorization'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.3.2',
+    name: 'SAD Storage Before Authorization Encrypted',
+    description: 'SAD that is stored electronically prior to completion of authorization is encrypted using strong cryptography.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement strong encryption for any temporary SAD storage during authorization. Use approved cryptographic algorithms. Ensure encryption keys are properly managed.',
+    evidenceRequirements: [
+      'Encryption configurations for temporary SAD storage',
+      'Cryptographic algorithm documentation',
+      'Key management procedures',
+      'Pre-authorization data flow documentation'
+    ],
+    testProcedures: [
+      'Verify encryption of temporary SAD storage',
+      'Review cryptographic algorithms used',
+      'Examine key management practices',
+      'Trace pre-authorization data flows'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.3.3',
+    name: 'SAD Storage Before Authorization for Issuers',
+    description: 'Additional requirement for issuers: SAD is stored only with appropriate business justification and encrypted with strong cryptography.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Document business justification for issuer SAD storage. Implement strong encryption and access controls. Limit storage duration to minimum necessary.',
+    evidenceRequirements: [
+      'Business justification for SAD storage',
+      'Encryption configuration documentation',
+      'Access control configurations',
+      'Storage duration policies'
+    ],
+    testProcedures: [
+      'Review business justification documentation',
+      'Verify encryption implementation',
+      'Examine access controls',
+      'Confirm storage duration compliance'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.4.1',
+    name: 'PAN Masked When Displayed',
+    description: 'PAN is masked when displayed, such that only personnel with a legitimate business need can see more than the first six/last four digits of the PAN.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement PAN masking in all applications displaying card data. Configure masking to show only first six and last four digits. Establish role-based access for full PAN viewing.',
+    evidenceRequirements: [
+      'Application masking configurations',
+      'Role definitions for full PAN access',
+      'Screenshots demonstrating masking',
+      'Access control documentation'
+    ],
+    testProcedures: [
+      'Verify PAN masking in application displays',
+      'Test role-based access to full PAN',
+      'Review application configurations',
+      'Examine access control effectiveness'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.4.2',
+    name: 'Technical Controls for PAN Masking',
+    description: 'When PAN is displayed, technical controls are in place to ensure only those with a documented business need can see more than the first six and last four digits.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement technical controls enforcing masking rules. Create documented roles with full PAN access justification. Log all full PAN access events.',
+    evidenceRequirements: [
+      'Technical control configurations',
+      'Documented business need justifications',
+      'Full PAN access logs',
+      'Role-based access control documentation'
+    ],
+    testProcedures: [
+      'Test technical control enforcement',
+      'Review business need justifications',
+      'Examine access logs',
+      'Verify role-based controls'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.5.1',
+    name: 'PAN Rendered Unreadable Anywhere Stored',
+    description: 'PAN is rendered unreadable anywhere it is stored using one-way hashes, truncation, index tokens, or strong cryptography.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement encryption, tokenization, or hashing for all stored PAN. Use approved cryptographic algorithms. Document the method used for each storage location.',
+    evidenceRequirements: [
+      'Encryption/tokenization configurations',
+      'Cryptographic algorithm documentation',
+      'Storage location inventory with protection methods',
+      'Key management documentation'
+    ],
+    testProcedures: [
+      'Verify PAN protection at each storage location',
+      'Review cryptographic algorithms',
+      'Examine storage inventory',
+      'Test key management procedures'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.5.1.1',
+    name: 'Hashes for PAN Protection',
+    description: 'If hashing is used to render PAN unreadable, the hash is a keyed cryptographic hash with appropriate key management.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Use keyed HMAC or similar keyed hash functions. Implement proper key management including generation, storage, rotation, and destruction. Document hash algorithm selection.',
+    evidenceRequirements: [
+      'Hash algorithm configuration documentation',
+      'Key management procedures for hash keys',
+      'Hash key inventory and rotation records',
+      'Algorithm selection justification'
+    ],
+    testProcedures: [
+      'Verify keyed hash implementation',
+      'Review key management procedures',
+      'Examine key rotation records',
+      'Test hash function configuration'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.5.1.2',
+    name: 'Disk-Level Encryption for Removable Media',
+    description: 'If disk-level or partition-level encryption is used to render PAN unreadable, it is implemented only on removable electronic media.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement full disk encryption on all removable media. Use file-level or database-level encryption for fixed storage. Document encryption approach for each storage type.',
+    evidenceRequirements: [
+      'Removable media encryption configurations',
+      'Fixed storage encryption documentation',
+      'Encryption method inventory by storage type',
+      'Key management for disk encryption'
+    ],
+    testProcedures: [
+      'Verify disk encryption on removable media',
+      'Review fixed storage encryption methods',
+      'Examine encryption inventory',
+      'Test key management procedures'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.5.1.3',
+    name: 'Disk Encryption Authentication Independent of OS',
+    description: 'If disk-level encryption is used, logical access is managed separately and independently of native operating system authentication mechanisms.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement pre-boot authentication for disk encryption separate from OS login. Use dedicated encryption key management independent of OS credentials.',
+    evidenceRequirements: [
+      'Pre-boot authentication configurations',
+      'Independent key management documentation',
+      'Encryption authentication separation evidence',
+      'Access control architecture documentation'
+    ],
+    testProcedures: [
+      'Verify pre-boot authentication independence',
+      'Test key management separation from OS',
+      'Review authentication architecture',
+      'Examine access control implementation'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.6.1',
+    name: 'Cryptographic Key Management Procedures',
+    description: 'Procedures are defined and implemented to protect cryptographic keys used to protect stored account data against disclosure and misuse.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Develop comprehensive key management procedures covering generation, distribution, storage, rotation, and destruction. Implement hardware security modules where appropriate.',
+    evidenceRequirements: [
+      'Key management policy and procedures',
+      'HSM configuration documentation',
+      'Key lifecycle documentation',
+      'Personnel training records on key management'
+    ],
+    testProcedures: [
+      'Review key management procedures',
+      'Examine HSM configurations',
+      'Verify key lifecycle compliance',
+      'Interview key custodians'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.6.1.1',
+    name: 'Service Provider Key Management for Customers',
+    description: 'Additional requirement for service providers: A documented description of the cryptographic architecture is maintained.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Document complete cryptographic architecture including algorithms, key lengths, key custodians, and key management procedures. Make documentation available to customers upon request.',
+    evidenceRequirements: [
+      'Cryptographic architecture documentation',
+      'Customer-facing key management documentation',
+      'Key custodian assignments',
+      'Customer communication records'
+    ],
+    testProcedures: [
+      'Review cryptographic architecture documentation',
+      'Verify customer documentation availability',
+      'Examine key custodian records',
+      'Review customer communications'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.6.1.2',
+    name: 'Strong Cryptographic Key Generation',
+    description: 'Cryptographic keys are generated using strong random number generators or approved key generation methods.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Use FIPS 140-2 validated random number generators. Implement key generation in secure environments. Document key generation procedures and entropy sources.',
+    evidenceRequirements: [
+      'Random number generator documentation',
+      'FIPS 140-2 validation certificates',
+      'Key generation procedure documentation',
+      'Entropy source documentation'
+    ],
+    testProcedures: [
+      'Verify RNG validation status',
+      'Review key generation procedures',
+      'Examine entropy sources',
+      'Test key generation environment security'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.6.1.3',
+    name: 'Secure Cryptographic Key Distribution',
+    description: 'Cryptographic keys are distributed securely, and key distribution is limited to authorized custodians.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement secure key distribution channels such as split knowledge or key transport encryption. Maintain authorized key custodian lists. Log all key distribution events.',
+    evidenceRequirements: [
+      'Key distribution procedure documentation',
+      'Authorized custodian lists',
+      'Key distribution logs',
+      'Secure channel configurations'
+    ],
+    testProcedures: [
+      'Review key distribution procedures',
+      'Verify authorized custodian lists',
+      'Examine distribution logs',
+      'Test secure channel implementation'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.6.1.4',
+    name: 'Secure Cryptographic Key Storage',
+    description: 'Cryptographic keys are stored securely with access limited to the fewest number of custodians necessary.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Store keys in HSMs or encrypted key stores. Implement dual control for key access. Minimize number of key custodians and document justification.',
+    evidenceRequirements: [
+      'Key storage configuration documentation',
+      'Dual control implementation evidence',
+      'Key custodian justification documentation',
+      'Key access logs'
+    ],
+    testProcedures: [
+      'Verify secure key storage implementation',
+      'Test dual control procedures',
+      'Review custodian justifications',
+      'Examine key access logs'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.7.1',
+    name: 'Key Management Policy Documentation',
+    description: 'Key management policies and procedures are implemented and documented for cryptographic keys used to protect stored account data.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Create comprehensive key management policies covering the full key lifecycle. Include responsibilities, procedures, and compliance requirements. Review policies annually.',
+    evidenceRequirements: [
+      'Key management policy document',
+      'Annual policy review records',
+      'Responsibility assignments',
+      'Compliance requirement documentation'
+    ],
+    testProcedures: [
+      'Review key management policies',
+      'Verify annual review completion',
+      'Examine responsibility assignments',
+      'Confirm compliance requirements'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.7.2',
+    name: 'Cryptoperiod Defined for Each Key Type',
+    description: 'Cryptoperiods are defined for each key type in use and based on industry best practices and guidelines.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Define cryptoperiods based on NIST SP 800-57 guidelines. Document rationale for each key type cryptoperiod. Implement automated key rotation where possible.',
+    evidenceRequirements: [
+      'Cryptoperiod definitions by key type',
+      'Industry guideline references (NIST)',
+      'Automated rotation configurations',
+      'Cryptoperiod rationale documentation'
+    ],
+    testProcedures: [
+      'Review cryptoperiod definitions',
+      'Verify alignment with industry guidelines',
+      'Test automated rotation',
+      'Examine rationale documentation'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.7.3',
+    name: 'Key Retirement and Replacement',
+    description: 'Procedures are defined and implemented to retire and replace keys that have reached the end of their defined cryptoperiod.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement key retirement workflows triggered by cryptoperiod expiration. Ensure seamless key replacement without service disruption. Archive retired keys securely if needed.',
+    evidenceRequirements: [
+      'Key retirement procedures',
+      'Key replacement workflows',
+      'Retired key archive documentation',
+      'Service continuity plans for key replacement'
+    ],
+    testProcedures: [
+      'Review retirement procedures',
+      'Test key replacement workflows',
+      'Verify retired key archival',
+      'Examine service continuity plans'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.7.4',
+    name: 'Key Retirement When Integrity Weakened',
+    description: 'Procedures are defined and implemented to retire keys when the integrity of the key has been weakened.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Define criteria for key compromise detection. Implement emergency key retirement procedures. Document and test incident response for key compromise.',
+    evidenceRequirements: [
+      'Key compromise criteria documentation',
+      'Emergency retirement procedures',
+      'Incident response plans for key compromise',
+      'Key compromise detection configurations'
+    ],
+    testProcedures: [
+      'Review compromise criteria',
+      'Test emergency retirement procedures',
+      'Examine incident response plans',
+      'Verify detection capabilities'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.7.5',
+    name: 'Key Retirement When Known or Suspected Compromise',
+    description: 'Procedures are defined and implemented to retire or replace keys as necessary when known or suspected key compromise occurs.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement immediate key revocation capabilities. Define communication procedures for compromise notification. Maintain backup keys for rapid replacement.',
+    evidenceRequirements: [
+      'Key revocation procedures',
+      'Compromise notification procedures',
+      'Backup key documentation',
+      'Compromise response test records'
+    ],
+    testProcedures: [
+      'Test key revocation procedures',
+      'Review notification procedures',
+      'Verify backup key availability',
+      'Examine response test records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.7.6',
+    name: 'Split Knowledge and Dual Control for Manual Key Management',
+    description: 'Where manual clear-text cryptographic key-management operations are used, split knowledge and dual control are employed.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement split knowledge requiring multiple custodians for key operations. Enforce dual control for all manual key handling. Document and train custodians on procedures.',
+    evidenceRequirements: [
+      'Split knowledge implementation documentation',
+      'Dual control procedures',
+      'Custodian training records',
+      'Key operation logs showing dual control'
+    ],
+    testProcedures: [
+      'Verify split knowledge implementation',
+      'Test dual control enforcement',
+      'Review custodian training',
+      'Examine key operation logs'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.7.7',
+    name: 'Prevention of Unauthorized Key Substitution',
+    description: 'Procedures are defined and implemented to prevent unauthorized substitution of cryptographic keys.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Implement key authentication mechanisms. Use key signing or certificates to verify key authenticity. Log and alert on unauthorized key modification attempts.',
+    evidenceRequirements: [
+      'Key authentication configurations',
+      'Key signing/certificate documentation',
+      'Unauthorized modification alerts',
+      'Key integrity verification procedures'
+    ],
+    testProcedures: [
+      'Test key authentication mechanisms',
+      'Verify key signing implementation',
+      'Review unauthorized modification alerts',
+      'Examine integrity verification procedures'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.7.8',
+    name: 'Key Custodian Acknowledgment',
+    description: 'Cryptographic key custodians formally acknowledge that they understand and accept their key custodian responsibilities.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Create formal acknowledgment documentation for key custodians. Include responsibilities, compliance requirements, and consequences. Obtain annual re-acknowledgment.',
+    evidenceRequirements: [
+      'Custodian acknowledgment forms',
+      'Responsibility documentation',
+      'Annual re-acknowledgment records',
+      'Custodian training completion records'
+    ],
+    testProcedures: [
+      'Review acknowledgment forms',
+      'Verify all custodians have acknowledged',
+      'Check annual re-acknowledgment dates',
+      'Examine training records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-3.7.9',
+    name: 'Key Custodian Responsibilities Documentation',
+    description: 'Additional requirement for service providers: Key custodian responsibilities are documented and include acknowledgment of responsibilities.',
+    category: 'Protect Stored Data',
+    implementationGuidance: 'Document all key custodian responsibilities in detail. Include security requirements, operational procedures, and compliance obligations. Obtain signed acknowledgments.',
+    evidenceRequirements: [
+      'Detailed responsibility documentation',
+      'Signed acknowledgment records',
+      'Compliance obligation documentation',
+      'Operational procedure documentation'
+    ],
+    testProcedures: [
+      'Review responsibility documentation',
+      'Verify signed acknowledgments',
+      'Examine compliance obligations',
+      'Review operational procedures'
+    ],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 4 - Protect Cardholder Data During Transmission (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-4.1.1',
+    name: 'Transmission Security Policies Documented',
+    description: 'All security policies and operational procedures for protecting cardholder data during transmission are documented, kept up to date, in use, and known to all affected parties.',
+    category: 'Protect Data in Transit',
+    implementationGuidance: 'Develop transmission security policies covering encryption requirements, protocol standards, and key management. Communicate policies to all personnel involved in data transmission.',
+    evidenceRequirements: [
+      'Transmission security policy documentation',
+      'Policy review and approval records',
+      'Personnel training records',
+      'Policy distribution acknowledgments'
+    ],
+    testProcedures: [
+      'Review transmission security policies',
+      'Verify policies are current and approved',
+      'Interview personnel on policy awareness',
+      'Examine training documentation'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-4.1.2',
+    name: 'Roles and Responsibilities for Transmission Security',
+    description: 'Roles and responsibilities for performing activities in Requirement 4 are documented, assigned, and understood.',
+    category: 'Protect Data in Transit',
+    implementationGuidance: 'Define and document roles for transmission security management. Assign responsibilities to specific personnel. Provide training on role expectations.',
+    evidenceRequirements: [
+      'Role and responsibility documentation',
+      'Personnel assignment records',
+      'Training completion records',
+      'Organizational chart showing assignments'
+    ],
+    testProcedures: [
+      'Review role documentation',
+      'Verify personnel assignments',
+      'Interview assigned personnel',
+      'Examine training records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-4.2.1',
+    name: 'Strong Cryptography for PAN Transmission',
+    description: 'PAN is protected with strong cryptography during transmission over open, public networks.',
+    category: 'Protect Data in Transit',
+    implementationGuidance: 'Implement TLS 1.2 or higher for all PAN transmissions. Use approved cipher suites. Disable deprecated protocols and weak ciphers.',
+    evidenceRequirements: [
+      'TLS configuration documentation',
+      'Cipher suite configurations',
+      'Protocol version settings',
+      'Network traffic analysis showing encryption'
+    ],
+    testProcedures: [
+      'Verify TLS version in use',
+      'Test cipher suite configurations',
+      'Scan for deprecated protocols',
+      'Capture and verify encrypted traffic'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-4.2.1.1',
+    name: 'Inventory of Trusted Keys and Certificates',
+    description: 'An inventory of the entity\'s trusted keys and certificates used to protect PAN during transmission is maintained.',
+    category: 'Protect Data in Transit',
+    implementationGuidance: 'Create and maintain inventory of all certificates and keys. Include expiration dates, key strengths, and responsible parties. Implement certificate lifecycle management.',
+    evidenceRequirements: [
+      'Certificate and key inventory',
+      'Expiration tracking documentation',
+      'Key strength documentation',
+      'Certificate lifecycle procedures'
+    ],
+    testProcedures: [
+      'Review certificate inventory',
+      'Verify expiration tracking',
+      'Examine key strengths',
+      'Test lifecycle management procedures'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-4.2.1.2',
+    name: 'Certificates Used for PAN Transmission Valid',
+    description: 'Certificates used to protect PAN during transmission over open, public networks are confirmed as valid and are not expired or revoked.',
+    category: 'Protect Data in Transit',
+    implementationGuidance: 'Implement certificate validation including revocation checking (OCSP/CRL). Configure automated certificate monitoring. Alert on pending expirations.',
+    evidenceRequirements: [
+      'Certificate validation configurations',
+      'OCSP/CRL checking evidence',
+      'Certificate monitoring alerts',
+      'Expiration notification records'
+    ],
+    testProcedures: [
+      'Verify certificate validation',
+      'Test revocation checking',
+      'Review monitoring alerts',
+      'Examine notification records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-4.2.2',
+    name: 'PAN Secured When Sent via End-User Messaging',
+    description: 'PAN is secured with strong cryptography whenever it is sent via end-user messaging technologies.',
+    category: 'Protect Data in Transit',
+    implementationGuidance: 'Implement encryption for any PAN in email or messaging. Use secure messaging platforms with end-to-end encryption. Train users on secure transmission requirements.',
+    evidenceRequirements: [
+      'End-user messaging security configurations',
+      'Encryption implementation documentation',
+      'User training records',
+      'Secure messaging platform documentation'
+    ],
+    testProcedures: [
+      'Verify messaging encryption',
+      'Test secure messaging platforms',
+      'Review user training',
+      'Examine configuration documentation'
+    ],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 5 - Protect All Systems Against Malware (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-5.1.1',
+    name: 'Anti-Malware Policies Documented',
+    description: 'All security policies and operational procedures for protecting systems and networks from malware are documented, kept up to date, in use, and known to all affected parties.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Develop comprehensive anti-malware policies covering deployment, updates, scanning, and incident response. Communicate policies to all IT personnel.',
+    evidenceRequirements: [
+      'Anti-malware policy documentation',
+      'Policy review and approval records',
+      'Personnel training records',
+      'Policy distribution acknowledgments'
+    ],
+    testProcedures: [
+      'Review anti-malware policies',
+      'Verify policies are current',
+      'Interview personnel on policy awareness',
+      'Examine training documentation'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.1.2',
+    name: 'Roles and Responsibilities for Malware Protection',
+    description: 'Roles and responsibilities for performing activities in Requirement 5 are documented, assigned, and understood.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Define and document roles for anti-malware management. Assign responsibilities for deployment, monitoring, and incident response. Provide role-specific training.',
+    evidenceRequirements: [
+      'Role and responsibility documentation',
+      'Personnel assignment records',
+      'Training completion records',
+      'Incident response role assignments'
+    ],
+    testProcedures: [
+      'Review role documentation',
+      'Verify personnel assignments',
+      'Interview assigned personnel',
+      'Examine incident response assignments'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.2.1',
+    name: 'Anti-Malware Solution Deployed',
+    description: 'An anti-malware solution is deployed on all system components, except for those identified as not commonly affected by malware.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Deploy anti-malware on all workstations, servers, and applicable systems. Document systems excluded with risk-based justification. Implement compensating controls for excluded systems.',
+    evidenceRequirements: [
+      'Anti-malware deployment inventory',
+      'Exclusion documentation with justification',
+      'Compensating control documentation',
+      'Deployment verification reports'
+    ],
+    testProcedures: [
+      'Verify anti-malware deployment',
+      'Review exclusion justifications',
+      'Examine compensating controls',
+      'Check deployment reports'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.2.2',
+    name: 'Anti-Malware Solution Detects All Known Malware Types',
+    description: 'The anti-malware solution detects all known types of malware.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Configure anti-malware for comprehensive detection including viruses, worms, Trojans, ransomware, and spyware. Enable heuristic and behavioral detection.',
+    evidenceRequirements: [
+      'Anti-malware configuration documentation',
+      'Detection capability specifications',
+      'Vendor documentation on malware types detected',
+      'Configuration screenshots'
+    ],
+    testProcedures: [
+      'Review detection configurations',
+      'Verify malware type coverage',
+      'Examine vendor specifications',
+      'Test detection capabilities'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.2.3',
+    name: 'Anti-Malware Solution Performs Scans and Active Monitoring',
+    description: 'The anti-malware solution performs periodic scans and active or real-time scans, OR performs continuous behavioral analysis.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Configure scheduled full system scans. Enable real-time scanning for all file operations. Implement behavioral analysis for advanced threat detection.',
+    evidenceRequirements: [
+      'Scan schedule configurations',
+      'Real-time scanning settings',
+      'Behavioral analysis configurations',
+      'Scan completion reports'
+    ],
+    testProcedures: [
+      'Verify scan schedule compliance',
+      'Test real-time scanning',
+      'Review behavioral analysis settings',
+      'Examine scan reports'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.2.3.1',
+    name: 'Periodic Malware Scan Frequency Based on Risk',
+    description: 'If periodic malware scans are performed, the frequency is defined in the entity\'s targeted risk analysis.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Conduct risk analysis to determine appropriate scan frequency. Document rationale for chosen frequency. Adjust frequency based on threat landscape changes.',
+    evidenceRequirements: [
+      'Risk analysis documentation',
+      'Scan frequency rationale',
+      'Threat landscape assessment',
+      'Frequency adjustment records'
+    ],
+    testProcedures: [
+      'Review risk analysis',
+      'Verify scan frequency rationale',
+      'Examine threat assessments',
+      'Check frequency adjustments'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.3.1',
+    name: 'Anti-Malware Solution Kept Current',
+    description: 'The anti-malware solution is kept current via automatic updates.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Configure automatic signature and engine updates. Set update frequency to at least daily. Monitor update status and alert on failures.',
+    evidenceRequirements: [
+      'Automatic update configurations',
+      'Update frequency settings',
+      'Update status monitoring reports',
+      'Update failure alerts'
+    ],
+    testProcedures: [
+      'Verify automatic updates enabled',
+      'Check update frequency',
+      'Review update status reports',
+      'Examine failure alert configurations'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.3.2',
+    name: 'Anti-Malware Solution Generates Audit Logs',
+    description: 'The anti-malware solution generates audit logs.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Enable comprehensive logging for all anti-malware activities. Include detection events, scan results, update status, and configuration changes. Centralize logs for analysis.',
+    evidenceRequirements: [
+      'Logging configuration documentation',
+      'Sample audit logs',
+      'Log centralization evidence',
+      'Log retention settings'
+    ],
+    testProcedures: [
+      'Verify logging configurations',
+      'Review sample audit logs',
+      'Test log centralization',
+      'Check retention settings'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.3.2.1',
+    name: 'Anti-Malware Log Retention Based on Risk',
+    description: 'The frequency of anti-malware log reviews is defined in the entity\'s targeted risk analysis.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Conduct risk analysis to determine log review frequency. Document rationale for review frequency. Implement automated log analysis where possible.',
+    evidenceRequirements: [
+      'Risk analysis for log review frequency',
+      'Review frequency rationale',
+      'Log review schedule',
+      'Automated analysis configurations'
+    ],
+    testProcedures: [
+      'Review risk analysis',
+      'Verify review frequency rationale',
+      'Check review schedule compliance',
+      'Examine automated analysis'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.3.3',
+    name: 'Anti-Malware Cannot Be Disabled by Users',
+    description: 'The anti-malware solution is not able to be disabled or altered by users, unless specifically authorized on a case-by-case basis for a limited time period.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Configure anti-malware with administrative protections. Implement approval workflow for temporary disabling. Log and monitor all disable events.',
+    evidenceRequirements: [
+      'User restriction configurations',
+      'Temporary disable approval workflow',
+      'Disable event logs',
+      'Re-enablement procedures'
+    ],
+    testProcedures: [
+      'Test user restriction enforcement',
+      'Review approval workflow',
+      'Examine disable event logs',
+      'Verify re-enablement procedures'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.3.4',
+    name: 'Anti-Malware Logs Available for Forensics',
+    description: 'Audit logs for the anti-malware solution are protected from destruction and are available for forensic analysis.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Implement log protection with restricted access. Configure log forwarding to secure storage. Ensure logs are retained for forensic timeframes.',
+    evidenceRequirements: [
+      'Log protection configurations',
+      'Secure storage documentation',
+      'Forensic retention settings',
+      'Access restriction evidence'
+    ],
+    testProcedures: [
+      'Verify log protection',
+      'Test secure storage',
+      'Check forensic retention',
+      'Examine access restrictions'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.3.5',
+    name: 'Anti-Malware on Removable Media',
+    description: 'Anti-malware mechanisms are active on all removable electronic media.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Configure automatic scanning of removable media. Enable auto-run prevention. Implement USB device controls and monitoring.',
+    evidenceRequirements: [
+      'Removable media scan configurations',
+      'Auto-run prevention settings',
+      'USB device control configurations',
+      'Removable media activity logs'
+    ],
+    testProcedures: [
+      'Test removable media scanning',
+      'Verify auto-run prevention',
+      'Check USB device controls',
+      'Review activity logs'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-5.4.1',
+    name: 'Phishing Attack Protection',
+    description: 'Processes and automated mechanisms are in place to detect and protect personnel against phishing attacks.',
+    category: 'Malware Protection',
+    implementationGuidance: 'Deploy email security solutions with phishing detection. Implement URL filtering and sandboxing. Conduct regular phishing awareness training.',
+    evidenceRequirements: [
+      'Email security configurations',
+      'Phishing detection rules',
+      'URL filtering configurations',
+      'Phishing training records'
+    ],
+    testProcedures: [
+      'Test phishing detection',
+      'Verify email security configurations',
+      'Review URL filtering',
+      'Examine training records'
+    ],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 6 - Develop and Maintain Secure Systems (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-6.1.1',
+    name: 'Secure Development Policies Documented',
+    description: 'All security policies and operational procedures for developing and maintaining secure systems and software are documented, kept up to date, in use, and known to all affected parties.',
+    category: 'Secure Development',
+    implementationGuidance: 'Develop secure SDLC policies covering requirements, design, coding, testing, and deployment. Communicate policies to all development personnel.',
+    evidenceRequirements: [
+      'Secure development policy documentation',
+      'Policy review and approval records',
+      'Developer training records',
+      'Policy distribution acknowledgments'
+    ],
+    testProcedures: [
+      'Review secure development policies',
+      'Verify policies are current',
+      'Interview developers on policy awareness',
+      'Examine training documentation'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.1.2',
+    name: 'Roles and Responsibilities for Secure Development',
+    description: 'Roles and responsibilities for performing activities in Requirement 6 are documented, assigned, and understood.',
+    category: 'Secure Development',
+    implementationGuidance: 'Define and document roles for secure development activities. Assign responsibilities for code review, security testing, and vulnerability management.',
+    evidenceRequirements: [
+      'Role and responsibility documentation',
+      'Personnel assignment records',
+      'Training completion records',
+      'Security team assignments'
+    ],
+    testProcedures: [
+      'Review role documentation',
+      'Verify personnel assignments',
+      'Interview assigned personnel',
+      'Examine security team structure'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.2.1',
+    name: 'Bespoke Software Developed Securely',
+    description: 'Bespoke and custom software is developed securely.',
+    category: 'Secure Development',
+    implementationGuidance: 'Implement secure SDLC with security requirements, threat modeling, secure coding practices, and security testing. Train developers on secure coding.',
+    evidenceRequirements: [
+      'SDLC documentation with security integration',
+      'Security requirements documentation',
+      'Threat modeling records',
+      'Secure coding training records'
+    ],
+    testProcedures: [
+      'Review SDLC for security integration',
+      'Verify security requirements process',
+      'Examine threat modeling practices',
+      'Check developer training'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.2.2',
+    name: 'Software Development Personnel Trained',
+    description: 'Software development personnel working on bespoke and custom software are trained at least once every 12 months on security relevant to their job function.',
+    category: 'Secure Development',
+    implementationGuidance: 'Provide annual secure coding training. Include OWASP Top 10, secure design principles, and PCI DSS requirements. Track training completion.',
+    evidenceRequirements: [
+      'Training curriculum documentation',
+      'Annual training completion records',
+      'Training content covering security topics',
+      'Developer training tracking system'
+    ],
+    testProcedures: [
+      'Review training curriculum',
+      'Verify annual training completion',
+      'Examine training content',
+      'Check tracking system records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.2.3',
+    name: 'Bespoke Software Reviewed Before Release',
+    description: 'Bespoke and custom software is reviewed prior to being released into production to identify and correct potential coding vulnerabilities.',
+    category: 'Secure Development',
+    implementationGuidance: 'Implement mandatory code review processes. Use automated code analysis tools. Conduct manual security code reviews for critical components.',
+    evidenceRequirements: [
+      'Code review policy and procedures',
+      'Automated analysis tool configurations',
+      'Code review records',
+      'Vulnerability remediation records'
+    ],
+    testProcedures: [
+      'Review code review processes',
+      'Verify automated analysis tools',
+      'Examine code review records',
+      'Check remediation records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.2.3.1',
+    name: 'Manual Code Review Performed',
+    description: 'If manual code reviews are performed, the reviews are performed by individuals with knowledge of secure coding practices and the programming language.',
+    category: 'Secure Development',
+    implementationGuidance: 'Assign qualified reviewers for code reviews. Verify reviewer qualifications in secure coding and relevant languages. Document reviewer assignments.',
+    evidenceRequirements: [
+      'Reviewer qualification documentation',
+      'Reviewer assignment records',
+      'Secure coding knowledge verification',
+      'Language proficiency documentation'
+    ],
+    testProcedures: [
+      'Verify reviewer qualifications',
+      'Check assignment records',
+      'Review knowledge verification',
+      'Examine proficiency documentation'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.2.4',
+    name: 'Common Software Attacks Addressed',
+    description: 'Software engineering techniques or other methods are defined and in use by software development personnel to prevent or mitigate common software attacks.',
+    category: 'Secure Development',
+    implementationGuidance: 'Document secure coding standards addressing common vulnerabilities. Include input validation, output encoding, authentication, and session management. Enforce standards in code reviews.',
+    evidenceRequirements: [
+      'Secure coding standards documentation',
+      'Standards covering common attacks',
+      'Code review checklists',
+      'Standards enforcement evidence'
+    ],
+    testProcedures: [
+      'Review secure coding standards',
+      'Verify common attack coverage',
+      'Examine code review checklists',
+      'Check standards enforcement'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.3.1',
+    name: 'Security Vulnerabilities Identified and Risk Ranked',
+    description: 'Security vulnerabilities are identified and managed through a vulnerability management process.',
+    category: 'Secure Development',
+    implementationGuidance: 'Implement vulnerability scanning and assessment. Risk rank vulnerabilities based on severity and impact. Establish remediation timelines based on risk.',
+    evidenceRequirements: [
+      'Vulnerability management procedures',
+      'Risk ranking methodology',
+      'Vulnerability scan results',
+      'Remediation timeline documentation'
+    ],
+    testProcedures: [
+      'Review vulnerability management process',
+      'Verify risk ranking methodology',
+      'Examine scan results',
+      'Check remediation timelines'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.3.2',
+    name: 'Software Inventory Maintained',
+    description: 'An inventory of bespoke and custom software, and third-party software components incorporated into bespoke and custom software, is maintained.',
+    category: 'Secure Development',
+    implementationGuidance: 'Create and maintain software inventory including custom and third-party components. Track versions, licensing, and vulnerability status. Update inventory with each release.',
+    evidenceRequirements: [
+      'Software component inventory',
+      'Third-party library tracking',
+      'Version documentation',
+      'Inventory update procedures'
+    ],
+    testProcedures: [
+      'Review software inventory',
+      'Verify third-party tracking',
+      'Check version documentation',
+      'Examine update procedures'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.3.3',
+    name: 'Security Patches Installed Timely',
+    description: 'All system components are protected from known vulnerabilities by installing applicable security patches/updates within one month of release.',
+    category: 'Secure Development',
+    implementationGuidance: 'Implement patch management process with testing and deployment procedures. Track patch status across all systems. Prioritize critical and high-severity patches.',
+    evidenceRequirements: [
+      'Patch management procedures',
+      'Patch testing documentation',
+      'Patch deployment records',
+      'Patch compliance reports'
+    ],
+    testProcedures: [
+      'Review patch management process',
+      'Verify testing procedures',
+      'Examine deployment records',
+      'Check compliance reports'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.4.1',
+    name: 'Public-Facing Web Applications Protected',
+    description: 'For public-facing web applications, new threats and vulnerabilities are addressed on an ongoing basis and these applications are protected against known attacks.',
+    category: 'Secure Development',
+    implementationGuidance: 'Deploy web application firewalls or equivalent protections. Conduct regular vulnerability assessments. Monitor for new threats and update protections accordingly.',
+    evidenceRequirements: [
+      'WAF deployment documentation',
+      'Vulnerability assessment reports',
+      'Threat monitoring procedures',
+      'Protection update records'
+    ],
+    testProcedures: [
+      'Verify WAF deployment',
+      'Review assessment reports',
+      'Examine threat monitoring',
+      'Check protection updates'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.4.2',
+    name: 'Automated Technical Solution for Public Web Applications',
+    description: 'For public-facing web applications, an automated technical solution is deployed that continually detects and prevents web-based attacks.',
+    category: 'Secure Development',
+    implementationGuidance: 'Implement WAF with automated attack detection and blocking. Configure for OWASP Top 10 protections. Enable logging and alerting for attack detection.',
+    evidenceRequirements: [
+      'WAF configuration documentation',
+      'Attack detection rule sets',
+      'Blocking configuration evidence',
+      'Attack detection logs'
+    ],
+    testProcedures: [
+      'Test WAF attack detection',
+      'Verify blocking configurations',
+      'Review rule sets',
+      'Examine attack logs'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.4.3',
+    name: 'Payment Page Scripts Managed',
+    description: 'All payment page scripts that are loaded and executed in the consumer\'s browser are managed.',
+    category: 'Secure Development',
+    implementationGuidance: 'Inventory all scripts on payment pages. Implement Content Security Policy. Monitor for unauthorized script changes. Verify script integrity.',
+    evidenceRequirements: [
+      'Payment page script inventory',
+      'Content Security Policy configurations',
+      'Script change monitoring evidence',
+      'Script integrity verification records'
+    ],
+    testProcedures: [
+      'Review script inventory',
+      'Verify CSP implementation',
+      'Test change monitoring',
+      'Check integrity verification'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.5.1',
+    name: 'Change Control Processes for System Changes',
+    description: 'Changes to all system components in the production environment are made according to established procedures.',
+    category: 'Secure Development',
+    implementationGuidance: 'Implement formal change control with documentation, impact assessment, testing, approval, and rollback procedures. Require sign-off for all production changes.',
+    evidenceRequirements: [
+      'Change control procedures',
+      'Change request documentation',
+      'Impact assessment records',
+      'Approval and sign-off records'
+    ],
+    testProcedures: [
+      'Review change control procedures',
+      'Verify change documentation',
+      'Examine impact assessments',
+      'Check approval records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.5.2',
+    name: 'Significant Changes Documented',
+    description: 'Upon completion of a significant change, all relevant PCI DSS requirements are confirmed to be in place on all new or changed systems and networks.',
+    category: 'Secure Development',
+    implementationGuidance: 'Define criteria for significant changes. Conduct PCI DSS compliance verification after significant changes. Document verification results.',
+    evidenceRequirements: [
+      'Significant change criteria documentation',
+      'Post-change compliance verification records',
+      'Verification checklists',
+      'Remediation records for identified gaps'
+    ],
+    testProcedures: [
+      'Review significant change criteria',
+      'Verify compliance verification process',
+      'Examine verification records',
+      'Check remediation records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.5.3',
+    name: 'Pre-Production and Production Environments Separated',
+    description: 'Pre-production environments are separated from production environments and the separation is enforced with access controls.',
+    category: 'Secure Development',
+    implementationGuidance: 'Implement network and logical separation between environments. Use separate credentials for each environment. Restrict production access to authorized personnel.',
+    evidenceRequirements: [
+      'Environment separation documentation',
+      'Network segmentation configurations',
+      'Access control configurations',
+      'Credential management documentation'
+    ],
+    testProcedures: [
+      'Verify environment separation',
+      'Test network segmentation',
+      'Review access controls',
+      'Check credential management'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.5.4',
+    name: 'Separation of Duties for Production Deployment',
+    description: 'Roles and functions are separated between production and pre-production environments to reduce the risk of unauthorized changes.',
+    category: 'Secure Development',
+    implementationGuidance: 'Implement separation of duties between development, testing, and operations. Restrict production deployment to operations personnel. Monitor for policy violations.',
+    evidenceRequirements: [
+      'Separation of duties policy',
+      'Role assignment documentation',
+      'Access restriction configurations',
+      'Policy violation monitoring records'
+    ],
+    testProcedures: [
+      'Review separation of duties policy',
+      'Verify role assignments',
+      'Test access restrictions',
+      'Check monitoring records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.5.5',
+    name: 'Live PANs Not Used in Pre-Production',
+    description: 'Live PANs are not used in pre-production environments, unless those environments are included in the CDE and protected in accordance with all applicable PCI DSS requirements.',
+    category: 'Secure Development',
+    implementationGuidance: 'Prohibit use of live PAN in development and test environments. Implement data masking or synthetic data generation. Audit pre-production environments for live data.',
+    evidenceRequirements: [
+      'Data handling policy for pre-production',
+      'Data masking configurations',
+      'Pre-production data audit reports',
+      'Synthetic data generation documentation'
+    ],
+    testProcedures: [
+      'Review data handling policy',
+      'Verify data masking',
+      'Examine audit reports',
+      'Check synthetic data implementation'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-6.5.6',
+    name: 'Test Data and Accounts Removed Before Production',
+    description: 'Test data and test accounts are removed from system components before the system goes into production.',
+    category: 'Secure Development',
+    implementationGuidance: 'Implement pre-production cleanup procedures. Verify removal of test data and accounts before go-live. Document cleanup verification.',
+    evidenceRequirements: [
+      'Pre-production cleanup procedures',
+      'Cleanup verification checklists',
+      'Test account removal records',
+      'Go-live verification documentation'
+    ],
+    testProcedures: [
+      'Review cleanup procedures',
+      'Verify cleanup verification',
+      'Check account removal records',
+      'Examine go-live documentation'
+    ],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 7 - Restrict Access (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-7.1.1',
+    name: 'Access Control Policies Documented',
+    description: 'All security policies and operational procedures for restricting access to system components and cardholder data are documented, kept up to date, in use, and known to all affected parties.',
+    category: 'Access Control',
+    implementationGuidance: 'Develop comprehensive access control policies covering need-to-know principles, role-based access, and access review procedures.',
+    evidenceRequirements: ['Access control policy documentation', 'Policy review records', 'Personnel training records', 'Policy acknowledgments'],
+    testProcedures: ['Review access control policies', 'Verify policies are current', 'Interview personnel on awareness', 'Examine training documentation'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-7.1.2',
+    name: 'Roles and Responsibilities for Access Control',
+    description: 'Roles and responsibilities for performing activities in Requirement 7 are documented, assigned, and understood.',
+    category: 'Access Control',
+    implementationGuidance: 'Define and document roles for access management including provisioning, review, and revocation.',
+    evidenceRequirements: ['Role documentation', 'Personnel assignments', 'Training records', 'Access management structure'],
+    testProcedures: ['Review role documentation', 'Verify assignments', 'Interview personnel', 'Examine team structure'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-7.2.1',
+    name: 'Access Control Model Defined',
+    description: 'An access control model is defined and includes granting access based on business and access needs.',
+    category: 'Access Control',
+    implementationGuidance: 'Implement role-based access control (RBAC) model with defined access levels based on job functions.',
+    evidenceRequirements: ['Access control model documentation', 'Role definitions', 'Business justifications', 'Access matrix'],
+    testProcedures: ['Review access control model', 'Verify role definitions', 'Examine justifications', 'Test access matrix'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-7.2.2',
+    name: 'Access Based on Job Classification',
+    description: 'Access is assigned to users based on job classification and function using least privilege principles.',
+    category: 'Access Control',
+    implementationGuidance: 'Map access rights to job classifications implementing least privilege principles.',
+    evidenceRequirements: ['Job classification documentation', 'Access rights mapping', 'Least privilege evidence', 'Privileged access justifications'],
+    testProcedures: ['Review classifications', 'Verify access mapping', 'Test least privilege', 'Examine justifications'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-7.2.3',
+    name: 'Privileges Approved by Authorized Personnel',
+    description: 'Required privileges are approved by authorized personnel through formal approval workflows.',
+    category: 'Access Control',
+    implementationGuidance: 'Implement access request and approval workflows requiring management approval.',
+    evidenceRequirements: ['Access request procedures', 'Approval workflows', 'Authority matrix', 'Approval records'],
+    testProcedures: ['Review request procedures', 'Verify workflows', 'Examine authority documentation', 'Check approval records'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-7.2.4',
+    name: 'User Access Reviews Performed',
+    description: 'All user accounts and access privileges are reviewed at least once every six months.',
+    category: 'Access Control',
+    implementationGuidance: 'Implement semi-annual access review process including all user types and vendors.',
+    evidenceRequirements: ['Access review schedule', 'Review completion records', 'Findings documentation', 'Remediation records'],
+    testProcedures: ['Verify review schedule', 'Examine review records', 'Check findings', 'Verify remediation'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-7.2.5',
+    name: 'Application and System Accounts Managed',
+    description: 'All application and system accounts and related access privileges are assigned and managed.',
+    category: 'Access Control',
+    implementationGuidance: 'Inventory all service accounts with assigned ownership and periodic privilege review.',
+    evidenceRequirements: ['Service account inventory', 'Ownership assignments', 'Privilege reviews', 'Management procedures'],
+    testProcedures: ['Review account inventory', 'Verify ownership', 'Examine privilege reviews', 'Check procedures'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-7.2.6',
+    name: 'Query Repository Access Restricted',
+    description: 'All user access to query repositories of stored cardholder data is restricted.',
+    category: 'Access Control',
+    implementationGuidance: 'Implement database access controls restricting query access to authorized users only.',
+    evidenceRequirements: ['Database access controls', 'Authorized user documentation', 'Query activity logs', 'Monitoring configurations'],
+    testProcedures: ['Verify database controls', 'Check user lists', 'Review query logs', 'Examine monitoring'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-7.3.1',
+    name: 'Access Control System Established',
+    description: 'Access control systems restrict access based on need to know covering all system components.',
+    category: 'Access Control',
+    implementationGuidance: 'Deploy enterprise access control systems configured for need-to-know access.',
+    evidenceRequirements: ['Access control system documentation', 'Component coverage', 'Need-to-know settings', 'Access logs'],
+    testProcedures: ['Verify system deployment', 'Check coverage', 'Test enforcement', 'Review logs'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-7.3.2',
+    name: 'Access Control Default Deny',
+    description: 'Access control systems enforce permissions based on roles with default deny.',
+    category: 'Access Control',
+    implementationGuidance: 'Configure access control with default deny and explicit permission grants.',
+    evidenceRequirements: ['Default deny configurations', 'Role-based permissions', 'Permission documentation', 'Access denial logs'],
+    testProcedures: ['Verify default deny', 'Test role permissions', 'Review assignments', 'Check denial logging'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-7.3.3',
+    name: 'Access Control Deny All Default',
+    description: 'Access control systems are set to deny all by default.',
+    category: 'Access Control',
+    implementationGuidance: 'Configure all access control systems with explicit deny-all default.',
+    evidenceRequirements: ['Default deny screenshots', 'Allow rule documentation', 'Configuration reviews', 'Setting verification'],
+    testProcedures: ['Verify deny settings', 'Review allow rules', 'Test default behavior', 'Examine reviews'],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 8 - Identify and Authenticate (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-8.1.1',
+    name: 'Authentication Policies Documented',
+    description: 'All security policies for identification and authentication are documented and known to affected parties.',
+    category: 'Authentication',
+    implementationGuidance: 'Develop comprehensive authentication policies covering password requirements, MFA, and account management.',
+    evidenceRequirements: ['Authentication policy documentation', 'Policy reviews', 'Training records', 'Policy acknowledgments'],
+    testProcedures: ['Review authentication policies', 'Verify currency', 'Interview personnel', 'Examine training'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.1.2',
+    name: 'Authentication Roles Defined',
+    description: 'Roles and responsibilities for authentication activities are documented and assigned.',
+    category: 'Authentication',
+    implementationGuidance: 'Define roles for identity and authentication management including provisioning and system management.',
+    evidenceRequirements: ['Role documentation', 'Personnel assignments', 'Training records', 'Team structure'],
+    testProcedures: ['Review roles', 'Verify assignments', 'Interview personnel', 'Examine structure'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.2.1',
+    name: 'Unique User IDs Assigned',
+    description: 'All users are assigned a unique ID before access to system components or cardholder data.',
+    category: 'Authentication',
+    implementationGuidance: 'Implement unique user ID assignment procedures prohibiting shared accounts.',
+    evidenceRequirements: ['User ID procedures', 'Unique ID enforcement', 'Shared account prohibition', 'User inventory'],
+    testProcedures: ['Verify unique IDs', 'Check for shared accounts', 'Review configurations', 'Examine inventory'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.2.2',
+    name: 'Shared Accounts Managed',
+    description: 'Group, shared, or generic accounts are only used when necessary and managed appropriately.',
+    category: 'Authentication',
+    implementationGuidance: 'Document business justification for shared accounts with additional controls.',
+    evidenceRequirements: ['Shared account inventory', 'Business justification', 'Activity logs', 'Management approval'],
+    testProcedures: ['Review inventory', 'Verify justifications', 'Examine controls', 'Check monitoring'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.2.4',
+    name: 'User Account Lifecycle Management',
+    description: 'Addition, deletion, and modification of user IDs and authentication factors are managed.',
+    category: 'Authentication',
+    implementationGuidance: 'Implement formal account lifecycle procedures with approvals and audit trails.',
+    evidenceRequirements: ['Lifecycle procedures', 'Approval records', 'Audit logs', 'Provisioning records'],
+    testProcedures: ['Review procedures', 'Verify approvals', 'Examine logs', 'Check records'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.2.5',
+    name: 'Terminated User Access Revoked',
+    description: 'Access for terminated users is immediately revoked.',
+    category: 'Authentication',
+    implementationGuidance: 'Implement immediate access revocation integrated with HR termination processes.',
+    evidenceRequirements: ['Revocation procedures', 'HR integration', 'Revocation records', 'Access audit logs'],
+    testProcedures: ['Review procedures', 'Verify integration', 'Examine records', 'Test for residual access'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.2.6',
+    name: 'Inactive Accounts Disabled',
+    description: 'Inactive user accounts are removed or disabled within 90 days of inactivity.',
+    category: 'Authentication',
+    implementationGuidance: 'Implement automated inactive account detection with 90-day threshold.',
+    evidenceRequirements: ['Inactivity detection configs', 'Automation evidence', 'Inactive account reports', 'Threshold settings'],
+    testProcedures: ['Verify detection', 'Test automation', 'Review reports', 'Check thresholds'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.2.7',
+    name: 'Third-Party Access Managed',
+    description: 'Third-party remote access accounts are enabled only when needed and monitored.',
+    category: 'Authentication',
+    implementationGuidance: 'Enable third-party accounts only when needed and disable immediately after use.',
+    evidenceRequirements: ['Third-party procedures', 'Enablement logs', 'Monitoring records', 'Access periods'],
+    testProcedures: ['Review procedures', 'Verify logs', 'Examine monitoring', 'Check compliance'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.2.8',
+    name: 'Session Timeout Configured',
+    description: 'User sessions timeout after 15 minutes of inactivity requiring re-authentication.',
+    category: 'Authentication',
+    implementationGuidance: 'Configure 15-minute session timeout across all systems with re-authentication.',
+    evidenceRequirements: ['Timeout configurations', 'Re-authentication settings', 'Timeout logs', 'System coverage'],
+    testProcedures: ['Verify timeouts', 'Test re-authentication', 'Review logs', 'Check coverage'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.1',
+    name: 'Strong Authentication Implemented',
+    description: 'All user access is authenticated via strong authentication factors.',
+    category: 'Authentication',
+    implementationGuidance: 'Implement strong authentication using passwords, tokens, or biometrics.',
+    evidenceRequirements: ['Authentication methods', 'System configurations', 'Enforcement evidence', 'Method inventory'],
+    testProcedures: ['Verify methods', 'Test enforcement', 'Review configurations', 'Examine inventory'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.2',
+    name: 'Authentication Factors Encrypted',
+    description: 'Strong cryptography protects authentication factors during transmission and storage.',
+    category: 'Authentication',
+    implementationGuidance: 'Implement encryption for credential transmission and strong hashing for storage.',
+    evidenceRequirements: ['Transmission encryption', 'Hashing algorithms', 'Token protection', 'Cryptographic standards'],
+    testProcedures: ['Verify encryption', 'Review hashing', 'Test token protection', 'Examine standards'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.4',
+    name: 'Invalid Attempts Limited',
+    description: 'Invalid authentication attempts are limited by lockout after ten attempts.',
+    category: 'Authentication',
+    implementationGuidance: 'Configure account lockout after 10 failed attempts with 30-minute duration.',
+    evidenceRequirements: ['Lockout configurations', 'Threshold settings', 'Duration settings', 'Lockout logs'],
+    testProcedures: ['Verify configurations', 'Test threshold', 'Verify duration', 'Review logs'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.5',
+    name: 'Password Requirements Enforced',
+    description: 'Passwords meet security requirements including minimum length and complexity.',
+    category: 'Authentication',
+    implementationGuidance: 'Enforce minimum 12 character passwords with complexity and 90-day rotation.',
+    evidenceRequirements: ['Password policy configs', 'Complexity settings', 'History settings', 'Change frequency'],
+    testProcedures: ['Verify length', 'Test complexity', 'Check history', 'Verify frequency'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.6',
+    name: 'Password Complexity Required',
+    description: 'Passwords meet minimum complexity with numeric and alphabetic characters.',
+    category: 'Authentication',
+    implementationGuidance: 'Require mix of numeric and alphabetic characters minimum.',
+    evidenceRequirements: ['Complexity configs', 'Character requirements', 'Rationale documentation', 'Compliance reports'],
+    testProcedures: ['Test complexity', 'Verify requirements', 'Review rationale', 'Check reports'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.7',
+    name: 'Password History Enforced',
+    description: 'New passwords cannot match any of the last four passwords used.',
+    category: 'Authentication',
+    implementationGuidance: 'Configure password history preventing reuse of last 4 passwords.',
+    evidenceRequirements: ['History configurations', 'Reuse prevention', 'Attempt logs', 'System coverage'],
+    testProcedures: ['Verify history', 'Test prevention', 'Review logs', 'Check coverage'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.4.1',
+    name: 'MFA for CDE Access',
+    description: 'MFA is implemented for all access into the CDE.',
+    category: 'Authentication',
+    implementationGuidance: 'Deploy MFA for all CDE access points using at least two authentication factors.',
+    evidenceRequirements: ['MFA deployment', 'Access point inventory', 'MFA configurations', 'Factor documentation'],
+    testProcedures: ['Verify MFA deployment', 'Test functionality', 'Review configurations', 'Check coverage'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.4.2',
+    name: 'MFA for All CDE Users',
+    description: 'MFA is implemented for all users accessing the CDE including employees and vendors.',
+    category: 'Authentication',
+    implementationGuidance: 'Ensure MFA covers all user types accessing CDE including contractors.',
+    evidenceRequirements: ['User coverage documentation', 'User type analysis', 'Exception documentation', 'Compensating controls'],
+    testProcedures: ['Verify coverage', 'Check user types', 'Review exceptions', 'Examine controls'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.4.3',
+    name: 'MFA for Remote Access',
+    description: 'MFA is implemented for all remote network access that could impact the CDE.',
+    category: 'Authentication',
+    implementationGuidance: 'Deploy MFA for all remote access methods including VPN and web-based access.',
+    evidenceRequirements: ['Remote access MFA configs', 'Access method inventory', 'Enforcement evidence', 'User coverage'],
+    testProcedures: ['Verify MFA for remote', 'Test remote access', 'Review coverage', 'Check user types'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.5.1',
+    name: 'MFA System Security',
+    description: 'MFA systems are implemented with proper security configuration.',
+    category: 'Authentication',
+    implementationGuidance: 'Configure MFA to prevent bypass using independent authentication factors.',
+    evidenceRequirements: ['MFA configurations', 'Bypass prevention', 'Factor independence', 'Replay protection'],
+    testProcedures: ['Verify configurations', 'Test bypass prevention', 'Review independence', 'Check protection'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.6.1',
+    name: 'System Account Interactive Login Managed',
+    description: 'System accounts with interactive login capability are managed appropriately.',
+    category: 'Authentication',
+    implementationGuidance: 'Identify and implement additional controls for system accounts with interactive login.',
+    evidenceRequirements: ['System account inventory', 'Additional controls', 'Login monitoring', 'Management procedures'],
+    testProcedures: ['Review inventory', 'Verify controls', 'Examine monitoring', 'Check procedures'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.6.2',
+    name: 'No Hard-Coded Passwords',
+    description: 'Passwords for application accounts are not hard coded in scripts or source code.',
+    category: 'Authentication',
+    implementationGuidance: 'Scan for hard-coded credentials and use secrets management solutions.',
+    evidenceRequirements: ['Credential scanning', 'Secrets management', 'Rotation evidence', 'Code review records'],
+    testProcedures: ['Run scans', 'Verify secrets management', 'Check rotation', 'Review code'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.6.3',
+    name: 'Application Passwords Protected',
+    description: 'Passwords for application and system accounts are protected against misuse.',
+    category: 'Authentication',
+    implementationGuidance: 'Store application credentials securely with access controls and monitoring.',
+    evidenceRequirements: ['Secure storage', 'Access controls', 'Access logs', 'Protection mechanisms'],
+    testProcedures: ['Verify storage', 'Test controls', 'Review logs', 'Examine mechanisms'],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 9 - Physical Security (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-9.1.1',
+    name: 'Physical Security Policies Documented',
+    description: 'All security policies for restricting physical access are documented and known to affected parties.',
+    category: 'Physical Security',
+    implementationGuidance: 'Develop comprehensive physical security policies covering facility access and visitor management.',
+    evidenceRequirements: ['Physical security policies', 'Policy reviews', 'Training records', 'Acknowledgments'],
+    testProcedures: ['Review policies', 'Verify currency', 'Interview personnel', 'Examine training'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.1.2',
+    name: 'Physical Security Roles Defined',
+    description: 'Roles and responsibilities for physical security are documented and assigned.',
+    category: 'Physical Security',
+    implementationGuidance: 'Define roles for physical security management including access control and monitoring.',
+    evidenceRequirements: ['Role documentation', 'Personnel assignments', 'Training records', 'Team structure'],
+    testProcedures: ['Review roles', 'Verify assignments', 'Interview personnel', 'Examine structure'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.2.1',
+    name: 'Facility Entry Controls Implemented',
+    description: 'Appropriate facility entry controls restrict physical access to CDE systems.',
+    category: 'Physical Security',
+    implementationGuidance: 'Deploy physical access controls such as badge readers and biometrics.',
+    evidenceRequirements: ['Access control configurations', 'System documentation', 'Access logs', 'Authorized personnel lists'],
+    testProcedures: ['Verify controls', 'Test systems', 'Review logs', 'Check personnel lists'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.2.2',
+    name: 'Network Equipment Physically Secured',
+    description: 'Physical access to wireless access points and networking hardware is restricted.',
+    category: 'Physical Security',
+    implementationGuidance: 'Secure network equipment in locked cabinets with access logging.',
+    evidenceRequirements: ['Equipment security documentation', 'Locked storage evidence', 'Access lists', 'Access logs'],
+    testProcedures: ['Verify security', 'Check storage', 'Review access lists', 'Examine logs'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.2.3',
+    name: 'Consoles Physically Secured',
+    description: 'Physical access to consoles in sensitive areas is restricted via locking.',
+    category: 'Physical Security',
+    implementationGuidance: 'Implement console locking mechanisms with authentication requirements.',
+    evidenceRequirements: ['Console locking configs', 'Authentication requirements', 'Access logs', 'Security procedures'],
+    testProcedures: ['Verify locking', 'Test authentication', 'Review logs', 'Check procedures'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.2.4',
+    name: 'Visitor Access Managed',
+    description: 'Access of onsite personnel and visitors is managed appropriately.',
+    category: 'Physical Security',
+    implementationGuidance: 'Implement visitor registration with badges and escort requirements.',
+    evidenceRequirements: ['Visitor procedures', 'Badge records', 'Escort requirements', 'Visitor logs'],
+    testProcedures: ['Review procedures', 'Verify badges', 'Check escorts', 'Examine logs'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.3.1',
+    name: 'Visitor Authorization Procedures',
+    description: 'Procedures are implemented for authorizing and managing visitors.',
+    category: 'Physical Security',
+    implementationGuidance: 'Create formal visitor authorization with sponsor approval and tracking.',
+    evidenceRequirements: ['Authorization procedures', 'Sponsor approval', 'Tracking records', 'Workflow documentation'],
+    testProcedures: ['Review procedures', 'Verify approval', 'Check tracking', 'Examine workflow'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.3.2',
+    name: 'Visitor Badges Managed',
+    description: 'Visitor badges distinguish visitors from onsite personnel.',
+    category: 'Physical Security',
+    implementationGuidance: 'Issue distinct visitor badges collected upon departure with expiration.',
+    evidenceRequirements: ['Visitor badges', 'Collection procedures', 'Expiration settings', 'Issuance records'],
+    testProcedures: ['Verify distinction', 'Test collection', 'Check expiration', 'Review records'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.3.3',
+    name: 'Visitors Escorted',
+    description: 'Visitors are escorted in areas where cardholder data is processed.',
+    category: 'Physical Security',
+    implementationGuidance: 'Implement mandatory escort policy for CDE areas with training.',
+    evidenceRequirements: ['Escort policy', 'Training records', 'Activity logs', 'Access procedures'],
+    testProcedures: ['Review policy', 'Verify training', 'Check logs', 'Observe practices'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.3.4',
+    name: 'Visitor Log Maintained',
+    description: 'A visitor log maintains physical record of visitor activity.',
+    category: 'Physical Security',
+    implementationGuidance: 'Maintain visitor logs with name, organization, date, time, and sponsor.',
+    evidenceRequirements: ['Visitor logs', 'Content requirements', 'Retention documentation', 'Secure storage'],
+    testProcedures: ['Review logs', 'Verify content', 'Check retention', 'Examine storage'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.4.1',
+    name: 'Media Physically Secured',
+    description: 'All media with cardholder data is physically secured.',
+    category: 'Physical Security',
+    implementationGuidance: 'Store media in secure locked locations with access logging.',
+    evidenceRequirements: ['Media storage security', 'Locked storage', 'Access lists', 'Access logs'],
+    testProcedures: ['Verify security', 'Check storage', 'Review lists', 'Examine logs'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.4.2',
+    name: 'Media Classified',
+    description: 'All media with cardholder data is classified for sensitivity.',
+    category: 'Physical Security',
+    implementationGuidance: 'Implement media classification scheme with appropriate labeling.',
+    evidenceRequirements: ['Classification scheme', 'Labeling evidence', 'Training records', 'Handling procedures'],
+    testProcedures: ['Review scheme', 'Verify labeling', 'Check training', 'Examine procedures'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.4.3',
+    name: 'Media Sent Securely',
+    description: 'Media with cardholder data sent outside the facility is secured.',
+    category: 'Physical Security',
+    implementationGuidance: 'Use secure courier services with tracking and recipient confirmation.',
+    evidenceRequirements: ['Courier documentation', 'Tracking records', 'Confirmation records', 'Transport procedures'],
+    testProcedures: ['Verify courier', 'Review tracking', 'Check confirmations', 'Examine procedures'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.4.4',
+    name: 'Media Distribution Approved',
+    description: 'Management approves all media moved outside the facility.',
+    category: 'Physical Security',
+    implementationGuidance: 'Require management approval for external media movement with documentation.',
+    evidenceRequirements: ['Approval process', 'Management approvals', 'Movement logs', 'Workflow documentation'],
+    testProcedures: ['Review process', 'Verify approvals', 'Check logs', 'Examine workflow'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.4.5',
+    name: 'Media Inventory Maintained',
+    description: 'Inventory logs of all electronic media with cardholder data are maintained.',
+    category: 'Physical Security',
+    implementationGuidance: 'Maintain comprehensive media inventory with location and custodian.',
+    evidenceRequirements: ['Media inventory', 'Content requirements', 'Update procedures', 'Custodian assignments'],
+    testProcedures: ['Review inventory', 'Verify content', 'Check procedures', 'Examine assignments'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.4.6',
+    name: 'Hard-Copy Materials Destroyed',
+    description: 'Hard-copy materials with cardholder data are destroyed when no longer needed.',
+    category: 'Physical Security',
+    implementationGuidance: 'Implement secure destruction using cross-cut shredding or incineration.',
+    evidenceRequirements: ['Destruction procedures', 'Method specifications', 'Destruction logs', 'Retention schedules'],
+    testProcedures: ['Review procedures', 'Verify methods', 'Check logs', 'Examine schedules'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.4.7',
+    name: 'Electronic Media Destroyed',
+    description: 'Electronic media with cardholder data is destroyed when no longer needed.',
+    category: 'Physical Security',
+    implementationGuidance: 'Use degaussing, physical destruction, or secure erasure for media.',
+    evidenceRequirements: ['Destruction procedures', 'Method documentation', 'Destruction logs', 'Certificates'],
+    testProcedures: ['Review procedures', 'Verify methods', 'Check logs', 'Examine certificates'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.5.1',
+    name: 'POI Devices Protected',
+    description: 'POI devices are protected from tampering and unauthorized substitution.',
+    category: 'Physical Security',
+    implementationGuidance: 'Implement POI device protection with regular inspections and training.',
+    evidenceRequirements: ['Protection procedures', 'Inspection records', 'Training records', 'Tampering indicators'],
+    testProcedures: ['Review procedures', 'Verify inspections', 'Check training', 'Examine indicators'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.5.1.1',
+    name: 'POI Device Inventory',
+    description: 'An up-to-date list of POI devices is maintained.',
+    category: 'Physical Security',
+    implementationGuidance: 'Maintain POI inventory with make, model, serial number, and location.',
+    evidenceRequirements: ['POI inventory', 'Device details', 'Update records', 'Location tracking'],
+    testProcedures: ['Review inventory', 'Verify details', 'Check updates', 'Confirm locations'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.5.1.2',
+    name: 'POI Devices Inspected',
+    description: 'POI device surfaces are periodically inspected for tampering.',
+    category: 'Physical Security',
+    implementationGuidance: 'Conduct periodic visual inspections with documented results.',
+    evidenceRequirements: ['Inspection schedule', 'Checklists', 'Result records', 'Training records'],
+    testProcedures: ['Verify schedule', 'Review checklists', 'Check results', 'Examine training'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-9.5.1.3',
+    name: 'POI Personnel Trained',
+    description: 'Personnel in POI environments are trained on tampering awareness.',
+    category: 'Physical Security',
+    implementationGuidance: 'Provide training on POI tampering indicators and device substitution.',
+    evidenceRequirements: ['Training materials', 'Completion records', 'Indicator documentation', 'Training schedule'],
+    testProcedures: ['Review materials', 'Verify completion', 'Check indicators', 'Examine schedule'],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 10 - Logging and Monitoring (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-10.1.1',
+    name: 'Logging Policies Documented',
+    description: 'All security policies for logging and monitoring are documented.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Develop comprehensive logging policies covering content, retention, and review.',
+    evidenceRequirements: ['Logging policies', 'Policy reviews', 'Training records', 'Acknowledgments'],
+    testProcedures: ['Review policies', 'Verify currency', 'Interview personnel', 'Examine training'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.1.2',
+    name: 'Logging Roles Defined',
+    description: 'Roles and responsibilities for logging are documented and assigned.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Define roles for log management and incident response.',
+    evidenceRequirements: ['Role documentation', 'Personnel assignments', 'Training records', 'Team structure'],
+    testProcedures: ['Review roles', 'Verify assignments', 'Interview personnel', 'Examine structure'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.2.1',
+    name: 'Audit Logs Enabled',
+    description: 'Audit logs are enabled for all system components and cardholder data.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Enable audit logging on all CDE components for security events.',
+    evidenceRequirements: ['Log configurations', 'Enablement evidence', 'Coverage documentation', 'Verification records'],
+    testProcedures: ['Verify logging', 'Test generation', 'Check coverage', 'Review records'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.2.1.1',
+    name: 'User Access Logged',
+    description: 'All individual user access to cardholder data is logged.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Configure logging for all user access including success and failure.',
+    evidenceRequirements: ['Access logging configs', 'Sample logs', 'Content verification', 'Access coverage'],
+    testProcedures: ['Verify configurations', 'Review logs', 'Check content', 'Test coverage'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.2.1.2',
+    name: 'Administrative Actions Logged',
+    description: 'All actions by administrators are logged.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Configure logging for all administrative actions and configuration changes.',
+    evidenceRequirements: ['Admin logging configs', 'Sample logs', 'Content requirements', 'Action coverage'],
+    testProcedures: ['Verify admin logging', 'Review logs', 'Check content', 'Test coverage'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.2.1.3',
+    name: 'Log Access Logged',
+    description: 'All access to audit logs is logged.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Configure logging for access to log files including all operations.',
+    evidenceRequirements: ['Log access configs', 'Sample events', 'Access type coverage', 'Access controls'],
+    testProcedures: ['Verify log access logging', 'Review events', 'Check coverage', 'Test controls'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.2.1.4',
+    name: 'Invalid Access Logged',
+    description: 'All invalid logical access attempts are logged.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Configure logging for failed authentication with alerting.',
+    evidenceRequirements: ['Invalid access configs', 'Sample logs', 'Alerting configs', 'Source identification'],
+    testProcedures: ['Verify logging', 'Review logs', 'Test alerting', 'Check source capture'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.2.1.5',
+    name: 'Authentication Changes Logged',
+    description: 'All changes to authentication credentials are logged.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Log credential creation, modification, and deletion.',
+    evidenceRequirements: ['Credential change logging', 'Sample logs', 'Change coverage', 'Admin identification'],
+    testProcedures: ['Verify logging', 'Review logs', 'Check coverage', 'Test admin capture'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.2.2',
+    name: 'Log Content Requirements',
+    description: 'Audit logs record required information for each event.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Configure logs to include user ID, event type, date/time, success/failure.',
+    evidenceRequirements: ['Content configs', 'Sample logs', 'Content checklist', 'Compliance verification'],
+    testProcedures: ['Verify content', 'Review logs', 'Check fields', 'Test completeness'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.3.1',
+    name: 'Daily Log Review',
+    description: 'Security event logs are reviewed at least daily.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Implement daily log review with automated analysis tools.',
+    evidenceRequirements: ['Review procedures', 'Completion records', 'Analysis configs', 'Findings documentation'],
+    testProcedures: ['Verify procedures', 'Check records', 'Test analysis', 'Review findings'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.3.2',
+    name: 'Automated Log Review',
+    description: 'Automated mechanisms perform audit log reviews.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Deploy SIEM with automated correlation and alerting.',
+    evidenceRequirements: ['SIEM deployment', 'Correlation rules', 'Alert configs', 'Tuning documentation'],
+    testProcedures: ['Verify deployment', 'Review rules', 'Test alerting', 'Examine tuning'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.3.3',
+    name: 'Exceptions Addressed',
+    description: 'Exceptions and anomalies from log review are addressed.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Implement exception handling with escalation and tracking.',
+    evidenceRequirements: ['Exception procedures', 'Escalation procedures', 'Remediation tracking', 'Resolution documentation'],
+    testProcedures: ['Review procedures', 'Verify escalation', 'Check tracking', 'Examine resolution'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.4.1',
+    name: 'Security Control Failure Detection',
+    description: 'Failures of critical security controls are detected and alerted.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Implement automated detection for security control failures.',
+    evidenceRequirements: ['Detection configs', 'Alert configs', 'Response procedures', 'Test records'],
+    testProcedures: ['Verify detection', 'Test alerting', 'Review procedures', 'Examine tests'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.4.2',
+    name: 'Failure Response',
+    description: 'Security control failures are addressed promptly.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Implement incident response for control failures with tracking.',
+    evidenceRequirements: ['Response procedures', 'Tracking records', 'Resolution documentation', 'Response metrics'],
+    testProcedures: ['Review procedures', 'Verify tracking', 'Check resolution', 'Examine metrics'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.5.1',
+    name: 'Log History Retained',
+    description: 'Audit log history is retained for at least 12 months.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Configure 12-month retention with 3 months immediately available.',
+    evidenceRequirements: ['Retention configs', 'Availability documentation', 'Archival procedures', 'Compliance verification'],
+    testProcedures: ['Verify retention', 'Test availability', 'Review archival', 'Check compliance'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.6.1',
+    name: 'Time Synchronization',
+    description: 'System clocks are synchronized using time-synchronization technology.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Deploy NTP for time synchronization across all systems.',
+    evidenceRequirements: ['Sync configs', 'NTP documentation', 'Coverage evidence', 'Monitoring records'],
+    testProcedures: ['Verify sync', 'Check NTP', 'Test coverage', 'Review monitoring'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.6.2',
+    name: 'Time Data Protected',
+    description: 'Time data is protected from unauthorized modification.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Restrict access to time configuration with change logging.',
+    evidenceRequirements: ['Access controls', 'Change logs', 'Monitoring configs', 'Access restrictions'],
+    testProcedures: ['Verify controls', 'Review logs', 'Test monitoring', 'Check restrictions'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.6.3',
+    name: 'Industry-Accepted Time Sources',
+    description: 'Time settings are received from industry-accepted sources.',
+    category: 'Logging and Monitoring',
+    implementationGuidance: 'Configure synchronization to authoritative time sources.',
+    evidenceRequirements: ['Source configs', 'Authoritative source docs', 'Redundancy configs', 'Source rationale'],
+    testProcedures: ['Verify sources', 'Check authoritative', 'Test redundancy', 'Review rationale'],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 11 - Security Testing (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-11.1.1',
+    name: 'Security Testing Policies Documented',
+    description: 'All security policies for security testing are documented.',
+    category: 'Security Testing',
+    implementationGuidance: 'Develop comprehensive security testing policies covering vulnerability scanning and penetration testing.',
+    evidenceRequirements: ['Testing policies', 'Policy reviews', 'Training records', 'Acknowledgments'],
+    testProcedures: ['Review policies', 'Verify currency', 'Interview personnel', 'Examine training'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.1.2',
+    name: 'Security Testing Roles Defined',
+    description: 'Roles for security testing are documented and assigned.',
+    category: 'Security Testing',
+    implementationGuidance: 'Define roles for vulnerability management and penetration testing.',
+    evidenceRequirements: ['Role documentation', 'Personnel assignments', 'Training records', 'Team structure'],
+    testProcedures: ['Review roles', 'Verify assignments', 'Interview personnel', 'Examine structure'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.2.1',
+    name: 'Wireless Access Points Detected',
+    description: 'Authorized and unauthorized wireless access points are managed.',
+    category: 'Security Testing',
+    implementationGuidance: 'Implement wireless AP detection through scanning or monitoring.',
+    evidenceRequirements: ['Detection methods', 'Authorized AP inventory', 'Scan results', 'Unauthorized AP procedures'],
+    testProcedures: ['Verify detection', 'Review inventory', 'Examine scans', 'Check procedures'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.2.2',
+    name: 'Wireless AP Inventory Maintained',
+    description: 'An inventory of authorized wireless access points is maintained.',
+    category: 'Security Testing',
+    implementationGuidance: 'Maintain inventory with business justification for each AP.',
+    evidenceRequirements: ['AP inventory', 'Business justification', 'Update procedures', 'Approval records'],
+    testProcedures: ['Review inventory', 'Verify justification', 'Check procedures', 'Examine approvals'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.3.1',
+    name: 'Internal Vulnerability Scans',
+    description: 'Internal vulnerability scans are performed at least quarterly.',
+    category: 'Security Testing',
+    implementationGuidance: 'Perform quarterly internal vulnerability scans with remediation.',
+    evidenceRequirements: ['Scan schedule', 'Scan results', 'Remediation records', 'Rescan evidence'],
+    testProcedures: ['Verify schedule', 'Review results', 'Check remediation', 'Examine rescans'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.3.1.1',
+    name: 'High-Risk Vulnerabilities Addressed',
+    description: 'High-risk and critical vulnerabilities are addressed.',
+    category: 'Security Testing',
+    implementationGuidance: 'Prioritize and remediate high-risk vulnerabilities promptly.',
+    evidenceRequirements: ['Vulnerability rankings', 'Remediation timelines', 'Completion records', 'Risk acceptance docs'],
+    testProcedures: ['Review rankings', 'Verify timelines', 'Check completion', 'Examine acceptances'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.3.2',
+    name: 'External Vulnerability Scans',
+    description: 'External vulnerability scans are performed quarterly by ASV.',
+    category: 'Security Testing',
+    implementationGuidance: 'Perform quarterly external scans by PCI-approved ASV.',
+    evidenceRequirements: ['ASV attestations', 'Scan schedule', 'Passing scans', 'Remediation records'],
+    testProcedures: ['Verify ASV approval', 'Check schedule', 'Review passing scans', 'Examine remediation'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.4.1',
+    name: 'Penetration Testing Performed',
+    description: 'External and internal penetration testing is performed.',
+    category: 'Security Testing',
+    implementationGuidance: 'Perform annual penetration testing covering network and application layers.',
+    evidenceRequirements: ['Pen test methodology', 'Test reports', 'Remediation records', 'Retest results'],
+    testProcedures: ['Review methodology', 'Examine reports', 'Verify remediation', 'Check retests'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.4.2',
+    name: 'Internal Penetration Testing',
+    description: 'Internal penetration testing is performed at least annually.',
+    category: 'Security Testing',
+    implementationGuidance: 'Perform internal penetration testing annually and after significant changes.',
+    evidenceRequirements: ['Internal pen test reports', 'Annual schedule', 'Scope documentation', 'Findings remediation'],
+    testProcedures: ['Review reports', 'Verify schedule', 'Check scope', 'Examine remediation'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.4.3',
+    name: 'External Penetration Testing',
+    description: 'External penetration testing is performed at least annually.',
+    category: 'Security Testing',
+    implementationGuidance: 'Perform external penetration testing annually and after changes.',
+    evidenceRequirements: ['External pen test reports', 'Annual schedule', 'Scope documentation', 'Findings remediation'],
+    testProcedures: ['Review reports', 'Verify schedule', 'Check scope', 'Examine remediation'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.4.4',
+    name: 'Penetration Testing Findings Corrected',
+    description: 'Exploitable vulnerabilities found during penetration testing are corrected.',
+    category: 'Security Testing',
+    implementationGuidance: 'Remediate penetration testing findings and verify through retesting.',
+    evidenceRequirements: ['Finding reports', 'Remediation plans', 'Correction evidence', 'Retest results'],
+    testProcedures: ['Review findings', 'Verify plans', 'Check corrections', 'Examine retests'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.4.5',
+    name: 'Segmentation Testing',
+    description: 'Segmentation controls are verified through penetration testing.',
+    category: 'Security Testing',
+    implementationGuidance: 'Test segmentation effectiveness at least annually.',
+    evidenceRequirements: ['Segmentation test methodology', 'Test results', 'Scope of testing', 'Effectiveness evidence'],
+    testProcedures: ['Review methodology', 'Examine results', 'Verify scope', 'Check effectiveness'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.5.1',
+    name: 'Change Detection Mechanisms',
+    description: 'Change detection mechanisms are deployed to alert on unauthorized modifications.',
+    category: 'Security Testing',
+    implementationGuidance: 'Deploy file integrity monitoring on critical files.',
+    evidenceRequirements: ['FIM deployment', 'Monitored file list', 'Alert configurations', 'Response procedures'],
+    testProcedures: ['Verify deployment', 'Review file list', 'Test alerting', 'Check procedures'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.5.2',
+    name: 'Change Detection Weekly Comparison',
+    description: 'Change detection performs critical file comparisons at least weekly.',
+    category: 'Security Testing',
+    implementationGuidance: 'Configure FIM to compare critical files at least weekly.',
+    evidenceRequirements: ['Comparison schedule', 'FIM configurations', 'Comparison reports', 'Exception handling'],
+    testProcedures: ['Verify schedule', 'Review configurations', 'Examine reports', 'Check exceptions'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.6.1',
+    name: 'Payment Page Change Detection',
+    description: 'A change and tamper detection mechanism is deployed for payment pages.',
+    category: 'Security Testing',
+    implementationGuidance: 'Deploy mechanisms to detect unauthorized changes to payment pages.',
+    evidenceRequirements: ['Detection mechanism deployment', 'Payment page inventory', 'Alert configurations', 'Response procedures'],
+    testProcedures: ['Verify deployment', 'Review inventory', 'Test alerting', 'Check procedures'],
+    status: 'Not Started',
+  },
+  // ============================================================
+  // PCI DSS v4.0 Requirement 12 - Security Governance (Sub-requirements)
+  // ============================================================
+  {
+    controlId: 'PCI-12.1.1',
+    name: 'Information Security Policy Established',
+    description: 'An overall information security policy is established, published, and maintained.',
+    category: 'Security Governance',
+    implementationGuidance: 'Develop comprehensive information security policy reviewed annually.',
+    evidenceRequirements: ['Security policy document', 'Publication evidence', 'Annual review records', 'Approval documentation'],
+    testProcedures: ['Review policy', 'Verify publication', 'Check annual reviews', 'Examine approvals'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.1.2',
+    name: 'Security Policy Reviewed Annually',
+    description: 'The information security policy is reviewed at least annually.',
+    category: 'Security Governance',
+    implementationGuidance: 'Establish annual policy review process with documented updates.',
+    evidenceRequirements: ['Review schedule', 'Review records', 'Update documentation', 'Approval records'],
+    testProcedures: ['Verify schedule', 'Examine reviews', 'Check updates', 'Review approvals'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.1.3',
+    name: 'Security Roles Defined in Policy',
+    description: 'Security roles and responsibilities are defined in the policy.',
+    category: 'Security Governance',
+    implementationGuidance: 'Document all security roles and responsibilities in policy.',
+    evidenceRequirements: ['Role definitions in policy', 'Responsibility assignments', 'Organizational chart', 'Accountability documentation'],
+    testProcedures: ['Review role definitions', 'Verify assignments', 'Check org chart', 'Examine accountability'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.1.4',
+    name: 'Security Responsibility Assigned',
+    description: 'Information security responsibility is formally assigned to a CISO or equivalent.',
+    category: 'Security Governance',
+    implementationGuidance: 'Appoint CISO or equivalent with documented responsibilities.',
+    evidenceRequirements: ['CISO appointment', 'Job description', 'Reporting structure', 'Authority documentation'],
+    testProcedures: ['Verify appointment', 'Review job description', 'Check reporting', 'Examine authority'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.2.1',
+    name: 'Acceptable Use Policies',
+    description: 'Acceptable use policies for end-user technologies are documented and implemented.',
+    category: 'Security Governance',
+    implementationGuidance: 'Develop acceptable use policies for all end-user technologies.',
+    evidenceRequirements: ['Acceptable use policies', 'Technology coverage', 'User acknowledgments', 'Enforcement procedures'],
+    testProcedures: ['Review policies', 'Verify coverage', 'Check acknowledgments', 'Examine enforcement'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.3.1',
+    name: 'Targeted Risk Analysis Performed',
+    description: 'A targeted risk analysis is performed for each PCI DSS requirement with flexibility.',
+    category: 'Security Governance',
+    implementationGuidance: 'Perform targeted risk analysis for applicable requirements.',
+    evidenceRequirements: ['Risk analysis documentation', 'Requirement coverage', 'Risk decisions', 'Review records'],
+    testProcedures: ['Review analysis', 'Verify coverage', 'Check decisions', 'Examine reviews'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.3.2',
+    name: 'Risk Analysis Documentation',
+    description: 'Targeted risk analyses are documented.',
+    category: 'Security Governance',
+    implementationGuidance: 'Document all risk analysis including methodology and results.',
+    evidenceRequirements: ['Risk analysis documentation', 'Methodology documentation', 'Results documentation', 'Approval records'],
+    testProcedures: ['Review documentation', 'Verify methodology', 'Check results', 'Examine approvals'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.5.1',
+    name: 'PCI DSS Scope Documented',
+    description: 'An inventory of system components in scope for PCI DSS is maintained.',
+    category: 'Security Governance',
+    implementationGuidance: 'Maintain comprehensive inventory of all in-scope system components.',
+    evidenceRequirements: ['Scope inventory', 'Component classifications', 'Update procedures', 'Scope documentation'],
+    testProcedures: ['Review inventory', 'Verify classifications', 'Check procedures', 'Examine documentation'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.5.2',
+    name: 'PCI DSS Scope Reviewed',
+    description: 'PCI DSS scope is documented and confirmed at least annually.',
+    category: 'Security Governance',
+    implementationGuidance: 'Review and confirm PCI DSS scope at least annually.',
+    evidenceRequirements: ['Annual scope review', 'Confirmation documentation', 'Scope changes', 'Approval records'],
+    testProcedures: ['Verify annual review', 'Check confirmation', 'Review changes', 'Examine approvals'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.6.1',
+    name: 'Security Awareness Program',
+    description: 'A formal security awareness program is implemented.',
+    category: 'Security Governance',
+    implementationGuidance: 'Implement comprehensive security awareness training program.',
+    evidenceRequirements: ['Awareness program documentation', 'Training materials', 'Delivery schedule', 'Completion tracking'],
+    testProcedures: ['Review program', 'Examine materials', 'Check schedule', 'Verify tracking'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.6.2',
+    name: 'Security Awareness Training',
+    description: 'Personnel receive security awareness training upon hire and annually.',
+    category: 'Security Governance',
+    implementationGuidance: 'Provide security training at hire and at least annually thereafter.',
+    evidenceRequirements: ['Training schedule', 'Completion records', 'Training content', 'New hire procedures'],
+    testProcedures: ['Verify schedule', 'Review records', 'Examine content', 'Check new hire process'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.6.3',
+    name: 'Security Awareness Content',
+    description: 'Security awareness training includes threats and data protection responsibilities.',
+    category: 'Security Governance',
+    implementationGuidance: 'Include current threats, social engineering, and PCI DSS responsibilities.',
+    evidenceRequirements: ['Training content', 'Threat coverage', 'PCI DSS content', 'Content updates'],
+    testProcedures: ['Review content', 'Verify threat coverage', 'Check PCI coverage', 'Examine updates'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.7.1',
+    name: 'Personnel Screening',
+    description: 'Personnel with access to CDE are screened prior to hire.',
+    category: 'Security Governance',
+    implementationGuidance: 'Conduct background screening for personnel with CDE access.',
+    evidenceRequirements: ['Screening policy', 'Screening records', 'Verification procedures', 'Screening coverage'],
+    testProcedures: ['Review policy', 'Examine records', 'Check procedures', 'Verify coverage'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.8.1',
+    name: 'Service Provider Inventory',
+    description: 'A list of service providers with cardholder data access is maintained.',
+    category: 'Security Governance',
+    implementationGuidance: 'Maintain inventory of all service providers handling cardholder data.',
+    evidenceRequirements: ['Service provider list', 'Services description', 'Data access documentation', 'Update procedures'],
+    testProcedures: ['Review list', 'Verify services', 'Check data access', 'Examine procedures'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.8.2',
+    name: 'Service Provider Agreements',
+    description: 'Written agreements with service providers include PCI DSS responsibilities.',
+    category: 'Security Governance',
+    implementationGuidance: 'Include PCI DSS compliance responsibilities in all service provider agreements.',
+    evidenceRequirements: ['Service agreements', 'PCI DSS language', 'Responsibility matrix', 'Agreement reviews'],
+    testProcedures: ['Review agreements', 'Verify language', 'Check matrix', 'Examine reviews'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.8.3',
+    name: 'Service Provider Due Diligence',
+    description: 'Due diligence is performed prior to engaging service providers.',
+    category: 'Security Governance',
+    implementationGuidance: 'Conduct due diligence on service providers including PCI DSS compliance status.',
+    evidenceRequirements: ['Due diligence procedures', 'Assessment records', 'Compliance verification', 'Risk assessments'],
+    testProcedures: ['Review procedures', 'Examine records', 'Verify compliance', 'Check assessments'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.8.4',
+    name: 'Service Provider Monitoring',
+    description: 'Service providers PCI DSS compliance status is monitored annually.',
+    category: 'Security Governance',
+    implementationGuidance: 'Monitor service provider compliance at least annually.',
+    evidenceRequirements: ['Monitoring procedures', 'Annual status records', 'Compliance documentation', 'Follow-up records'],
+    testProcedures: ['Review procedures', 'Verify status records', 'Check compliance', 'Examine follow-up'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.8.5',
+    name: 'Service Provider Responsibility Matrix',
+    description: 'Information about PCI DSS responsibilities is maintained for each service provider.',
+    category: 'Security Governance',
+    implementationGuidance: 'Maintain clear documentation of shared PCI DSS responsibilities.',
+    evidenceRequirements: ['Responsibility matrices', 'Requirement mapping', 'Update procedures', 'Provider acknowledgments'],
+    testProcedures: ['Review matrices', 'Verify mapping', 'Check procedures', 'Examine acknowledgments'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.9.1',
+    name: 'Service Provider Acknowledgment',
+    description: 'Service providers acknowledge responsibility for cardholder data security.',
+    category: 'Security Governance',
+    implementationGuidance: 'Obtain written acknowledgment of data security responsibility from providers.',
+    evidenceRequirements: ['Acknowledgment documents', 'Provider coverage', 'Responsibility statements', 'Annual updates'],
+    testProcedures: ['Review acknowledgments', 'Verify coverage', 'Check statements', 'Examine updates'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.10.1',
+    name: 'Incident Response Plan',
+    description: 'An incident response plan exists and is ready to be activated.',
+    category: 'Security Governance',
+    implementationGuidance: 'Develop comprehensive incident response plan covering all required elements.',
+    evidenceRequirements: ['Incident response plan', 'Contact lists', 'Procedures documentation', 'Activation criteria'],
+    testProcedures: ['Review plan', 'Verify contacts', 'Check procedures', 'Examine criteria'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.10.2',
+    name: 'Incident Response Plan Reviewed',
+    description: 'The incident response plan is reviewed and updated at least annually.',
+    category: 'Security Governance',
+    implementationGuidance: 'Review and update incident response plan at least annually.',
+    evidenceRequirements: ['Annual review records', 'Update documentation', 'Approval records', 'Change history'],
+    testProcedures: ['Verify annual review', 'Check updates', 'Review approvals', 'Examine history'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.10.3',
+    name: 'Incident Response Team',
+    description: 'Specific personnel are designated to be available for incident response.',
+    category: 'Security Governance',
+    implementationGuidance: 'Designate incident response team with 24/7 availability.',
+    evidenceRequirements: ['Team roster', 'Contact information', 'Availability schedules', 'Escalation procedures'],
+    testProcedures: ['Review roster', 'Verify contacts', 'Check availability', 'Examine escalation'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.10.4',
+    name: 'Incident Response Training',
+    description: 'Incident response personnel are trained appropriately.',
+    category: 'Security Governance',
+    implementationGuidance: 'Provide regular training for all incident response team members.',
+    evidenceRequirements: ['Training records', 'Training content', 'Completion tracking', 'Skill assessments'],
+    testProcedures: ['Review records', 'Examine content', 'Check tracking', 'Verify assessments'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.10.5',
+    name: 'Incident Response Plan Includes Alerts',
+    description: 'The incident response plan includes response to alerts from security monitoring.',
+    category: 'Security Governance',
+    implementationGuidance: 'Include alert response procedures in incident response plan.',
+    evidenceRequirements: ['Alert response procedures', 'Monitoring integration', 'Response workflows', 'Alert types covered'],
+    testProcedures: ['Review procedures', 'Verify integration', 'Check workflows', 'Examine coverage'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.10.6',
+    name: 'Incident Response Plan Tested',
+    description: 'The incident response plan is tested at least annually.',
+    category: 'Security Governance',
+    implementationGuidance: 'Conduct annual incident response exercises or tabletop tests.',
+    evidenceRequirements: ['Test schedule', 'Test documentation', 'Lessons learned', 'Plan updates from testing'],
+    testProcedures: ['Verify schedule', 'Review documentation', 'Check lessons', 'Examine updates'],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.10.7',
+    name: 'Incident Response Procedures for Common Events',
+    description: 'Incident response procedures exist for common security events.',
+    category: 'Security Governance',
+    implementationGuidance: 'Develop specific procedures for common incident types.',
+    evidenceRequirements: ['Event-specific procedures', 'Common event coverage', 'Response workflows', 'Playbook documentation'],
+    testProcedures: ['Review procedures', 'Verify coverage', 'Check workflows', 'Examine playbooks'],
+    status: 'Not Started',
+  },
 ];
