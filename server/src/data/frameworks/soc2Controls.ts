@@ -1106,4 +1106,174 @@ export const SOC2_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started',
   },
+
+  // ===== Additional Controls to meet 60 control requirement =====
+  {
+    controlId: 'CC6.9',
+    name: 'Third-Party Remote Access Controls',
+    description:
+      'The entity implements controls to manage and monitor remote access by third-party vendors and service providers to protected systems and data. Remote access sessions are logged, monitored, and restricted to authorized activities only.',
+    category: 'Logical and Physical Access',
+    implementationGuidance:
+      'Implement dedicated remote access solutions for third-party vendors with session recording, time-limited access, and just-in-time provisioning. Require multi-factor authentication for all third-party remote access and restrict access to only the systems and data necessary for their contracted services. Monitor third-party sessions in real-time and review access logs regularly.',
+    evidenceRequirements: [
+      'Third-party remote access policy and procedures documentation',
+      'Remote access session logs and recording archives',
+      'Third-party access provisioning and deprovisioning records',
+      'Remote access monitoring reports and anomaly detection alerts',
+    ],
+    testProcedures: [
+      'Review third-party remote access controls and verify that MFA is required and sessions are logged and recorded',
+      'Select a sample of third-party access sessions and verify they were limited to authorized systems and time periods',
+      'Inspect third-party access deprovisioning records and confirm access was revoked upon contract completion',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC7.6',
+    name: 'Configuration and Baseline Management',
+    description:
+      'The entity establishes and maintains secure configuration baselines for system components and monitors compliance with those baselines. Configuration drift is detected and remediated, and unauthorized changes are investigated.',
+    category: 'System Operations',
+    implementationGuidance:
+      'Develop secure configuration baselines based on industry standards (CIS Benchmarks, vendor hardening guides) for all system types including servers, databases, and network devices. Implement automated configuration monitoring tools to detect drift from baselines. Establish configuration change approval processes and enforce configuration compliance through automated remediation or alerting.',
+    evidenceRequirements: [
+      'Secure configuration baseline documentation for each system type',
+      'Configuration monitoring tool deployment and coverage reports',
+      'Configuration drift detection reports and remediation records',
+      'Configuration compliance trending reports from the audit period',
+    ],
+    testProcedures: [
+      'Review secure configuration baselines and verify they are based on recognized security standards',
+      'Inspect configuration monitoring reports and confirm that compliance is tracked for all in-scope systems',
+      'Select a sample of configuration drift alerts and verify that deviations were investigated and remediated',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'A1.4',
+    name: 'System Recovery Procedures',
+    description:
+      'The entity maintains documented recovery procedures for critical systems and conducts regular recovery testing to validate that systems can be restored within defined recovery time objectives. Recovery procedures are updated based on infrastructure changes and test results.',
+    category: 'Availability',
+    implementationGuidance:
+      'Document detailed recovery procedures (runbooks) for each critical system covering restoration steps, dependencies, validation checks, and escalation contacts. Conduct recovery tests quarterly or after significant changes, including full system restoration from backups. Track recovery test results against RTO/RPO metrics and update procedures based on lessons learned.',
+    evidenceRequirements: [
+      'System recovery runbooks for all critical systems',
+      'Recovery test plans and execution schedules',
+      'Recovery test results with measured RTO/RPO vs. targets',
+      'Procedure update history based on test findings and infrastructure changes',
+    ],
+    testProcedures: [
+      'Review recovery runbooks and verify they contain detailed step-by-step procedures for each critical system',
+      'Inspect recovery test results and confirm that tests achieved defined RTO and RPO targets',
+      'Verify that recovery procedures were updated following tests or infrastructure changes during the period',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PI1.6',
+    name: 'Processing Authorization Controls',
+    description:
+      'The entity implements authorization controls that ensure only authorized transactions are initiated and processed. Transaction authorization includes validation of requestor identity, authority level, and compliance with business rules before processing.',
+    category: 'Processing Integrity',
+    implementationGuidance:
+      'Implement transaction authorization controls that verify the identity and authority of requestors before initiating processing. Define approval hierarchies and transaction limits that require additional authorization for high-value or sensitive transactions. Log all authorization decisions including approvals, rejections, and escalations for audit purposes.',
+    evidenceRequirements: [
+      'Transaction authorization policy and approval hierarchy documentation',
+      'System configuration showing authorization controls and transaction limits',
+      'Authorization audit logs showing approval decisions and approver identities',
+      'Exception reports for unauthorized transaction attempts or override events',
+    ],
+    testProcedures: [
+      'Review authorization policies and verify that approval requirements are defined based on transaction type and value',
+      'Inspect system configurations and confirm that authorization controls enforce defined approval hierarchies',
+      'Select a sample of transactions and verify that appropriate authorization was obtained before processing',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P1.9',
+    name: 'Privacy Impact Assessments',
+    description:
+      'The entity conducts privacy impact assessments for new or significantly changed processing activities involving personal information. PIAs evaluate privacy risks and identify controls needed to mitigate those risks before processing begins.',
+    category: 'Privacy',
+    implementationGuidance:
+      'Establish a PIA process that is triggered for new projects, systems, or processing activities involving personal information. Define PIA templates that evaluate data collection scope, processing purposes, retention requirements, and sharing arrangements. Review and approve PIAs before launch and track implementation of identified privacy controls.',
+    evidenceRequirements: [
+      'Privacy impact assessment policy and procedures documentation',
+      'PIA templates and completion guides',
+      'Completed PIAs for new processing activities initiated during the period',
+      'PIA review and approval records with sign-off from privacy officer or data protection officer',
+    ],
+    testProcedures: [
+      'Review the PIA process and verify it requires assessments before initiating new personal information processing activities',
+      'Select a sample of new projects or systems involving personal information and verify that PIAs were completed and approved',
+      'Inspect PIA records and confirm that identified privacy risks were addressed through implemented controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P1.10',
+    name: 'Cross-Border Data Transfers',
+    description:
+      'The entity implements safeguards for the transfer of personal information across international borders. Transfer mechanisms comply with applicable data protection regulations and provide adequate protection for transferred data.',
+    category: 'Privacy',
+    implementationGuidance:
+      'Identify all cross-border data transfers involving personal information and document the legal basis for each transfer. Implement appropriate transfer mechanisms such as standard contractual clauses, binding corporate rules, or adequacy decisions. Conduct transfer impact assessments to evaluate the data protection landscape in recipient countries and implement supplementary measures as needed.',
+    evidenceRequirements: [
+      'Cross-border data transfer inventory and legal basis documentation',
+      'Standard contractual clauses or other transfer mechanism agreements',
+      'Transfer impact assessments for high-risk jurisdictions',
+      'Supplementary technical and organizational measures documentation',
+    ],
+    testProcedures: [
+      'Review the cross-border transfer inventory and verify that all transfers are documented with identified legal bases',
+      'Select a sample of international data transfers and verify that appropriate transfer mechanisms are in place',
+      'Inspect transfer impact assessments and confirm that supplementary measures address identified risks',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'C1.3',
+    name: 'Confidential Information Access Logging',
+    description:
+      'The entity logs and monitors access to confidential information to detect unauthorized access attempts and support forensic investigations. Access logs are retained, protected from tampering, and reviewed regularly.',
+    category: 'Confidentiality',
+    implementationGuidance:
+      'Implement comprehensive access logging for systems and repositories containing confidential information, capturing user identity, access time, accessed resources, and actions performed. Forward logs to a centralized SIEM for correlation and analysis. Establish log retention periods that meet regulatory and business requirements and protect log integrity through write-once storage or cryptographic signing.',
+    evidenceRequirements: [
+      'Access logging policy and configuration standards for confidential data systems',
+      'Log aggregation and SIEM deployment documentation',
+      'Access log review procedures and sample review reports',
+      'Log retention and integrity protection configuration records',
+    ],
+    testProcedures: [
+      'Review access logging configurations for systems containing confidential information and verify that comprehensive access events are captured',
+      'Inspect log retention settings and confirm they meet defined retention requirements',
+      'Select a sample of access log review reports and verify that suspicious access patterns were investigated and addressed',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'C1.4',
+    name: 'Confidential Information Encryption',
+    description:
+      'The entity encrypts confidential information at rest and in transit using strong cryptographic algorithms and key management practices. Encryption keys are protected, rotated regularly, and access to keys is restricted to authorized personnel.',
+    category: 'Confidentiality',
+    implementationGuidance:
+      'Implement encryption for all confidential information at rest using AES-256 or equivalent algorithms, and in transit using TLS 1.2 or higher. Deploy a key management solution that provides secure key generation, storage, rotation, and destruction. Establish key custody procedures and restrict key access to authorized administrators with appropriate segregation of duties.',
+    evidenceRequirements: [
+      'Encryption standards policy specifying algorithms and key lengths',
+      'Encryption deployment documentation for data at rest and in transit',
+      'Key management procedures and key rotation records',
+      'Key access logs and custody transfer records',
+    ],
+    testProcedures: [
+      'Review encryption configurations for systems storing confidential information and verify that approved algorithms and key lengths are used',
+      'Inspect key management records and confirm that keys are rotated according to the defined schedule',
+      'Verify that key access is restricted to authorized personnel and that key custody procedures are followed',
+    ],
+    status: 'Not Started',
+  },
 ];
