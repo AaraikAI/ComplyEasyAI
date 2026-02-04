@@ -170,6 +170,57 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started'
   },
+  {
+    controlId: 'CIS-2.4',
+    name: 'Utilize Automated Software Inventory Tools',
+    description: 'Utilize software inventory tools, where possible, throughout the enterprise to automate the discovery and documentation of installed software.',
+    category: 'IG2',
+    implementationGuidance: 'Deploy automated software inventory tools that can discover and catalog all installed software across enterprise assets. Integrate the software inventory with asset management systems and configure regular scanning to maintain accuracy.',
+    evidenceRequirements: [
+      'Software inventory tool deployment and configuration documentation',
+      'Current software inventory report showing discovered applications',
+      'Integration records between software inventory and asset management systems'
+    ],
+    testProcedures: [
+      'Review the software inventory tool configuration and verify it covers all enterprise assets',
+      'Compare the automated software inventory against manual spot checks on sample systems to verify accuracy'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-2.6',
+    name: 'Allowlist Authorized Libraries',
+    description: 'Use technical controls to ensure that only authorized software libraries, such as specific .dll, .ocx, .so, etc. files are allowed to load into a system process.',
+    category: 'IG2',
+    implementationGuidance: 'Implement controls to restrict which software libraries can be loaded by applications. Configure application control tools to monitor and restrict library loading to authorized files only.',
+    evidenceRequirements: [
+      'Library allowlisting configuration documentation',
+      'Authorized library inventory with version information',
+      'Monitoring logs showing blocked unauthorized library load attempts'
+    ],
+    testProcedures: [
+      'Attempt to load an unauthorized library and verify it is blocked',
+      'Review the authorized library list and verify it is current and documented'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-2.7',
+    name: 'Allowlist Authorized Scripts',
+    description: 'Use technical controls such as digital signatures and version control to ensure that only authorized scripts, such as specific .ps1, .py, etc. files are allowed to execute.',
+    category: 'IG3',
+    implementationGuidance: 'Implement script execution controls using code signing, execution policies, or script allowlisting. Require scripts to be digitally signed before execution and maintain a version-controlled repository of authorized scripts.',
+    evidenceRequirements: [
+      'Script execution policy configuration documentation',
+      'Code signing certificate management procedures',
+      'Authorized script repository with version control'
+    ],
+    testProcedures: [
+      'Attempt to execute an unsigned or unauthorized script and verify it is blocked',
+      'Review the script allowlist and verify digital signature requirements are enforced'
+    ],
+    status: 'Not Started'
+  },
 
   // ============================================================
   // CIS 3 - Data Protection (IG1)
@@ -259,6 +310,159 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started'
   },
+  {
+    controlId: 'CIS-3.5',
+    name: 'Securely Dispose of Data',
+    description: 'Securely dispose of data as outlined in the enterprise data management process. Ensure the disposal method is commensurate with the data sensitivity.',
+    category: 'IG1',
+    implementationGuidance: 'Implement secure data disposal procedures that match the sensitivity of the data being disposed. Use cryptographic erasure, secure overwrite, or physical destruction as appropriate. Maintain disposal records for compliance and audit purposes.',
+    evidenceRequirements: [
+      'Data disposal policy specifying methods for each data sensitivity level',
+      'Disposal records documenting date, method, and data disposed',
+      'Certificates of destruction for physical media destruction'
+    ],
+    testProcedures: [
+      'Review disposal records and verify appropriate methods were used based on data sensitivity',
+      'Verify that disposal certificates are maintained for physical media destruction'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-3.7',
+    name: 'Establish and Maintain a Data Classification Scheme',
+    description: 'Establish and maintain an overall data classification scheme for the enterprise. Enterprises may use labels such as Sensitive, Confidential, and Public, and should classify data according to those labels.',
+    category: 'IG2',
+    implementationGuidance: 'Define a data classification scheme with clear categories and handling requirements for each level. Train personnel on classification requirements and implement technical controls to enforce classification-based handling.',
+    evidenceRequirements: [
+      'Data classification policy defining categories and handling requirements',
+      'Training records for personnel on data classification',
+      'Examples of classified data with appropriate labels applied'
+    ],
+    testProcedures: [
+      'Review the data classification policy and verify it defines clear categories with handling requirements',
+      'Verify that sample data repositories have appropriate classification labels applied'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-3.8',
+    name: 'Document Data Flows',
+    description: 'Document data flows. Data flow documentation includes service provider data flows and should be based on the data management process.',
+    category: 'IG2',
+    implementationGuidance: 'Create and maintain data flow diagrams showing how sensitive data moves through the enterprise and to external parties. Include data sources, processing locations, storage locations, and transmission paths.',
+    evidenceRequirements: [
+      'Data flow diagrams for sensitive data types',
+      'Documentation of data flows to and from service providers',
+      'Annual review records for data flow documentation'
+    ],
+    testProcedures: [
+      'Review data flow documentation and verify it covers all sensitive data types',
+      'Verify data flow diagrams are current and have been reviewed within the past year'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-3.9',
+    name: 'Encrypt Data on Removable Media',
+    description: 'Encrypt data on removable media.',
+    category: 'IG2',
+    implementationGuidance: 'Require encryption for all removable media containing sensitive data. Use hardware-encrypted drives or software encryption tools. Implement policies to prevent use of unencrypted removable media for sensitive data.',
+    evidenceRequirements: [
+      'Removable media encryption policy',
+      'Inventory of approved encrypted removable media devices',
+      'Technical controls enforcing removable media encryption'
+    ],
+    testProcedures: [
+      'Verify that removable media devices are encrypted before containing sensitive data',
+      'Attempt to copy sensitive data to unencrypted removable media and verify it is blocked'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-3.10',
+    name: 'Encrypt Sensitive Data in Transit',
+    description: 'Encrypt sensitive data in transit. Example implementations can include Transport Layer Security (TLS) and Open Secure Shell (OpenSSH).',
+    category: 'IG2',
+    implementationGuidance: 'Require TLS 1.2 or higher for all sensitive data transmission. Disable legacy protocols and weak cipher suites. Implement certificate management for TLS certificates.',
+    evidenceRequirements: [
+      'Data in transit encryption policy specifying required protocols',
+      'System configurations showing TLS enforcement',
+      'Certificate inventory and management records'
+    ],
+    testProcedures: [
+      'Scan systems for TLS configuration and verify only approved protocols are enabled',
+      'Capture network traffic and verify sensitive data is encrypted in transit'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-3.11',
+    name: 'Encrypt Sensitive Data at Rest',
+    description: 'Encrypt sensitive data at rest on servers, applications, and databases containing sensitive data. Storage-layer encryption, also known as server-side encryption, meets the minimum requirement of this safeguard.',
+    category: 'IG2',
+    implementationGuidance: 'Implement encryption for all storage containing sensitive data including databases, file servers, and cloud storage. Use encryption solutions that meet compliance requirements and implement proper key management.',
+    evidenceRequirements: [
+      'Data at rest encryption policy',
+      'Encryption configuration for databases and storage systems',
+      'Key management procedures and records'
+    ],
+    testProcedures: [
+      'Verify that storage systems containing sensitive data have encryption enabled',
+      'Review key management procedures and verify keys are properly protected'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-3.12',
+    name: 'Segment Data Processing and Storage Based on Sensitivity',
+    description: 'Segment data processing and storage based on the sensitivity of the data. Do not process sensitive data on enterprise assets intended for lower sensitivity data.',
+    category: 'IG2',
+    implementationGuidance: 'Implement network segmentation and access controls to separate systems processing different data sensitivity levels. Use dedicated systems or virtual environments for highly sensitive data processing.',
+    evidenceRequirements: [
+      'Data segmentation architecture documentation',
+      'Network segmentation configurations',
+      'Access control lists separating data sensitivity levels'
+    ],
+    testProcedures: [
+      'Review network architecture and verify data segmentation is implemented',
+      'Attempt to access high-sensitivity data from low-sensitivity segments and verify access is blocked'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-3.13',
+    name: 'Deploy a Data Loss Prevention Solution',
+    description: 'Implement an automated tool, such as a host-based data loss prevention (DLP) tool, to identify all sensitive data stored, processed, or transmitted through enterprise assets.',
+    category: 'IG3',
+    implementationGuidance: 'Deploy DLP solutions covering endpoints, network, and cloud services. Configure policies to detect and prevent unauthorized transmission of sensitive data. Integrate DLP with incident response processes.',
+    evidenceRequirements: [
+      'DLP solution deployment documentation',
+      'DLP policy configurations',
+      'DLP incident reports and response records'
+    ],
+    testProcedures: [
+      'Attempt to transmit test sensitive data and verify DLP detects and blocks it',
+      'Review DLP coverage reports and verify all data channels are monitored'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-3.14',
+    name: 'Log Sensitive Data Access',
+    description: 'Log sensitive data access, including modification and disposal.',
+    category: 'IG3',
+    implementationGuidance: 'Enable audit logging for all access to sensitive data including reads, writes, modifications, and deletions. Centralize logs and implement alerting for suspicious access patterns.',
+    evidenceRequirements: [
+      'Sensitive data access logging configuration',
+      'Sample audit logs showing data access events',
+      'Alerting rules for suspicious data access'
+    ],
+    testProcedures: [
+      'Access sensitive data and verify the access is logged with appropriate detail',
+      'Review alerting rules and verify they detect suspicious access patterns'
+    ],
+    status: 'Not Started'
+  },
 
   // ============================================================
   // CIS 4 - Secure Configuration of Enterprise Assets and Software (IG1)
@@ -345,6 +549,125 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     testProcedures: [
       'Attempt to authenticate using well-known default credentials on a sample of enterprise assets and verify that default accounts are disabled or passwords have been changed',
       'Review the default account tracking list against a sample of recently deployed assets to confirm the SOP was followed'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-4.5',
+    name: 'Implement and Manage a Firewall on Servers',
+    description: 'Implement and manage a firewall on servers where supported and applicable. Example implementations include a virtual firewall, operating system firewall, or a third-party firewall agent.',
+    category: 'IG1',
+    implementationGuidance: 'Enable host-based firewalls on all servers and configure rules to allow only necessary traffic. Centrally manage firewall policies where possible and regularly review rules for accuracy.',
+    evidenceRequirements: [
+      'Server firewall policy specifying required configurations',
+      'Firewall rule sets for each server type',
+      'Firewall management and monitoring records'
+    ],
+    testProcedures: [
+      'Verify host-based firewalls are enabled on a sample of servers',
+      'Review firewall rules and verify only necessary traffic is permitted'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-4.6',
+    name: 'Securely Manage Enterprise Assets and Software',
+    description: 'Securely manage enterprise assets and software. Example implementations include managing configuration through version-controlled infrastructure-as-code and accessing administrative interfaces over secure network protocols.',
+    category: 'IG1',
+    implementationGuidance: 'Use configuration management tools and version control for infrastructure configurations. Require secure protocols (SSH, HTTPS) for all administrative access. Implement change management for configuration changes.',
+    evidenceRequirements: [
+      'Configuration management tool deployment documentation',
+      'Version control repository for infrastructure configurations',
+      'Secure protocol requirements for administrative access'
+    ],
+    testProcedures: [
+      'Verify that configuration changes are tracked in version control',
+      'Verify that administrative access uses secure protocols only'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-4.8',
+    name: 'Uninstall or Disable Unnecessary Services on Enterprise Assets and Software',
+    description: 'Uninstall or disable unnecessary services on enterprise assets and software such as an unused file sharing service, web application module, or service function.',
+    category: 'IG2',
+    implementationGuidance: 'Identify and document required services for each asset type. Disable or uninstall services not required for business function. Regularly audit systems for unnecessary services.',
+    evidenceRequirements: [
+      'Baseline service requirements for each asset type',
+      'Service audit reports showing disabled unnecessary services',
+      'Configuration standards for minimal service deployment'
+    ],
+    testProcedures: [
+      'Scan a sample of systems for running services and compare against baseline requirements',
+      'Verify unnecessary services are disabled or uninstalled'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-4.9',
+    name: 'Configure Trusted DNS Servers on Enterprise Assets',
+    description: 'Configure trusted DNS servers on enterprise assets. Example implementations include configuring assets to use enterprise-controlled DNS servers and/or reputable externally accessible DNS servers.',
+    category: 'IG2',
+    implementationGuidance: 'Deploy enterprise DNS servers and configure all assets to use them. Implement DNS security features such as DNSSEC and DNS filtering. Block direct external DNS queries from endpoints.',
+    evidenceRequirements: [
+      'DNS configuration policy specifying approved DNS servers',
+      'System configurations showing DNS server settings',
+      'Network controls blocking unauthorized DNS traffic'
+    ],
+    testProcedures: [
+      'Verify that systems are configured to use approved DNS servers',
+      'Attempt to use an unauthorized DNS server and verify it is blocked'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-4.10',
+    name: 'Enforce Automatic Device Lockout on Portable End-User Devices',
+    description: 'Enforce automatic device lockout following a predetermined threshold of local failed authentication attempts on portable end-user devices where supported.',
+    category: 'IG2',
+    implementationGuidance: 'Configure mobile devices and laptops to lock after a defined number of failed authentication attempts. Implement device wipe after excessive failed attempts for mobile devices.',
+    evidenceRequirements: [
+      'Device lockout policy specifying thresholds',
+      'MDM configuration showing lockout enforcement',
+      'Compliance reports showing lockout policy deployment'
+    ],
+    testProcedures: [
+      'Exceed the failed authentication threshold and verify device lockout occurs',
+      'Review MDM compliance reports for lockout policy enforcement'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-4.11',
+    name: 'Enforce Remote Wipe Capability on Portable End-User Devices',
+    description: 'Remotely wipe enterprise data from enterprise-owned portable end-user devices when deemed appropriate such as lost or stolen devices, or when an individual no longer supports the enterprise.',
+    category: 'IG2',
+    implementationGuidance: 'Enroll all portable devices in MDM with remote wipe capability enabled. Establish procedures for initiating remote wipe when devices are lost, stolen, or when employees separate.',
+    evidenceRequirements: [
+      'Remote wipe policy and procedures',
+      'MDM configuration showing remote wipe capability',
+      'Records of remote wipe actions taken'
+    ],
+    testProcedures: [
+      'Verify MDM is configured with remote wipe capability for enrolled devices',
+      'Review procedures and verify they address device loss and employee separation scenarios'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-4.12',
+    name: 'Separate Enterprise Workspaces on Mobile End-User Devices',
+    description: 'Ensure separate enterprise workspaces on mobile end-user devices where supported. Example implementations include using an EMM container or using separate browser profiles.',
+    category: 'IG3',
+    implementationGuidance: 'Deploy containerization or workspace separation on mobile devices to isolate enterprise data from personal data. Configure enterprise workspace with appropriate security controls.',
+    evidenceRequirements: [
+      'Mobile workspace separation policy',
+      'Container or workspace configuration documentation',
+      'Deployment reports showing workspace separation on managed devices'
+    ],
+    testProcedures: [
+      'Verify that enterprise data is isolated in a separate workspace on mobile devices',
+      'Verify that enterprise workspace has appropriate security controls enabled'
     ],
     status: 'Not Started'
   },
@@ -543,6 +866,57 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started'
   },
+  {
+    controlId: 'CIS-6.6',
+    name: 'Establish and Maintain an Inventory of Authentication and Authorization Systems',
+    description: 'Establish and maintain an inventory of the enterprise authentication and authorization systems including those hosted on-site or at a remote service provider.',
+    category: 'IG2',
+    implementationGuidance: 'Document all systems that provide authentication or authorization services including directory services, identity providers, single sign-on solutions, and certificate authorities. Include ownership, criticality, and integration details.',
+    evidenceRequirements: [
+      'Inventory of authentication and authorization systems',
+      'System documentation including ownership and criticality',
+      'Integration diagrams showing authentication flows'
+    ],
+    testProcedures: [
+      'Review the inventory and verify all authentication systems are documented',
+      'Verify the inventory is current and has been reviewed within the past year'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-6.7',
+    name: 'Centralize Access Control',
+    description: 'Centralize access control for all enterprise assets through a directory service or SSO provider where supported.',
+    category: 'IG2',
+    implementationGuidance: 'Integrate all applications and systems with centralized directory services or SSO where supported. Eliminate local accounts where possible and federate access management.',
+    evidenceRequirements: [
+      'Centralized access control architecture documentation',
+      'List of systems integrated with directory or SSO',
+      'Exceptions list for systems not integrated with justification'
+    ],
+    testProcedures: [
+      'Verify that systems are integrated with centralized access control',
+      'Review exceptions and verify they have valid justification'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-6.8',
+    name: 'Define and Maintain Role-Based Access Control',
+    description: 'Define and maintain role-based access control by determining and documenting the access rights necessary for each role within the enterprise to successfully carry out its assigned duties.',
+    category: 'IG3',
+    implementationGuidance: 'Define roles based on job functions and document required access rights for each role. Implement role-based access control in systems and conduct regular access reviews to ensure role assignments remain appropriate.',
+    evidenceRequirements: [
+      'Role definitions with required access rights',
+      'Role-based access control implementation in systems',
+      'Access review records confirming role appropriateness'
+    ],
+    testProcedures: [
+      'Review role definitions and verify access rights align with job functions',
+      'Verify that access reviews are conducted per schedule'
+    ],
+    status: 'Not Started'
+  },
 
   // ============================================================
   // CIS 7 - Continuous Vulnerability Management (IG2)
@@ -612,6 +986,57 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     testProcedures: [
       'Review application patch compliance reports to verify that third-party applications are being patched within the defined monthly schedule',
       'Select a sample of enterprise assets and verify that critical third-party applications are running the latest patched versions'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-7.5',
+    name: 'Perform Automated Vulnerability Scans of Internal Enterprise Assets',
+    description: 'Perform automated vulnerability scans of internal enterprise assets on a quarterly basis or more frequently. Conduct both authenticated and unauthenticated scans using a SCAP-compliant vulnerability scanning tool.',
+    category: 'IG2',
+    implementationGuidance: 'Deploy vulnerability scanning tools capable of authenticated scanning across all internal network segments. Configure regular scan schedules and ensure credential management for authenticated scans.',
+    evidenceRequirements: [
+      'Vulnerability scanning tool configuration and schedules',
+      'Quarterly vulnerability scan reports',
+      'Authenticated scanning credential management documentation'
+    ],
+    testProcedures: [
+      'Review scan schedules and verify quarterly scanning is configured',
+      'Review scan reports and verify authenticated scanning is used'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-7.6',
+    name: 'Perform Automated Vulnerability Scans of Externally-Exposed Enterprise Assets',
+    description: 'Perform automated vulnerability scans of externally-exposed enterprise assets using a SCAP-compliant vulnerability scanning tool. Perform scans on a monthly basis or more frequently.',
+    category: 'IG2',
+    implementationGuidance: 'Conduct external vulnerability scans of all internet-facing assets monthly or more frequently. Use external scanning services or position scanners outside the network perimeter.',
+    evidenceRequirements: [
+      'External vulnerability scan schedules and configurations',
+      'Monthly external scan reports',
+      'Inventory of externally-exposed assets covered by scanning'
+    ],
+    testProcedures: [
+      'Review scan schedules and verify monthly external scanning is configured',
+      'Verify all externally-exposed assets are included in scan scope'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-7.7',
+    name: 'Remediate Detected Vulnerabilities',
+    description: 'Remediate detected vulnerabilities in software through processes and tooling on a monthly, or more frequent, basis based on the remediation process.',
+    category: 'IG2',
+    implementationGuidance: 'Establish risk-based remediation timelines based on vulnerability severity. Track remediation progress and escalate overdue items. Validate remediation through follow-up scanning.',
+    evidenceRequirements: [
+      'Vulnerability remediation policy with timelines',
+      'Remediation tracking records',
+      'Follow-up scan results validating remediation'
+    ],
+    testProcedures: [
+      'Review remediation tracking and verify timelines are met',
+      'Verify remediation is validated through follow-up scanning'
     ],
     status: 'Not Started'
   },
@@ -704,6 +1129,125 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started'
   },
+  {
+    controlId: 'CIS-8.4',
+    name: 'Standardize Time Synchronization',
+    description: 'Standardize time synchronization. Configure at least two synchronized time sources across enterprise assets where supported.',
+    category: 'IG2',
+    implementationGuidance: 'Configure all enterprise assets to synchronize time with authoritative NTP servers. Use multiple time sources for redundancy and monitor time synchronization status.',
+    evidenceRequirements: [
+      'NTP configuration policy specifying time sources',
+      'System configurations showing NTP settings',
+      'Time synchronization monitoring records'
+    ],
+    testProcedures: [
+      'Verify systems are configured with approved NTP servers',
+      'Verify time is synchronized across systems by comparing timestamps'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-8.6',
+    name: 'Collect DNS Query Audit Logs',
+    description: 'Collect DNS query audit logs on enterprise assets where appropriate and supported.',
+    category: 'IG2',
+    implementationGuidance: 'Enable DNS query logging on DNS servers and configure endpoints to log DNS queries where possible. Forward DNS logs to the centralized log management system.',
+    evidenceRequirements: [
+      'DNS logging configuration on DNS servers',
+      'DNS log samples showing query details',
+      'Integration of DNS logs with centralized logging'
+    ],
+    testProcedures: [
+      'Verify DNS query logging is enabled on DNS servers',
+      'Verify DNS logs are forwarded to centralized log management'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-8.7',
+    name: 'Collect URL Request Audit Logs',
+    description: 'Collect URL request audit logs on enterprise assets where appropriate and supported.',
+    category: 'IG2',
+    implementationGuidance: 'Enable URL logging on web proxies and web security gateways. Configure browsers or endpoints to log web requests where proxy logging is not available.',
+    evidenceRequirements: [
+      'URL logging configuration on proxies and gateways',
+      'URL log samples showing request details',
+      'Integration of URL logs with centralized logging'
+    ],
+    testProcedures: [
+      'Verify URL logging is enabled on web proxies',
+      'Verify URL logs are forwarded to centralized log management'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-8.8',
+    name: 'Collect Command-Line Audit Logs',
+    description: 'Collect command-line audit logs. Example implementations include collecting audit logs from PowerShell, BASH, and remote administrative terminals.',
+    category: 'IG2',
+    implementationGuidance: 'Enable command-line auditing on all systems. Configure PowerShell script block logging and transcription on Windows. Enable audit logging for shell commands on Linux/Unix systems.',
+    evidenceRequirements: [
+      'Command-line logging configuration documentation',
+      'Sample command-line logs showing captured commands',
+      'Integration of command-line logs with centralized logging'
+    ],
+    testProcedures: [
+      'Execute commands and verify they are logged',
+      'Verify command-line logs are forwarded to centralized log management'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-8.10',
+    name: 'Retain Audit Logs',
+    description: 'Retain audit logs across enterprise assets for a minimum of 90 days.',
+    category: 'IG2',
+    implementationGuidance: 'Configure log retention policies to retain logs for at least 90 days online and archive logs for longer periods as required by compliance. Implement log rotation and archival processes.',
+    evidenceRequirements: [
+      'Log retention policy specifying retention periods',
+      'Log storage configuration showing retention settings',
+      'Evidence of logs available for at least 90 days'
+    ],
+    testProcedures: [
+      'Verify log retention configuration meets 90-day minimum',
+      'Verify logs from 90 days ago are accessible'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-8.11',
+    name: 'Conduct Audit Log Reviews',
+    description: 'Conduct reviews of audit logs to detect anomalies or abnormal events that could indicate a potential threat. Conduct reviews on a weekly basis or more frequently.',
+    category: 'IG2',
+    implementationGuidance: 'Establish regular log review processes using SIEM dashboards and alerts. Define review procedures for different log types and escalation paths for suspicious findings.',
+    evidenceRequirements: [
+      'Log review procedures and schedules',
+      'Log review records documenting reviews performed',
+      'Escalation records for suspicious findings'
+    ],
+    testProcedures: [
+      'Review log review records and verify weekly reviews are conducted',
+      'Verify escalation procedures are followed for suspicious findings'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-8.12',
+    name: 'Collect Service Provider Logs',
+    description: 'Collect service provider logs where supported. Example implementations include collecting authentication and authorization events, data creation and disposal events, and user management events.',
+    category: 'IG3',
+    implementationGuidance: 'Enable logging in cloud and SaaS services and forward logs to centralized log management. Ensure logs include authentication, authorization, data access, and administrative events.',
+    evidenceRequirements: [
+      'Service provider logging configuration documentation',
+      'Log integration records for each service provider',
+      'Sample logs from service providers'
+    ],
+    testProcedures: [
+      'Verify logging is enabled in service provider environments',
+      'Verify service provider logs are forwarded to centralized logging'
+    ],
+    status: 'Not Started'
+  },
 
   // ============================================================
   // CIS 9 - Email and Web Browser Protections (IG2)
@@ -776,6 +1320,57 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started'
   },
+  {
+    controlId: 'CIS-9.4',
+    name: 'Restrict Unnecessary or Unauthorized Browser and Email Client Extensions',
+    description: 'Restrict, either through uninstalling or disabling, any unauthorized or unnecessary browser or email client plugins, extensions, and add-on applications.',
+    category: 'IG2',
+    implementationGuidance: 'Implement browser and email client extension management through group policy or endpoint management tools. Maintain an allowlist of approved extensions and block unauthorized extensions.',
+    evidenceRequirements: [
+      'Extension management policy specifying approved extensions',
+      'Configuration showing extension restrictions',
+      'Audit reports showing extension compliance'
+    ],
+    testProcedures: [
+      'Attempt to install an unauthorized extension and verify it is blocked',
+      'Review extension compliance reports'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-9.5',
+    name: 'Implement DMARC',
+    description: 'Implement DMARC to lower the chance of spoofed or modified emails from valid domains. Start with DMARC monitoring mode to ensure legitimate email is not blocked, then move to enforcement mode.',
+    category: 'IG2',
+    implementationGuidance: 'Configure DMARC records for all organizational domains starting with monitoring mode (p=none). Analyze DMARC reports to identify legitimate email sources and configure SPF and DKIM accordingly before moving to enforcement.',
+    evidenceRequirements: [
+      'DMARC DNS records for organizational domains',
+      'DMARC aggregate report analysis records',
+      'SPF and DKIM configuration documentation'
+    ],
+    testProcedures: [
+      'Verify DMARC records are published for organizational domains',
+      'Review DMARC reports and verify legitimate sources are properly authenticated'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-9.6',
+    name: 'Block Unnecessary File Types',
+    description: 'Block unnecessary file types attempting to enter the enterprise email gateway.',
+    category: 'IG2',
+    implementationGuidance: 'Configure email gateways to block high-risk file types that are not required for business operations. Include executable files, script files, and other potentially dangerous attachments.',
+    evidenceRequirements: [
+      'Email gateway file blocking configuration',
+      'List of blocked file types with business justification',
+      'Blocking statistics and exception records'
+    ],
+    testProcedures: [
+      'Send an email with a blocked file type and verify it is rejected',
+      'Review file blocking configuration and verify it covers high-risk file types'
+    ],
+    status: 'Not Started'
+  },
 
   // ============================================================
   // CIS 10 - Malware Defenses (IG2)
@@ -845,6 +1440,57 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     testProcedures: [
       'Review the EDR or behavior-based anti-malware console to verify deployment coverage and confirm behavioral analysis policies are active',
       'Execute a benign behavioral test scenario (such as an approved red team tool in test mode) and verify the behavior-based engine detects and alerts on the suspicious activity'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-10.4',
+    name: 'Configure Automatic Anti-Malware Scanning of Removable Media',
+    description: 'Configure anti-malware software to automatically scan removable media.',
+    category: 'IG2',
+    implementationGuidance: 'Configure endpoint anti-malware to automatically scan removable media when inserted. Enable real-time scanning for all files accessed from removable media.',
+    evidenceRequirements: [
+      'Anti-malware configuration showing removable media scanning',
+      'Scan logs showing removable media scan events',
+      'Policy documentation for removable media scanning'
+    ],
+    testProcedures: [
+      'Insert removable media and verify automatic scanning occurs',
+      'Review anti-malware configuration for removable media scanning settings'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-10.5',
+    name: 'Enable Anti-Exploitation Features',
+    description: 'Enable anti-exploitation features on enterprise assets and software where possible, such as Microsoft Data Execution Prevention (DEP), Windows Defender Exploit Guard (WDEG), or Apple System Integrity Protection (SIP).',
+    category: 'IG2',
+    implementationGuidance: 'Enable operating system and application anti-exploitation features. Configure DEP, ASLR, CFG, and other exploit mitigation technologies. Deploy WDEG or equivalent solutions for advanced exploit protection.',
+    evidenceRequirements: [
+      'Anti-exploitation feature configuration documentation',
+      'System configurations showing enabled features',
+      'Compliance reports for anti-exploitation coverage'
+    ],
+    testProcedures: [
+      'Verify DEP, ASLR, and other anti-exploitation features are enabled',
+      'Review compliance reports for anti-exploitation coverage'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-10.6',
+    name: 'Centrally Manage Anti-Malware Software',
+    description: 'Centrally manage anti-malware software.',
+    category: 'IG2',
+    implementationGuidance: 'Deploy centralized anti-malware management console for policy deployment, status monitoring, and alert management. Configure all endpoints to report to the central management system.',
+    evidenceRequirements: [
+      'Centralized anti-malware management console documentation',
+      'Endpoint registration and compliance reports',
+      'Centralized alerting and response records'
+    ],
+    testProcedures: [
+      'Verify all endpoints report to centralized management',
+      'Review centralized management dashboard for coverage and compliance'
     ],
     status: 'Not Started'
   },
@@ -1009,6 +1655,74 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started'
   },
+  {
+    controlId: 'CIS-12.5',
+    name: 'Centralize Network Authentication, Authorization, and Auditing (AAA)',
+    description: 'Centralize network AAA.',
+    category: 'IG2',
+    implementationGuidance: 'Implement centralized AAA services using RADIUS, TACACS+, or equivalent protocols for network device authentication. Configure all network devices to use centralized AAA and log all authentication events.',
+    evidenceRequirements: [
+      'Centralized AAA architecture documentation',
+      'Network device configurations showing AAA integration',
+      'AAA authentication and authorization logs'
+    ],
+    testProcedures: [
+      'Verify network devices use centralized AAA for authentication',
+      'Review AAA logs and verify authentication events are captured'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-12.6',
+    name: 'Use of Secure Network Management and Communication Protocols',
+    description: 'Use secure network management and communication protocols such as 802.1X, Wi-Fi Protected Access 2 (WPA2) Enterprise or greater, and Transport Layer Security (TLS) where available.',
+    category: 'IG2',
+    implementationGuidance: 'Configure all network management interfaces to use encrypted protocols (SSH, HTTPS, SNMPv3). Deploy 802.1X for wired and wireless network access control. Require WPA2/WPA3 Enterprise for wireless networks.',
+    evidenceRequirements: [
+      'Secure protocol requirements for network management',
+      '802.1X deployment documentation',
+      'Wireless security configuration showing WPA2/WPA3 Enterprise'
+    ],
+    testProcedures: [
+      'Verify network management uses secure protocols only',
+      'Verify 802.1X is deployed for network access control'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-12.7',
+    name: 'Ensure Remote Devices Utilize a VPN and are Connecting to an Enterprise AAA Infrastructure',
+    description: 'Require users to authenticate to enterprise-managed VPN and authentication infrastructure prior to accessing enterprise resources on end-user devices.',
+    category: 'IG2',
+    implementationGuidance: 'Deploy enterprise VPN solution and require all remote access through VPN. Integrate VPN authentication with enterprise AAA infrastructure and require MFA for VPN access.',
+    evidenceRequirements: [
+      'VPN deployment and configuration documentation',
+      'VPN integration with AAA infrastructure',
+      'VPN access logs showing authentication events'
+    ],
+    testProcedures: [
+      'Verify VPN is required for remote access',
+      'Verify VPN authentication integrates with enterprise AAA'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-12.8',
+    name: 'Establish and Maintain Dedicated Computing Resources for All Administrative Work',
+    description: 'Establish and maintain dedicated computing resources, either physically or logically separated, for all administrative tasks.',
+    category: 'IG3',
+    implementationGuidance: 'Deploy privileged access workstations (PAWs) or jump servers for administrative access. Isolate administrative workstations from standard user networks and restrict internet access.',
+    evidenceRequirements: [
+      'PAW or jump server deployment documentation',
+      'Network segmentation for administrative workstations',
+      'Access controls restricting administrative workstation use'
+    ],
+    testProcedures: [
+      'Verify administrative workstations are isolated from user networks',
+      'Verify administrative tasks are performed only from dedicated resources'
+    ],
+    status: 'Not Started'
+  },
 
   // ============================================================
   // CIS 13 - Network Monitoring and Defense (IG3)
@@ -1078,6 +1792,125 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     testProcedures: [
       'Review the monthly alert tuning records to verify regular reviews are occurring and threshold adjustments are documented with rationale',
       'Compare alert quality metrics over the past quarter to verify false positive rates are trending downward and detection effectiveness is maintained or improved'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-13.2',
+    name: 'Deploy a Host-Based Intrusion Detection Solution',
+    description: 'Deploy a host-based intrusion detection solution on enterprise assets where appropriate and supported.',
+    category: 'IG2',
+    implementationGuidance: 'Deploy HIDS on critical servers and workstations. Configure detection rules for known attack patterns and suspicious behavior. Integrate alerts with centralized security monitoring.',
+    evidenceRequirements: [
+      'HIDS deployment coverage documentation',
+      'Detection rule configurations',
+      'Alert integration with SIEM'
+    ],
+    testProcedures: [
+      'Verify HIDS is deployed on critical assets',
+      'Trigger a test alert and verify it is captured in centralized monitoring'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-13.4',
+    name: 'Perform Traffic Filtering Between Network Segments',
+    description: 'Perform traffic filtering between network segments as appropriate.',
+    category: 'IG2',
+    implementationGuidance: 'Implement firewall rules or ACLs between network segments to restrict traffic to only what is required. Document allowed traffic flows and review rules regularly.',
+    evidenceRequirements: [
+      'Inter-segment traffic filtering rules',
+      'Documentation of allowed traffic flows',
+      'Rule review records'
+    ],
+    testProcedures: [
+      'Verify traffic filtering is in place between segments',
+      'Attempt unauthorized cross-segment traffic and verify it is blocked'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-13.5',
+    name: 'Manage Access Control for Remote Assets',
+    description: 'Manage access control for assets remotely connecting to enterprise resources. Determine level of access based on device compliance.',
+    category: 'IG2',
+    implementationGuidance: 'Implement network access control (NAC) that evaluates device compliance before granting access. Restrict non-compliant devices to remediation networks or deny access entirely.',
+    evidenceRequirements: [
+      'NAC deployment and configuration documentation',
+      'Compliance check criteria',
+      'Non-compliant device handling procedures'
+    ],
+    testProcedures: [
+      'Verify NAC evaluates device compliance before granting access',
+      'Connect a non-compliant device and verify restricted access'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-13.7',
+    name: 'Deploy a Host-Based Intrusion Prevention Solution',
+    description: 'Deploy a host-based intrusion prevention solution on enterprise assets where appropriate and supported.',
+    category: 'IG3',
+    implementationGuidance: 'Deploy HIPS on critical servers and workstations with prevention rules enabled. Configure response actions for detected threats and integrate with incident response processes.',
+    evidenceRequirements: [
+      'HIPS deployment coverage documentation',
+      'Prevention rule configurations',
+      'Blocking event logs and response records'
+    ],
+    testProcedures: [
+      'Verify HIPS is deployed with prevention enabled',
+      'Trigger a test scenario and verify blocking occurs'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-13.8',
+    name: 'Deploy a Network Intrusion Prevention Solution',
+    description: 'Deploy a network intrusion prevention solution where appropriate.',
+    category: 'IG3',
+    implementationGuidance: 'Deploy NIPS at network boundaries and critical internal segments. Configure prevention rules for known attack signatures and anomalous behavior. Tune rules to minimize false positives.',
+    evidenceRequirements: [
+      'NIPS deployment architecture documentation',
+      'Prevention rule configurations',
+      'Blocking event logs and tuning records'
+    ],
+    testProcedures: [
+      'Verify NIPS is deployed at network boundaries',
+      'Review prevention logs and verify blocking is occurring'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-13.9',
+    name: 'Deploy Port-Level Access Control',
+    description: 'Deploy port-level access control. Port-level access control utilizes 802.1X or similar network access control protocols.',
+    category: 'IG3',
+    implementationGuidance: 'Deploy 802.1X authentication on all network ports. Configure authentication requirements and VLAN assignment based on device and user identity. Handle authentication failures appropriately.',
+    evidenceRequirements: [
+      '802.1X deployment documentation',
+      'Switch configurations showing 802.1X enablement',
+      'Authentication logs and exception records'
+    ],
+    testProcedures: [
+      'Verify 802.1X is enabled on network ports',
+      'Connect an unauthenticated device and verify access is blocked or restricted'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-13.10',
+    name: 'Perform Application Layer Filtering',
+    description: 'Perform application layer filtering. Example implementations include web application firewalls, email filtering, and DNS filtering.',
+    category: 'IG3',
+    implementationGuidance: 'Deploy application layer filtering for web traffic (WAF), email (secure email gateway), and DNS (DNS filtering). Configure policies to block malicious content and applications.',
+    evidenceRequirements: [
+      'Application layer filtering deployment documentation',
+      'Filtering policies and configurations',
+      'Filtering event logs'
+    ],
+    testProcedures: [
+      'Verify application layer filtering is deployed for critical protocols',
+      'Test filtering by accessing blocked content and verify blocking'
     ],
     status: 'Not Started'
   },
@@ -1153,6 +1986,91 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started'
   },
+  {
+    controlId: 'CIS-14.4',
+    name: 'Train Workforce on Data Handling Best Practices',
+    description: 'Train workforce members on data handling best practices. Example topics include not leaving sensitive data in the clear, avoiding storing sensitive data in unsecured locations, and properly disposing of documents with sensitive data.',
+    category: 'IG1',
+    implementationGuidance: 'Include data handling training in the security awareness program covering classification, handling, storage, and disposal requirements. Provide practical examples relevant to employee roles.',
+    evidenceRequirements: [
+      'Data handling training materials and curriculum',
+      'Training completion records',
+      'Assessment results for data handling knowledge'
+    ],
+    testProcedures: [
+      'Review data handling training content for completeness',
+      'Verify training completion rates meet targets'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-14.5',
+    name: 'Train Workforce Members on Causes of Unintentional Data Exposure',
+    description: 'Train workforce members on causes of unintentional data exposure, such as losing devices, posting information to wrong recipients, or misconfiguring access permissions.',
+    category: 'IG1',
+    implementationGuidance: 'Develop training content covering common causes of data exposure including device loss, misdirected communications, and misconfigured sharing. Use real-world examples and scenarios.',
+    evidenceRequirements: [
+      'Training materials covering unintentional data exposure',
+      'Training completion records',
+      'Incident data showing training effectiveness'
+    ],
+    testProcedures: [
+      'Review training content for coverage of unintentional exposure scenarios',
+      'Track data exposure incidents and correlate with training'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-14.6',
+    name: 'Train Workforce Members on Recognizing and Reporting Security Incidents',
+    description: 'Train workforce members on how to recognize potential security incidents and how to report them.',
+    category: 'IG1',
+    implementationGuidance: 'Train employees to recognize indicators of security incidents and provide clear reporting procedures. Include examples of common incidents and how to report them.',
+    evidenceRequirements: [
+      'Incident recognition training materials',
+      'Reporting procedures documentation',
+      'Training completion records'
+    ],
+    testProcedures: [
+      'Review training for incident recognition coverage',
+      'Verify reporting procedures are communicated'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-14.7',
+    name: 'Train Workforce Members on How to Recognize Social Engineering Attacks',
+    description: 'Train workforce members on how to recognize common social engineering attacks such as phishing, pretexting, and tailgating.',
+    category: 'IG2',
+    implementationGuidance: 'Provide comprehensive social engineering awareness training covering phishing, vishing, pretexting, and physical social engineering. Conduct periodic simulated attacks to reinforce training.',
+    evidenceRequirements: [
+      'Social engineering training materials',
+      'Phishing simulation results',
+      'Training completion and assessment records'
+    ],
+    testProcedures: [
+      'Review social engineering training content',
+      'Review phishing simulation results and remediation training'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-14.8',
+    name: 'Train Workforce Members on Authentication Best Practices',
+    description: 'Train workforce members on authentication best practices including MFA use, password creation, and credential management.',
+    category: 'IG2',
+    implementationGuidance: 'Train employees on strong password creation, MFA enrollment and use, and secure credential management. Cover risks of password reuse and sharing.',
+    evidenceRequirements: [
+      'Authentication best practices training materials',
+      'Training completion records',
+      'MFA enrollment rates'
+    ],
+    testProcedures: [
+      'Review authentication training content',
+      'Verify MFA enrollment rates post-training'
+    ],
+    status: 'Not Started'
+  },
 
   // ============================================================
   // CIS 15 - Service Provider Management (IG3)
@@ -1222,6 +2140,57 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     testProcedures: [
       'Review a sample of executed service provider contracts to verify they include required security clauses covering encryption, incident notification, audit rights, and data handling',
       'Verify the contract review process by checking that recently executed contracts went through the documented legal and security review process'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-15.5',
+    name: 'Assess Service Providers',
+    description: 'Assess service providers consistent with the enterprise assessment and authorization policy. Assessment should include review of any third-party or independent audit reports.',
+    category: 'IG3',
+    implementationGuidance: 'Conduct initial and periodic assessments of service providers based on data sensitivity and criticality. Review SOC 2 reports, security questionnaires, and conduct on-site assessments as appropriate.',
+    evidenceRequirements: [
+      'Service provider assessment policy and criteria',
+      'Assessment records for each service provider',
+      'SOC 2 or equivalent audit reports'
+    ],
+    testProcedures: [
+      'Verify assessments are conducted per the defined schedule',
+      'Review assessment documentation for completeness'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-15.6',
+    name: 'Monitor Service Providers',
+    description: 'Monitor service providers consistent with the enterprise security service provider management policy. Monitoring may include periodic reassessment, review of security alerts, and tracking of security incidents.',
+    category: 'IG3',
+    implementationGuidance: 'Establish ongoing monitoring processes for service providers including security alert tracking, incident monitoring, and periodic reassessment. Define monitoring frequency based on risk.',
+    evidenceRequirements: [
+      'Service provider monitoring policy and procedures',
+      'Monitoring records and alert tracking',
+      'Periodic reassessment records'
+    ],
+    testProcedures: [
+      'Verify monitoring is conducted per the defined schedule',
+      'Review incident tracking for service provider-related incidents'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-15.7',
+    name: 'Securely Decommission Service Providers',
+    description: 'Securely decommission service providers. Example considerations include user and service account deactivation, termination of data flows, and secure data disposal.',
+    category: 'IG3',
+    implementationGuidance: 'Develop decommissioning procedures covering account termination, data retrieval, secure data destruction, and access revocation. Execute decommissioning checklist for each terminated provider.',
+    evidenceRequirements: [
+      'Service provider decommissioning procedures',
+      'Decommissioning checklist template',
+      'Completed decommissioning records'
+    ],
+    testProcedures: [
+      'Review decommissioning procedures for completeness',
+      'Verify decommissioning records for recently terminated providers'
     ],
     status: 'Not Started'
   },
@@ -1297,6 +2266,176 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started'
   },
+  {
+    controlId: 'CIS-16.4',
+    name: 'Establish and Manage an Inventory of Third-Party Software Components',
+    description: 'Establish and manage an updated inventory of third-party software components used in development, often referred to as a software bill of materials.',
+    category: 'IG2',
+    implementationGuidance: 'Generate and maintain software bills of materials (SBOM) for all applications. Track third-party libraries, frameworks, and components including versions and known vulnerabilities.',
+    evidenceRequirements: [
+      'SBOM generation process documentation',
+      'Current SBOMs for applications',
+      'Vulnerability tracking for third-party components'
+    ],
+    testProcedures: [
+      'Verify SBOMs are maintained for applications',
+      'Review vulnerability tracking for third-party components'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-16.5',
+    name: 'Use Up-to-Date and Trusted Third-Party Software Components',
+    description: 'Use up-to-date and trusted third-party software components. When possible, choose established and proven frameworks and libraries that provide adequate security. Acquire components from trusted sources.',
+    category: 'IG2',
+    implementationGuidance: 'Establish approved sources for third-party components. Implement processes to keep components updated and scan for vulnerabilities. Remove or replace unmaintained components.',
+    evidenceRequirements: [
+      'Approved third-party component sources',
+      'Component update tracking records',
+      'Vulnerability scan results for third-party components'
+    ],
+    testProcedures: [
+      'Verify components are from approved sources',
+      'Verify components are kept updated'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-16.6',
+    name: 'Establish and Maintain a Severity Rating System and Process for Application Vulnerabilities',
+    description: 'Establish and maintain a severity rating system and process for application vulnerabilities that facilitates prioritization of remediation.',
+    category: 'IG2',
+    implementationGuidance: 'Define severity ratings for application vulnerabilities aligned with industry standards (CVSS). Establish remediation timelines based on severity and track remediation progress.',
+    evidenceRequirements: [
+      'Vulnerability severity rating system documentation',
+      'Remediation timeline requirements by severity',
+      'Vulnerability tracking and remediation records'
+    ],
+    testProcedures: [
+      'Verify severity rating system is documented and used',
+      'Verify remediation timelines are met'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-16.7',
+    name: 'Use Standard Hardening Configuration Templates for Application Infrastructure',
+    description: 'Use standard, industry-recommended hardening configuration templates for application infrastructure such as web servers, database servers, and application servers.',
+    category: 'IG2',
+    implementationGuidance: 'Develop or adopt hardening templates based on CIS Benchmarks or vendor guidance. Apply templates to all application infrastructure and verify compliance regularly.',
+    evidenceRequirements: [
+      'Hardening templates for application infrastructure',
+      'Configuration compliance scan results',
+      'Remediation records for compliance gaps'
+    ],
+    testProcedures: [
+      'Verify hardening templates are documented',
+      'Verify compliance scans are conducted and gaps remediated'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-16.8',
+    name: 'Separate Production and Non-Production Systems',
+    description: 'Maintain separate environments for production and non-production systems.',
+    category: 'IG2',
+    implementationGuidance: 'Implement network and logical separation between production and non-production environments. Restrict data flow between environments and use sanitized data in non-production.',
+    evidenceRequirements: [
+      'Environment separation architecture documentation',
+      'Network segmentation between environments',
+      'Data sanitization procedures for non-production'
+    ],
+    testProcedures: [
+      'Verify network separation between environments',
+      'Verify production data is sanitized in non-production'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-16.9',
+    name: 'Train Developers in Application Security Concepts and Secure Coding',
+    description: 'Ensure all software development personnel receive training in writing secure code for their specific development environment and responsibilities.',
+    category: 'IG2',
+    implementationGuidance: 'Provide secure coding training for all developers covering OWASP Top 10, secure coding practices, and language-specific security considerations. Require annual training updates.',
+    evidenceRequirements: [
+      'Secure coding training curriculum',
+      'Developer training completion records',
+      'Training effectiveness assessments'
+    ],
+    testProcedures: [
+      'Verify developers complete secure coding training',
+      'Review training content for coverage of key topics'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-16.10',
+    name: 'Apply Secure Design Principles in Application Architectures',
+    description: 'Apply secure design principles in application architectures including least privilege, defense in depth, secure defaults, and zero trust.',
+    category: 'IG2',
+    implementationGuidance: 'Document and enforce secure design principles during application architecture review. Conduct security architecture reviews for new applications and significant changes.',
+    evidenceRequirements: [
+      'Secure design principles documentation',
+      'Security architecture review records',
+      'Design principle compliance checklists'
+    ],
+    testProcedures: [
+      'Verify secure design principles are documented',
+      'Verify architecture reviews are conducted'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-16.11',
+    name: 'Leverage Vetted Modules or Services for Application Security Components',
+    description: 'Leverage vetted modules or services for application security components such as identity management, encryption, and auditing and logging.',
+    category: 'IG2',
+    implementationGuidance: 'Establish a catalog of approved security modules for common security functions. Require use of approved modules rather than custom implementations for identity, encryption, and logging.',
+    evidenceRequirements: [
+      'Approved security module catalog',
+      'Application reviews verifying approved module use',
+      'Custom implementation justification records'
+    ],
+    testProcedures: [
+      'Verify approved modules catalog exists',
+      'Verify applications use approved modules for security functions'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-16.13',
+    name: 'Conduct Application Penetration Testing',
+    description: 'Conduct application penetration testing. For critical applications, perform authenticated penetration testing.',
+    category: 'IG3',
+    implementationGuidance: 'Conduct penetration testing for applications before production deployment and periodically thereafter. Include authenticated testing for critical applications to test access controls.',
+    evidenceRequirements: [
+      'Application penetration testing schedule',
+      'Penetration test reports and findings',
+      'Remediation tracking for findings'
+    ],
+    testProcedures: [
+      'Verify penetration testing is conducted per schedule',
+      'Verify findings are tracked and remediated'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-16.14',
+    name: 'Conduct Threat Modeling',
+    description: 'Conduct threat modeling to identify application threats. Application threat modeling should enumerate the attack surface, identify potential threats, and drive security testing.',
+    category: 'IG3',
+    implementationGuidance: 'Conduct threat modeling during application design using methodologies such as STRIDE. Document threats, mitigations, and use threat models to inform security testing.',
+    evidenceRequirements: [
+      'Threat modeling methodology documentation',
+      'Threat models for applications',
+      'Linkage of threat models to security testing'
+    ],
+    testProcedures: [
+      'Verify threat modeling is conducted for applications',
+      'Verify threat models inform security testing'
+    ],
+    status: 'Not Started'
+  },
 
   // ============================================================
   // CIS 17 - Incident Response Management (IG3)
@@ -1366,6 +2505,91 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     testProcedures: [
       'Review the incident response plan to verify it addresses all phases of incident response, defines roles and responsibilities, and includes communication and escalation procedures',
       'Conduct a tabletop exercise to validate the incident response process and verify participants understand their roles and the process flows as documented'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-17.5',
+    name: 'Assign Key Roles and Responsibilities',
+    description: 'Assign key roles and responsibilities for incident response including staff from legal, IT, information security, facilities, public relations, human resources, incident responders, and analysts.',
+    category: 'IG2',
+    implementationGuidance: 'Document roles and responsibilities for all personnel involved in incident response. Ensure each role has a backup and that contact information is current.',
+    evidenceRequirements: [
+      'Incident response roles and responsibilities matrix',
+      'Contact information for incident response team members',
+      'Backup assignments for each role'
+    ],
+    testProcedures: [
+      'Verify roles and responsibilities are documented',
+      'Verify contact information is current'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-17.6',
+    name: 'Define Mechanisms for Communicating During Incident Response',
+    description: 'Define mechanisms for communicating during incident response. Include provisions for an alternate communication channel in case of primary channel compromise.',
+    category: 'IG2',
+    implementationGuidance: 'Establish primary and backup communication channels for incident response. Test communication channels regularly and ensure all team members know how to use them.',
+    evidenceRequirements: [
+      'Incident response communication plan',
+      'Primary and backup communication channel documentation',
+      'Communication channel testing records'
+    ],
+    testProcedures: [
+      'Verify communication channels are documented',
+      'Test backup communication channels'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-17.7',
+    name: 'Conduct Routine Incident Response Exercises',
+    description: 'Conduct routine incident response exercises. Plan and conduct periodic incident response exercises to prepare for cyber attacks and evaluate the effectiveness of the incident response plan.',
+    category: 'IG2',
+    implementationGuidance: 'Conduct incident response exercises at least annually including tabletop exercises and functional tests. Document lessons learned and update the incident response plan based on exercise results.',
+    evidenceRequirements: [
+      'Incident response exercise schedule',
+      'Exercise documentation and scenarios',
+      'After-action reports with lessons learned'
+    ],
+    testProcedures: [
+      'Verify exercises are conducted per schedule',
+      'Verify lessons learned are incorporated into plan updates'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-17.8',
+    name: 'Conduct Post-Incident Reviews',
+    description: 'Conduct post-incident reviews. Post-incident reviews help prevent incident recurrence by documenting root cause, lessons learned, and remediation actions.',
+    category: 'IG2',
+    implementationGuidance: 'Conduct post-incident reviews for all significant incidents. Document root cause, timeline, response effectiveness, lessons learned, and remediation actions.',
+    evidenceRequirements: [
+      'Post-incident review procedures',
+      'Post-incident review reports',
+      'Remediation action tracking'
+    ],
+    testProcedures: [
+      'Verify post-incident reviews are conducted',
+      'Verify remediation actions are tracked to completion'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-17.9',
+    name: 'Establish and Maintain Security Incident Thresholds',
+    description: 'Establish and maintain security incident thresholds including at minimum distinguishing between an incident and an event.',
+    category: 'IG3',
+    implementationGuidance: 'Define thresholds and criteria for classifying security events vs. incidents. Establish severity levels and escalation criteria for different incident types.',
+    evidenceRequirements: [
+      'Incident classification criteria documentation',
+      'Severity level definitions',
+      'Escalation thresholds and procedures'
+    ],
+    testProcedures: [
+      'Verify incident thresholds are documented',
+      'Verify classification criteria are applied consistently'
     ],
     status: 'Not Started'
   },
@@ -1455,6 +2679,76 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     testProcedures: [
       'Review the most recent internal penetration test report to verify it covers the defined internal scope, tests segmentation and lateral movement, and includes detailed findings',
       'Review remediation tracking to verify findings from the most recent internal penetration test have been addressed within defined remediation timelines'
+    ],
+    status: 'Not Started'
+  },
+
+  // Additional IG1 Safeguards
+  {
+    controlId: 'CIS-4.4',
+    name: 'Implement and Manage a Firewall on End-User Devices',
+    description: 'Implement and manage a firewall on end-user devices. Example implementations include a host-based firewall or an endpoint security agent with built-in firewall capabilities.',
+    category: 'IG1',
+    implementationGuidance: 'Enable host-based firewalls on all end-user devices including workstations and laptops. Configure to block inbound connections by default and allow only necessary outbound traffic.',
+    evidenceRequirements: [
+      'Host firewall policy for end-user devices',
+      'Firewall configurations deployed via endpoint management',
+      'Compliance reports showing firewall status'
+    ],
+    testProcedures: [
+      'Verify host firewalls are enabled on sample end-user devices',
+      'Review firewall rules and verify they follow the principle of least privilege'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-5.6',
+    name: 'Centralize Account Management',
+    description: 'Centralize account management through a directory or identity service.',
+    category: 'IG2',
+    implementationGuidance: 'Integrate all systems with centralized identity management. Minimize local accounts and federate authentication where possible.',
+    evidenceRequirements: [
+      'Centralized identity management architecture',
+      'Systems integrated with directory services',
+      'Local account exceptions with justification'
+    ],
+    testProcedures: [
+      'Verify systems use centralized authentication',
+      'Review and justify any local account exceptions'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-6.4',
+    name: 'Require MFA for Remote Network Access',
+    description: 'Require MFA for remote network access.',
+    category: 'IG1',
+    implementationGuidance: 'Require MFA for all remote access including VPN, remote desktop, and cloud service access. Implement hardware tokens or authenticator apps for MFA.',
+    evidenceRequirements: [
+      'MFA policy for remote access',
+      'MFA configuration on remote access systems',
+      'MFA enrollment records'
+    ],
+    testProcedures: [
+      'Attempt remote access without MFA and verify it is denied',
+      'Verify MFA is required for all remote access paths'
+    ],
+    status: 'Not Started'
+  },
+  {
+    controlId: 'CIS-11.5',
+    name: 'Test Data Recovery',
+    description: 'Test backup recovery quarterly, or more frequently, for a sampling of in-scope enterprise assets.',
+    category: 'IG2',
+    implementationGuidance: 'Conduct quarterly recovery tests for a representative sample of systems and data. Document recovery time and success rate. Address any recovery failures.',
+    evidenceRequirements: [
+      'Backup recovery testing schedule',
+      'Recovery test results and documentation',
+      'Remediation records for failed tests'
+    ],
+    testProcedures: [
+      'Review recovery test records and verify quarterly testing',
+      'Verify recovery times meet RTO requirements'
     ],
     status: 'Not Started'
   }
