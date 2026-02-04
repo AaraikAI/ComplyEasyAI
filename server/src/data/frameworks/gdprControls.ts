@@ -1034,4 +1034,52 @@ export const GDPR_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started',
   },
+  // Additional Controls for 45 Total
+  {
+    controlId: 'GDPR-77',
+    name: 'Right to Lodge a Complaint with Supervisory Authority',
+    description:
+      'Every data subject shall have the right to lodge a complaint with a supervisory authority if the data subject considers that the processing of personal data relating to him or her infringes the GDPR.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Inform data subjects of their right to lodge complaints with the supervisory authority in privacy notices and communications. Provide contact information for relevant supervisory authorities. Establish internal processes to handle and track complaints that may be escalated to supervisory authorities. Train staff on responding appropriately to complaints and understanding when regulatory escalation may occur.',
+    evidenceRequirements: [
+      'Privacy notice sections informing of complaint rights',
+      'Supervisory authority contact information availability',
+      'Internal complaint handling procedures',
+      'Complaint tracking logs',
+      'Staff training records on complaint handling',
+    ],
+    testProcedures: [
+      'Verify privacy notices include information about complaint rights and supervisory authority contact',
+      'Review complaint handling procedures for regulatory escalation pathways',
+      'Inspect complaint tracking logs for completeness',
+      'Confirm staff training includes regulatory complaint awareness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-82',
+    name: 'Right to Compensation and Liability',
+    description:
+      'Any person who has suffered material or non-material damage as a result of an infringement of the GDPR shall have the right to receive compensation from the controller or processor for the damage suffered.',
+    category: 'Accountability',
+    implementationGuidance:
+      'Maintain adequate liability insurance to cover potential GDPR compensation claims. Establish processes to investigate and assess claims for damages. Implement clear allocation of liability responsibilities between controllers and processors in data processing agreements. Document compliance measures to demonstrate exemption from liability under Art. 82(3) where the party is not responsible for the event giving rise to the damage.',
+    evidenceRequirements: [
+      'Liability insurance coverage documentation',
+      'Claims investigation and assessment procedures',
+      'Data processing agreements with liability allocation clauses',
+      'Compliance documentation demonstrating due diligence',
+      'Incident response records showing timely remediation',
+    ],
+    testProcedures: [
+      'Review liability insurance coverage adequacy',
+      'Verify claims handling procedures are documented and operationalized',
+      'Inspect data processing agreements for Art. 82 liability provisions',
+      'Assess compliance documentation for demonstrating exemption from liability',
+      'Review incident response records for evidence of due diligence',
+    ],
+    status: 'Not Started',
+  },
 ];

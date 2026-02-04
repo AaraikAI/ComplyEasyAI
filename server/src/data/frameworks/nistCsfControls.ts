@@ -2055,4 +2055,182 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started',
   },
+  {
+    controlId: 'RC.CO-05',
+    name: 'Stakeholder Recovery Feedback',
+    description:
+      'Feedback from stakeholders on recovery effectiveness is collected and incorporated into recovery plan improvements.',
+    category: 'Recover - Recovery Communication',
+    implementationGuidance:
+      'Establish mechanisms to collect feedback from internal and external stakeholders on recovery effectiveness. Conduct post-recovery surveys and debriefs. Analyze feedback to identify areas for improvement in recovery processes, communication, and coordination. Incorporate feedback into recovery plan updates.',
+    evidenceRequirements: [
+      'Stakeholder feedback collection mechanisms and surveys',
+      'Post-recovery debrief records',
+      'Feedback analysis and improvement recommendations',
+      'Recovery plan updates based on stakeholder feedback',
+    ],
+    testProcedures: [
+      'Review stakeholder feedback collection mechanisms',
+      'Verify post-recovery debriefs are conducted',
+      'Confirm feedback analysis leads to improvement recommendations',
+      'Assess recovery plan updates incorporate stakeholder feedback',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RC.CO-06',
+    name: 'Regulatory Recovery Reporting',
+    description:
+      'Recovery activities and outcomes are reported to regulators and oversight bodies as required.',
+    category: 'Recover - Recovery Communication',
+    implementationGuidance:
+      'Maintain awareness of regulatory reporting requirements related to incident recovery. Prepare and submit required reports to regulators, industry oversight bodies, and government agencies. Ensure reports meet content, format, and timing requirements. Track regulatory inquiries and responses related to recovery activities.',
+    evidenceRequirements: [
+      'Regulatory recovery reporting requirements inventory',
+      'Regulatory report templates and submission records',
+      'Correspondence with regulators regarding recovery activities',
+      'Tracking of regulatory inquiries and responses',
+    ],
+    testProcedures: [
+      'Review regulatory reporting requirements inventory',
+      'Verify regulatory reports are submitted as required',
+      'Confirm correspondence with regulators is maintained',
+      'Assess tracking of regulatory inquiries and response timeliness',
+    ],
+    status: 'Not Started',
+  },
+
+  // --- GV.PO: Policy ---
+  {
+    controlId: 'GV.PO-03',
+    name: 'Policy Communication and Training',
+    description:
+      'Cybersecurity policies are communicated to all personnel and training is provided to ensure understanding and compliance.',
+    category: 'Govern - Policy',
+    implementationGuidance:
+      'Develop comprehensive communication and training programs for cybersecurity policies. Ensure all personnel understand their policy obligations. Conduct regular training updates when policies change. Track training completion and comprehension. Provide role-specific policy training for personnel with elevated responsibilities.',
+    evidenceRequirements: [
+      'Policy communication records and distribution lists',
+      'Training materials for cybersecurity policies',
+      'Training completion and comprehension records',
+      'Role-specific policy training documentation',
+    ],
+    testProcedures: [
+      'Review policy communication and distribution records',
+      'Verify training materials cover all key policies',
+      'Confirm training completion tracking is maintained',
+      'Assess role-specific training for personnel with elevated access',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GV.PO-04',
+    name: 'Policy Exception Management',
+    description:
+      'Policy exceptions are documented, approved, monitored, and reviewed for continued necessity.',
+    category: 'Govern - Policy',
+    implementationGuidance:
+      'Establish formal process for requesting, approving, and tracking policy exceptions. Document business justification and compensating controls for each exception. Set expiration dates and conduct periodic reviews. Ensure exceptions are approved by appropriate authority levels. Monitor exception usage and remediate when possible.',
+    evidenceRequirements: [
+      'Policy exception request and approval process documentation',
+      'Exception records with business justification',
+      'Compensating control documentation for exceptions',
+      'Exception review and renewal records',
+    ],
+    testProcedures: [
+      'Review policy exception process documentation',
+      'Verify exception records include business justification',
+      'Confirm compensating controls are documented and effective',
+      'Assess exception review and renewal compliance',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GV.RM-08',
+    name: 'Risk Treatment Tracking',
+    description:
+      'Risk treatment decisions and actions are tracked through implementation and verified for effectiveness.',
+    category: 'Govern - Risk Management Strategy',
+    implementationGuidance:
+      'Implement system to track risk treatment decisions from approval through implementation. Monitor treatment action progress and completion. Verify treatment effectiveness through testing and measurement. Document residual risk after treatment. Escalate delayed or ineffective treatments.',
+    evidenceRequirements: [
+      'Risk treatment tracking system and reports',
+      'Treatment action progress and completion records',
+      'Treatment effectiveness verification records',
+      'Residual risk documentation after treatment',
+    ],
+    testProcedures: [
+      'Review risk treatment tracking system capabilities',
+      'Verify treatment actions are tracked to completion',
+      'Confirm treatment effectiveness is verified',
+      'Assess residual risk documentation accuracy',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GV.SC-09',
+    name: 'Supply Chain Security Metrics',
+    description:
+      'Metrics are established to measure and monitor supply chain cybersecurity risk management effectiveness.',
+    category: 'Govern - Supply Chain Risk Management',
+    implementationGuidance:
+      'Define key performance indicators for supply chain security including vendor assessment completion rates, security incident frequency, compliance status, and risk reduction trends. Collect and analyze metrics regularly. Report metrics to leadership and use for program improvement.',
+    evidenceRequirements: [
+      'Supply chain security metrics definitions',
+      'Metrics collection and analysis records',
+      'Metrics reporting to leadership',
+      'Program improvements based on metrics analysis',
+    ],
+    testProcedures: [
+      'Review supply chain security metrics definitions',
+      'Verify metrics are collected and analyzed regularly',
+      'Confirm metrics are reported to leadership',
+      'Assess program improvements driven by metrics',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GV.SC-10',
+    name: 'Critical Supplier Continuity',
+    description:
+      'Business continuity requirements are established and verified for critical suppliers and service providers.',
+    category: 'Govern - Supply Chain Risk Management',
+    implementationGuidance:
+      'Identify critical suppliers and service providers essential to business operations. Define business continuity requirements for critical suppliers including RTOs and RPOs. Verify supplier continuity capabilities through documentation review and testing. Develop contingency plans for critical supplier failures.',
+    evidenceRequirements: [
+      'Critical supplier identification and classification',
+      'Business continuity requirements for critical suppliers',
+      'Supplier continuity capability verification records',
+      'Contingency plans for critical supplier failures',
+    ],
+    testProcedures: [
+      'Review critical supplier identification criteria',
+      'Verify continuity requirements are defined for critical suppliers',
+      'Confirm supplier continuity capabilities are verified',
+      'Assess contingency plans for critical supplier scenarios',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PR.AT-03',
+    name: 'Privileged User Security Training',
+    description:
+      'Users with privileged access receive enhanced security training commensurate with their access level and responsibilities.',
+    category: 'Protect - Awareness and Training',
+    implementationGuidance:
+      'Develop enhanced security training program for privileged users including administrators, developers, and security personnel. Cover advanced threats, secure practices, and responsibilities specific to privileged access. Conduct training more frequently than general awareness. Verify comprehension through testing.',
+    evidenceRequirements: [
+      'Privileged user training curriculum and materials',
+      'Training completion records for privileged users',
+      'Training frequency and scheduling documentation',
+      'Comprehension testing results for privileged users',
+    ],
+    testProcedures: [
+      'Review privileged user training curriculum',
+      'Verify training completion for all privileged users',
+      'Confirm training frequency meets requirements',
+      'Assess comprehension testing results',
+    ],
+    status: 'Not Started',
+  },
 ];
