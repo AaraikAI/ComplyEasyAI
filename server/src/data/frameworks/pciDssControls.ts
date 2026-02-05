@@ -4634,4 +4634,996 @@ export const PCI_DSS_CONTROLS: FrameworkControlTemplate[] = [
     testProcedures: ['Review procedures', 'Verify coverage', 'Check workflows', 'Examine playbooks'],
     status: 'Not Started',
   },
+
+  // ============================================================
+  // Additional PCI DSS v4.0 Sub-Requirements - Requirement 8
+  // ============================================================
+  {
+    controlId: 'PCI-8.2.3',
+    name: 'Invalid Authentication Attempts Handled',
+    description: 'Invalid authentication attempts are limited by locking out the user ID after not more than 10 attempts, setting the lockout duration to a minimum of 30 minutes or until the user\'s identity is confirmed.',
+    category: 'User Identification and Authentication',
+    implementationGuidance: 'Configure all authentication systems to lock accounts after a maximum of 10 invalid login attempts. Set lockout duration to at least 30 minutes or require administrator intervention to unlock. Implement incremental lockout policies where appropriate. Log all lockout events and alert on patterns that may indicate brute force attacks. Consider implementing CAPTCHA or other bot protection mechanisms in addition to lockout policies.',
+    evidenceRequirements: [
+      'Authentication system lockout configuration settings',
+      'Lockout policy documentation specifying threshold and duration',
+      'Lockout event logs and monitoring configuration',
+      'Alert configuration for brute force attack detection',
+      'Testing records demonstrating lockout enforcement'
+    ],
+    testProcedures: [
+      'Examine authentication system configurations for lockout settings',
+      'Verify lockout threshold is set to 10 or fewer invalid attempts',
+      'Confirm lockout duration is at least 30 minutes',
+      'Attempt multiple invalid logins and verify account lockout occurs',
+      'Review lockout event logs and alert configurations'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.3',
+    name: 'Password/Passphrase Set as Authentication Factor',
+    description: 'If passwords/passphrases are used as an authentication factor, they meet minimum complexity requirements including length and character types.',
+    category: 'User Identification and Authentication',
+    implementationGuidance: 'Configure password policies to require minimum length of 12 characters (or 8 if system limitations exist) with both alphabetic and numeric characters. Implement password complexity validators that prevent common passwords, dictionary words, and sequential characters. Consider implementing passphrase support for improved security and usability. Provide password strength meters during password creation. Document any systems with technical limitations that prevent full compliance.',
+    evidenceRequirements: [
+      'Password policy configuration across all systems',
+      'Password complexity requirements documentation',
+      'Password validator and strength checker implementations',
+      'Documentation of systems with technical limitations',
+      'Testing results for password policy enforcement'
+    ],
+    testProcedures: [
+      'Examine password policy configurations on authentication systems',
+      'Verify minimum password length meets requirements',
+      'Test password creation with non-compliant passwords',
+      'Review documentation for systems with limitations',
+      'Confirm password complexity validators are functional'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.8',
+    name: 'Authentication Policies for Application and System Accounts',
+    description: 'Authentication policies and procedures are documented and implemented for application and system accounts, including guidance for selecting strong passwords.',
+    category: 'User Identification and Authentication',
+    implementationGuidance: 'Develop specific authentication policies for application and system accounts that address password complexity, rotation schedules, secure storage, and access controls. Require unique, strong passwords for each application and system account. Implement automated password rotation where possible. Store service account credentials securely using secret management solutions. Document approval requirements for service account creation and password access.',
+    evidenceRequirements: [
+      'Application and system account authentication policy',
+      'Password selection guidance for service accounts',
+      'Secret management solution deployment evidence',
+      'Automated password rotation configuration',
+      'Service account approval and access control procedures'
+    ],
+    testProcedures: [
+      'Examine authentication policies for application/system accounts',
+      'Verify password guidance addresses complexity requirements',
+      'Review secret management implementation',
+      'Verify password rotation is performed per policy',
+      'Examine approval records for service account credentials'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.9',
+    name: 'Unique Passwords for Application and System Accounts',
+    description: 'If passwords/passphrases are the only authentication factor for application and system accounts, passwords are changed periodically and in accordance with targeted risk analysis.',
+    category: 'User Identification and Authentication',
+    implementationGuidance: 'Implement password rotation schedules for all application and system accounts based on risk analysis. Higher risk accounts should have more frequent rotation. Use automated rotation mechanisms where possible. Implement password vaults with audit logging for manual rotations. Define clear procedures for emergency password changes when compromise is suspected. Track and report on rotation compliance.',
+    evidenceRequirements: [
+      'Risk analysis for password rotation frequency',
+      'Password rotation schedule and tracking',
+      'Automated rotation tool configurations',
+      'Password vault audit logs showing rotations',
+      'Emergency password change procedures'
+    ],
+    testProcedures: [
+      'Review risk analysis supporting rotation frequency',
+      'Verify rotation schedule aligns with risk analysis',
+      'Examine automated rotation configurations',
+      'Review audit logs for recent password rotations',
+      'Test emergency password change procedures'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.10',
+    name: 'Additional Authentication Controls for Service Providers',
+    description: 'For service providers only: If passwords/passphrases are the only authentication factor for customer user access, guidance is provided to customers regarding requirements for strong passwords.',
+    category: 'User Identification and Authentication',
+    implementationGuidance: 'Service providers must provide clear guidance to customers on password requirements and best practices. Create customer-facing documentation explaining password complexity requirements, recommended password managers, and multi-factor authentication options. Implement technical controls to enforce password requirements. Provide self-service password reset with identity verification. Consider offering MFA as an upgrade option.',
+    evidenceRequirements: [
+      'Customer password guidance documentation',
+      'Technical enforcement of password requirements',
+      'Self-service password reset procedures',
+      'MFA offering documentation',
+      'Customer communication records on password security'
+    ],
+    testProcedures: [
+      'Review customer password guidance documentation',
+      'Verify technical controls enforce password requirements',
+      'Test self-service password reset process',
+      'Verify MFA options are communicated to customers',
+      'Examine customer communication records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.10.1',
+    name: 'Service Provider Customer Password Changes',
+    description: 'For service providers only: If passwords/passphrases are the only authentication factor for customer user access, passwords/passphrases are changed at least every 90 days, or access is managed via dynamic analysis of security posture.',
+    category: 'User Identification and Authentication',
+    implementationGuidance: 'Implement mandatory password changes for customer accounts at least every 90 days if password is the only authentication factor. Alternatively, implement a dynamic analysis system that considers factors such as compromise indicators, password strength, and user behavior to determine when password changes are required. Notify customers before password expiration. Provide secure password change mechanisms.',
+    evidenceRequirements: [
+      'Password expiration policy configuration (90 days or less)',
+      'Dynamic analysis system documentation if used',
+      'Customer notification system for password expiration',
+      'Password change mechanism security assessment',
+      'Compliance reporting for password age'
+    ],
+    testProcedures: [
+      'Examine password expiration configuration',
+      'Verify 90-day maximum or dynamic analysis implementation',
+      'Test customer notification process',
+      'Review password change mechanism security',
+      'Verify compliance reporting accuracy'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-8.3.11',
+    name: 'Re-authentication When Authentication Factors Change',
+    description: 'If an authentication factor is changed or reset, and the request was made by a user, the user\'s identity is verified before the change is made.',
+    category: 'User Identification and Authentication',
+    implementationGuidance: 'Implement identity verification procedures for all authentication factor changes including password resets, MFA device enrollment, and security question changes. Use out-of-band verification methods such as SMS, email to verified addresses, or callback to verified phone numbers. Require multiple verification factors for high-risk changes. Log all authentication factor changes with verification method used. Train support personnel on social engineering prevention.',
+    evidenceRequirements: [
+      'Identity verification procedures for authentication changes',
+      'Out-of-band verification method documentation',
+      'High-risk change approval procedures',
+      'Audit logs of authentication factor changes',
+      'Support personnel training records'
+    ],
+    testProcedures: [
+      'Review identity verification procedures',
+      'Test out-of-band verification mechanisms',
+      'Verify high-risk changes require additional approval',
+      'Examine audit logs for factor change events',
+      'Interview support personnel on verification procedures'
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Additional PCI DSS v4.0 Sub-Requirements - Requirement 10
+  // ============================================================
+  {
+    controlId: 'PCI-10.4.1.1',
+    name: 'Automated Log Review Mechanisms',
+    description: 'Automated mechanisms are used to perform audit log reviews, with manual review of logs that cannot be reviewed by automated mechanisms.',
+    category: 'Log and Monitor All Access',
+    implementationGuidance: 'Deploy SIEM or log analysis tools with automated correlation rules and anomaly detection. Configure automated alerts for security events requiring immediate attention. Define manual review procedures for log types that cannot be effectively analyzed by automated tools. Document the rationale for manual vs automated review for each log type. Tune automated detection to reduce false positives while maintaining detection effectiveness.',
+    evidenceRequirements: [
+      'SIEM or automated log analysis tool deployment',
+      'Automated correlation rules and alert configurations',
+      'Manual review procedures for non-automated logs',
+      'Documentation of log review method selection rationale',
+      'False positive tuning records and effectiveness metrics'
+    ],
+    testProcedures: [
+      'Examine automated log analysis tool configurations',
+      'Verify correlation rules detect security events',
+      'Review manual log review procedures and records',
+      'Examine rationale for manual vs automated selection',
+      'Review alert tuning and false positive rates'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.4.2.1',
+    name: 'Targeted Risk Analysis for Log Review Frequency',
+    description: 'A targeted risk analysis is performed to determine the frequency of log reviews for all other system components not defined in Requirement 10.4.1.',
+    category: 'Log and Monitor All Access',
+    implementationGuidance: 'Conduct a risk analysis to determine appropriate log review frequency for system components beyond those requiring daily review. Consider factors such as criticality of the system, sensitivity of data processed, threat exposure, and historical incident patterns. Document review frequencies ranging from daily to weekly based on risk level. Re-evaluate frequencies when risk factors change.',
+    evidenceRequirements: [
+      'Risk analysis methodology for log review frequency',
+      'System component risk classifications',
+      'Documented review frequencies by risk level',
+      'Review schedule implementation evidence',
+      'Risk re-evaluation records'
+    ],
+    testProcedures: [
+      'Examine risk analysis methodology',
+      'Verify risk classifications for all system components',
+      'Review documented review frequencies',
+      'Verify actual review schedule matches documented frequencies',
+      'Examine risk re-evaluation records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.4.3',
+    name: 'Log Review Exceptions and Anomalies Addressed',
+    description: 'Exceptions and anomalies identified during the log review process are addressed through investigation and documented resolution.',
+    category: 'Log and Monitor All Access',
+    implementationGuidance: 'Establish procedures for investigating and resolving exceptions and anomalies identified during log reviews. Define escalation procedures based on severity. Document all investigations including findings, root cause analysis, and remediation actions. Track exception resolution through completion. Maintain metrics on exception types and resolution times. Feed findings back into detection tuning.',
+    evidenceRequirements: [
+      'Exception investigation procedures',
+      'Escalation matrix by severity',
+      'Investigation documentation and resolution records',
+      'Exception tracking and metrics',
+      'Detection tuning records based on findings'
+    ],
+    testProcedures: [
+      'Examine exception investigation procedures',
+      'Verify escalation matrix is current',
+      'Review investigation documentation for completeness',
+      'Examine exception tracking metrics',
+      'Verify detection tuning incorporates lessons learned'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.7.1',
+    name: 'Critical Security Control System Failures Detected',
+    description: 'Additional requirement for service providers: Failures of critical security control systems are detected, alerted, and addressed promptly.',
+    category: 'Log and Monitor All Access',
+    implementationGuidance: 'Implement comprehensive monitoring for all critical security control systems including firewalls, IDS/IPS, antimalware, FIM, physical access controls, logical access controls, audit logging, and network segmentation. Configure real-time alerting for failures with appropriate severity levels. Define critical security control inventory and ensure each is monitored. Integrate monitoring into NOC/SOC operations.',
+    evidenceRequirements: [
+      'Critical security control system inventory',
+      'Monitoring configuration for each control system',
+      'Real-time alerting configuration and notification procedures',
+      'NOC/SOC integration documentation',
+      'Alert response procedures for control failures'
+    ],
+    testProcedures: [
+      'Review critical security control inventory',
+      'Verify monitoring covers all critical controls',
+      'Test alerting by simulating control failure',
+      'Verify NOC/SOC integration is operational',
+      'Review alert response procedures'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.7.2',
+    name: 'Critical Security Control Failures Responded To Promptly',
+    description: 'Additional requirement for service providers: Failures of critical security control systems are responded to promptly with documented processes.',
+    category: 'Log and Monitor All Access',
+    implementationGuidance: 'Define response time objectives for critical security control failures based on the criticality of the control. Establish incident response procedures specific to control failures. Implement compensating controls to maintain security during outages. Document all failure events, response actions, and restoration activities. Conduct post-incident reviews to prevent recurrence.',
+    evidenceRequirements: [
+      'Response time objectives for control failures',
+      'Control failure incident response procedures',
+      'Compensating control procedures during outages',
+      'Failure event and response documentation',
+      'Post-incident review records'
+    ],
+    testProcedures: [
+      'Examine response time objectives',
+      'Review incident response procedures for control failures',
+      'Verify compensating controls are documented',
+      'Review failure event documentation',
+      'Examine post-incident review records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-10.7.3',
+    name: 'Critical Security Control Failures Addressed',
+    description: 'Additional requirement for service providers: Failures of critical security control systems result in documented generation of alerts, processes for restoring security functions, and resumption of security control monitoring.',
+    category: 'Log and Monitor All Access',
+    implementationGuidance: 'Implement end-to-end failure management for critical security controls from detection through restoration. Ensure alerts are generated and documented for all failures. Define restoration procedures for each control type. Verify security control functionality after restoration before resuming normal operations. Document the period during which the control was non-functional and any compensating measures applied.',
+    evidenceRequirements: [
+      'Alert generation and documentation procedures',
+      'Restoration procedures for each control type',
+      'Post-restoration verification procedures',
+      'Control downtime documentation requirements',
+      'Compensating measure documentation'
+    ],
+    testProcedures: [
+      'Verify alerts are generated and documented',
+      'Review restoration procedures for completeness',
+      'Examine post-restoration verification records',
+      'Review control downtime documentation',
+      'Verify compensating measures are documented'
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Additional PCI DSS v4.0 Sub-Requirements - Requirement 11
+  // ============================================================
+  {
+    controlId: 'PCI-11.3.1.2',
+    name: 'Internal Vulnerability Scans via Authenticated Scanning',
+    description: 'Internal vulnerability scans are performed via authenticated scanning with sufficient privileges to provide comprehensive vulnerability detection.',
+    category: 'Test Security Regularly',
+    implementationGuidance: 'Configure internal vulnerability scanners with credentials that provide sufficient access to evaluate system configurations, installed software, and security settings. Use service accounts with appropriate privileges for different system types. Implement credential management best practices for scanner accounts. Validate that authenticated scanning provides visibility into vulnerabilities that unauthenticated scanning would miss.',
+    evidenceRequirements: [
+      'Authenticated scanning configuration documentation',
+      'Service account setup for vulnerability scanners',
+      'Credential management procedures for scanner accounts',
+      'Comparison of authenticated vs unauthenticated scan results',
+      'Scan coverage verification reports'
+    ],
+    testProcedures: [
+      'Examine authenticated scanning configurations',
+      'Verify scanner service accounts have appropriate privileges',
+      'Review credential management for scanner accounts',
+      'Compare authenticated and unauthenticated scan coverage',
+      'Verify all in-scope systems are scanned with authentication'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.3.1.3',
+    name: 'Internal Vulnerability Scans After Significant Changes',
+    description: 'Internal vulnerability scans are performed after any significant change to the environment including new system installations, changes to network topology, firewall rule modifications, and product upgrades.',
+    category: 'Test Security Regularly',
+    implementationGuidance: 'Define criteria for significant changes that trigger vulnerability scanning. Integrate vulnerability scanning into change management processes. Automate scan triggering where possible through CI/CD integration. Document scan results and remediation activities associated with each significant change. Track time from change to scan completion.',
+    evidenceRequirements: [
+      'Significant change criteria definition',
+      'Change management integration procedures',
+      'Automated scan triggering configuration',
+      'Scan results linked to change tickets',
+      'Time-to-scan metrics for significant changes'
+    ],
+    testProcedures: [
+      'Review significant change criteria',
+      'Verify change management includes scan requirements',
+      'Examine automated scan triggering',
+      'Review scan results for recent significant changes',
+      'Verify scans occur within required timeframe'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.3.2.1',
+    name: 'External Vulnerability Scans After Significant Changes',
+    description: 'External vulnerability scans are performed after any significant change that could impact external-facing systems or network topology.',
+    category: 'Test Security Regularly',
+    implementationGuidance: 'Define significant changes affecting external attack surface that require ASV scanning. Coordinate with ASV to perform scans following significant changes. Document the change and corresponding scan results. Ensure passing scan results before considering the change complete for external-facing modifications. Track ASV scan scheduling and results.',
+    evidenceRequirements: [
+      'External change criteria requiring ASV scans',
+      'ASV coordination procedures for change-triggered scans',
+      'Change-linked ASV scan results',
+      'Passing scan requirements for change completion',
+      'ASV scan scheduling and tracking records'
+    ],
+    testProcedures: [
+      'Review external change criteria',
+      'Verify ASV coordination procedures',
+      'Review ASV scan results for recent external changes',
+      'Verify passing results before change completion',
+      'Examine ASV scan scheduling records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.4.6',
+    name: 'Penetration Testing for Service Providers',
+    description: 'Additional requirement for service providers: Penetration testing is performed at least once every six months and after any significant infrastructure or application upgrade or modification.',
+    category: 'Test Security Regularly',
+    implementationGuidance: 'Service providers must perform penetration testing twice annually at minimum. Schedule tests to be approximately six months apart. Perform additional testing after significant changes. Ensure testing covers all service provider CDE components and network segments. Document testing scope, methodology, findings, and remediation for each test cycle.',
+    evidenceRequirements: [
+      'Semi-annual penetration testing schedule',
+      'Penetration test reports from past 12 months (minimum 2)',
+      'Change-triggered penetration test records',
+      'Testing scope documentation for each test',
+      'Remediation records for identified vulnerabilities'
+    ],
+    testProcedures: [
+      'Verify penetration tests are performed semi-annually',
+      'Review test reports for past 12 months',
+      'Examine change-triggered test records',
+      'Verify testing scope covers all CDE components',
+      'Review remediation of identified vulnerabilities'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-11.4.7',
+    name: 'Multi-Tenant Service Provider Penetration Testing',
+    description: 'Additional requirement for multi-tenant service providers: Penetration testing confirms that controls between customers\' environments are effective and operationally secure.',
+    category: 'Test Security Regularly',
+    implementationGuidance: 'Include multi-tenancy controls in penetration testing scope. Test for cross-tenant data access vulnerabilities. Verify tenant isolation controls at network, application, and data layers. Test privilege escalation paths that could affect multiple tenants. Document specific multi-tenancy testing activities and results.',
+    evidenceRequirements: [
+      'Multi-tenancy testing scope documentation',
+      'Cross-tenant isolation test results',
+      'Network, application, and data layer isolation tests',
+      'Privilege escalation testing results',
+      'Multi-tenancy specific findings and remediation'
+    ],
+    testProcedures: [
+      'Verify multi-tenancy controls are in penetration test scope',
+      'Review cross-tenant isolation test results',
+      'Examine isolation tests at each layer',
+      'Review privilege escalation test results',
+      'Verify multi-tenancy findings are remediated'
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Additional PCI DSS v4.0 Sub-Requirements - Requirement 12
+  // ============================================================
+  {
+    controlId: 'PCI-12.3.3',
+    name: 'Cryptographic Cipher Suites and Protocols Documented',
+    description: 'Cryptographic cipher suites and protocols in use are documented, including purpose and where used, and their continued use is reviewed annually.',
+    category: 'Organizational Policies',
+    implementationGuidance: 'Create and maintain an inventory of all cryptographic cipher suites and protocols in use across the environment. Document the purpose, systems using each, and security strength. Review annually to identify deprecated or weakened cryptography. Plan migration paths for outdated algorithms. Include cryptographic inventory in security architecture documentation.',
+    evidenceRequirements: [
+      'Cryptographic cipher suite and protocol inventory',
+      'Purpose and usage documentation for each',
+      'Annual review records with security assessment',
+      'Migration plans for deprecated cryptography',
+      'Security architecture documentation'
+    ],
+    testProcedures: [
+      'Examine cryptographic inventory for completeness',
+      'Verify purpose and usage is documented',
+      'Review annual assessment records',
+      'Examine migration plans for deprecated algorithms',
+      'Verify inventory matches actual implementations'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.3.4',
+    name: 'Hardware and Software Technologies Review',
+    description: 'Hardware and software technologies in use are reviewed at least annually to confirm continued support from vendors and compliance with PCI DSS requirements.',
+    category: 'Organizational Policies',
+    implementationGuidance: 'Maintain a comprehensive inventory of all hardware and software in the CDE. Track vendor support status and end-of-life dates for each component. Review annually to identify components approaching or past end of support. Develop upgrade or replacement plans for unsupported components. Document risk acceptance for any unsupported components that must remain in use temporarily.',
+    evidenceRequirements: [
+      'Hardware and software inventory with support status',
+      'Vendor end-of-life tracking documentation',
+      'Annual review records of technology support status',
+      'Upgrade and replacement plans',
+      'Risk acceptance documentation for unsupported items'
+    ],
+    testProcedures: [
+      'Review hardware and software inventory',
+      'Verify vendor support status is current',
+      'Examine annual technology review records',
+      'Review upgrade plans for EOL components',
+      'Verify risk acceptance is documented where required'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.4.1',
+    name: 'Service Provider PCI DSS Responsibility Assignment',
+    description: 'Additional requirement for service providers: Responsibility is established by executive management for the protection of cardholder data and a PCI DSS compliance program.',
+    category: 'Organizational Policies',
+    implementationGuidance: 'Formally assign executive-level responsibility for PCI DSS compliance. Create a PCI DSS compliance charter with executive sponsorship. Establish a PCI DSS compliance officer or committee with appropriate authority. Define reporting lines from compliance activities to executive management. Include PCI DSS compliance in executive performance objectives.',
+    evidenceRequirements: [
+      'Executive responsibility assignment documentation',
+      'PCI DSS compliance charter with executive approval',
+      'Compliance officer or committee documentation',
+      'Reporting structure documentation',
+      'Executive performance objectives including PCI DSS'
+    ],
+    testProcedures: [
+      'Verify executive responsibility is formally assigned',
+      'Review compliance charter and executive approval',
+      'Verify compliance officer or committee authority',
+      'Examine reporting structure to executives',
+      'Review executive performance objectives'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.4.2',
+    name: 'Service Provider PCI DSS Compliance Reviews',
+    description: 'Additional requirement for service providers: Reviews are performed at least quarterly to confirm personnel are following security policies and operational procedures.',
+    category: 'Organizational Policies',
+    implementationGuidance: 'Conduct quarterly reviews of personnel compliance with security policies and procedures. Include spot checks, procedural audits, and compliance sampling. Document findings and track remediation. Report quarterly review results to management. Use review findings to improve training and procedures.',
+    evidenceRequirements: [
+      'Quarterly compliance review schedule and procedures',
+      'Review documentation and findings',
+      'Remediation tracking for identified issues',
+      'Management reporting of review results',
+      'Process improvement records based on findings'
+    ],
+    testProcedures: [
+      'Verify quarterly reviews are scheduled and performed',
+      'Examine review documentation and findings',
+      'Review remediation tracking for issues',
+      'Verify management receives review reports',
+      'Examine process improvements based on findings'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.4.2.1',
+    name: 'Service Provider Quarterly Compliance Documentation',
+    description: 'Additional requirement for service providers: Reviews conducted in accordance with 12.4.2 are documented to include results of reviews, remediation actions for issues identified, and sign-off by personnel assigned responsibility.',
+    category: 'Organizational Policies',
+    implementationGuidance: 'Create a standardized template for quarterly compliance review documentation. Include review scope, methodology, findings, severity ratings, and remediation plans. Require formal sign-off by the responsible compliance officer or executive. Maintain documentation for audit trail purposes. Track trending of findings over time.',
+    evidenceRequirements: [
+      'Standardized review documentation template',
+      'Completed review documentation with all required elements',
+      'Formal sign-off records',
+      'Findings trend analysis',
+      'Documentation retention evidence'
+    ],
+    testProcedures: [
+      'Examine review documentation template',
+      'Verify completed reviews contain all required elements',
+      'Verify sign-off by responsible personnel',
+      'Review findings trend analysis',
+      'Verify documentation retention'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.5.2.1',
+    name: 'PCI DSS Scope Impact Documented Before Changes',
+    description: 'The impact on PCI DSS scope is documented and confirmed prior to any system component change, including additions, deletions, and modifications.',
+    category: 'Organizational Policies',
+    implementationGuidance: 'Integrate PCI DSS scope impact assessment into the change management process. Create a checklist for evaluating scope impact of proposed changes. Require scope impact documentation approval before changes proceed. Document any scope changes in the PCI DSS scope documentation. Update data flow and network diagrams as needed.',
+    evidenceRequirements: [
+      'Change management integration procedures',
+      'Scope impact assessment checklist',
+      'Scope impact documentation for recent changes',
+      'Approval records for scope-affecting changes',
+      'Updated scope documentation following changes'
+    ],
+    testProcedures: [
+      'Verify scope assessment is in change management',
+      'Review scope impact assessment checklist',
+      'Examine scope documentation for recent changes',
+      'Verify approvals for scope-affecting changes',
+      'Confirm scope documentation is updated'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.5.3',
+    name: 'PCI DSS Scope Changes Organizational Impact Review',
+    description: 'Additional requirement for service providers: Significant changes to organizational structure result in a documented review of the impact on PCI DSS scope and applicability of controls.',
+    category: 'Organizational Policies',
+    implementationGuidance: 'Define criteria for significant organizational changes that trigger scope reviews. Include mergers, acquisitions, divestitures, major outsourcing, and organizational restructuring. Conduct comprehensive scope review following significant changes. Document changes to scope and affected controls. Update compliance program as needed.',
+    evidenceRequirements: [
+      'Significant organizational change criteria',
+      'Scope review procedures for organizational changes',
+      'Review documentation for recent organizational changes',
+      'Scope and control impact documentation',
+      'Compliance program update records'
+    ],
+    testProcedures: [
+      'Review organizational change criteria',
+      'Examine scope review procedures',
+      'Review documentation for recent changes',
+      'Verify scope and control impacts are documented',
+      'Confirm compliance program updates'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.6.3.1',
+    name: 'Security Awareness Training Includes Threats',
+    description: 'Security awareness training includes awareness of threats and vulnerabilities that could impact the security of the CDE, including phishing, social engineering, and related attacks.',
+    category: 'Organizational Policies',
+    implementationGuidance: 'Include current threat landscape information in security awareness training. Cover phishing attack techniques and recognition. Address social engineering tactics including vishing, pretexting, and baiting. Provide examples of recent attacks relevant to the organization. Update training content as new threats emerge. Conduct phishing simulations to reinforce training.',
+    evidenceRequirements: [
+      'Training content covering current threats',
+      'Phishing and social engineering modules',
+      'Recent attack examples in training',
+      'Training content update records',
+      'Phishing simulation results'
+    ],
+    testProcedures: [
+      'Review training content for threat coverage',
+      'Verify phishing and social engineering content',
+      'Examine recent attack examples in training',
+      'Verify training is updated for new threats',
+      'Review phishing simulation results'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.6.3.2',
+    name: 'Security Awareness Training Includes Acceptable Use',
+    description: 'Security awareness training includes awareness of acceptable use of end-user technologies in accordance with Requirement 12.2.1.',
+    category: 'Organizational Policies',
+    implementationGuidance: 'Include acceptable use policies in security awareness training. Cover proper use of email, internet, remote access, mobile devices, and removable media. Address consequences of policy violations. Provide practical examples of acceptable vs unacceptable use. Include acknowledgment of acceptable use policies as part of training completion.',
+    evidenceRequirements: [
+      'Training content covering acceptable use policies',
+      'Coverage of all technology types per 12.2.1',
+      'Policy violation consequences in training',
+      'Practical examples in training content',
+      'Acceptable use acknowledgment records'
+    ],
+    testProcedures: [
+      'Review training content for acceptable use coverage',
+      'Verify all technology types are addressed',
+      'Examine policy violation content',
+      'Review practical examples',
+      'Verify acknowledgment requirements'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-12.9.2',
+    name: 'Service Provider Written Acknowledgment to Customers',
+    description: 'Additional requirement for service providers: Written acknowledgments from TPSPs include acknowledgment that the TPSP is responsible for the security of account data the TPSP possesses or stores, processes, or transmits on behalf of the customer.',
+    category: 'Organizational Policies',
+    implementationGuidance: 'Provide written acknowledgments to customers confirming TPSP responsibility for account data security. Clearly state the scope of data handling covered by the acknowledgment. Include specifics on security measures implemented. Provide acknowledgments as part of service agreements or separate compliance documentation. Update acknowledgments when services or security measures change.',
+    evidenceRequirements: [
+      'Customer acknowledgment template',
+      'Sample executed acknowledgments',
+      'Scope of data handling in acknowledgments',
+      'Security measure descriptions',
+      'Acknowledgment update procedures'
+    ],
+    testProcedures: [
+      'Review acknowledgment template',
+      'Examine executed customer acknowledgments',
+      'Verify data handling scope is clear',
+      'Verify security measures are described',
+      'Confirm acknowledgment update process'
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Appendix A1 - Multi-Tenant Service Provider Requirements
+  // ============================================================
+  {
+    controlId: 'PCI-A1.1.1',
+    name: 'Multi-Tenant Logical Separation Confirmed',
+    description: 'For multi-tenant service providers: Logical separation is implemented such that each customer only has access to its own cardholder data environment.',
+    category: 'Multi-Tenant Service Providers',
+    implementationGuidance: 'Implement logical separation controls at network, application, and data layers to ensure tenant isolation. Use separate VLANs, network segments, or virtual networks for each tenant. Implement application-level access controls that prevent cross-tenant data access. Use separate database schemas, encryption keys, or other mechanisms to isolate tenant data. Test isolation controls regularly.',
+    evidenceRequirements: [
+      'Logical separation architecture documentation',
+      'Network segmentation configurations',
+      'Application access control configurations',
+      'Data isolation mechanisms',
+      'Isolation testing results'
+    ],
+    testProcedures: [
+      'Review logical separation architecture',
+      'Examine network segmentation configurations',
+      'Verify application access controls prevent cross-tenant access',
+      'Examine data isolation mechanisms',
+      'Review isolation testing results'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A1.1.2',
+    name: 'Multi-Tenant Controls Reviewed Annually',
+    description: 'For multi-tenant service providers: Controls are in place to confirm that each customer can only access its own data, and reviews are performed at least annually.',
+    category: 'Multi-Tenant Service Providers',
+    implementationGuidance: 'Establish annual review procedures for multi-tenant access controls. Include automated testing of tenant isolation. Conduct manual penetration testing targeting cross-tenant access. Document review findings and remediation. Track isolation control effectiveness metrics over time.',
+    evidenceRequirements: [
+      'Annual review procedures for tenant controls',
+      'Automated isolation testing configurations',
+      'Penetration test results for tenant isolation',
+      'Review findings and remediation records',
+      'Isolation effectiveness metrics'
+    ],
+    testProcedures: [
+      'Verify annual reviews are scheduled and performed',
+      'Review automated testing configurations',
+      'Examine penetration test results',
+      'Review findings and remediation',
+      'Examine effectiveness metrics'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A1.1.3',
+    name: 'Multi-Tenant Logging Separation',
+    description: 'For multi-tenant service providers: Logging mechanisms are implemented such that logs for each customer\'s cardholder data environment are available only to the respective customer.',
+    category: 'Multi-Tenant Service Providers',
+    implementationGuidance: 'Implement log separation ensuring each tenant can only access their own logs. Use tenant identifiers in log entries to enable filtering. Implement access controls on log storage and retrieval. Provide tenant-specific log access interfaces. Ensure shared infrastructure logs do not expose other tenant data.',
+    evidenceRequirements: [
+      'Log separation architecture documentation',
+      'Tenant identifier implementation in logs',
+      'Log access control configurations',
+      'Tenant log access interface documentation',
+      'Shared log redaction procedures'
+    ],
+    testProcedures: [
+      'Review log separation architecture',
+      'Verify tenant identifiers in logs',
+      'Examine log access controls',
+      'Test tenant log access interface',
+      'Verify shared logs do not expose tenant data'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A1.1.4',
+    name: 'Multi-Tenant Forensics Capability',
+    description: 'For multi-tenant service providers: Processes and procedures are in place to support timely forensic investigation in the event of a suspected or confirmed security incident for any customer.',
+    category: 'Multi-Tenant Service Providers',
+    implementationGuidance: 'Develop forensic investigation procedures specific to multi-tenant environments. Ensure log retention and evidence preservation capabilities. Define procedures for isolating affected tenants during investigation. Establish communication protocols with affected customers. Maintain forensic tools and trained personnel.',
+    evidenceRequirements: [
+      'Multi-tenant forensic investigation procedures',
+      'Log retention and evidence preservation capabilities',
+      'Tenant isolation procedures during incidents',
+      'Customer communication protocols',
+      'Forensic tools and personnel documentation'
+    ],
+    testProcedures: [
+      'Review forensic investigation procedures',
+      'Verify log retention capabilities',
+      'Examine tenant isolation procedures',
+      'Review customer communication protocols',
+      'Verify forensic capabilities are available'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A1.2.1',
+    name: 'Customer Penetration Testing Enablement',
+    description: 'For multi-tenant service providers: The service provider enables its customers to perform penetration testing according to PCI DSS Requirement 11.4.',
+    category: 'Multi-Tenant Service Providers',
+    implementationGuidance: 'Establish policies and procedures allowing customers to perform or arrange penetration testing of their environments. Define scope boundaries and rules of engagement. Provide coordination procedures for customer-initiated testing. Document any restrictions or requirements for customer testing. Consider offering penetration testing as a service option.',
+    evidenceRequirements: [
+      'Customer penetration testing policy',
+      'Scope boundaries and rules of engagement',
+      'Testing coordination procedures',
+      'Testing restrictions documentation',
+      'Penetration testing service offering'
+    ],
+    testProcedures: [
+      'Review customer penetration testing policy',
+      'Examine scope and rules of engagement',
+      'Verify coordination procedures',
+      'Review testing restrictions',
+      'Verify testing capability is available to customers'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A1.2.2',
+    name: 'Supporting Customer Security Requirements',
+    description: 'For multi-tenant service providers: The service provider supports its customers\' request to provide evidence of their PCI DSS compliance.',
+    category: 'Multi-Tenant Service Providers',
+    implementationGuidance: 'Establish procedures for providing PCI DSS compliance evidence to customers. Make Attestation of Compliance (AOC) available upon request. Provide responsibility matrices showing shared responsibilities. Support customer audit activities with appropriate documentation. Maintain documentation suitable for customer compliance evidence.',
+    evidenceRequirements: [
+      'Evidence request fulfillment procedures',
+      'AOC availability documentation',
+      'Customer responsibility matrix',
+      'Audit support procedures',
+      'Customer compliance documentation'
+    ],
+    testProcedures: [
+      'Review evidence request procedures',
+      'Verify AOC is available to customers',
+      'Examine customer responsibility matrix',
+      'Review audit support procedures',
+      'Verify documentation is available for customers'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A1.2.3',
+    name: 'Service Level Agreement Coverage',
+    description: 'For multi-tenant service providers: Shared services have service-level agreements that address security and compliance requirements.',
+    category: 'Multi-Tenant Service Providers',
+    implementationGuidance: 'Include PCI DSS compliance requirements in service level agreements for shared services. Define security responsibilities and expectations. Specify incident response and notification procedures. Include audit rights and compliance reporting provisions. Address data location and jurisdiction requirements.',
+    evidenceRequirements: [
+      'SLA templates with security provisions',
+      'PCI DSS compliance requirements in SLAs',
+      'Incident response provisions',
+      'Audit rights provisions',
+      'Data location requirements'
+    ],
+    testProcedures: [
+      'Review SLA security provisions',
+      'Verify PCI DSS requirements are included',
+      'Examine incident response provisions',
+      'Review audit rights provisions',
+      'Verify data location requirements'
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Appendix A3 - Designated Entities Supplemental Validation (DESV)
+  // ============================================================
+  {
+    controlId: 'PCI-A3.1.1',
+    name: 'DESV PCI DSS Compliance Program',
+    description: 'For designated entities: A comprehensive PCI DSS compliance program is implemented that includes a detailed description of the program with executive leadership involvement.',
+    category: 'Designated Entities Supplemental Validation',
+    implementationGuidance: 'Establish a formal PCI DSS compliance program with executive sponsorship. Document program scope, objectives, governance structure, and resource allocation. Define roles and responsibilities for compliance activities. Establish regular executive reporting on compliance status. Integrate compliance program with enterprise risk management.',
+    evidenceRequirements: [
+      'PCI DSS compliance program documentation',
+      'Executive sponsorship documentation',
+      'Governance structure documentation',
+      'Roles and responsibilities matrix',
+      'Executive reporting schedule and samples'
+    ],
+    testProcedures: [
+      'Review compliance program documentation',
+      'Verify executive sponsorship',
+      'Examine governance structure',
+      'Review roles and responsibilities',
+      'Verify executive reporting occurs'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A3.2.1',
+    name: 'DESV Scope Documentation',
+    description: 'For designated entities: PCI DSS scope is documented and validated by the entity at least quarterly and upon significant change.',
+    category: 'Designated Entities Supplemental Validation',
+    implementationGuidance: 'Implement quarterly scope validation procedures. Document all components in PCI DSS scope with data flow diagrams. Validate scope following any significant environmental changes. Maintain scope validation records with sign-off. Track scope changes over time.',
+    evidenceRequirements: [
+      'Quarterly scope validation procedures',
+      'Scope documentation and data flow diagrams',
+      'Change-triggered validation records',
+      'Validation sign-off records',
+      'Scope change tracking'
+    ],
+    testProcedures: [
+      'Verify quarterly validations occur',
+      'Review scope documentation completeness',
+      'Examine change-triggered validations',
+      'Verify sign-off records',
+      'Review scope change tracking'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A3.2.2',
+    name: 'DESV Scope Validation Documentation',
+    description: 'For designated entities: PCI DSS scope validation includes documentation of all segmentation controls and methods used.',
+    category: 'Designated Entities Supplemental Validation',
+    implementationGuidance: 'Document all segmentation controls used to reduce PCI DSS scope. Include network segmentation, application controls, and process isolation methods. Document segmentation testing methodology and results. Maintain current segmentation architecture diagrams. Review segmentation effectiveness regularly.',
+    evidenceRequirements: [
+      'Segmentation control inventory',
+      'Segmentation architecture diagrams',
+      'Segmentation testing methodology',
+      'Segmentation test results',
+      'Effectiveness review records'
+    ],
+    testProcedures: [
+      'Review segmentation control inventory',
+      'Examine architecture diagrams',
+      'Review testing methodology',
+      'Examine test results',
+      'Verify effectiveness reviews occur'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A3.2.3',
+    name: 'DESV Scoping Methodologies',
+    description: 'For designated entities: Scoping methodologies are validated by the assessor and confirmed as appropriate for the complexity of the environment.',
+    category: 'Designated Entities Supplemental Validation',
+    implementationGuidance: 'Document scoping methodologies used to determine PCI DSS scope. Include methodology for identifying connected systems, data flows, and security-impacting systems. Ensure methodology addresses the complexity of the specific environment. Have methodology validated by qualified assessor. Update methodology as environment evolves.',
+    evidenceRequirements: [
+      'Scoping methodology documentation',
+      'Connected systems identification process',
+      'Data flow analysis methodology',
+      'Assessor validation records',
+      'Methodology update records'
+    ],
+    testProcedures: [
+      'Review scoping methodology documentation',
+      'Verify connected systems process',
+      'Examine data flow analysis approach',
+      'Verify assessor validation',
+      'Review methodology updates'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A3.3.1',
+    name: 'DESV Impact Assessment',
+    description: 'For designated entities: The impact of any changes to the cardholder data environment, organizational structure, business processes, or supporting technologies is assessed prior to implementation.',
+    category: 'Designated Entities Supplemental Validation',
+    implementationGuidance: 'Implement comprehensive change impact assessment procedures. Assess PCI DSS scope and control impacts for all significant changes. Require pre-implementation review and approval. Document impact assessments and mitigation plans. Track assessment findings through implementation.',
+    evidenceRequirements: [
+      'Change impact assessment procedures',
+      'Assessment templates and criteria',
+      'Pre-implementation approval records',
+      'Mitigation plans',
+      'Assessment tracking records'
+    ],
+    testProcedures: [
+      'Review impact assessment procedures',
+      'Examine assessment templates',
+      'Verify pre-implementation approvals',
+      'Review mitigation plans',
+      'Examine tracking records'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A3.4.1',
+    name: 'DESV Control Effectiveness Monitoring',
+    description: 'For designated entities: PCI DSS controls are monitored on an ongoing basis for effectiveness through regular testing and review of the control environment.',
+    category: 'Designated Entities Supplemental Validation',
+    implementationGuidance: 'Implement continuous monitoring for PCI DSS control effectiveness. Define monitoring frequency based on control criticality. Use automated monitoring tools where possible. Establish KPIs for control effectiveness. Report monitoring results to management regularly.',
+    evidenceRequirements: [
+      'Control monitoring procedures',
+      'Monitoring frequency documentation',
+      'Automated monitoring tool configurations',
+      'Control effectiveness KPIs',
+      'Management reporting samples'
+    ],
+    testProcedures: [
+      'Review monitoring procedures',
+      'Verify monitoring frequency',
+      'Examine automated monitoring tools',
+      'Review effectiveness KPIs',
+      'Verify management reporting'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A3.5.1',
+    name: 'DESV Incident Response Program',
+    description: 'For designated entities: An incident response program is implemented that includes specific provisions for responding to breaches involving account data.',
+    category: 'Designated Entities Supplemental Validation',
+    implementationGuidance: 'Develop comprehensive incident response procedures specific to account data breaches. Include identification, containment, eradication, and recovery procedures. Define communication protocols for customers, card brands, and regulators. Conduct regular incident response exercises. Maintain relationships with forensic investigators.',
+    evidenceRequirements: [
+      'Account data breach response procedures',
+      'Communication protocols documentation',
+      'Incident response exercise records',
+      'Forensic investigator relationships',
+      'Response capability documentation'
+    ],
+    testProcedures: [
+      'Review breach response procedures',
+      'Verify communication protocols',
+      'Review exercise records',
+      'Verify forensic relationships',
+      'Assess response capabilities'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A3.6.1',
+    name: 'DESV Executive Reporting',
+    description: 'For designated entities: The results of the PCI DSS compliance program, including findings from the annual assessment and ongoing monitoring, are reported to executive management.',
+    category: 'Designated Entities Supplemental Validation',
+    implementationGuidance: 'Establish regular executive reporting on PCI DSS compliance status. Include assessment findings, remediation status, and risk metrics. Report on compliance trends and emerging issues. Ensure executive understanding of compliance implications. Document executive review and decisions.',
+    evidenceRequirements: [
+      'Executive reporting schedule',
+      'Compliance status report samples',
+      'Risk metrics reporting',
+      'Executive meeting minutes',
+      'Executive decision documentation'
+    ],
+    testProcedures: [
+      'Verify reporting schedule adherence',
+      'Review compliance status reports',
+      'Examine risk metrics',
+      'Review meeting minutes',
+      'Verify executive decisions are documented'
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PCI-A3.7.1',
+    name: 'DESV Compliance Assessment Findings',
+    description: 'For designated entities: Findings from the annual PCI DSS assessment are addressed in a timely manner with documented remediation plans.',
+    category: 'Designated Entities Supplemental Validation',
+    implementationGuidance: 'Implement formal processes for addressing assessment findings. Define remediation timelines based on finding severity. Track remediation through completion with evidence. Report remediation status to management. Conduct verification testing after remediation.',
+    evidenceRequirements: [
+      'Remediation process documentation',
+      'Remediation timeline standards',
+      'Remediation tracking records',
+      'Management status reports',
+      'Verification testing results'
+    ],
+    testProcedures: [
+      'Review remediation process',
+      'Verify timeline standards',
+      'Examine tracking records',
+      'Review management reports',
+      'Verify remediation testing'
+    ],
+    status: 'Not Started',
+  },
 ];
