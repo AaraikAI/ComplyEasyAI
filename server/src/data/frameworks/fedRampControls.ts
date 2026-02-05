@@ -6885,4 +6885,1124 @@ export const FEDRAMP_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started',
   },
+
+  // ============================================================
+  // ADDITIONAL SYSTEM AND COMMUNICATIONS PROTECTION (SC) - 5 Controls
+  // ============================================================
+  {
+    controlId: 'FR-SC-46',
+    name: 'Cross Domain Policy Enforcement',
+    description:
+      'FedRAMP requires organizations to implement cross domain policy enforcement mechanisms when transferring information between different security domains.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Deploy cross domain solutions. Implement policy enforcement points. Validate all cross-domain transfers. Monitor and log cross-domain activities.',
+    evidenceRequirements: [
+      'Cross domain solution implementation',
+      'Policy enforcement configuration',
+      'Transfer validation mechanisms',
+      'Cross-domain monitoring logs',
+      'Policy enforcement testing records',
+    ],
+    testProcedures: [
+      'Verify cross domain solution deployment',
+      'Test policy enforcement mechanisms',
+      'Validate transfer controls',
+      'Review monitoring logs',
+      'Assess enforcement effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-47',
+    name: 'Alternate Communications Protocols',
+    description:
+      'FedRAMP requires organizations to implement alternative communications protocols to increase availability during adverse conditions.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Identify primary and alternate protocols. Configure automatic failover. Test alternate protocols regularly. Document protocol switching procedures.',
+    evidenceRequirements: [
+      'Alternate protocol documentation',
+      'Failover configuration evidence',
+      'Protocol testing records',
+      'Switching procedures documentation',
+      'Availability metrics during failover',
+    ],
+    testProcedures: [
+      'Review alternate protocol implementation',
+      'Test automatic failover',
+      'Verify protocol switching',
+      'Review testing records',
+      'Assess availability during transitions',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-48',
+    name: 'Sensor Relocation',
+    description:
+      'FedRAMP requires organizations to relocate sensors and monitoring capabilities to protect against adversary detection and targeting.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Implement mobile or relocatable sensors. Vary monitoring locations. Protect sensor placement information. Coordinate relocation activities.',
+    evidenceRequirements: [
+      'Sensor relocation capability documentation',
+      'Relocation procedures',
+      'Placement protection measures',
+      'Coordination records',
+      'Relocation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify relocation capabilities',
+      'Test sensor mobility',
+      'Review placement protection',
+      'Examine coordination procedures',
+      'Assess detection avoidance',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-49',
+    name: 'Hardware Enforced Separation',
+    description:
+      'FedRAMP requires organizations to implement hardware-enforced separation mechanisms for security-critical components.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Deploy hardware separation mechanisms. Isolate critical components physically. Implement hardware security modules. Verify separation effectiveness.',
+    evidenceRequirements: [
+      'Hardware separation architecture',
+      'Physical isolation documentation',
+      'HSM deployment records',
+      'Separation verification evidence',
+      'Hardware security assessment',
+    ],
+    testProcedures: [
+      'Review hardware separation design',
+      'Verify physical isolation',
+      'Test HSM functionality',
+      'Validate separation effectiveness',
+      'Assess hardware security controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-50',
+    name: 'Software and Firmware Integrity Verification',
+    description:
+      'FedRAMP requires organizations to verify the integrity of software and firmware components using cryptographic mechanisms.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Implement code signing for software. Verify firmware signatures before execution. Monitor for unauthorized modifications. Alert on integrity failures.',
+    evidenceRequirements: [
+      'Code signing implementation',
+      'Firmware verification configuration',
+      'Modification monitoring setup',
+      'Integrity alerting records',
+      'Verification effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test code signing verification',
+      'Verify firmware signature checks',
+      'Test modification detection',
+      'Review integrity alerts',
+      'Assess verification coverage',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // ADDITIONAL SYSTEM AND INFORMATION INTEGRITY (SI) - 6 Controls
+  // ============================================================
+  {
+    controlId: 'FR-SI-25',
+    name: 'Information Input Validation',
+    description:
+      'FedRAMP requires organizations to check the validity of information inputs to the system.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Implement input validation controls. Validate data types, formats, and ranges. Reject invalid inputs. Log validation failures.',
+    evidenceRequirements: [
+      'Input validation implementation',
+      'Validation rules documentation',
+      'Invalid input handling procedures',
+      'Validation failure logs',
+      'Validation coverage assessment',
+    ],
+    testProcedures: [
+      'Test input validation controls',
+      'Verify validation rules',
+      'Test invalid input handling',
+      'Review failure logs',
+      'Assess validation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-26',
+    name: 'Error Handling',
+    description:
+      'FedRAMP requires organizations to handle error conditions in a secure manner that does not provide information useful to adversaries.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Implement secure error handling. Sanitize error messages for users. Log detailed errors securely. Prevent information leakage in errors.',
+    evidenceRequirements: [
+      'Error handling implementation',
+      'Error message sanitization evidence',
+      'Secure error logging configuration',
+      'Information leakage prevention measures',
+      'Error handling testing records',
+    ],
+    testProcedures: [
+      'Test error handling mechanisms',
+      'Verify error message sanitization',
+      'Review secure logging',
+      'Test for information leakage',
+      'Assess error handling security',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-27',
+    name: 'Information Output Filtering',
+    description:
+      'FedRAMP requires organizations to validate information outputs from the system to ensure accuracy and protect sensitive data.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Implement output validation. Filter sensitive data from outputs. Verify output accuracy. Log output validation activities.',
+    evidenceRequirements: [
+      'Output validation implementation',
+      'Sensitive data filtering configuration',
+      'Output accuracy verification',
+      'Validation activity logs',
+      'Output filtering effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test output validation',
+      'Verify sensitive data filtering',
+      'Check output accuracy',
+      'Review validation logs',
+      'Assess filtering effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-28',
+    name: 'Memory Protection',
+    description:
+      'FedRAMP requires organizations to implement memory protection mechanisms to prevent unauthorized code execution.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Enable DEP/NX protections. Implement ASLR. Use stack canaries. Monitor for memory exploitation attempts.',
+    evidenceRequirements: [
+      'DEP/NX configuration evidence',
+      'ASLR implementation records',
+      'Stack protection configuration',
+      'Memory exploitation monitoring',
+      'Memory protection assessment',
+    ],
+    testProcedures: [
+      'Verify DEP/NX is enabled',
+      'Test ASLR effectiveness',
+      'Review stack protection',
+      'Test exploitation detection',
+      'Assess memory protection coverage',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-29',
+    name: 'Fail-Safe Procedures',
+    description:
+      'FedRAMP requires organizations to implement fail-safe procedures that activate when security failures occur.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Define fail-safe states for systems. Implement automatic fail-safe activation. Test fail-safe procedures. Document recovery procedures.',
+    evidenceRequirements: [
+      'Fail-safe state definitions',
+      'Automatic activation configuration',
+      'Fail-safe testing records',
+      'Recovery procedure documentation',
+      'Fail-safe effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review fail-safe definitions',
+      'Test automatic activation',
+      'Verify fail-safe procedures',
+      'Review recovery procedures',
+      'Assess fail-safe effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-30',
+    name: 'Information Disposal',
+    description:
+      'FedRAMP requires organizations to dispose of information and sanitize media in accordance with organizational policies.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Implement secure disposal procedures. Use approved sanitization methods. Verify disposal completion. Document disposal activities.',
+    evidenceRequirements: [
+      'Disposal procedure documentation',
+      'Sanitization method approvals',
+      'Disposal verification records',
+      'Activity documentation',
+      'Disposal effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review disposal procedures',
+      'Verify sanitization methods',
+      'Check disposal verification',
+      'Review activity documentation',
+      'Assess disposal effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // ADDITIONAL CONTINGENCY PLANNING (CP) - 6 Controls
+  // ============================================================
+  {
+    controlId: 'FR-CP-7',
+    name: 'Alternate Processing Site',
+    description:
+      'FedRAMP requires organizations to establish an alternate processing site that provides security safeguards equivalent to the primary site.',
+    category: 'Contingency Planning',
+    implementationGuidance:
+      'Identify and configure alternate processing site. Ensure equivalent security controls. Test failover capabilities. Maintain site readiness.',
+    evidenceRequirements: [
+      'Alternate site documentation',
+      'Security control equivalence analysis',
+      'Failover testing records',
+      'Site readiness assessments',
+      'Alternate site agreements',
+    ],
+    testProcedures: [
+      'Verify alternate site configuration',
+      'Assess security control equivalence',
+      'Test failover capabilities',
+      'Review readiness assessments',
+      'Examine site agreements',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CP-8',
+    name: 'Telecommunications Services',
+    description:
+      'FedRAMP requires organizations to establish alternate telecommunications services to support the contingency plan.',
+    category: 'Contingency Planning',
+    implementationGuidance:
+      'Establish primary and alternate telecommunications. Configure automatic failover. Test telecommunications continuity. Document service agreements.',
+    evidenceRequirements: [
+      'Telecommunications service documentation',
+      'Failover configuration evidence',
+      'Continuity testing records',
+      'Service agreements',
+      'Telecommunications redundancy assessment',
+    ],
+    testProcedures: [
+      'Verify telecommunications configuration',
+      'Test automatic failover',
+      'Review continuity testing',
+      'Examine service agreements',
+      'Assess redundancy effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CP-9',
+    name: 'Information System Backup',
+    description:
+      'FedRAMP requires organizations to conduct backups of user-level and system-level information at defined frequencies.',
+    category: 'Contingency Planning',
+    implementationGuidance:
+      'Define backup frequencies by data criticality. Automate backup processes. Verify backup integrity. Store backups securely off-site.',
+    evidenceRequirements: [
+      'Backup policy and procedures',
+      'Backup automation configuration',
+      'Integrity verification records',
+      'Off-site storage evidence',
+      'Backup testing records',
+    ],
+    testProcedures: [
+      'Review backup policy',
+      'Verify automation configuration',
+      'Test backup integrity',
+      'Verify off-site storage',
+      'Test backup restoration',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CP-10',
+    name: 'Information System Recovery and Reconstitution',
+    description:
+      'FedRAMP requires organizations to provide for the recovery and reconstitution of the system to a known state after disruption.',
+    category: 'Contingency Planning',
+    implementationGuidance:
+      'Define recovery procedures. Establish known-good system states. Practice recovery procedures. Document reconstitution activities.',
+    evidenceRequirements: [
+      'Recovery procedure documentation',
+      'Known-good state definitions',
+      'Recovery practice records',
+      'Reconstitution activity logs',
+      'Recovery effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review recovery procedures',
+      'Verify known-good state definitions',
+      'Test recovery capabilities',
+      'Review reconstitution logs',
+      'Assess recovery effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CP-11',
+    name: 'Alternate Communications Protocols',
+    description:
+      'FedRAMP requires organizations to establish alternate communications protocols to support contingency operations.',
+    category: 'Contingency Planning',
+    implementationGuidance:
+      'Identify alternate communication methods. Configure backup communications. Test alternate protocols. Document protocol switching procedures.',
+    evidenceRequirements: [
+      'Alternate communications documentation',
+      'Backup communications configuration',
+      'Protocol testing records',
+      'Switching procedure documentation',
+      'Communications continuity assessment',
+    ],
+    testProcedures: [
+      'Review alternate communications',
+      'Verify backup configuration',
+      'Test alternate protocols',
+      'Review switching procedures',
+      'Assess communications continuity',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CP-12',
+    name: 'Safe Mode',
+    description:
+      'FedRAMP requires organizations to implement safe mode operations when anomalous conditions are detected.',
+    category: 'Contingency Planning',
+    implementationGuidance:
+      'Define safe mode operating states. Implement automatic safe mode activation. Test safe mode transitions. Document safe mode procedures.',
+    evidenceRequirements: [
+      'Safe mode definition documentation',
+      'Automatic activation configuration',
+      'Transition testing records',
+      'Safe mode procedures',
+      'Safe mode effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review safe mode definitions',
+      'Test automatic activation',
+      'Verify transition procedures',
+      'Review safe mode procedures',
+      'Assess safe mode effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // ADDITIONAL IDENTIFICATION AND AUTHENTICATION (IA) - 6 Controls
+  // ============================================================
+  {
+    controlId: 'FR-IA-7',
+    name: 'Cryptographic Module Authentication',
+    description:
+      'FedRAMP requires organizations to implement authentication mechanisms that meet FIPS 140-2 requirements for cryptographic modules.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Use FIPS 140-2 validated modules. Configure module authentication. Verify module validation status. Monitor module compliance.',
+    evidenceRequirements: [
+      'FIPS 140-2 validation certificates',
+      'Module authentication configuration',
+      'Validation status verification',
+      'Compliance monitoring records',
+      'Module security assessment',
+    ],
+    testProcedures: [
+      'Verify FIPS 140-2 validation',
+      'Test module authentication',
+      'Review validation status',
+      'Examine compliance monitoring',
+      'Assess module security',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-8',
+    name: 'Identification and Authentication (Non-Organizational Users)',
+    description:
+      'FedRAMP requires organizations to uniquely identify and authenticate non-organizational users and processes acting on behalf of non-organizational users.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Implement external user identification. Require authentication for non-org users. Validate external identities. Monitor non-org user activities.',
+    evidenceRequirements: [
+      'External user identification process',
+      'Non-org user authentication configuration',
+      'Identity validation procedures',
+      'Activity monitoring records',
+      'External user access assessment',
+    ],
+    testProcedures: [
+      'Test external user identification',
+      'Verify authentication requirements',
+      'Review identity validation',
+      'Examine activity monitoring',
+      'Assess external access controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-9',
+    name: 'Service Identification and Authentication',
+    description:
+      'FedRAMP requires organizations to identify and authenticate services before establishing connections.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Implement service-to-service authentication. Use certificates for service identity. Validate service credentials. Monitor service connections.',
+    evidenceRequirements: [
+      'Service authentication implementation',
+      'Certificate management documentation',
+      'Credential validation procedures',
+      'Connection monitoring records',
+      'Service authentication assessment',
+    ],
+    testProcedures: [
+      'Test service authentication',
+      'Verify certificate usage',
+      'Review credential validation',
+      'Examine connection monitoring',
+      'Assess service identity controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-10',
+    name: 'Adaptive Identification and Authentication',
+    description:
+      'FedRAMP requires organizations to require individuals accessing the system to employ supplemental authentication techniques under specific circumstances.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Define adaptive authentication triggers. Implement step-up authentication. Configure risk-based authentication. Monitor authentication patterns.',
+    evidenceRequirements: [
+      'Adaptive authentication policy',
+      'Step-up authentication configuration',
+      'Risk-based rules documentation',
+      'Authentication pattern monitoring',
+      'Adaptive authentication assessment',
+    ],
+    testProcedures: [
+      'Test adaptive authentication triggers',
+      'Verify step-up authentication',
+      'Review risk-based rules',
+      'Examine pattern monitoring',
+      'Assess adaptive effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-11',
+    name: 'Re-authentication',
+    description:
+      'FedRAMP requires organizations to require users to re-authenticate when defined circumstances or situations require re-authentication.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Define re-authentication triggers. Implement session timeout re-auth. Require re-auth for sensitive operations. Log re-authentication events.',
+    evidenceRequirements: [
+      'Re-authentication policy',
+      'Trigger configuration documentation',
+      'Session timeout settings',
+      'Sensitive operation re-auth config',
+      'Re-authentication event logs',
+    ],
+    testProcedures: [
+      'Test re-authentication triggers',
+      'Verify session timeouts',
+      'Test sensitive operation re-auth',
+      'Review event logs',
+      'Assess re-authentication effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-12',
+    name: 'Identity Proofing',
+    description:
+      'FedRAMP requires organizations to identity proof users who require accounts for logical access to systems.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Establish identity proofing procedures. Verify user identity documents. Validate identity evidence. Document proofing activities.',
+    evidenceRequirements: [
+      'Identity proofing procedures',
+      'Document verification requirements',
+      'Evidence validation records',
+      'Proofing activity logs',
+      'Identity proofing assessment',
+    ],
+    testProcedures: [
+      'Review proofing procedures',
+      'Verify document requirements',
+      'Test evidence validation',
+      'Review activity logs',
+      'Assess proofing effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // ADDITIONAL INCIDENT RESPONSE (IR) - 5 Controls
+  // ============================================================
+  {
+    controlId: 'FR-IR-8',
+    name: 'Incident Response Plan',
+    description:
+      'FedRAMP requires organizations to develop an incident response plan that provides a roadmap for implementing incident response capability.',
+    category: 'Incident Response',
+    implementationGuidance:
+      'Develop comprehensive IR plan. Define roles and responsibilities. Establish communication procedures. Review and update plan annually.',
+    evidenceRequirements: [
+      'Incident response plan document',
+      'Role and responsibility definitions',
+      'Communication procedures',
+      'Plan review records',
+      'Plan distribution evidence',
+    ],
+    testProcedures: [
+      'Review IR plan completeness',
+      'Verify role definitions',
+      'Test communication procedures',
+      'Confirm annual reviews',
+      'Verify plan distribution',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IR-9',
+    name: 'Information Spillage Response',
+    description:
+      'FedRAMP requires organizations to respond to information spills by identifying contaminated systems and taking corrective actions.',
+    category: 'Incident Response',
+    implementationGuidance:
+      'Define spillage response procedures. Identify contamination scope. Implement containment measures. Conduct cleanup activities.',
+    evidenceRequirements: [
+      'Spillage response procedures',
+      'Contamination identification process',
+      'Containment measure documentation',
+      'Cleanup activity records',
+      'Spillage response assessment',
+    ],
+    testProcedures: [
+      'Review spillage procedures',
+      'Test contamination identification',
+      'Verify containment measures',
+      'Review cleanup records',
+      'Assess response effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IR-10',
+    name: 'Integrated Information Security Analysis Team',
+    description:
+      'FedRAMP requires organizations to establish an integrated team of forensic/malware analysts, tool developers, and real-time operations personnel.',
+    category: 'Incident Response',
+    implementationGuidance:
+      'Form integrated security analysis team. Define team roles and capabilities. Establish collaboration procedures. Train team members.',
+    evidenceRequirements: [
+      'Team charter and membership',
+      'Role and capability definitions',
+      'Collaboration procedure documentation',
+      'Training records',
+      'Team effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review team composition',
+      'Verify role definitions',
+      'Test collaboration procedures',
+      'Review training records',
+      'Assess team effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IR-11',
+    name: 'Incident Response Automation',
+    description:
+      'FedRAMP requires organizations to employ automated mechanisms to support the incident response process.',
+    category: 'Incident Response',
+    implementationGuidance:
+      'Implement SOAR capabilities. Automate incident triage. Configure automated response actions. Monitor automation effectiveness.',
+    evidenceRequirements: [
+      'SOAR implementation documentation',
+      'Automated triage configuration',
+      'Response automation rules',
+      'Effectiveness monitoring records',
+      'Automation assessment',
+    ],
+    testProcedures: [
+      'Test SOAR capabilities',
+      'Verify automated triage',
+      'Test response automation',
+      'Review monitoring records',
+      'Assess automation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IR-12',
+    name: 'Malicious Code and Forensic Analysis',
+    description:
+      'FedRAMP requires organizations to analyze malicious code and conduct forensic analysis to support incident response.',
+    category: 'Incident Response',
+    implementationGuidance:
+      'Establish malware analysis capability. Implement forensic analysis procedures. Preserve evidence chain of custody. Document analysis findings.',
+    evidenceRequirements: [
+      'Malware analysis capability documentation',
+      'Forensic analysis procedures',
+      'Chain of custody records',
+      'Analysis finding reports',
+      'Capability effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test malware analysis capability',
+      'Review forensic procedures',
+      'Verify chain of custody',
+      'Review analysis reports',
+      'Assess capability effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // ADDITIONAL RISK ASSESSMENT (RA) - 4 Controls
+  // ============================================================
+  {
+    controlId: 'FR-RA-9',
+    name: 'Criticality Analysis',
+    description:
+      'FedRAMP requires organizations to identify critical system components and functions by performing a criticality analysis.',
+    category: 'Risk Assessment',
+    implementationGuidance:
+      'Identify critical components. Assess component dependencies. Determine criticality levels. Document analysis findings.',
+    evidenceRequirements: [
+      'Criticality analysis documentation',
+      'Critical component inventory',
+      'Dependency mapping',
+      'Criticality level assignments',
+      'Analysis review records',
+    ],
+    testProcedures: [
+      'Review criticality analysis',
+      'Verify component inventory',
+      'Examine dependency mapping',
+      'Review criticality levels',
+      'Assess analysis completeness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-RA-10',
+    name: 'Threat Hunting',
+    description:
+      'FedRAMP requires organizations to conduct a threat hunting capability to search for indicators of compromise.',
+    category: 'Risk Assessment',
+    implementationGuidance:
+      'Establish threat hunting program. Define hunting hypotheses. Conduct regular hunting activities. Document and act on findings.',
+    evidenceRequirements: [
+      'Threat hunting program documentation',
+      'Hunting hypothesis records',
+      'Hunting activity logs',
+      'Finding documentation',
+      'Program effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review hunting program',
+      'Examine hunting hypotheses',
+      'Review activity logs',
+      'Verify finding documentation',
+      'Assess program effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-RA-11',
+    name: 'Enterprise Risk Management Integration',
+    description:
+      'FedRAMP requires organizations to integrate risk assessment processes with enterprise risk management processes.',
+    category: 'Risk Assessment',
+    implementationGuidance:
+      'Align system risk with enterprise risk. Report risks to enterprise level. Incorporate enterprise guidance. Coordinate risk activities.',
+    evidenceRequirements: [
+      'Enterprise risk integration documentation',
+      'Risk reporting procedures',
+      'Enterprise guidance incorporation',
+      'Coordination records',
+      'Integration effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review integration documentation',
+      'Verify risk reporting',
+      'Examine enterprise guidance',
+      'Review coordination records',
+      'Assess integration effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-RA-12',
+    name: 'Mission and Business Process Definition',
+    description:
+      'FedRAMP requires organizations to define mission and business processes with consideration for information security.',
+    category: 'Risk Assessment',
+    implementationGuidance:
+      'Document mission and business processes. Identify security requirements per process. Assess process risks. Update process documentation regularly.',
+    evidenceRequirements: [
+      'Mission and business process documentation',
+      'Process security requirements',
+      'Process risk assessments',
+      'Documentation update records',
+      'Process security assessment',
+    ],
+    testProcedures: [
+      'Review process documentation',
+      'Verify security requirements',
+      'Examine risk assessments',
+      'Review update records',
+      'Assess process security',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // ADDITIONAL AWARENESS AND TRAINING (AT) - 4 Controls
+  // ============================================================
+  {
+    controlId: 'FR-AT-7',
+    name: 'Role-Based Security Training',
+    description:
+      'FedRAMP requires organizations to provide role-based security training to personnel with assigned security roles.',
+    category: 'Awareness and Training',
+    implementationGuidance:
+      'Identify roles requiring specialized training. Develop role-based training curriculum. Deliver training before role assignment. Track training completion.',
+    evidenceRequirements: [
+      'Role-based training curriculum',
+      'Training delivery records',
+      'Completion tracking documentation',
+      'Training effectiveness assessment',
+      'Role assignment verification',
+    ],
+    testProcedures: [
+      'Review training curriculum',
+      'Verify training delivery',
+      'Check completion tracking',
+      'Assess training effectiveness',
+      'Verify role assignment timing',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AT-8',
+    name: 'Security Training Records',
+    description:
+      'FedRAMP requires organizations to document and monitor individual security training activities.',
+    category: 'Awareness and Training',
+    implementationGuidance:
+      'Maintain training records per individual. Track training completion status. Monitor training currency. Report training metrics.',
+    evidenceRequirements: [
+      'Individual training records',
+      'Completion status tracking',
+      'Currency monitoring records',
+      'Training metrics reports',
+      'Record retention evidence',
+    ],
+    testProcedures: [
+      'Review individual records',
+      'Verify completion tracking',
+      'Check currency monitoring',
+      'Review metrics reports',
+      'Verify record retention',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AT-9',
+    name: 'Simulated Attack Training',
+    description:
+      'FedRAMP requires organizations to include simulated events in security training to prepare personnel for actual incidents.',
+    category: 'Awareness and Training',
+    implementationGuidance:
+      'Design realistic attack simulations. Conduct regular phishing exercises. Provide feedback on performance. Track improvement over time.',
+    evidenceRequirements: [
+      'Simulation design documentation',
+      'Exercise execution records',
+      'Performance feedback records',
+      'Improvement tracking metrics',
+      'Simulation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review simulation design',
+      'Examine exercise records',
+      'Verify feedback delivery',
+      'Review improvement metrics',
+      'Assess simulation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AT-10',
+    name: 'Practical Exercises',
+    description:
+      'FedRAMP requires organizations to provide practical exercises that simulate actual cyber-attacks.',
+    category: 'Awareness and Training',
+    implementationGuidance:
+      'Develop hands-on security exercises. Conduct tabletop and functional exercises. Evaluate participant performance. Apply lessons learned.',
+    evidenceRequirements: [
+      'Exercise curriculum documentation',
+      'Exercise execution records',
+      'Performance evaluation records',
+      'Lessons learned documentation',
+      'Exercise effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review exercise curriculum',
+      'Examine execution records',
+      'Verify performance evaluation',
+      'Review lessons learned',
+      'Assess exercise effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // ADDITIONAL SECURITY ASSESSMENT AND AUTHORIZATION (CA) - 3 Controls
+  // ============================================================
+  {
+    controlId: 'FR-CA-13',
+    name: 'Penetration Testing',
+    description:
+      'FedRAMP requires organizations to conduct penetration testing on an annual basis to identify exploitable vulnerabilities.',
+    category: 'Security Assessment and Authorization',
+    implementationGuidance:
+      'Engage qualified penetration testers. Define testing scope and rules. Conduct comprehensive testing. Remediate identified vulnerabilities.',
+    evidenceRequirements: [
+      'Penetration testing scope documentation',
+      'Tester qualifications',
+      'Testing methodology documentation',
+      'Test results and findings',
+      'Remediation tracking records',
+    ],
+    testProcedures: [
+      'Review testing scope',
+      'Verify tester qualifications',
+      'Examine testing methodology',
+      'Review test results',
+      'Verify remediation activities',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CA-14',
+    name: 'Internal System Connections',
+    description:
+      'FedRAMP requires organizations to authorize internal connections of system components and monitor the connections.',
+    category: 'Security Assessment and Authorization',
+    implementationGuidance:
+      'Document internal system connections. Authorize each connection. Monitor connection activities. Review connections periodically.',
+    evidenceRequirements: [
+      'Internal connection inventory',
+      'Connection authorization records',
+      'Connection monitoring configuration',
+      'Periodic review records',
+      'Connection security assessment',
+    ],
+    testProcedures: [
+      'Review connection inventory',
+      'Verify connection authorizations',
+      'Test connection monitoring',
+      'Examine review records',
+      'Assess connection security',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CA-15',
+    name: 'Security Control Assessment Automation',
+    description:
+      'FedRAMP requires organizations to employ automated mechanisms to support security control assessment activities.',
+    category: 'Security Assessment and Authorization',
+    implementationGuidance:
+      'Implement automated assessment tools. Configure continuous assessment. Generate automated assessment reports. Monitor assessment coverage.',
+    evidenceRequirements: [
+      'Assessment automation implementation',
+      'Continuous assessment configuration',
+      'Automated assessment reports',
+      'Coverage monitoring records',
+      'Automation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test assessment automation',
+      'Verify continuous assessment',
+      'Review automated reports',
+      'Examine coverage monitoring',
+      'Assess automation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // ADDITIONAL MEDIA PROTECTION (MP) - 3 Controls
+  // ============================================================
+  {
+    controlId: 'FR-MP-11',
+    name: 'Media Use',
+    description:
+      'FedRAMP requires organizations to restrict the use of types of digital media on systems or system components.',
+    category: 'Media Protection',
+    implementationGuidance:
+      'Define authorized media types. Implement technical media restrictions. Monitor media usage. Enforce media policies.',
+    evidenceRequirements: [
+      'Authorized media type documentation',
+      'Technical restriction implementation',
+      'Media usage monitoring records',
+      'Policy enforcement records',
+      'Media use assessment',
+    ],
+    testProcedures: [
+      'Review authorized media types',
+      'Test technical restrictions',
+      'Verify usage monitoring',
+      'Examine enforcement records',
+      'Assess media controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-MP-12',
+    name: 'Media Downgrading',
+    description:
+      'FedRAMP requires organizations to downgrade media containing sensitive information before release for reuse.',
+    category: 'Media Protection',
+    implementationGuidance:
+      'Define downgrading procedures. Implement approved sanitization techniques. Verify downgrading effectiveness. Document downgrading activities.',
+    evidenceRequirements: [
+      'Downgrading procedure documentation',
+      'Sanitization technique approvals',
+      'Effectiveness verification records',
+      'Activity documentation',
+      'Downgrading assessment',
+    ],
+    testProcedures: [
+      'Review downgrading procedures',
+      'Verify sanitization techniques',
+      'Test effectiveness verification',
+      'Review activity documentation',
+      'Assess downgrading controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-MP-13',
+    name: 'Digital Media Labeling',
+    description:
+      'FedRAMP requires organizations to mark digital media with appropriate security labels indicating distribution limitations.',
+    category: 'Media Protection',
+    implementationGuidance:
+      'Define labeling requirements. Implement automated labeling where possible. Verify label accuracy. Monitor labeling compliance.',
+    evidenceRequirements: [
+      'Labeling requirements documentation',
+      'Automated labeling implementation',
+      'Label accuracy verification records',
+      'Compliance monitoring records',
+      'Labeling effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review labeling requirements',
+      'Test automated labeling',
+      'Verify label accuracy',
+      'Examine compliance monitoring',
+      'Assess labeling effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // ADDITIONAL ACCESS CONTROL (AC) - 3 Controls
+  // ============================================================
+  {
+    controlId: 'FR-AC-20',
+    name: 'Use of External Systems',
+    description:
+      'FedRAMP requires organizations to establish terms and conditions for authorized individuals to access the system from external systems.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Define external system access policies. Establish access terms and conditions. Verify external system security. Monitor external access.',
+    evidenceRequirements: [
+      'External access policy documentation',
+      'Terms and conditions documentation',
+      'External system security verification',
+      'Access monitoring records',
+      'External access assessment',
+    ],
+    testProcedures: [
+      'Review external access policy',
+      'Verify terms and conditions',
+      'Examine security verification',
+      'Review monitoring records',
+      'Assess external access controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-21',
+    name: 'Information Sharing',
+    description:
+      'FedRAMP requires organizations to facilitate information sharing by enabling authorized users to determine access permissions.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Implement information sharing controls. Enable user-defined permissions where appropriate. Audit sharing activities. Enforce sharing boundaries.',
+    evidenceRequirements: [
+      'Information sharing policy',
+      'User permission mechanisms',
+      'Sharing activity audit logs',
+      'Boundary enforcement configuration',
+      'Sharing controls assessment',
+    ],
+    testProcedures: [
+      'Review sharing policy',
+      'Test permission mechanisms',
+      'Review audit logs',
+      'Verify boundary enforcement',
+      'Assess sharing controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-22',
+    name: 'Publicly Accessible Content',
+    description:
+      'FedRAMP requires organizations to designate individuals authorized to post information publicly and review content for nonpublic information.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Designate authorized content publishers. Implement content review process. Train publishers on requirements. Monitor public content.',
+    evidenceRequirements: [
+      'Authorized publisher designations',
+      'Content review procedures',
+      'Publisher training records',
+      'Public content monitoring records',
+      'Content control assessment',
+    ],
+    testProcedures: [
+      'Verify publisher designations',
+      'Review content review process',
+      'Examine training records',
+      'Review monitoring records',
+      'Assess content controls',
+    ],
+    status: 'Not Started',
+  },
 ];
