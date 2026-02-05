@@ -495,23 +495,299 @@ Format as JSON with: {prediction, confidence, factors}`;
     rule: SymbolicRule,
     context?: any
   ): { satisfied: boolean; confidence: number } {
-    const condition = rule.condition.toLowerCase();
-    let satisfied = false;
+    if (!context) {
+      return { satisfied: false, confidence: Math.max(0, rule.confidence - 0.4) };
+    }
 
-    if (context) {
-      if (condition.includes('non-compliant') && context.controls) {
-        const controls = Array.isArray(context.controls) ? context.controls : [context.controls];
-        satisfied = controls.some((c: any) => c.status === 'Non-Compliant');
-      } else if (condition.includes('high') && context.risks) {
-        const risks = Array.isArray(context.risks) ? context.risks : [context.risks];
-        satisfied = risks.some((r: any) => r.severity === 'High');
+    const condition = rule.condition;
+
+    // Parse and evaluate the condition expression with support for AND, OR, NOT, and nested groups
+    const result = this.evaluateConditionExpression(condition, context);
+
+    return {
+      satisfied: result.satisfied,
+      confidence: result.satisfied
+        ? rule.confidence * result.matchStrength
+        : Math.max(0, rule.confidence - 0.3 * (1 - result.matchStrength)),
+    };
+  }
+
+  /**
+   * Recursively evaluate a condition expression supporting AND, OR, NOT, parentheses, and comparisons
+   */
+  private evaluateConditionExpression(
+    condition: string,
+    context: any
+  ): { satisfied: boolean; matchStrength: number } {
+    let expr = condition.trim();
+
+    // Strip outer parentheses if they wrap the entire expression
+    if (expr.startsWith('(') && expr.endsWith(')')) {
+      let depth = 0;
+      let wrapsAll = true;
+      for (let i = 0; i < expr.length; i++) {
+        if (expr[i] === '(') depth++;
+        if (expr[i] === ')') depth--;
+        if (depth === 0 && i < expr.length - 1) {
+          wrapsAll = false;
+          break;
+        }
+      }
+      if (wrapsAll) {
+        expr = expr.substring(1, expr.length - 1).trim();
       }
     }
 
-    return {
-      satisfied,
-      confidence: satisfied ? rule.confidence : Math.max(0, rule.confidence - 0.3),
-    };
+    // Split on OR (lowest precedence) - respecting parentheses
+    const orParts = this.splitByOperator(expr, 'OR');
+    if (orParts.length > 1) {
+      let anySatisfied = false;
+      let maxStrength = 0;
+      for (const part of orParts) {
+        const result = this.evaluateConditionExpression(part.trim(), context);
+        if (result.satisfied) {
+          anySatisfied = true;
+          maxStrength = Math.max(maxStrength, result.matchStrength);
+        }
+      }
+      return { satisfied: anySatisfied, matchStrength: anySatisfied ? maxStrength : 0 };
+    }
+
+    // Split on AND (higher precedence than OR) - respecting parentheses
+    const andParts = this.splitByOperator(expr, 'AND');
+    if (andParts.length > 1) {
+      let allSatisfied = true;
+      let totalStrength = 0;
+      for (const part of andParts) {
+        const result = this.evaluateConditionExpression(part.trim(), context);
+        if (!result.satisfied) {
+          allSatisfied = false;
+        }
+        totalStrength += result.matchStrength;
+      }
+      return {
+        satisfied: allSatisfied,
+        matchStrength: totalStrength / andParts.length,
+      };
+    }
+
+    // Handle NOT prefix
+    if (expr.toUpperCase().startsWith('NOT ') || expr.startsWith('!')) {
+      const inner = expr.toUpperCase().startsWith('NOT ') ? expr.substring(4).trim() : expr.substring(1).trim();
+      const result = this.evaluateConditionExpression(inner, context);
+      return { satisfied: !result.satisfied, matchStrength: result.matchStrength };
+    }
+
+    // Evaluate atomic condition (leaf expression)
+    return this.evaluateAtomicCondition(expr, context);
+  }
+
+  /**
+   * Split an expression by a logical operator, respecting parenthesized groups
+   */
+  private splitByOperator(expr: string, operator: string): string[] {
+    const parts: string[] = [];
+    let depth = 0;
+    let current = '';
+    const tokens = expr.split(/\s+/);
+    const op = operator.toUpperCase();
+
+    for (const token of tokens) {
+      // Track parenthesis depth
+      for (const ch of token) {
+        if (ch === '(') depth++;
+        if (ch === ')') depth--;
+      }
+
+      if (depth === 0 && token.toUpperCase() === op) {
+        if (current.trim()) {
+          parts.push(current.trim());
+        }
+        current = '';
+      } else {
+        current += (current ? ' ' : '') + token;
+      }
+    }
+    if (current.trim()) {
+      parts.push(current.trim());
+    }
+
+    return parts;
+  }
+
+  /**
+   * Evaluate a single atomic condition against the context
+   */
+  private evaluateAtomicCondition(
+    expr: string,
+    context: any
+  ): { satisfied: boolean; matchStrength: number } {
+    const lowerExpr = expr.toLowerCase();
+
+    // Pattern: field.property operator value (e.g., "control.status == 'Non-Compliant'")
+    const comparisonMatch = expr.match(
+      /(\w+(?:\.\w+)*)\s*(==|!=|>=|<=|>|<|contains|includes)\s*['"]?([^'"]+)['"]?/i
+    );
+
+    if (comparisonMatch) {
+      const [, fieldPath, operator, value] = comparisonMatch;
+      const resolvedValues = this.resolveFieldValues(fieldPath, context);
+
+      if (resolvedValues.length === 0) {
+        return { satisfied: false, matchStrength: 0 };
+      }
+
+      let matchCount = 0;
+      for (const resolved of resolvedValues) {
+        if (this.compareValues(resolved, operator.toLowerCase(), value.trim())) {
+          matchCount++;
+        }
+      }
+
+      const satisfied = matchCount > 0;
+      const matchStrength = resolvedValues.length > 0 ? matchCount / resolvedValues.length : 0;
+      return { satisfied, matchStrength: Math.max(matchStrength, satisfied ? 0.5 : 0) };
+    }
+
+    // Pattern: threshold comparison (e.g., "risk score > 0.7", "compliance rate >= 80")
+    const thresholdMatch = expr.match(
+      /(\w+(?:\s+\w+)*)\s*(above|below|exceeds|at least|at most|greater than|less than)\s*(\d+(?:\.\d+)?%?)/i
+    );
+
+    if (thresholdMatch) {
+      const [, fieldName, comparison, thresholdStr] = thresholdMatch;
+      const threshold = parseFloat(thresholdStr.replace('%', ''));
+      const isPercent = thresholdStr.includes('%');
+      const resolvedValues = this.resolveFieldValues(fieldName.trim().replace(/\s+/g, '.'), context);
+
+      for (const val of resolvedValues) {
+        const numVal = typeof val === 'number' ? val : parseFloat(String(val));
+        if (isNaN(numVal)) continue;
+        const compareVal = isPercent ? numVal * 100 : numVal;
+
+        const comp = comparison.toLowerCase();
+        let satisfied = false;
+        if (comp === 'above' || comp === 'exceeds' || comp === 'greater than') satisfied = compareVal > threshold;
+        else if (comp === 'below' || comp === 'less than') satisfied = compareVal < threshold;
+        else if (comp === 'at least') satisfied = compareVal >= threshold;
+        else if (comp === 'at most') satisfied = compareVal <= threshold;
+
+        if (satisfied) {
+          return { satisfied: true, matchStrength: 0.8 };
+        }
+      }
+      return { satisfied: false, matchStrength: 0.2 };
+    }
+
+    // Keyword-based matching for common compliance terms
+    const keywordChecks: Array<{
+      keywords: string[];
+      contextField: string;
+      statusCheck: (item: any) => boolean;
+    }> = [
+      { keywords: ['non-compliant', 'non_compliant', 'noncompliant'], contextField: 'controls', statusCheck: (c: any) => c.status === 'Non-Compliant' || c.status === 'non-compliant' || c.status === 'Failed' },
+      { keywords: ['compliant', 'in-compliance'], contextField: 'controls', statusCheck: (c: any) => c.status === 'Compliant' || c.status === 'compliant' || c.status === 'Passed' },
+      { keywords: ['critical', 'critical severity', 'critical risk'], contextField: 'risks', statusCheck: (r: any) => r.severity === 'Critical' },
+      { keywords: ['high', 'high severity', 'high risk'], contextField: 'risks', statusCheck: (r: any) => r.severity === 'High' || r.severity === 'Critical' },
+      { keywords: ['medium', 'medium severity', 'medium risk'], contextField: 'risks', statusCheck: (r: any) => r.severity === 'Medium' },
+      { keywords: ['low', 'low severity', 'low risk'], contextField: 'risks', statusCheck: (r: any) => r.severity === 'Low' },
+      { keywords: ['pending', 'not implemented', 'incomplete'], contextField: 'controls', statusCheck: (c: any) => c.status === 'Pending' || c.status === 'Not Implemented' || c.status === 'In Progress' },
+      { keywords: ['overdue', 'expired', 'past due'], contextField: 'controls', statusCheck: (c: any) => c.dueDate && new Date(c.dueDate) < new Date() },
+    ];
+
+    for (const check of keywordChecks) {
+      if (check.keywords.some(kw => lowerExpr.includes(kw))) {
+        const items = context[check.contextField];
+        if (items) {
+          const itemArray = Array.isArray(items) ? items : [items];
+          const matchCount = itemArray.filter(check.statusCheck).length;
+          if (matchCount > 0) {
+            return { satisfied: true, matchStrength: Math.min(1, 0.5 + matchCount / itemArray.length * 0.5) };
+          }
+        }
+        return { satisfied: false, matchStrength: 0.2 };
+      }
+    }
+
+    // Fallback: attempt direct context field lookup from the expression
+    for (const key of Object.keys(context)) {
+      if (lowerExpr.includes(key.toLowerCase()) && context[key] !== undefined && context[key] !== null) {
+        const val = context[key];
+        if (typeof val === 'boolean') {
+          return { satisfied: val, matchStrength: 0.6 };
+        }
+        if (typeof val === 'number') {
+          return { satisfied: val > 0, matchStrength: 0.5 };
+        }
+      }
+    }
+
+    return { satisfied: false, matchStrength: 0.1 };
+  }
+
+  /**
+   * Resolve a dotted field path against the context, returning all matching values
+   * (handles arrays by expanding each element)
+   */
+  private resolveFieldValues(fieldPath: string, context: any): any[] {
+    const parts = fieldPath.split('.');
+    let current: any[] = [context];
+
+    for (const part of parts) {
+      const next: any[] = [];
+      for (const item of current) {
+        if (item == null) continue;
+        if (Array.isArray(item)) {
+          for (const el of item) {
+            if (el != null && el[part] !== undefined) {
+              next.push(el[part]);
+            }
+          }
+        } else if (typeof item === 'object' && item[part] !== undefined) {
+          const val = item[part];
+          if (Array.isArray(val)) {
+            next.push(...val);
+          } else {
+            next.push(val);
+          }
+        }
+      }
+      current = next;
+    }
+
+    return current;
+  }
+
+  /**
+   * Compare a resolved value against an expected value using the specified operator
+   */
+  private compareValues(actual: any, operator: string, expected: string): boolean {
+    const actualStr = String(actual).toLowerCase().trim();
+    const expectedStr = expected.toLowerCase().trim();
+    const actualNum = parseFloat(String(actual));
+    const expectedNum = parseFloat(expected);
+
+    switch (operator) {
+      case '==':
+      case '===':
+        return actualStr === expectedStr;
+      case '!=':
+      case '!==':
+        return actualStr !== expectedStr;
+      case '>':
+        return !isNaN(actualNum) && !isNaN(expectedNum) && actualNum > expectedNum;
+      case '<':
+        return !isNaN(actualNum) && !isNaN(expectedNum) && actualNum < expectedNum;
+      case '>=':
+        return !isNaN(actualNum) && !isNaN(expectedNum) && actualNum >= expectedNum;
+      case '<=':
+        return !isNaN(actualNum) && !isNaN(expectedNum) && actualNum <= expectedNum;
+      case 'contains':
+      case 'includes':
+        return actualStr.includes(expectedStr);
+      default:
+        return actualStr === expectedStr;
+    }
   }
 
   /**

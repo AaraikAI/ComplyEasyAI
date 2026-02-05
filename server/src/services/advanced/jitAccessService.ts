@@ -909,8 +909,34 @@ class JITAccessService {
     userId: string,
     privilege: PrivilegeLevel
   ): Promise<void> {
-    // In production, this would update user permissions temporarily
-    logger.info(`Granted temporary ${privilege} to user ${userId}`);
+    try {
+      // Map PrivilegeLevel to database Role values
+      const roleMap: Record<string, string> = {
+        viewer: 'viewer',
+        editor: 'editor',
+        admin: 'admin',
+        super_admin: 'admin',
+        security_admin: 'security_admin',
+        compliance_admin: 'compliance_admin',
+      };
+
+      const targetRole = roleMap[privilege] || 'viewer';
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { role: targetRole as any },
+      });
+
+      logger.info(
+        `Granted temporary ${privilege} (role: ${targetRole}) to user ${userId}`
+      );
+    } catch (error) {
+      logger.error(
+        `Failed to grant temporary ${privilege} to user ${userId}`,
+        error
+      );
+      throw error;
+    }
   }
 
   /**
@@ -920,8 +946,23 @@ class JITAccessService {
     userId: string,
     privilege: PrivilegeLevel
   ): Promise<void> {
-    // In production, this would remove temporary permissions
-    logger.info(`Revoked temporary ${privilege} from user ${userId}`);
+    try {
+      // Revert to default base role
+      await prisma.user.update({
+        where: { id: userId },
+        data: { role: 'viewer' as any },
+      });
+
+      logger.info(
+        `Revoked temporary ${privilege} from user ${userId}, reverted to base role`
+      );
+    } catch (error) {
+      logger.error(
+        `Failed to revoke temporary ${privilege} from user ${userId}`,
+        error
+      );
+      throw error;
+    }
   }
 
   /**
@@ -1127,8 +1168,28 @@ class JITAccessService {
    * Update session in database
    */
   private async updateSession(session: JITSession): Promise<void> {
-    // In production, update in database
-    logger.info(`Updated JIT session: ${session.id}`);
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: `JIT Access Session Updated: ${session.privilege}`,
+          userId: session.userId,
+          organizationId: session.organizationId,
+          hash: crypto.randomBytes(32).toString('hex'),
+          details: JSON.stringify({
+            sessionId: session.id,
+            userId: session.userId,
+            privilege: session.privilege,
+            status: session.active ? 'active' : 'inactive',
+            startTime: session.startTime,
+            endTime: session.endTime,
+          }),
+        },
+      });
+
+      logger.info(`Updated JIT session: ${session.id}`);
+    } catch (error) {
+      logger.error(`Failed to update JIT session: ${session.id}`, error);
+    }
   }
 
   /**
