@@ -1276,4 +1276,1563 @@ export const SOC2_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started',
   },
+
+  // ===== P2: Privacy - Choice and Consent =====
+  {
+    controlId: 'P2.1',
+    name: 'Privacy Choice and Consent Communication',
+    description:
+      'The entity communicates choices available to individuals regarding the collection, use, retention, disclosure, and disposal of personal information and obtains consent for the same. Individuals are informed of the consequences of their choices.',
+    category: 'Privacy - Choice and Consent',
+    implementationGuidance:
+      'Implement clear consent mechanisms at all data collection points including web forms, applications, and customer interactions. Provide explicit opt-in and opt-out options for different data processing activities. Maintain consent records with timestamps and version tracking. Implement consent withdrawal mechanisms that are as easy as the original consent process.',
+    evidenceRequirements: [
+      'Consent management policy and procedures',
+      'Consent forms and opt-in/opt-out mechanisms documentation',
+      'Consent records database with timestamps and versions',
+      'Consent withdrawal process documentation',
+      'Records of consent preference changes',
+    ],
+    testProcedures: [
+      'Review consent collection mechanisms and verify they clearly communicate choices to individuals',
+      'Test consent withdrawal process and confirm it is functional and accessible',
+      'Inspect consent records to verify they include timestamps, specific purposes, and version information',
+      'Verify that consent preferences are respected in downstream data processing activities',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P2.2',
+    name: 'Implicit Consent for Data Processing',
+    description:
+      'The entity documents and communicates activities for which implicit consent is obtained. Where implicit consent is relied upon, the entity ensures that individuals are clearly informed of what constitutes implied consent through their actions.',
+    category: 'Privacy - Choice and Consent',
+    implementationGuidance:
+      'Identify and document all scenarios where implicit consent is relied upon for data processing. Ensure website banners, terms of service, and user agreements clearly explain what actions constitute implied consent. Implement just-in-time notices where appropriate to inform users before implicit consent is triggered.',
+    evidenceRequirements: [
+      'Documentation of implicit consent scenarios and legal basis',
+      'User interface designs showing implicit consent notifications',
+      'Terms of service with implicit consent language',
+      'Just-in-time notification implementations',
+    ],
+    testProcedures: [
+      'Review documentation of implicit consent scenarios and verify legal basis is established',
+      'Inspect user interfaces to confirm implicit consent is clearly communicated before data collection',
+      'Verify terms of service adequately describe implied consent activities',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== P3: Privacy - Collection =====
+  {
+    controlId: 'P3.1',
+    name: 'Personal Information Collection Limitation',
+    description:
+      'The entity collects personal information only for the purposes identified in the privacy notice and limits collection to information that is relevant and necessary for those purposes. Collection methods are designed to minimize data gathered.',
+    category: 'Privacy - Collection',
+    implementationGuidance:
+      'Implement data minimization principles in all data collection processes. Review all data collection forms and APIs to ensure only necessary fields are requested. Document the business purpose for each data element collected. Implement technical controls to prevent collection of unnecessary data fields.',
+    evidenceRequirements: [
+      'Data collection inventory mapped to stated purposes',
+      'Data minimization review records for collection points',
+      'Business justification documentation for each data element',
+      'Technical specifications limiting data collection',
+    ],
+    testProcedures: [
+      'Compare data collection points against the privacy notice and verify alignment',
+      'Review data minimization assessments and confirm unnecessary fields have been removed',
+      'Inspect business justifications for collected data elements and assess necessity',
+      'Test data collection forms to verify only documented fields are captured',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P3.2',
+    name: 'Third-Party Data Collection Sources',
+    description:
+      'The entity identifies and documents personal information collected from third-party sources. The entity ensures that third-party collected data meets the same privacy standards and that individuals are informed of such collection.',
+    category: 'Privacy - Collection',
+    implementationGuidance:
+      'Maintain an inventory of all third-party data sources including data brokers, partners, and public sources. Conduct due diligence on third-party data collection practices. Include third-party data sources in privacy notices. Implement data quality checks for third-party sourced data.',
+    evidenceRequirements: [
+      'Inventory of third-party data sources',
+      'Due diligence assessments for third-party data providers',
+      'Privacy notices disclosing third-party data collection',
+      'Data quality verification records for third-party data',
+    ],
+    testProcedures: [
+      'Review third-party data source inventory for completeness',
+      'Inspect due diligence documentation for third-party data providers',
+      'Verify privacy notices accurately describe third-party data collection',
+      'Test data quality controls for third-party sourced information',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== P4: Privacy - Use, Retention, and Disposal =====
+  {
+    controlId: 'P4.1',
+    name: 'Personal Information Use Limitation',
+    description:
+      'The entity uses personal information only for the purposes identified in the privacy notice and for which the individual has provided implicit or explicit consent. Secondary uses require additional consent or legal basis.',
+    category: 'Privacy - Use, Retention, and Disposal',
+    implementationGuidance:
+      'Implement access controls that limit data use to approved purposes. Document and approve any new use cases for personal information. Implement technical controls to prevent unauthorized secondary uses. Train employees on permitted data uses and restrictions.',
+    evidenceRequirements: [
+      'Data use policy aligned with privacy notice purposes',
+      'Access control configurations limiting data use',
+      'Approval records for new data use cases',
+      'Employee training records on permitted data uses',
+    ],
+    testProcedures: [
+      'Review data use cases against privacy notice purposes and verify alignment',
+      'Inspect access controls and confirm they restrict data use appropriately',
+      'Review new use case approval records and verify proper authorization was obtained',
+      'Interview employees to verify understanding of data use limitations',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P4.2',
+    name: 'Personal Information Retention',
+    description:
+      'The entity retains personal information only for as long as necessary to fulfill the stated purposes and in accordance with applicable legal and regulatory requirements. Retention periods are documented and enforced.',
+    category: 'Privacy - Use, Retention, and Disposal',
+    implementationGuidance:
+      'Develop and maintain a data retention schedule that specifies retention periods for each category of personal information. Implement automated retention enforcement mechanisms. Conduct periodic reviews of retained data to identify information that has exceeded retention periods.',
+    evidenceRequirements: [
+      'Data retention schedule with defined periods by data category',
+      'Automated retention enforcement configurations',
+      'Periodic retention review reports',
+      'Legal and regulatory retention requirement analysis',
+    ],
+    testProcedures: [
+      'Review data retention schedule and verify retention periods are justified',
+      'Test automated retention enforcement mechanisms for proper functioning',
+      'Inspect retention review reports and verify overdue data was properly addressed',
+      'Verify retention periods comply with applicable legal requirements',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P4.3',
+    name: 'Personal Information Disposal',
+    description:
+      'The entity securely disposes of personal information when it is no longer needed for the stated purposes or when the retention period has expired. Disposal methods are designed to prevent unauthorized access or reconstruction.',
+    category: 'Privacy - Use, Retention, and Disposal',
+    implementationGuidance:
+      'Implement secure disposal procedures for all forms of personal information including electronic, physical, and backup media. Use cryptographic erasure, overwriting, or physical destruction as appropriate. Maintain disposal logs and certificates. Verify disposal of data held by third parties.',
+    evidenceRequirements: [
+      'Secure disposal policy and procedures',
+      'Disposal method specifications by data type and media',
+      'Disposal logs and certificates of destruction',
+      'Third-party disposal verification records',
+    ],
+    testProcedures: [
+      'Review disposal procedures and verify they meet security standards',
+      'Inspect disposal logs and verify completeness and timeliness',
+      'Test disposal methods to confirm data cannot be recovered',
+      'Verify third-party disposal certifications are obtained and retained',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== P5: Privacy - Access =====
+  {
+    controlId: 'P5.1',
+    name: 'Individual Access to Personal Information',
+    description:
+      'The entity provides individuals with access to their personal information upon request for review and update. Access mechanisms are designed to be user-friendly while maintaining security controls.',
+    category: 'Privacy - Access',
+    implementationGuidance:
+      'Implement self-service portals allowing individuals to view their personal information. Establish procedures for handling manual access requests. Implement identity verification controls for access requests. Provide information in a commonly used electronic format upon request.',
+    evidenceRequirements: [
+      'Individual access request policy and procedures',
+      'Self-service portal functionality documentation',
+      'Identity verification procedures for access requests',
+      'Access request tracking logs',
+    ],
+    testProcedures: [
+      'Test self-service portal functionality for viewing personal information',
+      'Review access request procedures and verify they are followed',
+      'Inspect identity verification controls and confirm they are adequate',
+      'Review access request logs and verify timely responses',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P5.2',
+    name: 'Personal Information Correction and Update',
+    description:
+      'The entity provides individuals with the ability to correct, amend, or delete their personal information upon request. Corrections are propagated to third parties who received the information.',
+    category: 'Privacy - Access',
+    implementationGuidance:
+      'Implement mechanisms for individuals to submit correction requests. Establish procedures for validating and processing correction requests. Implement data propagation procedures to update third parties. Maintain correction request logs and resolution records.',
+    evidenceRequirements: [
+      'Correction request policy and procedures',
+      'Correction request submission mechanisms',
+      'Third-party data correction propagation procedures',
+      'Correction request tracking and resolution logs',
+    ],
+    testProcedures: [
+      'Test correction request submission mechanisms for functionality',
+      'Review correction request procedures and verify proper validation',
+      'Verify correction propagation to third parties is documented and executed',
+      'Inspect correction request logs and verify timely resolution',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== P6: Privacy - Disclosure to Third Parties =====
+  {
+    controlId: 'P6.1',
+    name: 'Third-Party Disclosure Authorization',
+    description:
+      'The entity discloses personal information to third parties only for the purposes identified in the privacy notice and with the implicit or explicit consent of the individual. Disclosures are documented and tracked.',
+    category: 'Privacy - Disclosure',
+    implementationGuidance:
+      'Implement controls to ensure third-party disclosures are authorized and documented. Maintain a disclosure log tracking all third-party data sharing. Verify disclosure purposes align with privacy notice commitments. Implement technical controls to prevent unauthorized disclosures.',
+    evidenceRequirements: [
+      'Third-party disclosure policy and procedures',
+      'Disclosure authorization records',
+      'Third-party disclosure tracking log',
+      'Privacy notice disclosure purpose alignment verification',
+    ],
+    testProcedures: [
+      'Review disclosure authorization records and verify proper approvals',
+      'Inspect disclosure tracking logs for completeness',
+      'Compare disclosures against privacy notice purposes and verify alignment',
+      'Test technical controls preventing unauthorized disclosures',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P6.2',
+    name: 'Third-Party Privacy Agreements',
+    description:
+      'The entity requires third parties to whom personal information is disclosed to protect the information in accordance with relevant privacy requirements. Contractual agreements specify privacy obligations.',
+    category: 'Privacy - Disclosure',
+    implementationGuidance:
+      'Include privacy protection clauses in all third-party agreements involving personal information. Conduct privacy assessments of third parties before disclosure. Require third parties to maintain comparable privacy controls. Implement third-party compliance monitoring procedures.',
+    evidenceRequirements: [
+      'Third-party privacy agreement templates',
+      'Executed third-party agreements with privacy clauses',
+      'Third-party privacy assessments',
+      'Third-party compliance monitoring records',
+    ],
+    testProcedures: [
+      'Review third-party agreements and verify adequate privacy clauses',
+      'Inspect third-party privacy assessments and verify adequate controls',
+      'Review compliance monitoring records and verify ongoing oversight',
+      'Verify third-party agreements cover data breach notification requirements',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P6.3',
+    name: 'Third-Party Disclosure Notification',
+    description:
+      'The entity creates and retains a record of third-party disclosures of personal information and notifies affected individuals when their information is disclosed to third parties as required.',
+    category: 'Privacy - Disclosure',
+    implementationGuidance:
+      'Implement a centralized disclosure registry tracking all third-party sharing. Establish procedures for notifying individuals of disclosures when required. Implement automated notification capabilities where feasible. Maintain disclosure notification records.',
+    evidenceRequirements: [
+      'Third-party disclosure registry',
+      'Disclosure notification procedures',
+      'Individual notification records',
+      'Automated notification system documentation',
+    ],
+    testProcedures: [
+      'Review disclosure registry for completeness and accuracy',
+      'Inspect notification procedures and verify compliance with requirements',
+      'Review notification records and verify timely delivery',
+      'Test automated notification systems for proper functionality',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P6.4',
+    name: 'Onward Transfer Controls',
+    description:
+      'The entity implements controls to prevent third parties from disclosing personal information to other parties without authorization. Onward transfer restrictions are contractually enforced.',
+    category: 'Privacy - Disclosure',
+    implementationGuidance:
+      'Include onward transfer restrictions in third-party agreements. Implement technical controls limiting third-party ability to share data. Require third-party notification before any onward transfers. Conduct audits of third-party data handling practices.',
+    evidenceRequirements: [
+      'Onward transfer restriction clauses in agreements',
+      'Technical controls limiting third-party data sharing',
+      'Third-party audit reports on data handling',
+      'Onward transfer authorization records',
+    ],
+    testProcedures: [
+      'Review third-party agreements for onward transfer restrictions',
+      'Inspect technical controls limiting third-party sharing capabilities',
+      'Review third-party audit reports and verify compliance',
+      'Verify onward transfer authorization process is followed',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P6.5',
+    name: 'Government and Legal Disclosure',
+    description:
+      'The entity discloses personal information to government authorities and in legal proceedings only when required by law or court order. Such disclosures are documented and individuals are notified when legally permitted.',
+    category: 'Privacy - Disclosure',
+    implementationGuidance:
+      'Establish procedures for responding to government and legal requests for data. Implement legal review process for disclosure requests. Notify individuals of disclosures when legally permitted. Maintain detailed logs of government and legal disclosures.',
+    evidenceRequirements: [
+      'Government and legal disclosure policy and procedures',
+      'Legal review process documentation',
+      'Disclosure request and response logs',
+      'Individual notification records for permitted notifications',
+    ],
+    testProcedures: [
+      'Review disclosure procedures and verify legal compliance requirements',
+      'Inspect disclosure request logs and verify legal review was conducted',
+      'Verify individual notifications were sent when legally permitted',
+      'Review disclosure response timelines and verify compliance with legal requirements',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P6.6',
+    name: 'Cross-Border Data Transfer',
+    description:
+      'The entity implements appropriate safeguards for cross-border transfers of personal information to ensure continued protection. Transfer mechanisms comply with applicable data protection regulations.',
+    category: 'Privacy - Disclosure',
+    implementationGuidance:
+      'Identify all cross-border data flows involving personal information. Implement appropriate transfer mechanisms such as standard contractual clauses, binding corporate rules, or adequacy decisions. Conduct transfer impact assessments for high-risk transfers. Maintain documentation of transfer safeguards.',
+    evidenceRequirements: [
+      'Cross-border data flow inventory',
+      'Transfer mechanism documentation (SCCs, BCRs, etc.)',
+      'Transfer impact assessments',
+      'Regulatory compliance verification for destination countries',
+    ],
+    testProcedures: [
+      'Review cross-border data flow inventory for completeness',
+      'Inspect transfer mechanism documentation and verify adequacy',
+      'Review transfer impact assessments and verify risk mitigation',
+      'Verify compliance with destination country data protection requirements',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P6.7',
+    name: 'Data Sharing Agreement Management',
+    description:
+      'The entity maintains a comprehensive inventory of data sharing agreements and conducts regular reviews to ensure agreements remain current and appropriate. Expired or terminated agreements are properly handled.',
+    category: 'Privacy - Disclosure',
+    implementationGuidance:
+      'Implement a centralized data sharing agreement repository. Establish agreement review cycles and renewal procedures. Implement data return or destruction procedures for terminated agreements. Track agreement expiration dates and trigger renewal reviews.',
+    evidenceRequirements: [
+      'Data sharing agreement inventory',
+      'Agreement review and renewal records',
+      'Data return/destruction records for terminated agreements',
+      'Agreement expiration tracking system',
+    ],
+    testProcedures: [
+      'Review agreement inventory for completeness and currency',
+      'Inspect agreement review records and verify periodic reviews occur',
+      'Verify terminated agreements have associated data return/destruction records',
+      'Test agreement expiration tracking system for proper alerting',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== P7: Privacy - Quality =====
+  {
+    controlId: 'P7.1',
+    name: 'Personal Information Accuracy',
+    description:
+      'The entity maintains accurate, complete, and relevant personal information for the purposes identified in the privacy notice. Data quality processes ensure information remains current and correct.',
+    category: 'Privacy - Quality',
+    implementationGuidance:
+      'Implement data quality validation rules at point of collection. Establish periodic data quality review processes. Provide mechanisms for individuals to update their information. Implement automated data quality monitoring and alerting.',
+    evidenceRequirements: [
+      'Data quality policy and standards',
+      'Data validation rule documentation',
+      'Data quality review reports',
+      'Data quality metrics and monitoring dashboards',
+    ],
+    testProcedures: [
+      'Review data quality policies and verify completeness',
+      'Test data validation rules for proper functioning',
+      'Inspect data quality review reports and verify issues are addressed',
+      'Review data quality metrics and verify acceptable quality levels',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P7.2',
+    name: 'Data Quality Correction Procedures',
+    description:
+      'The entity implements procedures for correcting data quality issues when identified. Corrections are propagated to all systems and third parties holding the affected data.',
+    category: 'Privacy - Quality',
+    implementationGuidance:
+      'Establish data quality issue identification and reporting procedures. Implement correction workflows with appropriate approvals. Track corrections through to completion including third-party propagation. Conduct root cause analysis for systemic data quality issues.',
+    evidenceRequirements: [
+      'Data quality correction procedures',
+      'Correction workflow documentation',
+      'Correction tracking logs',
+      'Root cause analysis reports for recurring issues',
+    ],
+    testProcedures: [
+      'Review correction procedures and verify they are comprehensive',
+      'Inspect correction tracking logs and verify timely resolution',
+      'Verify corrections are propagated to third parties',
+      'Review root cause analyses and verify corrective actions were implemented',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== P8: Privacy - Monitoring and Enforcement =====
+  {
+    controlId: 'P8.1',
+    name: 'Privacy Compliance Monitoring',
+    description:
+      'The entity monitors compliance with privacy policies and procedures and addresses privacy-related inquiries, complaints, and disputes. Noncompliance issues are remediated in a timely manner.',
+    category: 'Privacy - Monitoring and Enforcement',
+    implementationGuidance:
+      'Implement privacy compliance monitoring program with regular assessments. Establish complaint handling and dispute resolution procedures. Track privacy inquiries and complaints through resolution. Conduct periodic privacy audits and address findings.',
+    evidenceRequirements: [
+      'Privacy compliance monitoring program documentation',
+      'Compliance assessment reports',
+      'Complaint and inquiry tracking logs',
+      'Privacy audit reports and remediation plans',
+    ],
+    testProcedures: [
+      'Review compliance monitoring program and verify adequate coverage',
+      'Inspect compliance assessment reports and verify issues are addressed',
+      'Review complaint tracking logs and verify timely resolution',
+      'Inspect privacy audit reports and verify remediation completion',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P8.2',
+    name: 'Privacy Breach Response',
+    description:
+      'The entity implements procedures for responding to privacy breaches including notification to affected individuals and regulatory authorities. Breach response procedures are tested periodically.',
+    category: 'Privacy - Monitoring and Enforcement',
+    implementationGuidance:
+      'Develop comprehensive privacy breach response plan including identification, containment, assessment, notification, and remediation phases. Establish notification procedures and templates for affected individuals and regulators. Conduct periodic breach response exercises. Maintain breach incident register.',
+    evidenceRequirements: [
+      'Privacy breach response plan',
+      'Breach notification procedures and templates',
+      'Breach response exercise reports',
+      'Breach incident register and post-incident reviews',
+    ],
+    testProcedures: [
+      'Review breach response plan and verify comprehensive coverage',
+      'Inspect notification procedures and verify compliance with regulatory timelines',
+      'Review breach response exercise results and verify lessons learned are implemented',
+      'Inspect breach register and verify incidents were properly handled',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'P8.3',
+    name: 'Privacy Enforcement and Sanctions',
+    description:
+      'The entity enforces privacy policies through appropriate disciplinary actions and sanctions for violations. Enforcement actions are documented and communicated to reinforce privacy expectations.',
+    category: 'Privacy - Monitoring and Enforcement',
+    implementationGuidance:
+      'Define privacy violation consequences in employee policies. Implement investigation procedures for suspected violations. Apply consistent sanctions proportionate to violation severity. Communicate enforcement actions (anonymized) to reinforce expectations.',
+    evidenceRequirements: [
+      'Privacy violation sanctions policy',
+      'Investigation procedures documentation',
+      'Privacy violation investigation records',
+      'Enforcement action summaries and communications',
+    ],
+    testProcedures: [
+      'Review sanctions policy and verify proportionate consequences',
+      'Inspect investigation procedures and verify due process',
+      'Review violation investigation records and verify proper handling',
+      'Verify enforcement communications are issued to reinforce expectations',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== CC1 Enhancements: Control Environment - Additional Controls =====
+  {
+    controlId: 'CC1.6',
+    name: 'Board Independence and Expertise',
+    description:
+      'The board of directors demonstrates independence from management and exercises oversight of internal control. The board maintains relevant expertise to evaluate organizational risks and the effectiveness of risk management practices.',
+    category: 'Control Environment',
+    implementationGuidance:
+      'Establish board independence requirements with defined criteria for board member qualifications. Implement board committee structure including audit committee and risk committee with appropriate charters. Conduct periodic board effectiveness assessments and ensure members receive ongoing education on governance and risk topics.',
+    evidenceRequirements: [
+      'Board charter and independence criteria',
+      'Board member qualifications and expertise documentation',
+      'Audit committee and risk committee charters',
+      'Board meeting minutes demonstrating oversight activities',
+      'Board training and continuing education records',
+    ],
+    testProcedures: [
+      'Review board charter and verify independence criteria are defined and met',
+      'Inspect board member qualifications and confirm relevant expertise',
+      'Review committee charters and meeting minutes for evidence of active oversight',
+      'Verify board members receive ongoing training on governance and risk topics',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC1.7',
+    name: 'Organizational Structure and Authority',
+    description:
+      'The entity establishes organizational structures, reporting lines, and appropriate authorities and responsibilities in pursuit of objectives. Clear accountability is defined for all positions within the organization.',
+    category: 'Control Environment',
+    implementationGuidance:
+      'Develop and maintain organizational charts with clear reporting lines. Define roles, responsibilities, and accountability for each position through job descriptions. Implement delegation of authority policies and ensure appropriate segregation of duties. Review organizational structure periodically for effectiveness.',
+    evidenceRequirements: [
+      'Current organizational charts',
+      'Job descriptions with defined roles and responsibilities',
+      'Delegation of authority policy and matrix',
+      'Segregation of duties documentation',
+      'Organizational structure review records',
+    ],
+    testProcedures: [
+      'Review organizational charts and verify reporting lines are clear',
+      'Inspect job descriptions and confirm responsibilities are adequately defined',
+      'Review delegation of authority matrix and verify appropriate limits',
+      'Verify segregation of duties is implemented for critical functions',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC1.8',
+    name: 'Human Resource Policies and Practices',
+    description:
+      'The entity demonstrates commitment to attract, develop, and retain competent individuals in alignment with objectives. HR policies support integrity, ethical values, and competence requirements.',
+    category: 'Control Environment',
+    implementationGuidance:
+      'Implement comprehensive HR policies covering recruitment, onboarding, performance management, compensation, and termination. Conduct background checks for new hires. Establish career development and training programs. Implement succession planning for critical roles.',
+    evidenceRequirements: [
+      'HR policies and procedures manual',
+      'Recruitment and background check procedures',
+      'Performance management program documentation',
+      'Training and development program records',
+      'Succession planning documentation',
+    ],
+    testProcedures: [
+      'Review HR policies and verify they support integrity and competence',
+      'Verify background checks are conducted for new employees',
+      'Inspect performance management records and verify regular reviews occur',
+      'Review training programs and verify they develop required competencies',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC1.9',
+    name: 'Personnel Accountability',
+    description:
+      'The entity holds individuals accountable for their internal control responsibilities in pursuit of objectives. Accountability mechanisms are documented and communicated throughout the organization.',
+    category: 'Control Environment',
+    implementationGuidance:
+      'Define control responsibilities in job descriptions and performance objectives. Implement performance evaluation criteria that include control responsibility assessment. Establish consequences for control failures and reward mechanisms for strong control performance.',
+    evidenceRequirements: [
+      'Job descriptions with control responsibilities',
+      'Performance evaluation criteria including control responsibilities',
+      'Disciplinary action policy for control failures',
+      'Recognition programs for control performance',
+    ],
+    testProcedures: [
+      'Review job descriptions and verify control responsibilities are defined',
+      'Inspect performance evaluations and verify control criteria are assessed',
+      'Review disciplinary action records related to control failures',
+      'Verify accountability mechanisms are communicated to personnel',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== CC2 Enhancements: Communication and Information - Additional Controls =====
+  {
+    controlId: 'CC2.4',
+    name: 'Internal Communication of Control Information',
+    description:
+      'The entity internally communicates information, including objectives and responsibilities for internal control, necessary to support the functioning of internal control. Communication channels are established for control-related matters.',
+    category: 'Communication and Information',
+    implementationGuidance:
+      'Establish formal communication channels for control-related information including policies, procedures, and control updates. Implement intranet or document management system for control documentation access. Conduct regular control awareness communications and ensure key messages reach all relevant personnel.',
+    evidenceRequirements: [
+      'Internal communication policy and procedures',
+      'Control documentation repository and access logs',
+      'Control awareness communication records',
+      'Meeting minutes where control matters are discussed',
+    ],
+    testProcedures: [
+      'Review communication channels and verify control information is disseminated',
+      'Inspect control documentation repository and verify accessibility',
+      'Review control awareness communications and verify regular distribution',
+      'Interview personnel to confirm understanding of control responsibilities',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC2.5',
+    name: 'External Communication of Control Information',
+    description:
+      'The entity communicates with external parties regarding matters affecting the functioning of internal control. External communication includes control-related information required by regulators, auditors, and business partners.',
+    category: 'Communication and Information',
+    implementationGuidance:
+      'Establish procedures for external communications regarding control matters. Implement processes for regulatory reporting and audit support. Define protocols for communicating with business partners about control requirements and expectations.',
+    evidenceRequirements: [
+      'External communication policy and procedures',
+      'Regulatory reporting records',
+      'External audit communication logs',
+      'Business partner control requirement communications',
+    ],
+    testProcedures: [
+      'Review external communication procedures and verify compliance',
+      'Inspect regulatory reporting records for timeliness and accuracy',
+      'Review audit communication logs and verify responsiveness',
+      'Verify business partner control requirements are communicated',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC2.6',
+    name: 'Information Quality and Integrity',
+    description:
+      'The entity obtains or generates and uses relevant, quality information to support the functioning of internal control. Information integrity controls ensure data accuracy and reliability.',
+    category: 'Communication and Information',
+    implementationGuidance:
+      'Implement data quality standards and validation procedures. Establish information integrity controls including input validation, processing controls, and output verification. Conduct periodic data quality assessments and implement remediation for identified issues.',
+    evidenceRequirements: [
+      'Data quality policy and standards',
+      'Information integrity control documentation',
+      'Data quality assessment reports',
+      'Data remediation tracking records',
+    ],
+    testProcedures: [
+      'Review data quality standards and verify they are comprehensive',
+      'Test information integrity controls for effectiveness',
+      'Inspect data quality assessment reports and verify issues are addressed',
+      'Verify data quality metrics are monitored and acceptable',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== CC3 Enhancements: Risk Assessment - Additional Controls =====
+  {
+    controlId: 'CC3.5',
+    name: 'Fraud Risk Assessment',
+    description:
+      'The entity considers the potential for fraud in assessing risks to the achievement of objectives. Fraud risk factors are identified and evaluated including incentives, pressures, opportunities, and rationalization.',
+    category: 'Risk Assessment',
+    implementationGuidance:
+      'Conduct periodic fraud risk assessments considering various types of fraud including financial reporting fraud, misappropriation of assets, and corruption. Identify fraud risk factors in processes and personnel. Implement anti-fraud controls and monitoring mechanisms.',
+    evidenceRequirements: [
+      'Fraud risk assessment methodology',
+      'Fraud risk assessment reports',
+      'Anti-fraud control documentation',
+      'Fraud monitoring and detection reports',
+    ],
+    testProcedures: [
+      'Review fraud risk assessment methodology and verify comprehensive coverage',
+      'Inspect fraud risk assessment reports and verify all fraud types are considered',
+      'Verify anti-fraud controls are implemented for identified risks',
+      'Review fraud monitoring reports and verify suspicious activity is investigated',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC3.6',
+    name: 'Technology Risk Assessment',
+    description:
+      'The entity assesses technology-specific risks including cybersecurity threats, system vulnerabilities, and technology dependencies. Technology risk assessments inform technology control decisions.',
+    category: 'Risk Assessment',
+    implementationGuidance:
+      'Conduct periodic technology risk assessments including threat assessments, vulnerability assessments, and dependency analysis. Integrate technology risks into enterprise risk management framework. Implement technology risk registers and treatment plans.',
+    evidenceRequirements: [
+      'Technology risk assessment methodology',
+      'Technology risk assessment reports',
+      'Vulnerability assessment results',
+      'Technology risk treatment plans',
+    ],
+    testProcedures: [
+      'Review technology risk assessment methodology and verify comprehensiveness',
+      'Inspect technology risk assessment reports and verify currency',
+      'Review vulnerability assessments and verify remediation tracking',
+      'Verify technology risks are integrated into enterprise risk management',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC3.7',
+    name: 'Third-Party Risk Assessment',
+    description:
+      'The entity assesses risks associated with third-party service providers and vendors. Third-party risk assessments consider operational, compliance, security, and reputational risks.',
+    category: 'Risk Assessment',
+    implementationGuidance:
+      'Implement third-party risk management program including due diligence procedures, risk assessments, and ongoing monitoring. Categorize vendors by risk level and apply appropriate oversight. Conduct periodic reassessments of critical vendors.',
+    evidenceRequirements: [
+      'Third-party risk management policy',
+      'Vendor risk assessment methodology and criteria',
+      'Vendor risk assessment records',
+      'Ongoing vendor monitoring reports',
+    ],
+    testProcedures: [
+      'Review third-party risk management policy and verify comprehensive coverage',
+      'Inspect vendor risk assessments and verify appropriate criteria',
+      'Review vendor monitoring reports and verify ongoing oversight',
+      'Verify critical vendors receive enhanced due diligence and monitoring',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== CC4 Enhancements: Monitoring Activities - Additional Controls =====
+  {
+    controlId: 'CC4.3',
+    name: 'Continuous Monitoring',
+    description:
+      'The entity implements continuous monitoring activities to provide ongoing assurance of control effectiveness. Automated monitoring mechanisms provide real-time visibility into control performance.',
+    category: 'Monitoring Activities',
+    implementationGuidance:
+      'Implement automated control monitoring tools and dashboards. Establish key control indicators and thresholds for automated alerting. Integrate monitoring outputs into management reporting and escalation procedures.',
+    evidenceRequirements: [
+      'Continuous monitoring program documentation',
+      'Automated monitoring tool configurations',
+      'Key control indicator definitions and thresholds',
+      'Monitoring dashboards and reports',
+    ],
+    testProcedures: [
+      'Review continuous monitoring program and verify adequate coverage',
+      'Test automated monitoring tools for proper functioning',
+      'Verify key control indicators are appropriate and monitored',
+      'Review monitoring alerts and verify timely response',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC4.4',
+    name: 'Internal Audit Function',
+    description:
+      'The entity maintains an internal audit function that independently evaluates and reports on the adequacy and effectiveness of internal control. Internal audit operates with appropriate independence and authority.',
+    category: 'Monitoring Activities',
+    implementationGuidance:
+      'Establish internal audit function with clear charter defining scope, authority, and independence. Develop risk-based audit plan covering critical controls and processes. Implement audit methodology including planning, fieldwork, reporting, and follow-up phases.',
+    evidenceRequirements: [
+      'Internal audit charter',
+      'Annual internal audit plan',
+      'Internal audit reports',
+      'Audit finding tracking and remediation records',
+    ],
+    testProcedures: [
+      'Review internal audit charter and verify appropriate independence',
+      'Inspect annual audit plan and verify risk-based approach',
+      'Review audit reports and verify quality and coverage',
+      'Verify audit findings are tracked and remediated timely',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC4.5',
+    name: 'Control Self-Assessment',
+    description:
+      'The entity implements control self-assessment processes where process owners evaluate control effectiveness within their areas. Self-assessments supplement formal audits and promote control ownership.',
+    category: 'Monitoring Activities',
+    implementationGuidance:
+      'Develop control self-assessment questionnaires and procedures. Train process owners on self-assessment requirements. Implement self-assessment scheduling and tracking. Aggregate and report self-assessment results to management.',
+    evidenceRequirements: [
+      'Control self-assessment policy and procedures',
+      'Self-assessment questionnaires and templates',
+      'Completed self-assessment records',
+      'Self-assessment summary reports',
+    ],
+    testProcedures: [
+      'Review self-assessment procedures and verify adequacy',
+      'Inspect completed self-assessments for quality and completeness',
+      'Verify self-assessment results are reported to management',
+      'Review self-assessment issue resolution tracking',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== CC5 Enhancements: Control Activities - Additional Controls =====
+  {
+    controlId: 'CC5.4',
+    name: 'Authorization and Approval Controls',
+    description:
+      'The entity implements authorization and approval controls to ensure transactions and activities are properly authorized. Authorization limits and approval workflows are defined and enforced.',
+    category: 'Control Activities',
+    implementationGuidance:
+      'Define authorization limits by role and transaction type. Implement approval workflows in business systems. Establish procedures for authorization limit exceptions. Monitor authorization compliance and violations.',
+    evidenceRequirements: [
+      'Authorization limit policy and matrix',
+      'Approval workflow configurations',
+      'Authorization exception records',
+      'Authorization compliance monitoring reports',
+    ],
+    testProcedures: [
+      'Review authorization limits and verify appropriateness',
+      'Test approval workflows for proper enforcement',
+      'Review authorization exceptions and verify proper handling',
+      'Verify authorization violations are detected and addressed',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC5.5',
+    name: 'Reconciliation Controls',
+    description:
+      'The entity implements reconciliation controls to ensure data consistency and integrity across systems and processes. Reconciliations are performed regularly and discrepancies are investigated and resolved.',
+    category: 'Control Activities',
+    implementationGuidance:
+      'Identify critical reconciliation points across systems and processes. Establish reconciliation schedules and procedures. Implement discrepancy thresholds and escalation procedures. Maintain reconciliation records and resolution documentation.',
+    evidenceRequirements: [
+      'Reconciliation policy and procedures',
+      'Reconciliation schedule and assignments',
+      'Completed reconciliation records',
+      'Discrepancy investigation and resolution logs',
+    ],
+    testProcedures: [
+      'Review reconciliation procedures and verify comprehensiveness',
+      'Inspect reconciliation records and verify timeliness',
+      'Review discrepancy logs and verify proper investigation',
+      'Verify reconciliation issues are resolved within defined timeframes',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC5.6',
+    name: 'Physical Asset Controls',
+    description:
+      'The entity implements physical controls to protect assets from unauthorized access, use, or removal. Physical security measures are commensurate with asset value and criticality.',
+    category: 'Control Activities',
+    implementationGuidance:
+      'Implement physical access controls including badges, locks, and barriers. Establish visitor management procedures. Implement asset tracking and inventory controls. Conduct periodic physical security assessments.',
+    evidenceRequirements: [
+      'Physical security policy and procedures',
+      'Physical access control system configurations',
+      'Asset inventory records',
+      'Physical security assessment reports',
+    ],
+    testProcedures: [
+      'Review physical security policy and verify coverage',
+      'Test physical access controls for effectiveness',
+      'Verify asset inventory accuracy through sampling',
+      'Review physical security assessments and verify issue resolution',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== CC6 Enhancements: Logical and Physical Access - Additional Controls =====
+  {
+    controlId: 'CC6.10',
+    name: 'Privileged Access Management',
+    description:
+      'The entity implements enhanced controls for privileged access accounts including just-in-time access, session monitoring, and privileged access workstations. Privileged access is minimized and closely monitored.',
+    category: 'Logical and Physical Access',
+    implementationGuidance:
+      'Implement privileged access management (PAM) solution with password vaulting and session recording. Establish just-in-time privileged access procedures. Implement privileged access workstations for sensitive administrative tasks. Conduct regular privileged access reviews.',
+    evidenceRequirements: [
+      'Privileged access management policy',
+      'PAM solution configuration documentation',
+      'Privileged access request and approval records',
+      'Privileged access review records',
+    ],
+    testProcedures: [
+      'Review PAM policy and verify comprehensive coverage',
+      'Test PAM solution for proper access controls and session recording',
+      'Review privileged access requests and verify proper approvals',
+      'Inspect privileged access reviews and verify timely completion',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC6.11',
+    name: 'Network Segmentation',
+    description:
+      'The entity implements network segmentation to isolate systems and data based on security requirements. Segmentation controls limit lateral movement and contain potential security incidents.',
+    category: 'Logical and Physical Access',
+    implementationGuidance:
+      'Design network architecture with appropriate segmentation zones. Implement firewalls and access control lists between segments. Establish DMZ for external-facing systems. Implement micro-segmentation for critical assets.',
+    evidenceRequirements: [
+      'Network architecture diagrams with segmentation zones',
+      'Firewall rule documentation',
+      'Access control list configurations',
+      'Network segmentation assessment reports',
+    ],
+    testProcedures: [
+      'Review network architecture and verify appropriate segmentation',
+      'Inspect firewall rules and verify enforcement of segmentation',
+      'Test network segmentation through penetration testing',
+      'Verify segmentation controls prevent unauthorized lateral movement',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC6.12',
+    name: 'Endpoint Security',
+    description:
+      'The entity implements endpoint security controls to protect workstations, servers, and mobile devices from threats. Endpoint protection includes anti-malware, host-based firewall, and endpoint detection and response capabilities.',
+    category: 'Logical and Physical Access',
+    implementationGuidance:
+      'Deploy endpoint protection platform (EPP) with anti-malware, host firewall, and application control. Implement endpoint detection and response (EDR) for threat detection. Establish endpoint hardening standards and configuration management.',
+    evidenceRequirements: [
+      'Endpoint security policy and standards',
+      'EPP/EDR deployment documentation',
+      'Endpoint configuration standards',
+      'Endpoint security incident reports',
+    ],
+    testProcedures: [
+      'Review endpoint security policy and verify comprehensiveness',
+      'Verify EPP/EDR deployment coverage across endpoints',
+      'Test endpoint configurations against hardening standards',
+      'Review endpoint security incidents and verify proper response',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC6.13',
+    name: 'Data Loss Prevention',
+    description:
+      'The entity implements data loss prevention (DLP) controls to detect and prevent unauthorized data exfiltration. DLP policies cover sensitive data across endpoints, network, and cloud environments.',
+    category: 'Logical and Physical Access',
+    implementationGuidance:
+      'Implement DLP solution covering email, web, endpoint, and cloud channels. Define sensitive data classification and DLP policies. Establish incident response procedures for DLP alerts. Monitor and tune DLP policies based on false positive analysis.',
+    evidenceRequirements: [
+      'Data loss prevention policy',
+      'DLP solution configuration and rules',
+      'Data classification definitions',
+      'DLP incident reports and response records',
+    ],
+    testProcedures: [
+      'Review DLP policy and verify alignment with data classification',
+      'Test DLP rules for proper detection of sensitive data',
+      'Review DLP incidents and verify appropriate response',
+      'Verify DLP coverage across all data channels',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== CC7 Enhancements: System Operations - Additional Controls =====
+  {
+    controlId: 'CC7.7',
+    name: 'Event Logging and Correlation',
+    description:
+      'The entity implements comprehensive event logging and log correlation to detect security events and support incident investigation. Logs are centralized, protected, and retained according to policy.',
+    category: 'System Operations',
+    implementationGuidance:
+      'Implement centralized log management with SIEM capabilities. Define logging requirements for all systems and applications. Establish log correlation rules for threat detection. Protect log integrity and implement retention according to requirements.',
+    evidenceRequirements: [
+      'Logging policy and standards',
+      'SIEM configuration and correlation rules',
+      'Log retention procedures and records',
+      'Security event investigation reports',
+    ],
+    testProcedures: [
+      'Review logging standards and verify comprehensive coverage',
+      'Test SIEM correlation rules for proper alerting',
+      'Verify log retention meets policy requirements',
+      'Review security event investigations and verify completeness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC7.8',
+    name: 'Security Operations Center',
+    description:
+      'The entity maintains security operations center (SOC) capabilities to monitor, detect, and respond to security events. SOC operations include 24x7 monitoring for critical systems.',
+    category: 'System Operations',
+    implementationGuidance:
+      'Establish SOC function with defined roles and responsibilities. Implement monitoring coverage for critical systems and applications. Develop runbooks for common security scenarios. Establish escalation procedures and service level objectives.',
+    evidenceRequirements: [
+      'SOC charter and operational procedures',
+      'SOC staffing and coverage schedule',
+      'Security monitoring dashboards and reports',
+      'Incident response runbooks',
+    ],
+    testProcedures: [
+      'Review SOC charter and verify adequate scope and authority',
+      'Verify monitoring coverage for critical systems',
+      'Review SOC performance metrics and incident response times',
+      'Test incident response runbooks through tabletop exercises',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC7.9',
+    name: 'Threat Intelligence',
+    description:
+      'The entity integrates threat intelligence into security operations to proactively identify and respond to emerging threats. Threat intelligence sources are evaluated and operationalized.',
+    category: 'System Operations',
+    implementationGuidance:
+      'Subscribe to relevant threat intelligence feeds and services. Integrate threat intelligence into SIEM and security tools. Establish threat intelligence analysis and sharing procedures. Conduct threat hunting activities based on intelligence.',
+    evidenceRequirements: [
+      'Threat intelligence program documentation',
+      'Threat intelligence source inventory',
+      'Threat intelligence integration configurations',
+      'Threat hunting reports',
+    ],
+    testProcedures: [
+      'Review threat intelligence program and verify maturity',
+      'Verify threat intelligence is integrated into security operations',
+      'Review threat hunting activities and findings',
+      'Verify intelligence is actionable and acted upon',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== CC8 Enhancements: Change Management - Additional Controls =====
+  {
+    controlId: 'CC8.2',
+    name: 'Emergency Change Management',
+    description:
+      'The entity implements procedures for managing emergency changes that bypass normal change management processes. Emergency changes are documented, authorized, and reviewed post-implementation.',
+    category: 'Change Management',
+    implementationGuidance:
+      'Define emergency change criteria and authorization procedures. Implement expedited approval workflows for emergency changes. Require post-implementation review and documentation. Track emergency changes and analyze for process improvement.',
+    evidenceRequirements: [
+      'Emergency change policy and procedures',
+      'Emergency change authorization records',
+      'Post-implementation review documentation',
+      'Emergency change trend analysis',
+    ],
+    testProcedures: [
+      'Review emergency change procedures and verify appropriate controls',
+      'Inspect emergency change records and verify proper authorization',
+      'Review post-implementation reviews for completeness',
+      'Verify emergency changes are appropriately rare and justified',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC8.3',
+    name: 'Configuration Management',
+    description:
+      'The entity maintains configuration management processes to control and document system configurations. Configuration baselines are established and deviations are detected and remediated.',
+    category: 'Change Management',
+    implementationGuidance:
+      'Establish configuration baselines for systems and applications. Implement configuration management database (CMDB). Deploy configuration monitoring tools to detect drift. Establish procedures for configuration change approval and documentation.',
+    evidenceRequirements: [
+      'Configuration management policy',
+      'Configuration baselines and standards',
+      'CMDB documentation',
+      'Configuration drift reports and remediation records',
+    ],
+    testProcedures: [
+      'Review configuration baselines and verify completeness',
+      'Test configuration monitoring for drift detection',
+      'Verify CMDB accuracy through sampling',
+      'Review configuration drift remediation and verify timeliness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC8.4',
+    name: 'Release Management',
+    description:
+      'The entity implements release management processes to coordinate and control the deployment of changes to production environments. Releases are planned, tested, and deployed according to defined procedures.',
+    category: 'Change Management',
+    implementationGuidance:
+      'Establish release management procedures including release planning, packaging, and deployment. Implement release calendars and coordination processes. Define rollback procedures for failed releases. Conduct post-release verification and documentation.',
+    evidenceRequirements: [
+      'Release management policy and procedures',
+      'Release calendar and planning documentation',
+      'Release deployment records',
+      'Post-release verification and incident records',
+    ],
+    testProcedures: [
+      'Review release management procedures and verify comprehensiveness',
+      'Inspect release records and verify adherence to procedures',
+      'Verify rollback procedures are documented and tested',
+      'Review post-release incidents and verify proper handling',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== CC9 Enhancements: Risk Mitigation - Additional Controls =====
+  {
+    controlId: 'CC9.3',
+    name: 'Business Continuity Planning',
+    description:
+      'The entity develops and maintains business continuity plans to ensure critical operations can continue during disruptions. Plans are tested and updated regularly.',
+    category: 'Risk Mitigation',
+    implementationGuidance:
+      'Conduct business impact analysis to identify critical functions. Develop business continuity plans with recovery strategies. Establish recovery time and recovery point objectives. Test plans through exercises and update based on results.',
+    evidenceRequirements: [
+      'Business impact analysis',
+      'Business continuity plans',
+      'Recovery time and point objectives documentation',
+      'Business continuity exercise reports',
+    ],
+    testProcedures: [
+      'Review business impact analysis and verify currency',
+      'Inspect business continuity plans and verify comprehensiveness',
+      'Review exercise reports and verify plans were tested',
+      'Verify lessons learned are incorporated into plan updates',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC9.4',
+    name: 'Disaster Recovery',
+    description:
+      'The entity implements disaster recovery capabilities to restore systems and data following significant disruptions. Disaster recovery procedures are documented, tested, and maintained.',
+    category: 'Risk Mitigation',
+    implementationGuidance:
+      'Establish disaster recovery site and infrastructure. Develop disaster recovery procedures for critical systems. Implement data replication and backup strategies. Conduct regular disaster recovery testing including failover exercises.',
+    evidenceRequirements: [
+      'Disaster recovery plan and procedures',
+      'Disaster recovery site documentation',
+      'Data replication and backup configurations',
+      'Disaster recovery test reports',
+    ],
+    testProcedures: [
+      'Review disaster recovery procedures and verify completeness',
+      'Verify disaster recovery site readiness',
+      'Test data recovery from backups',
+      'Review disaster recovery test results and verify objectives met',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC9.5',
+    name: 'Crisis Management',
+    description:
+      'The entity establishes crisis management capabilities to coordinate response to significant incidents. Crisis management procedures define escalation, communication, and decision-making processes.',
+    category: 'Risk Mitigation',
+    implementationGuidance:
+      'Establish crisis management team with defined roles. Develop crisis communication procedures including stakeholder notification. Implement crisis escalation criteria and decision-making protocols. Conduct crisis management exercises.',
+    evidenceRequirements: [
+      'Crisis management plan',
+      'Crisis team roster and contact information',
+      'Crisis communication templates',
+      'Crisis management exercise reports',
+    ],
+    testProcedures: [
+      'Review crisis management plan and verify comprehensiveness',
+      'Verify crisis team members are trained and available',
+      'Review crisis communication procedures and templates',
+      'Inspect crisis exercise reports and verify lessons learned implementation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CC9.6',
+    name: 'Insurance and Risk Transfer',
+    description:
+      'The entity maintains appropriate insurance coverage to transfer certain risks. Insurance policies are reviewed periodically to ensure adequate coverage for identified risks.',
+    category: 'Risk Mitigation',
+    implementationGuidance:
+      'Identify insurable risks and determine appropriate coverage levels. Obtain cyber insurance, business interruption, and other relevant policies. Review insurance coverage annually against risk profile. Maintain claims procedures and documentation.',
+    evidenceRequirements: [
+      'Insurance policy inventory',
+      'Coverage analysis and recommendations',
+      'Insurance policy documents',
+      'Insurance review and renewal records',
+    ],
+    testProcedures: [
+      'Review insurance coverage against identified risks',
+      'Verify insurance policies are current and adequate',
+      'Review coverage limits against potential loss scenarios',
+      'Verify claims procedures are documented and understood',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== A1 Enhancements: Availability - Additional Controls =====
+  {
+    controlId: 'A1.5',
+    name: 'System Performance Monitoring',
+    description:
+      'The entity monitors system performance to ensure processing capacity meets current and anticipated requirements. Performance thresholds are established and monitored to enable proactive capacity management.',
+    category: 'Availability',
+    implementationGuidance:
+      'Implement performance monitoring tools covering CPU, memory, storage, and network utilization. Establish performance baselines and alerting thresholds. Conduct capacity planning and forecasting. Implement automated scaling where feasible.',
+    evidenceRequirements: [
+      'Performance monitoring tool configurations',
+      'Performance baseline documentation',
+      'Capacity planning and forecasting reports',
+      'Performance alert and response records',
+    ],
+    testProcedures: [
+      'Review performance monitoring coverage and verify all critical systems are monitored',
+      'Inspect performance thresholds and verify they are appropriate',
+      'Review capacity planning and verify it accounts for growth projections',
+      'Verify performance alerts are generated and responded to appropriately',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'A1.6',
+    name: 'Infrastructure Redundancy',
+    description:
+      'The entity implements infrastructure redundancy to support system availability objectives. Redundant components eliminate single points of failure for critical systems.',
+    category: 'Availability',
+    implementationGuidance:
+      'Identify critical infrastructure components and implement redundancy. Deploy redundant power, network, and storage systems. Implement load balancing and failover capabilities. Test failover procedures regularly.',
+    evidenceRequirements: [
+      'Infrastructure redundancy documentation',
+      'Single point of failure analysis',
+      'Failover procedure documentation',
+      'Failover test results and records',
+    ],
+    testProcedures: [
+      'Review infrastructure architecture and verify redundancy for critical components',
+      'Inspect single point of failure analysis and verify completeness',
+      'Review failover test results and verify successful failover',
+      'Verify redundant components are actively monitored',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'A1.7',
+    name: 'Service Level Management',
+    description:
+      'The entity establishes and monitors service level objectives and agreements related to system availability. Performance against service levels is tracked and reported.',
+    category: 'Availability',
+    implementationGuidance:
+      'Define service level objectives for critical systems including uptime targets. Establish service level agreements with customers and vendors. Implement SLA monitoring and reporting. Conduct SLA performance reviews and improvement initiatives.',
+    evidenceRequirements: [
+      'Service level objectives documentation',
+      'Service level agreements',
+      'SLA monitoring dashboards and reports',
+      'SLA performance review records',
+    ],
+    testProcedures: [
+      'Review service level objectives and verify they are measurable',
+      'Inspect SLA monitoring and verify accuracy',
+      'Review SLA performance against targets',
+      'Verify SLA breaches are investigated and addressed',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'A1.8',
+    name: 'Scheduled Maintenance Management',
+    description:
+      'The entity manages scheduled maintenance activities to minimize impact on system availability. Maintenance windows are communicated and coordinated with stakeholders.',
+    category: 'Availability',
+    implementationGuidance:
+      'Establish maintenance scheduling procedures and approval processes. Define maintenance windows and communicate to affected stakeholders. Implement change coordination for maintenance activities. Track maintenance activities and their impact on availability.',
+    evidenceRequirements: [
+      'Maintenance scheduling policy and procedures',
+      'Maintenance window calendar',
+      'Maintenance notification records',
+      'Maintenance impact tracking records',
+    ],
+    testProcedures: [
+      'Review maintenance scheduling procedures and verify compliance',
+      'Inspect maintenance notifications and verify timely communication',
+      'Review maintenance impact tracking and verify minimal disruption',
+      'Verify maintenance activities follow approved schedules',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== PI1 Enhancements: Processing Integrity - Additional Controls =====
+  {
+    controlId: 'PI1.7',
+    name: 'Data Validation Controls',
+    description:
+      'The entity implements data validation controls to ensure the accuracy and completeness of data input. Validation rules prevent invalid data from entering the system.',
+    category: 'Processing Integrity',
+    implementationGuidance:
+      'Define data validation rules for all input fields including format, range, and referential integrity checks. Implement front-end and back-end validation. Establish error handling procedures for validation failures. Monitor validation error rates.',
+    evidenceRequirements: [
+      'Data validation rule documentation',
+      'Input validation control configurations',
+      'Validation error handling procedures',
+      'Validation error rate reports',
+    ],
+    testProcedures: [
+      'Review data validation rules and verify comprehensiveness',
+      'Test input validation controls with various test cases',
+      'Verify validation errors are handled appropriately',
+      'Review validation error rates and verify acceptable levels',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PI1.8',
+    name: 'Processing Exception Management',
+    description:
+      'The entity identifies, logs, and resolves processing exceptions in a timely manner. Exception handling procedures ensure data integrity is maintained when errors occur.',
+    category: 'Processing Integrity',
+    implementationGuidance:
+      'Implement exception detection and logging mechanisms. Establish exception classification and prioritization criteria. Define exception resolution workflows and escalation procedures. Track exceptions through resolution and conduct root cause analysis.',
+    evidenceRequirements: [
+      'Exception management policy and procedures',
+      'Exception logging configurations',
+      'Exception resolution workflow documentation',
+      'Exception tracking and resolution records',
+    ],
+    testProcedures: [
+      'Review exception management procedures and verify comprehensiveness',
+      'Verify exception logging captures required information',
+      'Review exception resolution records and verify timeliness',
+      'Verify root cause analysis is conducted for recurring exceptions',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PI1.9',
+    name: 'Output Completeness Verification',
+    description:
+      'The entity verifies the completeness and accuracy of processing outputs. Output controls ensure all transactions are processed and reported correctly.',
+    category: 'Processing Integrity',
+    implementationGuidance:
+      'Implement output reconciliation controls comparing input counts to output counts. Establish output verification procedures including hash totals and control totals. Define procedures for investigating and resolving output discrepancies.',
+    evidenceRequirements: [
+      'Output verification procedures',
+      'Reconciliation control documentation',
+      'Output verification reports',
+      'Discrepancy investigation records',
+    ],
+    testProcedures: [
+      'Review output verification procedures and verify adequacy',
+      'Test reconciliation controls for proper functioning',
+      'Review output verification reports and verify completeness',
+      'Verify discrepancies are investigated and resolved',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PI1.10',
+    name: 'Transaction Logging and Audit Trail',
+    description:
+      'The entity maintains transaction logs and audit trails to support processing integrity verification. Logs capture sufficient detail to trace transactions through the system.',
+    category: 'Processing Integrity',
+    implementationGuidance:
+      'Implement transaction logging for all critical processing activities. Capture transaction details including timestamp, user, action, and data changes. Protect log integrity and implement retention according to requirements. Enable log search and analysis capabilities.',
+    evidenceRequirements: [
+      'Transaction logging standards',
+      'Audit trail configurations',
+      'Log retention policy and evidence',
+      'Log integrity protection mechanisms',
+    ],
+    testProcedures: [
+      'Review transaction logging and verify required events are captured',
+      'Verify audit trail captures sufficient detail for transaction tracing',
+      'Test log integrity protection mechanisms',
+      'Verify log retention meets policy requirements',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PI1.11',
+    name: 'Batch Processing Controls',
+    description:
+      'The entity implements controls over batch processing to ensure complete and accurate processing of batch jobs. Batch processing is monitored and exceptions are identified and resolved.',
+    category: 'Processing Integrity',
+    implementationGuidance:
+      'Establish batch processing schedules and dependencies. Implement batch monitoring and alerting for failures. Define restart and recovery procedures for failed batches. Conduct batch reconciliation and verification.',
+    evidenceRequirements: [
+      'Batch processing schedule and procedures',
+      'Batch monitoring configurations',
+      'Batch failure and recovery records',
+      'Batch reconciliation reports',
+    ],
+    testProcedures: [
+      'Review batch processing procedures and verify completeness',
+      'Verify batch monitoring alerts on failures',
+      'Test batch restart and recovery procedures',
+      'Review batch reconciliation and verify accuracy',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PI1.12',
+    name: 'Interface Control Management',
+    description:
+      'The entity implements controls over system interfaces to ensure accurate and complete data exchange. Interface controls verify data integrity across system boundaries.',
+    category: 'Processing Integrity',
+    implementationGuidance:
+      'Document all system interfaces including data flows and formats. Implement interface validation and reconciliation controls. Establish error handling and retry logic for interface failures. Monitor interface health and performance.',
+    evidenceRequirements: [
+      'Interface inventory and documentation',
+      'Interface validation control configurations',
+      'Interface reconciliation procedures',
+      'Interface monitoring and error reports',
+    ],
+    testProcedures: [
+      'Review interface documentation and verify accuracy',
+      'Test interface validation controls for proper functioning',
+      'Review interface reconciliation and verify completeness',
+      'Verify interface errors are detected and resolved',
+    ],
+    status: 'Not Started',
+  },
+
+  // ===== C1 Enhancements: Confidentiality - Additional Controls =====
+  {
+    controlId: 'C1.5',
+    name: 'Confidential Data Classification',
+    description:
+      'The entity classifies information based on confidentiality requirements and applies appropriate protection measures based on classification. Data classification is reviewed and updated periodically.',
+    category: 'Confidentiality',
+    implementationGuidance:
+      'Develop data classification policy defining confidentiality levels and handling requirements. Implement data classification labels and metadata. Train personnel on classification requirements. Conduct periodic classification reviews.',
+    evidenceRequirements: [
+      'Data classification policy and standards',
+      'Classification level definitions and handling requirements',
+      'Data classification training records',
+      'Classification review records',
+    ],
+    testProcedures: [
+      'Review data classification policy and verify comprehensiveness',
+      'Verify data is classified according to policy',
+      'Review classification training and verify coverage',
+      'Inspect classification reviews and verify periodic updates',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'C1.6',
+    name: 'Confidential Data Handling Procedures',
+    description:
+      'The entity implements procedures for handling confidential information throughout its lifecycle. Handling procedures address creation, storage, transmission, and destruction of confidential data.',
+    category: 'Confidentiality',
+    implementationGuidance:
+      'Define handling procedures for each confidentiality classification level. Implement controls for confidential data in physical and electronic form. Establish clear desk and clear screen policies. Train personnel on handling requirements.',
+    evidenceRequirements: [
+      'Confidential data handling procedures',
+      'Physical and electronic handling controls documentation',
+      'Clear desk and clear screen policy',
+      'Handling procedure training records',
+    ],
+    testProcedures: [
+      'Review handling procedures and verify completeness for all classification levels',
+      'Inspect physical controls for confidential data protection',
+      'Verify clear desk and clear screen compliance',
+      'Test personnel awareness of handling requirements',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'C1.7',
+    name: 'Non-Disclosure Agreements',
+    description:
+      'The entity requires appropriate confidentiality agreements from employees, contractors, and third parties who may have access to confidential information. Agreements specify confidentiality obligations and consequences of breach.',
+    category: 'Confidentiality',
+    implementationGuidance:
+      'Develop non-disclosure agreement templates for employees, contractors, and third parties. Implement NDA tracking and management. Ensure NDAs are executed before access to confidential information. Review and renew NDAs as appropriate.',
+    evidenceRequirements: [
+      'Non-disclosure agreement templates',
+      'Executed NDA records',
+      'NDA tracking system documentation',
+      'NDA renewal records',
+    ],
+    testProcedures: [
+      'Review NDA templates and verify adequate protection',
+      'Verify NDAs are executed before confidential information access',
+      'Inspect NDA tracking and verify completeness',
+      'Verify NDA renewals are conducted as required',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'C1.8',
+    name: 'Confidential Information Access Restrictions',
+    description:
+      'The entity restricts access to confidential information based on job responsibilities and business need. Access restrictions are implemented through technical and administrative controls.',
+    category: 'Confidentiality',
+    implementationGuidance:
+      'Implement role-based access control for confidential information systems. Establish access request and approval procedures. Conduct periodic access reviews to verify appropriate access. Implement segregation of duties for sensitive functions.',
+    evidenceRequirements: [
+      'Access control policy for confidential information',
+      'Role-based access control configurations',
+      'Access request and approval records',
+      'Periodic access review documentation',
+    ],
+    testProcedures: [
+      'Review access control configurations and verify role-based restrictions',
+      'Verify access request and approval process is followed',
+      'Inspect access reviews and verify timely completion',
+      'Verify access is removed upon role change or termination',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'C1.9',
+    name: 'Secure Transmission of Confidential Information',
+    description:
+      'The entity protects confidential information during transmission using encryption and secure protocols. Transmission controls apply to internal and external data transfers.',
+    category: 'Confidentiality',
+    implementationGuidance:
+      'Implement encryption for confidential data in transit using TLS 1.2 or higher. Deploy secure file transfer solutions for large file exchanges. Establish procedures for secure email and messaging. Monitor for unauthorized transmission attempts.',
+    evidenceRequirements: [
+      'Transmission encryption policy and standards',
+      'Encryption configurations for transmission channels',
+      'Secure file transfer solution documentation',
+      'Transmission monitoring and violation reports',
+    ],
+    testProcedures: [
+      'Review transmission encryption configurations and verify standards compliance',
+      'Test secure file transfer mechanisms for proper encryption',
+      'Verify secure email and messaging solutions are deployed',
+      'Review transmission monitoring and verify violation detection',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'C1.10',
+    name: 'Confidential Data Backup Protection',
+    description:
+      'The entity ensures that backups containing confidential information are protected with controls equivalent to production data. Backup encryption and access controls maintain confidentiality.',
+    category: 'Confidentiality',
+    implementationGuidance:
+      'Implement encryption for backup media containing confidential information. Establish secure backup storage with appropriate access controls. Implement backup media handling and transport procedures. Track backup media through destruction.',
+    evidenceRequirements: [
+      'Backup encryption policy and configurations',
+      'Backup storage access control documentation',
+      'Backup media handling procedures',
+      'Backup media inventory and tracking records',
+    ],
+    testProcedures: [
+      'Verify backup encryption is implemented and functioning',
+      'Review backup storage access controls and verify restrictions',
+      'Inspect backup media handling and verify secure procedures',
+      'Verify backup media is tracked through destruction',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'C1.11',
+    name: 'Confidential Information in Development Environments',
+    description:
+      'The entity protects confidential information used in development and test environments. Production confidential data is masked or substituted in non-production environments.',
+    category: 'Confidentiality',
+    implementationGuidance:
+      'Implement data masking or synthetic data generation for non-production environments. Establish procedures for requesting exceptions to use production data. Apply appropriate access controls to non-production environments. Monitor non-production environments for confidential data exposure.',
+    evidenceRequirements: [
+      'Non-production data protection policy',
+      'Data masking tool configurations',
+      'Production data usage exception records',
+      'Non-production environment access controls',
+    ],
+    testProcedures: [
+      'Review data masking implementations and verify effectiveness',
+      'Inspect exception requests and verify appropriate approvals',
+      'Verify non-production access controls are appropriate',
+      'Test non-production environments for confidential data exposure',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'C1.12',
+    name: 'Confidential Information Incident Response',
+    description:
+      'The entity implements procedures for responding to incidents involving confidential information. Incident response includes containment, investigation, notification, and remediation.',
+    category: 'Confidentiality',
+    implementationGuidance:
+      'Develop incident response procedures specific to confidential information breaches. Establish breach notification procedures and timelines. Implement forensic investigation capabilities. Conduct post-incident reviews and implement lessons learned.',
+    evidenceRequirements: [
+      'Confidential information incident response procedures',
+      'Breach notification procedures and templates',
+      'Incident investigation records',
+      'Post-incident review documentation',
+    ],
+    testProcedures: [
+      'Review incident response procedures and verify completeness',
+      'Verify breach notification procedures meet regulatory requirements',
+      'Review incident investigation records and verify thoroughness',
+      'Verify lessons learned are implemented from past incidents',
+    ],
+    status: 'Not Started',
+  },
 ];
