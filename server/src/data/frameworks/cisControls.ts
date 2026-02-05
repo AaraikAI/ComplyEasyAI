@@ -49,26 +49,26 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
   },
   {
     controlId: 'CIS-1.3',
-    name: 'Utilize DHCP Logging to Update Enterprise Asset Inventory',
-    description: 'Use DHCP logging on all DHCP servers or Internet Protocol address management tools to update the enterprise asset inventory. Review and use logs to update the enterprise asset inventory weekly, or more frequently.',
-    category: 'IG1',
-    implementationGuidance: 'Enable DHCP logging on all DHCP servers and configure log forwarding to a centralized log management system. Create an automated or semi-automated process that parses DHCP lease data and reconciles new or changed IP assignments with the asset inventory on at least a weekly basis.',
+    name: 'Utilize an Active Discovery Tool',
+    description: 'Utilize an active discovery tool to identify assets connected to the enterprise network. Configure the active discovery tool to execute daily, or more frequently.',
+    category: 'IG2',
+    implementationGuidance: 'Deploy an active network discovery tool that proactively scans network segments to identify connected devices. Configure the tool to run automated daily scans and reconcile discovered assets against the enterprise asset inventory. Ensure the tool can identify device types, operating systems, and services running on discovered assets.',
     evidenceRequirements: [
-      'DHCP server configuration showing logging is enabled and forwarding to central log management',
-      'Sample DHCP logs demonstrating lease assignment data is being captured',
-      'Evidence of weekly reconciliation process between DHCP logs and the asset inventory'
+      'Active discovery tool deployment and configuration documentation',
+      'Daily scan schedule configuration showing automated execution',
+      'Discovery scan results and asset reconciliation reports'
     ],
     testProcedures: [
-      'Verify DHCP logging is enabled on all DHCP servers by reviewing server configurations and confirming log entries are being generated',
-      'Review the reconciliation records for the past month to confirm DHCP data is being used to update the asset inventory at least weekly'
+      'Review the active discovery tool configuration to verify it is set to scan daily or more frequently',
+      'Connect a new device to the network and verify the active discovery tool identifies it within 24 hours'
     ],
     status: 'Not Started'
   },
   {
     controlId: 'CIS-1.4',
-    name: 'Use Dynamic Host Configuration Protocol (DHCP) Server to Update Asset Inventory',
-    description: 'Use DHCP server logging to automatically update the enterprise asset inventory as devices connect to and disconnect from the network, ensuring the inventory reflects the current state of network-connected assets.',
-    category: 'IG1',
+    name: 'Use Dynamic Host Configuration Protocol (DHCP) Logging to Update Enterprise Asset Inventory',
+    description: 'Use DHCP logging on all DHCP servers or IP address management tools to update the enterprise asset inventory. Review and use logs to update the enterprise asset inventory weekly, or more frequently.',
+    category: 'IG2',
     implementationGuidance: 'Configure DHCP servers to feed lease information into the asset management database through automated integration scripts or APIs. Set up alerting for new MAC addresses that do not match existing inventory entries so they can be investigated promptly.',
     evidenceRequirements: [
       'Integration configuration between DHCP servers and asset management system',
@@ -85,7 +85,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-1.5',
     name: 'Use a Passive Asset Discovery Tool',
     description: 'Use a passive discovery tool to identify assets connected to the enterprise network. Review and use scans to update the enterprise asset inventory at least weekly, or more frequently.',
-    category: 'IG1',
+    category: 'IG3',
     implementationGuidance: 'Deploy a passive network monitoring tool at key network segments to identify assets through traffic analysis without generating additional network traffic. Integrate the passive discovery results with the asset inventory system and schedule automated weekly reconciliation.',
     evidenceRequirements: [
       'Passive asset discovery tool deployment records showing coverage of key network segments',
@@ -157,7 +157,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-2.5',
     name: 'Allowlist Authorized Software',
     description: 'Use technical controls such as application allowlisting to ensure that only authorized software can execute or be installed on enterprise assets. Reassess the allowlist on a biannual basis or more frequently.',
-    category: 'IG1',
+    category: 'IG2',
     implementationGuidance: 'Deploy application allowlisting technology on all enterprise assets and configure it to permit only approved software to execute. Establish a biannual review cycle to evaluate and update the allowlist based on business needs and software inventory changes.',
     evidenceRequirements: [
       'Application allowlisting tool deployment records showing coverage across enterprise assets',
@@ -554,18 +554,18 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
   },
   {
     controlId: 'CIS-4.5',
-    name: 'Implement and Manage a Firewall on Servers',
-    description: 'Implement and manage a firewall on servers where supported and applicable. Example implementations include a virtual firewall, operating system firewall, or a third-party firewall agent.',
+    name: 'Implement and Manage a Firewall on End-User Devices',
+    description: 'Implement and manage a host-based firewall on end-user devices. Example implementations include a host-based firewall or an endpoint security agent with built-in firewall capabilities.',
     category: 'IG1',
-    implementationGuidance: 'Enable host-based firewalls on all servers and configure rules to allow only necessary traffic. Centrally manage firewall policies where possible and regularly review rules for accuracy.',
+    implementationGuidance: 'Enable host-based firewalls on all end-user devices including workstations and laptops. Configure to block inbound connections by default and allow only necessary outbound traffic. Centrally manage firewall policies through endpoint management tools.',
     evidenceRequirements: [
-      'Server firewall policy specifying required configurations',
-      'Firewall rule sets for each server type',
-      'Firewall management and monitoring records'
+      'Host firewall policy for end-user devices',
+      'Firewall configurations deployed via endpoint management',
+      'Compliance reports showing firewall status across end-user devices'
     ],
     testProcedures: [
-      'Verify host-based firewalls are enabled on a sample of servers',
-      'Review firewall rules and verify only necessary traffic is permitted'
+      'Verify host firewalls are enabled on a sample of end-user devices',
+      'Review firewall rules and verify they follow the principle of least privilege'
     ],
     status: 'Not Started'
   },
@@ -747,7 +747,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-5.5',
     name: 'Establish and Maintain an Inventory of Service Accounts',
     description: 'Establish and maintain an inventory of all service accounts. The inventory must include the account owner, creation date, last reviewed date, and purpose for each service account.',
-    category: 'IG1',
+    category: 'IG2',
     implementationGuidance: 'Create a centralized registry of all service accounts in the IAM system, documenting the account owner, purpose, associated systems, and creation date. Review the service account inventory on a quarterly basis to validate continued need and ensure accounts are properly managed.',
     evidenceRequirements: [
       'Service account inventory with owner, purpose, creation date, and last review date for each account',
@@ -764,7 +764,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-5.6',
     name: 'Centralize Account Management',
     description: 'Centralize account management through a directory or identity service. Centralized account management enables consistent enforcement of policies such as password requirements, lockout settings, and MFA.',
-    category: 'IG1',
+    category: 'IG2',
     implementationGuidance: 'Integrate all enterprise applications and systems with a centralized directory service such as Active Directory, Azure AD, or an equivalent identity provider using protocols like LDAP or SAML. Eliminate local accounts where possible and ensure all authentication flows through the centralized identity service for consistent policy enforcement.',
     evidenceRequirements: [
       'Centralized directory or identity service architecture documentation showing integrated systems',
@@ -925,7 +925,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-7.1',
     name: 'Establish and Maintain a Vulnerability Management Process',
     description: 'Establish and maintain a documented vulnerability management process for enterprise assets. Review and update the process annually or when significant enterprise changes occur that could affect vulnerability management.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Develop a formal vulnerability management policy that defines scanning frequency, risk-rating methodology, remediation timelines based on severity, and escalation procedures. Integrate the vulnerability management process with the change management and patch management workflows to ensure efficient remediation.',
     evidenceRequirements: [
       'Vulnerability management policy document defining processes, roles, scanning frequency, and remediation SLAs',
@@ -942,7 +942,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-7.2',
     name: 'Establish and Maintain a Remediation Process',
     description: 'Establish and maintain a risk-based remediation strategy documented in a remediation process with monthly or more frequent reviews. The process should prioritize remediation based on the severity of the vulnerability and the criticality of the affected asset.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Define remediation SLAs based on vulnerability severity (e.g., critical within 15 days, high within 30 days, medium within 90 days) and asset criticality. Implement a tracking system that monitors remediation progress against SLAs and escalates overdue items to management.',
     evidenceRequirements: [
       'Remediation process documentation with risk-based prioritization criteria and SLAs',
@@ -959,7 +959,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-7.3',
     name: 'Perform Automated Operating System Patch Management',
     description: 'Perform operating system updates on enterprise assets through automated patch management on a monthly basis or more frequently. Validate that all OS patches have been applied within the defined remediation timeline.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Deploy an enterprise patch management solution such as WSUS, SCCM, or equivalent that automatically distributes and installs OS patches to all managed assets. Configure patch deployment schedules with appropriate testing windows and monitor patch compliance rates through the management console.',
     evidenceRequirements: [
       'Patch management tool configuration showing automated OS patch deployment schedules',
@@ -976,7 +976,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-7.4',
     name: 'Perform Automated Application Patch Management',
     description: 'Perform application updates on enterprise assets through automated patch management on a monthly basis or more frequently. Validate that all application patches have been applied within the defined remediation timeline.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Extend the enterprise patch management solution to include third-party application patching, covering browsers, productivity suites, and other commonly used software. Configure automated deployment policies for application updates and monitor compliance through centralized reporting.',
     evidenceRequirements: [
       'Patch management configuration showing third-party application patch deployment policies',
@@ -1048,7 +1048,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-8.1',
     name: 'Establish and Maintain an Audit Log Management Process',
     description: 'Establish and maintain an audit log management process that defines the enterprise logging requirements. Review and update the process annually or when significant changes occur.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Develop a formal audit log management policy that specifies what events to log, log retention periods, log protection requirements, and the review process for log data. Align the logging requirements with regulatory obligations and incident response needs to ensure sufficient detail is captured.',
     evidenceRequirements: [
       'Audit log management policy document defining logging requirements, retention, and review procedures',
@@ -1065,7 +1065,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-8.2',
     name: 'Collect Audit Logs',
     description: 'Collect audit logs from enterprise assets including operating systems, applications, and network devices. Ensure audit log collection is enabled on all assets that support logging.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Enable audit logging on all enterprise assets following the logging standards and configure log forwarding to the centralized SIEM or log management platform. Verify log collection is functioning by monitoring for log receipt gaps and implementing alerting for systems that stop sending logs.',
     evidenceRequirements: [
       'SIEM or log management platform showing active log sources and collection status',
@@ -1082,7 +1082,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-8.3',
     name: 'Ensure Adequate Audit Log Storage',
     description: 'Ensure that logging destinations maintain adequate storage to comply with the enterprise log retention policy. Configure log storage to meet both minimum retention requirements and anticipated log volume growth.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Size log storage to accommodate the enterprise retention requirements plus a growth buffer, and configure automated archival to long-term storage when primary storage reaches capacity thresholds. Implement monitoring and alerting on log storage utilization to proactively address capacity issues before log data is lost.',
     evidenceRequirements: [
       'Log storage capacity planning documentation showing sizing calculations based on retention requirements',
@@ -1133,7 +1133,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-8.4',
     name: 'Standardize Time Synchronization',
     description: 'Standardize time synchronization. Configure at least two synchronized time sources across enterprise assets where supported.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Configure all enterprise assets to synchronize time with authoritative NTP servers. Use multiple time sources for redundancy and monitor time synchronization status.',
     evidenceRequirements: [
       'NTP configuration policy specifying time sources',
@@ -1256,7 +1256,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-9.1',
     name: 'Ensure Use of Only Fully Supported Browsers and Email Clients',
     description: 'Ensure only fully supported browsers and email clients are allowed to execute on enterprise assets. Only use browsers and email clients that are receiving vendor security updates and support.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Maintain an approved list of supported browser and email client versions and enforce their use through application control policies or GPO restrictions. Configure automated update mechanisms for approved browsers and email clients and block execution of unsupported versions.',
     evidenceRequirements: [
       'Approved browser and email client list with current supported versions',
@@ -1273,7 +1273,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-9.2',
     name: 'Use DNS Filtering Services',
     description: 'Use DNS filtering services on all enterprise assets to block access to known malicious domains. Configure DNS filtering to apply to both on-network and roaming or remote users.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Deploy a DNS filtering solution that intercepts DNS queries and blocks resolution of known malicious, phishing, and command-and-control domains. Configure the DNS filter on both the enterprise network and endpoint agents for roaming users to ensure protection regardless of location.',
     evidenceRequirements: [
       'DNS filtering solution configuration showing block policies for malicious domain categories',
@@ -1379,7 +1379,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-10.1',
     name: 'Deploy and Maintain Anti-Malware Software',
     description: 'Install and maintain anti-malware software on all enterprise assets. Anti-malware software should include real-time scanning, automatic updates, and centralized management capabilities.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Deploy an enterprise anti-malware solution with real-time protection on all endpoints, servers, and supported devices, managed through a centralized console. Configure policies to prevent users from disabling anti-malware protection and monitor deployment coverage to ensure no enterprise assets are unprotected.',
     evidenceRequirements: [
       'Anti-malware deployment reports from the centralized management console showing coverage across all enterprise assets',
@@ -1396,7 +1396,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-10.2',
     name: 'Configure Automatic Anti-Malware Signature Updates',
     description: 'Configure automatic updates for anti-malware signature files on all enterprise assets. Signature updates should occur daily or more frequently to ensure protection against the latest known threats.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Configure the anti-malware management console to push signature updates to all endpoints at least daily and enable endpoints to pull updates directly from the vendor when not connected to the enterprise network. Monitor signature currency across all endpoints and alert on devices with outdated signatures.',
     evidenceRequirements: [
       'Anti-malware update policy configuration showing automatic daily or more frequent update schedule',
@@ -1413,7 +1413,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-10.3',
     name: 'Disable Autorun and Autoplay for Removable Media',
     description: 'Disable autorun and autoplay auto-execute functionality for removable media on enterprise assets. This prevents malware from automatically executing when removable storage devices are connected.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Configure Group Policy Objects to disable autorun and autoplay functionality for all drive types across all enterprise workstations and servers. Validate the policy through endpoint compliance scans and ensure the GPO is linked to all relevant organizational units.',
     evidenceRequirements: [
       'GPO configuration disabling autorun and autoplay for all drive types',
@@ -1502,7 +1502,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-11.1',
     name: 'Establish and Maintain a Data Recovery Practice',
     description: 'Establish and maintain a data recovery practice sufficient to restore in-scope enterprise assets from a pre-loss and trusted state. The practice should define backup scope, frequency, and retention requirements.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Develop a data recovery policy that defines the scope of data to be backed up, backup frequency aligned with recovery point objectives (RPO), retention periods, and recovery time objectives (RTO). Assign responsibility for backup management and ensure the policy is reviewed and updated annually.',
     evidenceRequirements: [
       'Data recovery policy document defining backup scope, frequency, RPO, RTO, and retention requirements',
@@ -1519,7 +1519,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-11.2',
     name: 'Perform Automated Backups',
     description: 'Perform automated backups of in-scope enterprise assets on a weekly or more frequent basis. Automated backups should cover operating system configurations, application data, and user data.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Configure enterprise backup solutions to perform automated backups of all in-scope assets at least weekly, with more frequent backups for critical systems as defined by RPO requirements. Monitor backup job completion status daily and configure alerting for failed or incomplete backup jobs.',
     evidenceRequirements: [
       'Backup solution configuration showing automated backup schedules for all in-scope assets',
@@ -1536,7 +1536,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-11.3',
     name: 'Protect Recovery Data',
     description: 'Protect recovery data with equivalent controls to the original data. Reference encryption or data separation based on requirements defined in the enterprise data management process.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Encrypt backup data both in transit and at rest using enterprise-approved encryption standards, and restrict access to backup systems and media using role-based access controls. Store encryption keys separately from the backup data and implement integrity verification for backup files.',
     evidenceRequirements: [
       'Backup encryption configuration showing encryption standards for data at rest and in transit',
@@ -1553,7 +1553,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-11.4',
     name: 'Establish and Maintain an Isolated Instance of Recovery Data',
     description: 'Establish and maintain an isolated instance of recovery data using versioned backup copies. Isolated recovery data should be stored in a location that is separate from the primary environment.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Implement an air-gapped or logically isolated backup repository that maintains versioned copies of critical backup data separate from the production network. Configure immutable storage or write-once-read-many (WORM) settings to prevent backup data from being modified or deleted by ransomware or unauthorized access.',
     evidenceRequirements: [
       'Isolated backup repository architecture documentation showing network separation from production',
@@ -1591,7 +1591,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-12.1',
     name: 'Ensure Network Infrastructure is Up-to-Date',
     description: 'Ensure network infrastructure is kept up-to-date. Review software versions and firmware for network devices monthly to verify support status and patch level.',
-    category: 'IG2',
+    category: 'IG1',
     implementationGuidance: 'Maintain an inventory of all network devices with their current firmware and software versions, and cross-reference against vendor-published latest versions and end-of-support dates monthly. Establish a patching schedule for network infrastructure that minimizes operational disruption while ensuring timely updates.',
     evidenceRequirements: [
       'Network device inventory with current firmware and software versions documented',
@@ -1731,7 +1731,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-13.1',
     name: 'Centralize Security Event Alerting',
     description: 'Centralize security event alerting across enterprise assets for log correlation and analysis. Use a SIEM or equivalent mechanism to consolidate security alerts from multiple sources for unified monitoring.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Deploy a SIEM platform that aggregates security events from all enterprise assets including endpoints, network devices, servers, and cloud services. Configure correlation rules and use cases that detect known attack patterns, anomalous behaviors, and policy violations, and route alerts to the security operations team.',
     evidenceRequirements: [
       'SIEM deployment documentation showing log source integrations and coverage',
@@ -1748,7 +1748,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-13.3',
     name: 'Deploy a Network Intrusion Detection Solution',
     description: 'Deploy a network intrusion detection solution (NIDS) on enterprise assets. Configure the NIDS to monitor network traffic for known attack signatures and anomalous activity patterns.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Deploy network IDS sensors at critical network boundaries including internet egress points, DMZ segments, and between high-value network zones. Configure the NIDS with up-to-date signature sets and tune detection rules to minimize false positives while maintaining visibility into malicious activity.',
     evidenceRequirements: [
       'Network IDS deployment architecture showing sensor placement at critical network boundaries',
@@ -1765,7 +1765,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-13.6',
     name: 'Collect Network Traffic Flow Logs',
     description: 'Collect network traffic flow logs and review them to identify anomalous activity. Enable NetFlow or equivalent flow logging on network devices at critical network points.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Enable NetFlow, sFlow, or IPFIX on routers and switches at critical network segments to capture traffic flow data. Forward flow data to a centralized flow analysis platform and configure baseline traffic profiles to enable detection of anomalous communication patterns.',
     evidenceRequirements: [
       'NetFlow or equivalent configuration on network devices at critical network points',
@@ -1922,7 +1922,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-14.1',
     name: 'Establish and Maintain a Security Awareness Program',
     description: 'Establish and maintain a security awareness program to influence workforce behavior to be security conscious and properly skilled to reduce cybersecurity risks. Update the program annually or when significant threats emerge.',
-    category: 'IG3',
+    category: 'IG1',
     implementationGuidance: 'Develop a comprehensive security awareness program that includes annual training for all employees, regular phishing simulations, and ongoing security communications covering current threats. Track training completion rates and phishing simulation results to measure program effectiveness and identify areas needing improvement.',
     evidenceRequirements: [
       'Security awareness program documentation including curriculum, schedule, and delivery methods',
@@ -1939,7 +1939,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-14.2',
     name: 'Train Workforce Members to Recognize Social Engineering Attacks',
     description: 'Train workforce members to recognize social engineering attacks such as phishing, pretexting, and tailgating. Include practical examples and conduct regular simulations to reinforce training.',
-    category: 'IG3',
+    category: 'IG1',
     implementationGuidance: 'Include social engineering awareness modules in the security awareness program covering phishing emails, vishing calls, pretexting scenarios, and physical social engineering tactics. Conduct monthly phishing simulations and provide immediate education to users who fall for simulated attacks.',
     evidenceRequirements: [
       'Social engineering training materials and curriculum documentation',
@@ -1956,7 +1956,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-14.3',
     name: 'Train Workforce Members on Authentication Best Practices',
     description: 'Train workforce members on authentication best practices including MFA usage, strong password creation, credential management, and how to identify and report phishing attempts targeting credentials.',
-    category: 'IG3',
+    category: 'IG1',
     implementationGuidance: 'Develop authentication-specific training modules that cover proper use of MFA, password manager usage, recognizing credential phishing, and the importance of not sharing or reusing passwords. Include hands-on exercises for enrolling in MFA and using the enterprise password manager.',
     evidenceRequirements: [
       'Authentication best practices training materials covering MFA, passwords, and credential management',
@@ -2079,7 +2079,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-15.1',
     name: 'Establish and Maintain an Inventory of Service Providers',
     description: 'Establish and maintain an inventory of service providers that includes classification of data processed, stored, or transmitted by each provider. Review and update the inventory annually.',
-    category: 'IG3',
+    category: 'IG1',
     implementationGuidance: 'Create a centralized registry of all third-party service providers that process, store, or transmit enterprise data, including the data types involved and data classification levels. Assign an internal owner to each service provider relationship and conduct annual reviews to validate the inventory accuracy and assess ongoing risk.',
     evidenceRequirements: [
       'Service provider inventory listing all providers with data classification and relationship owner',
@@ -2096,7 +2096,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-15.2',
     name: 'Establish and Maintain a Service Provider Management Policy',
     description: 'Establish and maintain a service provider management policy that addresses the classification, inventory, assessment, monitoring, and decommissioning of service providers.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Develop a comprehensive third-party risk management policy that defines requirements for service provider assessment, ongoing monitoring, security requirements, incident notification, and relationship termination procedures. Review the policy annually and ensure it aligns with regulatory requirements and enterprise risk appetite.',
     evidenceRequirements: [
       'Service provider management policy document covering assessment, monitoring, and decommissioning',
@@ -2113,7 +2113,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-15.3',
     name: 'Classify Service Providers',
     description: 'Classify service providers based on the type and sensitivity of data they handle. Apply appropriate oversight levels based on the classification to ensure adequate risk management.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Develop a classification framework that categorizes service providers into risk tiers based on the sensitivity of data they access and the criticality of services they provide. Apply graduated oversight requirements for each tier, with the highest level of scrutiny for providers handling the most sensitive data.',
     evidenceRequirements: [
       'Service provider classification framework documentation with tier definitions and criteria',
@@ -2130,7 +2130,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-15.4',
     name: 'Ensure Service Provider Contracts Include Security Requirements',
     description: 'Ensure service provider contracts include security requirements such as encryption, data handling, incident notification, access controls, and the right to audit.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Develop standard security contract clauses and addenda that address encryption requirements, data handling obligations, breach notification timelines, access control requirements, audit rights, and data return or destruction upon termination. Require legal and security review of all service provider contracts before execution.',
     evidenceRequirements: [
       'Standard security contract clauses and addenda template',
@@ -2202,7 +2202,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-16.1',
     name: 'Establish and Maintain a Secure Application Development Process',
     description: 'Establish and maintain a secure application development process that includes secure coding standards, security testing requirements, and security review gates throughout the SDLC.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Implement a secure SDLC framework that integrates security activities into each phase of development including threat modeling during design, secure code reviews during development, and security testing before release. Document secure coding standards based on OWASP or equivalent guidelines and require developer training on secure development practices.',
     evidenceRequirements: [
       'Secure SDLC process documentation including security activities for each development phase',
@@ -2219,7 +2219,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-16.2',
     name: 'Establish and Maintain a Process to Accept and Address Software Vulnerabilities',
     description: 'Establish and maintain a process to accept and address reports of software vulnerabilities including a means for external entities to report vulnerabilities. Publish a security contact or vulnerability disclosure policy.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Create a vulnerability disclosure policy that provides clear instructions for external researchers and users to report security vulnerabilities in enterprise-developed software. Establish an internal triage process that evaluates reported vulnerabilities, prioritizes remediation based on severity, and communicates status back to reporters.',
     evidenceRequirements: [
       'Published vulnerability disclosure policy or security contact information',
@@ -2236,7 +2236,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-16.3',
     name: 'Perform Root Cause Analysis on Security Vulnerabilities',
     description: 'Perform root cause analysis on security vulnerabilities in enterprise-developed software. Use findings to improve the secure development process and prevent similar vulnerabilities from recurring.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Establish a root cause analysis process that is triggered for all critical and high-severity vulnerabilities discovered in enterprise-developed applications. Document root cause findings and feed them back into secure coding standards, developer training, and automated security testing rules to prevent recurrence.',
     evidenceRequirements: [
       'Root cause analysis process documentation defining when and how RCA is performed',
@@ -2444,7 +2444,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-17.1',
     name: 'Designate Personnel to Manage Incident Handling',
     description: 'Designate one key person and at least one backup who will manage the enterprise incident handling process. Management personnel are responsible for the coordination and documentation of incident response and recovery efforts.',
-    category: 'IG3',
+    category: 'IG1',
     implementationGuidance: 'Formally designate an incident response manager and at least one backup through written assignment that defines their authority, responsibilities, and escalation paths. Ensure designated personnel have appropriate training, certifications, and access to the tools and resources needed to manage incident response effectively.',
     evidenceRequirements: [
       'Formal designation letters or role assignments for incident response manager and backup',
@@ -2461,7 +2461,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-17.2',
     name: 'Establish and Maintain Contact Information for Reporting Security Incidents',
     description: 'Establish and maintain contact information for parties that need to be informed of security incidents. Contacts may include internal teams, legal, law enforcement, regulatory bodies, and affected parties.',
-    category: 'IG3',
+    category: 'IG1',
     implementationGuidance: 'Create and maintain a comprehensive incident notification contact list that includes internal stakeholders (executive management, legal, PR, IT), external parties (law enforcement, regulators, cyber insurance), and affected party notification procedures. Review and update the contact list quarterly to ensure accuracy.',
     evidenceRequirements: [
       'Incident notification contact list with internal and external stakeholder contacts',
@@ -2478,7 +2478,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-17.3',
     name: 'Establish and Maintain an Enterprise Process for Reporting Incidents',
     description: 'Establish and maintain an enterprise process for the workforce to report security incidents. The process must include a reporting mechanism, timeline requirements, and details on what constitutes a reportable incident.',
-    category: 'IG3',
+    category: 'IG1',
     implementationGuidance: 'Create an incident reporting process that provides multiple reporting channels (email, phone, web portal, chat) and clearly defines what constitutes a reportable security incident. Train all workforce members on the reporting process during onboarding and annual security awareness training, and ensure the reporting mechanisms are easily accessible.',
     evidenceRequirements: [
       'Incident reporting process documentation defining reportable incidents and reporting channels',
@@ -2495,7 +2495,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-17.4',
     name: 'Establish and Maintain an Incident Response Process',
     description: 'Establish and maintain an incident response process that addresses roles, responsibilities, communication requirements, and phases of incident response. Review and update the process annually.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Develop a comprehensive incident response plan based on the NIST incident response lifecycle that includes preparation, detection and analysis, containment, eradication, recovery, and post-incident activities. Define roles and responsibilities, communication protocols, and decision-making authority for each phase of the response.',
     evidenceRequirements: [
       'Incident response plan document covering all phases of incident response with roles and responsibilities',
@@ -2601,7 +2601,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-18.1',
     name: 'Establish and Maintain a Penetration Testing Program',
     description: 'Establish and maintain a penetration testing program appropriate to the size, complexity, and maturity of the enterprise. The program should define testing scope, frequency, methodology, and reporting requirements.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Develop a formal penetration testing program document that defines testing scope covering external and internal assets, testing frequency (at least annually), approved testing methodologies (such as PTES or OWASP), and reporting and remediation requirements. Ensure the program is approved by senior management and resourced appropriately.',
     evidenceRequirements: [
       'Penetration testing program document defining scope, frequency, methodology, and reporting requirements',
@@ -2618,7 +2618,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-18.2',
     name: 'Perform Periodic External Penetration Tests',
     description: 'Perform periodic external penetration tests based on program requirements. External penetration testing must include enterprise and environmental reconnaissance to detect exploitable information.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Engage qualified penetration testers (internal or third-party) to conduct external penetration tests at least annually that simulate real-world attack scenarios against internet-facing assets. Ensure testing includes reconnaissance, vulnerability exploitation, and post-exploitation activities to identify actual risk exposure.',
     evidenceRequirements: [
       'External penetration test reports from the past year documenting scope, methodology, and findings',
@@ -2635,7 +2635,7 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'CIS-18.3',
     name: 'Remediate Penetration Test Findings',
     description: 'Remediate penetration test findings based on the enterprise policy for remediation scope and prioritization. Track remediation to completion and validate fixes through re-testing.',
-    category: 'IG3',
+    category: 'IG2',
     implementationGuidance: 'Establish a remediation tracking process for all penetration test findings that assigns owners, sets remediation deadlines based on severity, and requires validation through re-testing before closure. Integrate penetration test findings with the vulnerability management process to ensure consistent tracking and prioritization.',
     evidenceRequirements: [
       'Remediation tracking records for penetration test findings with owners, deadlines, and status',
@@ -2679,76 +2679,6 @@ export const CIS_CONTROLS: FrameworkControlTemplate[] = [
     testProcedures: [
       'Review the most recent internal penetration test report to verify it covers the defined internal scope, tests segmentation and lateral movement, and includes detailed findings',
       'Review remediation tracking to verify findings from the most recent internal penetration test have been addressed within defined remediation timelines'
-    ],
-    status: 'Not Started'
-  },
-
-  // Additional IG1 Safeguards
-  {
-    controlId: 'CIS-4.4',
-    name: 'Implement and Manage a Firewall on End-User Devices',
-    description: 'Implement and manage a firewall on end-user devices. Example implementations include a host-based firewall or an endpoint security agent with built-in firewall capabilities.',
-    category: 'IG1',
-    implementationGuidance: 'Enable host-based firewalls on all end-user devices including workstations and laptops. Configure to block inbound connections by default and allow only necessary outbound traffic.',
-    evidenceRequirements: [
-      'Host firewall policy for end-user devices',
-      'Firewall configurations deployed via endpoint management',
-      'Compliance reports showing firewall status'
-    ],
-    testProcedures: [
-      'Verify host firewalls are enabled on sample end-user devices',
-      'Review firewall rules and verify they follow the principle of least privilege'
-    ],
-    status: 'Not Started'
-  },
-  {
-    controlId: 'CIS-5.6',
-    name: 'Centralize Account Management',
-    description: 'Centralize account management through a directory or identity service.',
-    category: 'IG2',
-    implementationGuidance: 'Integrate all systems with centralized identity management. Minimize local accounts and federate authentication where possible.',
-    evidenceRequirements: [
-      'Centralized identity management architecture',
-      'Systems integrated with directory services',
-      'Local account exceptions with justification'
-    ],
-    testProcedures: [
-      'Verify systems use centralized authentication',
-      'Review and justify any local account exceptions'
-    ],
-    status: 'Not Started'
-  },
-  {
-    controlId: 'CIS-6.4',
-    name: 'Require MFA for Remote Network Access',
-    description: 'Require MFA for remote network access.',
-    category: 'IG1',
-    implementationGuidance: 'Require MFA for all remote access including VPN, remote desktop, and cloud service access. Implement hardware tokens or authenticator apps for MFA.',
-    evidenceRequirements: [
-      'MFA policy for remote access',
-      'MFA configuration on remote access systems',
-      'MFA enrollment records'
-    ],
-    testProcedures: [
-      'Attempt remote access without MFA and verify it is denied',
-      'Verify MFA is required for all remote access paths'
-    ],
-    status: 'Not Started'
-  },
-  {
-    controlId: 'CIS-11.5',
-    name: 'Test Data Recovery',
-    description: 'Test backup recovery quarterly, or more frequently, for a sampling of in-scope enterprise assets.',
-    category: 'IG2',
-    implementationGuidance: 'Conduct quarterly recovery tests for a representative sample of systems and data. Document recovery time and success rate. Address any recovery failures.',
-    evidenceRequirements: [
-      'Backup recovery testing schedule',
-      'Recovery test results and documentation',
-      'Remediation records for failed tests'
-    ],
-    testProcedures: [
-      'Review recovery test records and verify quarterly testing',
-      'Verify recovery times meet RTO requirements'
     ],
     status: 'Not Started'
   }
