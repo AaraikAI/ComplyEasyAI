@@ -2504,4 +2504,1081 @@ export const CMMC_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started',
   },
+
+  // ============================================================
+  // BATCH 1: MISSING LEVEL 2 AND LEVEL 3 ESSENTIAL CONTROLS
+  // ============================================================
+
+  // Missing Level 2 Control - Awareness and Training
+  {
+    controlId: 'AT.L2-3.2.3',
+    name: 'Insider Threat Awareness',
+    description:
+      'Provide security awareness training on recognizing and reporting potential indicators of insider threat. Personnel must be able to identify behaviors and activities that may indicate malicious insider activity or unintentional security risks.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Include insider threat indicators in security awareness training, such as unauthorized data transfers, unusual access patterns, expressions of disgruntlement, and violations of security policies. Establish clear reporting channels for suspicious activities and protect reporters from retaliation.',
+    evidenceRequirements: [
+      'Insider threat awareness training materials and curriculum',
+      'Training completion records for all personnel',
+      'Reporting procedures and hotline documentation',
+      'Records of insider threat reports and investigations',
+    ],
+    testProcedures: [
+      'Review training materials and verify insider threat indicators are covered',
+      'Interview personnel to confirm understanding of reporting procedures',
+      'Verify that reporting channels are accessible and functioning',
+    ],
+    status: 'Not Started',
+  },
+
+  // Additional Level 3 Controls - Incident Response
+  {
+    controlId: 'IR.L3-3.6.2E',
+    name: 'Cyber Incident Response Team',
+    description:
+      'Establish and maintain a cyber incident response team that can be deployed within 24 hours. The team must have the capability to conduct forensic analysis, contain threats, and coordinate response activities.',
+    category: 'Level 3 - Expert',
+    implementationGuidance:
+      'Designate personnel with incident response expertise and ensure they are trained in forensic analysis, malware analysis, and threat containment. Establish on-call rotations and ensure team members can be mobilized within 24 hours. Maintain necessary tools and access for rapid response.',
+    evidenceRequirements: [
+      'Incident response team charter and roster',
+      'Team member training and certification records',
+      'On-call schedules and contact procedures',
+      'Incident response toolkit inventory and readiness documentation',
+    ],
+    testProcedures: [
+      'Conduct tabletop exercises to verify team mobilization within 24 hours',
+      'Verify team members have necessary access and tools for forensic analysis',
+      'Review recent incident responses to assess team effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // Additional Level 3 Controls - Risk Assessment (Supply Chain)
+  {
+    controlId: 'RA.L3-3.11.3E',
+    name: 'Supply Chain Risk Assessment',
+    description:
+      'Assess supply chain risks associated with systems, components, and services. Organizations must identify and evaluate threats, vulnerabilities, and impacts throughout the supply chain.',
+    category: 'Level 3 - Expert',
+    implementationGuidance:
+      'Conduct risk assessments for critical suppliers and supply chain elements. Evaluate supplier security practices, geographic risks, and potential for counterfeit or compromised components. Document findings and implement risk mitigation strategies.',
+    evidenceRequirements: [
+      'Supply chain risk assessment methodology and procedures',
+      'Risk assessments for critical suppliers and components',
+      'Supplier security evaluation criteria and questionnaires',
+      'Risk mitigation plans and tracking documentation',
+    ],
+    testProcedures: [
+      'Review supply chain risk assessments for completeness and currency',
+      'Verify that assessments cover critical suppliers and high-risk components',
+      'Confirm that risk findings are tracked and mitigated appropriately',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RA.L3-3.11.4E',
+    name: 'Security Solution Rationale',
+    description:
+      'Document the rationale for security solutions selected for protecting CUI. Organizations must justify security control selections based on risk assessments and demonstrate that chosen solutions adequately address identified threats.',
+    category: 'Level 3 - Expert',
+    implementationGuidance:
+      'Maintain documentation linking security controls to specific risks and threats. Explain why selected solutions are appropriate and how they mitigate identified risks. Review and update rationale as threats evolve.',
+    evidenceRequirements: [
+      'Security solution selection rationale documentation',
+      'Mapping of security controls to identified risks and threats',
+      'Alternative analysis documentation where applicable',
+      'Periodic review records demonstrating ongoing appropriateness',
+    ],
+    testProcedures: [
+      'Review security solution rationale and verify alignment with risk assessments',
+      'Confirm that rationale addresses current threat landscape',
+      'Verify that documentation is maintained and updated periodically',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RA.L3-3.11.5E',
+    name: 'Supply Chain Risk Response',
+    description:
+      'Respond to supply chain risks by developing and implementing risk response strategies. Organizations must take action to mitigate, transfer, accept, or avoid supply chain risks based on assessment findings.',
+    category: 'Level 3 - Expert',
+    implementationGuidance:
+      'Develop response strategies for identified supply chain risks including alternative sourcing, enhanced security requirements for suppliers, inspection and testing procedures, and contingency plans. Track implementation of response actions.',
+    evidenceRequirements: [
+      'Supply chain risk response plan',
+      'Response strategy documentation for identified risks',
+      'Implementation tracking for risk response actions',
+      'Contingency and alternative sourcing plans',
+    ],
+    testProcedures: [
+      'Review risk response strategies and verify they address identified risks',
+      'Confirm that response actions are implemented and tracked',
+      'Test contingency plans through exercises or simulations',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RA.L3-3.11.6E',
+    name: 'Supply Chain Risk Plan',
+    description:
+      'Develop and implement a plan for managing supply chain risks. The plan must address risk identification, assessment, response, and monitoring throughout the supply chain lifecycle.',
+    category: 'Level 3 - Expert',
+    implementationGuidance:
+      'Create a comprehensive supply chain risk management plan that defines roles, responsibilities, processes, and procedures. Include criteria for supplier selection, ongoing monitoring, incident response, and continuous improvement.',
+    evidenceRequirements: [
+      'Supply chain risk management plan',
+      'Roles and responsibilities matrix',
+      'Supplier selection and monitoring criteria',
+      'Plan review and update records',
+    ],
+    testProcedures: [
+      'Review the supply chain risk management plan for completeness',
+      'Verify that plan elements are implemented in practice',
+      'Confirm that the plan is reviewed and updated periodically',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RA.L3-3.11.7E',
+    name: 'Supply Chain Security Requirements',
+    description:
+      'Establish security requirements for suppliers and supply chain elements. Requirements must address security controls, verification procedures, and compliance obligations.',
+    category: 'Level 3 - Expert',
+    implementationGuidance:
+      'Define security requirements in contracts and agreements with suppliers. Include requirements for access controls, data protection, incident reporting, and audit rights. Verify compliance through assessments and monitoring.',
+    evidenceRequirements: [
+      'Supplier security requirements documentation',
+      'Contract clauses addressing security obligations',
+      'Supplier compliance verification records',
+      'Security requirement acknowledgment forms',
+    ],
+    testProcedures: [
+      'Review supplier contracts for required security clauses',
+      'Verify that suppliers have acknowledged security requirements',
+      'Confirm that compliance verification is conducted as required',
+    ],
+    status: 'Not Started',
+  },
+
+  // Additional Level 3 Controls - System and Information Integrity
+  {
+    controlId: 'SI.L3-3.14.1E',
+    name: 'Software Integrity Verification',
+    description:
+      'Verify the integrity of software using cryptographic mechanisms or other methods. Organizations must ensure that software has not been tampered with before deployment or execution.',
+    category: 'Level 3 - Expert',
+    implementationGuidance:
+      'Implement code signing for internally developed software and verify digital signatures on third-party software. Use hash verification and secure distribution channels. Block execution of unsigned or unverified software where feasible.',
+    evidenceRequirements: [
+      'Software integrity verification policy and procedures',
+      'Code signing certificates and key management documentation',
+      'Verification logs and records',
+      'Configuration evidence for software execution restrictions',
+    ],
+    testProcedures: [
+      'Verify that software integrity checks are performed before deployment',
+      'Attempt to execute unsigned software and confirm it is blocked or flagged',
+      'Review verification logs for completeness and accuracy',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SI.L3-3.14.2E',
+    name: 'Automated Integrity Verification',
+    description:
+      'Employ automated mechanisms to detect and respond to integrity violations. Automated verification provides continuous assurance and rapid detection of unauthorized changes.',
+    category: 'Level 3 - Expert',
+    implementationGuidance:
+      'Deploy file integrity monitoring (FIM) tools that automatically detect changes to critical system files, configurations, and software. Configure alerts and automated responses for integrity violations. Integrate with security monitoring for correlation.',
+    evidenceRequirements: [
+      'File integrity monitoring tool deployment documentation',
+      'FIM configuration showing monitored files and directories',
+      'Alert and response configuration settings',
+      'Integrity violation logs and response records',
+    ],
+    testProcedures: [
+      'Modify a monitored file and verify that an alert is generated',
+      'Review FIM coverage and confirm critical files are monitored',
+      'Verify that integrity violations trigger appropriate responses',
+    ],
+    status: 'Not Started',
+  },
+
+  // Additional Level 3 Controls - Access Control
+  {
+    controlId: 'AC.L3-3.1.3E',
+    name: 'Secure Information Transfer',
+    description:
+      'Employ secure information transfer solutions to control information flows between security domains on connected systems. Organizations must ensure that data transfers between domains are authorized and protected.',
+    category: 'Level 3 - Expert',
+    implementationGuidance:
+      'Implement cross-domain solutions, data diodes, or security gateways that enforce policy-based controls on information transfers between security domains. Log and monitor all cross-domain transfers.',
+    evidenceRequirements: [
+      'Cross-domain transfer policy and procedures',
+      'Secure transfer solution architecture documentation',
+      'Transfer authorization and approval records',
+      'Cross-domain transfer logs and monitoring records',
+    ],
+    testProcedures: [
+      'Attempt unauthorized cross-domain transfers and verify they are blocked',
+      'Review transfer logs for completeness and policy compliance',
+      'Verify that all transfers are authorized according to policy',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // BATCH 2: EXTENDED AWARENESS AND TRAINING CONTROLS
+  // ============================================================
+  {
+    controlId: 'AT.L2-3.2.4',
+    name: 'Role-Based Security Training',
+    description:
+      'Provide role-based security training to personnel with assigned security roles and responsibilities. Training must be tailored to the specific duties and access levels of each role.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Develop specialized training curricula for different roles including system administrators, security personnel, developers, and executives. Ensure training addresses role-specific threats, responsibilities, and security practices.',
+    evidenceRequirements: [
+      'Role-based training curriculum for each security role',
+      'Training completion records by role',
+      'Role assignment documentation linking personnel to training requirements',
+      'Annual training update and refresh records',
+    ],
+    testProcedures: [
+      'Review training curricula and verify role-specific content is included',
+      'Verify that personnel in security roles have completed appropriate training',
+      'Interview role holders to assess understanding of role-specific security responsibilities',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'AT.L2-3.2.5',
+    name: 'Social Engineering Awareness',
+    description:
+      'Provide training on recognizing and responding to social engineering attacks including phishing, pretexting, and other manipulation techniques. Personnel must be equipped to identify and report these attempts.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Include detailed examples of social engineering techniques in security awareness training. Conduct periodic phishing simulations and provide immediate feedback and training to personnel who fall for simulated attacks.',
+    evidenceRequirements: [
+      'Social engineering awareness training materials',
+      'Phishing simulation results and metrics',
+      'Training completion records',
+      'Remedial training records for personnel who failed simulations',
+    ],
+    testProcedures: [
+      'Review training materials for comprehensive social engineering coverage',
+      'Conduct a phishing simulation and measure click rates',
+      'Verify that personnel who fail simulations receive additional training',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'AT.L2-3.2.6',
+    name: 'CUI Handling Training',
+    description:
+      'Provide training on the proper handling, marking, storage, and transmission of Controlled Unclassified Information. Personnel must understand CUI requirements and their responsibilities.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Develop CUI-specific training that covers marking requirements, authorized storage locations, approved transmission methods, and incident reporting procedures. Include practical exercises on CUI identification and handling.',
+    evidenceRequirements: [
+      'CUI handling training curriculum',
+      'Training completion records for personnel with CUI access',
+      'CUI handling policy acknowledgments',
+      'Assessment results demonstrating understanding',
+    ],
+    testProcedures: [
+      'Review training materials for CUI-specific content',
+      'Test personnel knowledge of CUI handling requirements',
+      'Verify that all personnel with CUI access have completed training',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'AT.L2-3.2.7',
+    name: 'Incident Reporting Training',
+    description:
+      'Provide training on security incident recognition and reporting procedures. Personnel must know how to identify potential security incidents and the proper channels for reporting them.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Train personnel to recognize indicators of security incidents including suspicious emails, unauthorized access attempts, data anomalies, and system compromises. Provide clear reporting channels and ensure personnel understand the importance of timely reporting.',
+    evidenceRequirements: [
+      'Incident reporting training materials',
+      'Training completion records',
+      'Incident reporting procedures and contact information',
+      'Records of incident reports demonstrating procedure effectiveness',
+    ],
+    testProcedures: [
+      'Review training materials for incident recognition coverage',
+      'Test personnel knowledge of reporting procedures',
+      'Verify that reporting channels are accessible and understood',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'AT.L2-3.2.8',
+    name: 'Training Updates and Refreshers',
+    description:
+      'Update security awareness training when organizational changes occur or when new threats emerge. Provide periodic refresher training to maintain security awareness.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Establish a process for reviewing and updating training content based on threat intelligence, incident lessons learned, and organizational changes. Require annual refresher training and additional training when significant changes occur.',
+    evidenceRequirements: [
+      'Training update process documentation',
+      'Training content revision history',
+      'Refresher training schedules and completion records',
+      'Change-triggered training deployment records',
+    ],
+    testProcedures: [
+      'Review training content revision history for currency',
+      'Verify that refresher training is conducted on schedule',
+      'Confirm that significant changes trigger training updates',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'AT.L2-3.2.9',
+    name: 'Training Documentation and Records',
+    description:
+      'Document and maintain records of all security awareness and training activities. Records must demonstrate compliance with training requirements and support audit activities.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Implement a training management system that tracks training assignments, completions, and certifications. Retain records for the required retention period and generate reports for compliance monitoring.',
+    evidenceRequirements: [
+      'Training management system or tracking database',
+      'Training completion certificates and records',
+      'Training attendance logs',
+      'Compliance reports demonstrating training coverage',
+    ],
+    testProcedures: [
+      'Review training records for completeness and accuracy',
+      'Generate compliance reports and verify coverage metrics',
+      'Verify that records are retained according to policy',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // BATCH 3: EXTENDED AUDIT, CM, AND IA CONTROLS
+  // ============================================================
+
+  // Extended Audit and Accountability Controls
+  {
+    controlId: 'AU.L2-3.3.10',
+    name: 'Audit Record Backup',
+    description:
+      'Back up audit records to a repository that is part of a physically different system or system component. Backup protection ensures audit data survives system failures or compromises.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Configure audit systems to transmit logs to a centralized, separate log management system in real-time or near-real-time. Ensure the backup repository is protected with appropriate access controls and retained according to policy.',
+    evidenceRequirements: [
+      'Audit backup configuration documentation',
+      'Log management system architecture showing separation',
+      'Backup verification records',
+      'Retention policy compliance evidence',
+    ],
+    testProcedures: [
+      'Verify that audit logs are backed up to a separate system',
+      'Confirm that backups are occurring as configured',
+      'Test log recovery from backup to verify integrity',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'AU.L2-3.3.11',
+    name: 'Time Source Synchronization',
+    description:
+      'Synchronize system clocks with an authoritative time source. Accurate time synchronization ensures audit logs from different systems can be correlated accurately.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Configure all systems to synchronize with an authoritative time source such as NTP servers. Monitor time synchronization status and alert on drift exceeding acceptable thresholds.',
+    evidenceRequirements: [
+      'Time synchronization configuration for all systems',
+      'Authoritative time source documentation',
+      'Time drift monitoring and alerting configuration',
+      'Synchronization status reports',
+    ],
+    testProcedures: [
+      'Verify that all systems are configured to synchronize with the authoritative time source',
+      'Check current time drift across systems and verify it is within acceptable limits',
+      'Review alerts for time synchronization failures',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'AU.L2-3.3.12',
+    name: 'Unauthorized Connection Detection',
+    description:
+      'Monitor for unauthorized local, network, and remote connections. Detection of unauthorized connections enables rapid response to potential security incidents.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Deploy network monitoring tools that detect unauthorized connections including rogue devices, unauthorized remote access, and anomalous network traffic. Configure alerts for suspicious connection activity.',
+    evidenceRequirements: [
+      'Network monitoring tool deployment documentation',
+      'Connection monitoring rules and baselines',
+      'Alert configuration for unauthorized connections',
+      'Unauthorized connection detection logs and response records',
+    ],
+    testProcedures: [
+      'Connect an unauthorized device and verify detection',
+      'Review connection monitoring coverage and verify completeness',
+      'Confirm that alerts are generated for unauthorized connection attempts',
+    ],
+    status: 'Not Started',
+  },
+
+  // Extended Configuration Management Controls
+  {
+    controlId: 'CM.L2-3.4.10',
+    name: 'Software Installation Restrictions',
+    description:
+      'Enforce software installation restrictions by privileged users only. Restricting software installation prevents unauthorized or malicious software from being introduced.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Configure systems to require administrative privileges for software installation. Implement application whitelisting where feasible and maintain an approved software list.',
+    evidenceRequirements: [
+      'Software installation restriction policy',
+      'System configuration showing installation restrictions',
+      'Approved software list',
+      'Application whitelisting configuration if implemented',
+    ],
+    testProcedures: [
+      'Attempt to install software as a non-privileged user and verify it is blocked',
+      'Review system configurations for installation restrictions',
+      'Verify that the approved software list is maintained and current',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CM.L2-3.4.11',
+    name: 'Information Location Restrictions',
+    description:
+      'Control and restrict the location of CUI processing and storage. Geographic and system restrictions limit the attack surface and ensure data remains within approved boundaries.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Define approved locations for CUI processing and storage. Implement technical controls to prevent CUI from being processed or stored in unauthorized locations including cloud services and personal devices.',
+    evidenceRequirements: [
+      'Approved CUI processing and storage locations list',
+      'Technical controls preventing unauthorized storage',
+      'Data flow diagrams showing CUI locations',
+      'Periodic verification of CUI location compliance',
+    ],
+    testProcedures: [
+      'Review CUI location inventory and verify completeness',
+      'Attempt to store CUI in an unauthorized location and verify it is blocked',
+      'Verify that technical controls are functioning as intended',
+    ],
+    status: 'Not Started',
+  },
+
+  // Extended Identification and Authentication Controls
+  {
+    controlId: 'IA.L2-3.5.12',
+    name: 'Replay-Resistant Authentication',
+    description:
+      'Implement replay-resistant authentication mechanisms for network access to privileged accounts. Replay resistance prevents attackers from reusing captured credentials.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Deploy authentication mechanisms that include nonces, timestamps, or challenge-response protocols to prevent replay attacks. Configure network access for privileged accounts to require these mechanisms.',
+    evidenceRequirements: [
+      'Authentication mechanism documentation showing replay resistance',
+      'Network access configuration for privileged accounts',
+      'Protocol specifications demonstrating replay protection',
+      'Testing results validating replay resistance',
+    ],
+    testProcedures: [
+      'Capture authentication traffic and attempt replay attack to verify protection',
+      'Review authentication protocol configuration for replay-resistant features',
+      'Verify that all privileged account network access uses replay-resistant mechanisms',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'IA.L2-3.5.13',
+    name: 'Session Authenticator Management',
+    description:
+      'Manage session authenticators including tokens and cookies to prevent unauthorized session access. Proper management prevents session hijacking and unauthorized access.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Implement secure session management including strong session token generation, secure transmission, appropriate timeout settings, and secure storage. Invalidate sessions upon logout or inactivity.',
+    evidenceRequirements: [
+      'Session management policy and procedures',
+      'Application configuration showing secure session settings',
+      'Session token strength analysis',
+      'Session invalidation verification records',
+    ],
+    testProcedures: [
+      'Review session token generation for randomness and strength',
+      'Verify sessions are invalidated upon logout',
+      'Test session timeout enforcement',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // BATCH 4: EXTENDED INCIDENT RESPONSE AND PERSONNEL SECURITY
+  // ============================================================
+
+  // Extended Incident Response Controls
+  {
+    controlId: 'IR.L2-3.6.4',
+    name: 'Incident Response Plan',
+    description:
+      'Develop, document, and implement an incident response plan that provides a roadmap for incident handling. The plan must address roles, responsibilities, procedures, and communication requirements.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Create a comprehensive incident response plan that covers incident classification, escalation procedures, containment strategies, eradication steps, recovery processes, and post-incident activities. Review and update the plan annually.',
+    evidenceRequirements: [
+      'Incident response plan document',
+      'Plan approval and distribution records',
+      'Annual plan review and update records',
+      'Plan accessibility verification for incident responders',
+    ],
+    testProcedures: [
+      'Review the incident response plan for completeness and currency',
+      'Verify that plan elements are understood by incident responders',
+      'Confirm that the plan addresses all required phases of incident handling',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'IR.L2-3.6.5',
+    name: 'Information Spillage Response',
+    description:
+      'Identify, respond to, and report information spillage incidents. Spillage response procedures must address containment, cleanup, and notification requirements for unauthorized data exposure.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Establish procedures for identifying when CUI has been exposed to unauthorized systems or personnel. Define containment actions, cleanup procedures, and notification requirements. Train personnel on spillage recognition and reporting.',
+    evidenceRequirements: [
+      'Information spillage response procedures',
+      'Spillage incident logs and response records',
+      'Personnel training records on spillage procedures',
+      'Notification and reporting documentation',
+    ],
+    testProcedures: [
+      'Review spillage response procedures for completeness',
+      'Verify that personnel understand spillage recognition and reporting',
+      'Review past spillage incidents for procedural compliance',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'IR.L2-3.6.6',
+    name: 'Incident Response Training',
+    description:
+      'Provide incident response training to personnel with assigned incident response roles. Training must prepare personnel to effectively detect, respond to, and recover from security incidents.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Develop role-specific incident response training for personnel with incident handling responsibilities. Include tabletop exercises and practical simulations. Conduct training initially upon assignment and periodically thereafter.',
+    evidenceRequirements: [
+      'Incident response training curriculum',
+      'Training completion records for incident responders',
+      'Exercise and simulation records',
+      'Training effectiveness assessments',
+    ],
+    testProcedures: [
+      'Review incident response training curriculum for role coverage',
+      'Verify that all incident responders have completed required training',
+      'Assess training effectiveness through exercises or interviews',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'IR.L2-3.6.7',
+    name: 'Incident Coordination',
+    description:
+      'Coordinate incident response activities with internal stakeholders and external organizations. Coordination ensures effective communication and resource sharing during incidents.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Establish coordination mechanisms with internal departments, external partners, law enforcement, and regulatory bodies. Define communication channels, escalation paths, and information sharing protocols.',
+    evidenceRequirements: [
+      'Incident coordination procedures and contact lists',
+      'Memoranda of understanding with external organizations',
+      'Communication channel documentation',
+      'Coordination activity records from past incidents',
+    ],
+    testProcedures: [
+      'Review coordination procedures and verify contact information currency',
+      'Verify that coordination mechanisms have been tested',
+      'Review past incident coordination activities for effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'IR.L2-3.6.8',
+    name: 'Root Cause Analysis',
+    description:
+      'Perform root cause analysis on security incidents to identify underlying causes and prevent recurrence. Analysis findings must inform corrective actions and system improvements.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Conduct root cause analysis for significant security incidents using structured methodologies. Document findings, identify corrective actions, and track implementation. Share lessons learned with relevant stakeholders.',
+    evidenceRequirements: [
+      'Root cause analysis procedures',
+      'Analysis reports for significant incidents',
+      'Corrective action tracking records',
+      'Lessons learned documentation and distribution records',
+    ],
+    testProcedures: [
+      'Review root cause analysis reports for completeness',
+      'Verify that corrective actions are identified and tracked',
+      'Confirm that lessons learned are communicated to stakeholders',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'IR.L2-3.6.9',
+    name: 'Lessons Learned Integration',
+    description:
+      'Incorporate lessons learned from security incidents into incident response procedures and training. Continuous improvement ensures the organization becomes more resilient over time.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Establish a process for capturing, reviewing, and integrating lessons learned from incidents. Update incident response plans, procedures, and training based on findings. Track implementation of improvements.',
+    evidenceRequirements: [
+      'Lessons learned integration process documentation',
+      'Records of procedure and plan updates based on lessons learned',
+      'Training content updates incorporating lessons learned',
+      'Improvement tracking and verification records',
+    ],
+    testProcedures: [
+      'Review lessons learned from recent incidents',
+      'Verify that lessons have been integrated into procedures and training',
+      'Confirm that improvements are tracked and implemented',
+    ],
+    status: 'Not Started',
+  },
+
+  // Extended Personnel Security Controls
+  {
+    controlId: 'PS.L2-3.9.3',
+    name: 'Personnel Transfer and Reassignment',
+    description:
+      'Review and update logical and physical access authorizations when personnel are transferred or reassigned. Access must be adjusted to match new roles and responsibilities.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Establish procedures for reviewing and adjusting access rights when personnel change positions. Coordinate with HR to ensure timely notification of transfers. Remove access no longer required and grant access for new responsibilities.',
+    evidenceRequirements: [
+      'Personnel transfer access review procedures',
+      'Access modification records for transferred personnel',
+      'HR coordination process documentation',
+      'Audit records of access changes following transfers',
+    ],
+    testProcedures: [
+      'Review access records for recently transferred personnel',
+      'Verify that access was adjusted appropriately for role changes',
+      'Confirm that procedures ensure timely access modifications',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PS.L2-3.9.4',
+    name: 'Personnel Termination Access Revocation',
+    description:
+      'Revoke access to systems and facilities upon personnel termination. Timely revocation prevents unauthorized access by former personnel.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Establish procedures for revoking all logical and physical access upon personnel termination. Coordinate with HR for timely notification. Retrieve all access devices, credentials, and organizational equipment.',
+    evidenceRequirements: [
+      'Personnel termination access revocation procedures',
+      'Access revocation records for terminated personnel',
+      'Equipment and credential recovery records',
+      'Audit logs confirming timely access termination',
+    ],
+    testProcedures: [
+      'Review access revocation records for recently terminated personnel',
+      'Verify that access was revoked on or before termination date',
+      'Confirm that equipment and credentials were recovered',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PS.L2-3.9.5',
+    name: 'Third-Party Personnel Security',
+    description:
+      'Apply personnel security requirements to third-party personnel including contractors and service providers. Third parties with system access must meet the same security standards as employees.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Include personnel security requirements in contracts and agreements with third parties. Require background screening, security training, and compliance with access policies. Monitor third-party personnel compliance.',
+    evidenceRequirements: [
+      'Contract clauses addressing third-party personnel security',
+      'Third-party personnel screening verification records',
+      'Training completion records for third-party personnel',
+      'Third-party personnel access management records',
+    ],
+    testProcedures: [
+      'Review contracts for required personnel security clauses',
+      'Verify that third-party personnel meet screening requirements',
+      'Confirm that third-party access is managed according to policy',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PS.L2-3.9.6',
+    name: 'Personnel Access Review',
+    description:
+      'Periodically review personnel access authorizations to ensure they remain appropriate. Regular reviews identify and correct inappropriate access accumulation.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Conduct periodic reviews of personnel access rights, typically quarterly for privileged access and annually for standard access. Compare current access to role requirements and remove unnecessary access.',
+    evidenceRequirements: [
+      'Access review procedures and schedules',
+      'Access review records and findings',
+      'Access modification records resulting from reviews',
+      'Review completion tracking documentation',
+    ],
+    testProcedures: [
+      'Review access review schedules and verify adherence',
+      'Examine review records for thoroughness',
+      'Verify that review findings result in appropriate access adjustments',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PS.L2-3.9.7',
+    name: 'Personnel Sanctions',
+    description:
+      'Employ a formal sanctions process for personnel who fail to comply with security policies and procedures. Sanctions reinforce the importance of security compliance.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Establish a formal process for addressing security policy violations including investigation, documentation, and disciplinary actions. Ensure the process is fair, consistent, and documented.',
+    evidenceRequirements: [
+      'Personnel sanctions policy and procedures',
+      'Records of security policy violations and sanctions applied',
+      'Documentation of investigation processes',
+      'Communication of policy to personnel',
+    ],
+    testProcedures: [
+      'Review sanctions policy for completeness and fairness',
+      'Verify that the policy is communicated to all personnel',
+      'Review past violation records for consistent application',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // BATCH 5: EXTENDED SYSTEM AND COMMUNICATIONS PROTECTION
+  // ============================================================
+  {
+    controlId: 'SC.L2-3.13.17',
+    name: 'Network Segmentation',
+    description:
+      'Employ network segmentation to limit the attack surface and contain potential breaches. Segmentation divides the network into separate zones based on security requirements.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Implement network segmentation using VLANs, firewalls, and access control lists to separate systems based on data sensitivity and function. Control traffic between segments and monitor inter-segment communications.',
+    evidenceRequirements: [
+      'Network segmentation architecture documentation',
+      'VLAN and firewall rule configurations',
+      'Inter-segment traffic flow policies',
+      'Segmentation validation testing records',
+    ],
+    testProcedures: [
+      'Review network segmentation design for adequacy',
+      'Test inter-segment access controls to verify they function as intended',
+      'Verify that CUI systems are appropriately segmented from less sensitive systems',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SC.L2-3.13.18',
+    name: 'DNS Security',
+    description:
+      'Implement domain name system (DNS) security mechanisms to protect against DNS-based attacks. DNS security prevents cache poisoning, spoofing, and data exfiltration via DNS.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Deploy DNS security extensions (DNSSEC) where supported and use secure DNS resolvers. Implement DNS filtering to block known malicious domains and monitor DNS queries for anomalies.',
+    evidenceRequirements: [
+      'DNS security configuration documentation',
+      'DNSSEC implementation records where applicable',
+      'DNS filtering rules and block lists',
+      'DNS monitoring and alerting configuration',
+    ],
+    testProcedures: [
+      'Review DNS security configurations for protective measures',
+      'Attempt to resolve known malicious domains and verify blocking',
+      'Verify that DNS monitoring captures query patterns',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SC.L2-3.13.19',
+    name: 'Information in Transit Protection',
+    description:
+      'Protect the confidentiality and integrity of CUI in transit using cryptographic mechanisms. All CUI transmissions must be encrypted to prevent interception.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Implement TLS 1.2 or higher for all CUI transmissions. Configure systems to reject unencrypted communications for CUI. Use VPNs for remote access and ensure email containing CUI is encrypted.',
+    evidenceRequirements: [
+      'Encryption requirements for CUI in transit',
+      'TLS configuration documentation for systems handling CUI',
+      'VPN and email encryption configurations',
+      'Testing records validating encryption effectiveness',
+    ],
+    testProcedures: [
+      'Verify that CUI transmissions are encrypted',
+      'Test TLS configurations for strong cipher suites',
+      'Attempt to transmit CUI over unencrypted channels and verify it is blocked',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SC.L2-3.13.20',
+    name: 'Information at Rest Protection',
+    description:
+      'Protect the confidentiality of CUI at rest using cryptographic mechanisms. Stored CUI must be encrypted to protect against unauthorized disclosure.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Implement full disk encryption for all systems storing CUI. Use database encryption for CUI in databases. Implement encryption key management procedures and protect keys appropriately.',
+    evidenceRequirements: [
+      'Encryption requirements for CUI at rest',
+      'Full disk encryption configuration records',
+      'Database encryption documentation',
+      'Key management procedures and protection evidence',
+    ],
+    testProcedures: [
+      'Verify that systems storing CUI have encryption enabled',
+      'Review encryption key management procedures',
+      'Attempt to access encrypted data without proper keys and verify it is protected',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SC.L2-3.13.21',
+    name: 'Boundary Protection Enhancement',
+    description:
+      'Implement additional boundary protection measures to detect and prevent unauthorized communications. Enhanced boundary protection provides defense-in-depth.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Deploy intrusion prevention systems (IPS), web application firewalls (WAF), and advanced threat protection at network boundaries. Implement outbound filtering to prevent data exfiltration.',
+    evidenceRequirements: [
+      'Enhanced boundary protection architecture documentation',
+      'IPS and WAF deployment and configuration records',
+      'Outbound filtering rules and policies',
+      'Boundary protection monitoring and alert records',
+    ],
+    testProcedures: [
+      'Review boundary protection deployments for coverage',
+      'Test IPS and WAF effectiveness against sample attacks',
+      'Verify that outbound filtering prevents unauthorized data transfers',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SC.L2-3.13.22',
+    name: 'Information Sharing Controls',
+    description:
+      'Control the sharing of CUI with external parties. Sharing controls ensure CUI is only shared with authorized recipients through approved channels.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Establish policies for sharing CUI externally including authorization requirements, approved methods, and recipient verification. Implement technical controls to prevent unauthorized sharing.',
+    evidenceRequirements: [
+      'CUI sharing policy and procedures',
+      'Authorization records for external CUI sharing',
+      'Approved sharing methods documentation',
+      'Sharing activity logs and monitoring records',
+    ],
+    testProcedures: [
+      'Review CUI sharing policies for completeness',
+      'Verify that sharing authorizations are documented',
+      'Test technical controls to confirm unauthorized sharing is prevented',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SC.L2-3.13.23',
+    name: 'Function Isolation',
+    description:
+      'Isolate security functions from nonsecurity functions. Function isolation prevents security mechanisms from being compromised by less trusted components.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Implement logical or physical separation between security functions and general user functions. Use separate processes, containers, or systems for security-critical functions.',
+    evidenceRequirements: [
+      'Function isolation architecture documentation',
+      'Security function deployment configurations',
+      'Separation verification testing records',
+      'Isolation mechanism monitoring evidence',
+    ],
+    testProcedures: [
+      'Review function isolation design and implementation',
+      'Verify that security functions operate in isolated environments',
+      'Test isolation effectiveness by attempting cross-function access',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // BATCH 6: ADDITIONAL SECURITY ASSESSMENT AND RECOVERY CONTROLS
+  // ============================================================
+
+  // Extended Security Assessment Controls
+  {
+    controlId: 'CA.L2-3.12.5',
+    name: 'Continuous Monitoring',
+    description:
+      'Implement continuous monitoring of security controls to maintain ongoing awareness of security status. Continuous monitoring provides real-time visibility into security posture.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Deploy security monitoring tools that continuously assess control effectiveness. Establish metrics and thresholds for security monitoring. Generate reports and alerts for security status changes.',
+    evidenceRequirements: [
+      'Continuous monitoring program documentation',
+      'Monitoring tool deployment and configuration',
+      'Security metrics and threshold definitions',
+      'Monitoring reports and alert records',
+    ],
+    testProcedures: [
+      'Review continuous monitoring program implementation',
+      'Verify that monitoring tools are functioning as intended',
+      'Confirm that alerts are generated when thresholds are exceeded',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CA.L2-3.12.6',
+    name: 'Penetration Testing',
+    description:
+      'Conduct penetration testing to identify vulnerabilities and assess security control effectiveness. Penetration testing simulates real-world attack scenarios.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Conduct periodic penetration testing using qualified testers. Define scope, rules of engagement, and testing methodologies. Document findings and remediate identified vulnerabilities.',
+    evidenceRequirements: [
+      'Penetration testing policy and procedures',
+      'Testing scope and rules of engagement documentation',
+      'Penetration test reports and findings',
+      'Remediation tracking for identified vulnerabilities',
+    ],
+    testProcedures: [
+      'Review penetration testing program documentation',
+      'Examine recent penetration test reports',
+      'Verify that findings are tracked and remediated',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'CA.L2-3.12.7',
+    name: 'Assessment Documentation',
+    description:
+      'Document security assessment results and maintain assessment records. Documentation supports audit requirements and demonstrates compliance.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Create comprehensive assessment reports that document scope, methodology, findings, and recommendations. Retain assessment records according to retention requirements.',
+    evidenceRequirements: [
+      'Assessment report templates and standards',
+      'Completed assessment reports',
+      'Assessment record retention documentation',
+      'Assessment findings tracking records',
+    ],
+    testProcedures: [
+      'Review assessment documentation for completeness',
+      'Verify that records are retained according to policy',
+      'Confirm that findings are tracked and addressed',
+    ],
+    status: 'Not Started',
+  },
+
+  // Recovery and Contingency Controls
+  {
+    controlId: 'RE.L2-3.11.1',
+    name: 'Data Backup',
+    description:
+      'Regularly back up CUI and protect backup information. Backup protection ensures data can be recovered following incidents or disasters.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Implement regular backup schedules for all CUI. Store backups in secure locations separate from primary systems. Test backup restoration periodically to verify integrity.',
+    evidenceRequirements: [
+      'Data backup policy and schedules',
+      'Backup execution logs and records',
+      'Backup storage location security documentation',
+      'Backup restoration test records',
+    ],
+    testProcedures: [
+      'Review backup schedules and verify they cover CUI',
+      'Verify that backups are stored securely',
+      'Perform a test restoration to verify backup integrity',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RE.L2-3.11.2',
+    name: 'Backup Testing',
+    description:
+      'Test backup information regularly to verify media reliability and information integrity. Testing ensures backups can be successfully restored when needed.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Establish a schedule for testing backup restoration. Conduct full restoration tests and verify data integrity. Document test results and address any failures.',
+    evidenceRequirements: [
+      'Backup testing schedule and procedures',
+      'Backup restoration test records',
+      'Data integrity verification records',
+      'Failure remediation documentation',
+    ],
+    testProcedures: [
+      'Review backup testing schedule and adherence',
+      'Examine recent test restoration records',
+      'Verify that test failures are investigated and remediated',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RE.L2-3.11.3',
+    name: 'Disaster Recovery Planning',
+    description:
+      'Develop and implement a disaster recovery plan to ensure system availability. The plan must address recovery of critical systems and data following disasters.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Create a disaster recovery plan that identifies critical systems, recovery time objectives, and recovery procedures. Establish alternate processing sites if required. Test the plan periodically.',
+    evidenceRequirements: [
+      'Disaster recovery plan document',
+      'Critical system inventory with recovery priorities',
+      'Alternate site agreements if applicable',
+      'Disaster recovery test records',
+    ],
+    testProcedures: [
+      'Review the disaster recovery plan for completeness',
+      'Verify that recovery objectives are defined',
+      'Review disaster recovery test results',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RE.L2-3.11.4',
+    name: 'Contingency Plan Testing',
+    description:
+      'Test contingency plans to determine effectiveness and organizational readiness. Testing validates that plans work as intended and identifies gaps.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Conduct periodic tests of contingency plans including tabletop exercises, functional exercises, and full-scale tests. Document results and update plans based on lessons learned.',
+    evidenceRequirements: [
+      'Contingency plan testing schedule',
+      'Test scenarios and exercise documentation',
+      'Test results and after-action reports',
+      'Plan updates based on test findings',
+    ],
+    testProcedures: [
+      'Review contingency plan testing schedule and adherence',
+      'Examine test results and after-action reports',
+      'Verify that lessons learned are incorporated into plan updates',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RE.L2-3.11.5',
+    name: 'Business Continuity Planning',
+    description:
+      'Implement business continuity planning to ensure essential operations continue during disruptions. Business continuity addresses organizational resilience.',
+    category: 'Level 2 - Advanced',
+    implementationGuidance:
+      'Develop business continuity plans that identify essential functions, resources, and procedures for maintaining operations during disruptions. Coordinate with disaster recovery planning.',
+    evidenceRequirements: [
+      'Business continuity plan document',
+      'Essential function identification documentation',
+      'Resource requirements and alternate procedures',
+      'Business continuity test records',
+    ],
+    testProcedures: [
+      'Review business continuity plan for completeness',
+      'Verify that essential functions are identified',
+      'Review business continuity test results',
+    ],
+    status: 'Not Started',
+  },
 ];
