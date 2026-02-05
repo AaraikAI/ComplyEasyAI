@@ -665,7 +665,7 @@ class ZeroTrustService {
           id: request.deviceId,
           trusted: deviceTrust.isTrusted,
           trustScore: deviceTrust.trustScore,
-          ...(deviceTrust.metadata || {}),
+          ...((typeof deviceTrust.metadata === 'object' && deviceTrust.metadata !== null ? deviceTrust.metadata : {}) as Record<string, any>),
         },
         user: {
           id: request.userId,

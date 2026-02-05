@@ -1090,41 +1090,75 @@ class AgenticAIService {
     organizationId: string,
     userId: string
   ): Promise<AgenticAction> {
-    // Get action from audit log (actions are stored in audit logs)
-    // In production, could use dedicated AgenticAction table for better querying
-    const actionLog = await prisma.auditLog.findFirst({
+    // Retrieve action from the dedicated AgenticAction table
+    const dbAction = await prisma.agenticAction.findFirst({
       where: {
-        action: 'agentic_action.created',
-        details: {
-          contains: actionId,
-        },
+        id: actionId,
         organizationId,
       },
     });
 
-    if (!actionLog) {
+    if (!dbAction) {
       throw new Error(`Action ${actionId} not found`);
     }
 
-    const actionDetails = JSON.parse(actionLog.details || '{}');
-    const action: AgenticAction = {
-      id: actionId,
-      actionType: 'control_update',
-      targetId: '',
-      parameters: {},
-      blastRadius: {
-        affectedControls: 0,
-        affectedFrameworks: 0,
-        affectedRisks: 0,
-        estimatedUsers: 0,
-        riskLevel: 'low',
-        confidence: 0.8,
-        canRollback: true,
-        rollbackComplexity: 'simple',
+    if (dbAction.status !== 'pending') {
+      throw new Error(`Action ${actionId} is not pending approval (current status: ${dbAction.status})`);
+    }
+
+    // Update status to approved and store approval metadata in parameters
+    const existingParams = (dbAction.parameters as Record<string, any>) || {};
+    await prisma.agenticAction.update({
+      where: { id: actionId },
+      data: {
+        status: 'approved',
+        parameters: {
+          ...existingParams,
+          approvedBy: userId,
+          approvedAt: new Date().toISOString(),
+        },
       },
-      requiresApproval: false,
+    });
+
+    // Reconstruct the full action from stored database record
+    const storedBlastRadius = (dbAction.blastRadius as any) || {};
+    const action: AgenticAction = {
+      id: dbAction.id,
+      actionType: dbAction.actionType as any,
+      targetId: dbAction.targetId,
+      parameters: (dbAction.parameters as Record<string, any>) || {},
+      blastRadius: {
+        affectedControls: storedBlastRadius.affectedControls ?? 0,
+        affectedFrameworks: storedBlastRadius.affectedFrameworks ?? 0,
+        affectedRisks: storedBlastRadius.affectedRisks ?? 0,
+        estimatedUsers: storedBlastRadius.estimatedUsers ?? 0,
+        riskLevel: storedBlastRadius.riskLevel ?? 'low',
+        confidence: storedBlastRadius.confidence ?? 0.8,
+        canRollback: storedBlastRadius.canRollback ?? true,
+        rollbackComplexity: storedBlastRadius.rollbackComplexity ?? 'simple',
+      },
+      requiresApproval: dbAction.requiresApproval,
       status: 'approved',
     };
+
+    // Log approval audit trail
+    await prisma.auditLog.create({
+      data: {
+        action: 'agentic_action.approved',
+        details: JSON.stringify({
+          actionId,
+          actionType: action.actionType,
+          targetId: action.targetId,
+          approvedBy: userId,
+          blastRadius: action.blastRadius,
+        }),
+        userId,
+        organizationId,
+        hash: (await import('crypto')).randomBytes(16).toString('hex'),
+      },
+    });
+
+    logger.info(`[Agentic AI] Action approved: ${actionId} by user ${userId}`);
 
     return await this.executeActionInternal(action, organizationId, userId);
   }
@@ -1232,7 +1266,7 @@ class AgenticAIService {
       // Validate entity exists
       if (preconditions.entityExists !== false) {
         // Check if target entity exists based on action type
-        // This is a simplified check - in production, would check specific entity types
+        // Check target entity existence across all entity types (controls, frameworks, risks, evidence)
         const entityExists = await this.checkEntityExists(targetId, organizationId);
         if (!entityExists) {
           return { valid: false, reason: `Target entity ${targetId} does not exist` };
@@ -1249,8 +1283,37 @@ class AgenticAIService {
 
       // Validate permission conditions
       if (preconditions.requiredPermissions) {
-        // In production, would check actual permissions
-        // For now, assume permissions are validated at API level
+        const requiredPerms = Array.isArray(preconditions.requiredPermissions)
+          ? preconditions.requiredPermissions
+          : [preconditions.requiredPermissions];
+
+        // Retrieve the user's role from the organization's users
+        const orgUser = await prisma.user.findFirst({
+          where: {
+            organizationId,
+          },
+        });
+
+        if (!orgUser) {
+          return { valid: false, reason: 'No user found in organization for permission validation' };
+        }
+
+        const userRole = orgUser.role?.toLowerCase() || '';
+        // Map roles to permission sets
+        const rolePermissions: Record<string, string[]> = {
+          admin: ['read', 'write', 'delete', 'approve', 'manage', 'control_update', 'policy_create', 'evidence_delete', 'risk_mitigation'],
+          owner: ['read', 'write', 'delete', 'approve', 'manage', 'control_update', 'policy_create', 'evidence_delete', 'risk_mitigation'],
+          editor: ['read', 'write', 'control_update', 'policy_create', 'risk_mitigation'],
+          viewer: ['read'],
+          auditor: ['read', 'approve'],
+        };
+
+        const userPerms = rolePermissions[userRole] || rolePermissions['viewer'] || ['read'];
+        const missingPerms = requiredPerms.filter((p: string) => !userPerms.includes(p.toLowerCase()));
+
+        if (missingPerms.length > 0) {
+          return { valid: false, reason: `Missing required permissions: ${missingPerms.join(', ')}` };
+        }
       }
 
       // Validate data conditions

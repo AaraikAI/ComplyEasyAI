@@ -3067,7 +3067,7 @@ export const SOX_CONTROLS: FrameworkControlTemplate[] = [
       'Intercompany transactions must be properly recorded and documented with matching entries at both entities. Transfer pricing must comply with policy and regulations.',
     category: 'Consolidation & Intercompany',
     implementationGuidance:
-      'Document intercompany transaction types and recording procedures. Establish intercompany agreements supporting transaction terms and transfer pricing. Record intercompany transactions using linked accounts for efficient identification. Ensure matching entries at both entities (one entity''s receivable equals other entity''s payable). Apply consistent transfer pricing methodology compliant with tax regulations. Document transfer pricing methodology and support arm''s-length pricing. Process intercompany transactions timely for proper period recording.',
+      'Document intercompany transaction types and recording procedures. Establish intercompany agreements supporting transaction terms and transfer pricing. Record intercompany transactions using linked accounts for efficient identification. Ensure matching entries at both entities (one entity\'s receivable equals other entity\'s payable). Apply consistent transfer pricing methodology compliant with tax regulations. Document transfer pricing methodology and support arm\'s-length pricing. Process intercompany transactions timely for proper period recording.',
     evidenceRequirements: [
       'Intercompany policy and procedures',
       'Intercompany agreements',
@@ -3165,7 +3165,7 @@ export const SOX_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'SOX-CON-5',
     name: 'Equity Method Investments',
     description:
-      'Investments accounted for under the equity method must be properly recorded with the investor''s share of investee income and adjustments for basis differences and impairment.',
+      'Investments accounted for under the equity method must be properly recorded with the investor\'s share of investee income and adjustments for basis differences and impairment.',
     category: 'Consolidation & Intercompany',
     implementationGuidance:
       'Identify investments requiring equity method accounting (typically 20-50% ownership with significant influence). Record initial investment at cost. Obtain investee financial statements timely. Record share of investee net income or loss. Adjust for intercompany profits and amortization of basis differences. Assess equity method investments for impairment other than temporary. Record dividends received as reduction of investment balance. Prepare equity method investment disclosures.',
@@ -3297,7 +3297,7 @@ export const SOX_CONTROLS: FrameworkControlTemplate[] = [
     controlId: 'SOX-TAX-5',
     name: 'Transfer Pricing Compliance',
     description:
-      'Intercompany transactions must be priced at arm''s length in accordance with transfer pricing regulations. Documentation must support pricing methodology and compliance.',
+      'Intercompany transactions must be priced at arm\'s length in accordance with transfer pricing regulations. Documentation must support pricing methodology and compliance.',
     category: 'Tax',
     implementationGuidance:
       'Develop transfer pricing policies for intercompany transactions: goods, services, royalties, and financing. Select appropriate transfer pricing methods based on transaction type and comparability. Document functional analysis, economic analysis, and selected methods. Prepare contemporaneous transfer pricing documentation as required by regulations. Apply consistent transfer pricing in intercompany agreements and actual transactions. Monitor transfer pricing outcomes and adjust as needed. Coordinate transfer pricing across jurisdictions.',
