@@ -2028,7 +2028,7 @@ class EvidenceTruthLayerService {
       <tr><td>Overall Confidence</td><td>${report.summary.overallConfidence}</td></tr>
       <tr>
         <td>Verification Status</td>
-        <td class="${report.summary.verificationStatus === 'verified' ? 'status-verified' : report.summary.verificationStatus === 'flagged' ? 'status-flagged' : 'status-pending'}">${report.summary.verificationStatus}</td>
+        <td class="${report.summary.verificationStatus === 'verified' ? 'status-verified' : (report.summary.verificationStatus as string) === 'flagged' ? 'status-flagged' : 'status-pending'}">${report.summary.verificationStatus}</td>
       </tr>
       <tr><td>Physical Attestation</td><td>${report.summary.hasPhysicalAttestation ? 'Yes' : 'No'}</td></tr>
       <tr><td>Human Liveness Check</td><td>${report.summary.hasHumanLiveness ? 'Yes' : 'No'}</td></tr>
