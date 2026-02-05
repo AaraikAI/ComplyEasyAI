@@ -397,35 +397,79 @@ class ZeroKnowledgeService {
   }
 
   /**
-   * Create simulated zk-SNARK proof (development only)
-   * In production, this should never be used
+   * Create development-mode zk-SNARK proof (development only)
+   * Generates deterministic, input-derived proofs using cryptographic hashing.
+   * Proofs are unique to the input data and structurally valid for Groth16 over bn128.
+   * WARNING: These are NOT cryptographically sound ZK proofs - they are structurally
+   * correct development placeholders. In production, real circuit compilation and
+   * trusted setup are required.
    */
   private createSimulatedProof(circuitName: string, input: any): ZKProof {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('Simulated proofs are not allowed in production');
+      throw new Error(
+        'Development-mode proofs are not allowed in production. ' +
+        'Compile circuits and run trusted setup to generate real proving/verification keys.'
+      );
     }
 
-    // Generate cryptographically secure random values for proof
-    const randomFieldElement = () => {
-      const buffer = crypto.randomBytes(32);
-      return '0x' + buffer.toString('hex');
+    // bn128 curve order (also known as alt_bn128 / BN254)
+    // All field elements must be reduced modulo this prime
+    const BN128_FIELD_ORDER = BigInt(
+      '21888242871839275222246405745257275088548364400416034343698204186575808495617'
+    );
+
+    // Derive a deterministic field element from a seed using HMAC-SHA256.
+    // Each element is unique to the (circuitName, input, index) tuple.
+    const inputSeed = JSON.stringify({ circuit: circuitName, input });
+    const deriveFieldElement = (index: number): string => {
+      const hmac = crypto.createHmac('sha256', `zkp-dev-${index}`);
+      hmac.update(inputSeed);
+      const hash = hmac.digest('hex');
+      const value = BigInt('0x' + hash) % BN128_FIELD_ORDER;
+      return value.toString();
     };
 
-    // Groth16 proof structure
+    // Derive curve point representations for Groth16 proof components.
+    // In a real proof, these would be elliptic curve points on bn128.
+    // Here we derive deterministic hex values from the input hash to produce
+    // structurally valid and input-unique proof elements.
+    const deriveG1Point = (baseIndex: number): string[] => {
+      // G1 points on bn128 have 3 coordinates (x, y, z in projective form)
+      return [
+        deriveFieldElement(baseIndex),
+        deriveFieldElement(baseIndex + 1),
+        '1', // z-coordinate = 1 for affine representation
+      ];
+    };
+
+    const deriveG2Point = (baseIndex: number): string[][] => {
+      // G2 points on bn128 have 3 pairs of coordinates (extension field Fp2)
+      return [
+        [deriveFieldElement(baseIndex), deriveFieldElement(baseIndex + 1)],
+        [deriveFieldElement(baseIndex + 2), deriveFieldElement(baseIndex + 3)],
+        ['1', '0'], // z-coordinate = (1, 0) for affine representation in Fp2
+      ];
+    };
+
+    // Groth16 proof structure: pi_a (G1), pi_b (G2), pi_c (G1)
     const proof = {
-      pi_a: [randomFieldElement(), randomFieldElement(), randomFieldElement()],
-      pi_b: [
-        [randomFieldElement(), randomFieldElement()],
-        [randomFieldElement(), randomFieldElement()],
-        [randomFieldElement(), randomFieldElement()],
-      ],
-      pi_c: [randomFieldElement(), randomFieldElement(), randomFieldElement()],
+      pi_a: deriveG1Point(0),
+      pi_b: deriveG2Point(10),
+      pi_c: deriveG1Point(20),
       protocol: 'groth16',
       curve: 'bn128',
+      _devMode: true,
+      _warning: 'DEVELOPMENT ONLY - This proof was generated without real circuits and is not cryptographically valid',
     };
 
     // Public signals (outputs visible to verifier)
     const publicSignals = this.extractPublicSignals(circuitName, input);
+
+    logger.warn(
+      `[ZKP] Generated DEVELOPMENT-ONLY proof for circuit "${circuitName}". ` +
+      `This proof is deterministic and input-derived but NOT cryptographically valid. ` +
+      `Deploy compiled circuits for production use.`
+    );
 
     return { proof, publicSignals };
   }

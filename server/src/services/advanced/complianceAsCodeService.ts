@@ -527,20 +527,116 @@ class ComplianceAsCodeService {
   }
 
   /**
-   * Post compliance status back to CI/CD
+   * Post compliance status back to CI/CD provider
+   * Integrates with GitHub Checks API and GitLab Pipeline API
    */
   private async postStatusToCICD(
     provider: string,
     payload: any,
     evaluation: PolicyEvaluationResult
   ): Promise<void> {
-    try {
-      // Implementation would post status to GitHub/GitLab/etc.
-      // using their respective APIs
+    const status = evaluation.allowed ? 'PASS' : 'FAIL';
+    const violationSummary = evaluation.violations.length > 0
+      ? evaluation.violations.map(v => `- [${v.severity}] ${v.message}`).join('\n')
+      : 'No violations found.';
 
-      logger.info(`Posted compliance status to ${provider}: ${evaluation.allowed ? 'PASS' : 'FAIL'}`);
-    } catch (error) {
-      logger.error('Error posting status to CI/CD', error);
+    try {
+      if (provider === 'github') {
+        const githubToken = process.env.GITHUB_TOKEN;
+        if (!githubToken) {
+          logger.warn('[ComplianceAsCode] GITHUB_TOKEN not configured - skipping GitHub check run status post');
+          return;
+        }
+
+        const repoFullName = payload.repository?.full_name;
+        const headSha = payload.head_commit?.id || payload.after;
+
+        if (!repoFullName || !headSha) {
+          logger.warn('[ComplianceAsCode] GitHub payload missing repository or commit SHA - skipping status post', {
+            hasRepo: !!repoFullName,
+            hasSha: !!headSha,
+          });
+          return;
+        }
+
+        const [owner, repo] = repoFullName.split('/');
+
+        await axios.post(
+          `https://api.github.com/repos/${owner}/${repo}/check-runs`,
+          {
+            name: 'Compliance Policy Check',
+            head_sha: headSha,
+            status: 'completed',
+            conclusion: evaluation.allowed ? 'success' : 'failure',
+            output: {
+              title: `Compliance Check: ${status}`,
+              summary: `Policy evaluation completed with ${evaluation.violations.length} violation(s).`,
+              text: violationSummary,
+            },
+            completed_at: new Date().toISOString(),
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${githubToken}`,
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+            },
+            timeout: 10000,
+          }
+        );
+
+        logger.info(`[ComplianceAsCode] Posted check run to GitHub ${repoFullName}@${headSha}: ${status}`);
+      } else if (provider === 'gitlab') {
+        const gitlabToken = process.env.GITLAB_TOKEN;
+        if (!gitlabToken) {
+          logger.warn('[ComplianceAsCode] GITLAB_TOKEN not configured - skipping GitLab pipeline status post');
+          return;
+        }
+
+        const projectId = payload.project?.id;
+        const commitSha = payload.checkout_sha || payload.after;
+
+        if (!projectId || !commitSha) {
+          logger.warn('[ComplianceAsCode] GitLab payload missing project ID or commit SHA - skipping status post', {
+            hasProjectId: !!projectId,
+            hasSha: !!commitSha,
+          });
+          return;
+        }
+
+        await axios.post(
+          `https://gitlab.com/api/v4/projects/${projectId}/statuses/${commitSha}`,
+          {
+            state: evaluation.allowed ? 'success' : 'failed',
+            name: 'compliance-policy-check',
+            description: `Compliance Check: ${status} (${evaluation.violations.length} violation(s))`,
+            target_url: undefined, // Could be set to a compliance dashboard URL
+          },
+          {
+            headers: {
+              'PRIVATE-TOKEN': gitlabToken,
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000,
+          }
+        );
+
+        logger.info(`[ComplianceAsCode] Posted commit status to GitLab project ${projectId}@${commitSha}: ${status}`);
+      } else {
+        // Jenkins, CircleCI, and other providers: log status only
+        // These providers typically pull status rather than receive pushes
+        logger.info(`[ComplianceAsCode] Compliance status for ${provider}: ${status} (no API integration for this provider)`);
+      }
+    } catch (error: any) {
+      // Log error but don't throw - status posting is best-effort and should not
+      // fail the webhook processing pipeline
+      logger.error(`[ComplianceAsCode] Error posting compliance status to ${provider}`, {
+        error: error.message || error,
+        status: error.response?.status,
+        responseData: error.response?.data,
+        provider,
+        evaluationResult: status,
+      });
     }
   }
 
@@ -707,23 +803,231 @@ allow {
   }
 
   /**
-   * Get organization compliance data
+   * Get organization compliance data for OPA policy evaluation
+   * Queries all relevant compliance resources from the database and structures
+   * them for consumption by Rego policies.
    */
   async getOrganizationComplianceData(organizationId: string): Promise<any> {
-    // Gather organization data for policy evaluation
-    const org = await prisma.organization.findUnique({
-      where: { id: organizationId },
-      include: {
-        users: true,
-      },
-    });
+    try {
+      // Query all compliance-relevant data in parallel for performance
+      const [
+        org,
+        frameworks,
+        policies,
+        risks,
+        evidenceAnalyses,
+        compliancePolicies,
+      ] = await Promise.all([
+        prisma.organization.findUnique({
+          where: { id: organizationId },
+          include: {
+            users: {
+              select: {
+                id: true,
+                email: true,
+                role: true,
+                mfaEnabled: true,
+                lastLoginAt: true,
+                createdAt: true,
+              },
+            },
+          },
+        }),
+        prisma.complianceFramework.findMany({
+          where: { organizationId },
+          include: {
+            controls: {
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                category: true,
+                evidenceRequired: true,
+                evidenceVersions: {
+                  where: { isCurrent: true },
+                  select: {
+                    id: true,
+                    fileName: true,
+                    uploadedAt: true,
+                    versionNumber: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
+        prisma.policy.findMany({
+          where: { organizationId },
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            framework: true,
+            status: true,
+            version: true,
+            effectiveDate: true,
+            reviewDate: true,
+            nextReviewDate: true,
+          },
+        }),
+        prisma.riskItem.findMany({
+          where: { organizationId },
+          select: {
+            id: true,
+            title: true,
+            severity: true,
+            status: true,
+            category: true,
+            likelihood: true,
+            impact: true,
+            riskScore: true,
+            mitigationPlan: true,
+            targetDate: true,
+          },
+        }),
+        prisma.evidenceAnalysis.findMany({
+          where: { organizationId },
+          select: {
+            id: true,
+            evidenceId: true,
+            overallConfidence: true,
+            verificationStatus: true,
+            analyzedAt: true,
+          },
+          orderBy: { analyzedAt: 'desc' },
+          take: 200,
+        }),
+        prisma.compliancePolicy.findMany({
+          where: { organizationId, enabled: true },
+          select: {
+            id: true,
+            name: true,
+            framework: true,
+            severity: true,
+            version: true,
+          },
+        }),
+      ]);
 
-    return {
-      organization: org,
-      resources: {
-        // databases, servers, users, etc.
-      },
-    };
+      // Structure data for OPA policy evaluation
+      // OPA Rego policies can access this data via input.resources.<type>
+      const controlsByStatus = {
+        total: 0,
+        implemented: 0,
+        pending: 0,
+        notApplicable: 0,
+      };
+
+      const evidenceCoverage = {
+        total: 0,
+        withEvidence: 0,
+        withoutEvidence: 0,
+      };
+
+      for (const framework of frameworks) {
+        for (const control of framework.controls) {
+          controlsByStatus.total++;
+          if (control.status === 'Implemented' || control.status === 'Compliant') {
+            controlsByStatus.implemented++;
+          } else if (control.status === 'Not Applicable') {
+            controlsByStatus.notApplicable++;
+          } else {
+            controlsByStatus.pending++;
+          }
+
+          if (control.evidenceRequired) {
+            evidenceCoverage.total++;
+            if (control.evidenceVersions.length > 0) {
+              evidenceCoverage.withEvidence++;
+            } else {
+              evidenceCoverage.withoutEvidence++;
+            }
+          }
+        }
+      }
+
+      return {
+        organization: {
+          id: org?.id,
+          name: org?.name,
+          plan: org?.plan,
+        },
+        resources: {
+          users: org?.users.map(u => ({
+            id: u.id,
+            email: u.email,
+            role: u.role,
+            mfa_enabled: u.mfaEnabled,
+            last_login: u.lastLoginAt,
+          })) || [],
+          frameworks: frameworks.map(f => ({
+            id: f.id,
+            name: f.name,
+            status: f.status,
+            progress: f.progress,
+            next_audit_date: f.nextAuditDate,
+            controls_count: f.controls.length,
+            controls: f.controls.map(c => ({
+              id: c.id,
+              name: c.name,
+              status: c.status,
+              category: c.category,
+              evidence_required: c.evidenceRequired,
+              has_evidence: c.evidenceVersions.length > 0,
+            })),
+          })),
+          policies: policies.map(p => ({
+            id: p.id,
+            title: p.title,
+            category: p.category,
+            framework: p.framework,
+            status: p.status,
+            version: p.version,
+            effective_date: p.effectiveDate,
+            review_date: p.reviewDate,
+            next_review_date: p.nextReviewDate,
+          })),
+          risks: risks.map(r => ({
+            id: r.id,
+            title: r.title,
+            severity: r.severity,
+            status: r.status,
+            category: r.category,
+            likelihood: r.likelihood,
+            impact: r.impact,
+            risk_score: r.riskScore,
+            has_mitigation: !!r.mitigationPlan,
+            target_date: r.targetDate,
+          })),
+          evidence: evidenceAnalyses.map(e => ({
+            id: e.id,
+            evidence_id: e.evidenceId,
+            confidence: e.overallConfidence,
+            verification_status: e.verificationStatus,
+            analyzed_at: e.analyzedAt,
+          })),
+          compliance_policies: compliancePolicies.map(cp => ({
+            id: cp.id,
+            name: cp.name,
+            framework: cp.framework,
+            severity: cp.severity,
+            version: cp.version,
+          })),
+        },
+        summary: {
+          controls: controlsByStatus,
+          evidence_coverage: evidenceCoverage,
+          total_frameworks: frameworks.length,
+          total_policies: policies.length,
+          total_risks: risks.length,
+          open_risks: risks.filter(r => r.status === 'Open').length,
+          critical_risks: risks.filter(r => r.severity === 'Critical').length,
+        },
+      };
+    } catch (error) {
+      logger.error('[ComplianceAsCode] Error fetching organization compliance data', error);
+      throw new Error('Failed to fetch organization compliance data for policy evaluation');
+    }
   }
 
   /**
