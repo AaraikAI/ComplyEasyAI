@@ -8005,4 +8005,2332 @@ export const FEDRAMP_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started',
   },
+
+  // ============================================================
+  // FEDRAMP HIGH BASELINE - ACCESS CONTROL ENHANCEMENTS
+  // ============================================================
+  {
+    controlId: 'FR-AC-2(1)',
+    name: 'Account Management | Automated System Account Management',
+    description:
+      'FedRAMP High requires organizations to employ automated mechanisms to support the management of information system accounts.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Implement automated account provisioning. Configure automatic account disabling. Use automated account review workflows. Monitor account lifecycle automatically.',
+    evidenceRequirements: [
+      'Automated account management system documentation',
+      'Provisioning workflow configuration',
+      'Automatic disabling rules',
+      'Automated review workflow evidence',
+      'Account lifecycle monitoring logs',
+    ],
+    testProcedures: [
+      'Test automated provisioning',
+      'Verify automatic account disabling',
+      'Review automated workflows',
+      'Examine lifecycle monitoring',
+      'Assess automation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-2(2)',
+    name: 'Account Management | Removal of Temporary/Emergency Accounts',
+    description:
+      'FedRAMP High requires automatic removal of temporary and emergency accounts after a defined time period.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Configure automatic expiration for temporary accounts. Set emergency account time limits. Implement automatic account removal. Monitor temporary account usage.',
+    evidenceRequirements: [
+      'Temporary account policy documentation',
+      'Automatic expiration configuration',
+      'Emergency account time limit settings',
+      'Automatic removal logs',
+      'Usage monitoring records',
+    ],
+    testProcedures: [
+      'Test automatic expiration',
+      'Verify emergency account limits',
+      'Review removal processes',
+      'Examine usage monitoring',
+      'Assess removal effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-2(3)',
+    name: 'Account Management | Disable Inactive Accounts',
+    description:
+      'FedRAMP High requires automatic disabling of inactive accounts after a defined period of inactivity.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Define inactivity thresholds. Configure automatic account disabling. Monitor account activity. Alert on pending disablement.',
+    evidenceRequirements: [
+      'Inactivity threshold documentation',
+      'Automatic disabling configuration',
+      'Activity monitoring setup',
+      'Alerting configuration',
+      'Disabling effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify inactivity thresholds',
+      'Test automatic disabling',
+      'Review activity monitoring',
+      'Test alerting functions',
+      'Assess disabling effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-2(4)',
+    name: 'Account Management | Automated Audit Actions',
+    description:
+      'FedRAMP High requires automatic audit of account creation, modification, enabling, disabling, and removal actions.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Configure comprehensive account action auditing. Automate audit log generation. Alert on suspicious account activities. Retain audit logs appropriately.',
+    evidenceRequirements: [
+      'Audit configuration documentation',
+      'Account action logging evidence',
+      'Alerting rule configuration',
+      'Log retention settings',
+      'Audit effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test account action auditing',
+      'Verify log generation',
+      'Test suspicious activity alerts',
+      'Review log retention',
+      'Assess audit completeness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-2(5)',
+    name: 'Account Management | Inactivity Logout',
+    description:
+      'FedRAMP High requires logout of users after a defined period of inactivity.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Configure session inactivity timeouts. Implement automatic logout. Provide user warning before logout. Log automatic logout events.',
+    evidenceRequirements: [
+      'Inactivity timeout configuration',
+      'Automatic logout implementation',
+      'User warning configuration',
+      'Logout event logs',
+      'Timeout effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test inactivity timeouts',
+      'Verify automatic logout',
+      'Test user warnings',
+      'Review logout logs',
+      'Assess timeout effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-2(11)',
+    name: 'Account Management | Usage Conditions',
+    description:
+      'FedRAMP High requires enforcement of usage conditions for information system accounts.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Define account usage conditions. Implement technical enforcement. Monitor compliance with conditions. Take action on violations.',
+    evidenceRequirements: [
+      'Usage condition documentation',
+      'Technical enforcement configuration',
+      'Compliance monitoring records',
+      'Violation response records',
+      'Condition enforcement assessment',
+    ],
+    testProcedures: [
+      'Review usage conditions',
+      'Test technical enforcement',
+      'Verify compliance monitoring',
+      'Review violation responses',
+      'Assess enforcement effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-2(12)',
+    name: 'Account Management | Account Monitoring / Atypical Usage',
+    description:
+      'FedRAMP High requires monitoring of accounts for atypical usage.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Implement user behavior analytics. Define atypical usage baselines. Monitor for anomalies. Alert and investigate atypical patterns.',
+    evidenceRequirements: [
+      'Behavior analytics implementation',
+      'Baseline definition documentation',
+      'Anomaly monitoring configuration',
+      'Alert and investigation records',
+      'Monitoring effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test behavior analytics',
+      'Verify baseline definitions',
+      'Test anomaly detection',
+      'Review alert handling',
+      'Assess monitoring effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-2(13)',
+    name: 'Account Management | Disable Accounts for High-Risk Individuals',
+    description:
+      'FedRAMP High requires disabling accounts of individuals within a defined time period of discovery of significant risk.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Define high-risk criteria. Establish rapid disabling procedures. Implement immediate disabling capability. Document risk-based disabling actions.',
+    evidenceRequirements: [
+      'High-risk criteria documentation',
+      'Rapid disabling procedures',
+      'Immediate disabling capability evidence',
+      'Risk-based action records',
+      'Disabling effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review risk criteria',
+      'Test rapid disabling',
+      'Verify immediate capability',
+      'Review action records',
+      'Assess disabling timeliness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-3(2)',
+    name: 'Access Enforcement | Dual Authorization',
+    description:
+      'FedRAMP High requires dual authorization for executing critical or sensitive operations.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Identify operations requiring dual authorization. Implement two-person integrity controls. Configure approval workflows. Log dual authorization events.',
+    evidenceRequirements: [
+      'Dual authorization policy',
+      'Operations list requiring dual auth',
+      'Approval workflow configuration',
+      'Authorization event logs',
+      'Dual auth effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review dual auth policy',
+      'Test two-person controls',
+      'Verify approval workflows',
+      'Review authorization logs',
+      'Assess dual auth effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-4(4)',
+    name: 'Information Flow Enforcement | Content Check Encrypted Information',
+    description:
+      'FedRAMP High requires checking encrypted information for malware and content violations.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Implement SSL/TLS inspection. Configure content inspection for encrypted traffic. Deploy decryption capabilities. Monitor inspection effectiveness.',
+    evidenceRequirements: [
+      'SSL inspection implementation',
+      'Content inspection configuration',
+      'Decryption capability documentation',
+      'Inspection effectiveness metrics',
+      'Privacy protection measures',
+    ],
+    testProcedures: [
+      'Test SSL inspection',
+      'Verify content checking',
+      'Review decryption process',
+      'Assess inspection effectiveness',
+      'Verify privacy protections',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-6(1)',
+    name: 'Least Privilege | Authorize Access to Security Functions',
+    description:
+      'FedRAMP High requires explicit authorization for access to security-relevant functions.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Identify security functions. Require explicit authorization. Implement access controls. Audit security function access.',
+    evidenceRequirements: [
+      'Security function inventory',
+      'Authorization requirements documentation',
+      'Access control implementation',
+      'Access audit logs',
+      'Authorization effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review security functions',
+      'Verify authorization requirements',
+      'Test access controls',
+      'Review audit logs',
+      'Assess authorization effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-6(2)',
+    name: 'Least Privilege | Non-Privileged Access for Nonsecurity Functions',
+    description:
+      'FedRAMP High requires users to use non-privileged accounts for non-security functions.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Require separate privileged and non-privileged accounts. Enforce non-privileged use for routine tasks. Monitor privileged account usage. Audit privilege escalation.',
+    evidenceRequirements: [
+      'Account separation policy',
+      'Non-privileged usage enforcement',
+      'Privileged account monitoring',
+      'Escalation audit logs',
+      'Separation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify account separation',
+      'Test usage enforcement',
+      'Review monitoring records',
+      'Examine escalation audits',
+      'Assess separation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-6(3)',
+    name: 'Least Privilege | Network Access to Privileged Commands',
+    description:
+      'FedRAMP High requires authorization of network access to privileged commands only for compelling operational needs.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Identify privileged commands accessible via network. Document operational justifications. Implement access restrictions. Monitor network privileged access.',
+    evidenceRequirements: [
+      'Privileged command inventory',
+      'Operational justifications',
+      'Access restriction configuration',
+      'Network access monitoring logs',
+      'Justification review records',
+    ],
+    testProcedures: [
+      'Review privileged commands',
+      'Verify operational justifications',
+      'Test access restrictions',
+      'Review monitoring logs',
+      'Assess justification validity',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-6(5)',
+    name: 'Least Privilege | Privileged Accounts',
+    description:
+      'FedRAMP High requires restricting privileged accounts on the system to a defined set of personnel or roles.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Define authorized privileged users. Restrict privileged account creation. Review privileged access regularly. Remove unnecessary privileges.',
+    evidenceRequirements: [
+      'Authorized privileged user list',
+      'Account creation restrictions',
+      'Privileged access review records',
+      'Privilege removal records',
+      'Restriction effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify authorized user list',
+      'Test creation restrictions',
+      'Review access reviews',
+      'Verify privilege removals',
+      'Assess restriction effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-6(9)',
+    name: 'Least Privilege | Auditing Use of Privileged Functions',
+    description:
+      'FedRAMP High requires auditing the execution of privileged functions.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Identify privileged functions. Configure comprehensive auditing. Monitor privileged function execution. Alert on suspicious privileged activity.',
+    evidenceRequirements: [
+      'Privileged function inventory',
+      'Audit configuration documentation',
+      'Execution monitoring logs',
+      'Alert configuration and records',
+      'Audit completeness assessment',
+    ],
+    testProcedures: [
+      'Review privileged functions',
+      'Verify audit configuration',
+      'Examine execution logs',
+      'Test alerting functions',
+      'Assess audit completeness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-6(10)',
+    name: 'Least Privilege | Prohibit Non-Privileged Users from Executing Privileged Functions',
+    description:
+      'FedRAMP High requires preventing non-privileged users from executing privileged functions.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Implement privilege separation. Configure access controls to prevent execution. Monitor for unauthorized privilege use. Alert on privilege violations.',
+    evidenceRequirements: [
+      'Privilege separation implementation',
+      'Access control configuration',
+      'Unauthorized usage monitoring',
+      'Violation alert records',
+      'Prevention effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test privilege separation',
+      'Verify access controls',
+      'Review monitoring records',
+      'Test violation alerts',
+      'Assess prevention effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-10',
+    name: 'Concurrent Session Control',
+    description:
+      'FedRAMP High requires limiting the number of concurrent sessions for each user account.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Define concurrent session limits by account type. Implement session limit enforcement. Monitor concurrent sessions. Alert on limit violations.',
+    evidenceRequirements: [
+      'Session limit policy documentation',
+      'Enforcement mechanism configuration',
+      'Session monitoring records',
+      'Limit violation alerts',
+      'Enforcement effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review session limits',
+      'Test enforcement mechanisms',
+      'Verify session monitoring',
+      'Test violation alerts',
+      'Assess enforcement effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-12',
+    name: 'Session Termination',
+    description:
+      'FedRAMP High requires automatic termination of user sessions after defined conditions.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Define session termination conditions. Implement automatic termination. Log session termination events. Provide user notification of termination.',
+    evidenceRequirements: [
+      'Termination condition documentation',
+      'Automatic termination configuration',
+      'Termination event logs',
+      'User notification evidence',
+      'Termination effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review termination conditions',
+      'Test automatic termination',
+      'Verify event logging',
+      'Test user notifications',
+      'Assess termination effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AC-16',
+    name: 'Security Attributes',
+    description:
+      'FedRAMP High requires providing the means to associate security attributes with information.',
+    category: 'Access Control',
+    implementationGuidance:
+      'Define security attribute schema. Implement attribute assignment mechanisms. Enforce attribute-based access control. Monitor attribute changes.',
+    evidenceRequirements: [
+      'Security attribute schema documentation',
+      'Assignment mechanism configuration',
+      'ABAC implementation evidence',
+      'Attribute change monitoring logs',
+      'Attribute effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review attribute schema',
+      'Test assignment mechanisms',
+      'Verify ABAC implementation',
+      'Review change monitoring',
+      'Assess attribute effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // FEDRAMP HIGH BASELINE - AUDIT ENHANCEMENTS
+  // ============================================================
+  {
+    controlId: 'FR-AU-2(3)',
+    name: 'Audit Events | Reviews and Updates',
+    description:
+      'FedRAMP High requires reviewing and updating audited events on a defined frequency.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Establish audit event review schedule. Update audited events based on threat intelligence. Document review decisions. Implement approved changes.',
+    evidenceRequirements: [
+      'Audit event review schedule',
+      'Review meeting records',
+      'Event update documentation',
+      'Change implementation records',
+      'Review effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify review schedule',
+      'Review meeting records',
+      'Examine event updates',
+      'Verify change implementation',
+      'Assess review effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-3(1)',
+    name: 'Content of Audit Records | Additional Audit Information',
+    description:
+      'FedRAMP High requires generating audit records containing additional, more detailed information.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Define additional audit information requirements. Configure systems to capture detailed audit data. Verify audit record completeness. Store additional data securely.',
+    evidenceRequirements: [
+      'Additional information requirements',
+      'Detailed audit configuration',
+      'Completeness verification records',
+      'Secure storage evidence',
+      'Information adequacy assessment',
+    ],
+    testProcedures: [
+      'Review information requirements',
+      'Verify detailed configuration',
+      'Test record completeness',
+      'Verify secure storage',
+      'Assess information adequacy',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-3(2)',
+    name: 'Content of Audit Records | Centralized Management',
+    description:
+      'FedRAMP High requires centralized management of content of audit records.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Implement centralized audit management. Define consistent audit record format. Deploy centralized audit configuration. Monitor configuration compliance.',
+    evidenceRequirements: [
+      'Centralized management implementation',
+      'Record format standards',
+      'Centralized configuration evidence',
+      'Compliance monitoring records',
+      'Centralization effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test centralized management',
+      'Verify format consistency',
+      'Review configuration deployment',
+      'Examine compliance monitoring',
+      'Assess centralization effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-4(1)',
+    name: 'Audit Storage Capacity | Transfer to Alternate Storage',
+    description:
+      'FedRAMP High requires transfer of audit logs to alternate storage when audit storage capacity is reached.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Configure automatic audit log transfer. Define alternate storage locations. Monitor storage capacity. Test transfer mechanisms.',
+    evidenceRequirements: [
+      'Automatic transfer configuration',
+      'Alternate storage documentation',
+      'Capacity monitoring records',
+      'Transfer testing records',
+      'Transfer effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify transfer configuration',
+      'Test alternate storage',
+      'Review capacity monitoring',
+      'Test transfer mechanisms',
+      'Assess transfer effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-5(1)',
+    name: 'Response to Audit Processing Failures | Audit Storage Capacity',
+    description:
+      'FedRAMP High requires alerting when audit log storage volume reaches a defined percentage of capacity.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Define storage capacity thresholds. Configure capacity alerting. Monitor storage utilization. Respond to capacity alerts promptly.',
+    evidenceRequirements: [
+      'Capacity threshold documentation',
+      'Alerting configuration evidence',
+      'Utilization monitoring records',
+      'Alert response records',
+      'Alerting effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review capacity thresholds',
+      'Test alerting functions',
+      'Verify utilization monitoring',
+      'Review response records',
+      'Assess alerting effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-5(2)',
+    name: 'Response to Audit Processing Failures | Real-Time Alerts',
+    description:
+      'FedRAMP High requires real-time alerts when defined audit failure events occur.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Define audit failure events requiring alerts. Configure real-time alerting. Test alert delivery. Document alert response procedures.',
+    evidenceRequirements: [
+      'Failure event definitions',
+      'Real-time alerting configuration',
+      'Alert delivery testing records',
+      'Response procedure documentation',
+      'Alerting effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review failure event definitions',
+      'Test real-time alerts',
+      'Verify alert delivery',
+      'Review response procedures',
+      'Assess alerting effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-6(1)',
+    name: 'Audit Review, Analysis, and Reporting | Process Integration',
+    description:
+      'FedRAMP High requires employing automated mechanisms to integrate audit review, analysis, and reporting.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Implement SIEM or similar platform. Integrate all audit sources. Automate analysis and correlation. Generate automated reports.',
+    evidenceRequirements: [
+      'SIEM implementation documentation',
+      'Source integration evidence',
+      'Automated analysis configuration',
+      'Automated report examples',
+      'Integration effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify SIEM implementation',
+      'Test source integration',
+      'Review analysis automation',
+      'Examine report generation',
+      'Assess integration effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-6(3)',
+    name: 'Audit Review, Analysis, and Reporting | Correlate Audit Repositories',
+    description:
+      'FedRAMP High requires analysis and correlation of audit records across different repositories.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Identify all audit repositories. Implement cross-repository correlation. Establish correlation rules. Monitor correlation effectiveness.',
+    evidenceRequirements: [
+      'Audit repository inventory',
+      'Correlation implementation evidence',
+      'Correlation rule documentation',
+      'Effectiveness monitoring records',
+      'Correlation capability assessment',
+    ],
+    testProcedures: [
+      'Review repository inventory',
+      'Test correlation capabilities',
+      'Verify correlation rules',
+      'Examine effectiveness monitoring',
+      'Assess correlation capabilities',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-6(5)',
+    name: 'Audit Review, Analysis, and Reporting | Integrated Analysis of Audit Records',
+    description:
+      'FedRAMP High requires integration of analysis of audit records with analysis of other data sources.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Identify relevant non-audit data sources. Integrate with audit analysis platform. Develop cross-source analytics. Monitor integrated analysis effectiveness.',
+    evidenceRequirements: [
+      'Non-audit data source inventory',
+      'Integration implementation evidence',
+      'Cross-source analytics documentation',
+      'Effectiveness monitoring records',
+      'Integrated analysis assessment',
+    ],
+    testProcedures: [
+      'Review data source inventory',
+      'Test integration',
+      'Verify cross-source analytics',
+      'Examine effectiveness monitoring',
+      'Assess integrated analysis',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-6(6)',
+    name: 'Audit Review, Analysis, and Reporting | Correlation with Physical Monitoring',
+    description:
+      'FedRAMP High requires correlation of audit record information with information from physical access monitoring.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Integrate physical access logs with audit system. Correlate physical and logical access events. Alert on access anomalies. Investigate correlated events.',
+    evidenceRequirements: [
+      'Physical access log integration',
+      'Correlation configuration evidence',
+      'Anomaly alerting records',
+      'Investigation records',
+      'Correlation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify physical log integration',
+      'Test correlation functions',
+      'Test anomaly alerts',
+      'Review investigations',
+      'Assess correlation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-7',
+    name: 'Audit Reduction and Report Generation',
+    description:
+      'FedRAMP High requires an audit reduction and report generation capability.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Implement audit reduction tools. Configure report generation capabilities. Enable filtering and search. Support investigation requirements.',
+    evidenceRequirements: [
+      'Audit reduction tool documentation',
+      'Report generation configuration',
+      'Filtering and search capabilities',
+      'Investigation support evidence',
+      'Capability effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test reduction tools',
+      'Verify report generation',
+      'Test filtering and search',
+      'Verify investigation support',
+      'Assess capability effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-7(1)',
+    name: 'Audit Reduction and Report Generation | Automatic Processing',
+    description:
+      'FedRAMP High requires automatic processing of audit records for events of interest.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Define events of interest. Configure automatic processing rules. Generate alerts for significant events. Enable automated response.',
+    evidenceRequirements: [
+      'Events of interest documentation',
+      'Automatic processing configuration',
+      'Alert generation records',
+      'Automated response evidence',
+      'Processing effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review events of interest',
+      'Test automatic processing',
+      'Verify alert generation',
+      'Test automated responses',
+      'Assess processing effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-9(2)',
+    name: 'Protection of Audit Information | Audit Backup on Separate Physical Systems',
+    description:
+      'FedRAMP High requires backup of audit records to a physically different system than the system being audited.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Identify separate backup systems. Configure real-time audit backup. Verify physical separation. Test backup integrity.',
+    evidenceRequirements: [
+      'Separate backup system documentation',
+      'Real-time backup configuration',
+      'Physical separation evidence',
+      'Backup integrity testing records',
+      'Backup effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify backup systems',
+      'Test real-time backup',
+      'Confirm physical separation',
+      'Verify backup integrity',
+      'Assess backup effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-9(3)',
+    name: 'Protection of Audit Information | Cryptographic Protection',
+    description:
+      'FedRAMP High requires cryptographic protection of the integrity of audit information and audit tools.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Implement cryptographic integrity protection. Use digital signatures for audit records. Protect audit tools with cryptography. Verify cryptographic controls.',
+    evidenceRequirements: [
+      'Cryptographic protection implementation',
+      'Digital signature configuration',
+      'Tool protection evidence',
+      'Control verification records',
+      'Cryptographic effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test integrity protection',
+      'Verify digital signatures',
+      'Review tool protection',
+      'Examine verification records',
+      'Assess cryptographic effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-9(4)',
+    name: 'Protection of Audit Information | Access by Subset of Privileged Users',
+    description:
+      'FedRAMP High requires authorizing access to audit functionality only to a subset of privileged users.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Define authorized audit administrators. Restrict audit access to approved users. Monitor audit function access. Review access authorizations regularly.',
+    evidenceRequirements: [
+      'Authorized administrator list',
+      'Access restriction configuration',
+      'Access monitoring logs',
+      'Authorization review records',
+      'Access control effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify administrator list',
+      'Test access restrictions',
+      'Review monitoring logs',
+      'Examine authorization reviews',
+      'Assess access control effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-10',
+    name: 'Non-Repudiation',
+    description:
+      'FedRAMP High requires protection against an individual falsely denying having performed actions.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Implement non-repudiation mechanisms. Use digital signatures where appropriate. Maintain chain of custody for evidence. Protect non-repudiation data.',
+    evidenceRequirements: [
+      'Non-repudiation mechanism documentation',
+      'Digital signature implementation',
+      'Chain of custody procedures',
+      'Data protection evidence',
+      'Non-repudiation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test non-repudiation mechanisms',
+      'Verify digital signatures',
+      'Review chain of custody',
+      'Verify data protection',
+      'Assess non-repudiation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-12(1)',
+    name: 'Audit Generation | System-Wide / Time-Correlated Audit Trail',
+    description:
+      'FedRAMP High requires compiling audit records from multiple components into a system-wide, time-correlated audit trail.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Implement centralized audit collection. Synchronize time across all components. Correlate events by timestamp. Enable unified audit trail analysis.',
+    evidenceRequirements: [
+      'Centralized collection implementation',
+      'Time synchronization configuration',
+      'Event correlation evidence',
+      'Unified analysis capabilities',
+      'Audit trail effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test centralized collection',
+      'Verify time synchronization',
+      'Test event correlation',
+      'Review analysis capabilities',
+      'Assess audit trail effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-AU-12(3)',
+    name: 'Audit Generation | Changes by Authorized Individuals',
+    description:
+      'FedRAMP High requires authorized individuals to change the auditing to be performed based on selectable event criteria.',
+    category: 'Audit and Accountability',
+    implementationGuidance:
+      'Enable flexible audit configuration. Define selectable event criteria. Authorize audit configuration changes. Log all audit configuration modifications.',
+    evidenceRequirements: [
+      'Flexible audit configuration evidence',
+      'Event criteria documentation',
+      'Authorization requirements',
+      'Configuration change logs',
+      'Flexibility effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test configuration flexibility',
+      'Review event criteria',
+      'Verify authorization controls',
+      'Review change logs',
+      'Assess flexibility effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // FEDRAMP HIGH BASELINE - IDENTIFICATION & AUTHENTICATION ENHANCEMENTS
+  // ============================================================
+  {
+    controlId: 'FR-IA-2(1)',
+    name: 'Identification and Authentication | Multi-Factor Authentication to Privileged Accounts',
+    description:
+      'FedRAMP High requires implementation of multi-factor authentication for network access to privileged accounts.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Implement MFA for all privileged access. Configure hardware tokens or authenticator apps. Enforce MFA at all entry points. Monitor MFA usage.',
+    evidenceRequirements: [
+      'MFA implementation documentation',
+      'Token or app configuration',
+      'Entry point enforcement evidence',
+      'MFA usage monitoring logs',
+      'MFA effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test MFA for privileged access',
+      'Verify token configuration',
+      'Test all entry points',
+      'Review usage monitoring',
+      'Assess MFA effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-2(2)',
+    name: 'Identification and Authentication | Multi-Factor Authentication to Non-Privileged Accounts',
+    description:
+      'FedRAMP High requires implementation of multi-factor authentication for network access to non-privileged accounts.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Extend MFA to all user accounts. Support multiple MFA options. Ensure MFA coverage for all access methods. Monitor MFA adoption.',
+    evidenceRequirements: [
+      'MFA extension documentation',
+      'MFA option availability',
+      'Access method coverage evidence',
+      'Adoption monitoring records',
+      'MFA coverage assessment',
+    ],
+    testProcedures: [
+      'Test MFA for non-privileged access',
+      'Verify MFA options',
+      'Test all access methods',
+      'Review adoption records',
+      'Assess MFA coverage',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-2(5)',
+    name: 'Identification and Authentication | Group Authentication',
+    description:
+      'FedRAMP High requires individual authentication when group authenticators are employed.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Require individual authentication before group access. Track individual identity within groups. Audit individual actions in group contexts. Prevent anonymous group access.',
+    evidenceRequirements: [
+      'Individual authentication requirements',
+      'Identity tracking mechanisms',
+      'Individual action audit logs',
+      'Anonymous access prevention',
+      'Group authentication assessment',
+    ],
+    testProcedures: [
+      'Test individual authentication',
+      'Verify identity tracking',
+      'Review action audits',
+      'Test anonymous access prevention',
+      'Assess group authentication',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-2(8)',
+    name: 'Identification and Authentication | Network Access to Privileged Accounts - Replay Resistant',
+    description:
+      'FedRAMP High requires replay-resistant authentication mechanisms for network access to privileged accounts.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Implement replay-resistant protocols. Use challenge-response mechanisms. Deploy time-based tokens. Monitor for replay attacks.',
+    evidenceRequirements: [
+      'Replay-resistant protocol documentation',
+      'Challenge-response configuration',
+      'Time-based token implementation',
+      'Replay attack monitoring',
+      'Replay resistance assessment',
+    ],
+    testProcedures: [
+      'Test replay resistance',
+      'Verify challenge-response',
+      'Test time-based tokens',
+      'Review attack monitoring',
+      'Assess replay resistance',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-2(11)',
+    name: 'Identification and Authentication | Remote Access - Separate Device',
+    description:
+      'FedRAMP High requires using a separate device for one of the factors during multi-factor authentication for remote access.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Require out-of-band authentication factor. Implement separate device verification. Ensure factor independence. Monitor separate device usage.',
+    evidenceRequirements: [
+      'Out-of-band authentication configuration',
+      'Separate device verification evidence',
+      'Factor independence documentation',
+      'Device usage monitoring logs',
+      'Separate device effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test out-of-band authentication',
+      'Verify device separation',
+      'Confirm factor independence',
+      'Review usage monitoring',
+      'Assess separate device effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-2(12)',
+    name: 'Identification and Authentication | Acceptance of PIV Credentials',
+    description:
+      'FedRAMP High requires accepting and electronically verifying Personal Identity Verification (PIV) credentials.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Configure PIV card acceptance. Implement certificate validation. Connect to federal PKI. Monitor PIV authentication events.',
+    evidenceRequirements: [
+      'PIV acceptance configuration',
+      'Certificate validation implementation',
+      'Federal PKI connection evidence',
+      'PIV authentication logs',
+      'PIV integration assessment',
+    ],
+    testProcedures: [
+      'Test PIV acceptance',
+      'Verify certificate validation',
+      'Test PKI connection',
+      'Review authentication logs',
+      'Assess PIV integration',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-3',
+    name: 'Device Identification and Authentication',
+    description:
+      'FedRAMP High requires uniquely identifying and authenticating devices before establishing a connection.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Implement device certificates. Configure device authentication. Maintain device inventory. Monitor device authentication events.',
+    evidenceRequirements: [
+      'Device certificate implementation',
+      'Device authentication configuration',
+      'Device inventory documentation',
+      'Authentication event logs',
+      'Device authentication assessment',
+    ],
+    testProcedures: [
+      'Test device certificates',
+      'Verify device authentication',
+      'Review device inventory',
+      'Examine authentication logs',
+      'Assess device authentication',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-4(4)',
+    name: 'Identifier Management | Identify User Status',
+    description:
+      'FedRAMP High requires managing individual identifiers by uniquely identifying each individual as a specific user category.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Define user categories. Assign category attributes to identifiers. Track category changes. Audit category assignments.',
+    evidenceRequirements: [
+      'User category definitions',
+      'Category attribute assignments',
+      'Category change tracking records',
+      'Category assignment audit logs',
+      'Category management assessment',
+    ],
+    testProcedures: [
+      'Review user categories',
+      'Verify attribute assignments',
+      'Test category tracking',
+      'Review audit logs',
+      'Assess category management',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-5(1)',
+    name: 'Authenticator Management | Password-Based Authentication',
+    description:
+      'FedRAMP High requires enforcing minimum password complexity and change requirements.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Configure minimum password length. Enforce complexity requirements. Implement password history. Set maximum password age.',
+    evidenceRequirements: [
+      'Password length configuration',
+      'Complexity requirement settings',
+      'Password history configuration',
+      'Maximum age settings',
+      'Password policy effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test password length enforcement',
+      'Verify complexity requirements',
+      'Test password history',
+      'Verify age enforcement',
+      'Assess policy effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-5(2)',
+    name: 'Authenticator Management | PKI-Based Authentication',
+    description:
+      'FedRAMP High requires validating certifications by constructing and verifying a certification path.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Implement PKI infrastructure. Configure certificate validation. Check certificate revocation. Monitor certificate usage.',
+    evidenceRequirements: [
+      'PKI infrastructure documentation',
+      'Certificate validation configuration',
+      'Revocation checking evidence',
+      'Usage monitoring logs',
+      'PKI effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test PKI infrastructure',
+      'Verify certificate validation',
+      'Test revocation checking',
+      'Review usage monitoring',
+      'Assess PKI effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-5(3)',
+    name: 'Authenticator Management | In-Person or Trusted Third-Party Registration',
+    description:
+      'FedRAMP High requires in-person or trusted third-party registration for receiving authenticators.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Define in-person registration procedures. Identify trusted third parties. Implement identity verification. Document registration activities.',
+    evidenceRequirements: [
+      'In-person registration procedures',
+      'Trusted third-party documentation',
+      'Identity verification records',
+      'Registration activity logs',
+      'Registration effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review registration procedures',
+      'Verify third-party identification',
+      'Test identity verification',
+      'Review activity logs',
+      'Assess registration effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-5(6)',
+    name: 'Authenticator Management | Protection of Authenticators',
+    description:
+      'FedRAMP High requires protection of authenticators commensurate with the security category of the information.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Define authenticator protection requirements. Implement appropriate safeguards. Monitor authenticator security. Respond to compromises promptly.',
+    evidenceRequirements: [
+      'Protection requirement documentation',
+      'Safeguard implementation evidence',
+      'Security monitoring records',
+      'Compromise response records',
+      'Protection effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review protection requirements',
+      'Verify safeguard implementation',
+      'Test security monitoring',
+      'Review compromise responses',
+      'Assess protection effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-5(7)',
+    name: 'Authenticator Management | No Embedded Unencrypted Static Authenticators',
+    description:
+      'FedRAMP High requires no embedding of unencrypted static authenticators in applications or scripts.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Scan code for embedded credentials. Use secrets management solutions. Implement secure credential injection. Monitor for credential exposure.',
+    evidenceRequirements: [
+      'Code scanning results',
+      'Secrets management implementation',
+      'Secure injection configuration',
+      'Exposure monitoring records',
+      'Embedding prevention assessment',
+    ],
+    testProcedures: [
+      'Run credential scans',
+      'Verify secrets management',
+      'Test secure injection',
+      'Review exposure monitoring',
+      'Assess embedding prevention',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-5(8)',
+    name: 'Authenticator Management | Multiple System Accounts',
+    description:
+      'FedRAMP High requires implementing controls to manage risk of authenticator compromise across multiple systems.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Avoid shared authenticators across systems. Implement unique credentials per system. Monitor cross-system authentication. Rotate credentials regularly.',
+    evidenceRequirements: [
+      'Credential uniqueness policy',
+      'Per-system credential evidence',
+      'Cross-system monitoring logs',
+      'Rotation records',
+      'Cross-system risk assessment',
+    ],
+    testProcedures: [
+      'Verify credential uniqueness',
+      'Test per-system credentials',
+      'Review cross-system monitoring',
+      'Verify rotation compliance',
+      'Assess cross-system risk',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IA-5(11)',
+    name: 'Authenticator Management | Hardware Token-Based Authentication',
+    description:
+      'FedRAMP High requires employing hardware authentication devices that satisfy defined token quality requirements.',
+    category: 'Identification and Authentication',
+    implementationGuidance:
+      'Define token quality requirements. Deploy FIPS-validated tokens. Manage token lifecycle. Monitor token usage.',
+    evidenceRequirements: [
+      'Token quality requirements',
+      'FIPS validation certificates',
+      'Lifecycle management procedures',
+      'Usage monitoring logs',
+      'Token effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review quality requirements',
+      'Verify FIPS validation',
+      'Test lifecycle management',
+      'Review usage monitoring',
+      'Assess token effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // FEDRAMP HIGH BASELINE - SYSTEM AND COMMUNICATIONS PROTECTION ENHANCEMENTS
+  // ============================================================
+  {
+    controlId: 'FR-SC-2(1)',
+    name: 'Application Partitioning | Interfaces for Non-Privileged Users',
+    description:
+      'FedRAMP High requires preventing non-privileged users from accessing system management functionality.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Separate user and admin interfaces. Implement interface access controls. Monitor interface usage. Prevent interface bypass.',
+    evidenceRequirements: [
+      'Interface separation documentation',
+      'Access control configuration',
+      'Usage monitoring logs',
+      'Bypass prevention evidence',
+      'Separation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify interface separation',
+      'Test access controls',
+      'Review usage monitoring',
+      'Test bypass prevention',
+      'Assess separation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-3(1)',
+    name: 'Security Function Isolation | Hardware Separation',
+    description:
+      'FedRAMP High requires employing hardware-based mechanisms to achieve security function isolation.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Implement hardware security modules. Use hardware-based isolation. Configure hardware protection boundaries. Monitor hardware security.',
+    evidenceRequirements: [
+      'HSM implementation documentation',
+      'Hardware isolation configuration',
+      'Protection boundary documentation',
+      'Hardware monitoring logs',
+      'Hardware isolation assessment',
+    ],
+    testProcedures: [
+      'Test HSM implementation',
+      'Verify hardware isolation',
+      'Review protection boundaries',
+      'Examine monitoring logs',
+      'Assess hardware isolation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-3(2)',
+    name: 'Security Function Isolation | Access and Flow Control Functions',
+    description:
+      'FedRAMP High requires isolating security functions enforcing access and information flow control.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Isolate access control functions. Protect flow control mechanisms. Implement separate security domains. Monitor function isolation.',
+    evidenceRequirements: [
+      'Access control isolation evidence',
+      'Flow control protection documentation',
+      'Security domain implementation',
+      'Function isolation monitoring',
+      'Isolation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test access control isolation',
+      'Verify flow control protection',
+      'Review security domains',
+      'Examine isolation monitoring',
+      'Assess isolation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-4(2)',
+    name: 'Information in Shared Resources | Periods Processing',
+    description:
+      'FedRAMP High requires preventing unauthorized information transfer via shared resources during periods processing.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Implement memory clearing between periods. Sanitize shared resources. Configure period processing controls. Monitor resource sanitization.',
+    evidenceRequirements: [
+      'Memory clearing configuration',
+      'Resource sanitization procedures',
+      'Period processing controls',
+      'Sanitization monitoring logs',
+      'Sanitization effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test memory clearing',
+      'Verify resource sanitization',
+      'Review period controls',
+      'Examine monitoring logs',
+      'Assess sanitization effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-5(1)',
+    name: 'Denial of Service Protection | Restrict Ability to Attack Other Systems',
+    description:
+      'FedRAMP High requires restricting the ability of individuals to launch denial of service attacks against other systems.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Implement outbound traffic controls. Restrict attack tool usage. Monitor for attack patterns. Block malicious outbound traffic.',
+    evidenceRequirements: [
+      'Outbound control configuration',
+      'Tool restriction documentation',
+      'Attack pattern monitoring',
+      'Traffic blocking records',
+      'Attack prevention assessment',
+    ],
+    testProcedures: [
+      'Test outbound controls',
+      'Verify tool restrictions',
+      'Review pattern monitoring',
+      'Test traffic blocking',
+      'Assess attack prevention',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-5(2)',
+    name: 'Denial of Service Protection | Excess Capacity/Bandwidth/Redundancy',
+    description:
+      'FedRAMP High requires managing excess capacity, bandwidth, or redundancy to limit denial of service effects.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Provision excess capacity. Implement bandwidth management. Configure redundant systems. Monitor capacity utilization.',
+    evidenceRequirements: [
+      'Excess capacity documentation',
+      'Bandwidth management configuration',
+      'Redundancy implementation evidence',
+      'Utilization monitoring logs',
+      'Capacity effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify excess capacity',
+      'Test bandwidth management',
+      'Review redundancy',
+      'Examine utilization monitoring',
+      'Assess capacity effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-7(3)',
+    name: 'Boundary Protection | Access Points',
+    description:
+      'FedRAMP High requires limiting the number of external network connections to the system.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Document all external connections. Minimize access points. Implement connection controls. Monitor all external access.',
+    evidenceRequirements: [
+      'External connection inventory',
+      'Access point minimization evidence',
+      'Connection control configuration',
+      'External access monitoring logs',
+      'Access point effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review connection inventory',
+      'Verify access point minimization',
+      'Test connection controls',
+      'Review access monitoring',
+      'Assess access point security',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-7(4)',
+    name: 'Boundary Protection | External Telecommunications Services',
+    description:
+      'FedRAMP High requires implementing a managed interface for each external telecommunication service.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Define managed interfaces. Implement interface controls. Monitor telecommunications services. Document service agreements.',
+    evidenceRequirements: [
+      'Managed interface documentation',
+      'Interface control configuration',
+      'Service monitoring records',
+      'Service agreements',
+      'Interface effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review managed interfaces',
+      'Test interface controls',
+      'Review service monitoring',
+      'Examine service agreements',
+      'Assess interface effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-7(5)',
+    name: 'Boundary Protection | Deny by Default / Allow by Exception',
+    description:
+      'FedRAMP High requires denying network communications traffic by default and allowing only authorized traffic.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Configure default deny policies. Define explicit allow rules. Document traffic exceptions. Monitor denied traffic.',
+    evidenceRequirements: [
+      'Default deny configuration',
+      'Allow rule documentation',
+      'Exception documentation',
+      'Denied traffic logs',
+      'Policy effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify default deny',
+      'Test allow rules',
+      'Review exceptions',
+      'Examine denied traffic',
+      'Assess policy effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-7(7)',
+    name: 'Boundary Protection | Prevent Split Tunneling for Remote Devices',
+    description:
+      'FedRAMP High requires preventing split tunneling for remote devices connecting to the system.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Configure VPN to prevent split tunneling. Enforce full tunnel requirements. Monitor tunnel configurations. Detect split tunnel attempts.',
+    evidenceRequirements: [
+      'Split tunnel prevention configuration',
+      'Full tunnel enforcement evidence',
+      'Configuration monitoring records',
+      'Split tunnel detection logs',
+      'Prevention effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test split tunnel prevention',
+      'Verify full tunnel enforcement',
+      'Review configuration monitoring',
+      'Test detection capabilities',
+      'Assess prevention effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-7(8)',
+    name: 'Boundary Protection | Route Traffic to Authenticated Proxy Servers',
+    description:
+      'FedRAMP High requires routing internal communications traffic to external networks through authenticated proxy servers.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Deploy authenticated proxy servers. Configure traffic routing. Implement proxy authentication. Monitor proxy traffic.',
+    evidenceRequirements: [
+      'Proxy server deployment documentation',
+      'Traffic routing configuration',
+      'Proxy authentication evidence',
+      'Traffic monitoring logs',
+      'Proxy effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test proxy server deployment',
+      'Verify traffic routing',
+      'Test proxy authentication',
+      'Review traffic monitoring',
+      'Assess proxy effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-7(18)',
+    name: 'Boundary Protection | Fail Secure',
+    description:
+      'FedRAMP High requires system boundary protections to fail secure in the event of an operational failure.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Configure fail-secure defaults. Test failure scenarios. Document fail-secure behavior. Monitor boundary protection status.',
+    evidenceRequirements: [
+      'Fail-secure configuration documentation',
+      'Failure scenario testing records',
+      'Fail-secure behavior documentation',
+      'Protection status monitoring logs',
+      'Fail-secure effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test fail-secure configuration',
+      'Execute failure scenarios',
+      'Verify fail-secure behavior',
+      'Review status monitoring',
+      'Assess fail-secure effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-7(21)',
+    name: 'Boundary Protection | Isolation of System Components',
+    description:
+      'FedRAMP High requires employing boundary protection mechanisms to isolate system components.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Implement network segmentation. Deploy internal firewalls. Configure component isolation. Monitor inter-component traffic.',
+    evidenceRequirements: [
+      'Network segmentation documentation',
+      'Internal firewall configuration',
+      'Component isolation evidence',
+      'Inter-component traffic logs',
+      'Isolation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify network segmentation',
+      'Test internal firewalls',
+      'Review component isolation',
+      'Examine traffic logs',
+      'Assess isolation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-8(1)',
+    name: 'Transmission Confidentiality and Integrity | Cryptographic Protection',
+    description:
+      'FedRAMP High requires implementing cryptographic mechanisms to prevent unauthorized disclosure and modification.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Implement TLS for all transmissions. Use FIPS-validated cryptography. Configure strong cipher suites. Monitor cryptographic operations.',
+    evidenceRequirements: [
+      'TLS implementation documentation',
+      'FIPS validation certificates',
+      'Cipher suite configuration',
+      'Cryptographic operation logs',
+      'Cryptographic effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test TLS implementation',
+      'Verify FIPS validation',
+      'Review cipher configuration',
+      'Examine operation logs',
+      'Assess cryptographic effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-12(1)',
+    name: 'Cryptographic Key Establishment and Management | Availability',
+    description:
+      'FedRAMP High requires maintaining availability of information in the event of loss of cryptographic keys.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Implement key backup and recovery. Configure key escrow where appropriate. Test key recovery procedures. Document key recovery process.',
+    evidenceRequirements: [
+      'Key backup implementation',
+      'Key escrow configuration',
+      'Recovery procedure testing records',
+      'Recovery process documentation',
+      'Key availability assessment',
+    ],
+    testProcedures: [
+      'Test key backup',
+      'Verify escrow configuration',
+      'Test recovery procedures',
+      'Review process documentation',
+      'Assess key availability',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-12(2)',
+    name: 'Cryptographic Key Establishment and Management | Symmetric Keys',
+    description:
+      'FedRAMP High requires producing, controlling, and distributing symmetric cryptographic keys using approved key management technology.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Use FIPS-validated key management. Implement secure key distribution. Control key lifecycle. Audit key management activities.',
+    evidenceRequirements: [
+      'Key management technology documentation',
+      'Secure distribution procedures',
+      'Lifecycle control evidence',
+      'Key management audit logs',
+      'Key management effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify key management technology',
+      'Test secure distribution',
+      'Review lifecycle controls',
+      'Examine audit logs',
+      'Assess key management effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-12(3)',
+    name: 'Cryptographic Key Establishment and Management | Asymmetric Keys',
+    description:
+      'FedRAMP High requires producing, controlling, and distributing asymmetric cryptographic keys using approved key management technology.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Implement PKI for asymmetric keys. Configure certificate lifecycle management. Secure private key storage. Monitor certificate usage.',
+    evidenceRequirements: [
+      'PKI implementation documentation',
+      'Lifecycle management configuration',
+      'Private key storage evidence',
+      'Certificate usage logs',
+      'Asymmetric key management assessment',
+    ],
+    testProcedures: [
+      'Test PKI implementation',
+      'Verify lifecycle management',
+      'Review private key storage',
+      'Examine usage logs',
+      'Assess asymmetric key management',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SC-28(1)',
+    name: 'Protection of Information at Rest | Cryptographic Protection',
+    description:
+      'FedRAMP High requires implementing cryptographic mechanisms to prevent unauthorized disclosure and modification of information at rest.',
+    category: 'System and Communications Protection',
+    implementationGuidance:
+      'Implement full disk encryption. Use database encryption. Encrypt sensitive files. Manage encryption keys securely.',
+    evidenceRequirements: [
+      'Full disk encryption evidence',
+      'Database encryption configuration',
+      'File encryption implementation',
+      'Key management documentation',
+      'At-rest encryption effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify disk encryption',
+      'Test database encryption',
+      'Review file encryption',
+      'Examine key management',
+      'Assess at-rest encryption effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // FEDRAMP HIGH BASELINE - ADDITIONAL CONTROLS
+  // ============================================================
+  {
+    controlId: 'FR-PE-7',
+    name: 'Visitor Control',
+    description:
+      'FedRAMP High requires controlling physical access by authenticating visitors before authorizing access.',
+    category: 'Physical and Environmental Protection',
+    implementationGuidance:
+      'Implement visitor registration. Verify visitor identity. Issue visitor badges. Escort visitors in sensitive areas.',
+    evidenceRequirements: [
+      'Visitor registration procedures',
+      'Identity verification process',
+      'Badge issuance records',
+      'Escort procedures documentation',
+      'Visitor control effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review registration procedures',
+      'Test identity verification',
+      'Verify badge issuance',
+      'Review escort procedures',
+      'Assess visitor control effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-PE-24',
+    name: 'Physical Access Monitoring',
+    description:
+      'FedRAMP High requires monitoring physical access to facilities using automated mechanisms.',
+    category: 'Physical and Environmental Protection',
+    implementationGuidance:
+      'Deploy access monitoring systems. Configure automated alerting. Review access logs regularly. Investigate anomalous access.',
+    evidenceRequirements: [
+      'Access monitoring system documentation',
+      'Automated alerting configuration',
+      'Access log review records',
+      'Investigation records',
+      'Monitoring effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test monitoring systems',
+      'Verify automated alerting',
+      'Review access logs',
+      'Examine investigation records',
+      'Assess monitoring effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-PE-25',
+    name: 'Facility Site Selection',
+    description:
+      'FedRAMP High requires selecting a facility site that reduces susceptibility to physical threats.',
+    category: 'Physical and Environmental Protection',
+    implementationGuidance:
+      'Conduct site threat assessment. Consider natural disaster risks. Evaluate physical security options. Document site selection criteria.',
+    evidenceRequirements: [
+      'Site threat assessment documentation',
+      'Natural disaster risk analysis',
+      'Physical security evaluation',
+      'Site selection criteria documentation',
+      'Site selection effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review threat assessment',
+      'Examine disaster risk analysis',
+      'Review security evaluation',
+      'Verify selection criteria',
+      'Assess site selection effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SA-6',
+    name: 'Software Usage Restrictions',
+    description:
+      'FedRAMP High requires employing software and associated documentation in accordance with contract agreements and copyright laws.',
+    category: 'System and Services Acquisition',
+    implementationGuidance:
+      'Track software licenses. Verify license compliance. Document software usage. Conduct periodic license audits.',
+    evidenceRequirements: [
+      'Software license inventory',
+      'License compliance verification',
+      'Usage documentation',
+      'License audit records',
+      'Compliance effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review license inventory',
+      'Verify compliance',
+      'Review usage documentation',
+      'Examine audit records',
+      'Assess compliance effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SA-7',
+    name: 'User-Installed Software',
+    description:
+      'FedRAMP High requires enforcing explicit rules governing the installation of software by users.',
+    category: 'System and Services Acquisition',
+    implementationGuidance:
+      'Define software installation policies. Implement technical enforcement. Monitor user installations. Review installed software regularly.',
+    evidenceRequirements: [
+      'Installation policy documentation',
+      'Technical enforcement configuration',
+      'Installation monitoring logs',
+      'Software review records',
+      'Enforcement effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review installation policies',
+      'Test technical enforcement',
+      'Verify monitoring',
+      'Review software audits',
+      'Assess enforcement effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-9',
+    name: 'Information Input Restrictions',
+    description:
+      'FedRAMP High requires restricting the capability to input information to the system to authorized personnel only.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Define authorized input personnel. Implement input access controls. Monitor input activities. Audit input operations.',
+    evidenceRequirements: [
+      'Authorized personnel documentation',
+      'Input access control configuration',
+      'Input activity logs',
+      'Input operation audits',
+      'Input restriction effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify authorized personnel',
+      'Test access controls',
+      'Review activity logs',
+      'Examine operation audits',
+      'Assess restriction effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CP-5',
+    name: 'Contingency Plan Update',
+    description:
+      'FedRAMP High requires reviewing the contingency plan at a defined frequency and updating based on changes.',
+    category: 'Contingency Planning',
+    implementationGuidance:
+      'Establish plan review schedule. Document plan changes. Update plan after significant events. Communicate updates to stakeholders.',
+    evidenceRequirements: [
+      'Plan review schedule',
+      'Change documentation records',
+      'Event-triggered updates',
+      'Stakeholder communication records',
+      'Update effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify review schedule',
+      'Review change documentation',
+      'Examine event-triggered updates',
+      'Review communication records',
+      'Assess update effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CP-6',
+    name: 'Alternate Storage Site',
+    description:
+      'FedRAMP High requires establishing an alternate storage site with safeguards equivalent to the primary site.',
+    category: 'Contingency Planning',
+    implementationGuidance:
+      'Identify alternate storage location. Implement equivalent security. Test storage capabilities. Document alternate site procedures.',
+    evidenceRequirements: [
+      'Alternate site documentation',
+      'Security equivalence analysis',
+      'Storage capability testing records',
+      'Site procedures documentation',
+      'Alternate site effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify alternate site',
+      'Assess security equivalence',
+      'Test storage capabilities',
+      'Review procedures',
+      'Assess alternate site effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-PL-3',
+    name: 'System Security Plan Update',
+    description:
+      'FedRAMP High requires updating the system security plan to address changes to the system and environment.',
+    category: 'Planning',
+    implementationGuidance:
+      'Establish SSP update procedures. Track system changes. Update SSP for all changes. Review SSP accuracy regularly.',
+    evidenceRequirements: [
+      'SSP update procedures',
+      'Change tracking records',
+      'SSP revision history',
+      'Accuracy review records',
+      'Update effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review update procedures',
+      'Verify change tracking',
+      'Examine revision history',
+      'Review accuracy checks',
+      'Assess update effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-PL-5',
+    name: 'Privacy Impact Assessment',
+    description:
+      'FedRAMP High requires conducting privacy impact assessments for systems processing personally identifiable information.',
+    category: 'Planning',
+    implementationGuidance:
+      'Conduct PIAs for PII systems. Document privacy risks. Implement privacy controls. Update PIAs when changes occur.',
+    evidenceRequirements: [
+      'Privacy impact assessment documentation',
+      'Privacy risk documentation',
+      'Privacy control implementation',
+      'PIA update records',
+      'PIA effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review PIA documentation',
+      'Examine privacy risks',
+      'Verify control implementation',
+      'Review update records',
+      'Assess PIA effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-PL-6',
+    name: 'Security-Related Activity Planning',
+    description:
+      'FedRAMP High requires planning and coordinating security-related activities before conducting such activities.',
+    category: 'Planning',
+    implementationGuidance:
+      'Plan security activities in advance. Coordinate with stakeholders. Document activity plans. Review outcomes after activities.',
+    evidenceRequirements: [
+      'Activity planning documentation',
+      'Stakeholder coordination records',
+      'Activity plan documentation',
+      'Outcome review records',
+      'Planning effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review activity planning',
+      'Verify stakeholder coordination',
+      'Review activity plans',
+      'Examine outcome reviews',
+      'Assess planning effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CA-4',
+    name: 'Security Certification',
+    description:
+      'FedRAMP High requires an independent security assessment of the system.',
+    category: 'Security Assessment and Authorization',
+    implementationGuidance:
+      'Engage independent assessor. Conduct comprehensive assessment. Document findings. Address assessment findings.',
+    evidenceRequirements: [
+      'Independent assessor credentials',
+      'Assessment scope documentation',
+      'Assessment findings report',
+      'Finding remediation records',
+      'Assessment effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify assessor independence',
+      'Review assessment scope',
+      'Examine findings report',
+      'Review remediation records',
+      'Assess assessment effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-RA-4',
+    name: 'Risk Assessment Update',
+    description:
+      'FedRAMP High requires updating risk assessments at defined frequency or when significant changes occur.',
+    category: 'Risk Assessment',
+    implementationGuidance:
+      'Establish risk assessment schedule. Update for significant changes. Document assessment updates. Communicate risk changes.',
+    evidenceRequirements: [
+      'Assessment schedule documentation',
+      'Change-triggered update records',
+      'Assessment update documentation',
+      'Risk communication records',
+      'Update effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify assessment schedule',
+      'Review change-triggered updates',
+      'Examine update documentation',
+      'Review communication records',
+      'Assess update effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-IR-3',
+    name: 'Incident Response Testing',
+    description:
+      'FedRAMP High requires testing the incident response capability at defined frequency.',
+    category: 'Incident Response',
+    implementationGuidance:
+      'Develop testing plan. Conduct incident response exercises. Document test results. Improve capability based on findings.',
+    evidenceRequirements: [
+      'Testing plan documentation',
+      'Exercise execution records',
+      'Test result documentation',
+      'Capability improvement records',
+      'Testing effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review testing plan',
+      'Examine exercise records',
+      'Review test results',
+      'Verify capability improvements',
+      'Assess testing effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-CM-5',
+    name: 'Access Restrictions for Change',
+    description:
+      'FedRAMP High requires defining, documenting, approving, and enforcing access restrictions for configuration changes.',
+    category: 'Configuration Management',
+    implementationGuidance:
+      'Define change access restrictions. Document approval requirements. Implement technical enforcement. Audit change access.',
+    evidenceRequirements: [
+      'Access restriction documentation',
+      'Approval requirement documentation',
+      'Technical enforcement configuration',
+      'Change access audit logs',
+      'Restriction effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review access restrictions',
+      'Verify approval requirements',
+      'Test technical enforcement',
+      'Review audit logs',
+      'Assess restriction effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // FEDRAMP HIGH BASELINE - FINAL CONTROLS
+  // ============================================================
+  {
+    controlId: 'FR-SI-2(2)',
+    name: 'Flaw Remediation | Automated Flaw Remediation Status',
+    description:
+      'FedRAMP High requires employing automated mechanisms to determine the state of system components with regard to flaw remediation.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Implement automated vulnerability scanning. Configure automated patch status reporting. Monitor remediation progress. Alert on overdue remediations.',
+    evidenceRequirements: [
+      'Automated scanning implementation',
+      'Patch status reporting configuration',
+      'Remediation progress monitoring',
+      'Overdue remediation alerts',
+      'Automation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test automated scanning',
+      'Verify status reporting',
+      'Review progress monitoring',
+      'Test overdue alerts',
+      'Assess automation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-3(1)',
+    name: 'Malicious Code Protection | Central Management',
+    description:
+      'FedRAMP High requires central management of malicious code protection mechanisms.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Implement centralized antimalware management. Configure policy distribution. Monitor protection status centrally. Update definitions centrally.',
+    evidenceRequirements: [
+      'Central management implementation',
+      'Policy distribution configuration',
+      'Status monitoring dashboard',
+      'Central update procedures',
+      'Central management effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test central management',
+      'Verify policy distribution',
+      'Review status monitoring',
+      'Test central updates',
+      'Assess central management effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-3(2)',
+    name: 'Malicious Code Protection | Automatic Updates',
+    description:
+      'FedRAMP High requires automatic updates of malicious code protection mechanisms.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Configure automatic definition updates. Enable automatic engine updates. Monitor update status. Alert on update failures.',
+    evidenceRequirements: [
+      'Automatic update configuration',
+      'Engine update settings',
+      'Update status monitoring',
+      'Failure alert configuration',
+      'Update effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify automatic updates',
+      'Test engine updates',
+      'Review update status',
+      'Test failure alerts',
+      'Assess update effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-4(2)',
+    name: 'System Monitoring | Automated Tools for Real-Time Analysis',
+    description:
+      'FedRAMP High requires employing automated tools to support near real-time analysis of events.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Deploy SIEM for real-time analysis. Configure automated event correlation. Enable real-time alerting. Monitor analysis effectiveness.',
+    evidenceRequirements: [
+      'SIEM deployment documentation',
+      'Event correlation configuration',
+      'Real-time alerting setup',
+      'Analysis effectiveness metrics',
+      'Real-time analysis assessment',
+    ],
+    testProcedures: [
+      'Test SIEM deployment',
+      'Verify event correlation',
+      'Test real-time alerting',
+      'Review effectiveness metrics',
+      'Assess real-time analysis',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-4(4)',
+    name: 'System Monitoring | Inbound and Outbound Communications Traffic',
+    description:
+      'FedRAMP High requires monitoring inbound and outbound communications traffic for unusual or unauthorized activities.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Monitor all network traffic. Analyze traffic patterns. Detect anomalous communications. Alert on suspicious traffic.',
+    evidenceRequirements: [
+      'Traffic monitoring implementation',
+      'Pattern analysis configuration',
+      'Anomaly detection rules',
+      'Suspicious traffic alerts',
+      'Traffic monitoring effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test traffic monitoring',
+      'Verify pattern analysis',
+      'Test anomaly detection',
+      'Review alert handling',
+      'Assess monitoring effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-4(5)',
+    name: 'System Monitoring | System-Generated Alerts',
+    description:
+      'FedRAMP High requires alerting personnel when system-generated indications of compromise occur.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Configure IOC detection alerts. Define alert recipients. Establish alert escalation procedures. Monitor alert response times.',
+    evidenceRequirements: [
+      'IOC alert configuration',
+      'Recipient list documentation',
+      'Escalation procedure documentation',
+      'Response time monitoring',
+      'Alert effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test IOC alerts',
+      'Verify alert recipients',
+      'Test escalation procedures',
+      'Review response times',
+      'Assess alert effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-7(1)',
+    name: 'Software, Firmware, and Information Integrity | Integrity Checks',
+    description:
+      'FedRAMP High requires performing integrity checks of software, firmware, and information at startup and at defined transitional states.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Implement boot-time integrity checks. Configure transitional state verification. Alert on integrity failures. Document integrity baselines.',
+    evidenceRequirements: [
+      'Boot-time integrity configuration',
+      'Transitional state verification',
+      'Integrity failure alerting',
+      'Baseline documentation',
+      'Integrity check effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test boot-time checks',
+      'Verify transitional verification',
+      'Test failure alerts',
+      'Review baselines',
+      'Assess integrity check effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-SI-7(7)',
+    name: 'Software, Firmware, and Information Integrity | Integration of Detection and Response',
+    description:
+      'FedRAMP High requires incorporating detection of unauthorized changes into the organizational incident response capability.',
+    category: 'System and Information Integrity',
+    implementationGuidance:
+      'Integrate change detection with incident response. Configure automated incident creation. Establish response procedures. Track detection-to-response metrics.',
+    evidenceRequirements: [
+      'Detection-response integration',
+      'Automated incident creation',
+      'Response procedure documentation',
+      'Detection-to-response metrics',
+      'Integration effectiveness assessment',
+    ],
+    testProcedures: [
+      'Test detection integration',
+      'Verify automated incidents',
+      'Review response procedures',
+      'Examine metrics',
+      'Assess integration effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-MA-4(1)',
+    name: 'Nonlocal Maintenance | Auditing and Review',
+    description:
+      'FedRAMP High requires auditing nonlocal maintenance and diagnostic sessions and reviewing maintenance records.',
+    category: 'Maintenance',
+    implementationGuidance:
+      'Audit all remote maintenance sessions. Record maintenance activities. Review maintenance logs regularly. Investigate anomalous maintenance.',
+    evidenceRequirements: [
+      'Remote session audit configuration',
+      'Maintenance activity records',
+      'Log review records',
+      'Investigation records',
+      'Audit effectiveness assessment',
+    ],
+    testProcedures: [
+      'Verify session auditing',
+      'Review activity records',
+      'Examine log reviews',
+      'Review investigations',
+      'Assess audit effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-MA-4(2)',
+    name: 'Nonlocal Maintenance | Document Nonlocal Maintenance',
+    description:
+      'FedRAMP High requires documenting the policies and procedures for the establishment and use of nonlocal maintenance connections.',
+    category: 'Maintenance',
+    implementationGuidance:
+      'Document remote maintenance policies. Define connection procedures. Establish authorization requirements. Maintain procedure currency.',
+    evidenceRequirements: [
+      'Remote maintenance policy',
+      'Connection procedure documentation',
+      'Authorization requirements',
+      'Procedure review records',
+      'Documentation effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review maintenance policy',
+      'Verify connection procedures',
+      'Test authorization requirements',
+      'Review procedure currency',
+      'Assess documentation effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'FR-PS-11',
+    name: 'Personnel Termination',
+    description:
+      'FedRAMP High requires timely termination of system access upon personnel termination and conducting exit interviews.',
+    category: 'Personnel Security',
+    implementationGuidance:
+      'Define termination procedures. Implement immediate access revocation. Conduct exit interviews. Retrieve organizational assets.',
+    evidenceRequirements: [
+      'Termination procedure documentation',
+      'Access revocation evidence',
+      'Exit interview records',
+      'Asset retrieval records',
+      'Termination effectiveness assessment',
+    ],
+    testProcedures: [
+      'Review termination procedures',
+      'Test access revocation timing',
+      'Review exit interviews',
+      'Verify asset retrieval',
+      'Assess termination effectiveness',
+    ],
+    status: 'Not Started',
+  },
 ];
