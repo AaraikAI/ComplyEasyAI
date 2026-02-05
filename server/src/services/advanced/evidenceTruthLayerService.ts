@@ -260,25 +260,111 @@ class EvidenceTruthLayerService {
     } catch (error) {
       logger.error('[Evidence Truth Layer] Error in ML deepfake detection, using fallback', error);
 
-      // Fallback to heuristics
+      // Fallback: statistical analysis of buffer content
       let score = 0.0;
-      let confidence = 0.5;
+      let confidence = 0.4;
 
-      if (metadata.size && metadata.size < 1000) {
-        score += 0.3;
+      if (!fileBuffer || fileBuffer.length === 0) {
+        return { score: 0.5, confidence: 0.3 };
       }
 
-      if (metadata.filename) {
-        const suspiciousPatterns = ['deepfake', 'generated', 'ai_', 'synthetic'];
-        if (suspiciousPatterns.some(pattern => metadata.filename!.toLowerCase().includes(pattern))) {
-          score += 0.4;
-          confidence = 0.7;
+      // 1. Byte frequency distribution analysis
+      const byteFrequency = new Uint32Array(256);
+      for (let i = 0; i < fileBuffer.length; i++) {
+        byteFrequency[fileBuffer[i]]++;
+      }
+
+      // 2. Shannon entropy calculation - artificially generated content often has abnormal entropy
+      const bufLen = fileBuffer.length;
+      let entropy = 0;
+      for (let i = 0; i < 256; i++) {
+        if (byteFrequency[i] > 0) {
+          const p = byteFrequency[i] / bufLen;
+          entropy -= p * Math.log2(p);
         }
+      }
+      // Natural media typically has entropy between 6.5-7.9; AI-generated content often
+      // shows unusually uniform distribution (high entropy ~7.99) or structured patterns (low entropy <5)
+      const normalizedEntropy = entropy / 8.0;
+      if (normalizedEntropy > 0.98 || normalizedEntropy < 0.6) {
+        score += 0.25;
+        confidence += 0.1;
+      }
+
+      // 3. Bit pattern analysis - check for repeating patterns common in generated content
+      let repeatingPatterns = 0;
+      const chunkSize = 64;
+      const sampleLimit = Math.min(bufLen - chunkSize * 2, 10000);
+      for (let i = 0; i < sampleLimit; i += chunkSize) {
+        let matchCount = 0;
+        for (let j = 0; j < chunkSize; j++) {
+          if (fileBuffer[i + j] === fileBuffer[i + j + chunkSize]) {
+            matchCount++;
+          }
+        }
+        if (matchCount > chunkSize * 0.8) {
+          repeatingPatterns++;
+        }
+      }
+      const patternRatio = sampleLimit > 0 ? repeatingPatterns / (sampleLimit / chunkSize) : 0;
+      if (patternRatio > 0.3) {
+        score += 0.2;
+        confidence += 0.05;
+      }
+
+      // 4. Format-specific header analysis
+      if (fileBuffer.length >= 4) {
+        // JPEG analysis: check for inconsistent quantization tables
+        if (fileBuffer[0] === 0xFF && fileBuffer[1] === 0xD8) {
+          // Scan for multiple DQT markers which can indicate re-encoding (common in deepfakes)
+          let dqtCount = 0;
+          for (let i = 0; i < Math.min(bufLen - 1, 4096); i++) {
+            if (fileBuffer[i] === 0xFF && fileBuffer[i + 1] === 0xDB) {
+              dqtCount++;
+            }
+          }
+          if (dqtCount > 2) {
+            score += 0.15;
+            confidence += 0.05;
+          }
+        }
+
+        // PNG analysis: check for unusual chunk ordering or missing ancillary chunks
+        if (fileBuffer[0] === 0x89 && fileBuffer[1] === 0x50 &&
+            fileBuffer[2] === 0x4E && fileBuffer[3] === 0x47) {
+          // AI-generated PNGs often lack tEXt/iTXt metadata chunks
+          let hasTextChunk = false;
+          for (let i = 8; i < Math.min(bufLen - 4, 8192); i++) {
+            if ((fileBuffer[i] === 0x74 && fileBuffer[i + 1] === 0x45 &&
+                 fileBuffer[i + 2] === 0x58 && fileBuffer[i + 3] === 0x74) ||
+                (fileBuffer[i] === 0x69 && fileBuffer[i + 1] === 0x54 &&
+                 fileBuffer[i + 2] === 0x58 && fileBuffer[i + 3] === 0x74)) {
+              hasTextChunk = true;
+              break;
+            }
+          }
+          if (!hasTextChunk) {
+            score += 0.1;
+          }
+        }
+      }
+
+      // 5. Byte distribution uniformity chi-squared test
+      const expectedFreq = bufLen / 256;
+      let chiSquared = 0;
+      for (let i = 0; i < 256; i++) {
+        const diff = byteFrequency[i] - expectedFreq;
+        chiSquared += (diff * diff) / (expectedFreq || 1);
+      }
+      // Very low chi-squared suggests artificially uniform distribution
+      if (chiSquared < 200 && bufLen > 1024) {
+        score += 0.15;
+        confidence += 0.05;
       }
 
       return {
         score: Math.min(1.0, score),
-        confidence,
+        confidence: Math.min(0.8, confidence), // Cap confidence since this is statistical fallback
       };
     }
   }
@@ -1890,13 +1976,92 @@ class EvidenceTruthLayerService {
       }
 
       if (format === 'pdf') {
-        // In production, would generate PDF using library like pdfkit
-        // For now, return JSON with PDF flag
+        // Generate structured HTML report that callers can convert to PDF
+        const generatedDate = new Date().toISOString().split('T')[0];
+        const historyRows = report.history.map((h: any) => `
+              <tr>
+                <td>${h.createdAt instanceof Date ? h.createdAt.toISOString() : h.createdAt}</td>
+                <td>${h.deepfakeScore ?? 'N/A'}</td>
+                <td>${h.overallConfidence ?? 'N/A'}</td>
+                <td>${h.verificationStatus ?? 'N/A'}</td>
+              </tr>`).join('');
+
+        const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Evidence Analysis Report - ${evidenceId}</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin: 40px; color: #333; }
+    h1 { color: #1a237e; border-bottom: 2px solid #1a237e; padding-bottom: 8px; }
+    h2 { color: #283593; margin-top: 24px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+    th { background-color: #e8eaf6; font-weight: bold; }
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+    .summary-item { background: #f5f5f5; padding: 12px; border-radius: 4px; }
+    .summary-label { font-weight: bold; color: #555; }
+    .status-verified { color: #2e7d32; font-weight: bold; }
+    .status-flagged { color: #c62828; font-weight: bold; }
+    .status-pending { color: #ef6c00; font-weight: bold; }
+    .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #ccc; font-size: 0.85em; color: #777; }
+  </style>
+</head>
+<body>
+  <h1>Evidence Analysis Report</h1>
+
+  <section>
+    <h2>Report Metadata</h2>
+    <table>
+      <tr><th>Evidence ID</th><td>${evidenceId}</td></tr>
+      <tr><th>Organization ID</th><td>${report.organizationId}</td></tr>
+      <tr><th>Generated At</th><td>${report.generatedAt}</td></tr>
+      <tr><th>Total Analyses</th><td>${report.summary.totalAnalyses}</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Analysis Summary</h2>
+    <table>
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Deepfake Score</td><td>${report.summary.deepfakeScore}</td></tr>
+      <tr><td>Overall Confidence</td><td>${report.summary.overallConfidence}</td></tr>
+      <tr>
+        <td>Verification Status</td>
+        <td class="${report.summary.verificationStatus === 'verified' ? 'status-verified' : report.summary.verificationStatus === 'flagged' ? 'status-flagged' : 'status-pending'}">${report.summary.verificationStatus}</td>
+      </tr>
+      <tr><td>Physical Attestation</td><td>${report.summary.hasPhysicalAttestation ? 'Yes' : 'No'}</td></tr>
+      <tr><td>Human Liveness Check</td><td>${report.summary.hasHumanLiveness ? 'Yes' : 'No'}</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Analysis History (Last ${report.history.length} Entries)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Deepfake Score</th>
+          <th>Confidence</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>${historyRows || '<tr><td colspan="4">No history available</td></tr>'}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="footer">
+    <p>Generated by ComplyEasyAI Evidence Truth Layer on ${report.generatedAt}</p>
+  </div>
+</body>
+</html>`;
+
         return {
-          format: 'pdf',
-          content: JSON.stringify(report, null, 2),
-          filename: `evidence-analysis-${evidenceId}-${new Date().toISOString().split('T')[0]}.pdf`,
-          note: 'PDF generation would be implemented with pdfkit or similar library',
+          format: 'html',
+          contentType: 'text/html',
+          content: htmlContent,
+          filename: `evidence-analysis-${evidenceId}-${generatedDate}.html`,
         };
       }
 

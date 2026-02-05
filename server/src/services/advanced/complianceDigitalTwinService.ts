@@ -599,32 +599,69 @@ class ComplianceDigitalTwinService {
           include: { controls: true },
         });
 
-    // Simulate audit findings
+    // Deterministic audit gap detection based on actual control properties
     const gaps: string[] = [];
-    let findingsCount = 0;
+    let totalScoreImpact = 0;
+    const now = new Date();
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
 
     for (const fw of frameworks) {
       const controls = fw.controls || [];
-      const sampleControls = sampleSize 
+      const sampleControls = sampleSize
         ? controls.slice(0, Math.min(sampleSize, controls.length))
         : controls;
 
       for (const control of sampleControls) {
-        // Simulate finding gaps (30% chance per control)
-        if (Math.random() < 0.3 && (control.status === 'Pending' || control.status === 'Not_Implemented')) {
-          gaps.push(`Control "${control.name}" not implemented`);
-          findingsCount++;
+        let hasGap = false;
+        let gapReason = '';
+        let controlImpact = 0;
+
+        // Determine control importance based on category for score impact weighting
+        // Controls in security/access categories are higher impact than documentation
+        const category = (control.category || '').toLowerCase();
+        const isHighImportance = category.includes('security') || category.includes('access') ||
+          category.includes('encryption') || category.includes('authentication') ||
+          category.includes('audit') || category.includes('incident');
+        const isMediumImportance = category.includes('policy') || category.includes('risk') ||
+          category.includes('network') || category.includes('data') ||
+          category.includes('configuration') || category.includes('monitoring');
+        // Base impact per finding: high=4, medium=3, low=2
+        const baseImpact = isHighImportance ? 4 : isMediumImportance ? 3 : 2;
+
+        // Gap: control is Pending or Not_Implemented
+        if (control.status === 'Pending' || control.status === 'Not_Implemented') {
+          hasGap = true;
+          gapReason = control.status === 'Pending'
+            ? `Control "${control.name}" is still pending implementation`
+            : `Control "${control.name}" is not implemented`;
+          controlImpact = baseImpact;
+        }
+
+        // Gap: control is In_Progress but stale (not updated in >30 days)
+        if (!hasGap && control.status === 'In_Progress') {
+          const updatedAt = new Date(control.updatedAt);
+          const daysSinceUpdate = now.getTime() - updatedAt.getTime();
+          if (daysSinceUpdate > thirtyDaysMs) {
+            hasGap = true;
+            const staleDays = Math.floor(daysSinceUpdate / (24 * 60 * 60 * 1000));
+            gapReason = `Control "${control.name}" is in-progress but stale (no update in ${staleDays} days)`;
+            // Stale in-progress controls have slightly lower impact than unimplemented
+            controlImpact = Math.max(1, baseImpact - 1);
+          }
+        }
+
+        if (hasGap) {
+          gaps.push(gapReason);
+          totalScoreImpact += controlImpact;
         }
       }
     }
 
-    // Each finding reduces score
-    const scoreImpact = -findingsCount * 2; // 2% per finding
-    const newScore = Math.max(0, baselineScore + scoreImpact);
+    const newScore = Math.max(0, baselineScore - totalScoreImpact);
 
     return {
       newScore,
-      affectedControls: findingsCount,
+      affectedControls: gaps.length,
       affectedFrameworks: frameworks.length,
       gaps,
     };

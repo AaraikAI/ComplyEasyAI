@@ -549,8 +549,29 @@ class MLModelsService {
     const timeSpread = (maxTime - minTime) / (1000 * 60 * 60 * 24); // days
     features.push(timeSpread);
 
-    // Clustering coefficient (simplified)
-    features.push(0.5); // Placeholder
+    // Clustering coefficient (global average)
+    let clusteringSum = 0;
+    let clusteringCount = 0;
+    const allNodes = graph.nodes();
+    for (const node of allNodes) {
+      const neighbors: string[] = graph.neighbors(node);
+      const k = neighbors.length;
+      if (k < 2) continue;
+      let triangles = 0;
+      for (let i = 0; i < k; i++) {
+        for (let j = i + 1; j < k; j++) {
+          if (graph.hasEdge(neighbors[i], neighbors[j])) {
+            triangles++;
+          }
+        }
+      }
+      const possibleEdges = (k * (k - 1)) / 2;
+      clusteringSum += triangles / possibleEdges;
+      clusteringCount++;
+    }
+    const clusteringCoefficient =
+      clusteringCount > 0 ? clusteringSum / clusteringCount : 0;
+    features.push(clusteringCoefficient);
 
     // Density
     const maxEdges = (graph.order * (graph.order - 1)) / 2;
