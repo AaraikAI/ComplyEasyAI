@@ -2806,4 +2806,2594 @@ export const GDPR_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started',
   },
+
+  // ============================================================
+  // Additional GDPR Articles - Restrictions (Article 23)
+  // ============================================================
+  {
+    controlId: 'GDPR-23',
+    name: 'Restrictions on Data Subject Rights',
+    description:
+      'Union or Member State law may restrict the scope of obligations and rights provided in Articles 12-22 and Article 34, as well as Article 5 insofar as its provisions correspond to the rights and obligations provided for in Articles 12-22, when such a restriction respects the essence of fundamental rights and freedoms and is necessary and proportionate.',
+    category: 'Restrictions',
+    implementationGuidance:
+      'Identify any applicable Union or Member State laws that authorize restrictions on data subject rights. Document the specific legal basis for any restrictions applied. Ensure restrictions are applied only when necessary and proportionate to safeguard national security, defense, public security, criminal matters, important public interests, judicial independence, regulatory functions, or data subject protection. Implement procedures to assess restriction applicability on a case-by-case basis. Maintain records of all restrictions applied with legal justification.',
+    evidenceRequirements: [
+      'Inventory of applicable restriction laws',
+      'Legal basis documentation for each restriction type',
+      'Necessity and proportionality assessments',
+      'Case-by-case restriction application records',
+      'Legal review sign-off for restriction decisions',
+    ],
+    testProcedures: [
+      'Review inventory of restriction laws for completeness',
+      'Verify legal basis documentation for each restriction',
+      'Assess necessity and proportionality analysis rigor',
+      'Sample restriction decisions for proper documentation',
+      'Confirm legal review is obtained before applying restrictions',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Cooperation with Supervisory Authority (Article 31)
+  // ============================================================
+  {
+    controlId: 'GDPR-31',
+    name: 'Cooperation with Supervisory Authority',
+    description:
+      'The controller and the processor and, where applicable, their representatives, shall cooperate, on request, with the supervisory authority in the performance of its tasks.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Establish procedures for responding to supervisory authority requests for information or cooperation. Designate responsible personnel for supervisory authority communications. Implement document preservation procedures when supervisory authority inquiries are received. Train relevant staff on cooperation obligations and response protocols. Maintain records of all supervisory authority interactions. Establish escalation procedures for complex or contentious requests.',
+    evidenceRequirements: [
+      'Supervisory authority cooperation procedures',
+      'Designated contact personnel documentation',
+      'Document preservation procedures',
+      'Staff training records on cooperation obligations',
+      'Supervisory authority interaction logs',
+      'Escalation procedure documentation',
+    ],
+    testProcedures: [
+      'Review cooperation procedures for comprehensiveness',
+      'Verify designated contacts are documented and current',
+      'Test document preservation procedures',
+      'Confirm staff training on cooperation obligations',
+      'Review interaction logs for completeness',
+      'Test escalation procedures for responsiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // International Transfers - Additional Controls (Article 48)
+  // ============================================================
+  {
+    controlId: 'GDPR-48',
+    name: 'Transfers Not Authorized by Union Law',
+    description:
+      'Any judgment of a court or tribunal and any decision of an administrative authority of a third country requiring a controller or processor to transfer or disclose personal data may only be recognized or enforceable if based on an international agreement such as a mutual legal assistance treaty.',
+    category: 'International Transfers',
+    implementationGuidance:
+      'Establish procedures to identify and assess third country legal demands for personal data disclosure. Implement a legal review process for all foreign government or court requests. Document the legal basis assessment including whether mutual legal assistance treaties or international agreements apply. Coordinate with legal counsel and the DPO on disclosure decisions. Notify relevant supervisory authorities where required. Maintain records of all third country disclosure requests and responses.',
+    evidenceRequirements: [
+      'Third country disclosure request procedures',
+      'Legal review process documentation',
+      'Mutual legal assistance treaty inventory',
+      'Disclosure decision records with legal analysis',
+      'Supervisory authority notification records where applicable',
+      'Request and response tracking logs',
+    ],
+    testProcedures: [
+      'Review disclosure request procedures for legal compliance',
+      'Verify legal review process is followed',
+      'Confirm treaty inventory is current',
+      'Sample disclosure decisions for proper legal analysis',
+      'Verify supervisory authority notifications where required',
+      'Review tracking logs for completeness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Supervisory Authority Provisions (Articles 51-59)
+  // ============================================================
+  {
+    controlId: 'GDPR-51',
+    name: 'Supervisory Authority Awareness',
+    description:
+      'Each Member State shall provide for one or more independent public authorities to be responsible for monitoring the application of the GDPR. Organizations must be aware of and prepared to interact with relevant supervisory authorities.',
+    category: 'Regulatory Relations',
+    implementationGuidance:
+      'Identify all supervisory authorities with jurisdiction over the organization\'s processing activities. Maintain current contact information for relevant supervisory authorities. Monitor supervisory authority publications, guidance, and decisions. Understand the powers and procedures of each relevant supervisory authority. Prepare for potential supervisory authority audits, inspections, and inquiries.',
+    evidenceRequirements: [
+      'Supervisory authority jurisdiction mapping',
+      'Contact information directory for supervisory authorities',
+      'Monitoring process for supervisory authority publications',
+      'Summary of supervisory authority powers and procedures',
+      'Audit and inspection preparedness documentation',
+    ],
+    testProcedures: [
+      'Review jurisdiction mapping for accuracy',
+      'Verify contact information is current',
+      'Confirm monitoring of supervisory authority publications',
+      'Review understanding of supervisory authority powers',
+      'Assess audit preparedness documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-52',
+    name: 'Supervisory Authority Independence Recognition',
+    description:
+      'Each supervisory authority shall act with complete independence in performing its tasks and exercising its powers. Organizations must respect this independence in all interactions.',
+    category: 'Regulatory Relations',
+    implementationGuidance:
+      'Establish policies prohibiting attempts to improperly influence supervisory authority decisions. Train staff on appropriate interactions with supervisory authorities. Implement procedures ensuring transparent and honest communications with supervisory authorities. Document all supervisory authority interactions to demonstrate propriety. Report any perceived improper influence attempts through appropriate channels.',
+    evidenceRequirements: [
+      'Policy on supervisory authority interactions',
+      'Staff training on appropriate regulatory engagement',
+      'Communication procedures with supervisory authorities',
+      'Interaction documentation and records',
+      'Reporting procedures for improper influence concerns',
+    ],
+    testProcedures: [
+      'Review interaction policy for appropriateness',
+      'Verify staff training on regulatory engagement',
+      'Test communication procedures for transparency',
+      'Sample interaction records for propriety',
+      'Confirm reporting procedures exist for concerns',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-55',
+    name: 'Supervisory Authority Competence Awareness',
+    description:
+      'Each supervisory authority shall be competent to perform the tasks assigned to and exercise the powers conferred on it on the territory of its own Member State. Organizations must understand which supervisory authority has competence over their activities.',
+    category: 'Regulatory Relations',
+    implementationGuidance:
+      'Map processing activities to the Member States where they occur. Identify the competent supervisory authority for each processing activity based on establishment or data subject location. Document the lead supervisory authority for cross-border processing. Understand competence allocation for complaints and investigations. Prepare for potential multi-authority coordination in cross-border matters.',
+    evidenceRequirements: [
+      'Processing activity to Member State mapping',
+      'Competent authority identification per activity',
+      'Lead supervisory authority documentation',
+      'Competence allocation understanding documentation',
+      'Multi-authority coordination preparedness',
+    ],
+    testProcedures: [
+      'Review processing activity mapping for accuracy',
+      'Verify competent authority identification',
+      'Confirm lead supervisory authority documentation',
+      'Assess understanding of competence allocation',
+      'Review multi-authority coordination preparedness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-56',
+    name: 'Lead Supervisory Authority Engagement',
+    description:
+      'The supervisory authority of the main establishment or of the single establishment of the controller or processor shall be competent to act as lead supervisory authority for cross-border processing.',
+    category: 'Regulatory Relations',
+    implementationGuidance:
+      'Determine the organization\'s main establishment in the Union based on place of central administration or decision-making for processing. Document the rationale for main establishment determination. Identify the lead supervisory authority based on main establishment location. Establish communication channels with the lead supervisory authority. Prepare for one-stop-shop mechanism application in cross-border matters.',
+    evidenceRequirements: [
+      'Main establishment determination and rationale',
+      'Lead supervisory authority identification',
+      'Communication channel documentation',
+      'One-stop-shop mechanism understanding',
+      'Cross-border processing documentation',
+    ],
+    testProcedures: [
+      'Review main establishment determination rationale',
+      'Verify lead supervisory authority identification',
+      'Test communication channels with lead authority',
+      'Assess one-stop-shop mechanism understanding',
+      'Review cross-border processing documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-58',
+    name: 'Supervisory Authority Powers Awareness',
+    description:
+      'Each supervisory authority shall have investigative powers, corrective powers, authorization and advisory powers. Organizations must understand and prepare for the exercise of these powers.',
+    category: 'Regulatory Relations',
+    implementationGuidance:
+      'Document understanding of supervisory authority investigative powers including audits, access to premises, and information requests. Prepare for potential corrective measures including warnings, reprimands, orders, bans, and fines. Understand authorization powers for BCRs, certifications, and codes of conduct. Leverage advisory powers through consultations. Implement response procedures for each type of power exercise.',
+    evidenceRequirements: [
+      'Investigative powers understanding documentation',
+      'Corrective measures preparedness procedures',
+      'Authorization process understanding',
+      'Advisory engagement records',
+      'Response procedures for each power type',
+    ],
+    testProcedures: [
+      'Review investigative powers understanding',
+      'Test corrective measures response procedures',
+      'Verify authorization process understanding',
+      'Review advisory engagement history',
+      'Assess response procedure adequacy for each power',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Consistency Mechanism Awareness (Articles 63-67)
+  // ============================================================
+  {
+    controlId: 'GDPR-63',
+    name: 'Consistency Mechanism Awareness',
+    description:
+      'Supervisory authorities shall cooperate with each other and with the Commission through the consistency mechanism. Organizations should be aware of how this affects cross-border processing decisions.',
+    category: 'Regulatory Relations',
+    implementationGuidance:
+      'Understand the consistency mechanism and its impact on regulatory decisions. Monitor European Data Protection Board opinions and decisions. Track cases involving the consistency mechanism relevant to the organization\'s processing. Prepare for potential delays in cross-border matters due to consistency mechanism procedures. Incorporate EDPB guidance into compliance programs.',
+    evidenceRequirements: [
+      'Consistency mechanism understanding documentation',
+      'EDPB opinion and decision monitoring process',
+      'Relevant case tracking records',
+      'Timeline expectations for cross-border matters',
+      'EDPB guidance integration into compliance',
+    ],
+    testProcedures: [
+      'Review consistency mechanism understanding',
+      'Verify EDPB monitoring process is active',
+      'Review relevant case tracking',
+      'Assess timeline expectations for cross-border decisions',
+      'Confirm EDPB guidance integration',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // European Data Protection Board (Articles 68-76)
+  // ============================================================
+  {
+    controlId: 'GDPR-68',
+    name: 'European Data Protection Board Guidance',
+    description:
+      'The European Data Protection Board is established as a body of the Union with legal personality. Organizations should monitor and apply EDPB guidance in their compliance programs.',
+    category: 'Regulatory Relations',
+    implementationGuidance:
+      'Establish processes to monitor EDPB guidelines, recommendations, and best practices. Incorporate EDPB guidance into data protection policies and procedures. Track EDPB opinions on cross-border matters and consistency mechanism decisions. Review EDPB annual reports for trends and priorities. Engage with EDPB consultations on draft guidance where relevant.',
+    evidenceRequirements: [
+      'EDPB guidance monitoring process',
+      'Policy updates incorporating EDPB guidance',
+      'Cross-border opinion tracking',
+      'Annual report review records',
+      'Consultation engagement records where applicable',
+    ],
+    testProcedures: [
+      'Verify EDPB monitoring process is active',
+      'Review policy updates for EDPB guidance incorporation',
+      'Check cross-border opinion tracking currency',
+      'Confirm annual report reviews are conducted',
+      'Review consultation engagement where relevant',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Representative Organizations (Article 80)
+  // ============================================================
+  {
+    controlId: 'GDPR-80',
+    name: 'Representative Organization Engagement',
+    description:
+      'The data subject shall have the right to mandate a not-for-profit body, organization, or association to lodge a complaint and exercise rights on their behalf. Organizations must be prepared to handle such representative complaints.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Establish procedures to verify mandates from representative organizations. Process complaints and requests from authorized representatives as if from data subjects. Implement identity and mandate verification for representative requests. Train staff on handling representative organization engagements. Track representative organization complaints separately for analysis. Engage constructively with legitimate advocacy organizations.',
+    evidenceRequirements: [
+      'Representative mandate verification procedures',
+      'Processing procedures for representative requests',
+      'Identity and mandate verification documentation',
+      'Staff training on representative engagements',
+      'Representative complaint tracking records',
+      'Advocacy organization engagement records',
+    ],
+    testProcedures: [
+      'Test mandate verification procedures',
+      'Verify representative request processing matches data subject procedures',
+      'Review verification documentation requirements',
+      'Confirm staff training on representative handling',
+      'Review representative complaint tracking',
+      'Assess advocacy engagement records',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Right to Compensation (Article 81)
+  // ============================================================
+  {
+    controlId: 'GDPR-81',
+    name: 'Suspension of Proceedings',
+    description:
+      'Where a competent court of a Member State has information that proceedings concerning the same subject matter are pending in a court in another Member State, it shall contact that court to confirm the existence of such proceedings.',
+    category: 'Judicial Remedies',
+    implementationGuidance:
+      'Establish procedures to track multi-jurisdictional legal proceedings related to data protection. Coordinate with legal counsel across jurisdictions on parallel proceedings. Document all legal proceedings and their status across Member States. Implement communication procedures between legal representatives in different jurisdictions. Monitor for potential suspension of proceedings scenarios.',
+    evidenceRequirements: [
+      'Multi-jurisdictional proceedings tracking',
+      'Cross-jurisdictional legal coordination procedures',
+      'Legal proceedings documentation',
+      'Inter-jurisdictional communication records',
+      'Proceedings suspension monitoring',
+    ],
+    testProcedures: [
+      'Review multi-jurisdictional tracking for completeness',
+      'Verify legal coordination procedures exist',
+      'Inspect legal proceedings documentation',
+      'Review communication records between jurisdictions',
+      'Assess suspension monitoring effectiveness',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Specific Processing Situations (Articles 85-91)
+  // ============================================================
+  {
+    controlId: 'GDPR-85',
+    name: 'Processing for Journalism and Expression',
+    description:
+      'Member States shall reconcile the right to personal data protection with the right to freedom of expression and information, including processing for journalistic purposes and academic, artistic, or literary expression.',
+    category: 'Specific Processing Situations',
+    implementationGuidance:
+      'Identify any processing activities that may qualify for journalism, academic, artistic, or literary expression exemptions. Document the legal basis for relying on Article 85 exemptions in relevant Member States. Implement procedures to assess whether processing genuinely falls within protected expression categories. Balance data protection obligations with freedom of expression rights. Consult legal counsel on exemption applicability for borderline cases.',
+    evidenceRequirements: [
+      'Processing activities assessment for expression exemptions',
+      'Member State exemption law documentation',
+      'Assessment procedures for exemption applicability',
+      'Balancing analysis documentation',
+      'Legal counsel consultation records',
+    ],
+    testProcedures: [
+      'Review processing activities assessment for completeness',
+      'Verify Member State exemption law understanding',
+      'Test assessment procedures for exemption applicability',
+      'Review balancing analysis documentation',
+      'Confirm legal counsel consultation for complex cases',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-86',
+    name: 'Processing and Public Access to Official Documents',
+    description:
+      'Personal data in official documents held by a public authority or body may be disclosed in accordance with Union or Member State law to reconcile public access to official documents with the right to personal data protection.',
+    category: 'Specific Processing Situations',
+    implementationGuidance:
+      'If acting as a public authority, identify official documents containing personal data subject to public access requests. Implement procedures to balance transparency obligations with data protection requirements. Apply redaction or anonymization where appropriate before disclosure. Document decisions on public access requests involving personal data. Train staff on handling freedom of information and public access requests.',
+    evidenceRequirements: [
+      'Official document inventory with personal data identification',
+      'Public access request handling procedures',
+      'Redaction and anonymization procedures',
+      'Access request decision documentation',
+      'Staff training on public access handling',
+    ],
+    testProcedures: [
+      'Review official document inventory for personal data flagging',
+      'Test public access request procedures',
+      'Verify redaction procedures are applied appropriately',
+      'Sample access request decisions for proper documentation',
+      'Confirm staff training on public access requirements',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-87',
+    name: 'Processing of National Identification Numbers',
+    description:
+      'Member States may determine specific conditions for processing national identification numbers or any other identifier of general application. Organizations must comply with such Member State-specific requirements.',
+    category: 'Specific Processing Situations',
+    implementationGuidance:
+      'Identify all processing of national identification numbers across Member States where the organization operates. Document Member State-specific requirements for national ID number processing. Implement controls to limit national ID number collection and use to legally authorized purposes. Apply enhanced security measures to national ID number storage and transmission. Conduct regular reviews of national ID number processing necessity.',
+    evidenceRequirements: [
+      'National ID number processing inventory by Member State',
+      'Member State requirement documentation',
+      'Purpose limitation controls for national ID numbers',
+      'Enhanced security measures documentation',
+      'Processing necessity review records',
+    ],
+    testProcedures: [
+      'Review national ID processing inventory for completeness',
+      'Verify Member State requirements are documented',
+      'Test purpose limitation controls',
+      'Verify enhanced security measures implementation',
+      'Confirm necessity reviews are conducted periodically',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-88',
+    name: 'Processing in Employment Context',
+    description:
+      'Member States may provide more specific rules to ensure the protection of rights and freedoms in respect of the processing of employees personal data in the employment context.',
+    category: 'Specific Processing Situations',
+    implementationGuidance:
+      'Identify all Member State-specific employment data protection rules applicable to the organization. Implement employment-specific data protection policies addressing recruitment, performance management, monitoring, and termination. Ensure collective agreements with employee representatives address data protection where required. Conduct DPIAs for high-risk employment data processing. Coordinate with HR and legal on employment data protection compliance.',
+    evidenceRequirements: [
+      'Member State employment data protection rule inventory',
+      'Employment-specific data protection policies',
+      'Collective agreement data protection provisions',
+      'Employment data processing DPIAs',
+      'HR and legal coordination records',
+    ],
+    testProcedures: [
+      'Review Member State rule inventory for completeness',
+      'Verify employment policies address all data protection aspects',
+      'Check collective agreements for required provisions',
+      'Review DPIAs for high-risk employment processing',
+      'Confirm HR and legal coordination is effective',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-89',
+    name: 'Safeguards for Research and Statistics',
+    description:
+      'Processing for archiving purposes in the public interest, scientific or historical research purposes, or statistical purposes shall be subject to appropriate safeguards including technical and organizational measures to ensure data minimization.',
+    category: 'Research & Statistics',
+    implementationGuidance:
+      'Implement pseudonymization as the primary safeguard for research and statistical processing where possible. Apply data minimization ensuring only necessary data is processed for research purposes. Establish ethics review processes for research involving personal data. Implement access controls limiting research data access to authorized researchers. Apply retention limits ensuring research data is not kept longer than necessary. Document safeguards applied to each research processing activity.',
+    evidenceRequirements: [
+      'Pseudonymization implementation for research',
+      'Data minimization assessments for research',
+      'Ethics review process and completed reviews',
+      'Research data access controls',
+      'Retention limits for research data',
+      'Safeguard documentation per research activity',
+    ],
+    testProcedures: [
+      'Test pseudonymization implementation effectiveness',
+      'Review data minimization assessments',
+      'Verify ethics review process is followed',
+      'Test access controls for research data',
+      'Verify retention limits are enforced',
+      'Sample safeguard documentation for completeness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-89.2',
+    name: 'Derogations for Research Purposes',
+    description:
+      'Union or Member State law may provide for derogations from Articles 15, 16, 18, and 21 for research purposes subject to appropriate safeguards.',
+    category: 'Research & Statistics',
+    implementationGuidance:
+      'Identify applicable Member State derogations for research processing. Document the legal basis for relying on any research derogations. Ensure appropriate safeguards are in place before invoking derogations. Limit derogation reliance to cases where rights exercise would seriously impair research objectives. Maintain records of derogation reliance with justification for each instance.',
+    evidenceRequirements: [
+      'Member State research derogation inventory',
+      'Legal basis documentation for derogation reliance',
+      'Safeguard implementation evidence',
+      'Research impairment assessments',
+      'Derogation reliance records with justification',
+    ],
+    testProcedures: [
+      'Review derogation inventory for applicable jurisdictions',
+      'Verify legal basis documentation for each derogation',
+      'Test safeguard implementation',
+      'Review impairment assessments for legitimacy',
+      'Sample derogation reliance records for proper justification',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-90',
+    name: 'Obligations of Secrecy',
+    description:
+      'Member States may adopt specific rules to set out the powers of supervisory authorities in relation to controllers or processors subject to professional secrecy obligations.',
+    category: 'Specific Processing Situations',
+    implementationGuidance:
+      'Identify any professional secrecy obligations applicable to the organization (legal, medical, religious, etc.). Document how professional secrecy interacts with GDPR obligations and supervisory authority powers. Implement procedures balancing professional secrecy with data protection transparency and cooperation requirements. Consult legal counsel on conflicts between secrecy obligations and GDPR. Coordinate with relevant professional bodies on secrecy and data protection matters.',
+    evidenceRequirements: [
+      'Professional secrecy obligation inventory',
+      'Secrecy and GDPR interaction analysis',
+      'Balancing procedures documentation',
+      'Legal counsel consultation records',
+      'Professional body coordination records',
+    ],
+    testProcedures: [
+      'Review professional secrecy inventory for completeness',
+      'Verify interaction analysis addresses key conflicts',
+      'Test balancing procedures for consistency',
+      'Confirm legal counsel consultation on conflicts',
+      'Review professional body coordination',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-91',
+    name: 'Church and Religious Association Processing',
+    description:
+      'Where churches and religious associations apply comprehensive rules relating to personal data protection, they may continue to apply such rules provided they are brought into line with the GDPR.',
+    category: 'Specific Processing Situations',
+    implementationGuidance:
+      'If applicable as a church or religious association, assess existing data protection rules against GDPR requirements. Align existing rules with GDPR principles and requirements. Establish or designate a supervisory authority as required by Article 91(2). Implement procedures ensuring GDPR-equivalent protection under religious organization rules. Document the alignment between existing rules and GDPR requirements.',
+    evidenceRequirements: [
+      'Existing data protection rules documentation',
+      'GDPR alignment assessment',
+      'Supervisory authority designation where applicable',
+      'Equivalent protection implementation evidence',
+      'Rules to GDPR mapping documentation',
+    ],
+    testProcedures: [
+      'Review existing rules documentation',
+      'Verify GDPR alignment assessment completeness',
+      'Confirm supervisory authority designation if required',
+      'Test equivalent protection measures',
+      'Review mapping documentation for accuracy',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Extended Sub-Controls for Article 5 Principles
+  // ============================================================
+  {
+    controlId: 'GDPR-5.1a-1',
+    name: 'Lawfulness Assessment Process',
+    description:
+      'Implement a systematic process to assess and document the lawfulness of all processing activities before they commence.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Develop a lawfulness assessment template covering all six legal bases under Article 6. Require lawfulness assessment completion before any new processing activity begins. Implement review and approval workflows for lawfulness assessments. Train process owners on conducting lawfulness assessments. Maintain a register linking processing activities to their lawfulness assessments.',
+    evidenceRequirements: [
+      'Lawfulness assessment template',
+      'Completed assessments for all processing activities',
+      'Review and approval workflow documentation',
+      'Process owner training records',
+      'Assessment register linked to processing activities',
+    ],
+    testProcedures: [
+      'Review assessment template for comprehensiveness',
+      'Verify all processing activities have completed assessments',
+      'Test approval workflow is followed',
+      'Confirm process owner training completion',
+      'Cross-reference assessment register with RoPA',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-5.1a-2',
+    name: 'Fairness Impact Assessment',
+    description:
+      'Conduct assessments to ensure processing does not have unjustifiably negative effects on data subjects and meets reasonable expectations.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Develop fairness criteria considering data subject reasonable expectations, relationship with the controller, potential adverse effects, and vulnerable groups. Integrate fairness assessment into DPIA processes. Conduct standalone fairness assessments for processing not requiring full DPIAs. Document fairness considerations and mitigations applied. Review processing activities for unexpected fairness impacts periodically.',
+    evidenceRequirements: [
+      'Fairness assessment criteria documentation',
+      'Fairness integration in DPIA process',
+      'Standalone fairness assessment records',
+      'Mitigation documentation for fairness concerns',
+      'Periodic fairness review records',
+    ],
+    testProcedures: [
+      'Review fairness criteria for appropriateness',
+      'Verify fairness integration in DPIAs',
+      'Sample standalone fairness assessments',
+      'Review mitigation documentation',
+      'Confirm periodic reviews are conducted',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-5.1a-3',
+    name: 'Transparency Implementation',
+    description:
+      'Implement comprehensive transparency measures ensuring data subjects are fully informed about how their data is processed.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Develop transparency standards covering timing, format, accessibility, and content of privacy information. Implement multiple channels for privacy information delivery. Use plain language verified through readability testing. Provide layered privacy notices for complex processing. Make privacy information available in relevant languages. Proactively communicate changes to processing activities.',
+    evidenceRequirements: [
+      'Transparency standards documentation',
+      'Multi-channel privacy information delivery evidence',
+      'Readability testing results',
+      'Layered notice implementation',
+      'Multi-language notice availability',
+      'Processing change communication records',
+    ],
+    testProcedures: [
+      'Review transparency standards for comprehensiveness',
+      'Test privacy information availability across channels',
+      'Verify readability testing is conducted',
+      'Assess layered notice effectiveness',
+      'Confirm language coverage for data subject population',
+      'Review change communication records',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-5.1b-1',
+    name: 'Purpose Specification Process',
+    description:
+      'Implement processes to specify, document, and communicate processing purposes before data collection begins.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Require explicit purpose statements for all processing activities. Document purposes in the Record of Processing Activities with specificity. Communicate purposes to data subjects through privacy notices. Prohibit processing without documented purposes. Review and update purpose statements when processing evolves.',
+    evidenceRequirements: [
+      'Purpose statement requirements documentation',
+      'RoPA with specific purpose statements',
+      'Privacy notice purpose disclosures',
+      'Processing approval records requiring purpose documentation',
+      'Purpose statement review and update records',
+    ],
+    testProcedures: [
+      'Review purpose statement requirements',
+      'Verify RoPA contains specific purposes',
+      'Cross-reference privacy notices with RoPA purposes',
+      'Confirm approval processes require purpose documentation',
+      'Review purpose update records for currency',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-5.1b-2',
+    name: 'Compatible Use Assessment',
+    description:
+      'Implement a process to assess compatibility of proposed secondary uses against original collection purposes.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Develop compatibility assessment criteria based on Art. 6(4) factors. Require compatibility assessments before any secondary use of personal data. Consider relationship between original and new purposes, collection context, data nature, consequences to data subjects, and safeguards. Document assessment outcomes and any additional safeguards implemented. Prohibit incompatible secondary uses unless a new lawful basis is established.',
+    evidenceRequirements: [
+      'Compatibility assessment criteria documentation',
+      'Completed compatibility assessments for secondary uses',
+      'Art. 6(4) factor analysis documentation',
+      'Additional safeguard implementation records',
+      'Prohibition enforcement for incompatible uses',
+    ],
+    testProcedures: [
+      'Review compatibility assessment criteria against Art. 6(4)',
+      'Sample completed assessments for thoroughness',
+      'Verify factor analysis is documented',
+      'Confirm additional safeguards are implemented where required',
+      'Test enforcement of incompatible use prohibition',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-5.1c-1',
+    name: 'Data Collection Minimization',
+    description:
+      'Implement controls to ensure only necessary personal data is collected at the point of data collection.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Review all data collection forms and interfaces against documented purposes. Remove optional fields that are not necessary for the stated purpose. Implement form validation preventing collection of excessive data. Require justification for each data field collected. Conduct periodic reviews of collection points for minimization compliance.',
+    evidenceRequirements: [
+      'Data collection form review records',
+      'Optional field necessity justification',
+      'Form validation configuration',
+      'Field-level justification documentation',
+      'Periodic collection point review records',
+    ],
+    testProcedures: [
+      'Review collection form assessments',
+      'Verify optional fields have documented justification',
+      'Test form validation controls',
+      'Sample field justifications for legitimacy',
+      'Confirm periodic reviews are conducted',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-5.1c-2',
+    name: 'Data Processing Minimization',
+    description:
+      'Implement controls to ensure personal data processing is limited to what is necessary throughout the data lifecycle.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Implement access controls limiting data access to necessary personnel. Configure systems to process only required data fields for each function. Apply data masking for fields not needed in specific processing contexts. Review processing workflows for unnecessary data exposure. Implement automated minimization controls where technically feasible.',
+    evidenceRequirements: [
+      'Access control configuration limiting data exposure',
+      'System configuration for field-level processing limits',
+      'Data masking implementation evidence',
+      'Processing workflow review records',
+      'Automated minimization control documentation',
+    ],
+    testProcedures: [
+      'Test access controls for appropriate data limiting',
+      'Verify system configurations enforce field-level limits',
+      'Test data masking effectiveness',
+      'Review workflow assessments for minimization',
+      'Evaluate automated minimization controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-5.1d-1',
+    name: 'Data Quality Assurance',
+    description:
+      'Implement comprehensive data quality controls to ensure personal data remains accurate and up to date.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Implement data validation rules at collection points. Deploy automated data quality monitoring and alerting. Establish data quality metrics and thresholds. Implement data cleansing processes for identified quality issues. Provide self-service data update capabilities to data subjects. Conduct periodic data quality audits.',
+    evidenceRequirements: [
+      'Data validation rule documentation',
+      'Data quality monitoring configuration',
+      'Quality metrics and threshold documentation',
+      'Data cleansing process records',
+      'Self-service update capability evidence',
+      'Data quality audit reports',
+    ],
+    testProcedures: [
+      'Test data validation rules effectiveness',
+      'Verify quality monitoring is operational',
+      'Review quality metrics against thresholds',
+      'Assess data cleansing process effectiveness',
+      'Test self-service update capabilities',
+      'Review data quality audit findings',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-5.1d-2',
+    name: 'Data Correction Process',
+    description:
+      'Implement processes to promptly correct inaccurate personal data when identified or reported.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Establish multiple channels for reporting data inaccuracies. Implement triage and prioritization for correction requests. Define correction processing timelines and SLAs. Propagate corrections to all systems and third parties holding the data. Maintain audit trails of all corrections. Notify data subjects of correction completion.',
+    evidenceRequirements: [
+      'Inaccuracy reporting channel documentation',
+      'Correction request triage procedures',
+      'Timeline and SLA documentation',
+      'Correction propagation procedures',
+      'Correction audit trail records',
+      'Data subject notification records',
+    ],
+    testProcedures: [
+      'Test inaccuracy reporting channels',
+      'Verify triage procedures are followed',
+      'Review correction timeline compliance',
+      'Test correction propagation to all systems',
+      'Verify audit trail completeness',
+      'Confirm data subject notifications are sent',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-5.1e-1',
+    name: 'Retention Schedule Development',
+    description:
+      'Develop comprehensive retention schedules specifying retention periods for all categories of personal data.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Inventory all categories of personal data processed. Determine retention periods based on legal requirements, contractual obligations, and business necessity. Document the rationale for each retention period. Align retention periods with lawful basis validity. Review and update retention schedules annually and when requirements change.',
+    evidenceRequirements: [
+      'Personal data category inventory',
+      'Retention period determination documentation',
+      'Rationale documentation for each period',
+      'Lawful basis alignment analysis',
+      'Annual review and update records',
+    ],
+    testProcedures: [
+      'Review data category inventory for completeness',
+      'Verify retention periods have documented rationale',
+      'Assess rationale against legal and business requirements',
+      'Confirm lawful basis alignment',
+      'Review annual update records',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-5.1e-2',
+    name: 'Retention Enforcement',
+    description:
+      'Implement technical and procedural controls to enforce retention schedules across all data stores.',
+    category: 'Lawful Basis & Consent',
+    implementationGuidance:
+      'Configure automated deletion or archival for data reaching retention limits. Implement retention tagging for data lifecycle tracking. Establish manual deletion procedures for systems without automation capability. Monitor retention compliance across all data stores. Implement legal hold procedures that suspend automated deletion when required.',
+    evidenceRequirements: [
+      'Automated deletion configuration documentation',
+      'Retention tagging implementation',
+      'Manual deletion procedures',
+      'Retention compliance monitoring reports',
+      'Legal hold procedures and records',
+    ],
+    testProcedures: [
+      'Test automated deletion functionality',
+      'Verify retention tagging accuracy',
+      'Review manual deletion procedure compliance',
+      'Inspect compliance monitoring reports',
+      'Test legal hold implementation',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Extended Sub-Controls for Data Subject Rights
+  // ============================================================
+  {
+    controlId: 'GDPR-15.1',
+    name: 'Access Request Verification',
+    description:
+      'Implement robust identity verification procedures for data subject access requests to prevent unauthorized disclosure.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Develop risk-based identity verification procedures appropriate to the sensitivity of data. Implement multi-factor verification for high-sensitivity data access requests. Define acceptable forms of identity documentation. Establish procedures for handling requests from authorized representatives. Document verification steps for each access request.',
+    evidenceRequirements: [
+      'Identity verification procedures documentation',
+      'Risk-based verification criteria',
+      'Acceptable documentation list',
+      'Representative authorization procedures',
+      'Verification documentation records',
+    ],
+    testProcedures: [
+      'Review verification procedures for adequacy',
+      'Test risk-based verification application',
+      'Verify acceptable documentation is appropriate',
+      'Test representative authorization procedures',
+      'Sample verification records for completeness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-15.2',
+    name: 'Access Request Data Discovery',
+    description:
+      'Implement comprehensive data discovery capabilities to locate all personal data for access request fulfillment.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Map all systems and data stores containing personal data. Implement search capabilities across structured and unstructured data. Develop procedures for manual searches where automated discovery is not available. Establish escalation procedures for complex discovery scenarios. Document data discovery results for each access request.',
+    evidenceRequirements: [
+      'Personal data system and store mapping',
+      'Automated search capability documentation',
+      'Manual search procedures',
+      'Escalation procedures for complex scenarios',
+      'Data discovery documentation per request',
+    ],
+    testProcedures: [
+      'Review system mapping for completeness',
+      'Test automated search capabilities',
+      'Verify manual search procedures are followed',
+      'Test escalation procedures for complex cases',
+      'Sample discovery documentation for thoroughness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-15.3',
+    name: 'Access Request Response Preparation',
+    description:
+      'Implement standardized processes for preparing complete and accurate access request responses.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Develop response templates including all Art. 15 required information. Implement quality review procedures for response accuracy. Establish formatting standards for data copies provided. Apply redaction procedures for third-party data in responses. Implement secure delivery mechanisms for response transmission.',
+    evidenceRequirements: [
+      'Response templates with Art. 15 information',
+      'Quality review procedures and records',
+      'Data copy formatting standards',
+      'Redaction procedures and examples',
+      'Secure delivery mechanism documentation',
+    ],
+    testProcedures: [
+      'Review response templates for completeness',
+      'Verify quality review is conducted',
+      'Test data copy formatting consistency',
+      'Review redaction procedure application',
+      'Test secure delivery mechanisms',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-17.1',
+    name: 'Erasure Request Assessment',
+    description:
+      'Implement systematic assessment processes to evaluate erasure requests against applicable grounds and exemptions.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Develop assessment criteria for each Art. 17(1) erasure ground. Implement exemption analysis against Art. 17(3) exceptions. Establish legal review escalation for complex or contentious requests. Document assessment outcomes with detailed reasoning. Communicate assessment results to data subjects clearly.',
+    evidenceRequirements: [
+      'Assessment criteria for each erasure ground',
+      'Exemption analysis procedures',
+      'Legal review escalation procedures',
+      'Assessment outcome documentation',
+      'Data subject communication records',
+    ],
+    testProcedures: [
+      'Review assessment criteria comprehensiveness',
+      'Test exemption analysis procedures',
+      'Verify legal review escalation is triggered appropriately',
+      'Sample assessment documentation for reasoning quality',
+      'Review data subject communications for clarity',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-17.2',
+    name: 'Erasure Execution',
+    description:
+      'Implement technical capabilities to execute erasure requests across all systems and data stores.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Develop erasure procedures for each system type (databases, files, backups, logs). Implement verification procedures to confirm complete erasure. Address backup erasure through deletion or compensating controls. Establish procedures for notifying third parties of erasure requirements. Document erasure actions without retaining the deleted personal data.',
+    evidenceRequirements: [
+      'System-specific erasure procedures',
+      'Erasure verification procedures and records',
+      'Backup erasure or compensation documentation',
+      'Third-party notification procedures and records',
+      'Erasure action documentation',
+    ],
+    testProcedures: [
+      'Test erasure procedures for each system type',
+      'Verify erasure verification is conducted',
+      'Review backup handling documentation',
+      'Confirm third-party notifications are sent',
+      'Sample erasure documentation for completeness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-20.1',
+    name: 'Portability Data Scoping',
+    description:
+      'Implement processes to correctly scope portable data to data provided by the data subject under consent or contract.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Define criteria for identifying data provided by the data subject versus inferred or derived data. Map data elements to their source (provided, observed, inferred). Identify processing activities based on consent or contract for portability scope. Implement technical tagging to facilitate portability data identification. Document scoping decisions for portability requests.',
+    evidenceRequirements: [
+      'Data source classification criteria',
+      'Data element source mapping',
+      'Consent/contract processing activity identification',
+      'Technical tagging implementation',
+      'Scoping decision documentation',
+    ],
+    testProcedures: [
+      'Review classification criteria for accuracy',
+      'Verify data source mapping completeness',
+      'Confirm consent/contract activity identification',
+      'Test technical tagging implementation',
+      'Sample scoping decisions for correctness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-20.2',
+    name: 'Portability Export Formats',
+    description:
+      'Implement data export capabilities producing structured, commonly used, and machine-readable formats.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Support industry-standard formats such as JSON, CSV, and XML. Implement format selection options for data subjects where multiple formats are available. Ensure exported data is complete and accurately represents source data. Test export format interoperability with common import systems. Document supported formats and their suitability for different use cases.',
+    evidenceRequirements: [
+      'Supported format documentation',
+      'Format selection capability evidence',
+      'Export completeness and accuracy verification',
+      'Interoperability test results',
+      'Format suitability documentation',
+    ],
+    testProcedures: [
+      'Review supported formats for industry standards',
+      'Test format selection functionality',
+      'Verify export completeness and accuracy',
+      'Test interoperability with external systems',
+      'Review format suitability documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-21.1',
+    name: 'Direct Marketing Objection Processing',
+    description:
+      'Implement immediate and unconditional processing cessation for objections to direct marketing.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Implement opt-out mechanisms in all marketing communications. Process marketing objections immediately without assessment. Update suppression lists in real-time across all marketing systems. Prevent re-adding opted-out contacts through list uploads or purchases. Verify marketing cessation through monitoring and testing.',
+    evidenceRequirements: [
+      'Opt-out mechanism documentation in communications',
+      'Immediate processing procedures',
+      'Suppression list management documentation',
+      'Re-addition prevention controls',
+      'Marketing cessation verification records',
+    ],
+    testProcedures: [
+      'Test opt-out mechanisms in communications',
+      'Verify immediate processing timeline',
+      'Test suppression list updates across systems',
+      'Attempt to re-add opted-out contacts',
+      'Review cessation verification records',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-21.2',
+    name: 'Legitimate Interest Objection Assessment',
+    description:
+      'Implement assessment processes for objections to processing based on legitimate interests or public task.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Develop assessment criteria weighing data subject grounds against controller compelling legitimate grounds. Establish timelines for completing objection assessments. Implement processing restriction during assessment periods where appropriate. Document assessment reasoning and outcomes. Communicate assessment results and next steps to data subjects.',
+    evidenceRequirements: [
+      'Assessment criteria documentation',
+      'Assessment timeline standards',
+      'Restriction during assessment procedures',
+      'Assessment reasoning documentation',
+      'Data subject communication records',
+    ],
+    testProcedures: [
+      'Review assessment criteria for balance',
+      'Verify assessment timeline compliance',
+      'Test restriction implementation during assessment',
+      'Sample assessment documentation for reasoning quality',
+      'Review data subject communications',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-22.1',
+    name: 'Automated Decision Inventory',
+    description:
+      'Maintain a comprehensive inventory of automated decision-making systems and their impact on individuals.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Identify all systems making automated decisions about individuals. Classify decisions by impact level (legal effects, significant effects, other). Document the logic, data inputs, and decision outcomes for each system. Assess each system against Art. 22 requirements. Update the inventory when automated decision systems change.',
+    evidenceRequirements: [
+      'Automated decision system inventory',
+      'Impact classification for each system',
+      'Logic and data input documentation',
+      'Art. 22 compliance assessment',
+      'Inventory update records',
+    ],
+    testProcedures: [
+      'Review inventory for completeness',
+      'Verify impact classifications are accurate',
+      'Review logic documentation for transparency',
+      'Assess Art. 22 compliance for each system',
+      'Confirm inventory is updated when systems change',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-22.2',
+    name: 'Human Intervention Mechanism',
+    description:
+      'Implement mechanisms for data subjects to obtain human intervention in automated decision-making.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Provide clear information on how to request human review. Implement accessible request channels for human intervention. Train human reviewers on decision review procedures. Establish timelines for human review completion. Document human review process and outcomes.',
+    evidenceRequirements: [
+      'Human intervention request information',
+      'Request channel accessibility documentation',
+      'Human reviewer training records',
+      'Review timeline standards',
+      'Human review outcome documentation',
+    ],
+    testProcedures: [
+      'Verify human intervention information is accessible',
+      'Test request channel functionality',
+      'Confirm reviewer training completion',
+      'Review timeline compliance',
+      'Sample human review outcomes for quality',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Extended Controller Obligation Controls
+  // ============================================================
+  {
+    controlId: 'GDPR-24.1',
+    name: 'Risk-Based Control Implementation',
+    description:
+      'Implement technical and organizational measures proportionate to the risks presented by processing activities.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Conduct risk assessments for all processing activities considering likelihood and severity of harm. Map control requirements to identified risks. Implement controls proportionate to risk levels. Document control selection rationale. Review and adjust controls as risks evolve.',
+    evidenceRequirements: [
+      'Processing activity risk assessments',
+      'Risk to control mapping',
+      'Control implementation evidence proportionate to risk',
+      'Control selection rationale documentation',
+      'Control review and adjustment records',
+    ],
+    testProcedures: [
+      'Review risk assessments for thoroughness',
+      'Verify controls map to identified risks',
+      'Assess control proportionality to risk levels',
+      'Review selection rationale documentation',
+      'Confirm controls are reviewed as risks change',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-24.2',
+    name: 'Compliance Demonstration',
+    description:
+      'Maintain comprehensive documentation to demonstrate compliance with GDPR requirements.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Establish a compliance evidence repository with organized structure. Document policies, procedures, assessments, and operational records. Implement version control and retention for compliance artifacts. Prepare compliance documentation for supervisory authority requests. Conduct periodic completeness reviews of compliance documentation.',
+    evidenceRequirements: [
+      'Compliance evidence repository structure',
+      'Policy and procedure documentation',
+      'Assessment and operational records',
+      'Version control and retention records',
+      'Completeness review records',
+    ],
+    testProcedures: [
+      'Review repository organization for accessibility',
+      'Verify policy and procedure documentation completeness',
+      'Sample assessment and operational records',
+      'Confirm version control is maintained',
+      'Review completeness assessment findings',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-25.1',
+    name: 'Privacy by Design Integration',
+    description:
+      'Integrate data protection requirements into system and process design from the earliest stages.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Embed privacy requirements in project initiation and design phases. Implement privacy design patterns and reference architectures. Conduct privacy design reviews before development proceeds. Apply the eight privacy by design principles systematically. Document privacy design decisions and trade-offs.',
+    evidenceRequirements: [
+      'Privacy requirements in project initiation',
+      'Privacy design patterns documentation',
+      'Privacy design review records',
+      'Privacy by design principle application evidence',
+      'Design decision documentation',
+    ],
+    testProcedures: [
+      'Verify privacy requirements in project initiation',
+      'Review design patterns for appropriateness',
+      'Sample privacy design reviews for quality',
+      'Assess principle application consistency',
+      'Review design decision documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-25.2',
+    name: 'Privacy by Default Configuration',
+    description:
+      'Configure systems to process minimum personal data by default without requiring user action.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Set default privacy settings to most protective options. Limit default data collection to strict necessity. Disable optional data sharing by default. Implement default retention limits at system level. Review default configurations against privacy by default principles regularly.',
+    evidenceRequirements: [
+      'Default privacy setting documentation',
+      'Default data collection configuration',
+      'Default sharing setting documentation',
+      'Default retention configuration',
+      'Configuration review records',
+    ],
+    testProcedures: [
+      'Test default privacy settings for protection level',
+      'Verify default data collection minimization',
+      'Test default sharing settings',
+      'Review default retention configurations',
+      'Confirm regular configuration reviews',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-28.1',
+    name: 'Processor Selection Due Diligence',
+    description:
+      'Conduct comprehensive due diligence on processors before engagement to verify sufficient guarantees.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Develop processor assessment criteria covering technical and organizational security measures. Evaluate processor certifications, audit reports, and compliance documentation. Assess processor experience and reputation in handling personal data. Verify processor sub-processor management practices. Document due diligence findings and engagement decisions.',
+    evidenceRequirements: [
+      'Processor assessment criteria',
+      'Certification and audit report reviews',
+      'Experience and reputation assessment',
+      'Sub-processor management evaluation',
+      'Due diligence findings documentation',
+    ],
+    testProcedures: [
+      'Review assessment criteria for comprehensiveness',
+      'Verify certification and audit review process',
+      'Assess experience evaluation methodology',
+      'Review sub-processor management assessments',
+      'Sample due diligence documentation for thoroughness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-28.2',
+    name: 'Data Processing Agreement Management',
+    description:
+      'Implement comprehensive management of Data Processing Agreements throughout the processor relationship lifecycle.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Develop DPA templates covering all Art. 28(3) mandatory clauses. Implement DPA negotiation procedures and approval workflows. Maintain a DPA register with execution dates and renewal tracking. Implement DPA amendment procedures for relationship changes. Conduct periodic DPA compliance reviews.',
+    evidenceRequirements: [
+      'DPA templates with Art. 28(3) clauses',
+      'Negotiation and approval workflow documentation',
+      'DPA register with tracking information',
+      'Amendment procedures documentation',
+      'DPA compliance review records',
+    ],
+    testProcedures: [
+      'Audit DPA templates against Art. 28(3) requirements',
+      'Test negotiation and approval workflows',
+      'Verify DPA register completeness and accuracy',
+      'Review amendment procedure compliance',
+      'Sample DPA compliance reviews for quality',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-30.1',
+    name: 'RoPA Development and Maintenance',
+    description:
+      'Develop and maintain a comprehensive Record of Processing Activities meeting all Art. 30 requirements.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Implement a centralized RoPA management system or tool. Define required fields covering all Art. 30(1) elements. Assign process owners responsible for maintaining their entries. Establish RoPA update triggers and procedures. Implement review cycles ensuring RoPA accuracy and currency.',
+    evidenceRequirements: [
+      'RoPA management system documentation',
+      'Required field definitions and mapping to Art. 30(1)',
+      'Process owner assignments',
+      'Update trigger and procedure documentation',
+      'Review cycle records',
+    ],
+    testProcedures: [
+      'Review RoPA system for functionality',
+      'Verify fields cover all Art. 30(1) requirements',
+      'Confirm process owner assignments are complete',
+      'Test update trigger and procedures',
+      'Review cycle compliance and accuracy checks',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-32.1',
+    name: 'Security Risk Assessment',
+    description:
+      'Conduct comprehensive security risk assessments to determine appropriate security measures for personal data processing.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Develop risk assessment methodology considering Art. 32 factors. Assess risks to confidentiality, integrity, and availability. Evaluate likelihood and severity of potential harm to data subjects. Identify appropriate security measures to address identified risks. Document risk assessments and treatment decisions.',
+    evidenceRequirements: [
+      'Risk assessment methodology documentation',
+      'CIA risk assessment records',
+      'Harm likelihood and severity analysis',
+      'Security measure identification and selection',
+      'Risk treatment documentation',
+    ],
+    testProcedures: [
+      'Review methodology against Art. 32 factors',
+      'Verify CIA risks are assessed',
+      'Assess harm analysis thoroughness',
+      'Review security measure selection rationale',
+      'Sample risk treatment documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-32.2',
+    name: 'Security Testing and Evaluation',
+    description:
+      'Implement regular testing and evaluation of security measures to ensure continued effectiveness.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Establish a security testing program covering technical and organizational measures. Conduct regular vulnerability assessments and penetration testing. Test incident response and business continuity procedures. Evaluate security awareness training effectiveness. Document testing results and remediation actions.',
+    evidenceRequirements: [
+      'Security testing program documentation',
+      'Vulnerability assessment and penetration test reports',
+      'Incident response and continuity test records',
+      'Training effectiveness evaluation records',
+      'Remediation action documentation',
+    ],
+    testProcedures: [
+      'Review security testing program coverage',
+      'Verify regular vulnerability and penetration testing',
+      'Review incident and continuity test results',
+      'Assess training effectiveness evaluation methodology',
+      'Confirm remediation actions are completed',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-33.1',
+    name: 'Breach Detection Capabilities',
+    description:
+      'Implement technical and procedural capabilities to detect personal data breaches promptly.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Deploy security monitoring and alerting systems. Implement log analysis and anomaly detection. Establish reporting channels for employees to report suspected breaches. Define breach indicators and detection criteria. Conduct regular detection capability testing.',
+    evidenceRequirements: [
+      'Security monitoring system documentation',
+      'Log analysis and anomaly detection configuration',
+      'Employee reporting channel documentation',
+      'Breach indicator definitions',
+      'Detection capability test records',
+    ],
+    testProcedures: [
+      'Review monitoring system coverage',
+      'Test log analysis and anomaly detection',
+      'Verify employee reporting channel accessibility',
+      'Review breach indicator definitions for completeness',
+      'Assess detection capability test results',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-33.2',
+    name: 'Breach Assessment Process',
+    description:
+      'Implement systematic processes to assess breach severity and notification requirements.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Develop breach severity assessment criteria aligned with regulatory guidance. Implement risk to data subjects evaluation procedures. Define notification threshold criteria for supervisory authority and data subject notification. Establish assessment timelines supporting 72-hour notification requirement. Document assessment outcomes and notification decisions.',
+    evidenceRequirements: [
+      'Breach severity assessment criteria',
+      'Data subject risk evaluation procedures',
+      'Notification threshold criteria',
+      'Assessment timeline documentation',
+      'Assessment and notification decision records',
+    ],
+    testProcedures: [
+      'Review severity criteria against regulatory guidance',
+      'Test risk evaluation procedures',
+      'Verify notification threshold application',
+      'Assess timeline compliance capability',
+      'Sample assessment documentation for quality',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-35.1',
+    name: 'DPIA Screening Process',
+    description:
+      'Implement screening processes to identify processing activities requiring Data Protection Impact Assessments.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Develop DPIA screening criteria based on Art. 35(3) and supervisory authority lists. Integrate screening into project and change management processes. Require screening completion before new processing can proceed. Implement screening review and approval procedures. Track screening outcomes and DPIA requirements.',
+    evidenceRequirements: [
+      'DPIA screening criteria documentation',
+      'Process integration evidence',
+      'Screening completion requirements',
+      'Review and approval procedures',
+      'Screening outcome tracking records',
+    ],
+    testProcedures: [
+      'Review screening criteria against Art. 35(3) and SA lists',
+      'Verify process integration effectiveness',
+      'Confirm screening completion is required',
+      'Test review and approval procedures',
+      'Review outcome tracking for completeness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-35.2',
+    name: 'DPIA Methodology',
+    description:
+      'Implement a standardized DPIA methodology covering all required elements and producing quality assessments.',
+    category: 'Controller Obligations',
+    implementationGuidance:
+      'Develop DPIA templates covering Art. 35(7) required elements. Implement systematic risk identification and assessment procedures. Establish measure identification and residual risk evaluation processes. Require DPO involvement in DPIA conduct. Implement DPIA quality review procedures.',
+    evidenceRequirements: [
+      'DPIA templates with Art. 35(7) elements',
+      'Risk identification and assessment procedures',
+      'Measure and residual risk evaluation processes',
+      'DPO involvement documentation',
+      'Quality review procedures and records',
+    ],
+    testProcedures: [
+      'Audit templates against Art. 35(7) requirements',
+      'Test risk identification comprehensiveness',
+      'Review measure evaluation processes',
+      'Verify DPO involvement is documented',
+      'Sample DPIA quality reviews',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Extended International Transfer Controls
+  // ============================================================
+  {
+    controlId: 'GDPR-44.1',
+    name: 'Transfer Mapping and Inventory',
+    description:
+      'Maintain a comprehensive inventory of all international personal data transfers.',
+    category: 'International Transfers',
+    implementationGuidance:
+      'Identify all transfers of personal data outside the EEA. Document transfer details including data categories, recipients, destination countries, and transfer mechanisms. Map transfers to processing activities in the RoPA. Implement transfer discovery processes for new or changed processing. Update transfer inventory regularly and when transfers change.',
+    evidenceRequirements: [
+      'International transfer inventory',
+      'Transfer detail documentation',
+      'RoPA to transfer mapping',
+      'Transfer discovery procedures',
+      'Inventory update records',
+    ],
+    testProcedures: [
+      'Review transfer inventory for completeness',
+      'Verify transfer detail accuracy',
+      'Confirm RoPA mapping is complete',
+      'Test transfer discovery processes',
+      'Review inventory update frequency',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-44.2',
+    name: 'Transfer Mechanism Selection',
+    description:
+      'Implement processes to select appropriate transfer mechanisms for each international transfer.',
+    category: 'International Transfers',
+    implementationGuidance:
+      'Assess available transfer mechanisms for each destination country. Prioritize adequacy decisions where available. Evaluate appropriate safeguard options including SCCs, BCRs, and certifications. Consider derogations only as last resort measures. Document mechanism selection and rationale.',
+    evidenceRequirements: [
+      'Transfer mechanism assessment process',
+      'Adequacy decision reliance documentation',
+      'Safeguard evaluation records',
+      'Derogation necessity assessments',
+      'Mechanism selection and rationale documentation',
+    ],
+    testProcedures: [
+      'Review mechanism assessment process',
+      'Verify adequacy decision reliance is correct',
+      'Sample safeguard evaluations for thoroughness',
+      'Review derogation necessity assessments',
+      'Confirm selection rationale is documented',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-46.1',
+    name: 'Standard Contractual Clauses Implementation',
+    description:
+      'Implement Standard Contractual Clauses correctly as appropriate safeguards for international transfers.',
+    category: 'International Transfers',
+    implementationGuidance:
+      'Use the European Commission approved SCC modules (June 2021). Select appropriate modules based on transfer scenario (C2C, C2P, P2P, P2C). Complete all required annexes with transfer-specific details. Execute SCCs before transfers commence. Implement SCC obligations including audit rights and sub-processor management.',
+    evidenceRequirements: [
+      'Executed SCCs with correct module selection',
+      'Completed annexes with transfer details',
+      'SCC execution timing records',
+      'Obligation implementation evidence',
+      'Sub-processor SCC flow-down records',
+    ],
+    testProcedures: [
+      'Audit SCCs for correct module selection',
+      'Verify annexes are complete and accurate',
+      'Confirm SCCs executed before transfers began',
+      'Test obligation implementation',
+      'Review sub-processor SCC flow-down',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-46.2',
+    name: 'Transfer Impact Assessment Execution',
+    description:
+      'Conduct Transfer Impact Assessments to evaluate whether safeguards can be complied with in destination countries.',
+    category: 'International Transfers',
+    implementationGuidance:
+      'Develop TIA methodology aligned with EDPB guidance. Assess destination country legal framework including government access laws. Evaluate practical application of laws to the specific transfer. Identify supplementary measures needed to address identified gaps. Document TIA findings and conclusions.',
+    evidenceRequirements: [
+      'TIA methodology documentation',
+      'Legal framework assessments per destination country',
+      'Practical application analysis',
+      'Supplementary measure identification',
+      'TIA findings and conclusions documentation',
+    ],
+    testProcedures: [
+      'Review TIA methodology against EDPB guidance',
+      'Verify legal framework assessments are current',
+      'Assess practical application analysis depth',
+      'Review supplementary measure appropriateness',
+      'Sample TIA documentation for quality',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // Extended Operational Controls (OPS-55 through OPS-100)
+  // ============================================================
+  {
+    controlId: 'GDPR-OPS-55',
+    name: 'Privacy Risk Management Framework',
+    description:
+      'Establish a comprehensive framework for identifying, assessing, treating, and monitoring privacy risks across the organization.',
+    category: 'Risk Management',
+    implementationGuidance:
+      'Develop a privacy risk management methodology aligned with enterprise risk management. Define privacy risk categories, likelihood scales, and impact criteria. Implement risk identification processes covering all processing activities. Establish risk treatment options and acceptance criteria. Conduct periodic risk reassessments and report to governance.',
+    evidenceRequirements: [
+      'Privacy risk management methodology',
+      'Risk category and scale definitions',
+      'Risk identification procedures and records',
+      'Treatment options and acceptance criteria',
+      'Risk reassessment and reporting records',
+    ],
+    testProcedures: [
+      'Review methodology for comprehensiveness',
+      'Verify risk definitions are appropriate',
+      'Test risk identification processes',
+      'Assess treatment and acceptance criteria',
+      'Review reassessment and reporting frequency',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-56',
+    name: 'Privacy Risk Register',
+    description:
+      'Maintain a comprehensive register of identified privacy risks with treatment status and ownership.',
+    category: 'Risk Management',
+    implementationGuidance:
+      'Implement a privacy risk register capturing all identified risks. Document risk descriptions, assessments, owners, and treatment plans. Track risk status through treatment and closure. Link risks to processing activities and controls. Report risk register status to governance bodies.',
+    evidenceRequirements: [
+      'Privacy risk register with required fields',
+      'Risk assessment documentation',
+      'Treatment plan documentation',
+      'Risk status tracking records',
+      'Governance reporting records',
+    ],
+    testProcedures: [
+      'Review risk register for completeness',
+      'Sample risk assessments for quality',
+      'Verify treatment plans are implemented',
+      'Test status tracking accuracy',
+      'Confirm governance reporting occurs',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-57',
+    name: 'Data Mapping and Flow Documentation',
+    description:
+      'Maintain comprehensive documentation of personal data flows through the organization and to external parties.',
+    category: 'Data Management',
+    implementationGuidance:
+      'Create data flow diagrams showing personal data movement through systems. Document data flows to and from third parties. Identify cross-border data flows requiring transfer mechanism assessment. Update data flow documentation when systems or processes change. Use data flow documentation to support DPIA and compliance activities.',
+    evidenceRequirements: [
+      'Data flow diagrams for personal data',
+      'Third-party data flow documentation',
+      'Cross-border flow identification',
+      'Documentation update records',
+      'DPIA and compliance use evidence',
+    ],
+    testProcedures: [
+      'Review data flow diagrams for accuracy',
+      'Verify third-party flows are documented',
+      'Confirm cross-border flows are identified',
+      'Test documentation update procedures',
+      'Verify use in DPIA and compliance activities',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-58',
+    name: 'Personal Data Asset Register',
+    description:
+      'Maintain a register of personal data assets including databases, files, and other data stores containing personal data.',
+    category: 'Data Management',
+    implementationGuidance:
+      'Inventory all systems and storage locations containing personal data. Document data categories, volumes, and sensitivity classifications. Identify data owners and custodians for each asset. Map assets to processing activities in the RoPA. Conduct periodic asset discovery and register updates.',
+    evidenceRequirements: [
+      'Personal data asset register',
+      'Data categorization and classification records',
+      'Owner and custodian assignments',
+      'RoPA to asset mapping',
+      'Asset discovery and update records',
+    ],
+    testProcedures: [
+      'Review asset register for completeness',
+      'Verify categorization and classification accuracy',
+      'Confirm owner assignments are current',
+      'Test RoPA mapping accuracy',
+      'Review discovery and update frequency',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-59',
+    name: 'Data Quality Management Program',
+    description:
+      'Implement a comprehensive program to maintain personal data quality including accuracy, completeness, and currency.',
+    category: 'Data Management',
+    implementationGuidance:
+      'Define data quality dimensions and standards for personal data. Implement data quality monitoring and measurement. Establish data quality issue identification and remediation procedures. Provide mechanisms for data subjects to update their data. Report data quality metrics to governance.',
+    evidenceRequirements: [
+      'Data quality standards documentation',
+      'Quality monitoring configuration and reports',
+      'Issue identification and remediation records',
+      'Data subject update mechanism documentation',
+      'Quality metric reporting records',
+    ],
+    testProcedures: [
+      'Review data quality standards for appropriateness',
+      'Test quality monitoring effectiveness',
+      'Verify issue remediation procedures',
+      'Test data subject update mechanisms',
+      'Review quality metric reporting',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-60',
+    name: 'Data Disposal and Destruction',
+    description:
+      'Implement secure data disposal and destruction procedures for personal data reaching end of retention.',
+    category: 'Data Management',
+    implementationGuidance:
+      'Define secure disposal standards for different media types. Implement destruction procedures for electronic and physical data. Verify destruction through certificates or verification processes. Maintain destruction records without retaining the destroyed personal data. Address disposal of data held by third parties.',
+    evidenceRequirements: [
+      'Secure disposal standards by media type',
+      'Destruction procedures documentation',
+      'Destruction verification records',
+      'Destruction log records',
+      'Third-party disposal procedures',
+    ],
+    testProcedures: [
+      'Review disposal standards for adequacy',
+      'Test destruction procedure compliance',
+      'Verify destruction verification process',
+      'Sample destruction logs for completeness',
+      'Review third-party disposal procedures',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-61',
+    name: 'Privacy Engineering Standards',
+    description:
+      'Establish technical standards and patterns for implementing privacy requirements in systems and applications.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Develop privacy engineering standards covering data minimization, encryption, access control, and audit logging. Create reusable privacy design patterns and components. Implement privacy-aware development frameworks and libraries. Provide privacy engineering guidance and training for developers. Review and update standards as technology evolves.',
+    evidenceRequirements: [
+      'Privacy engineering standards documentation',
+      'Design pattern and component library',
+      'Framework and library documentation',
+      'Developer training records',
+      'Standards review and update records',
+    ],
+    testProcedures: [
+      'Review standards for comprehensiveness',
+      'Assess design pattern applicability',
+      'Test framework and library usage',
+      'Verify developer training completion',
+      'Confirm standards are periodically updated',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-62',
+    name: 'Privacy API and Interface Standards',
+    description:
+      'Establish standards for privacy-respecting APIs and system interfaces handling personal data.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Define API security standards including authentication, authorization, and encryption. Implement data minimization in API responses. Establish audit logging requirements for API access. Define rate limiting and abuse prevention measures. Review third-party APIs for privacy compliance.',
+    evidenceRequirements: [
+      'API security standards documentation',
+      'Data minimization implementation in APIs',
+      'API audit logging configuration',
+      'Rate limiting and abuse prevention documentation',
+      'Third-party API compliance reviews',
+    ],
+    testProcedures: [
+      'Review API security standards',
+      'Test data minimization in API responses',
+      'Verify API audit logging',
+      'Test rate limiting effectiveness',
+      'Sample third-party API compliance reviews',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-63',
+    name: 'Database Privacy Controls',
+    description:
+      'Implement privacy-specific controls for databases storing personal data.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Implement column-level encryption for sensitive personal data. Configure row-level security where applicable. Implement data masking for non-production access. Configure audit logging for personal data access. Implement database access controls aligned with least privilege.',
+    evidenceRequirements: [
+      'Column-level encryption configuration',
+      'Row-level security implementation',
+      'Data masking configuration for non-production',
+      'Database audit logging configuration',
+      'Access control configuration documentation',
+    ],
+    testProcedures: [
+      'Test column-level encryption effectiveness',
+      'Verify row-level security enforcement',
+      'Test data masking in non-production',
+      'Review database audit logs',
+      'Test access control enforcement',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-64',
+    name: 'Cloud Privacy Configuration',
+    description:
+      'Implement privacy-specific configurations for cloud services processing personal data.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Configure data residency controls to limit personal data location. Implement cloud encryption with customer-managed keys where available. Configure cloud access controls and identity management. Enable cloud audit logging and monitoring. Review cloud security configurations regularly.',
+    evidenceRequirements: [
+      'Data residency configuration documentation',
+      'Encryption configuration with key management',
+      'Cloud access control configuration',
+      'Audit logging and monitoring configuration',
+      'Configuration review records',
+    ],
+    testProcedures: [
+      'Verify data residency controls',
+      'Test encryption configuration',
+      'Review access control effectiveness',
+      'Verify audit logging completeness',
+      'Confirm regular configuration reviews',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-65',
+    name: 'Network Privacy Controls',
+    description:
+      'Implement network-level controls to protect personal data in transit and restrict unauthorized access.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Implement network segmentation for systems processing personal data. Configure firewall rules limiting access to personal data systems. Implement TLS encryption for all network communications involving personal data. Deploy intrusion detection and prevention for personal data networks. Monitor network traffic for anomalous access patterns.',
+    evidenceRequirements: [
+      'Network segmentation documentation',
+      'Firewall rule configuration',
+      'TLS implementation evidence',
+      'IDS/IPS deployment documentation',
+      'Network monitoring configuration',
+    ],
+    testProcedures: [
+      'Test network segmentation effectiveness',
+      'Review firewall rules for appropriateness',
+      'Verify TLS implementation',
+      'Test IDS/IPS functionality',
+      'Review network monitoring alerts',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-66',
+    name: 'Endpoint Privacy Controls',
+    description:
+      'Implement controls to protect personal data on endpoint devices including laptops, mobile devices, and workstations.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Implement full disk encryption on all devices storing personal data. Configure device access controls and strong authentication. Implement remote wipe capability for lost or stolen devices. Deploy endpoint detection and response solutions. Establish secure disposal procedures for end-of-life devices.',
+    evidenceRequirements: [
+      'Disk encryption deployment records',
+      'Device access control configuration',
+      'Remote wipe capability documentation',
+      'EDR deployment documentation',
+      'Device disposal procedures and records',
+    ],
+    testProcedures: [
+      'Verify encryption deployment coverage',
+      'Test device access controls',
+      'Test remote wipe functionality',
+      'Review EDR effectiveness',
+      'Sample device disposal records',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-67',
+    name: 'Identity and Access Governance',
+    description:
+      'Implement comprehensive identity and access governance for systems processing personal data.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Implement identity lifecycle management including provisioning, modification, and deprovisioning. Establish access request and approval workflows. Conduct periodic access certifications. Implement privileged access management. Monitor and alert on anomalous access patterns.',
+    evidenceRequirements: [
+      'Identity lifecycle management procedures',
+      'Access request and approval workflow documentation',
+      'Access certification records',
+      'PAM implementation documentation',
+      'Access monitoring and alerting configuration',
+    ],
+    testProcedures: [
+      'Test identity lifecycle procedures',
+      'Verify access approval workflows',
+      'Review access certification completion',
+      'Test PAM controls',
+      'Review access monitoring alerts',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-68',
+    name: 'Multi-Factor Authentication',
+    description:
+      'Implement multi-factor authentication for access to systems containing personal data.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Deploy MFA for all administrative access to personal data systems. Implement MFA for remote access and VPN connections. Require MFA for access to high-sensitivity personal data. Support multiple MFA methods for user convenience. Monitor and respond to MFA bypass attempts.',
+    evidenceRequirements: [
+      'MFA deployment for administrative access',
+      'MFA for remote access configuration',
+      'High-sensitivity data MFA requirements',
+      'Supported MFA method documentation',
+      'MFA bypass monitoring and response records',
+    ],
+    testProcedures: [
+      'Test MFA enforcement for admin access',
+      'Verify MFA for remote access',
+      'Test high-sensitivity data MFA requirements',
+      'Review MFA method availability',
+      'Test bypass detection and response',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-69',
+    name: 'Security Information and Event Management',
+    description:
+      'Implement SIEM capabilities for monitoring and analyzing security events related to personal data.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Deploy SIEM solution with coverage of all personal data systems. Configure log collection from relevant sources. Develop detection rules for privacy-relevant events. Establish alert triage and investigation procedures. Retain security event data for appropriate periods.',
+    evidenceRequirements: [
+      'SIEM deployment documentation',
+      'Log source coverage documentation',
+      'Detection rule documentation',
+      'Triage and investigation procedures',
+      'Event retention configuration',
+    ],
+    testProcedures: [
+      'Review SIEM deployment coverage',
+      'Verify log source completeness',
+      'Test detection rule effectiveness',
+      'Review investigation procedure compliance',
+      'Verify retention configuration',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-70',
+    name: 'Data Loss Prevention',
+    description:
+      'Implement data loss prevention controls to detect and prevent unauthorized disclosure of personal data.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Deploy DLP solutions covering email, web, and endpoint channels. Define DLP policies for personal data categories. Configure detection rules for sensitive personal data patterns. Implement blocking or quarantine for high-risk violations. Monitor and investigate DLP alerts.',
+    evidenceRequirements: [
+      'DLP solution deployment documentation',
+      'DLP policy definitions',
+      'Detection rule configuration',
+      'Blocking and quarantine configuration',
+      'Alert monitoring and investigation records',
+    ],
+    testProcedures: [
+      'Review DLP deployment coverage',
+      'Test DLP policy effectiveness',
+      'Verify detection rule accuracy',
+      'Test blocking and quarantine functionality',
+      'Review alert investigation quality',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-71',
+    name: 'Privacy in Mergers and Acquisitions',
+    description:
+      'Implement privacy considerations in merger, acquisition, and divestiture activities.',
+    category: 'Organizational Controls',
+    implementationGuidance:
+      'Integrate privacy due diligence into M&A processes. Assess target company privacy compliance and liabilities. Plan for data integration or separation privacy requirements. Update privacy notices and obtain consents where required for ownership changes. Address cross-border transfer implications of corporate transactions.',
+    evidenceRequirements: [
+      'M&A privacy due diligence procedures',
+      'Target company privacy assessments',
+      'Integration/separation privacy planning',
+      'Privacy notice and consent update records',
+      'Transfer assessment for corporate transactions',
+    ],
+    testProcedures: [
+      'Review M&A privacy procedures',
+      'Sample target company assessments',
+      'Review integration planning documentation',
+      'Verify notice and consent updates',
+      'Assess transfer considerations in transactions',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-72',
+    name: 'Privacy in Outsourcing',
+    description:
+      'Implement privacy requirements in outsourcing arrangements where third parties process personal data.',
+    category: 'Organizational Controls',
+    implementationGuidance:
+      'Include privacy requirements in outsourcing RFPs and contracts. Conduct privacy due diligence on outsourcing providers. Execute appropriate Data Processing Agreements. Implement ongoing oversight of outsourcing provider privacy compliance. Address transition-in and transition-out privacy requirements.',
+    evidenceRequirements: [
+      'Privacy requirements in outsourcing contracts',
+      'Provider privacy due diligence records',
+      'DPAs with outsourcing providers',
+      'Ongoing compliance oversight records',
+      'Transition privacy requirement documentation',
+    ],
+    testProcedures: [
+      'Review outsourcing contract privacy requirements',
+      'Sample provider due diligence records',
+      'Audit DPAs for compliance',
+      'Review oversight activities',
+      'Assess transition requirements documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-73',
+    name: 'Privacy in Product Development',
+    description:
+      'Integrate privacy requirements into product development processes to ensure privacy-respecting products.',
+    category: 'Privacy by Design',
+    implementationGuidance:
+      'Include privacy requirements in product requirement documents. Conduct privacy design reviews for new product features. Implement privacy user experience design standards. Test products for privacy compliance before release. Collect and address privacy feedback from users.',
+    evidenceRequirements: [
+      'Privacy requirements in product documentation',
+      'Privacy design review records',
+      'Privacy UX design standards',
+      'Pre-release privacy testing records',
+      'User privacy feedback and response records',
+    ],
+    testProcedures: [
+      'Review product requirements for privacy',
+      'Sample privacy design reviews',
+      'Assess privacy UX standards application',
+      'Review pre-release privacy testing',
+      'Review user feedback handling',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-74',
+    name: 'Privacy Dashboard and Self-Service',
+    description:
+      'Implement self-service capabilities enabling data subjects to manage their privacy preferences and exercise rights.',
+    category: 'Data Subject Rights',
+    implementationGuidance:
+      'Develop privacy dashboard interfaces for data subjects. Enable self-service access to personal data held. Provide preference management for consent and marketing. Enable self-service data correction and updates. Implement self-service data deletion where appropriate.',
+    evidenceRequirements: [
+      'Privacy dashboard implementation',
+      'Self-service data access functionality',
+      'Preference management capabilities',
+      'Self-service correction functionality',
+      'Self-service deletion capabilities',
+    ],
+    testProcedures: [
+      'Test privacy dashboard usability',
+      'Verify self-service access functionality',
+      'Test preference management effectiveness',
+      'Test self-service correction process',
+      'Verify self-service deletion functionality',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-75',
+    name: 'Privacy Communications Strategy',
+    description:
+      'Develop and implement a strategy for privacy communications with data subjects and stakeholders.',
+    category: 'Transparency',
+    implementationGuidance:
+      'Define privacy communication principles and standards. Develop communication templates for common scenarios. Establish communication channels for privacy matters. Train staff on privacy communications. Monitor communication effectiveness and adjust as needed.',
+    evidenceRequirements: [
+      'Privacy communication principles documentation',
+      'Communication template library',
+      'Communication channel documentation',
+      'Staff training records',
+      'Communication effectiveness monitoring records',
+    ],
+    testProcedures: [
+      'Review communication principles for appropriateness',
+      'Sample communication templates for quality',
+      'Verify communication channel accessibility',
+      'Confirm staff training completion',
+      'Review effectiveness monitoring results',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-76',
+    name: 'Privacy Stakeholder Management',
+    description:
+      'Identify and manage relationships with key privacy stakeholders including regulators, industry groups, and advocacy organizations.',
+    category: 'Governance',
+    implementationGuidance:
+      'Identify key privacy stakeholders and their interests. Develop stakeholder engagement strategies. Participate in industry privacy initiatives and standards development. Monitor advocacy organization activities and concerns. Report stakeholder engagement to governance.',
+    evidenceRequirements: [
+      'Stakeholder identification and mapping',
+      'Engagement strategy documentation',
+      'Industry initiative participation records',
+      'Advocacy monitoring records',
+      'Governance reporting on stakeholder engagement',
+    ],
+    testProcedures: [
+      'Review stakeholder mapping for completeness',
+      'Assess engagement strategy appropriateness',
+      'Verify industry participation',
+      'Review advocacy monitoring currency',
+      'Confirm governance reporting occurs',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-77',
+    name: 'Privacy Budget and Resource Management',
+    description:
+      'Establish and manage budget and resources necessary for effective privacy program operation.',
+    category: 'Governance',
+    implementationGuidance:
+      'Develop annual privacy program budget aligned with program needs. Allocate resources for privacy staff, tools, and initiatives. Track budget utilization and adjust as needed. Plan for privacy investments in response to regulatory changes. Report resource allocation to governance.',
+    evidenceRequirements: [
+      'Annual privacy budget documentation',
+      'Resource allocation records',
+      'Budget utilization tracking',
+      'Investment planning documentation',
+      'Governance resource reporting',
+    ],
+    testProcedures: [
+      'Review budget for program alignment',
+      'Verify resource allocation is adequate',
+      'Review budget utilization tracking',
+      'Assess investment planning for regulatory responsiveness',
+      'Confirm governance reporting on resources',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-78',
+    name: 'Privacy Technology Strategy',
+    description:
+      'Develop and implement a strategy for privacy-enabling technologies supporting compliance and operations.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Assess current privacy technology capabilities and gaps. Evaluate privacy technology market and emerging solutions. Develop privacy technology roadmap aligned with program needs. Implement selected privacy technologies with proper change management. Monitor technology effectiveness and adjust strategy.',
+    evidenceRequirements: [
+      'Current state technology assessment',
+      'Technology market evaluation',
+      'Privacy technology roadmap',
+      'Technology implementation records',
+      'Effectiveness monitoring records',
+    ],
+    testProcedures: [
+      'Review current state assessment for accuracy',
+      'Assess market evaluation thoroughness',
+      'Review roadmap for strategic alignment',
+      'Verify technology implementations',
+      'Review effectiveness monitoring results',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-79',
+    name: 'Automated Privacy Compliance Monitoring',
+    description:
+      'Implement automated monitoring capabilities to detect privacy compliance issues proactively.',
+    category: 'Technical Controls',
+    implementationGuidance:
+      'Identify key privacy compliance indicators suitable for automated monitoring. Deploy monitoring tools and configure detection rules. Establish alert thresholds and notification procedures. Implement remediation workflows for detected issues. Report monitoring results to governance.',
+    evidenceRequirements: [
+      'Compliance indicator identification',
+      'Monitoring tool deployment documentation',
+      'Detection rule and threshold configuration',
+      'Alert and notification procedures',
+      'Governance monitoring reports',
+    ],
+    testProcedures: [
+      'Review compliance indicators for relevance',
+      'Verify monitoring tool deployment',
+      'Test detection rule effectiveness',
+      'Verify alert procedures function correctly',
+      'Review governance reporting frequency',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-80',
+    name: 'Privacy Incident Lessons Learned',
+    description:
+      'Implement processes to capture and apply lessons learned from privacy incidents to prevent recurrence.',
+    category: 'Incident Management',
+    implementationGuidance:
+      'Conduct post-incident reviews for significant privacy incidents. Identify root causes and contributing factors. Develop and implement corrective and preventive actions. Share lessons learned across the organization. Track effectiveness of implemented improvements.',
+    evidenceRequirements: [
+      'Post-incident review procedures and records',
+      'Root cause analysis documentation',
+      'Corrective and preventive action records',
+      'Lessons learned communication records',
+      'Improvement effectiveness tracking',
+    ],
+    testProcedures: [
+      'Review post-incident review coverage',
+      'Assess root cause analysis quality',
+      'Verify corrective actions are implemented',
+      'Confirm lessons learned are communicated',
+      'Review improvement effectiveness tracking',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-81',
+    name: 'Privacy Crisis Management',
+    description:
+      'Establish capabilities to manage privacy crises including major breaches and regulatory enforcement actions.',
+    category: 'Incident Management',
+    implementationGuidance:
+      'Define privacy crisis scenarios and escalation criteria. Establish crisis management team and procedures. Develop crisis communication templates and procedures. Conduct crisis management exercises. Maintain relationships with external crisis support resources.',
+    evidenceRequirements: [
+      'Crisis scenario and escalation documentation',
+      'Crisis management team and procedures',
+      'Crisis communication materials',
+      'Crisis exercise records',
+      'External support resource documentation',
+    ],
+    testProcedures: [
+      'Review crisis scenarios for comprehensiveness',
+      'Verify crisis team readiness',
+      'Review communication materials for appropriateness',
+      'Assess crisis exercise results',
+      'Confirm external support relationships',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-82',
+    name: 'Vendor Privacy Risk Monitoring',
+    description:
+      'Implement ongoing monitoring of vendor privacy risks throughout the vendor relationship.',
+    category: 'Third-Party Management',
+    implementationGuidance:
+      'Establish continuous monitoring of high-risk vendors. Monitor vendor security incidents and breach disclosures. Track vendor compliance certification renewals. Assess impact of vendor organizational changes. Implement re-assessment triggers for significant vendor changes.',
+    evidenceRequirements: [
+      'Continuous monitoring procedures',
+      'Vendor incident monitoring records',
+      'Certification tracking records',
+      'Organizational change impact assessments',
+      'Re-assessment trigger documentation',
+    ],
+    testProcedures: [
+      'Review monitoring procedures for high-risk vendors',
+      'Verify incident monitoring effectiveness',
+      'Confirm certification tracking is current',
+      'Review organizational change assessments',
+      'Test re-assessment trigger activation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-83',
+    name: 'Vendor Privacy Performance Management',
+    description:
+      'Implement processes to measure and manage vendor privacy performance against contractual and regulatory requirements.',
+    category: 'Third-Party Management',
+    implementationGuidance:
+      'Define vendor privacy performance metrics and standards. Conduct periodic vendor privacy performance reviews. Address performance deficiencies through corrective action plans. Report vendor performance to governance. Consider performance in vendor renewal decisions.',
+    evidenceRequirements: [
+      'Vendor performance metrics and standards',
+      'Performance review records',
+      'Corrective action plan records',
+      'Governance performance reporting',
+      'Performance consideration in renewals',
+    ],
+    testProcedures: [
+      'Review performance metrics for appropriateness',
+      'Verify performance reviews are conducted',
+      'Assess corrective action effectiveness',
+      'Confirm governance receives performance reports',
+      'Review renewal decision documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-84',
+    name: 'Vendor Exit and Transition Management',
+    description:
+      'Implement procedures for managing privacy requirements during vendor exit and transition activities.',
+    category: 'Third-Party Management',
+    implementationGuidance:
+      'Develop vendor exit planning procedures including data return and deletion. Verify data deletion or return at vendor relationship end. Address transition privacy requirements for vendor changes. Maintain documentation of exit activities and verifications. Plan for business continuity during vendor transitions.',
+    evidenceRequirements: [
+      'Vendor exit planning procedures',
+      'Data deletion and return verification records',
+      'Transition privacy requirement documentation',
+      'Exit activity documentation',
+      'Business continuity planning for transitions',
+    ],
+    testProcedures: [
+      'Review exit planning procedures',
+      'Verify data deletion/return verification',
+      'Review transition privacy requirements',
+      'Sample exit documentation for completeness',
+      'Assess business continuity planning',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-85',
+    name: 'Privacy in Artificial Intelligence Governance',
+    description:
+      'Establish governance structures for privacy in artificial intelligence and machine learning systems.',
+    category: 'Emerging Technology',
+    implementationGuidance:
+      'Establish AI governance committee with privacy representation. Define AI privacy principles and requirements. Implement AI system registration and approval processes. Require privacy impact assessment for AI systems. Monitor AI system privacy performance.',
+    evidenceRequirements: [
+      'AI governance structure documentation',
+      'AI privacy principles and requirements',
+      'AI registration and approval records',
+      'AI privacy impact assessments',
+      'AI privacy performance monitoring records',
+    ],
+    testProcedures: [
+      'Review AI governance structure effectiveness',
+      'Verify AI privacy principles are applied',
+      'Test registration and approval processes',
+      'Sample AI privacy impact assessments',
+      'Review privacy performance monitoring',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-86',
+    name: 'AI Training Data Privacy',
+    description:
+      'Implement controls to ensure privacy compliance in AI and machine learning training data.',
+    category: 'Emerging Technology',
+    implementationGuidance:
+      'Document lawful basis for training data collection and use. Implement data minimization in training data selection. Apply anonymization or pseudonymization to training data where appropriate. Address bias and fairness in training data. Maintain training data provenance records.',
+    evidenceRequirements: [
+      'Training data lawful basis documentation',
+      'Data minimization in training data selection',
+      'Anonymization/pseudonymization application',
+      'Bias and fairness assessments',
+      'Training data provenance records',
+    ],
+    testProcedures: [
+      'Review training data lawful basis',
+      'Verify data minimization in training data',
+      'Test anonymization/pseudonymization effectiveness',
+      'Assess bias and fairness evaluations',
+      'Review provenance record completeness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-87',
+    name: 'AI Model Explainability',
+    description:
+      'Implement capabilities to explain AI model decisions to data subjects as required by GDPR.',
+    category: 'Emerging Technology',
+    implementationGuidance:
+      'Implement explainability techniques appropriate to model types. Develop explanations suitable for data subject understanding. Provide model logic information in privacy notices. Enable individual decision explanations on request. Document explainability capabilities and limitations.',
+    evidenceRequirements: [
+      'Explainability technique implementation',
+      'Data subject-appropriate explanations',
+      'Privacy notice model logic information',
+      'Individual explanation request handling',
+      'Capability and limitation documentation',
+    ],
+    testProcedures: [
+      'Test explainability technique effectiveness',
+      'Assess explanation comprehensibility',
+      'Review privacy notice model information',
+      'Test individual explanation requests',
+      'Review capability documentation accuracy',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-88',
+    name: 'Blockchain and Distributed Ledger Privacy',
+    description:
+      'Implement privacy controls for personal data processed using blockchain and distributed ledger technologies.',
+    category: 'Emerging Technology',
+    implementationGuidance:
+      'Assess GDPR compliance challenges for blockchain use cases involving personal data. Implement off-chain storage for personal data where appropriate. Apply encryption and access controls to on-chain personal data. Address immutability challenges for erasure and rectification rights. Document privacy architecture decisions for blockchain implementations.',
+    evidenceRequirements: [
+      'Blockchain GDPR compliance assessments',
+      'Off-chain storage implementation documentation',
+      'On-chain encryption and access controls',
+      'Erasure and rectification approach documentation',
+      'Privacy architecture decision records',
+    ],
+    testProcedures: [
+      'Review blockchain compliance assessments',
+      'Verify off-chain storage implementation',
+      'Test on-chain encryption and access controls',
+      'Assess erasure/rectification approach viability',
+      'Review architecture decision documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-89',
+    name: 'Edge Computing Privacy',
+    description:
+      'Implement privacy controls for personal data processed at the edge in distributed computing environments.',
+    category: 'Emerging Technology',
+    implementationGuidance:
+      'Assess privacy requirements for edge computing use cases. Implement data minimization at edge devices. Apply encryption for edge data storage and transmission. Address data subject rights for edge-processed data. Monitor edge device privacy compliance.',
+    evidenceRequirements: [
+      'Edge computing privacy assessments',
+      'Data minimization at edge implementation',
+      'Edge encryption configuration',
+      'Data subject rights procedures for edge data',
+      'Edge privacy compliance monitoring',
+    ],
+    testProcedures: [
+      'Review edge computing privacy assessments',
+      'Verify data minimization at edge',
+      'Test edge encryption implementation',
+      'Test data subject rights for edge data',
+      'Review compliance monitoring effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-90',
+    name: 'Privacy in Customer Relationship Management',
+    description:
+      'Implement privacy controls specific to CRM systems containing customer personal data.',
+    category: 'Application Privacy',
+    implementationGuidance:
+      'Assess CRM system privacy configuration options. Implement consent tracking in CRM. Configure data retention and deletion capabilities. Implement access controls based on customer relationship. Enable data subject rights fulfillment through CRM.',
+    evidenceRequirements: [
+      'CRM privacy configuration documentation',
+      'Consent tracking implementation',
+      'Retention and deletion configuration',
+      'Access control configuration',
+      'DSR fulfillment capability documentation',
+    ],
+    testProcedures: [
+      'Review CRM privacy configuration',
+      'Test consent tracking functionality',
+      'Verify retention and deletion capabilities',
+      'Test access control enforcement',
+      'Test DSR fulfillment through CRM',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-91',
+    name: 'Privacy in Human Resources Systems',
+    description:
+      'Implement privacy controls specific to HR systems containing employee personal data.',
+    category: 'Application Privacy',
+    implementationGuidance:
+      'Assess HR system privacy configuration requirements. Implement role-based access limiting data exposure. Configure retention aligned with employment law requirements. Enable employee data subject rights through HR systems. Address special category employee data with enhanced controls.',
+    evidenceRequirements: [
+      'HR system privacy configuration documentation',
+      'Role-based access implementation',
+      'Retention configuration documentation',
+      'Employee DSR capability documentation',
+      'Special category data controls',
+    ],
+    testProcedures: [
+      'Review HR privacy configuration',
+      'Test role-based access effectiveness',
+      'Verify retention configuration compliance',
+      'Test employee DSR capabilities',
+      'Verify special category data controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-92',
+    name: 'Privacy in Financial Systems',
+    description:
+      'Implement privacy controls specific to financial systems containing customer and transaction data.',
+    category: 'Application Privacy',
+    implementationGuidance:
+      'Assess financial system privacy requirements considering regulatory overlap. Implement transaction data minimization. Configure retention aligned with financial regulations and GDPR. Apply enhanced security for financial personal data. Address cross-border transfer requirements for financial data.',
+    evidenceRequirements: [
+      'Financial system privacy assessment',
+      'Transaction data minimization implementation',
+      'Retention configuration documentation',
+      'Enhanced security documentation',
+      'Cross-border transfer assessment',
+    ],
+    testProcedures: [
+      'Review financial system privacy assessment',
+      'Test transaction data minimization',
+      'Verify retention compliance',
+      'Test enhanced security controls',
+      'Review cross-border transfer compliance',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-93',
+    name: 'Privacy in Analytics and Business Intelligence',
+    description:
+      'Implement privacy controls for analytics and business intelligence systems processing personal data.',
+    category: 'Application Privacy',
+    implementationGuidance:
+      'Assess analytics use cases for privacy requirements. Implement aggregation and anonymization for analytics where feasible. Configure access controls for analytics containing personal data. Apply purpose limitation to analytics data use. Document analytics privacy controls and limitations.',
+    evidenceRequirements: [
+      'Analytics privacy assessment documentation',
+      'Aggregation and anonymization implementation',
+      'Analytics access control configuration',
+      'Purpose limitation documentation',
+      'Privacy control and limitation documentation',
+    ],
+    testProcedures: [
+      'Review analytics privacy assessments',
+      'Test aggregation and anonymization effectiveness',
+      'Verify analytics access controls',
+      'Review purpose limitation enforcement',
+      'Assess control documentation accuracy',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-94',
+    name: 'Social Media Privacy Management',
+    description:
+      'Implement controls for managing privacy in social media marketing and customer engagement activities.',
+    category: 'Marketing Compliance',
+    implementationGuidance:
+      'Assess privacy requirements for social media activities. Implement consent management for social media tracking. Address data sharing with social media platforms in privacy notices. Respond to data subject rights for social media collected data. Monitor social media platform privacy policy changes.',
+    evidenceRequirements: [
+      'Social media privacy assessment',
+      'Consent management for social tracking',
+      'Privacy notice social media disclosures',
+      'DSR procedures for social media data',
+      'Platform policy monitoring records',
+    ],
+    testProcedures: [
+      'Review social media privacy assessment',
+      'Test consent management for social tracking',
+      'Verify privacy notice social disclosures',
+      'Test DSR procedures for social data',
+      'Review policy monitoring currency',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-95',
+    name: 'Email Marketing Privacy',
+    description:
+      'Implement privacy and consent management controls for email marketing activities.',
+    category: 'Marketing Compliance',
+    implementationGuidance:
+      'Implement opt-in consent collection for marketing emails. Provide easy and effective unsubscribe mechanisms. Maintain suppression lists across marketing systems. Track consent and preferences in marketing databases. Document email marketing privacy compliance.',
+    evidenceRequirements: [
+      'Opt-in consent collection evidence',
+      'Unsubscribe mechanism documentation',
+      'Suppression list management procedures',
+      'Consent and preference tracking',
+      'Email marketing compliance documentation',
+    ],
+    testProcedures: [
+      'Test opt-in consent collection',
+      'Verify unsubscribe mechanism effectiveness',
+      'Test suppression list enforcement',
+      'Review consent tracking accuracy',
+      'Assess compliance documentation completeness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-96',
+    name: 'Location Data Privacy',
+    description:
+      'Implement privacy controls for collection and processing of location data.',
+    category: 'Special Data Types',
+    implementationGuidance:
+      'Assess location data collection necessity and minimize collection. Implement consent for location tracking where required. Provide clear notice about location data collection and use. Apply enhanced security for precise location data. Enable data subjects to control location sharing.',
+    evidenceRequirements: [
+      'Location data necessity assessment',
+      'Location consent mechanism documentation',
+      'Location privacy notice disclosures',
+      'Enhanced security for location data',
+      'Data subject location control capabilities',
+    ],
+    testProcedures: [
+      'Review location data necessity assessment',
+      'Test location consent mechanisms',
+      'Verify location disclosures in notices',
+      'Test location data security controls',
+      'Verify data subject location controls',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-97',
+    name: 'Children\'s Data Enhanced Protections',
+    description:
+      'Implement enhanced protections for processing children\'s personal data beyond basic consent requirements.',
+    category: 'Special Data Types',
+    implementationGuidance:
+      'Implement age-appropriate privacy notices and consent mechanisms. Apply enhanced data minimization for children\'s data. Limit profiling and targeted advertising to children. Implement stricter retention limits for children\'s data. Provide child-friendly data subject rights mechanisms.',
+    evidenceRequirements: [
+      'Age-appropriate privacy documentation',
+      'Enhanced data minimization for children',
+      'Profiling and advertising limitation evidence',
+      'Children\'s data retention limits',
+      'Child-friendly rights mechanisms',
+    ],
+    testProcedures: [
+      'Review age-appropriate privacy materials',
+      'Test data minimization for children\'s data',
+      'Verify profiling and advertising limitations',
+      'Test retention limit enforcement',
+      'Test child-friendly rights mechanisms',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-98',
+    name: 'Genetic Data Privacy',
+    description:
+      'Implement enhanced privacy controls for processing genetic data as special category data.',
+    category: 'Special Data Types',
+    implementationGuidance:
+      'Document Art. 9(2) exception for genetic data processing. Implement explicit consent mechanisms for genetic data. Apply enhanced security for genetic data storage and transmission. Address family member privacy implications. Limit genetic data retention and secondary use.',
+    evidenceRequirements: [
+      'Art. 9(2) exception documentation',
+      'Explicit consent mechanism for genetic data',
+      'Enhanced security implementation',
+      'Family privacy consideration documentation',
+      'Retention and secondary use limitations',
+    ],
+    testProcedures: [
+      'Verify Art. 9(2) exception validity',
+      'Test explicit consent mechanisms',
+      'Test enhanced security controls',
+      'Review family privacy considerations',
+      'Verify retention and use limitations',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-99',
+    name: 'Trade Union Data Privacy',
+    description:
+      'Implement privacy controls for processing data revealing trade union membership.',
+    category: 'Special Data Types',
+    implementationGuidance:
+      'Document Art. 9(2) exception for trade union data processing. Implement purpose limitation for trade union data. Apply strict access controls to trade union membership data. Address employee relations implications. Maintain confidentiality of union membership status.',
+    evidenceRequirements: [
+      'Art. 9(2) exception documentation',
+      'Purpose limitation documentation',
+      'Access control configuration',
+      'Employee relations consideration documentation',
+      'Confidentiality protection evidence',
+    ],
+    testProcedures: [
+      'Verify Art. 9(2) exception validity',
+      'Test purpose limitation enforcement',
+      'Verify access control effectiveness',
+      'Review employee relations considerations',
+      'Test confidentiality protections',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GDPR-OPS-100',
+    name: 'Political and Religious Belief Data Privacy',
+    description:
+      'Implement privacy controls for processing data revealing political opinions or religious beliefs.',
+    category: 'Special Data Types',
+    implementationGuidance:
+      'Document Art. 9(2) exception for political or religious data. Implement explicit consent where consent is the lawful basis. Apply strict access controls and need-to-know limitations. Prohibit discriminatory processing based on beliefs. Maintain enhanced confidentiality protections.',
+    evidenceRequirements: [
+      'Art. 9(2) exception documentation',
+      'Explicit consent mechanisms where applicable',
+      'Access control and need-to-know documentation',
+      'Non-discrimination policy documentation',
+      'Enhanced confidentiality protections',
+    ],
+    testProcedures: [
+      'Verify Art. 9(2) exception validity',
+      'Test explicit consent mechanisms',
+      'Verify access control and need-to-know',
+      'Review non-discrimination policy enforcement',
+      'Test confidentiality protections',
+    ],
+    status: 'Not Started',
+  },
 ];
