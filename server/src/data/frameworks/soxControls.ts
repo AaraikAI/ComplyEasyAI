@@ -890,4 +890,863 @@ export const SOX_CONTROLS: FrameworkControlTemplate[] = [
     ],
     status: 'Not Started',
   },
+
+  // ============================================================
+  // IT GENERAL CONTROLS (ITGC) - SECURITY
+  // ============================================================
+  {
+    controlId: 'SOX-ITGC-SEC-1',
+    name: 'Network Security and Perimeter Protection',
+    description:
+      'Network security controls must protect financially significant systems from unauthorized access, including firewalls, intrusion detection/prevention systems, and network segmentation. Critical financial systems must be isolated in secure network zones.',
+    category: 'IT General Controls - Security',
+    implementationGuidance:
+      'Implement defense-in-depth network security including: perimeter firewalls with deny-by-default rules, network segmentation isolating financial systems in dedicated VLANs or subnets, intrusion detection and prevention systems (IDS/IPS) monitoring traffic to financial systems, web application firewalls (WAF) for internet-facing financial applications, and DMZ architecture for external-facing services. Conduct quarterly firewall rule reviews to remove unnecessary rules and verify alignment with business requirements. Implement network access control (NAC) to prevent unauthorized devices from connecting. Monitor and alert on suspicious network activity targeting financial systems.',
+    evidenceRequirements: [
+      'Network architecture diagram showing segmentation of financial systems',
+      'Firewall configurations and rule sets for financial system zones',
+      'IDS/IPS configuration and monitoring procedures',
+      'Quarterly firewall rule review records with approval',
+      'Network access control (NAC) policy and configuration',
+      'Network security monitoring alerts and incident response records',
+    ],
+    testProcedures: [
+      'Review network architecture to verify financial systems are appropriately segmented',
+      'Test firewall rules to confirm only authorized traffic can reach financial systems',
+      'Verify IDS/IPS is actively monitoring and alerting on financial system traffic',
+      'Confirm quarterly firewall rule reviews were completed with documented approvals',
+      'Test network access controls by attempting to connect an unauthorized device',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-ITGC-SEC-2',
+    name: 'Vulnerability Management',
+    description:
+      'A vulnerability management program must identify, assess, and remediate security vulnerabilities in systems supporting financial reporting. Regular vulnerability scanning and timely patching must be performed on all in-scope systems.',
+    category: 'IT General Controls - Security',
+    implementationGuidance:
+      'Implement a vulnerability management program covering all in-scope financial systems. Conduct authenticated vulnerability scans at least monthly for critical systems and quarterly for all in-scope systems. Prioritize remediation based on CVSS scores and business impact: critical vulnerabilities within 7 days, high within 30 days, medium within 90 days. Track remediation progress and report to management monthly. Implement compensating controls when immediate patching is not feasible. Conduct annual penetration testing of financial systems by an independent party. Maintain a vulnerability exception process requiring business justification and compensating controls.',
+    evidenceRequirements: [
+      'Vulnerability management policy with scanning frequency and remediation timelines',
+      'Vulnerability scan reports for in-scope financial systems',
+      'Remediation tracking records showing resolution within defined timelines',
+      'Vulnerability exception requests with business justification and compensating controls',
+      'Annual penetration test report and remediation plan',
+      'Monthly vulnerability management reports to management',
+    ],
+    testProcedures: [
+      'Verify vulnerability scans were conducted at the required frequency for in-scope systems',
+      'Review scan results and confirm critical and high vulnerabilities were remediated within defined timelines',
+      'Examine vulnerability exceptions for appropriate justification and compensating controls',
+      'Review the most recent penetration test report and verify findings were addressed',
+      'Confirm monthly vulnerability reports were provided to management',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-ITGC-SEC-3',
+    name: 'Endpoint Security',
+    description:
+      'Endpoint security controls must protect workstations and servers accessing or hosting financial data. Controls must include anti-malware protection, endpoint detection and response, and secure configuration baselines.',
+    category: 'IT General Controls - Security',
+    implementationGuidance:
+      'Deploy enterprise endpoint protection on all systems accessing or processing financial data. Implement next-generation anti-malware with real-time scanning and behavioral analysis. Deploy endpoint detection and response (EDR) capabilities for advanced threat detection and investigation. Establish secure configuration baselines (hardening standards) for workstations and servers based on CIS benchmarks or equivalent. Disable unnecessary services and protocols. Implement application whitelisting on critical financial servers. Conduct monthly compliance scans against configuration baselines. Ensure endpoint protection cannot be disabled by end users.',
+    evidenceRequirements: [
+      'Endpoint security policy covering anti-malware, EDR, and hardening requirements',
+      'Anti-malware deployment and signature update reports',
+      'EDR deployment and alert monitoring procedures',
+      'Secure configuration baselines (hardening standards) for workstations and servers',
+      'Monthly configuration compliance scan results',
+      'Application whitelisting configuration for critical servers',
+    ],
+    testProcedures: [
+      'Verify endpoint protection is deployed on all in-scope systems',
+      'Confirm anti-malware signatures are updated at least daily',
+      'Review EDR alerts and incident response for a sample period',
+      'Test configuration compliance against hardening baselines for a sample of systems',
+      'Verify endpoint protection cannot be disabled by standard users',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-ITGC-SEC-4',
+    name: 'Security Information and Event Management (SIEM)',
+    description:
+      'Security events from financially significant systems must be centrally collected, correlated, and monitored in real time. Security alerts must be investigated and escalated according to defined procedures.',
+    category: 'IT General Controls - Security',
+    implementationGuidance:
+      'Implement a SIEM solution to aggregate security logs from all in-scope financial systems, including operating systems, databases, applications, network devices, and security tools. Define use cases and correlation rules for detecting threats to financial systems: unauthorized access attempts, privilege escalation, data exfiltration indicators, and anomalous user behavior. Establish a security operations center (SOC) or managed security service to monitor SIEM alerts 24/7 or during business hours based on risk. Define escalation procedures for different alert severity levels. Conduct regular tuning to reduce false positives while maintaining detection effectiveness. Retain security logs for at least one year.',
+    evidenceRequirements: [
+      'SIEM architecture documentation showing coverage of in-scope systems',
+      'Log sources and collection configuration for financial systems',
+      'Use cases and correlation rules targeting financial system threats',
+      'Alert monitoring and escalation procedures',
+      'Sample security alerts and investigation records',
+      'Log retention configuration demonstrating one-year minimum retention',
+    ],
+    testProcedures: [
+      'Verify all in-scope financial systems are sending logs to the SIEM',
+      'Review use cases and correlation rules for adequacy in detecting financial system threats',
+      'Examine security alert investigation records for appropriate response and documentation',
+      'Test detection capabilities by simulating a suspicious event and verifying alert generation',
+      'Confirm log retention meets the one-year minimum requirement',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-ITGC-SEC-5',
+    name: 'Data Encryption and Protection',
+    description:
+      'Sensitive financial data must be encrypted at rest and in transit. Encryption key management must follow secure practices including key rotation, secure storage, and access controls.',
+    category: 'IT General Controls - Security',
+    implementationGuidance:
+      'Implement encryption for financial data at rest in databases, file systems, and backups using AES-256 or equivalent. Encrypt all data in transit using TLS 1.2 or higher for network communications and SFTP/SCP for file transfers. Implement a key management solution or HSM for secure key storage. Define key rotation schedules: annual rotation for data encryption keys, more frequent for high-risk keys. Segregate key management duties so no single individual controls both encrypted data and decryption keys. Document and test key recovery procedures. Conduct annual cryptographic reviews to ensure algorithms and key lengths remain appropriate.',
+    evidenceRequirements: [
+      'Data encryption policy specifying encryption requirements and algorithms',
+      'Database and file system encryption configurations',
+      'TLS configuration for in-transit encryption',
+      'Key management procedures including rotation schedules',
+      'HSM or key management solution configuration',
+      'Key recovery procedure documentation and test records',
+      'Annual cryptographic review records',
+    ],
+    testProcedures: [
+      'Verify financial databases are encrypted at rest using approved algorithms',
+      'Test TLS configuration to confirm TLS 1.2+ is enforced for financial system communications',
+      'Review key rotation records to verify keys were rotated on schedule',
+      'Verify segregation of duties between data access and key management',
+      'Test key recovery procedures in a non-production environment',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-ITGC-SEC-6',
+    name: 'Security Awareness and Training',
+    description:
+      'Personnel with access to financially significant systems must receive security awareness training on protecting financial data, recognizing threats, and complying with security policies. Training must be completed annually and upon initial access.',
+    category: 'IT General Controls - Security',
+    implementationGuidance:
+      'Develop a security awareness training program tailored to personnel with financial system access. Include topics: protecting sensitive financial information, recognizing phishing and social engineering attacks, secure password practices, reporting security incidents, and compliance with security policies. Require completion within 30 days of gaining access to financial systems and annually thereafter. Conduct periodic phishing simulations to assess awareness and provide targeted training for those who fail. Track training completion and report compliance to management. Provide role-specific training for privileged users, developers, and other specialized roles.',
+    evidenceRequirements: [
+      'Security awareness training policy and curriculum',
+      'Training completion records for personnel with financial system access',
+      'Phishing simulation results and remedial training records',
+      'Role-specific training materials for privileged users and developers',
+      'Training compliance reports to management',
+      'Annual training effectiveness assessment records',
+    ],
+    testProcedures: [
+      'Verify security awareness training curriculum covers appropriate topics for financial system users',
+      'Confirm all personnel with financial system access completed training within required timelines',
+      'Review phishing simulation results and verify remedial training was provided',
+      'Verify role-specific training was completed by privileged users and developers',
+      'Confirm training compliance reports were provided to management',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // ENTITY-LEVEL CONTROLS
+  // ============================================================
+  {
+    controlId: 'SOX-ELC-1',
+    name: 'Control Environment - Tone at the Top',
+    description:
+      'Senior management and the board of directors must demonstrate commitment to integrity, ethical values, and effective internal control. The tone at the top must be communicated throughout the organization and reinforced through actions and policies.',
+    category: 'Entity-Level Controls',
+    implementationGuidance:
+      'Develop and communicate a code of conduct approved by the board that emphasizes integrity, ethical behavior, and the importance of internal controls. Require annual acknowledgment of the code by all employees. Hold senior leadership accountable for control effectiveness in their areas. Include control effectiveness in performance evaluations for management. Conduct periodic ethics and compliance communications from senior leadership. Establish clear consequences for code of conduct violations, applied consistently regardless of position. Monitor and address ethical concerns promptly. Report control environment matters to the audit committee regularly.',
+    evidenceRequirements: [
+      'Code of conduct approved by the board of directors',
+      'Employee code of conduct acknowledgment records',
+      'Senior leadership communications on ethics and controls',
+      'Management performance evaluation criteria including control effectiveness',
+      'Code of conduct violation investigation and resolution records',
+      'Audit committee reports on control environment matters',
+    ],
+    testProcedures: [
+      'Review the code of conduct for comprehensiveness and board approval',
+      'Verify code of conduct acknowledgments are collected from all employees annually',
+      'Review senior leadership communications for emphasis on ethics and controls',
+      'Confirm management performance evaluations include control effectiveness criteria',
+      'Review code of conduct violations for consistent enforcement',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-ELC-2',
+    name: 'Risk Assessment Process',
+    description:
+      'The organization must maintain a formal risk assessment process to identify and analyze risks to achieving financial reporting objectives. Risk assessments must consider internal and external factors, likelihood, and impact, and must be updated at least annually.',
+    category: 'Entity-Level Controls',
+    implementationGuidance:
+      'Establish a formal enterprise risk management (ERM) process with specific focus on financial reporting risks. Identify risks from internal sources (process changes, new systems, organizational changes) and external sources (regulatory changes, economic conditions, industry trends). Assess each risk for likelihood and impact using a consistent methodology. Define risk tolerance levels approved by management. Develop risk response strategies: accept, mitigate, transfer, or avoid. Map financial reporting risks to specific controls. Update the risk assessment at least annually and when significant changes occur. Report risk assessment results to the audit committee.',
+    evidenceRequirements: [
+      'Enterprise risk management policy and methodology',
+      'Financial reporting risk register with likelihood and impact assessments',
+      'Risk tolerance definitions approved by management',
+      'Risk response strategies and action plans',
+      'Risk-to-control mapping documentation',
+      'Annual risk assessment update records',
+      'Audit committee reports on risk assessment results',
+    ],
+    testProcedures: [
+      'Review the risk assessment methodology for comprehensiveness and consistency',
+      'Verify the risk register includes relevant financial reporting risks',
+      'Confirm risk assessments consider both internal and external factors',
+      'Verify risk response strategies are defined and implemented for significant risks',
+      'Confirm the risk assessment was updated within the last 12 months',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-ELC-3',
+    name: 'Information and Communication',
+    description:
+      'Relevant and reliable information must be identified, captured, and communicated in a form and timeframe that enables personnel to carry out their financial reporting responsibilities. Communication must flow in all directions: downward, upward, and across the organization.',
+    category: 'Entity-Level Controls',
+    implementationGuidance:
+      'Establish processes to capture information relevant to financial reporting from internal and external sources. Define information requirements for each financial reporting role. Implement systems and reports that provide timely, accurate, and complete information to support financial reporting. Establish communication channels for reporting control issues and concerns upward to management. Communicate financial reporting policies, procedures, and changes to affected personnel. Provide channels for business units to communicate significant events and transactions to finance. Maintain open communication lines with external parties (auditors, regulators, investors).',
+    evidenceRequirements: [
+      'Information flow diagrams for financial reporting processes',
+      'Financial reporting role definitions with information requirements',
+      'Communication procedures for control issues and concerns',
+      'Policy and procedure communication records',
+      'Significant event reporting procedures and records',
+      'External party communication procedures and records',
+    ],
+    testProcedures: [
+      'Review information flows to verify relevant data reaches financial reporting personnel',
+      'Verify communication channels exist for reporting control issues upward',
+      'Confirm policy and procedure changes were communicated to affected personnel',
+      'Review significant event reporting for timely communication to finance',
+      'Verify external communications with auditors and regulators are appropriately managed',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-ELC-4',
+    name: 'Monitoring of Controls',
+    description:
+      'The effectiveness of internal controls must be monitored through ongoing activities and separate evaluations. Control deficiencies must be identified, communicated, and corrected in a timely manner. The monitoring program must cover both entity-level and process-level controls.',
+    category: 'Entity-Level Controls',
+    implementationGuidance:
+      'Implement a comprehensive control monitoring program combining ongoing monitoring (built into business processes) and separate evaluations (internal audit, self-assessments). Define monitoring activities for each key control. Establish key risk indicators (KRIs) and key control indicators (KCIs) with thresholds triggering investigation. Conduct periodic control self-assessments by control owners. Require internal audit to test high-risk controls annually. Establish a deficiency tracking process covering identification, evaluation, remediation planning, and closure verification. Report control monitoring results and deficiency status to management and the audit committee.',
+    evidenceRequirements: [
+      'Control monitoring program documentation with coverage and frequency',
+      'Key risk indicators and key control indicators with thresholds',
+      'Control self-assessment procedures and completed assessments',
+      'Internal audit control testing plans and results',
+      'Deficiency tracking log with evaluation and remediation records',
+      'Management and audit committee reports on control monitoring results',
+    ],
+    testProcedures: [
+      'Review the control monitoring program for adequate coverage of key controls',
+      'Verify KRIs and KCIs are defined and monitored with appropriate thresholds',
+      'Confirm control self-assessments were completed by control owners',
+      'Review internal audit testing results for high-risk controls',
+      'Verify deficiencies were tracked through remediation and closure',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-ELC-5',
+    name: 'Organizational Structure and Authority',
+    description:
+      'The organizational structure must support effective internal control with clear reporting lines, defined authority and responsibility, and appropriate accountability. Roles critical to financial reporting must have defined competency requirements.',
+    category: 'Entity-Level Controls',
+    implementationGuidance:
+      'Maintain an organizational structure that clearly defines reporting relationships and authority for financial reporting functions. Document roles and responsibilities for key financial reporting positions in job descriptions. Define competency requirements (education, experience, certifications) for personnel in financial reporting roles. Implement appropriate spans of control to ensure adequate supervision. Establish clear delegation of authority with documented limits. Ensure the CFO and controller have sufficient authority and independence. Review organizational structure changes for impact on financial reporting controls.',
+    evidenceRequirements: [
+      'Organizational charts for finance and IT functions',
+      'Job descriptions for key financial reporting positions',
+      'Competency requirements and verification records for financial roles',
+      'Delegation of authority matrix with documented limits',
+      'Organizational change impact assessment records',
+      'CFO/Controller reporting line and authority documentation',
+    ],
+    testProcedures: [
+      'Review organizational structure for clear reporting lines and appropriate authority',
+      'Verify job descriptions exist for key financial reporting positions',
+      'Confirm personnel in financial roles meet defined competency requirements',
+      'Review delegation of authority for appropriate limits and documentation',
+      'Verify organizational changes were assessed for impact on financial reporting controls',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // FRAUD RISK MANAGEMENT
+  // ============================================================
+  {
+    controlId: 'SOX-FRM-1',
+    name: 'Fraud Risk Assessment',
+    description:
+      'The organization must conduct periodic fraud risk assessments to identify and evaluate fraud risks that could affect financial reporting. The assessment must consider incentives, opportunities, and rationalization for fraud, as well as management override of controls.',
+    category: 'Fraud Risk Management',
+    implementationGuidance:
+      'Conduct annual fraud risk assessments focusing on financial reporting fraud. Apply the fraud triangle framework (incentive/pressure, opportunity, rationalization) to identify fraud risks. Consider specific fraud schemes: fraudulent financial reporting (revenue manipulation, expense timing), misappropriation of assets, and management override of controls. Assess inherent risk and residual risk after considering controls. Identify fraud indicators and warning signs. Involve internal audit, legal, and compliance in the assessment. Document anti-fraud controls that address identified risks. Report fraud risk assessment results to the audit committee.',
+    evidenceRequirements: [
+      'Fraud risk assessment methodology and framework',
+      'Annual fraud risk assessment documentation',
+      'Fraud risk register with identified schemes and risk ratings',
+      'Anti-fraud control mapping to identified risks',
+      'Fraud indicator and warning sign documentation',
+      'Audit committee reports on fraud risk assessment results',
+    ],
+    testProcedures: [
+      'Review the fraud risk assessment methodology for alignment with fraud triangle framework',
+      'Verify the assessment considers financial reporting fraud, asset misappropriation, and management override',
+      'Confirm anti-fraud controls are mapped to identified risks',
+      'Verify the assessment was conducted within the last 12 months',
+      'Confirm results were reported to the audit committee',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-FRM-2',
+    name: 'Anti-Fraud Programs and Controls',
+    description:
+      'The organization must implement programs and controls to prevent, detect, and respond to fraud. This includes management oversight, anti-fraud training, fraud detection analytics, and a fraud response plan.',
+    category: 'Fraud Risk Management',
+    implementationGuidance:
+      'Develop and implement a comprehensive anti-fraud program including: fraud prevention controls (segregation of duties, authorization requirements, access controls), fraud detection controls (data analytics, exception monitoring, reconciliations), fraud awareness training for employees, management fraud detection activities (variance analysis, trend monitoring), and fraud investigation and response procedures. Implement data analytics to detect anomalies and patterns indicative of fraud (Benford\'s Law analysis, duplicate detection, unusual timing patterns). Establish a fraud response plan defining investigation procedures, evidence preservation, and reporting requirements.',
+    evidenceRequirements: [
+      'Anti-fraud program documentation',
+      'Fraud prevention control inventory',
+      'Fraud detection analytics and monitoring reports',
+      'Fraud awareness training materials and completion records',
+      'Management fraud detection activity documentation',
+      'Fraud response plan and investigation procedures',
+    ],
+    testProcedures: [
+      'Review the anti-fraud program for comprehensiveness (prevention, detection, response)',
+      'Verify fraud prevention controls address identified fraud risks',
+      'Review fraud detection analytics output and investigation of flagged items',
+      'Confirm fraud awareness training was completed by employees',
+      'Verify the fraud response plan includes investigation, evidence preservation, and reporting procedures',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-FRM-3',
+    name: 'Management Override Controls',
+    description:
+      'Controls must specifically address the risk of management override of internal controls, which is inherent in any control environment. This includes unpredictable procedures, journal entry reviews, and audit committee oversight of unusual transactions.',
+    category: 'Fraud Risk Management',
+    implementationGuidance:
+      'Implement controls specifically targeting management override risk: require audit committee review and approval of unusual or significant transactions, implement unpredictable audit procedures (surprise audits, unannounced counts), require independent review of journal entries made by management, analyze accounting estimates for bias (compare estimates to actual outcomes), review significant year-end adjusting entries, monitor for transactions without apparent business purpose, and implement dual authorization for high-risk transactions above management thresholds. Ensure internal audit has direct access to the audit committee.',
+    evidenceRequirements: [
+      'Management override risk control matrix',
+      'Audit committee review records for unusual transactions',
+      'Unpredictable audit procedure schedules and results',
+      'Management journal entry review and approval records',
+      'Accounting estimate bias analysis documentation',
+      'Significant year-end adjustment review records',
+    ],
+    testProcedures: [
+      'Review controls specifically designed to address management override risk',
+      'Verify audit committee reviewed and approved unusual or significant transactions',
+      'Confirm unpredictable audit procedures were conducted during the period',
+      'Review management journal entries for independent review and approval',
+      'Verify accounting estimates were analyzed for potential bias',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-FRM-4',
+    name: 'Related Party Transaction Controls',
+    description:
+      'Controls must ensure that related party transactions are identified, properly authorized, reviewed for business purpose, and disclosed appropriately in financial statements. Related party relationships must be monitored on an ongoing basis.',
+    category: 'Fraud Risk Management',
+    implementationGuidance:
+      'Establish procedures to identify related parties and their transactions: maintain a related party registry updated at least annually, require key personnel to disclose relationships that could create related parties, screen new vendors and customers against the related party registry, implement transaction monitoring to detect undisclosed related party transactions. Require audit committee or independent board approval for material related party transactions. Ensure related party transactions are at arm\'s length or have documented business purpose. Coordinate with external auditors on related party identification and disclosure.',
+    evidenceRequirements: [
+      'Related party policy and procedures',
+      'Related party registry with annual update records',
+      'Key personnel relationship disclosure questionnaires',
+      'Related party transaction screening procedures and results',
+      'Audit committee approval records for material related party transactions',
+      'Related party disclosure documentation for financial statements',
+    ],
+    testProcedures: [
+      'Review the related party registry for completeness and current updates',
+      'Verify key personnel completed relationship disclosure questionnaires',
+      'Test transaction screening against the related party registry',
+      'Review audit committee approvals for material related party transactions',
+      'Verify related party disclosures in financial statements are complete',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-FRM-5',
+    name: 'Fraud Investigation and Response',
+    description:
+      'The organization must have established procedures for investigating suspected fraud, preserving evidence, taking appropriate remedial action, and reporting findings to appropriate parties including the audit committee and external auditors when required.',
+    category: 'Fraud Risk Management',
+    implementationGuidance:
+      'Establish a fraud investigation protocol covering: initial assessment of allegations, evidence preservation (legal hold, system access suspension), investigation procedures (interviews, document review, forensic analysis), documentation requirements, legal privilege considerations, determination of findings, remedial action recommendations, and reporting procedures. Define roles and responsibilities for fraud investigations (internal audit, legal, HR, forensics). Establish reporting requirements for suspected and confirmed fraud to the audit committee and external auditors. Document lessons learned and control improvements from fraud incidents.',
+    evidenceRequirements: [
+      'Fraud investigation policy and procedures',
+      'Investigation role and responsibility matrix',
+      'Evidence preservation procedures and legal hold templates',
+      'Sample fraud investigation reports (anonymized)',
+      'Audit committee and external auditor notification records',
+      'Lessons learned and control improvement documentation',
+    ],
+    testProcedures: [
+      'Review fraud investigation procedures for comprehensiveness',
+      'Verify evidence preservation procedures include legal hold and access suspension',
+      'Confirm roles and responsibilities are clearly defined for investigations',
+      'Review investigation reports for appropriate documentation and conclusions',
+      'Verify audit committee and external auditors were notified of significant fraud matters',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // THIRD-PARTY AND VENDOR MANAGEMENT
+  // ============================================================
+  {
+    controlId: 'SOX-TPM-1',
+    name: 'Service Organization Risk Assessment and Due Diligence',
+    description:
+      'Third-party service providers that process or host financial data must undergo risk assessment and due diligence before engagement. The assessment must evaluate the provider\'s control environment, financial stability, and compliance posture.',
+    category: 'Third-Party and Vendor Management',
+    implementationGuidance:
+      'Implement a third-party risk assessment process for service providers with access to financial data or systems. Conduct due diligence including: review of SOC reports (SOC 1 Type II for financial processing, SOC 2 for technology services), financial stability assessment, information security assessment, compliance certifications review, reference checks, and business continuity assessment. Categorize vendors by risk level based on data access, criticality, and control reliance. Require more extensive due diligence for high-risk vendors. Document due diligence findings and risk acceptance decisions.',
+    evidenceRequirements: [
+      'Third-party risk assessment policy and procedures',
+      'Vendor risk categorization criteria and assessments',
+      'Due diligence documentation for in-scope service providers',
+      'SOC report review records with complementary user entity control (CUEC) gap analysis',
+      'Vendor financial stability assessments',
+      'Risk acceptance documentation for identified gaps',
+    ],
+    testProcedures: [
+      'Review the third-party risk assessment methodology for comprehensiveness',
+      'Verify risk assessments were completed for in-scope service providers',
+      'Review SOC reports for service providers and verify CUEC gaps were addressed',
+      'Confirm due diligence was conducted before vendor engagement',
+      'Review risk acceptance decisions for appropriate authority and documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-TPM-2',
+    name: 'Service Organization Agreements and SLAs',
+    description:
+      'Contracts with service organizations processing financial data must include appropriate terms for security requirements, control requirements, audit rights, data protection, service levels, and incident notification.',
+    category: 'Third-Party and Vendor Management',
+    implementationGuidance:
+      'Develop standard contract clauses for service provider agreements covering: security and control requirements, right to audit clause, annual SOC report delivery requirement, data protection and confidentiality, incident notification timelines (within 24-72 hours), business continuity requirements, subcontractor approval and flow-down requirements, termination and transition assistance, and data return/destruction upon termination. Define SLAs for availability, performance, and recovery time objectives. Review contracts with legal and IT security before execution. Maintain a contract repository with renewal tracking.',
+    evidenceRequirements: [
+      'Standard contract clause templates for service provider agreements',
+      'Executed contracts with in-scope service providers',
+      'SLA definitions and performance reporting',
+      'Right to audit clause documentation',
+      'Contract review and approval records',
+      'Contract repository with renewal tracking',
+    ],
+    testProcedures: [
+      'Review contracts with in-scope service providers for required security and control clauses',
+      'Verify audit rights and SOC report delivery requirements are included',
+      'Confirm incident notification timelines are specified',
+      'Verify SLAs are defined and performance is monitored',
+      'Review contract renewal tracking for timely renewals',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-TPM-3',
+    name: 'Service Organization Monitoring',
+    description:
+      'Ongoing monitoring must be performed to ensure service organizations maintain appropriate controls and meet contractual obligations. Monitoring must include SOC report reviews, performance monitoring, and periodic reassessments.',
+    category: 'Third-Party and Vendor Management',
+    implementationGuidance:
+      'Establish an ongoing monitoring program for service providers handling financial data. Obtain and review annual SOC reports: assess the auditor\'s opinion, review control exceptions and management responses, evaluate complementary user entity controls for implementation in your organization. Monitor SLA performance through regular reporting and dashboards. Conduct periodic risk reassessments (annually for high-risk vendors). Participate in or conduct periodic on-site assessments for critical vendors. Track and follow up on identified issues until resolution. Maintain regular communication with service provider account teams.',
+    evidenceRequirements: [
+      'Service organization monitoring program documentation',
+      'Annual SOC report review records with exception analysis',
+      'Complementary user entity control (CUEC) implementation evidence',
+      'SLA performance monitoring reports and dashboards',
+      'Annual risk reassessment records for high-risk vendors',
+      'Issue tracking and resolution records for service provider concerns',
+    ],
+    testProcedures: [
+      'Verify SOC reports were obtained and reviewed for all in-scope service providers',
+      'Review SOC report analysis for identified exceptions and management responses',
+      'Confirm CUECs are implemented in your control environment',
+      'Verify SLA performance is monitored and issues are addressed',
+      'Confirm annual risk reassessments were completed for high-risk vendors',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-TPM-4',
+    name: 'Fourth-Party and Subcontractor Risk Management',
+    description:
+      'Risks associated with subcontractors and fourth parties used by service providers must be identified and managed. Service providers must disclose material subcontractors and ensure appropriate controls flow down to subcontractors.',
+    category: 'Third-Party and Vendor Management',
+    implementationGuidance:
+      'Require service providers to disclose material subcontractors (fourth parties) as part of the contracting and monitoring process. Include subcontractor approval rights in contracts. Require service providers to flow down security and control requirements to subcontractors. Review SOC reports for inclusion of subcontractor controls or carve-outs requiring separate assessment. Assess concentration risk where multiple vendors rely on the same fourth party. Establish procedures to assess critical fourth parties directly when subcontractor carve-outs exist in SOC reports.',
+    evidenceRequirements: [
+      'Fourth-party risk management policy and procedures',
+      'Subcontractor disclosure requirements in contracts',
+      'Material subcontractor inventory from service providers',
+      'SOC report analysis identifying subcontractor carve-outs',
+      'Fourth-party assessment records for material carve-outs',
+      'Concentration risk assessment for fourth parties',
+    ],
+    testProcedures: [
+      'Verify contracts require subcontractor disclosure and approval',
+      'Review subcontractor inventories provided by service providers',
+      'Identify subcontractor carve-outs in SOC reports and verify separate assessment',
+      'Review concentration risk for critical fourth parties',
+      'Confirm control requirements flow down to subcontractors',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-TPM-5',
+    name: 'Service Organization Termination and Transition',
+    description:
+      'Procedures must be in place for terminating service provider relationships in an orderly manner, ensuring data is returned or destroyed, access is revoked, and transition to alternative providers is managed without disruption to financial reporting.',
+    category: 'Third-Party and Vendor Management',
+    implementationGuidance:
+      'Develop service provider termination and transition procedures covering: notification requirements and timelines, transition planning and knowledge transfer, data extraction and migration, data return certification and destruction verification, access revocation for all personnel and systems, return of company assets (equipment, documentation), final settlement of contractual obligations, and post-termination audit rights. Maintain contingency plans for critical service providers including alternative provider identification. Conduct tabletop exercises for critical vendor termination scenarios. Ensure transition clauses are included in contracts.',
+    evidenceRequirements: [
+      'Service provider termination and transition procedures',
+      'Transition clause requirements in contracts',
+      'Contingency plans for critical service providers',
+      'Termination checklist templates',
+      'Data return/destruction certifications from terminated providers',
+      'Transition tabletop exercise records for critical vendors',
+    ],
+    testProcedures: [
+      'Review termination procedures for completeness and practicality',
+      'Verify contracts include transition assistance and data return clauses',
+      'Confirm contingency plans exist for critical service providers',
+      'Review data return/destruction certifications from recent terminations',
+      'Verify tabletop exercises were conducted for critical vendor scenarios',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // BUSINESS CONTINUITY
+  // ============================================================
+  {
+    controlId: 'SOX-BC-1',
+    name: 'Business Impact Analysis for Financial Reporting',
+    description:
+      'A business impact analysis (BIA) must be conducted to identify critical processes, systems, and resources required for financial reporting. The BIA must define recovery time objectives (RTO) and recovery point objectives (RPO) for financially significant systems.',
+    category: 'Business Continuity',
+    implementationGuidance:
+      'Conduct a business impact analysis specifically covering financial reporting processes and supporting systems. Identify all processes required for financial close and reporting, their dependencies, and the resources required. Assess the impact of disruption over time (financial, operational, regulatory, reputational). Define recovery time objectives (maximum acceptable downtime) and recovery point objectives (maximum acceptable data loss) for each critical system. Prioritize recovery based on financial close deadlines and regulatory filing requirements. Update the BIA at least annually and when significant changes occur.',
+    evidenceRequirements: [
+      'Business impact analysis methodology and scope',
+      'BIA results for financial reporting processes and systems',
+      'RTO and RPO definitions for financially significant systems',
+      'Impact assessment documentation (financial, operational, regulatory)',
+      'Recovery priority list based on BIA results',
+      'Annual BIA update and review records',
+    ],
+    testProcedures: [
+      'Review the BIA methodology for alignment with best practices',
+      'Verify BIA coverage includes all financially significant systems and processes',
+      'Confirm RTOs and RPOs are defined and approved for critical systems',
+      'Verify recovery priorities align with financial reporting requirements',
+      'Confirm the BIA was updated within the last 12 months',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-BC-2',
+    name: 'Business Continuity and Disaster Recovery Plans',
+    description:
+      'Business continuity and disaster recovery (BC/DR) plans must be documented, approved, and maintained for financially significant systems. Plans must enable recovery within defined RTOs and RPOs to support financial reporting obligations.',
+    category: 'Business Continuity',
+    implementationGuidance:
+      'Develop comprehensive BC/DR plans covering: financial close and reporting processes, supporting IT systems and infrastructure, key personnel roles and responsibilities, communication procedures, recovery procedures and checklists, alternate work locations, and vendor coordination. Ensure plans address various scenarios (site failure, system failure, pandemic, cyber attack). Align recovery procedures with defined RTOs and RPOs. Maintain plans in accessible locations (cloud-based, offsite copies). Assign ownership and require annual review and approval. Distribute plans to all personnel with recovery responsibilities.',
+    evidenceRequirements: [
+      'Business continuity plans for financial reporting processes',
+      'IT disaster recovery plans for financially significant systems',
+      'Recovery procedures and checklists',
+      'Alternate work location procedures',
+      'Plan ownership assignment and distribution records',
+      'Annual plan review and approval records',
+    ],
+    testProcedures: [
+      'Review BC/DR plans for completeness and alignment with BIA requirements',
+      'Verify plans address various disruption scenarios',
+      'Confirm recovery procedures can achieve defined RTOs and RPOs',
+      'Verify plans are accessible from alternate locations',
+      'Confirm plans were reviewed and approved within the last 12 months',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-BC-3',
+    name: 'BC/DR Testing and Exercises',
+    description:
+      'Business continuity and disaster recovery plans must be tested periodically to validate their effectiveness. Testing must include tabletop exercises, functional testing, and full recovery tests for critical financial systems.',
+    category: 'Business Continuity',
+    implementationGuidance:
+      'Implement a BC/DR testing program with various test types: tabletop exercises (at least semi-annually) to walk through scenarios and validate procedures, functional tests (at least annually) to verify specific recovery capabilities, and full recovery tests (at least annually for critical systems) to validate end-to-end recovery. Develop test plans with success criteria based on RTOs and RPOs. Document test results, issues identified, and lessons learned. Track remediation of identified issues. Report test results and plan updates to management. Conduct unannounced tests periodically to assess real-world readiness.',
+    evidenceRequirements: [
+      'BC/DR testing program with test types and frequencies',
+      'Test plans with scenarios and success criteria',
+      'Tabletop exercise records with participant attendance and outcomes',
+      'Functional and full recovery test results',
+      'Issues identified during testing and remediation tracking',
+      'Test result reports to management',
+    ],
+    testProcedures: [
+      'Review the BC/DR testing program for appropriate frequency and coverage',
+      'Verify tabletop exercises were conducted at least semi-annually',
+      'Review test results to confirm RTOs and RPOs were achieved',
+      'Verify issues identified during testing were remediated',
+      'Confirm test results were reported to management',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-BC-4',
+    name: 'Crisis Communication and Escalation',
+    description:
+      'Crisis communication and escalation procedures must be established to ensure timely notification of key stakeholders during disruptions affecting financial reporting. Communication plans must cover internal and external parties.',
+    category: 'Business Continuity',
+    implementationGuidance:
+      'Develop crisis communication procedures covering: escalation criteria and triggers, notification chains and contact lists, communication templates for various scenarios, roles and responsibilities for crisis communication, internal communication (employees, management, board), and external communication (auditors, regulators, investors). Maintain current contact lists with multiple contact methods. Establish communication tools that function during outages (emergency notification systems, personal devices). Define communication frequency during extended incidents. Coordinate with corporate communications and investor relations for external messaging.',
+    evidenceRequirements: [
+      'Crisis communication and escalation procedures',
+      'Escalation criteria and notification triggers',
+      'Contact lists with multiple contact methods',
+      'Communication templates for various scenarios',
+      'Emergency notification system configuration',
+      'Crisis communication test records',
+    ],
+    testProcedures: [
+      'Review crisis communication procedures for completeness',
+      'Verify contact lists are current and include backup contacts',
+      'Confirm emergency notification systems are configured and tested',
+      'Review communication templates for appropriateness',
+      'Verify escalation criteria clearly define when to notify key stakeholders',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // INTERNAL AUDIT
+  // ============================================================
+  {
+    controlId: 'SOX-IA-1',
+    name: 'Internal Audit Independence and Authority',
+    description:
+      'The internal audit function must have appropriate independence, authority, and access to fulfill its responsibilities for evaluating internal controls over financial reporting. Internal audit must report functionally to the audit committee.',
+    category: 'Internal Audit',
+    implementationGuidance:
+      'Establish internal audit charter defining: functional reporting to the audit committee and administrative reporting to management, authority to access personnel, records, and systems, responsibility for evaluating internal controls and risk management, independence from operational responsibilities, and prohibition from performing operational duties that would compromise objectivity. Require audit committee approval of the internal audit charter, annual plan, and budget. Ensure the CAE has direct access to the audit committee without management filtering. Conduct periodic external quality assessments of the internal audit function.',
+    evidenceRequirements: [
+      'Internal audit charter approved by the audit committee',
+      'Organizational chart showing internal audit reporting lines',
+      'Audit committee meeting attendance records for CAE',
+      'Annual internal audit plan with audit committee approval',
+      'Internal audit budget with audit committee approval',
+      'External quality assessment reports',
+    ],
+    testProcedures: [
+      'Review the internal audit charter for appropriate authority and independence',
+      'Verify internal audit reports functionally to the audit committee',
+      'Confirm the CAE has direct access to the audit committee',
+      'Verify the annual audit plan and budget were approved by the audit committee',
+      'Review external quality assessment results and remediation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-IA-2',
+    name: 'Risk-Based Internal Audit Planning',
+    description:
+      'Internal audit must develop an annual audit plan based on risk assessment that provides appropriate coverage of internal controls over financial reporting. The plan must address high-risk areas and key controls supporting management\'s ICFR assessment.',
+    category: 'Internal Audit',
+    implementationGuidance:
+      'Develop the annual internal audit plan using a risk-based methodology. Consider risk inputs from: enterprise risk assessment, management\'s ICFR scoping, prior year audit results, regulatory changes, business changes, and fraud risk assessment. Ensure adequate coverage of key controls supporting management\'s Section 404 assessment. Prioritize audits based on risk: higher frequency and depth for high-risk areas. Include IT general controls, application controls, and entity-level controls in the plan. Allow flexibility for emerging risks and special projects. Present the plan to the audit committee for approval.',
+    evidenceRequirements: [
+      'Internal audit risk assessment methodology',
+      'Annual internal audit plan with risk justification',
+      'Mapping of audit plan to management\'s ICFR key controls',
+      'Audit committee approval records for the annual plan',
+      'Plan vs. actual tracking for audit completion',
+      'Emerging risk assessment and plan amendments',
+    ],
+    testProcedures: [
+      'Review the internal audit risk assessment methodology for comprehensiveness',
+      'Verify the audit plan provides coverage of high-risk areas and key ICFR controls',
+      'Confirm the audit plan was approved by the audit committee',
+      'Review plan execution and completion rates',
+      'Verify the plan was updated for emerging risks during the year',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-IA-3',
+    name: 'Internal Audit Execution and Reporting',
+    description:
+      'Internal audits must be conducted according to professional standards with appropriate testing methodology, evidence documentation, and timely reporting of findings. Audit reports must be distributed to management and the audit committee.',
+    category: 'Internal Audit',
+    implementationGuidance:
+      'Conduct internal audits in accordance with IIA Standards (International Standards for the Professional Practice of Internal Auditing). For each audit: develop audit programs with testing procedures, select appropriate sample sizes based on risk, perform testing of control design and operating effectiveness, document work performed and evidence obtained, evaluate findings and develop recommendations, prepare draft reports for management response, and issue final reports with agreed action plans. Apply professional skepticism and maintain objectivity. Distribute reports to management with copies or summaries to the audit committee. Track remediation of findings.',
+    evidenceRequirements: [
+      'Internal audit methodology aligned with IIA Standards',
+      'Audit programs and testing procedures',
+      'Workpapers documenting testing performed and evidence obtained',
+      'Sample size determination methodology',
+      'Draft and final audit reports',
+      'Management responses and action plans',
+      'Finding remediation tracking',
+    ],
+    testProcedures: [
+      'Review internal audit methodology for alignment with IIA Standards',
+      'Select sample audits and review workpapers for adequate documentation',
+      'Verify sample sizes are appropriate for the control and risk level',
+      'Review audit reports for clear communication of findings and recommendations',
+      'Verify findings are tracked through remediation and closure',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-IA-4',
+    name: 'Coordination with External Auditors',
+    description:
+      'Internal audit must coordinate with external auditors to ensure efficient coverage of internal controls, avoid duplication of effort, and maximize reliance on each other\'s work where appropriate.',
+    category: 'Internal Audit',
+    implementationGuidance:
+      'Establish a coordination protocol with external auditors covering: sharing of risk assessments and audit plans, agreement on areas where external auditors will rely on internal audit work, communication of internal audit findings relevant to the financial statement audit, joint planning meetings at the beginning of the audit cycle, and ongoing communication during the audit period. Ensure internal audit work that external auditors will rely upon meets their standards for competence, objectivity, and documentation. Coordinate timing of testing to avoid duplication. Share lessons learned and emerging risks.',
+    evidenceRequirements: [
+      'External auditor coordination protocol',
+      'Joint planning meeting records and agreed coverage',
+      'Areas of reliance agreed with external auditors',
+      'Internal audit findings shared with external auditors',
+      'Communication records during the audit period',
+      'Coordination efficiency assessment',
+    ],
+    testProcedures: [
+      'Review the coordination protocol with external auditors',
+      'Verify joint planning meetings were conducted',
+      'Confirm areas of reliance were agreed and documented',
+      'Verify internal audit findings were shared with external auditors',
+      'Assess the effectiveness of coordination in avoiding duplication',
+    ],
+    status: 'Not Started',
+  },
+
+  // ============================================================
+  // DISCLOSURE CONTROLS
+  // ============================================================
+  {
+    controlId: 'SOX-DC-1',
+    name: 'Disclosure Committee and Process',
+    description:
+      'A disclosure committee must be established to review and evaluate the effectiveness of disclosure controls and procedures. The committee must ensure that material information is identified, evaluated, and disclosed in SEC filings on a timely basis.',
+    category: 'Disclosure Controls',
+    implementationGuidance:
+      'Establish a disclosure committee with cross-functional representation including finance, legal, investor relations, and relevant business unit leaders. Define the committee charter specifying: responsibility for evaluating disclosure controls effectiveness, authority to gather information from all company personnel, procedures for identifying potentially material information, processes for drafting and reviewing SEC filings, and escalation procedures for disagreements. Schedule regular meetings aligned with SEC filing deadlines. Implement a disclosure questionnaire process to gather information from business units. Document committee deliberations and decisions.',
+    evidenceRequirements: [
+      'Disclosure committee charter defining authority and responsibilities',
+      'Committee member roster with cross-functional representation',
+      'Meeting schedules aligned with SEC filing deadlines',
+      'Meeting minutes documenting deliberations and decisions',
+      'Disclosure questionnaire templates and completed questionnaires',
+      'SEC filing review and approval records',
+    ],
+    testProcedures: [
+      'Review the disclosure committee charter for appropriate authority and scope',
+      'Verify committee membership includes appropriate cross-functional representation',
+      'Confirm committee meetings were held in advance of each SEC filing',
+      'Review meeting minutes for evidence of thorough deliberation on material matters',
+      'Verify disclosure questionnaires were collected and reviewed',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-DC-2',
+    name: 'Material Information Identification',
+    description:
+      'Procedures must be in place to identify and evaluate information that may be material to investors and require disclosure. Material events and transactions must be escalated to the disclosure committee on a timely basis.',
+    category: 'Disclosure Controls',
+    implementationGuidance:
+      'Develop materiality guidelines for identifying information requiring disclosure. Define quantitative thresholds (e.g., percentage of revenue, assets, net income) and qualitative factors (investor interest, regulatory impact, reputation risk). Establish processes for business units to identify and report potentially material events: significant contracts, litigation, regulatory actions, accounting changes, related party transactions, and cybersecurity incidents. Implement real-time escalation procedures for time-sensitive material events. Train business unit leaders on materiality concepts and reporting responsibilities. Maintain a log of potentially material items evaluated by the disclosure committee.',
+    evidenceRequirements: [
+      'Materiality guidelines with quantitative and qualitative criteria',
+      'Material event identification and reporting procedures',
+      'Business unit training records on materiality and reporting',
+      'Material event escalation records with timestamps',
+      'Disclosure committee evaluation log for potentially material items',
+      'Documentation of materiality assessments and conclusions',
+    ],
+    testProcedures: [
+      'Review materiality guidelines for appropriate quantitative and qualitative criteria',
+      'Verify procedures exist for business units to report potentially material events',
+      'Review material event escalation records for timeliness',
+      'Confirm disclosure committee evaluated all escalated items',
+      'Verify business unit leaders received training on materiality and reporting',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-DC-3',
+    name: 'SEC Filing Preparation and Review',
+    description:
+      'SEC filings must be prepared following a documented process with appropriate reviews, fact-checking, and approvals. The filing process must ensure accuracy, completeness, and compliance with SEC requirements and GAAP.',
+    category: 'Disclosure Controls',
+    implementationGuidance:
+      'Establish a comprehensive SEC filing preparation process including: filing calendar with milestones and deadlines, role assignments for drafting, reviewing, and approving sections, fact-checking and tie-out procedures to supporting documentation, cross-reference checks between filing sections, legal review for compliance with SEC regulations, technical XBRL/iXBRL tagging review, final read-through by senior executives, and sign-off procedures before submission. Implement a filing checklist to ensure all steps are completed. Use collaborative document management with version control. Conduct post-filing reviews to identify process improvements.',
+    evidenceRequirements: [
+      'SEC filing preparation procedures and calendar',
+      'Role assignments for drafting, review, and approval',
+      'Fact-checking and tie-out documentation',
+      'Legal compliance review records',
+      'XBRL/iXBRL tagging review records',
+      'Filing checklist completion records',
+      'Final executive sign-off records',
+      'Post-filing review and improvement documentation',
+    ],
+    testProcedures: [
+      'Review SEC filing procedures for completeness and appropriate controls',
+      'Verify filing calendar milestones were met for recent filings',
+      'Review fact-checking and tie-out documentation for accuracy',
+      'Confirm legal compliance review was completed',
+      'Verify final executive sign-offs were obtained before filing',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'SOX-DC-4',
+    name: 'Regulation FD Compliance',
+    description:
+      'Controls must ensure compliance with Regulation Fair Disclosure (Reg FD), which requires that material nonpublic information disclosed to certain parties must be simultaneously disclosed to the public. Policies must govern communications with analysts, investors, and media.',
+    category: 'Disclosure Controls',
+    implementationGuidance:
+      'Develop a Regulation FD compliance program including: policy defining material nonpublic information and prohibited selective disclosure, designated spokespersons authorized to communicate with analysts, investors, and media, pre-approval procedures for external communications and presentations, investor relations guidelines for earnings calls and conferences, monitoring of social media communications by company personnel, procedures for handling inadvertent disclosures (public disclosure within 24 hours), and training for personnel who may interact with external parties. Maintain records of all external communications and presentations.',
+    evidenceRequirements: [
+      'Regulation FD compliance policy and procedures',
+      'Designated spokesperson list with authorization records',
+      'External communication pre-approval records',
+      'Investor relations communication guidelines',
+      'Training records for Reg FD compliance',
+      'External communication and presentation logs',
+      'Inadvertent disclosure response records (if applicable)',
+    ],
+    testProcedures: [
+      'Review Reg FD policy for appropriate scope and procedures',
+      'Verify designated spokespersons are identified and authorized',
+      'Review pre-approval records for external communications',
+      'Confirm training was completed by relevant personnel',
+      'Review external communication logs for compliance with procedures',
+    ],
+    status: 'Not Started',
+  },
 ];
