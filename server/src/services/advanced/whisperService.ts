@@ -281,8 +281,13 @@ class WhisperService {
         }
         throw error;
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[Whisper] Error transcribing video', error);
+      // In production, throw error instead of falling through to fallback
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(`Video transcription failed: ${error.message}. OPENAI_API_KEY must be configured for video transcription in production.`);
+      }
+      // Development fallback
       return this.fallbackTranscription(videoBuffer, options);
     }
   }

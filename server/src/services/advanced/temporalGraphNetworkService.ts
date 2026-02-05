@@ -262,8 +262,7 @@ class TemporalGraphNetworkService {
    * Build temporal graph from historical data
    */
   private buildTemporalGraph(risks: any[], frameworks: any[], controls: any[] = []): any {
-    // Simplified temporal graph structure
-    // In production, would use actual graph neural network library
+    // Graph-based temporal analysis using topology metrics (betweenness centrality, PageRank)
 
     const nodes: any[] = [];
     const edges: any[] = [];
@@ -293,6 +292,25 @@ class TemporalGraphNetworkService {
       timestamps.push(framework.updatedAt);
     }
 
+    // Add control nodes for richer graph connectivity
+    for (const control of controls) {
+      nodes.push({
+        id: control.id,
+        type: 'control',
+        status: control.status,
+        timestamp: control.updatedAt || control.createdAt,
+      });
+      if (control.updatedAt || control.createdAt) {
+        timestamps.push(control.updatedAt || control.createdAt);
+      }
+    }
+
+    // Build adjacency list for graph algorithms
+    const adjacency = new Map<string, Array<{ target: string; weight: number }>>();
+    for (const node of nodes) {
+      adjacency.set(node.id, []);
+    }
+
     // Add temporal edges (risks that occurred close in time are connected)
     for (let i = 0; i < risks.length; i++) {
       for (let j = i + 1; j < risks.length; j++) {
@@ -301,20 +319,145 @@ class TemporalGraphNetworkService {
         );
         const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
 
-        if (daysDiff < 30) { // Risks within 30 days are connected
+        if (daysDiff < 30) {
+          const weight = 1 / (1 + daysDiff);
           edges.push({
             source: risks[i].id,
             target: risks[j].id,
-            weight: 1 / (1 + daysDiff), // Closer in time = stronger connection
-            timestamp: risks[i].detectedAt < risks[j].detectedAt 
-              ? risks[i].detectedAt 
+            weight,
+            timestamp: risks[i].detectedAt < risks[j].detectedAt
+              ? risks[i].detectedAt
               : risks[j].detectedAt,
           });
+          adjacency.get(risks[i].id)?.push({ target: risks[j].id, weight });
+          adjacency.get(risks[j].id)?.push({ target: risks[i].id, weight });
         }
       }
     }
 
-    return { nodes, edges, timestamps: timestamps.sort() };
+    // Add category-based edges between risks sharing the same category
+    for (let i = 0; i < risks.length; i++) {
+      for (let j = i + 1; j < risks.length; j++) {
+        if (risks[i].category === risks[j].category) {
+          const existingEdge = edges.find(
+            e => (e.source === risks[i].id && e.target === risks[j].id) ||
+                 (e.source === risks[j].id && e.target === risks[i].id)
+          );
+          if (!existingEdge) {
+            const weight = 0.5;
+            edges.push({
+              source: risks[i].id,
+              target: risks[j].id,
+              weight,
+              timestamp: risks[i].detectedAt,
+            });
+            adjacency.get(risks[i].id)?.push({ target: risks[j].id, weight });
+            adjacency.get(risks[j].id)?.push({ target: risks[i].id, weight });
+          }
+        }
+      }
+    }
+
+    // Compute betweenness centrality using Brandes' algorithm (simplified for undirected graph)
+    const betweenness = new Map<string, number>();
+    for (const node of nodes) {
+      betweenness.set(node.id, 0);
+    }
+
+    for (const source of nodes) {
+      const stack: string[] = [];
+      const predecessors = new Map<string, string[]>();
+      const sigma = new Map<string, number>();
+      const dist = new Map<string, number>();
+      const delta = new Map<string, number>();
+
+      for (const n of nodes) {
+        predecessors.set(n.id, []);
+        sigma.set(n.id, 0);
+        dist.set(n.id, -1);
+        delta.set(n.id, 0);
+      }
+      sigma.set(source.id, 1);
+      dist.set(source.id, 0);
+
+      const queue: string[] = [source.id];
+      while (queue.length > 0) {
+        const v = queue.shift()!;
+        stack.push(v);
+        const neighbors = adjacency.get(v) || [];
+        for (const { target: w } of neighbors) {
+          if (dist.get(w) === -1) {
+            dist.set(w, (dist.get(v) || 0) + 1);
+            queue.push(w);
+          }
+          if (dist.get(w) === (dist.get(v) || 0) + 1) {
+            sigma.set(w, (sigma.get(w) || 0) + (sigma.get(v) || 0));
+            predecessors.get(w)?.push(v);
+          }
+        }
+      }
+
+      while (stack.length > 0) {
+        const w = stack.pop()!;
+        for (const v of (predecessors.get(w) || [])) {
+          const contribution = ((sigma.get(v) || 0) / (sigma.get(w) || 1)) * (1 + (delta.get(w) || 0));
+          delta.set(v, (delta.get(v) || 0) + contribution);
+        }
+        if (w !== source.id) {
+          betweenness.set(w, (betweenness.get(w) || 0) + (delta.get(w) || 0));
+        }
+      }
+    }
+
+    // Normalize betweenness centrality
+    const n = nodes.length;
+    const normFactor = n > 2 ? (n - 1) * (n - 2) : 1;
+    for (const [id, val] of betweenness.entries()) {
+      betweenness.set(id, val / normFactor);
+    }
+
+    // Compute PageRank-like influence scores using weighted edges
+    const pageRank = new Map<string, number>();
+    const dampingFactor = 0.85;
+    const iterations = 20;
+    const initialRank = 1 / (nodes.length || 1);
+
+    for (const node of nodes) {
+      pageRank.set(node.id, initialRank);
+    }
+
+    for (let iter = 0; iter < iterations; iter++) {
+      const newRank = new Map<string, number>();
+      for (const node of nodes) {
+        newRank.set(node.id, (1 - dampingFactor) / (nodes.length || 1));
+      }
+
+      for (const node of nodes) {
+        const neighbors = adjacency.get(node.id) || [];
+        const totalWeight = neighbors.reduce((sum, e) => sum + e.weight, 0);
+        if (totalWeight > 0) {
+          for (const { target, weight } of neighbors) {
+            const contribution = (pageRank.get(node.id) || 0) * dampingFactor * (weight / totalWeight);
+            newRank.set(target, (newRank.get(target) || 0) + contribution);
+          }
+        }
+      }
+
+      for (const [id, rank] of newRank.entries()) {
+        pageRank.set(id, rank);
+      }
+    }
+
+    // Attach computed metrics to nodes
+    for (const node of nodes) {
+      node.betweennessCentrality = betweenness.get(node.id) || 0;
+      node.pageRank = pageRank.get(node.id) || 0;
+      const neighbors = adjacency.get(node.id) || [];
+      node.degree = neighbors.length;
+      node.weightedDegree = neighbors.reduce((sum, e) => sum + e.weight, 0);
+    }
+
+    return { nodes, edges, timestamps: timestamps.sort(), adjacency };
   }
 
   /**
@@ -328,10 +471,12 @@ class TemporalGraphNetworkService {
   ): RiskPrediction[] {
     const predictions: RiskPrediction[] = [];
 
-    // Analyze patterns in the graph
+    // Analyze patterns in the graph using topology metrics
     const riskCategories = new Map<string, number>();
     const severityDistribution = new Map<string, number>();
+    const categoryNodes = new Map<string, any[]>();
 
+    // Collect risk nodes with their graph metrics
     for (const node of graph.nodes) {
       if (node.type === 'risk') {
         riskCategories.set(
@@ -342,54 +487,92 @@ class TemporalGraphNetworkService {
           node.severity,
           (severityDistribution.get(node.severity) || 0) + 1
         );
+        if (!categoryNodes.has(node.category)) {
+          categoryNodes.set(node.category, []);
+        }
+        categoryNodes.get(node.category)!.push(node);
       }
     }
+
+    // Compute global graph metrics for normalization
+    const riskNodes = graph.nodes.filter((n: any) => n.type === 'risk');
+    const maxPageRank = riskNodes.length > 0
+      ? Math.max(...riskNodes.map((n: any) => n.pageRank || 0))
+      : 1;
+    const maxBetweenness = riskNodes.length > 0
+      ? Math.max(...riskNodes.map((n: any) => n.betweennessCentrality || 0))
+      : 1;
 
     // Predict future risks based on patterns
     const futureDate = new Date();
     futureDate.setMonth(futureDate.getMonth() + timeHorizonMonths);
 
-    // Predict risks for each category
+    // Predict risks for each category using graph-informed scoring
     for (const [category, count] of riskCategories.entries()) {
+      const nodesInCategory = categoryNodes.get(category) || [];
       const avgFrequency = count / (graph.timestamps.length / 30); // Risks per month
       const predictedCount = Math.ceil(avgFrequency * timeHorizonMonths);
+
+      // Calculate category-level graph influence using weighted average of node metrics
+      const totalWeightedDegree = nodesInCategory.reduce((sum: number, n: any) => sum + (n.weightedDegree || 0), 0);
+      const avgPageRank = nodesInCategory.reduce((sum: number, n: any) => sum + (n.pageRank || 0), 0) / (nodesInCategory.length || 1);
+      const avgBetweenness = nodesInCategory.reduce((sum: number, n: any) => sum + (n.betweennessCentrality || 0), 0) / (nodesInCategory.length || 1);
+      const maxCategoryDegree = nodesInCategory.length > 0
+        ? Math.max(...nodesInCategory.map((n: any) => n.degree || 0))
+        : 0;
+
+      // Normalized influence score: combines PageRank and betweenness centrality
+      const normalizedPageRank = maxPageRank > 0 ? avgPageRank / maxPageRank : 0;
+      const normalizedBetweenness = maxBetweenness > 0 ? avgBetweenness / maxBetweenness : 0;
+      // Weighted combination: PageRank (0.4) + Betweenness (0.3) + Connectivity (0.3)
+      const connectivityScore = maxCategoryDegree > 0 ? Math.min(1, totalWeightedDegree / (nodesInCategory.length * 3)) : 0;
+      const graphInfluence = normalizedPageRank * 0.4 + normalizedBetweenness * 0.3 + connectivityScore * 0.3;
 
       for (let i = 0; i < predictedCount && i < 5; i++) { // Limit to 5 per category
         const predictedDate = new Date();
         predictedDate.setMonth(predictedDate.getMonth() + (i * timeHorizonMonths / predictedCount));
 
-        // Determine predicted severity based on historical distribution
-        const mostCommonSeverity = Array.from(severityDistribution.entries())
+        // Determine predicted severity using weighted vote from graph-influential nodes
+        const severityWeights: Record<string, number> = {};
+        for (const node of nodesInCategory) {
+          const nodeInfluence = (node.pageRank || 0) + (node.betweennessCentrality || 0) + (node.weightedDegree || 0) * 0.1;
+          severityWeights[node.severity] = (severityWeights[node.severity] || 0) + nodeInfluence;
+        }
+        const predictedSeverity = Object.entries(severityWeights)
           .sort((a, b) => b[1] - a[1])[0]?.[0] || 'Medium';
 
-        // Calculate confidence based on data quality
-        const dataQuality = Math.min(1, graph.timestamps.length / 100); // More data = higher confidence
-        const confidence = Math.max(0.5, 0.7 * dataQuality);
+        // Calculate confidence: data quality + graph connectivity signal
+        const dataQuality = Math.min(1, graph.timestamps.length / 100);
+        const graphSignalStrength = Math.min(1, graph.edges.length / (graph.nodes.length || 1));
+        const confidence = Math.max(0.5, 0.5 * dataQuality + 0.3 * graphSignalStrength + 0.2 * graphInfluence);
 
-        // Calculate probability with control gaps consideration
-        const baseProbability = Math.min(0.9, 0.3 + (count / 100));
-        const controlGapFactor = controls.filter(c => c.status === 'Pending').length > 0 ? 0.1 : 0;
-        const predictedProbability = Math.min(0.95, baseProbability + controlGapFactor);
+        // Calculate probability: base frequency + graph influence + control gaps
+        const baseProbability = Math.min(0.85, 0.2 + (count / 100));
+        const graphBoost = graphInfluence * 0.15; // High-influence categories get up to 15% probability boost
+        const pendingControls = controls.filter(c => c.status === 'Pending').length;
+        const controlGapFactor = pendingControls > 0 ? Math.min(0.15, pendingControls * 0.03) : 0;
+        const predictedProbability = Math.min(0.95, baseProbability + graphBoost + controlGapFactor);
 
         predictions.push({
           riskType: category,
           predictedProbability,
-          predictedSeverity: mostCommonSeverity as any,
+          predictedSeverity: predictedSeverity as any,
           predictedDate,
           confidence,
           factors: [
             `Historical frequency: ${count} occurrences`,
             `Category: ${category}`,
-            `Time-based pattern detected`,
-            controls.filter(c => c.status === 'Pending').length > 0 
-              ? `${controls.filter(c => c.status === 'Pending').length} pending controls increase risk`
+            `Graph influence score: ${graphInfluence.toFixed(3)} (PageRank: ${normalizedPageRank.toFixed(3)}, betweenness: ${normalizedBetweenness.toFixed(3)})`,
+            `Category connectivity: ${maxCategoryDegree} max degree, ${totalWeightedDegree.toFixed(2)} total weighted degree`,
+            pendingControls > 0
+              ? `${pendingControls} pending controls increase risk (+${(controlGapFactor * 100).toFixed(1)}%)`
               : 'Control implementation status normal',
           ],
         });
       }
     }
 
-    return predictions.sort((a, b) => 
+    return predictions.sort((a, b) =>
       a.predictedProbability - b.predictedProbability
     ).reverse(); // Sort by probability descending
   }

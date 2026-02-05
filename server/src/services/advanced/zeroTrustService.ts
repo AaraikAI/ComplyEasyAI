@@ -657,42 +657,164 @@ class ZeroTrustService {
     deviceTrust: DeviceTrust,
     organizationId: string
   ): Promise<boolean> {
-    // Simple condition evaluation (in production, use a proper expression evaluator)
-    const condition = rule.condition.toLowerCase();
+    try {
+      // Build a context object with all available data for condition evaluation
+      const now = new Date(request.context.time);
+      const context: Record<string, any> = {
+        device: {
+          id: request.deviceId,
+          trusted: deviceTrust.isTrusted,
+          trustScore: deviceTrust.trustScore,
+          ...(deviceTrust.metadata || {}),
+        },
+        user: {
+          id: request.userId,
+        },
+        resource: {
+          id: request.resourceId,
+        },
+        action: request.action,
+        time: {
+          hour: now.getHours(),
+          minute: now.getMinutes(),
+          dayOfWeek: now.getDay(),
+          date: now.toISOString().split('T')[0],
+          timestamp: now.getTime(),
+        },
+        context: {
+          ipAddress: request.context.ipAddress,
+          location: request.context.location || '',
+        },
+      };
 
-    if (rule.type === 'device') {
-      if (condition.includes('trusted') && deviceTrust.isTrusted) return true;
-      if (condition.includes('score') && condition.includes('>')) {
-        const threshold = parseInt(condition.match(/>\s*(\d+)/)?.[1] || '0');
-        return deviceTrust.trustScore > threshold;
+      // Enrich context based on rule type
+      if (rule.type === 'network') {
+        const segment = await this.getNetworkSegment(request.context.ipAddress, organizationId);
+        context.network = {
+          segment: segment?.name || '',
+          trustLevel: segment?.trustLevel || 'untrusted',
+          cidr: segment?.cidr || '',
+        };
+      }
+
+      if (rule.type === 'user') {
+        const user = await prisma.user.findUnique({
+          where: { id: request.userId },
+          select: { role: true },
+        });
+        context.user.role = user?.role || '';
+      }
+
+      // Evaluate the condition expression against the context
+      return this.evaluateConditionExpression(rule.condition, context);
+    } catch (error) {
+      logger.warn(`[ZeroTrust] Failed to evaluate rule ${rule.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return false;
+    }
+  }
+
+  /**
+   * Resolve a dotted field path (e.g., "device.trustScore") to its value in the context object.
+   */
+  private resolveField(fieldPath: string, context: Record<string, any>): any {
+    const parts = fieldPath.trim().split('.');
+    let current: any = context;
+    for (const part of parts) {
+      if (current == null || typeof current !== 'object') return undefined;
+      current = current[part];
+    }
+    return current;
+  }
+
+  /**
+   * Parse a value literal from a condition string.
+   * Handles quoted strings, numbers, booleans, and bare identifiers (resolved from context).
+   */
+  private parseValue(raw: string, context: Record<string, any>): any {
+    const trimmed = raw.trim();
+
+    // Quoted string
+    const strMatch = trimmed.match(/^['"](.*)['"]$/);
+    if (strMatch) return strMatch[1];
+
+    // Boolean literals
+    if (trimmed === 'true') return true;
+    if (trimmed === 'false') return false;
+
+    // Numeric literal
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) return parseFloat(trimmed);
+
+    // Otherwise treat as a field path into context
+    return this.resolveField(trimmed, context);
+  }
+
+  /**
+   * Evaluate a single comparison expression like "device.trustScore > 70"
+   * Supports operators: ==, !=, >, <, >=, <=, contains, matches
+   */
+  private evaluateSingleCondition(expr: string, context: Record<string, any>): boolean {
+    const trimmed = expr.trim();
+
+    // Operator patterns ordered by specificity (multi-char operators first)
+    const operators = ['>=', '<=', '!=', '==', '>', '<', ' contains ', ' matches '];
+    for (const op of operators) {
+      const idx = trimmed.indexOf(op);
+      if (idx === -1) continue;
+
+      const leftRaw = trimmed.substring(0, idx);
+      const rightRaw = trimmed.substring(idx + op.length);
+      const left = this.parseValue(leftRaw, context);
+      const right = this.parseValue(rightRaw, context);
+
+      switch (op.trim()) {
+        case '==':
+          return left == right;
+        case '!=':
+          return left != right;
+        case '>':
+          return typeof left === 'number' && typeof right === 'number' && left > right;
+        case '<':
+          return typeof left === 'number' && typeof right === 'number' && left < right;
+        case '>=':
+          return typeof left === 'number' && typeof right === 'number' && left >= right;
+        case '<=':
+          return typeof left === 'number' && typeof right === 'number' && left <= right;
+        case 'contains':
+          if (typeof left === 'string' && typeof right === 'string') return left.includes(right);
+          if (Array.isArray(left)) return left.includes(right);
+          return false;
+        case 'matches':
+          if (typeof left === 'string' && typeof right === 'string') {
+            try {
+              return new RegExp(right).test(left);
+            } catch {
+              return false;
+            }
+          }
+          return false;
+        default:
+          return false;
       }
     }
 
-    if (rule.type === 'network') {
-      const segment = await this.getNetworkSegment(request.context.ipAddress, organizationId);
-      if (condition.includes('segment') && segment) {
-        const segmentName = condition.match(/segment\s*==\s*['"]([^'"]+)['"]/)?.[1];
-        return segment?.name === segmentName;
-      }
-    }
+    // No operator found - treat as a boolean field reference (e.g., "device.trusted")
+    const val = this.parseValue(trimmed, context);
+    return Boolean(val);
+  }
 
-    if (rule.type === 'user') {
-      const user = await prisma.user.findUnique({
-        where: { id: request.userId },
-        select: { role: true },
-      });
-      if (condition.includes('role') && user) {
-        const role = condition.match(/role\s*==\s*['"]([^'"]+)['"]/)?.[1];
-        return user.role === role;
-      }
+  /**
+   * Evaluate a full condition expression supporting && and || logical operators.
+   * Splits on || first (lower precedence), then && (higher precedence).
+   */
+  private evaluateConditionExpression(condition: string, context: Record<string, any>): boolean {
+    // Split on || (OR) - lower precedence
+    const orParts = condition.split('||').map(s => s.trim());
+    for (const orPart of orParts) {
+      // Split on && (AND) - higher precedence
+      const andParts = orPart.split('&&').map(s => s.trim());
+      const andResult = andParts.every(part => this.evaluateSingleCondition(part, context));
+      if (andResult) return true;
     }
-
-    if (rule.type === 'resource') {
-      if (condition.includes('resource') && condition.includes(request.resourceId)) {
-        return true;
-      }
-    }
-
     return false;
   }
 
