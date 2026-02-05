@@ -826,8 +826,8 @@ allow {
                 id: true,
                 email: true,
                 role: true,
-                mfaEnabled: true,
-                lastLoginAt: true,
+                twoFactorEnabled: true,
+                lastLogin: true,
                 createdAt: true,
               },
             },
@@ -953,12 +953,12 @@ allow {
           plan: org?.plan,
         },
         resources: {
-          users: org?.users.map(u => ({
+          users: (org as any)?.users?.map((u: any) => ({
             id: u.id,
             email: u.email,
             role: u.role,
-            mfa_enabled: u.mfaEnabled,
-            last_login: u.lastLoginAt,
+            mfa_enabled: u.twoFactorEnabled,
+            last_login: u.lastLogin,
           })) || [],
           frameworks: frameworks.map(f => ({
             id: f.id,
