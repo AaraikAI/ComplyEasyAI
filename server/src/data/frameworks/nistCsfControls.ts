@@ -396,6 +396,28 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
     status: 'Not Started',
   },
   {
+    controlId: 'GV.SC-02',
+    name: 'Cybersecurity Roles for Suppliers',
+    description:
+      'Cybersecurity roles and responsibilities for suppliers, customers, and partners are established, communicated, and coordinated internally and externally.',
+    category: 'Govern - Supply Chain Risk Management',
+    implementationGuidance:
+      'Define and document cybersecurity roles and responsibilities for all parties in the supply chain including suppliers, customers, and partners. Establish clear expectations for security practices, incident reporting, and compliance obligations. Communicate roles through contracts, service level agreements, and regular coordination meetings. Ensure internal teams understand their responsibilities in managing supply chain relationships.',
+    evidenceRequirements: [
+      'Documented cybersecurity roles and responsibilities for supply chain parties',
+      'Contract clauses defining supplier and partner security responsibilities',
+      'Communication records of security expectations to external parties',
+      'Internal role assignments for supply chain relationship management',
+    ],
+    testProcedures: [
+      'Review documentation of supply chain cybersecurity roles',
+      'Verify contracts include security responsibility definitions',
+      'Confirm security expectations are communicated to all parties',
+      'Assess internal team understanding of supply chain responsibilities',
+    ],
+    status: 'Not Started',
+  },
+  {
     controlId: 'GV.SC-03',
     name: 'Supply Chain Risk Assessment',
     description:
@@ -414,6 +436,28 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
       'Verify vendor risk assessments are conducted per policy',
       'Confirm supply chain risks are tracked in enterprise risk register',
       'Assess whether risk findings lead to corrective actions',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GV.SC-04',
+    name: 'Supplier Due Diligence',
+    description:
+      'Suppliers are known and prioritized by criticality.',
+    category: 'Govern - Supply Chain Risk Management',
+    implementationGuidance:
+      'Maintain a comprehensive inventory of all suppliers, vendors, and service providers. Classify suppliers by criticality based on their access to sensitive data, systems, and business-critical processes. Conduct due diligence on suppliers including background checks, financial stability assessments, and security posture evaluations. Prioritize risk management activities based on supplier criticality.',
+    evidenceRequirements: [
+      'Comprehensive supplier inventory with classification',
+      'Supplier criticality assessment methodology and results',
+      'Due diligence records for suppliers including security evaluations',
+      'Prioritized supplier risk management activities based on criticality',
+    ],
+    testProcedures: [
+      'Review supplier inventory for completeness and accuracy',
+      'Verify criticality assessments are performed for all suppliers',
+      'Confirm due diligence is conducted based on supplier risk level',
+      'Assess prioritization of risk management activities by supplier criticality',
     ],
     status: 'Not Started',
   },
@@ -440,6 +484,28 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
     status: 'Not Started',
   },
   {
+    controlId: 'GV.SC-06',
+    name: 'Supply Chain Planning and Due Diligence',
+    description:
+      'Planning and due diligence are performed to reduce risks before entering into formal supplier or other third-party relationships.',
+    category: 'Govern - Supply Chain Risk Management',
+    implementationGuidance:
+      'Conduct thorough planning and due diligence before establishing formal relationships with suppliers and third parties. Perform security assessments, review certifications and compliance posture, evaluate financial stability, and assess geographic and geopolitical risks. Develop supplier onboarding criteria that include security requirements. Document due diligence findings and use them to inform contract negotiations.',
+    evidenceRequirements: [
+      'Pre-engagement planning and due diligence procedures',
+      'Due diligence assessment records for prospective suppliers',
+      'Security requirement criteria for supplier onboarding',
+      'Due diligence findings informing contract terms',
+    ],
+    testProcedures: [
+      'Review due diligence procedures for comprehensiveness',
+      'Verify due diligence is performed before supplier agreements',
+      'Confirm security criteria are applied in onboarding decisions',
+      'Assess linkage between due diligence findings and contract terms',
+    ],
+    status: 'Not Started',
+  },
+  {
     controlId: 'GV.SC-07',
     name: 'Supply Chain Risk Understanding',
     description:
@@ -458,6 +524,28 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
       'Verify continuous monitoring processes are operational',
       'Confirm risk treatment plans exist and are tracked',
       'Assess periodic reassessment schedule adherence',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'GV.SC-08',
+    name: 'Supply Chain Incident Response',
+    description:
+      'Relevant suppliers and other third parties are included in incident planning, response, and recovery activities.',
+    category: 'Govern - Supply Chain Risk Management',
+    implementationGuidance:
+      'Include critical suppliers and third parties in incident response planning, exercises, and actual response activities. Define communication protocols for incidents affecting the supply chain. Establish roles and responsibilities for suppliers during incidents. Coordinate recovery efforts with suppliers when their products or services are involved in incidents.',
+    evidenceRequirements: [
+      'Supplier inclusion in incident response plans',
+      'Communication protocols for supply chain incidents',
+      'Supplier participation records in incident exercises',
+      'Coordination procedures for supplier-involved incident response',
+    ],
+    testProcedures: [
+      'Review incident response plans for supplier inclusion',
+      'Verify communication protocols are defined for supply chain incidents',
+      'Confirm suppliers participate in relevant incident exercises',
+      'Assess coordination effectiveness during supplier-involved incidents',
     ],
     status: 'Not Started',
   },
@@ -646,6 +734,28 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
     status: 'Not Started',
   },
   {
+    controlId: 'ID.AM-06',
+    name: 'Workforce Cybersecurity Roles',
+    description:
+      'Cybersecurity roles and responsibilities for the entire workforce and third-party stakeholders are established.',
+    category: 'Identify - Asset Management',
+    implementationGuidance:
+      'Define and document cybersecurity roles and responsibilities for all workforce members, contractors, and third-party stakeholders with access to organizational systems. Establish clear accountability for cybersecurity tasks including asset management, access control, incident reporting, and policy compliance. Communicate roles through job descriptions, training, and policy documentation.',
+    evidenceRequirements: [
+      'Documented cybersecurity roles and responsibilities for all workforce categories',
+      'Job descriptions incorporating cybersecurity responsibilities',
+      'Third-party stakeholder cybersecurity role definitions',
+      'Communication records of cybersecurity responsibilities',
+    ],
+    testProcedures: [
+      'Review workforce cybersecurity role documentation for completeness',
+      'Verify job descriptions include cybersecurity responsibilities',
+      'Confirm third-party roles are defined and communicated',
+      'Assess employee understanding of their cybersecurity responsibilities',
+    ],
+    status: 'Not Started',
+  },
+  {
     controlId: 'ID.AM-07',
     name: 'Data Asset Inventory and Mapping',
     description:
@@ -780,6 +890,28 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
     status: 'Not Started',
   },
   {
+    controlId: 'ID.RA-05',
+    name: 'Risk Prioritization',
+    description:
+      'Threats, vulnerabilities, likelihoods, and impacts are used to understand inherent risk and inform risk response prioritization.',
+    category: 'Identify - Risk Assessment',
+    implementationGuidance:
+      'Use threat, vulnerability, likelihood, and impact information to calculate and prioritize risks. Apply consistent risk scoring methodologies to enable comparison across risks. Prioritize risk response activities based on risk scores and alignment with organizational risk appetite. Document prioritization rationale and review priorities as conditions change.',
+    evidenceRequirements: [
+      'Risk prioritization methodology documentation',
+      'Prioritized risk register with scoring rationale',
+      'Risk response priority alignment with risk appetite',
+      'Evidence of periodic risk priority reviews',
+    ],
+    testProcedures: [
+      'Review risk prioritization methodology for consistency',
+      'Verify risk register contains prioritized risks with scores',
+      'Confirm risk response priorities align with organizational risk appetite',
+      'Assess periodic review of risk priorities',
+    ],
+    status: 'Not Started',
+  },
+  {
     controlId: 'ID.RA-06',
     name: 'Risk Response Selection',
     description:
@@ -820,6 +952,50 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
       'Verify risk impact assessments are performed for changes',
       'Confirm exceptions are documented with approvals and compensating controls',
       'Assess tracking and periodic review of active exceptions',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'ID.RA-08',
+    name: 'Vulnerability Disclosure',
+    description:
+      'Processes for receiving, analyzing, and responding to vulnerability disclosures are established.',
+    category: 'Identify - Risk Assessment',
+    implementationGuidance:
+      'Establish formal processes for receiving vulnerability disclosures from internal and external sources including security researchers, vendors, and employees. Implement a vulnerability disclosure program with clear submission channels, response timelines, and responsible disclosure guidelines. Analyze disclosed vulnerabilities for impact and prioritize remediation. Coordinate with researchers and provide acknowledgment where appropriate.',
+    evidenceRequirements: [
+      'Vulnerability disclosure policy and program documentation',
+      'Secure vulnerability submission channel configuration',
+      'Vulnerability disclosure response and remediation records',
+      'Researcher coordination and acknowledgment records',
+    ],
+    testProcedures: [
+      'Review vulnerability disclosure program for completeness',
+      'Verify secure submission channels are operational',
+      'Confirm disclosed vulnerabilities are analyzed and tracked',
+      'Assess response timeliness and researcher coordination',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'ID.RA-09',
+    name: 'Risk Assessment Documentation',
+    description:
+      'The authenticity and integrity of hardware and software are assessed prior to acquisition and use.',
+    category: 'Identify - Risk Assessment',
+    implementationGuidance:
+      'Implement processes to verify the authenticity and integrity of hardware and software before acquisition and deployment. Use trusted sources, verify digital signatures, validate checksums, and check for tampering indicators. Assess supply chain risks for critical components. Maintain documentation of verification activities for audit purposes.',
+    evidenceRequirements: [
+      'Hardware and software authentication verification procedures',
+      'Digital signature and checksum validation records',
+      'Supply chain verification documentation',
+      'Trusted source and vendor validation records',
+    ],
+    testProcedures: [
+      'Review authentication verification procedures',
+      'Verify digital signatures and checksums are validated for acquisitions',
+      'Confirm supply chain risks are assessed for critical components',
+      'Assess documentation of verification activities',
     ],
     status: 'Not Started',
   },
@@ -1166,6 +1342,160 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
     status: 'Not Started',
   },
   {
+    controlId: 'PR.DS-03',
+    name: 'Asset Removal and Transfer',
+    description:
+      'Assets are formally managed throughout removal, transfers, and disposition.',
+    category: 'Protect - Data Security',
+    implementationGuidance:
+      'Implement formal processes for managing data assets throughout their lifecycle including removal, transfers, and disposition. Ensure secure transfer procedures for data moving between systems, locations, or ownership. Implement secure data destruction methods for disposed assets. Maintain chain of custody documentation for asset transfers.',
+    evidenceRequirements: [
+      'Asset removal and transfer procedures',
+      'Secure data destruction policies and methods',
+      'Chain of custody documentation for asset transfers',
+      'Asset disposal verification records',
+    ],
+    testProcedures: [
+      'Review asset removal and transfer procedures',
+      'Verify secure destruction methods are implemented',
+      'Confirm chain of custody is maintained for transfers',
+      'Assess disposal verification processes',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PR.DS-04',
+    name: 'Capacity Management',
+    description:
+      'Adequate capacity to ensure availability is maintained.',
+    category: 'Protect - Data Security',
+    implementationGuidance:
+      'Implement capacity planning and management processes to ensure adequate resources for data storage, processing, and transmission. Monitor system capacity utilization and establish thresholds for alerts. Plan for capacity increases based on growth projections. Implement scalability solutions to handle peak demands while maintaining data availability.',
+    evidenceRequirements: [
+      'Capacity planning documentation and projections',
+      'Capacity monitoring and alerting configuration',
+      'Resource utilization reports and trends',
+      'Scalability and growth planning documentation',
+    ],
+    testProcedures: [
+      'Review capacity planning and monitoring processes',
+      'Verify capacity alerts are configured and functional',
+      'Confirm resource utilization is tracked and reported',
+      'Assess scalability plans for handling growth',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PR.DS-05',
+    name: 'Data Leakage Prevention',
+    description:
+      'Protections against data leaks are implemented.',
+    category: 'Protect - Data Security',
+    implementationGuidance:
+      'Deploy data leakage prevention (DLP) controls to detect and prevent unauthorized data exfiltration across all channels including email, web, cloud, and removable media. Implement content inspection, policy enforcement, and user behavior monitoring. Configure DLP policies based on data classification and regulatory requirements. Monitor and respond to DLP alerts.',
+    evidenceRequirements: [
+      'DLP policy aligned with data classification',
+      'DLP tool deployment across key channels',
+      'DLP alert monitoring and response procedures',
+      'DLP effectiveness metrics and reports',
+    ],
+    testProcedures: [
+      'Review DLP policies for alignment with data classification',
+      'Verify DLP coverage across email, web, cloud, and endpoints',
+      'Confirm DLP alerts are monitored and investigated',
+      'Test DLP effectiveness with controlled data transfers',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PR.DS-06',
+    name: 'Integrity Checking',
+    description:
+      'Integrity checking mechanisms are used to verify software, firmware, and information integrity.',
+    category: 'Protect - Data Security',
+    implementationGuidance:
+      'Implement integrity checking mechanisms for software, firmware, and critical data. Use cryptographic hash functions, digital signatures, and file integrity monitoring (FIM) tools to detect unauthorized modifications. Establish baselines for critical systems and alert on deviations. Verify software and firmware authenticity before deployment.',
+    evidenceRequirements: [
+      'Integrity checking procedures and tools',
+      'File integrity monitoring (FIM) deployment evidence',
+      'Baseline configuration records',
+      'Integrity violation detection and response records',
+    ],
+    testProcedures: [
+      'Review integrity checking mechanisms and tools',
+      'Verify FIM is deployed for critical systems',
+      'Confirm baselines are established and maintained',
+      'Assess integrity violation detection and response',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PR.DS-07',
+    name: 'Development and Test Environment Protection',
+    description:
+      'The development and testing environment(s) are separate from the production environment.',
+    category: 'Protect - Data Security',
+    implementationGuidance:
+      'Maintain separation between development, testing, and production environments. Implement network segmentation and access controls to prevent cross-environment access. Use sanitized or synthetic data in non-production environments. Establish change management processes for promoting code and configurations between environments.',
+    evidenceRequirements: [
+      'Environment separation architecture documentation',
+      'Network segmentation and access control evidence',
+      'Data sanitization procedures for non-production use',
+      'Change management procedures for environment promotion',
+    ],
+    testProcedures: [
+      'Review environment separation architecture',
+      'Verify network segmentation between environments',
+      'Confirm production data is not used in development/testing',
+      'Assess change management for cross-environment promotions',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PR.DS-08',
+    name: 'Hardware Integrity',
+    description:
+      'Integrity checking mechanisms are used to verify hardware integrity.',
+    category: 'Protect - Data Security',
+    implementationGuidance:
+      'Implement hardware integrity verification including Trusted Platform Module (TPM), secure boot, and hardware attestation mechanisms. Verify hardware authenticity during procurement and deployment. Monitor for unauthorized hardware modifications or tampering. Maintain hardware component inventories and validate against expected configurations.',
+    evidenceRequirements: [
+      'Hardware integrity verification procedures',
+      'TPM and secure boot configuration evidence',
+      'Hardware procurement authentication records',
+      'Hardware tampering detection and monitoring records',
+    ],
+    testProcedures: [
+      'Review hardware integrity verification mechanisms',
+      'Verify TPM and secure boot are enabled where supported',
+      'Confirm hardware authenticity is verified during procurement',
+      'Assess hardware tampering detection capabilities',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PR.DS-09',
+    name: 'Backup Management',
+    description:
+      'Backups of data are conducted, maintained, and tested.',
+    category: 'Protect - Data Security',
+    implementationGuidance:
+      'Implement comprehensive backup procedures for all critical data and systems. Define backup frequency, retention periods, and storage locations based on recovery objectives. Test backup restoration regularly. Protect backup media with encryption and access controls. Store backups in geographically separate locations for disaster recovery.',
+    evidenceRequirements: [
+      'Backup policy with frequency and retention requirements',
+      'Backup job schedules and completion records',
+      'Backup restoration test results',
+      'Offsite backup storage and protection documentation',
+    ],
+    testProcedures: [
+      'Review backup policy for adequacy',
+      'Verify backup jobs complete successfully',
+      'Confirm backup restoration tests are performed regularly',
+      'Assess offsite backup storage and protection',
+    ],
+    status: 'Not Started',
+  },
+  {
     controlId: 'PR.DS-10',
     name: 'Data-in-Use Protection',
     description:
@@ -1184,6 +1514,28 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
       'Verify endpoint protection includes memory protection capabilities',
       'Confirm data masking is applied in non-production environments',
       'Assess secure processing environment implementations',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'PR.DS-11',
+    name: 'Data Destruction',
+    description:
+      'Data is destroyed according to policy.',
+    category: 'Protect - Data Security',
+    implementationGuidance:
+      'Implement secure data destruction procedures aligned with data classification and regulatory requirements. Use cryptographic erasure, physical destruction, or overwriting methods appropriate for the media type. Document destruction activities with certificates of destruction. Ensure third-party destruction services are verified for compliance.',
+    evidenceRequirements: [
+      'Data destruction policy and procedures',
+      'Data destruction method specifications by media type',
+      'Certificates of destruction and destruction logs',
+      'Third-party destruction service verification records',
+    ],
+    testProcedures: [
+      'Review data destruction policy and procedures',
+      'Verify destruction methods are appropriate for media types',
+      'Confirm destruction is documented with certificates',
+      'Assess third-party destruction service compliance',
     ],
     status: 'Not Started',
   },
@@ -1462,6 +1814,50 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
     status: 'Not Started',
   },
   {
+    controlId: 'DE.CM-04',
+    name: 'Malicious Code Detection',
+    description:
+      'Malicious code is detected.',
+    category: 'Detect - Continuous Monitoring',
+    implementationGuidance:
+      'Deploy anti-malware solutions across all endpoints, servers, and network perimeters. Implement multiple detection technologies including signature-based, heuristic, and behavioral analysis. Keep malware definitions and detection engines current. Configure automated scanning of email attachments, file downloads, and removable media. Monitor and respond to malware detection alerts promptly.',
+    evidenceRequirements: [
+      'Anti-malware deployment documentation across all assets',
+      'Malware definition and engine update schedules',
+      'Malware scanning configuration for email, downloads, and media',
+      'Malware detection alert and response records',
+    ],
+    testProcedures: [
+      'Review anti-malware deployment coverage',
+      'Verify malware definitions are current across all systems',
+      'Confirm automated scanning is configured for key vectors',
+      'Assess malware alert response effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'DE.CM-05',
+    name: 'Unauthorized Mobile Code Detection',
+    description:
+      'Unauthorized mobile code is detected.',
+    category: 'Detect - Continuous Monitoring',
+    implementationGuidance:
+      'Implement controls to detect unauthorized mobile code including JavaScript, ActiveX, Flash, and other executable content. Configure browser security settings to restrict or prompt for mobile code execution. Deploy web filtering and content inspection to detect malicious scripts. Monitor for anomalous mobile code behavior and block unauthorized execution.',
+    evidenceRequirements: [
+      'Mobile code detection and restriction policies',
+      'Browser security configuration standards',
+      'Web filtering and content inspection deployment',
+      'Mobile code execution monitoring and blocking records',
+    ],
+    testProcedures: [
+      'Review mobile code detection and restriction policies',
+      'Verify browser security settings are enforced',
+      'Confirm web filtering detects malicious mobile code',
+      'Assess mobile code monitoring and blocking effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
     controlId: 'DE.CM-06',
     name: 'External Service Provider Monitoring',
     description:
@@ -1480,6 +1876,50 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
       'Verify logging is enabled for all external access points',
       'Confirm service provider security reports are reviewed per schedule',
       'Assess anomaly detection for third-party activity effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'DE.CM-07',
+    name: 'Unauthorized Personnel Monitoring',
+    description:
+      'Monitoring for unauthorized personnel, connections, devices, and software is performed.',
+    category: 'Detect - Continuous Monitoring',
+    implementationGuidance:
+      'Implement monitoring to detect unauthorized personnel access, network connections, devices, and software. Deploy network access control (NAC) to identify and quarantine unauthorized devices. Monitor for shadow IT and unauthorized application installations. Implement visitor management and physical access monitoring for personnel. Alert on detection of unauthorized elements.',
+    evidenceRequirements: [
+      'Unauthorized access monitoring procedures',
+      'Network access control (NAC) deployment and configuration',
+      'Shadow IT and unauthorized software detection mechanisms',
+      'Unauthorized element detection and response records',
+    ],
+    testProcedures: [
+      'Review unauthorized access monitoring procedures',
+      'Verify NAC is deployed and detecting unauthorized devices',
+      'Confirm shadow IT detection is operational',
+      'Assess unauthorized element detection and response effectiveness',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'DE.CM-08',
+    name: 'Vulnerability Scanning',
+    description:
+      'Vulnerability scans are performed.',
+    category: 'Detect - Continuous Monitoring',
+    implementationGuidance:
+      'Implement regular vulnerability scanning across all systems, applications, and network infrastructure. Configure authenticated scanning for comprehensive coverage. Scan on a schedule aligned with risk (at least monthly for critical systems) and after significant changes. Integrate scan results with vulnerability management processes for tracking and remediation.',
+    evidenceRequirements: [
+      'Vulnerability scanning policy with frequency requirements',
+      'Vulnerability scanning tool deployment and configuration',
+      'Vulnerability scan schedule and completion records',
+      'Scan result integration with vulnerability management',
+    ],
+    testProcedures: [
+      'Review vulnerability scanning policy and frequency',
+      'Verify scanning tools cover all asset types',
+      'Confirm scanning schedule is maintained',
+      'Assess scan result integration with remediation tracking',
     ],
     status: 'Not Started',
   },
@@ -1507,6 +1947,28 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
   },
 
   // --- DE.AE: Adverse Event Analysis ---
+  {
+    controlId: 'DE.AE-01',
+    name: 'Baseline of Network Operations',
+    description:
+      'A baseline of network operations and expected data flows for users and systems is established and managed.',
+    category: 'Detect - Adverse Event Analysis',
+    implementationGuidance:
+      'Establish and maintain baselines for normal network operations, data flows, user behavior, and system activities. Document expected traffic patterns, communication paths, and data volumes. Use network flow analysis, traffic monitoring, and behavior analytics to understand normal patterns. Update baselines as the environment changes and use them to detect anomalies.',
+    evidenceRequirements: [
+      'Network operations baseline documentation',
+      'Expected data flow mapping and documentation',
+      'Baseline establishment and update procedures',
+      'Baseline deviation detection configuration',
+    ],
+    testProcedures: [
+      'Review network operations baseline documentation',
+      'Verify expected data flows are documented',
+      'Confirm baseline update procedures are followed',
+      'Assess baseline deviation detection effectiveness',
+    ],
+    status: 'Not Started',
+  },
   {
     controlId: 'DE.AE-02',
     name: 'Adverse Event Analysis',
@@ -1552,6 +2014,50 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
     status: 'Not Started',
   },
   {
+    controlId: 'DE.AE-04',
+    name: 'Impact of Events',
+    description:
+      'The estimated impact and scope of adverse events are understood.',
+    category: 'Detect - Adverse Event Analysis',
+    implementationGuidance:
+      'Develop processes to estimate the impact and scope of detected adverse events. Assess potential business impact, number of affected systems, data at risk, and operational disruption. Use impact assessment criteria aligned with organizational risk frameworks. Document impact estimates and update them as investigation progresses.',
+    evidenceRequirements: [
+      'Impact assessment criteria and procedures',
+      'Impact estimation records for detected events',
+      'Scope assessment documentation',
+      'Impact assessment updates during investigations',
+    ],
+    testProcedures: [
+      'Review impact assessment criteria and procedures',
+      'Verify impact estimations are performed for adverse events',
+      'Confirm scope assessments are documented',
+      'Assess accuracy of impact estimates against actual outcomes',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'DE.AE-05',
+    name: 'Incident Alert Thresholds',
+    description:
+      'Incident alert thresholds are established.',
+    category: 'Detect - Adverse Event Analysis',
+    implementationGuidance:
+      'Establish alert thresholds for different types of adverse events based on severity, impact, and urgency. Define criteria for automated alerting versus analyst review. Configure alerting systems with appropriate thresholds to minimize false positives while ensuring timely detection of genuine incidents. Review and tune thresholds based on operational experience.',
+    evidenceRequirements: [
+      'Alert threshold definitions by event type',
+      'Alerting system configuration documentation',
+      'Threshold tuning and review records',
+      'False positive and detection rate metrics',
+    ],
+    testProcedures: [
+      'Review alert threshold definitions for appropriateness',
+      'Verify alerting systems are configured per thresholds',
+      'Confirm threshold tuning is performed regularly',
+      'Assess detection rates and false positive management',
+    ],
+    status: 'Not Started',
+  },
+  {
     controlId: 'DE.AE-06',
     name: 'Incident Declaration',
     description:
@@ -1570,6 +2076,50 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
       'Verify notification workflows are configured and tested',
       'Confirm automated alerting functions for high-severity events',
       'Assess timeliness of incident declaration through historical records',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'DE.AE-07',
+    name: 'Threat Intelligence Integration',
+    description:
+      'Cyber threat intelligence and other contextual information are integrated into the analysis.',
+    category: 'Detect - Adverse Event Analysis',
+    implementationGuidance:
+      'Integrate cyber threat intelligence into adverse event analysis to provide context on threat actors, attack techniques, and indicators of compromise. Use threat intelligence feeds, ISAC information, and government advisories to enrich event analysis. Correlate detected events with known threat indicators. Update threat intelligence regularly.',
+    evidenceRequirements: [
+      'Threat intelligence feed integration documentation',
+      'Intelligence enrichment in analysis workflows',
+      'Indicator of compromise (IoC) matching records',
+      'Threat intelligence update and curation procedures',
+    ],
+    testProcedures: [
+      'Review threat intelligence integration in analysis tools',
+      'Verify intelligence enrichment is used in event analysis',
+      'Confirm IoC matching is operational',
+      'Assess threat intelligence update frequency and relevance',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'DE.AE-08',
+    name: 'Incident Notification',
+    description:
+      'Incidents are declared when adverse events meet the defined incident criteria.',
+    category: 'Detect - Adverse Event Analysis',
+    implementationGuidance:
+      'Ensure incidents are formally declared when adverse events meet predefined criteria. Implement consistent incident declaration processes across the organization. Document the basis for incident declarations. Trigger appropriate response activities upon incident declaration including team activation and communication protocols.',
+    evidenceRequirements: [
+      'Incident declaration criteria documentation',
+      'Incident declaration process and records',
+      'Response activation documentation upon declaration',
+      'Incident declaration audit trail',
+    ],
+    testProcedures: [
+      'Review incident declaration criteria for clarity',
+      'Verify incidents are declared per established criteria',
+      'Confirm response activities are triggered upon declaration',
+      'Assess incident declaration documentation completeness',
     ],
     status: 'Not Started',
   },
@@ -1692,6 +2242,50 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
 
   // --- RS.AN: Incident Analysis ---
   {
+    controlId: 'RS.AN-01',
+    name: 'Incident Investigation',
+    description:
+      'Investigations are conducted for incidents.',
+    category: 'Respond - Incident Analysis',
+    implementationGuidance:
+      'Establish formal investigation procedures for all declared incidents. Assign qualified investigators based on incident type and severity. Define investigation objectives, scope, and timelines. Document investigation activities, findings, and conclusions. Preserve evidence integrity throughout the investigation process.',
+    evidenceRequirements: [
+      'Incident investigation procedures and guidelines',
+      'Investigator assignment and qualification records',
+      'Investigation activity logs and documentation',
+      'Evidence preservation records',
+    ],
+    testProcedures: [
+      'Review incident investigation procedures',
+      'Verify qualified investigators are assigned',
+      'Confirm investigation activities are documented',
+      'Assess evidence preservation practices',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RS.AN-02',
+    name: 'Incident Analysis Techniques',
+    description:
+      'The impact of the incident is understood.',
+    category: 'Respond - Incident Analysis',
+    implementationGuidance:
+      'Implement standardized techniques for analyzing incident impact across business, technical, and compliance dimensions. Assess affected systems, data compromised, operational disruption, financial impact, and regulatory implications. Document impact assessment findings and use them to prioritize response activities.',
+    evidenceRequirements: [
+      'Incident impact assessment methodology',
+      'Impact analysis templates and checklists',
+      'Impact assessment records for incidents',
+      'Business and regulatory impact documentation',
+    ],
+    testProcedures: [
+      'Review incident impact assessment methodology',
+      'Verify impact assessments cover all dimensions',
+      'Confirm impact findings are documented',
+      'Assess impact assessment accuracy for past incidents',
+    ],
+    status: 'Not Started',
+  },
+  {
     controlId: 'RS.AN-03',
     name: 'Incident Root Cause Analysis',
     description:
@@ -1710,6 +2304,50 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
       'Verify root cause analysis is performed for significant incidents',
       'Confirm forensic capabilities are maintained and available',
       'Assess quality of incident timeline reconstructions',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RS.AN-04',
+    name: 'Incident Categorization',
+    description:
+      'Incidents are categorized consistent with response plans.',
+    category: 'Respond - Incident Analysis',
+    implementationGuidance:
+      'Categorize incidents using a standardized taxonomy aligned with incident response plans. Categories may include malware, phishing, data breach, denial of service, insider threat, and unauthorized access. Ensure categorization drives appropriate response procedures and team activation. Update categorization as investigation reveals new information.',
+    evidenceRequirements: [
+      'Incident categorization taxonomy',
+      'Categorization alignment with response plans',
+      'Incident records showing categorization',
+      'Categorization update procedures',
+    ],
+    testProcedures: [
+      'Review incident categorization taxonomy',
+      'Verify categorization aligns with response plan activation',
+      'Confirm incidents are categorized consistently',
+      'Assess categorization updates during investigations',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RS.AN-05',
+    name: 'Vulnerability Identification from Incidents',
+    description:
+      'Processes are established to receive, analyze, and respond to vulnerabilities disclosed to the organization from internal and external sources.',
+    category: 'Respond - Incident Analysis',
+    implementationGuidance:
+      'Identify vulnerabilities revealed during incident analysis and integrate them into vulnerability management processes. Document vulnerability details including affected systems, severity, and exploitation evidence. Prioritize remediation based on incident context. Share vulnerability information with relevant teams for broader remediation.',
+    evidenceRequirements: [
+      'Vulnerability identification from incident analysis records',
+      'Integration with vulnerability management processes',
+      'Vulnerability prioritization based on incident context',
+      'Cross-team vulnerability communication records',
+    ],
+    testProcedures: [
+      'Review vulnerability identification from incidents',
+      'Verify vulnerabilities are integrated into tracking systems',
+      'Confirm prioritization considers incident context',
+      'Assess vulnerability information sharing effectiveness',
     ],
     status: 'Not Started',
   },
@@ -1782,6 +2420,28 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
 
   // --- RS.CO: Incident Reporting and Communication ---
   {
+    controlId: 'RS.CO-01',
+    name: 'Incident Response Personnel',
+    description:
+      'Personnel know their roles and order of operations when a response is needed.',
+    category: 'Respond - Incident Reporting and Communication',
+    implementationGuidance:
+      'Ensure all incident response personnel understand their roles, responsibilities, and the order of operations during incident response. Provide regular training and exercises to maintain readiness. Document response team structure, escalation paths, and decision authorities. Maintain current contact information for all response team members.',
+    evidenceRequirements: [
+      'Incident response team roster with roles and responsibilities',
+      'Response team training and exercise records',
+      'Escalation path documentation',
+      'Current contact information for response personnel',
+    ],
+    testProcedures: [
+      'Review response team roster and role definitions',
+      'Verify response personnel training is current',
+      'Confirm escalation paths are documented and understood',
+      'Assess contact information accuracy and accessibility',
+    ],
+    status: 'Not Started',
+  },
+  {
     controlId: 'RS.CO-02',
     name: 'Internal Incident Reporting',
     description:
@@ -1822,6 +2482,28 @@ export const NIST_CSF_CONTROLS: FrameworkControlTemplate[] = [
       'Verify sharing classification guidelines are defined and followed',
       'Confirm incident information has been shared per agreements',
       'Assess information sanitization before external sharing',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'RS.CO-04',
+    name: 'Coordination with Stakeholders',
+    description:
+      'Coordination with stakeholders occurs consistent with response plans.',
+    category: 'Respond - Incident Reporting and Communication',
+    implementationGuidance:
+      'Coordinate incident response activities with all relevant stakeholders including business units, legal, communications, third parties, and external partners. Ensure coordination follows established response plans and communication protocols. Conduct regular coordination meetings during active incidents. Document coordination activities and decisions.',
+    evidenceRequirements: [
+      'Stakeholder coordination procedures in response plans',
+      'Coordination meeting records during incidents',
+      'Communication protocol documentation',
+      'Stakeholder coordination activity logs',
+    ],
+    testProcedures: [
+      'Review stakeholder coordination procedures',
+      'Verify coordination follows response plan protocols',
+      'Confirm coordination meetings are held during incidents',
+      'Assess coordination activity documentation',
     ],
     status: 'Not Started',
   },
