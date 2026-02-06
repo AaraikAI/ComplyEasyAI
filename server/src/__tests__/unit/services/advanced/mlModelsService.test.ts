@@ -51,6 +51,9 @@ jest.mock('@tensorflow/tfjs', () => ({
   tensor2d: jest.fn<any>().mockReturnValue({
     dispose: jest.fn(),
   }),
+  tensor1d: jest.fn<any>().mockReturnValue({
+    dispose: jest.fn(),
+  }),
   tensor: jest.fn<any>().mockReturnValue({
     dispose: jest.fn(),
     data: jest.fn<any>().mockResolvedValue(new Float32Array([0.5])),
@@ -74,6 +77,7 @@ jest.mock('graphology', () => {
       edges: jest.fn<any>().mockReturnValue([]),
       forEachNode: jest.fn(),
       forEachEdge: jest.fn(),
+      filterNodes: jest.fn<any>().mockReturnValue([]),
       neighbors: jest.fn<any>().mockReturnValue([]),
       degree: jest.fn<any>().mockReturnValue(0),
       getNodeAttributes: jest.fn<any>().mockReturnValue({}),
@@ -85,7 +89,9 @@ jest.mock('graphology', () => {
 
 jest.mock('graphology-layout-forceatlas2', () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: {
+    assign: jest.fn(),
+  },
 }));
 
 import mlModelsService from '../../../../services/advanced/mlModelsService';
@@ -119,6 +125,7 @@ describe('MLModelsService', () => {
     tf.train.adam.mockReturnValue({});
     tf.regularizers.l2.mockReturnValue({});
     tf.tensor2d.mockReturnValue({ dispose: jest.fn() });
+    tf.tensor1d.mockReturnValue({ dispose: jest.fn() });
     tf.tensor.mockReturnValue({
       dispose: jest.fn(),
       data: jest.fn<any>().mockResolvedValue(new Float32Array([0.5])),
@@ -138,12 +145,16 @@ describe('MLModelsService', () => {
       edges: jest.fn<any>().mockReturnValue([]),
       forEachNode: jest.fn(),
       forEachEdge: jest.fn(),
+      filterNodes: jest.fn<any>().mockReturnValue([]),
       neighbors: jest.fn<any>().mockReturnValue([]),
       degree: jest.fn<any>().mockReturnValue(0),
       getNodeAttributes: jest.fn<any>().mockReturnValue({}),
       getEdgeAttributes: jest.fn<any>().mockReturnValue({}),
       setNodeAttribute: jest.fn(),
     }));
+
+    const forceAtlas2 = require('graphology-layout-forceatlas2').default;
+    if (forceAtlas2.assign) forceAtlas2.assign.mockImplementation(() => {});
 
     // Reset internal state
     (mlModelsService as any).initialized = false;
@@ -189,14 +200,18 @@ describe('MLModelsService', () => {
     it('should predict risks using TGN model', async () => {
       await mlModelsService.initialize();
 
+      // Provide a graph-like object with all methods used by extractGraphFeatures and predictRisksWithTGN
       const mockGraph = {
-        nodes: [
-          { id: 'r-1', type: 'risk', category: 'Security', severity: 'High', data: {} },
-          { id: 'fw-1', type: 'framework', data: {} },
-        ],
-        edges: [
-          { source: 'r-1', target: 'fw-1', weight: 1 },
-        ],
+        order: 2,
+        size: 1,
+        nodes: jest.fn<any>().mockReturnValue(['r-1', 'fw-1']),
+        edges: jest.fn<any>().mockReturnValue(['e-1']),
+        degree: jest.fn<any>().mockReturnValue(1),
+        getNodeAttributes: jest.fn<any>().mockReturnValue({ type: 'risk', category: 'Security', severity: 'High', timestamp: Date.now() }),
+        getEdgeAttributes: jest.fn<any>().mockReturnValue({ weight: 0.5 }),
+        filterNodes: jest.fn<any>().mockReturnValue(['r-1']),
+        neighbors: jest.fn<any>().mockReturnValue([]),
+        hasEdge: jest.fn<any>().mockReturnValue(false),
       };
 
       const predictions = await mlModelsService.predictRisksWithTGN(mockGraph, 6);
@@ -221,37 +236,32 @@ describe('MLModelsService', () => {
   });
 
   describe('detectLiveness', () => {
-    it('should detect liveness from features', async () => {
+    it('should detect liveness from media buffer', async () => {
       await mlModelsService.initialize();
 
-      const features = {
-        hasDepth: true,
-        textureComplexity: 0.6,
-        edgeDensity: 0.3,
-        colorVariation: 0.5,
-      };
+      // Provide a buffer with varied data to simulate a real image
+      const imageBuffer = Buffer.alloc(1024);
+      for (let i = 0; i < imageBuffer.length; i++) {
+        imageBuffer[i] = Math.floor(Math.random() * 256);
+      }
 
-      const result = await mlModelsService.detectLiveness(features);
+      const result = await mlModelsService.detectLiveness(imageBuffer, 'image');
 
       expect(result).toBeDefined();
-      expect(typeof result.isLive).toBe('boolean');
+      expect(typeof result.detected).toBe('boolean');
       expect(typeof result.confidence).toBe('number');
     });
 
-    it('should handle features indicating a non-live image', async () => {
+    it('should handle media indicating a non-live image', async () => {
       await mlModelsService.initialize();
 
-      const features = {
-        hasDepth: false,
-        textureComplexity: 0.1,
-        edgeDensity: 0.05,
-        colorVariation: 0.1,
-      };
+      // Provide a uniform buffer (low complexity = likely not live)
+      const imageBuffer = Buffer.alloc(1024, 0);
 
-      const result = await mlModelsService.detectLiveness(features);
+      const result = await mlModelsService.detectLiveness(imageBuffer, 'image');
 
       expect(result).toBeDefined();
-      expect(typeof result.isLive).toBe('boolean');
+      expect(typeof result.detected).toBe('boolean');
     });
   });
 
@@ -281,12 +291,16 @@ describe('MLModelsService', () => {
 
       const historicalData = [
         {
-          features: new Array(10).fill(0).map(() => Math.random()),
-          label: 1,
+          risks: [{ id: 'r-1', title: 'Risk 1', severity: 'High', category: 'Security', detectedAt: new Date() }],
+          frameworks: [{ id: 'fw-1', name: 'SOC2', status: 'In_Progress', createdAt: new Date() }],
+          controls: [{ id: 'c-1', name: 'Control 1', status: 'Implemented', frameworkId: 'fw-1', createdAt: new Date() }],
+          riskOccurred: true,
         },
         {
-          features: new Array(10).fill(0).map(() => Math.random()),
-          label: 0,
+          risks: [],
+          frameworks: [{ id: 'fw-2', name: 'ISO27001', status: 'Active', createdAt: new Date() }],
+          controls: [],
+          riskOccurred: false,
         },
       ];
 

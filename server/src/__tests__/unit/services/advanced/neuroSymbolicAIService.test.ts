@@ -86,10 +86,17 @@ describe('NeuroSymbolicAIService', () => {
 
     // Prisma mocks
     (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(null);
     (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(null);
     (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.neuroSymbolicReasoning.create as jest.Mock<any>).mockResolvedValue({ id: 'reasoning-1' });
+    (prismaMock.neuroSymbolicReasoning.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.ruleInference.create as jest.Mock<any>).mockResolvedValue({ id: 'inference-1' });
+    (prismaMock.ruleInference.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.ruleInference.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.ruleInference.update as jest.Mock<any>).mockResolvedValue({});
   });
 
   describe('performHybridReasoning', () => {
@@ -103,9 +110,7 @@ describe('NeuroSymbolicAIService', () => {
       (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([
         { id: 'r-1', severity: 'High', category: 'Security' },
       ]);
-      (prismaMock.neuroSymbolicReasoning as any) = {
-        create: jest.fn<any>().mockResolvedValue({ id: 'reasoning-1' }),
-      };
+      (prismaMock.neuroSymbolicReasoning.create as jest.Mock<any>).mockResolvedValue({ id: 'reasoning-1' });
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 
       const result = await neuroSymbolicAIService.performHybridReasoning(
@@ -125,15 +130,20 @@ describe('NeuroSymbolicAIService', () => {
       delete process.env.GEMINI_API_KEY;
     });
 
-    it('should throw error when Gemini API key is not configured', async () => {
+    it('should fall back to symbolic-only reasoning when Gemini API key is not configured', async () => {
       delete process.env.GEMINI_API_KEY;
 
-      await expect(
-        neuroSymbolicAIService.performHybridReasoning(
-          orgId,
-          'Test query'
-        )
-      ).rejects.toThrow();
+      (prismaMock.neuroSymbolicReasoning.create as jest.Mock<any>).mockResolvedValue({ id: 'reasoning-1' });
+
+      const result = await neuroSymbolicAIService.performHybridReasoning(
+        orgId,
+        'Test query'
+      );
+
+      // Should succeed but with degraded neural prediction
+      expect(result).toBeDefined();
+      expect(result.neuralPrediction.confidence).toBe(0);
+      expect(result.neuralPrediction.model).toBe('error');
     });
   });
 
@@ -148,12 +158,8 @@ describe('NeuroSymbolicAIService', () => {
       ]);
       (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
       (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.ruleInference as any) = {
-        create: jest.fn<any>().mockResolvedValue({ id: 'inference-1' }),
-      };
-      (prismaMock.neuroSymbolicReasoning as any) = {
-        create: jest.fn<any>().mockResolvedValue({ id: 'reasoning-1' }),
-      };
+      (prismaMock.ruleInference.create as jest.Mock<any>).mockResolvedValue({ id: 'inference-1' });
+      (prismaMock.neuroSymbolicReasoning.create as jest.Mock<any>).mockResolvedValue({ id: 'reasoning-1' });
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 
       const patterns = [
@@ -199,7 +205,8 @@ describe('NeuroSymbolicAIService', () => {
         framework: { id: 'fw-1', name: 'SOC2', organizationId: orgId },
       };
 
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(mockControl);
+      // Source uses findFirst, not findUnique
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(mockControl);
       (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([
         { id: 'r-1', title: 'Auth bypass', severity: 'High', category: 'Security' },
       ]);
@@ -220,9 +227,10 @@ describe('NeuroSymbolicAIService', () => {
         },
       });
 
+      // Source expects violation as { controlId, frameworkId, violationType }
       const result = await neuroSymbolicAIService.performCausalReasoning(
         orgId,
-        'ctrl-1'
+        { controlId: 'ctrl-1', frameworkId: 'fw-1', violationType: 'non_compliance' }
       );
 
       expect(result).toBeDefined();
@@ -231,26 +239,27 @@ describe('NeuroSymbolicAIService', () => {
     });
 
     it('should throw error if control not found', async () => {
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
-        neuroSymbolicAIService.performCausalReasoning(orgId, 'nonexistent')
+        neuroSymbolicAIService.performCausalReasoning(
+          orgId,
+          { controlId: 'nonexistent', frameworkId: 'fw-1', violationType: 'test' }
+        )
       ).rejects.toThrow();
     });
   });
 
   describe('getReasoningHistory', () => {
     it('should return reasoning history for an organization', async () => {
-      (prismaMock.neuroSymbolicReasoning as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([
-          {
-            id: 'reasoning-1',
-            organizationId: orgId,
-            query: 'Test query',
-            createdAt: new Date(),
-          },
-        ]),
-      };
+      (prismaMock.neuroSymbolicReasoning.findMany as jest.Mock<any>).mockResolvedValue([
+        {
+          id: 'reasoning-1',
+          organizationId: orgId,
+          query: 'Test query',
+          createdAt: new Date(),
+        },
+      ]);
 
       const result = await neuroSymbolicAIService.getReasoningHistory(orgId);
 
@@ -261,24 +270,18 @@ describe('NeuroSymbolicAIService', () => {
 
   describe('validateInferredRule', () => {
     it('should validate an inferred rule', async () => {
-      (prismaMock.ruleInference as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue({
-          id: 'inference-1',
-          organizationId: orgId,
-          validationStatus: 'pending',
-        }),
-        update: jest.fn<any>().mockResolvedValue({
-          id: 'inference-1',
-          validationStatus: 'validated',
-        }),
-      };
+      (prismaMock.ruleInference.update as jest.Mock<any>).mockResolvedValue({
+        id: 'inference-1',
+        validationStatus: 'validated',
+      });
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 
+      // Source signature: (inferenceId, organizationId, userId, validated)
       const result = await neuroSymbolicAIService.validateInferredRule(
-        orgId,
         'inference-1',
-        true,
-        'user-123'
+        orgId,
+        'user-123',
+        true
       );
 
       expect(result).toBeDefined();
@@ -294,13 +297,9 @@ describe('NeuroSymbolicAIService', () => {
       ]);
       (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.neuroSymbolicReasoning as any) = {
-        create: jest.fn<any>().mockResolvedValue({ id: 'r-1' }),
-      };
-      (prismaMock.ruleInference as any) = {
-        create: jest.fn<any>().mockResolvedValue({ id: 'i-1' }),
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
+      (prismaMock.neuroSymbolicReasoning.create as jest.Mock<any>).mockResolvedValue({ id: 'r-1' });
+      (prismaMock.ruleInference.create as jest.Mock<any>).mockResolvedValue({ id: 'i-1' });
+      (prismaMock.ruleInference.findMany as jest.Mock<any>).mockResolvedValue([]);
 
       const result = await neuroSymbolicAIService.generateExplainableDecision(
         orgId,

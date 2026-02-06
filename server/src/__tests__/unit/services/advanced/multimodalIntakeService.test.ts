@@ -39,6 +39,13 @@ jest.mock('../../../../services/advanced/whisperService', () => ({
 jest.mock('tesseract.js', () => ({
   __esModule: true,
   default: {
+    recognize: jest.fn<any>().mockResolvedValue({
+      data: {
+        text: 'OCR recognized text',
+        confidence: 85,
+        words: [{ text: 'OCR', confidence: 90, bbox: { x0: 0, y0: 0, x1: 50, y1: 20 } }],
+      },
+    }),
     createWorker: jest.fn<any>().mockReturnValue({
       loadLanguage: jest.fn<any>().mockResolvedValue(undefined),
       initialize: jest.fn<any>().mockResolvedValue(undefined),
@@ -87,22 +94,34 @@ jest.mock('sharp', () => {
 });
 
 jest.mock('fluent-ffmpeg', () => {
-  const mockFfmpeg = jest.fn<any>().mockReturnValue({
-    ffprobe: jest.fn<any>().mockImplementation((cb: any) => cb(null, {
-      format: { duration: 60 },
-      streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
-    })),
-    outputOptions: jest.fn().mockReturnThis(),
-    output: jest.fn().mockReturnThis(),
-    on: jest.fn().mockReturnThis(),
-    run: jest.fn(),
-    seek: jest.fn().mockReturnThis(),
-    frames: jest.fn().mockReturnThis(),
-    pipe: jest.fn().mockReturnThis(),
-    noVideo: jest.fn().mockReturnThis(),
-    audioCodec: jest.fn().mockReturnThis(),
-    format: jest.fn().mockReturnThis(),
-  });
+  const createFfmpegInstance = () => {
+    const cbs: Record<string, Function> = {};
+    const inst: any = {
+      _cbs: cbs,
+      ffprobe: jest.fn<any>().mockImplementation((cb: any) => cb(null, {
+        format: { duration: 60 },
+        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+      })),
+      outputOptions: jest.fn<any>().mockImplementation(() => inst),
+      output: jest.fn<any>().mockImplementation(() => inst),
+      on: jest.fn<any>().mockImplementation((event: string, cb: Function) => {
+        cbs[event] = cb;
+        return inst;
+      }),
+      run: jest.fn<any>().mockImplementation(() => {
+        if (cbs['end']) process.nextTick(() => cbs['end']());
+      }),
+      seekInput: jest.fn<any>().mockImplementation(() => inst),
+      seek: jest.fn<any>().mockImplementation(() => inst),
+      frames: jest.fn<any>().mockImplementation(() => inst),
+      pipe: jest.fn<any>().mockImplementation(() => inst),
+      noVideo: jest.fn<any>().mockImplementation(() => inst),
+      audioCodec: jest.fn<any>().mockImplementation(() => inst),
+      format: jest.fn<any>().mockImplementation(() => inst),
+    };
+    return inst;
+  };
+  const mockFfmpeg = jest.fn<any>().mockImplementation(() => createFfmpegInstance());
   return { __esModule: true, default: mockFfmpeg };
 });
 
@@ -143,6 +162,13 @@ describe('MultimodalIntakeService', () => {
     });
 
     const Tesseract = require('tesseract.js').default;
+    Tesseract.recognize.mockResolvedValue({
+      data: {
+        text: 'OCR recognized text',
+        confidence: 85,
+        words: [{ text: 'OCR', confidence: 90, bbox: { x0: 0, y0: 0, x1: 50, y1: 20 } }],
+      },
+    });
     Tesseract.createWorker.mockReturnValue({
       loadLanguage: jest.fn<any>().mockResolvedValue(undefined),
       initialize: jest.fn<any>().mockResolvedValue(undefined),
@@ -179,21 +205,32 @@ describe('MultimodalIntakeService', () => {
     });
 
     const ffmpeg = require('fluent-ffmpeg').default;
-    ffmpeg.mockReturnValue({
-      ffprobe: jest.fn<any>().mockImplementation((cb: any) => cb(null, {
-        format: { duration: 60 },
-        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
-      })),
-      outputOptions: jest.fn<any>().mockReturnThis(),
-      output: jest.fn<any>().mockReturnThis(),
-      on: jest.fn<any>().mockReturnThis(),
-      run: jest.fn(),
-      seek: jest.fn<any>().mockReturnThis(),
-      frames: jest.fn<any>().mockReturnThis(),
-      pipe: jest.fn<any>().mockReturnThis(),
-      noVideo: jest.fn<any>().mockReturnThis(),
-      audioCodec: jest.fn<any>().mockReturnThis(),
-      format: jest.fn<any>().mockReturnThis(),
+    ffmpeg.mockImplementation(() => {
+      const cbs: Record<string, Function> = {};
+      const inst: any = {
+        _cbs: cbs,
+        ffprobe: jest.fn<any>().mockImplementation((cb: any) => cb(null, {
+          format: { duration: 60 },
+          streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+        })),
+        outputOptions: jest.fn<any>().mockImplementation(() => inst),
+        output: jest.fn<any>().mockImplementation(() => inst),
+        on: jest.fn<any>().mockImplementation((event: string, cb: Function) => {
+          cbs[event] = cb;
+          return inst;
+        }),
+        run: jest.fn<any>().mockImplementation(() => {
+          if (cbs['end']) process.nextTick(() => cbs['end']());
+        }),
+        seekInput: jest.fn<any>().mockImplementation(() => inst),
+        seek: jest.fn<any>().mockImplementation(() => inst),
+        frames: jest.fn<any>().mockImplementation(() => inst),
+        pipe: jest.fn<any>().mockImplementation(() => inst),
+        noVideo: jest.fn<any>().mockImplementation(() => inst),
+        audioCodec: jest.fn<any>().mockImplementation(() => inst),
+        format: jest.fn<any>().mockImplementation(() => inst),
+      };
+      return inst;
     });
 
     const fs = require('fs');
