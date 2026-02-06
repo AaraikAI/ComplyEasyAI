@@ -1,6 +1,10 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
+
+// Unmock so we test the real implementation
+vi.unmock('@/contexts/OnboardingContext');
+
 import { OnboardingProvider, useOnboardingContext } from '../OnboardingContext';
 
 vi.mock('@/contexts/AuthContext', () => ({
@@ -14,12 +18,32 @@ vi.mock('@/services/api', () => ({
   api: {
     onboarding: {
       getProgress: vi.fn().mockResolvedValue({
-        completedFlows: [],
-        skippedFlows: [],
-        currentFlow: null,
-        currentStep: 0,
-        milestones: {},
-        preferences: { showHints: true, reducedMotion: false },
+        progress: {
+          id: 'p1',
+          userId: '1',
+          organizationId: 'org-1',
+          currentFlow: null,
+          currentStep: 0,
+          welcomeCompleted: true,
+          tierTourCompleted: false,
+          firstFrameworkCompleted: false,
+          firstEvidenceCompleted: false,
+          firstControlPassCompleted: false,
+          inviteTeamCompleted: false,
+          integrationSetupCompleted: false,
+          aiFeatureTrialCompleted: false,
+          acosDigitalTwinTourCompleted: false,
+          advancedFeaturesTourCompleted: false,
+          tooltipsShown: [],
+          skippedFlows: [],
+          completedAt: null,
+          lastActiveFlow: null,
+          lastActiveStep: null,
+          showHints: true,
+          reducedMotion: false,
+        },
+        organizationPlan: 'Growth',
+        organizationName: 'Test Org',
       }),
       updateProgress: vi.fn().mockResolvedValue({}),
       trackEvent: vi.fn().mockResolvedValue({}),
@@ -27,7 +51,23 @@ vi.mock('@/services/api', () => ({
       updatePreferences: vi.fn().mockResolvedValue({}),
       skipFlow: vi.fn().mockResolvedValue({}),
       resetProgress: vi.fn().mockResolvedValue({}),
-      getChecklist: vi.fn().mockResolvedValue(null),
+      getChecklist: vi.fn().mockResolvedValue({
+        checklist: {
+          id: 'c1',
+          organizationId: 'org-1',
+          profileCompleted: false,
+          teamInvited: false,
+          firstFrameworkAdded: false,
+          firstEvidenceUploaded: false,
+          firstControlPassed: false,
+          integrationConnected: false,
+          aiFeatureUsed: false,
+          firstReportGenerated: false,
+          acosConfigured: false,
+          digitalTwinActivated: false,
+          completedAt: null,
+        },
+      }),
     },
   },
 }));
