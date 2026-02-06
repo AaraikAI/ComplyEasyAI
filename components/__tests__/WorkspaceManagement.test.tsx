@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { WorkspaceManagement } from '../WorkspaceManagement';
 
-vi.mock('lucide-react', () => new Proxy({}, { get: (_, name) => { if (name === '__esModule') return true; return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />; } }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: vi.fn().mockReturnValue({ user: { id: '1', name: 'Test', role: 'admin', organizationId: 'org-1', organization: { plan: 'Growth' } }, isAuthenticated: true }) }));
 vi.mock('@/services/api', () => ({ api: { enterprise: { getWorkspaces: vi.fn().mockResolvedValue([]) } }, getAuthToken: vi.fn().mockReturnValue('token') }));
 vi.mock('@/constants/tierLimits', () => ({ getLimit: vi.fn().mockReturnValue(25), isAtLimit: vi.fn().mockReturnValue(false), getUpgradeMessage: vi.fn().mockReturnValue(''), UPGRADE_LINK: '/settings?tab=billing' }));

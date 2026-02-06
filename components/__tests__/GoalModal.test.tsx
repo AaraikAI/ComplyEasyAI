@@ -3,12 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GoalModal } from '../GoalModal';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('@/services/api', () => ({
   api: {
