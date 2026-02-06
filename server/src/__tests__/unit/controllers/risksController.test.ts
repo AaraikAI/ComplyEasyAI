@@ -50,6 +50,8 @@ describe('RisksController', () => {
         email: 'test@example.com',
         organizationId: 'org-123',
       },
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'test-agent' },
     } as any;
 
     mockResponse = {
@@ -130,11 +132,21 @@ describe('RisksController', () => {
         { id: 'risk-1', description: 'Risk 1', severity: 'High' },
       ];
 
+      const prioritized = [
+        { id: 'risk-1', score: 95, rationale: 'Critical' },
+      ];
+
       (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue(risks as any);
+      (prismaMock.riskItem.update as jest.Mock<any>).mockResolvedValue({} as any);
+      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as any);
+
+      // Re-mock geminiService.prioritizeRisks since resetMocks clears mock implementations
+      const geminiService = require('../../../services/geminiService').default;
+      (geminiService.prioritizeRisks as jest.Mock<any>).mockResolvedValue(prioritized as any);
 
       await risksController.prioritize(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(mockResponse.json).toHaveBeenCalled();
+      expect(mockResponse.json).toHaveBeenCalledWith(prioritized);
     });
   });
 });

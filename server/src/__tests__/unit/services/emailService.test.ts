@@ -27,7 +27,7 @@ jest.mock('../../../config', () => ({
   __esModule: true,
   default: {
     sendgrid: {
-      apiKey: 'test-api-key',
+      apiKey: 'SG.test-api-key',
       fromEmail: 'test@example.com',
       fromName: 'ComplyEasy AI',
     },
@@ -76,9 +76,7 @@ describe('EmailService', () => {
         html: '<p>Test</p>',
       };
 
-      const result = await emailService.sendEmail(options);
-
-      expect(result).toBe(false);
+      await expect(emailService.sendEmail(options)).rejects.toThrow('SendGrid error');
     });
 
     it('should use default text when not provided', async () => {
@@ -128,9 +126,7 @@ describe('EmailService', () => {
     it('should handle send failure', async () => {
       mockSend.mockRejectedValueOnce(new Error('Send failed'));
 
-      const result = await emailService.sendMagicLink('user@example.com', 'token');
-
-      expect(result).toBe(false);
+      await expect(emailService.sendMagicLink('user@example.com', 'token')).rejects.toThrow('Send failed');
     });
   });
 
@@ -172,7 +168,7 @@ describe('EmailService', () => {
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           to: email,
-          subject: expect.stringContaining('Password Reset'),
+          subject: expect.stringContaining('Reset Your Password'),
         })
       );
     });

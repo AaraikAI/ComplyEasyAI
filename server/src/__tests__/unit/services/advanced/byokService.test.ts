@@ -5,31 +5,50 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
+const mockSend = jest.fn<any>();
+
 // Mock AWS SDK
 jest.mock('@aws-sdk/client-kms', () => ({
   KMSClient: jest.fn().mockImplementation(() => ({
-    send: jest.fn(),
+    send: mockSend,
   })),
   EncryptCommand: jest.fn(),
   DecryptCommand: jest.fn(),
   GenerateDataKeyCommand: jest.fn(),
   DescribeKeyCommand: jest.fn(),
+  CreateKeyCommand: jest.fn(),
+  ScheduleKeyDeletionCommand: jest.fn(),
 }));
 
 // Mock Azure SDK
 jest.mock('@azure/keyvault-keys', () => ({
   KeyClient: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
-    getKey: (jest.fn() as jest.Mock<any>).mockResolvedValue({ name: 'test-key' }),
+    getKey: (jest.fn() as jest.Mock<any>).mockResolvedValue({
+      name: 'test-key',
+      properties: { enabled: true },
+    }),
     createKey: (jest.fn() as jest.Mock<any>).mockResolvedValue({ name: 'test-key' }),
   })),
   CryptographyClient: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
-    encrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue({ result: Buffer.from('encrypted') }),
-    decrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue({ result: Buffer.from('decrypted') }),
+    encrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue({ result: Buffer.alloc(32) }),
+    decrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue({ result: Buffer.alloc(32) }),
   })),
 }));
 
 jest.mock('@azure/identity', () => ({
   DefaultAzureCredential: jest.fn().mockImplementation(() => ({})),
+}));
+
+jest.mock('@google-cloud/kms', () => ({
+  KeyManagementServiceClient: jest.fn().mockImplementation(() => ({
+    cryptoKeyPath: jest.fn().mockReturnValue('projects/test/locations/us/keyRings/kr/cryptoKeys/k'),
+    encrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue([{ ciphertext: Buffer.alloc(32) }]),
+    decrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue([{ plaintext: Buffer.alloc(32) }]),
+  })),
+}));
+
+jest.mock('../../../../utils/urlValidator', () => ({
+  isUrlSafe: jest.fn().mockReturnValue(true),
 }));
 
 jest.mock('../../../../config/logger', () => ({
@@ -51,6 +70,23 @@ import byokService from '../../../../services/advanced/byokService';
 describe('BYOKService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Mock keyUsage for trackKeyUsage
+    (prismaMock as any).keyUsage = {
+      create: jest.fn<any>().mockResolvedValue({}),
+      findMany: jest.fn<any>().mockResolvedValue([]),
+    };
+    // Mock encryptionMetadata for storeEncryptionMetadata
+    (prismaMock as any).encryptionMetadata = {
+      upsert: jest.fn<any>().mockResolvedValue({}),
+      create: jest.fn<any>().mockResolvedValue({}),
+    };
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+    // Default AWS KMS send mock for generateDataKey
+    mockSend.mockResolvedValue({
+      Plaintext: Buffer.alloc(32),
+      CiphertextBlob: Buffer.alloc(64),
+      KeyMetadata: { Enabled: true },
+    });
   });
 
   describe('generateDataKey()', () => {
@@ -124,17 +160,16 @@ describe('BYOKService', () => {
         region: 'us-east-1',
       };
 
-      const encryptedPayload = {
-        ciphertext: 'encrypted-data',
-        encryptedDataKey: 'encrypted-key',
-        iv: 'initialization-vector',
-        authTag: 'auth-tag',
-        provider: 'aws_kms' as const,
-        keyId: config.keyId,
-        algorithm: 'AES-256-GCM',
-      };
+      // First encrypt some data to get valid encrypted payload
+      const plaintext = Buffer.from('sensitive data');
+      const encrypted = await byokService.encryptData(plaintext, config, 'org-123');
 
-      const result = await byokService.decryptData(encryptedPayload, config);
+      // Mock the DecryptCommand response to return the same key
+      mockSend.mockResolvedValueOnce({
+        Plaintext: Buffer.alloc(32), // same 32-byte key
+      });
+
+      const result = await byokService.decryptData(encrypted, config);
 
       expect(Buffer.isBuffer(result)).toBe(true);
     });
@@ -146,17 +181,11 @@ describe('BYOKService', () => {
         vaultUrl: 'https://test-vault.vault.azure.net/',
       };
 
-      const encryptedPayload = {
-        ciphertext: 'encrypted-data',
-        encryptedDataKey: 'encrypted-key',
-        iv: 'initialization-vector',
-        authTag: 'auth-tag',
-        provider: 'azure_kv' as const,
-        keyId: config.keyId,
-        algorithm: 'AES-256-GCM',
-      };
+      // First encrypt some data to get valid encrypted payload
+      const plaintext = Buffer.from('sensitive data');
+      const encrypted = await byokService.encryptData(plaintext, config, 'org-123');
 
-      const result = await byokService.decryptData(encryptedPayload, config);
+      const result = await byokService.decryptData(encrypted, config);
 
       expect(Buffer.isBuffer(result)).toBe(true);
     });
@@ -176,17 +205,11 @@ describe('BYOKService', () => {
         region: 'us-east-1',
       };
 
-      const encryptedData = [{
-        ciphertext: 'encrypted-data',
-        encryptedDataKey: 'encrypted-key',
-        iv: 'initialization-vector',
-        authTag: 'auth-tag',
-        provider: 'aws_kms' as const,
-        keyId: oldConfig.keyId,
-        algorithm: 'AES-256-GCM',
-      }];
+      // First encrypt some data
+      const plaintext = Buffer.from('sensitive data');
+      const encrypted = await byokService.encryptData(plaintext, oldConfig, 'org-123');
 
-      const result = await byokService.rotateKey('org-123', oldConfig, newConfig, encryptedData);
+      const result = await byokService.rotateKey('org-123', oldConfig, newConfig, [encrypted]);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(1);
@@ -208,4 +231,3 @@ describe('BYOKService', () => {
     });
   });
 });
-

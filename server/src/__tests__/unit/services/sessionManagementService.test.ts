@@ -38,6 +38,13 @@ import sessionManagementService from '../../../services/sessionManagementService
 describe('SessionManagementService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-set crypto mock that gets cleared by resetMocks: true in jest config
+    // Use a counter so each call returns a unique value (needed since Date.now() is frozen by fake timers)
+    let cryptoCallCount = 0;
+    const crypto = require('crypto');
+    (crypto.randomBytes as jest.Mock<any>).mockImplementation(() => ({
+      toString: () => `mock${String(cryptoCallCount++).padStart(8, '0')}`,
+    }));
     // Use fake timers for session expiry tests
     jest.useFakeTimers({ now: new Date('2025-06-01T12:00:00Z') });
     // Reset internal state by terminating all sessions
