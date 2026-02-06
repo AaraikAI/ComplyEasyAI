@@ -93,6 +93,60 @@ import mlModelsService from '../../../../services/advanced/mlModelsService';
 describe('MLModelsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-establish mock implementations (cleared by resetMocks)
+    const tf = require('@tensorflow/tfjs');
+    mockModel.predict.mockReturnValue({
+      data: jest.fn<any>().mockResolvedValue(new Float32Array([0.7])),
+      dispose: jest.fn(),
+      shape: [1, 1],
+      dataSync: jest.fn<any>().mockReturnValue(new Float32Array([0.7])),
+    });
+    mockModel.fit.mockResolvedValue({
+      history: {
+        loss: [0.5, 0.3, 0.1],
+        acc: [0.6, 0.8, 0.9],
+      },
+    });
+    mockModel.compile.mockImplementation(() => {});
+    mockModel.summary.mockImplementation(() => {});
+    mockModel.save.mockResolvedValue({});
+    mockModel.getWeights.mockReturnValue([]);
+
+    tf.sequential.mockReturnValue(mockModel);
+    tf.layers.dense.mockReturnValue({});
+    tf.layers.dropout.mockReturnValue({});
+    tf.layers.batchNormalization.mockReturnValue({});
+    tf.train.adam.mockReturnValue({});
+    tf.regularizers.l2.mockReturnValue({});
+    tf.tensor2d.mockReturnValue({ dispose: jest.fn() });
+    tf.tensor.mockReturnValue({
+      dispose: jest.fn(),
+      data: jest.fn<any>().mockResolvedValue(new Float32Array([0.5])),
+    });
+    tf.tidy.mockImplementation((fn: () => any) => fn());
+    tf.loadLayersModel.mockRejectedValue(new Error('No model found'));
+
+    const Graph = require('graphology').default;
+    Graph.mockImplementation(() => ({
+      addNode: jest.fn(),
+      addEdge: jest.fn(),
+      hasNode: jest.fn<any>().mockReturnValue(false),
+      hasEdge: jest.fn<any>().mockReturnValue(false),
+      order: 0,
+      size: 0,
+      nodes: jest.fn<any>().mockReturnValue([]),
+      edges: jest.fn<any>().mockReturnValue([]),
+      forEachNode: jest.fn(),
+      forEachEdge: jest.fn(),
+      neighbors: jest.fn<any>().mockReturnValue([]),
+      degree: jest.fn<any>().mockReturnValue(0),
+      getNodeAttributes: jest.fn<any>().mockReturnValue({}),
+      getEdgeAttributes: jest.fn<any>().mockReturnValue({}),
+      setNodeAttribute: jest.fn(),
+    }));
+
+    // Reset internal state
+    (mlModelsService as any).initialized = false;
   });
 
   describe('initialize', () => {

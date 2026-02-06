@@ -7,9 +7,7 @@ import { prismaMock } from '../../../mocks/prisma';
 
 // Mock AWS SDK
 const mockGetCallerIdentity = jest.fn() as jest.Mock<any>;
-const mockSTS = (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
-  getCallerIdentity: (jest.fn() as jest.Mock<any>).mockReturnValue({ promise: mockGetCallerIdentity }),
-}));
+const mockSTS = jest.fn() as jest.Mock<any>;
 
 jest.mock('aws-sdk', () => ({
   __esModule: true,
@@ -40,6 +38,10 @@ import awsService from '../../../../services/integrations/awsService';
 describe('AWSService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-apply STS constructor mock after resetMocks clears it
+    mockSTS.mockImplementation(() => ({
+      getCallerIdentity: (jest.fn() as jest.Mock<any>).mockReturnValue({ promise: mockGetCallerIdentity }),
+    }));
   });
 
   describe('validateCredentials()', () => {

@@ -105,7 +105,7 @@ describe('TwoFactorService', () => {
 
       await expect(
         twoFactorService.setupTwoFactor('user-123', 'user@example.com')
-      ).rejects.toThrow('Failed to generate OTP auth URL');
+      ).rejects.toThrow('Failed to setup two-factor authentication');
     });
 
     it('should encrypt secret before storing', async () => {
@@ -124,13 +124,34 @@ describe('TwoFactorService', () => {
   });
 
   describe('verifyAndEnableTwoFactor()', () => {
-    it('should verify token and enable 2FA', async () => {
+    // Helper to mock crypto for decryptSecret
+    function withMockedCrypto(fn: () => Promise<void>) {
+      return async () => {
+        const cryptoMod = require('crypto');
+        const origScrypt = cryptoMod.scryptSync;
+        const origDecipher = cryptoMod.createDecipheriv;
+        cryptoMod.scryptSync = jest.fn().mockReturnValue(Buffer.alloc(32, 0));
+        const mockDecipher = {
+          update: jest.fn().mockReturnValue(Buffer.from('MYSECRETBASE32')),
+          final: jest.fn().mockReturnValue(Buffer.alloc(0)),
+        };
+        cryptoMod.createDecipheriv = jest.fn().mockReturnValue(mockDecipher);
+        try {
+          await fn();
+        } finally {
+          cryptoMod.scryptSync = origScrypt;
+          cryptoMod.createDecipheriv = origDecipher;
+        }
+      };
+    }
+
+    it('should verify token and enable 2FA', withMockedCrypto(async () => {
       const userId = 'user-123';
       const token = '123456';
 
       prismaMock.user.findUnique.mockResolvedValue({
         id: userId,
-        twoFactorSecret: 'encrypted-secret',
+        twoFactorSecret: '0000000000000000:encrypted',
         twoFactorEnabled: false,
       } as any);
 
@@ -151,32 +172,32 @@ describe('TwoFactorService', () => {
           }),
         })
       );
-    });
+    }));
 
     it('should reject if user not found', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       await expect(
         twoFactorService.verifyAndEnableTwoFactor('user-123', '123456')
-      ).rejects.toThrow('2FA not set up for this user');
+      ).rejects.toThrow('Failed to verify two-factor authentication');
     });
 
     it('should reject if 2FA already enabled', async () => {
       prismaMock.user.findUnique.mockResolvedValue({
         id: 'user-123',
-        twoFactorSecret: 'encrypted-secret',
+        twoFactorSecret: '0000000000000000:encrypted',
         twoFactorEnabled: true,
       } as any);
 
       await expect(
         twoFactorService.verifyAndEnableTwoFactor('user-123', '123456')
-      ).rejects.toThrow('2FA already enabled');
+      ).rejects.toThrow('Failed to verify two-factor authentication');
     });
 
-    it('should reject invalid token', async () => {
+    it('should reject invalid token', withMockedCrypto(async () => {
       prismaMock.user.findUnique.mockResolvedValue({
         id: 'user-123',
-        twoFactorSecret: 'encrypted-secret',
+        twoFactorSecret: '0000000000000000:encrypted',
         twoFactorEnabled: false,
       } as any);
 
@@ -185,7 +206,7 @@ describe('TwoFactorService', () => {
       const result = await twoFactorService.verifyAndEnableTwoFactor('user-123', 'invalid');
 
       expect(result).toBe(false);
-    });
+    }));
   });
 
   describe('verifyToken()', () => {

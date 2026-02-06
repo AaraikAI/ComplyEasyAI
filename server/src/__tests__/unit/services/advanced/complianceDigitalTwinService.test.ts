@@ -110,6 +110,7 @@ describe('ComplianceDigitalTwinService', () => {
 
     it('should run a framework_addition simulation', async () => {
       setupBaselineMocks();
+      (prismaMock.frameworkControl.count as jest.Mock<any>).mockResolvedValue(3);
 
       const result = await complianceDigitalTwinService.runSimulation(
         orgId,
@@ -179,24 +180,21 @@ describe('ComplianceDigitalTwinService', () => {
         frameworkId: 'fw-1',
         framework: { id: 'fw-1', organizationId: orgId, controls: [] },
       });
+      (prismaMock.frameworkControl.count as jest.Mock<any>).mockResolvedValue(3);
 
       const result = await complianceDigitalTwinService.runMonteCarloSimulation(
         orgId,
-        {
-          name: 'Monte Carlo Test',
-          description: 'MC simulation',
-          scenarioType: 'control_change',
-          parameters: { controlId: 'c-1', newStatus: 'Pending' },
-        },
+        'control_change',
+        { controlId: 'c-1', newStatus: 'Pending' },
         10,
         userId
       );
 
       expect(result).toBeDefined();
-      expect(result.iterations).toBeDefined();
-      expect(result.meanScore).toBeDefined();
-      expect(result.standardDeviation).toBeDefined();
-      expect(result.percentiles).toBeDefined();
+      expect(result.averageScoreChange).toBeDefined();
+      expect(result.minScoreChange).toBeDefined();
+      expect(result.maxScoreChange).toBeDefined();
+      expect(result.confidenceInterval).toBeDefined();
     });
   });
 

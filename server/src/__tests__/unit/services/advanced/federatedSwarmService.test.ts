@@ -28,6 +28,21 @@ describe('FederatedSwarmService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-establish mock implementations (cleared by resetMocks)
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.auditLog.count as jest.Mock<any>).mockResolvedValue(0);
+    (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.organization.findUnique as jest.Mock<any>).mockResolvedValue({ id: orgId, industry: 'Technology' });
+    (prismaMock.organization.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.federatedSwarmPeer.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.federatedSwarmPeer.create as jest.Mock<any>).mockResolvedValue({ id: 'peer-1', organizationId: orgId, peerId: 'p-1', status: 'active' });
+    (prismaMock.federatedSwarmPeer.updateMany as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.federatedSwarmAggregation.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.federatedSwarmAggregation.create as jest.Mock<any>).mockResolvedValue({ id: 'agg-1' });
+    (prismaMock.swarmInsight.findMany as jest.Mock<any>).mockResolvedValue([]);
   });
 
   describe('joinFederation', () => {
@@ -126,14 +141,11 @@ describe('FederatedSwarmService', () => {
     });
 
     it('should reject contribution when rate limited', async () => {
-      // Simulate many recent contributions
-      const recentLogs = Array.from({ length: 20 }, (_, i) => ({
-        action: 'federated_swarm.contribution_made',
-        createdAt: new Date(),
-        details: JSON.stringify({ contributionId: `c-${i}` }),
-      }));
-
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue(recentLogs);
+      // Mock rate limit check - count returns more than max
+      (prismaMock.auditLog.count as jest.Mock<any>).mockResolvedValue(20);
+      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue({
+        timestamp: new Date(),
+      });
 
       await expect(
         federatedSwarmService.contributeToFederation(orgId, validContribution, userId)

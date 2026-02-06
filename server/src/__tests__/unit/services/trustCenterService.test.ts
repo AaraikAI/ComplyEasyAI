@@ -65,13 +65,13 @@ describe('TrustCenterService', () => {
         { id: 'cert-1', certificateType: 'SOC 2', status: 'Valid' },
       ] as any);
       prismaMock.complianceFramework.findMany.mockResolvedValue([
-        { id: 'framework-1', name: 'SOC 2', status: 'In_Progress' },
+        { id: 'framework-1', name: 'SOC 2', status: 'In_Progress', controls: [{ id: 'c-1', name: 'Control 1', status: 'Implemented' }] },
       ] as any);
 
       const result = await service.getPublicTrustCenter(organizationId);
 
       expect(result).toHaveProperty('organization');
-      expect(result).toHaveProperty('certificates');
+      expect(result).toHaveProperty('certifications');
       expect(result).toHaveProperty('frameworks');
     });
 

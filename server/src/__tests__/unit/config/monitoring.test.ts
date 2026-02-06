@@ -5,6 +5,16 @@
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
+// Mock @sentry/node and @sentry/profiling-node to simulate them not being installed.
+// The monitoring module uses require() inside a try/catch at load time, so a throwing
+// factory makes the module behave as if the packages are missing.
+jest.mock('@sentry/node', () => {
+  throw new Error('Cannot find module \'@sentry/node\'');
+});
+jest.mock('@sentry/profiling-node', () => {
+  throw new Error('Cannot find module \'@sentry/profiling-node\'');
+});
+
 // Store original env
 const originalEnv = { ...process.env };
 

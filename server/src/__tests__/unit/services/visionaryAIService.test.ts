@@ -10,21 +10,21 @@ jest.mock('../../../config/database', () => ({
   default: prismaMock,
 }));
 
+// Keep references to mock functions so we can re-set them after resetMocks
+const mockText = jest.fn() as jest.Mock<any>;
+const mockGenerateContent = jest.fn() as jest.Mock<any>;
+const mockGetGenerativeModel = jest.fn() as jest.Mock<any>;
+
 jest.mock('@google/generative-ai', () => ({
   GoogleGenerativeAI: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
-    getGenerativeModel: (jest.fn() as jest.Mock<any>).mockReturnValue({
-      generateContent: (jest.fn() as jest.Mock<any>).mockResolvedValue({
-        response: {
-          text: (jest.fn() as jest.Mock<any>).mockReturnValue('AI recommendation'),
-        },
-      }),
-    }),
+    getGenerativeModel: mockGetGenerativeModel,
   })),
 }));
 
+const mockAuditLog = jest.fn() as jest.Mock<any>;
 jest.mock('../../../utils/auditLogger', () => ({
   AuditLogger: {
-    log: (jest.fn() as jest.Mock<any>).mockResolvedValue({}),
+    log: mockAuditLog,
   },
 }));
 
@@ -35,6 +35,19 @@ describe('VisionaryAIService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-set mock implementations (cleared by jest config resetMocks: true)
+    mockText.mockReturnValue(JSON.stringify({
+      title: 'Data Encryption Policy',
+      content: 'Full policy content',
+      sections: [{ name: 'Purpose', content: 'Purpose content' }],
+      frameworkMappings: [{ framework: 'SOC 2', controls: ['CC6.1'] }],
+      confidence: 0.9,
+    }));
+    mockGenerateContent.mockResolvedValue({ response: { text: mockText } });
+    mockGetGenerativeModel.mockReturnValue({ generateContent: mockGenerateContent });
+    mockAuditLog.mockResolvedValue({});
+
     service = new VisionaryAIService();
   });
 
@@ -70,6 +83,13 @@ describe('VisionaryAIService', () => {
       prismaMock.riskItem.findMany.mockResolvedValue([
         { id: 'risk-1', severity: 'High', category: 'Security' },
       ] as any);
+      prismaMock.riskAssessment.findMany.mockResolvedValue([]);
+      prismaMock.organization.findUnique.mockResolvedValue({
+        id: organizationId,
+        name: 'Test Org',
+        frameworks: [],
+        vendors: [],
+      } as any);
 
       const result = await service.predictFutureRisks(organizationId, timeHorizonDays, userId);
 
@@ -88,6 +108,22 @@ describe('VisionaryAIService', () => {
         frameworkAlignment: ['SOC2'],
         industry: 'Technology',
       };
+
+      prismaMock.organization.findUnique.mockResolvedValue({
+        id: organizationId,
+        name: 'Test Org',
+        plan: 'Visionary',
+        frameworks: [{ name: 'SOC 2', controls: [] }],
+      } as any);
+      prismaMock.policy.create.mockResolvedValue({
+        id: 'policy-123',
+        organizationId,
+        title: 'Data Encryption Policy',
+        category: 'Security',
+        content: 'Full policy content',
+        version: '1.0-DRAFT',
+        status: 'Draft',
+      } as any);
 
       const result = await service.generatePolicyFromNaturalLanguage(
         organizationId,

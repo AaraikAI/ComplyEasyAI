@@ -163,21 +163,24 @@ describe('NotificationService', () => {
     });
 
     it('should mark notification as failed when delivery fails', async () => {
-      (prismaMock as any).notificationPreference.findUnique.mockResolvedValue(null);
-      (prismaMock as any).notification.create.mockResolvedValue(mockNotificationRecord());
-      (prismaMock as any).notification.update.mockResolvedValue(mockNotificationRecord({ status: 'failed' }));
-
-      // Websocket preference disabled
+      // Use a unique userId to avoid internal preferences cache from prior tests
+      const uniqueUserId = 'user-no-websocket';
       (prismaMock as any).notificationPreference.findUnique.mockResolvedValue({
-        userId: 'user-123',
+        userId: uniqueUserId,
         email: false,
         slack: false,
         websocket: false,
         sms: false,
         categories: {},
       });
+      (prismaMock as any).notification.create.mockResolvedValue(
+        mockNotificationRecord({ userId: uniqueUserId })
+      );
+      (prismaMock as any).notification.update.mockResolvedValue(
+        mockNotificationRecord({ userId: uniqueUserId, status: 'failed' })
+      );
 
-      const result = await notificationService.sendNotification('user-123', 'org-123', {
+      const result = await notificationService.sendNotification(uniqueUserId, 'org-123', {
         type: 'info',
         category: 'compliance',
         title: 'Test',

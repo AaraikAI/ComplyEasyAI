@@ -40,6 +40,12 @@ describe('VendorRiskService', () => {
     it('should create a new vendor', async () => {
       const mockVendor = createMockVendor();
       prismaMock.vendor.create.mockResolvedValue(mockVendor);
+      prismaMock.vendorAssessment.create.mockResolvedValue({
+        id: 'assessment-123',
+        vendorId: mockVendor.id,
+        assessmentType: 'Initial',
+        status: 'In_Progress',
+      } as any);
 
       const result = await vendorRiskService.createVendor({
         organizationId: 'org-123',
@@ -64,6 +70,12 @@ describe('VendorRiskService', () => {
     it('should calculate initial risk score based on data access', async () => {
       const vendorWithDataAccess = createMockVendor({ hasDataAccess: true, riskScore: 60 });
       prismaMock.vendor.create.mockResolvedValue(vendorWithDataAccess);
+      prismaMock.vendorAssessment.create.mockResolvedValue({
+        id: 'assessment-456',
+        vendorId: vendorWithDataAccess.id,
+        assessmentType: 'Initial',
+        status: 'In_Progress',
+      } as any);
 
       await vendorRiskService.createVendor({
         organizationId: 'org-123',

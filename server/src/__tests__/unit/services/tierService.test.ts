@@ -26,6 +26,17 @@ const createMockFn = (): jest.Mock<(...args: any[]) => any> => jest.fn() as jest
   ...((prismaMock as any).integration || {}),
   count: createMockFn(),
 };
+// Add count to customReport and riskAssessment
+if (!(prismaMock as any).customReport) {
+  (prismaMock as any).customReport = {};
+}
+(prismaMock as any).customReport.count = createMockFn();
+(prismaMock as any).customReport.findMany = (prismaMock as any).customReport.findMany || createMockFn();
+(prismaMock as any).customReport.create = (prismaMock as any).customReport.create || createMockFn();
+
+if (!prismaMock.riskAssessment.count) {
+  (prismaMock as any).riskAssessment.count = createMockFn();
+}
 
 // Mock the database
 jest.mock('../../../config/database', () => ({
