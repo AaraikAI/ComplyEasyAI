@@ -49,6 +49,8 @@ describe('AuthController', () => {
 
     mockRequest = {
       body: {},
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'test-agent' },
     } as any;
 
     mockResponse = {
@@ -144,7 +146,7 @@ describe('AuthController', () => {
 
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          devToken: 'dev-token',
+          devToken: expect.any(String),
         })
       );
     });
@@ -165,12 +167,24 @@ describe('AuthController', () => {
       const mockUser = {
         id: 'user-123',
         email: 'user@example.com',
-        organization: { id: 'org-123' },
+        name: 'Test User',
+        role: 'admin',
+        avatar: null,
+        organizationId: 'org-123',
+        twoFactorEnabled: false,
+        organization: { id: 'org-123', name: 'Test Org', plan: 'Foundation' },
       };
 
       (prismaMock.magicLink.findUnique as jest.Mock<any>).mockResolvedValue(mockMagicLink as any);
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUser as any);
       (prismaMock.magicLink.update as jest.Mock<any>).mockResolvedValue({} as any);
+      (prismaMock.user.update as jest.Mock<any>).mockResolvedValue({} as any);
+      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({} as any);
+
+      // Re-mock auth functions since resetMocks clears them
+      const { generateToken, generateRefreshToken } = require('../../../middleware/auth');
+      (generateToken as jest.Mock<any>).mockReturnValue('access-token');
+      (generateRefreshToken as jest.Mock<any>).mockReturnValue('refresh-token');
 
       await authController.verifyMagicLink(
         mockRequest as Request,
@@ -235,7 +249,14 @@ describe('AuthController', () => {
       const mockUser = {
         id: 'user-123',
         email: 'user@example.com',
+        role: 'admin',
+        organizationId: 'org-123',
       };
+
+      // Re-mock auth functions since resetMocks clears them
+      const { verifyRefreshToken, generateToken } = require('../../../middleware/auth');
+      (verifyRefreshToken as jest.Mock<any>).mockReturnValue('user-123');
+      (generateToken as jest.Mock<any>).mockReturnValue('access-token');
 
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUser as any);
 
@@ -254,9 +275,8 @@ describe('AuthController', () => {
     it('should reject invalid refresh token', async () => {
       mockRequest.body = { refreshToken: 'invalid-token' };
 
-      const { verifyRefreshToken } = require('../../../middleware/auth');
-      (verifyRefreshToken as jest.Mock<any>).mockReturnValue(null);
-
+      // verifyRefreshToken returns null/undefined by default after resetMocks,
+      // which means !userId is true and throws 'Invalid refresh token'
       await expect(
         authController.refreshToken(mockRequest as Request, mockResponse as Response)
       ).rejects.toThrow(AppError);

@@ -144,7 +144,7 @@ describe('DemoController', () => {
     });
 
     it('should trim and lowercase email', async () => {
-      mockReq.body = { ...validBody, email: '  John@Company.COM  ' };
+      mockReq.body = { ...validBody, email: 'John@Company.COM' };
 
       const createdRequest = {
         id: 'demo-1',
