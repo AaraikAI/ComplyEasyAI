@@ -110,8 +110,10 @@ jest.mock('fs', () => ({
   existsSync: jest.fn<any>().mockReturnValue(true),
   mkdirSync: jest.fn(),
   writeFileSync: jest.fn(),
+  writeFile: jest.fn<any>().mockImplementation((_path: any, _data: any, cb: any) => { if (cb) cb(null); }),
   readFileSync: jest.fn<any>().mockReturnValue(Buffer.alloc(100)),
   unlinkSync: jest.fn(),
+  unlink: jest.fn<any>().mockImplementation((_path: any, cb: any) => { if (cb) cb(null); }),
   createReadStream: jest.fn(),
 }));
 

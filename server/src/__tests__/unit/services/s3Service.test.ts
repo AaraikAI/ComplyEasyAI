@@ -5,11 +5,12 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../mocks/prisma';
 
-// Mock AWS SDK
-const mockUpload = jest.fn() as jest.Mock<any>;
-const mockGetObject = jest.fn() as jest.Mock<any>;
-const mockDeleteObject = jest.fn() as jest.Mock<any>;
-const mockHeadObject = jest.fn() as jest.Mock<any>;
+// Mock AWS SDK - use top-level mock fns so they survive resetMocks
+const mockUploadPromise = jest.fn() as jest.Mock<any>;
+const mockDeleteObjectPromise = jest.fn() as jest.Mock<any>;
+const mockS3Upload = jest.fn() as jest.Mock<any>;
+const mockS3DeleteObject = jest.fn() as jest.Mock<any>;
+const mockS3GetSignedUrlPromise = jest.fn() as jest.Mock<any>;
 
 jest.mock('aws-sdk', () => ({
   __esModule: true,
@@ -18,10 +19,9 @@ jest.mock('aws-sdk', () => ({
       update: jest.fn(),
     },
     S3: jest.fn().mockImplementation(() => ({
-      upload: jest.fn().mockReturnValue({ promise: mockUpload }),
-      getObject: jest.fn().mockReturnValue({ promise: mockGetObject }),
-      deleteObject: jest.fn().mockReturnValue({ promise: mockDeleteObject }),
-      headObject: jest.fn().mockReturnValue({ promise: mockHeadObject }),
+      upload: mockS3Upload,
+      deleteObject: mockS3DeleteObject,
+      getSignedUrlPromise: mockS3GetSignedUrlPromise,
     })),
   },
 }));
@@ -67,6 +67,9 @@ describe('S3Service', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-set mock implementations that get cleared by resetMocks: true
+    mockS3Upload.mockReturnValue({ promise: mockUploadPromise });
+    mockS3DeleteObject.mockReturnValue({ promise: mockDeleteObjectPromise });
   });
 
   describe('uploadFile()', () => {
@@ -82,10 +85,13 @@ describe('S3Service', () => {
         ETag: 'test-etag',
       };
 
-      mockUpload.mockResolvedValue(mockS3Response);
+      mockUploadPromise.mockResolvedValue(mockS3Response);
       prismaMock.fileUpload.create.mockResolvedValue({
         id: 'file-123',
         url: mockS3Response.Location,
+        filename: 'test.pdf',
+        size: 1024,
+        mimeType: 'application/pdf',
       } as any);
 
       const result = await s3Service.uploadFile(options);
@@ -93,13 +99,13 @@ describe('S3Service', () => {
       expect(result).toHaveProperty('id');
       expect(result).toHaveProperty('url');
       expect(result).toHaveProperty('filename');
-      expect(mockUpload).toHaveBeenCalled();
+      expect(mockUploadPromise).toHaveBeenCalled();
     });
 
     it('should reject files exceeding size limit', async () => {
       const largeFile = {
         ...mockFile,
-        size: 11 * 1024 * 1024, // 11MB
+        size: 51 * 1024 * 1024, // 51MB exceeds 50MB limit
       };
 
       await expect(
@@ -108,7 +114,7 @@ describe('S3Service', () => {
           userId: 'user-123',
           organizationId: 'org-123',
         })
-      ).rejects.toThrow('File size exceeds maximum');
+      ).rejects.toThrow('exceeds maximum');
     });
 
     it('should reject unsupported file types', async () => {
@@ -123,7 +129,7 @@ describe('S3Service', () => {
           userId: 'user-123',
           organizationId: 'org-123',
         })
-      ).rejects.toThrow('File type not allowed');
+      ).rejects.toThrow('is not allowed');
     });
 
     it('should use custom folder when provided', async () => {
@@ -134,50 +140,45 @@ describe('S3Service', () => {
         folder: 'documents',
       };
 
-      mockUpload.mockResolvedValue({ Location: 'https://s3...', ETag: 'tag' });
-      prismaMock.fileUpload.create.mockResolvedValue({} as any);
+      mockUploadPromise.mockResolvedValue({ Location: 'https://s3...', ETag: 'tag' });
+      prismaMock.fileUpload.create.mockResolvedValue({
+        id: 'file-123',
+        url: 'https://s3...',
+        filename: 'test.pdf',
+        size: 1024,
+        mimeType: 'application/pdf',
+      } as any);
 
       await s3Service.uploadFile(options);
 
-      expect(mockUpload).toHaveBeenCalledWith(
-        expect.objectContaining({
-          Key: expect.stringContaining('documents'),
-        })
-      );
+      // Verify the upload was called with the key containing 'documents'
+      expect(mockS3Upload).toHaveBeenCalled();
+      const uploadParams = mockS3Upload.mock.calls[0][0] as any;
+      expect(uploadParams.Key).toContain('documents');
     });
   });
 
   describe('downloadFile()', () => {
     it('should download file from S3', async () => {
-      const fileId = 'file-123';
-      const mockFileRecord = {
-        id: fileId,
-        s3Key: 'org-123/uploads/file.pdf',
-        s3Bucket: 'test-bucket',
-      };
+      const s3Key = 'org-123/uploads/file.pdf';
+      const mockUrl = 'https://s3.amazonaws.com/test-bucket/signed-url';
 
-      const mockS3Object = {
-        Body: Buffer.from('file content'),
-        ContentType: 'application/pdf',
-      };
+      mockS3GetSignedUrlPromise.mockResolvedValue(mockUrl);
 
-      prismaMock.fileUpload.findUnique.mockResolvedValue(mockFileRecord as any);
-      mockGetObject.mockResolvedValue(mockS3Object);
+      // getSignedUrl returns a string URL
+      const result = await s3Service.getSignedUrl(s3Key);
 
-      // Note: downloadFile is not implemented in the current S3Service
-      // Using getSignedUrl instead as the available method
-      const result = await s3Service.getSignedUrl(mockFileRecord.s3Key);
-
-      expect(result).toHaveProperty('buffer');
-      expect(result).toHaveProperty('mimeType', 'application/pdf');
-      expect(mockGetObject).toHaveBeenCalled();
+      expect(typeof result).toBe('string');
+      expect(result).toBe(mockUrl);
+      expect(mockS3GetSignedUrlPromise).toHaveBeenCalledWith('getObject', expect.objectContaining({
+        Key: s3Key,
+      }));
     });
 
-    it('should throw error if file not found', async () => {
-      prismaMock.fileUpload.findUnique.mockResolvedValue(null);
+    it('should throw error on failure', async () => {
+      mockS3GetSignedUrlPromise.mockRejectedValue(new Error('Access denied'));
 
-      // Note: downloadFile is not implemented; testing getSignedUrl with non-existent key
-      await expect(s3Service.getSignedUrl('invalid-key')).resolves.toBeDefined();
+      await expect(s3Service.getSignedUrl('invalid-key')).rejects.toThrow('Failed to generate download URL');
     });
   });
 
@@ -188,15 +189,17 @@ describe('S3Service', () => {
         id: fileId,
         s3Key: 'org-123/uploads/file.pdf',
         s3Bucket: 'test-bucket',
+        filename: 'file.pdf',
       };
 
-      prismaMock.fileUpload.findUnique.mockResolvedValue(mockFileRecord as any);
-      mockDeleteObject.mockResolvedValue({});
+      // deleteFile uses findFirst, not findUnique
+      prismaMock.fileUpload.findFirst.mockResolvedValue(mockFileRecord as any);
+      mockDeleteObjectPromise.mockResolvedValue({});
       prismaMock.fileUpload.delete.mockResolvedValue({} as any);
 
       await s3Service.deleteFile(fileId, 'org-123');
 
-      expect(mockDeleteObject).toHaveBeenCalled();
+      expect(mockS3DeleteObject).toHaveBeenCalled();
       expect(prismaMock.fileUpload.delete).toHaveBeenCalled();
     });
   });
@@ -204,11 +207,14 @@ describe('S3Service', () => {
   describe('getSignedUrl()', () => {
     it('should generate presigned URL', async () => {
       const s3Key = 'org-123/uploads/file.pdf';
+      const mockUrl = 'https://s3.amazonaws.com/test-bucket/signed-url';
+
+      mockS3GetSignedUrlPromise.mockResolvedValue(mockUrl);
 
       const result = await s3Service.getSignedUrl(s3Key);
 
       expect(typeof result).toBe('string');
+      expect(result).toBe(mockUrl);
     });
   });
 });
-
