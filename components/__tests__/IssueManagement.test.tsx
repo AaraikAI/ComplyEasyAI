@@ -101,7 +101,7 @@ describe('IssueManagement', () => {
   it('renders the dashboard and list toggle', async () => {
     render(<IssueManagement />);
     await waitFor(() => {
-      expect(screen.getByText(/Dashboard|Issues/i)).toBeTruthy();
+      expect(screen.getAllByText(/Dashboard|Issues/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -114,6 +114,6 @@ describe('IssueManagement', () => {
 
   it('shows loading state initially', () => {
     render(<IssueManagement />);
-    expect(screen.getByText(/Loading|Issue Management/i)).toBeTruthy();
+    expect(screen.getAllByText(/Loading|Issue Management/i).length).toBeGreaterThan(0);
   });
 });
