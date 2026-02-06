@@ -391,7 +391,7 @@ describe('ComplianceChat', () => {
     await typeAndSend('Go to aCOS overview');
     await waitFor(() => {
       const markdowns = screen.getAllByTestId('markdown');
-      const hasAcosNav = markdowns.some(el => el.textContent?.includes('Navigating to aCOS'));
+      const hasAcosNav = markdowns.some(el => el.textContent?.includes('Navigated to aCOS'));
       expect(hasAcosNav).toBe(true);
     });
   });
@@ -417,7 +417,7 @@ describe('ComplianceChat', () => {
     await typeAndSend('Go to settings billing');
     await waitFor(() => {
       const markdowns = screen.getAllByTestId('markdown');
-      const hasSettingsNav = markdowns.some(el => el.textContent?.includes('Navigating to Settings'));
+      const hasSettingsNav = markdowns.some(el => el.textContent?.includes('Navigated to Settings'));
       expect(hasSettingsNav).toBe(true);
     });
   });

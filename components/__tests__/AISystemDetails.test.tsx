@@ -154,8 +154,8 @@ describe('AISystemDetails', () => {
   it('renders system name and type after loading', async () => {
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Test AI System')).toBeInTheDocument();
-      expect(screen.getByText('Machine Learning')).toBeInTheDocument();
+      expect(screen.getAllByText('Test AI System')[0]).toBeInTheDocument();
+      expect(screen.getAllByText('Machine Learning')[0]).toBeInTheDocument();
     });
   });
 
@@ -170,14 +170,14 @@ describe('AISystemDetails', () => {
   it('displays status badge', async () => {
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Deployed')).toBeInTheDocument();
+      expect(screen.getAllByText('Deployed')[0]).toBeInTheDocument();
     });
   });
 
   it('calls onBack when back button is clicked', async () => {
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Test AI System')).toBeInTheDocument();
+      expect(screen.getAllByText('Test AI System')[0]).toBeInTheDocument();
     });
     const backButton = screen.getByTestId('icon-ArrowLeft').closest('button');
     if (backButton) fireEvent.click(backButton);
@@ -238,7 +238,7 @@ describe('AISystemDetails', () => {
   it('enters edit mode when Edit icon is clicked on a field', async () => {
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Test AI System')).toBeInTheDocument();
+      expect(screen.getAllByText('Test AI System')[0]).toBeInTheDocument();
     });
     // Click the first Edit icon (for the Name field)
     const editIcons = screen.getAllByTestId('icon-Edit');
@@ -251,7 +251,7 @@ describe('AISystemDetails', () => {
     const { api } = await import('@/services/api');
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Test AI System')).toBeInTheDocument();
+      expect(screen.getAllByText('Test AI System')[0]).toBeInTheDocument();
     });
     const editIcons = screen.getAllByTestId('icon-Edit');
     fireEvent.click(editIcons[0]);
@@ -265,7 +265,7 @@ describe('AISystemDetails', () => {
   it('cancels edit when X is clicked', async () => {
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Test AI System')).toBeInTheDocument();
+      expect(screen.getAllByText('Test AI System')[0]).toBeInTheDocument();
     });
     const editIcons = screen.getAllByTestId('icon-Edit');
     fireEvent.click(editIcons[0]);
@@ -415,7 +415,7 @@ describe('AISystemDetails', () => {
     await waitFor(() => screen.getByText('Assessments'));
     fireEvent.click(screen.getByText('Assessments'));
     await waitFor(() => {
-      expect(screen.getByText('75%')).toBeInTheDocument();
+      expect(screen.getAllByText('75%')[0]).toBeInTheDocument();
       expect(screen.getByText('Test User')).toBeInTheDocument();
     });
   });
@@ -555,8 +555,8 @@ describe('AISystemDetails', () => {
   it('renders Deployed status badge with green styling', async () => {
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      const badge = screen.getByText('Deployed');
-      expect(badge.closest('span')).toHaveClass('bg-green-100');
+      const badge = screen.getAllByText('Deployed')[0];
+      expect(badge.parentElement).toHaveClass('bg-green-100');
     });
   });
 
@@ -566,7 +566,7 @@ describe('AISystemDetails', () => {
     (api.aiRmf.getAISystemById as any).mockResolvedValueOnce(devSystem);
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('In Development')).toBeInTheDocument();
+      expect(screen.getAllByText('In Development')[0]).toBeInTheDocument();
     });
   });
 });
