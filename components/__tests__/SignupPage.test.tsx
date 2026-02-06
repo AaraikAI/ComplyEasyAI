@@ -1,122 +1,512 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
+// --- Mocks ---
 
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
-  AreaChart: ({ children }: any) => <div>{children}</div>,
-  Area: () => null, XAxis: () => null, YAxis: () => null,
-  CartesianGrid: () => null, Tooltip: () => null, Legend: () => null,
-  PieChart: ({ children }: any) => <div>{children}</div>,
-  Pie: () => null, Cell: () => null,
-  BarChart: ({ children }: any) => <div>{children}</div>,
-  Bar: () => null, LineChart: ({ children }: any) => <div>{children}</div>,
-  Line: () => null, RadialBarChart: ({ children }: any) => <div>{children}</div>,
-  RadialBar: () => null, RadarChart: ({ children }: any) => <div>{children}</div>,
-  Radar: () => null, PolarGrid: () => null, PolarAngleAxis: () => null, PolarRadiusAxis: () => null,
-}));
+const mockRegister = vi.fn();
+const mockAuthRegister = vi.fn().mockResolvedValue({});
 
-vi.mock('react-markdown', () => ({ default: ({ children }: any) => <div>{children}</div> }));
-
-vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: vi.fn().mockReturnValue({
-    user: { id: '1', name: 'Test', email: 'test@test.com', role: 'admin', organizationId: 'org-1', organization: { plan: 'Growth', name: 'Test Org' } },
-    isAuthenticated: true,
-    logout: vi.fn(),
-    register: vi.fn().mockResolvedValue({}),
-  }),
-}));
-
-vi.mock('@/services/api', () => ({
+vi.mock('../../services/api', () => ({
   api: {
-    risks: { getAll: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({}) },
-    frameworks: { getAll: vi.fn().mockResolvedValue([]), getControls: vi.fn().mockResolvedValue([]) },
-    ai: { generatePolicy: vi.fn().mockResolvedValue({}), analyzeContract: vi.fn().mockResolvedValue({}), analyzeGap: vi.fn().mockResolvedValue({}), generateRFP: vi.fn().mockResolvedValue({}), simulatePhishing: vi.fn().mockResolvedValue({}), scoreVendor: vi.fn().mockResolvedValue({}), mapData: vi.fn().mockResolvedValue({}), generateBCP: vi.fn().mockResolvedValue({}) },
-    billing: { getSubscription: vi.fn().mockResolvedValue({ status: 'active', plan: 'Growth' }), getUsage: vi.fn().mockResolvedValue({}) },
-    team: { getMembers: vi.fn().mockResolvedValue([]), invite: vi.fn().mockResolvedValue({}) },
-    organization: { get: vi.fn().mockResolvedValue({ name: 'Test Org' }) },
-    enterprise: { getQuestionnaires: vi.fn().mockResolvedValue([]), getPolicies: vi.fn().mockResolvedValue([]), getMonitors: vi.fn().mockResolvedValue([]), getIssues: vi.fn().mockResolvedValue([]), getReports: vi.fn().mockResolvedValue([]) },
-    audit: { list: vi.fn().mockResolvedValue({ logs: [], total: 0 }) },
-    integrations: { getAll: vi.fn().mockResolvedValue([]) },
-    vendors: { getAll: vi.fn().mockResolvedValue([]) },
-    acos: { getGoals: vi.fn().mockResolvedValue([]), getControlLoops: vi.fn().mockResolvedValue([]) },
-    security: { getZeroTrust: vi.fn().mockResolvedValue({}), getHomomorphicKeys: vi.fn().mockResolvedValue(null) },
-    aiRmf: { getSystems: vi.fn().mockResolvedValue([]), getSystem: vi.fn().mockResolvedValue(null), createSystem: vi.fn().mockResolvedValue({ id: '1' }), getAssessments: vi.fn().mockResolvedValue([]), getDashboard: vi.fn().mockResolvedValue({ totalSystems: 0, byStatus: {}, byLifecycleStage: {}, byRiskLevel: {}, averageTrustworthinessScore: 0 }) },
-    euRegulations: { getAISystems: vi.fn().mockResolvedValue([]), getDMAGatekeepers: vi.fn().mockResolvedValue([]), getDSAPlatforms: vi.fn().mockResolvedValue([]) },
-    onboarding: { getProgress: vi.fn().mockResolvedValue(null), updateProgress: vi.fn().mockResolvedValue({}) },
-    demo: { submit: vi.fn().mockResolvedValue({}) },
-    webhooks: { getAll: vi.fn().mockResolvedValue([]) },
-    twoFactor: { getStatus: vi.fn().mockResolvedValue({ enabled: false }) },
-    auth: { requestMagicLink: vi.fn().mockResolvedValue({}), verifyMagicLink: vi.fn().mockResolvedValue({}) },
+    auth: {
+      register: (...args: any[]) => mockAuthRegister(...args),
+    },
   },
-  getAuthToken: vi.fn().mockReturnValue('test-token'),
-  clearAuthToken: vi.fn(),
 }));
 
-vi.mock('@/constants/tierFeatures', () => ({
-  canAccessView: vi.fn().mockReturnValue(true),
-  normalizePlan: vi.fn().mockReturnValue('Growth'),
-  hasFeature: vi.fn().mockReturnValue(true),
-  TIER_ORDER: ['Foundation', 'Essentials', 'Growth', 'Visionary'],
-  VIEW_TO_FEATURE: {},
-}));
-
-vi.mock('@/constants/tierLimits', () => ({
-  getLimit: vi.fn().mockReturnValue(100),
-  isAtLimit: vi.fn().mockReturnValue(false),
-  getUpgradeMessage: vi.fn().mockReturnValue(''),
-  LIMIT_LABELS: {},
-  UPGRADE_LINK: '/settings?tab=billing',
-}));
-
-vi.mock('@/hooks/useOnboarding', () => ({
-  useOnboarding: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null }),
-  useOnboardingFlow: vi.fn().mockReturnValue({ isActive: false, currentStep: 0, canShow: false }),
-  useOnboardingTrigger: vi.fn(),
-  useOnboardingHint: vi.fn().mockReturnValue({ isVisible: false, position: null, dismiss: vi.fn(), disableAllHints: vi.fn() }),
-  useOnboardingChecklist: vi.fn().mockReturnValue({ items: [], completedCount: 0, totalCount: 0, percentage: 0, isComplete: false, startFlowForItem: vi.fn() }),
-  useConfetti: vi.fn().mockReturnValue({ trigger: vi.fn(), dismiss: vi.fn(), isShowing: false }),
-}));
-
-vi.mock('@/contexts/OnboardingContext', () => ({
-  OnboardingProvider: ({ children }: any) => <>{children}</>,
-  useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true, progress: null, organizationPlan: 'Growth', organizationName: 'Test', showCelebration: false }),
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => ({ register: mockRegister, user: null, isAuthenticated: false }),
 }));
 
 import { SignupPage } from '../SignupPage';
+
+const VALID_PASSWORD = 'SecureP@ss1234';
+
+const fillStep1 = () => {
+  fireEvent.change(screen.getByPlaceholderText('you@company.com'), { target: { value: 'test@company.com' } });
+  fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: VALID_PASSWORD } });
+  fireEvent.change(screen.getByPlaceholderText('Confirm your password'), { target: { value: VALID_PASSWORD } });
+};
+
+const submitForm = () => {
+  const continueBtn = screen.getByText('Continue');
+  fireEvent.click(continueBtn);
+};
 
 describe('SignupPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders the signup form at step 1', () => {
-    render(<SignupPage />);
-    expect(screen.getAllByText(/Create your account|email/i).length).toBeGreaterThan(0);
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it('renders the email input field', () => {
-    render(<SignupPage />);
-    const emailInput = screen.getByPlaceholderText('you@company.com');
-    expect(emailInput).toBeTruthy();
+  // ===== STEP 1: Account Credentials =====
+  describe('Step 1: Account Credentials', () => {
+    it('renders step 1 by default', () => {
+      render(<SignupPage />);
+      expect(screen.getByText('Create Your Account')).toBeInTheDocument();
+      expect(screen.getByText(/Start your 3-day free trial/)).toBeInTheDocument();
+    });
+
+    it('renders email input', () => {
+      render(<SignupPage />);
+      expect(screen.getByPlaceholderText('you@company.com')).toBeInTheDocument();
+    });
+
+    it('renders password input', () => {
+      render(<SignupPage />);
+      expect(screen.getByPlaceholderText('Create a strong password')).toBeInTheDocument();
+    });
+
+    it('renders confirm password input', () => {
+      render(<SignupPage />);
+      expect(screen.getByPlaceholderText('Confirm your password')).toBeInTheDocument();
+    });
+
+    it('renders password requirements', () => {
+      render(<SignupPage />);
+      expect(screen.getByText('12+ characters')).toBeInTheDocument();
+      expect(screen.getByText('Uppercase letter')).toBeInTheDocument();
+      expect(screen.getByText('Lowercase letter')).toBeInTheDocument();
+      expect(screen.getByText('Number')).toBeInTheDocument();
+      expect(screen.getByText('Special character')).toBeInTheDocument();
+    });
+
+    it('toggles password visibility', () => {
+      render(<SignupPage />);
+      const pwInput = screen.getByPlaceholderText('Create a strong password');
+      expect(pwInput).toHaveAttribute('type', 'password');
+
+      // Click the eye icon button
+      const toggleBtn = pwInput.parentElement?.querySelector('button');
+      fireEvent.click(toggleBtn!);
+      expect(pwInput).toHaveAttribute('type', 'text');
+    });
+
+    it('shows error if email is empty on submit', () => {
+      render(<SignupPage />);
+      submitForm();
+      expect(screen.getByText('Please enter your email address')).toBeInTheDocument();
+    });
+
+    it('shows error if password is empty', () => {
+      render(<SignupPage />);
+      fireEvent.change(screen.getByPlaceholderText('you@company.com'), { target: { value: 'test@test.com' } });
+      submitForm();
+      expect(screen.getByText('Please enter a password')).toBeInTheDocument();
+    });
+
+    it('shows error if password does not meet requirements', () => {
+      render(<SignupPage />);
+      fireEvent.change(screen.getByPlaceholderText('you@company.com'), { target: { value: 'test@test.com' } });
+      fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: 'weak' } });
+      fireEvent.change(screen.getByPlaceholderText('Confirm your password'), { target: { value: 'weak' } });
+      submitForm();
+      expect(screen.getByText('Please meet all password requirements')).toBeInTheDocument();
+    });
+
+    it('shows error if passwords do not match', () => {
+      render(<SignupPage />);
+      fireEvent.change(screen.getByPlaceholderText('you@company.com'), { target: { value: 'test@test.com' } });
+      fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: VALID_PASSWORD } });
+      fireEvent.change(screen.getByPlaceholderText('Confirm your password'), { target: { value: 'DifferentP@ss1234' } });
+      submitForm();
+      expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
+    });
+
+    it('shows inline mismatch warning while typing confirm password', () => {
+      render(<SignupPage />);
+      fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: 'Pass1' } });
+      fireEvent.change(screen.getByPlaceholderText('Confirm your password'), { target: { value: 'Diff' } });
+      expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
+    });
+
+    it('moves to step 2 on valid submission', () => {
+      render(<SignupPage />);
+      fillStep1();
+      submitForm();
+      expect(screen.getByText('Tell Us About Yourself')).toBeInTheDocument();
+    });
+
+    it('renders progress step labels', () => {
+      render(<SignupPage />);
+      expect(screen.getByText('Account')).toBeInTheDocument();
+      expect(screen.getByText('Profile')).toBeInTheDocument();
+      expect(screen.getByText('Company')).toBeInTheDocument();
+      expect(screen.getByText('Confirm')).toBeInTheDocument();
+    });
+
+    it('renders Sign In link', () => {
+      render(<SignupPage />);
+      expect(screen.getByText('Sign In')).toBeInTheDocument();
+    });
+
+    it('renders ComplyEasy AI header', () => {
+      render(<SignupPage />);
+      expect(screen.getByText('ComplyEasy AI')).toBeInTheDocument();
+    });
+
+    it('renders Terms of Service and Privacy Policy links', () => {
+      render(<SignupPage />);
+      expect(screen.getAllByText('Terms of Service').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Privacy Policy').length).toBeGreaterThan(0);
+    });
+
+    it('allows typing into email field', () => {
+      render(<SignupPage />);
+      const emailInput = screen.getByPlaceholderText('you@company.com') as HTMLInputElement;
+      fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
+      expect(emailInput.value).toBe('user@example.com');
+    });
+
+    it('clears error when input changes', () => {
+      render(<SignupPage />);
+      submitForm(); // triggers error
+      expect(screen.getByText('Please enter your email address')).toBeInTheDocument();
+
+      fireEvent.change(screen.getByPlaceholderText('you@company.com'), { target: { value: 'a' } });
+      expect(screen.queryByText('Please enter your email address')).not.toBeInTheDocument();
+    });
   });
 
-  it('allows typing into the email field', () => {
-    render(<SignupPage />);
-    const emailInput = screen.getByPlaceholderText('you@company.com') as HTMLInputElement;
-    fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-    expect(emailInput.value).toBe('user@example.com');
+  // ===== STEP 2: Personal Info =====
+  describe('Step 2: Personal Info', () => {
+    const goToStep2 = () => {
+      render(<SignupPage />);
+      fillStep1();
+      submitForm();
+    };
+
+    it('renders step 2 fields', () => {
+      goToStep2();
+      expect(screen.getByText('Tell Us About Yourself')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('John Smith')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Acme Inc.')).toBeInTheDocument();
+    });
+
+    it('shows error if full name is empty', () => {
+      goToStep2();
+      submitForm();
+      expect(screen.getByText('Please enter your full name')).toBeInTheDocument();
+    });
+
+    it('shows error if organization name is empty', () => {
+      goToStep2();
+      fireEvent.change(screen.getByPlaceholderText('John Smith'), { target: { value: 'John Smith' } });
+      submitForm();
+      expect(screen.getByText('Please enter your organization name')).toBeInTheDocument();
+    });
+
+    it('goes back to step 1 when Back button is clicked', () => {
+      goToStep2();
+      fireEvent.click(screen.getByText('Back'));
+      expect(screen.getByText('Create Your Account')).toBeInTheDocument();
+    });
+
+    it('moves to step 3 on valid submission', () => {
+      goToStep2();
+      fireEvent.change(screen.getByPlaceholderText('John Smith'), { target: { value: 'John Smith' } });
+      fireEvent.change(screen.getByPlaceholderText('Acme Inc.'), { target: { value: 'Acme Inc' } });
+      submitForm();
+      expect(screen.getByText('About Your Organization')).toBeInTheDocument();
+    });
+
+    it('shows help text', () => {
+      goToStep2();
+      expect(screen.getByText('Help us personalize your experience.')).toBeInTheDocument();
+    });
   });
 
-  it('shows feature list on the sidebar', () => {
-    render(<SignupPage />);
-    expect(screen.getAllByText(/SOC 2|frameworks/i).length).toBeGreaterThan(0);
+  // ===== STEP 3: Company Details =====
+  describe('Step 3: Company Details', () => {
+    const goToStep3 = () => {
+      render(<SignupPage />);
+      fillStep1();
+      submitForm();
+      fireEvent.change(screen.getByPlaceholderText('John Smith'), { target: { value: 'John Smith' } });
+      fireEvent.change(screen.getByPlaceholderText('Acme Inc.'), { target: { value: 'Acme Inc' } });
+      submitForm();
+    };
+
+    it('renders step 3 with industry selection', () => {
+      goToStep3();
+      expect(screen.getByText('About Your Organization')).toBeInTheDocument();
+      expect(screen.getByText('Industry')).toBeInTheDocument();
+    });
+
+    it('renders all industry options', () => {
+      goToStep3();
+      expect(screen.getByText('FinTech')).toBeInTheDocument();
+      expect(screen.getByText('HealthTech')).toBeInTheDocument();
+      expect(screen.getByText('SaaS / Software')).toBeInTheDocument();
+      expect(screen.getByText('AI / Machine Learning')).toBeInTheDocument();
+      expect(screen.getByText('E-Commerce')).toBeInTheDocument();
+    });
+
+    it('renders company size options', () => {
+      goToStep3();
+      expect(screen.getByText('1-10 employees')).toBeInTheDocument();
+      expect(screen.getByText('11-50 employees')).toBeInTheDocument();
+      expect(screen.getByText('51-200 employees')).toBeInTheDocument();
+    });
+
+    it('renders primary compliance goal options', () => {
+      goToStep3();
+      expect(screen.getByText('SOC 2 Certification')).toBeInTheDocument();
+      expect(screen.getByText('HIPAA Compliance')).toBeInTheDocument();
+      expect(screen.getByText('GDPR Compliance')).toBeInTheDocument();
+      expect(screen.getByText('Just Exploring')).toBeInTheDocument();
+    });
+
+    it('shows error if industry is not selected', () => {
+      goToStep3();
+      submitForm();
+      expect(screen.getByText('Please select your industry')).toBeInTheDocument();
+    });
+
+    it('shows error if company size is not selected', () => {
+      goToStep3();
+      fireEvent.click(screen.getByText('FinTech'));
+      submitForm();
+      expect(screen.getByText('Please select your company size')).toBeInTheDocument();
+    });
+
+    it('shows error if primary goal is not selected', () => {
+      goToStep3();
+      fireEvent.click(screen.getByText('FinTech'));
+      fireEvent.click(screen.getByText('1-10 employees'));
+      submitForm();
+      expect(screen.getByText('Please select your primary compliance goal')).toBeInTheDocument();
+    });
+
+    it('proceeds to step 4 when all selections are made', () => {
+      goToStep3();
+      fireEvent.click(screen.getByText('FinTech'));
+      fireEvent.click(screen.getByText('1-10 employees'));
+      fireEvent.click(screen.getByText('SOC 2 Certification'));
+      submitForm();
+      expect(screen.getByText('Review & Start Trial')).toBeInTheDocument();
+    });
+
+    it('goes back to step 2 when Back is clicked', () => {
+      goToStep3();
+      fireEvent.click(screen.getByText('Back'));
+      expect(screen.getByText('Tell Us About Yourself')).toBeInTheDocument();
+    });
+
+    it('shows framework details for selected goal', () => {
+      goToStep3();
+      // SOC 2 Certification shows associated frameworks
+      expect(screen.getByText('SOC 2 Type I, SOC 2 Type II')).toBeInTheDocument();
+    });
   });
 
-  it('renders the password field', () => {
-    render(<SignupPage />);
-    const passwordInputs = screen.getAllByPlaceholderText(/password/i);
-    expect(passwordInputs.length).toBeGreaterThan(0);
+  // ===== STEP 4: Review & Confirm =====
+  describe('Step 4: Review & Confirm', () => {
+    const goToStep4 = () => {
+      render(<SignupPage />);
+      fillStep1();
+      submitForm();
+      fireEvent.change(screen.getByPlaceholderText('John Smith'), { target: { value: 'John Smith' } });
+      fireEvent.change(screen.getByPlaceholderText('Acme Inc.'), { target: { value: 'Acme Inc' } });
+      submitForm();
+      fireEvent.click(screen.getByText('FinTech'));
+      fireEvent.click(screen.getByText('1-10 employees'));
+      fireEvent.click(screen.getByText('SOC 2 Certification'));
+      submitForm();
+    };
+
+    it('renders step 4 with review details', () => {
+      goToStep4();
+      expect(screen.getByText('Review & Start Trial')).toBeInTheDocument();
+    });
+
+    it('displays entered email in review', () => {
+      goToStep4();
+      expect(screen.getByText('test@company.com')).toBeInTheDocument();
+    });
+
+    it('displays entered name in review', () => {
+      goToStep4();
+      expect(screen.getByText('John Smith')).toBeInTheDocument();
+    });
+
+    it('displays organization name in review', () => {
+      goToStep4();
+      expect(screen.getByText('Acme Inc')).toBeInTheDocument();
+    });
+
+    it('displays industry in review', () => {
+      goToStep4();
+      expect(screen.getByText('FinTech')).toBeInTheDocument();
+    });
+
+    it('shows trial details section', () => {
+      goToStep4();
+      expect(screen.getByText('3-Day Free Trial')).toBeInTheDocument();
+      expect(screen.getByText('No credit card required')).toBeInTheDocument();
+    });
+
+    it('shows Terms of Service checkbox', () => {
+      goToStep4();
+      expect(screen.getByText(/I agree to the/)).toBeInTheDocument();
+    });
+
+    it('shows marketing checkbox', () => {
+      goToStep4();
+      expect(screen.getByText(/Send me product updates/)).toBeInTheDocument();
+    });
+
+    it('disables Submit button when terms not accepted', () => {
+      goToStep4();
+      const submitBtn = screen.getByText('Start Free Trial');
+      expect(submitBtn.closest('button')).toBeDisabled();
+    });
+
+    it('enables Submit button when terms are accepted', () => {
+      goToStep4();
+      const checkboxes = screen.getAllByRole('checkbox');
+      fireEvent.click(checkboxes[0]);
+      const submitBtn = screen.getByText('Start Free Trial');
+      expect(submitBtn.closest('button')).toBeEnabled();
+    });
+
+    it('shows error if form submitted without accepting terms', () => {
+      goToStep4();
+      const form = screen.getByText('Review & Start Trial').closest('form')!;
+      fireEvent.submit(form);
+      expect(screen.getByText('Please accept the terms of service and privacy policy')).toBeInTheDocument();
+    });
+
+    it('goes back to step 3 when Back is clicked', () => {
+      goToStep4();
+      fireEvent.click(screen.getByText('Back'));
+      expect(screen.getByText('About Your Organization')).toBeInTheDocument();
+    });
+
+    it('calls API on form submission with all fields', async () => {
+      goToStep4();
+      const checkboxes = screen.getAllByRole('checkbox');
+      fireEvent.click(checkboxes[0]);
+
+      fireEvent.click(screen.getByText('Start Free Trial'));
+
+      await waitFor(() => {
+        expect(mockAuthRegister).toHaveBeenCalledWith(
+          'John Smith',
+          'test@company.com',
+          'Acme Inc',
+          VALID_PASSWORD,
+          'fintech',
+          '1-10',
+          'soc2',
+          undefined,
+        );
+      });
+    });
+
+    it('shows verification sent screen after successful registration', async () => {
+      goToStep4();
+      const checkboxes = screen.getAllByRole('checkbox');
+      fireEvent.click(checkboxes[0]);
+
+      fireEvent.click(screen.getByText('Start Free Trial'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Check Your Email!')).toBeInTheDocument();
+      });
+    });
+
+    it('shows error message on API failure', async () => {
+      mockAuthRegister.mockRejectedValueOnce(new Error('Email already exists'));
+      goToStep4();
+      const checkboxes = screen.getAllByRole('checkbox');
+      fireEvent.click(checkboxes[0]);
+
+      fireEvent.click(screen.getByText('Start Free Trial'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Email already exists')).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ===== VERIFICATION SENT SCREEN =====
+  describe('Verification Sent Screen', () => {
+    const goToVerification = async () => {
+      render(<SignupPage />);
+      fillStep1();
+      submitForm();
+      fireEvent.change(screen.getByPlaceholderText('John Smith'), { target: { value: 'John Smith' } });
+      fireEvent.change(screen.getByPlaceholderText('Acme Inc.'), { target: { value: 'Acme Inc' } });
+      submitForm();
+      fireEvent.click(screen.getByText('FinTech'));
+      fireEvent.click(screen.getByText('1-10 employees'));
+      fireEvent.click(screen.getByText('SOC 2 Certification'));
+      submitForm();
+      const checkboxes = screen.getAllByRole('checkbox');
+      fireEvent.click(checkboxes[0]);
+      fireEvent.click(screen.getByText('Start Free Trial'));
+      await waitFor(() => {
+        expect(screen.getByText('Check Your Email!')).toBeInTheDocument();
+      });
+    };
+
+    it('shows email address in verification screen', async () => {
+      await goToVerification();
+      expect(screen.getByText('test@company.com')).toBeInTheDocument();
+    });
+
+    it('shows what-is-next steps', async () => {
+      await goToVerification();
+      expect(screen.getByText("What's next?")).toBeInTheDocument();
+      expect(screen.getByText('Click the verification link in your email')).toBeInTheDocument();
+    });
+
+    it('shows resend verification button', async () => {
+      await goToVerification();
+      expect(screen.getByText('Resend verification email')).toBeInTheDocument();
+    });
+  });
+
+  // ===== PASSWORD VALIDATION =====
+  describe('Password Validation', () => {
+    it('shows unmet requirement in muted color for weak password', () => {
+      render(<SignupPage />);
+      fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: 'Short1!' } });
+      const lengthCheck = screen.getByText('12+ characters');
+      expect(lengthCheck.closest('div')).toHaveClass('text-slate-500');
+    });
+
+    it('shows met requirement in green for strong password', () => {
+      render(<SignupPage />);
+      fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: VALID_PASSWORD } });
+      const lengthCheck = screen.getByText('12+ characters');
+      expect(lengthCheck.closest('div')).toHaveClass('text-green-400');
+    });
+
+    it('validates uppercase requirement', () => {
+      render(<SignupPage />);
+      fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: 'alllowercase1!' } });
+      const uppercaseCheck = screen.getByText('Uppercase letter');
+      expect(uppercaseCheck.closest('div')).toHaveClass('text-slate-500');
+    });
+
+    it('validates number requirement', () => {
+      render(<SignupPage />);
+      fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: 'NoNumbersHere!' } });
+      const numberCheck = screen.getByText('Number');
+      expect(numberCheck.closest('div')).toHaveClass('text-slate-500');
+    });
+
+    it('validates special character requirement', () => {
+      render(<SignupPage />);
+      fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: 'NoSpecialChar1A' } });
+      const specialCheck = screen.getByText('Special character');
+      expect(specialCheck.closest('div')).toHaveClass('text-slate-500');
+    });
   });
 });
