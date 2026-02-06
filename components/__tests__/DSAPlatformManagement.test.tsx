@@ -5,7 +5,7 @@ import { DSAPlatformManagement } from '../DSAPlatformManagement';
 
 vi.mock('recharts', () => ({ ResponsiveContainer: ({ children }: any) => <div>{children}</div>, AreaChart: ({ children }: any) => <div>{children}</div>, Area: () => null, XAxis: () => null, YAxis: () => null, CartesianGrid: () => null, Tooltip: () => null, PieChart: ({ children }: any) => <div>{children}</div>, Pie: () => null, Cell: () => null, BarChart: ({ children }: any) => <div>{children}</div>, Bar: () => null, Legend: () => null }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: vi.fn().mockReturnValue({ user: { id: '1', role: 'admin', organizationId: 'org-1', organization: { plan: 'Visionary' } }, isAuthenticated: true }) }));
-vi.mock('@/services/api', () => ({ api: { euRegulations: { getDSAPlatforms: vi.fn().mockResolvedValue([]) } }, getAuthToken: vi.fn().mockReturnValue('token') }));
+vi.mock('@/services/api', () => ({ api: { euRegulations: { dsa: { getPlatforms: vi.fn().mockResolvedValue([]), registerPlatform: vi.fn().mockResolvedValue({}), recordContentModeration: vi.fn().mockResolvedValue({}), getContentModerationHistory: vi.fn().mockResolvedValue([]), getTransparencyReports: vi.fn().mockResolvedValue([]) } } }, getAuthToken: vi.fn().mockReturnValue('token') }));
 
 describe('DSAPlatformManagement', () => {
   it('should render', async () => { render(<DSAPlatformManagement />); await waitFor(() => { expect(screen.getByText(/DSA|Digital Services|platform/i)).toBeTruthy(); }); });

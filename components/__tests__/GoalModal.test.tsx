@@ -10,7 +10,7 @@ vi.mock('@/services/api', () => ({
       createGoal: vi.fn().mockResolvedValue({ id: '1' }),
       updateGoal: vi.fn().mockResolvedValue({}),
     },
-    frameworks: { getAll: vi.fn().mockResolvedValue([]) },
+    frameworks: { getAll: vi.fn().mockResolvedValue([]), list: vi.fn().mockResolvedValue([]) },
   },
 }));
 
