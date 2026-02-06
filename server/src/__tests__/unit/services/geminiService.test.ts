@@ -50,6 +50,13 @@ describe('GeminiService', () => {
     mockGetGenerativeModel.mockReturnValue({
       generateContent: mockGenerateContent,
     });
+    // Re-set piiRedaction mocks that get cleared by resetMocks: true in jest config
+    const { redactPII, rehydratePII } = require('../../../utils/piiRedaction');
+    (redactPII as jest.Mock<any>).mockReturnValue({
+      redactedText: 'redacted prompt',
+      map: new Map(),
+    });
+    (rehydratePII as jest.Mock<any>).mockImplementation((text: string) => text);
   });
 
   describe('generateContent()', () => {
@@ -75,6 +82,8 @@ describe('GeminiService', () => {
     });
 
     it('should enforce rate limiting', async () => {
+      // Use a unique user ID to avoid poisoning rate limiter for other tests
+      const rateLimitUserId = 'rate-limit-test-user';
       // Make 60 requests to hit rate limit
       const mockResponse = {
         response: {
@@ -86,14 +95,14 @@ describe('GeminiService', () => {
 
       // Make requests rapidly
       const requests = Array(60).fill(0).map(() =>
-        geminiService.generateContent({ prompt: 'test' }, 'user-123')
+        geminiService.generateContent({ prompt: 'test' }, rateLimitUserId)
       );
 
       await Promise.all(requests);
 
       // 61st request should fail
       await expect(
-        geminiService.generateContent({ prompt: 'test' }, 'user-123')
+        geminiService.generateContent({ prompt: 'test' }, rateLimitUserId)
       ).rejects.toThrow('Rate limit exceeded');
     });
 

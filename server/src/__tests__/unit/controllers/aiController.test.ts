@@ -189,7 +189,7 @@ describe('AIController', () => {
 
       await aiController.chat(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(mockChatWithUser).toHaveBeenCalledWith('What is SOC 2?', 'user-123', 'org-123');
+      expect(mockChatWithUser).toHaveBeenCalledWith('What is SOC 2?', 'user-123', 'org-123', undefined);
       expect(mockResponse.json).toHaveBeenCalled();
     });
   });

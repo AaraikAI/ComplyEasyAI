@@ -328,6 +328,7 @@ export const prismaMock = {
     findMany: createMockFn(),
     create: createMockFn(),
     createMany: createMockFn(),
+    update: createMockFn(),
     delete: createMockFn(),
     deleteMany: createMockFn(),
     count: createMockFn(),

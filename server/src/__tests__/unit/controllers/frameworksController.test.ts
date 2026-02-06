@@ -33,12 +33,15 @@ describe('FrameworksController', () => {
 
     mockRequest = {
       params: {},
+      query: {},
       body: {},
       user: {
         id: 'user-123',
         email: 'test@example.com',
         organizationId: 'org-123',
       },
+      ip: '127.0.0.1',
+      headers: { 'user-agent': 'test-agent' },
     } as any;
 
     mockResponse = {
@@ -86,6 +89,8 @@ describe('FrameworksController', () => {
       };
 
       (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(mockFramework as any);
+      (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([] as any);
+      (prismaMock.frameworkControl.count as jest.Mock<any>).mockResolvedValue(0 as any);
 
       await frameworksController.getById(
         mockRequest as Request,
@@ -93,7 +98,19 @@ describe('FrameworksController', () => {
         mockNext
       );
 
-      expect(mockResponse.json).toHaveBeenCalledWith(mockFramework);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: mockFramework.id,
+          name: mockFramework.name,
+          controls: [],
+          pagination: expect.objectContaining({
+            page: 1,
+            limit: 50,
+            total: 0,
+            totalPages: 0,
+          }),
+        })
+      );
     });
 
     it('should throw error if framework not found', async () => {

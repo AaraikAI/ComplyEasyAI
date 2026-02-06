@@ -224,6 +224,40 @@ import tierService from '../../../services/tierService';
 describe('TierService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-set tiers config mock implementations that get cleared by resetMocks: true
+    const tiersConfig = require('../../../config/tiers');
+    const TIERS = tiersConfig.TIERS;
+    const TIER_ORDER = tiersConfig.TIER_ORDER;
+    (tiersConfig.getTier as jest.Mock<any>).mockImplementation((name: string) => TIERS[name] || TIERS['Foundation']);
+    (tiersConfig.getTierIndex as jest.Mock<any>).mockImplementation((name: string) => TIER_ORDER.indexOf(name));
+    (tiersConfig.isTierAtLeast as jest.Mock<any>).mockImplementation((current: string, target: string) =>
+      TIER_ORDER.indexOf(current) >= TIER_ORDER.indexOf(target)
+    );
+    (tiersConfig.hasFeature as jest.Mock<any>).mockImplementation((tier: string, feature: string) => {
+      return TIERS[tier]?.features?.[feature] ?? false;
+    });
+    (tiersConfig.getLimit as jest.Mock<any>).mockImplementation((tier: string, limit: string) => {
+      return TIERS[tier]?.limits?.[limit] ?? 0;
+    });
+    (tiersConfig.isWithinLimit as jest.Mock<any>).mockImplementation((tier: string, limit: string, current: number) => {
+      const max = TIERS[tier]?.limits?.[limit] ?? 0;
+      return max === -1 || current < max;
+    });
+    (tiersConfig.getNextTier as jest.Mock<any>).mockImplementation((tier: string) => {
+      const idx = TIER_ORDER.indexOf(tier);
+      return idx < TIER_ORDER.length - 1 ? TIER_ORDER[idx + 1] : null;
+    });
+    (tiersConfig.getFeaturesDifference as jest.Mock<any>).mockImplementation((from: string, to: string) => {
+      const fromFeatures = TIERS[from]?.features || {};
+      const toFeatures = TIERS[to]?.features || {};
+      return Object.keys(toFeatures).filter((k: string) => toFeatures[k] && !fromFeatures[k]);
+    });
+    (tiersConfig.calculateAnnualPrice as jest.Mock<any>).mockImplementation((tier: string, _users: number) => {
+      return TIERS[tier]?.pricing?.annualMin || 0;
+    });
+    (tiersConfig.calculateMonthlyPrice as jest.Mock<any>).mockImplementation((annual: number, tier: string) => {
+      return Math.round((annual / 12) * (TIERS[tier]?.pricing?.monthlyMultiplier || 1.2));
+    });
   });
 
   // ======================================================================
