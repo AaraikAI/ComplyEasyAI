@@ -87,8 +87,10 @@ describe('JiraService', () => {
         data: {},
       });
 
+      // The inner "No access token received" error is caught and re-thrown
+      // as "Failed to exchange authorization code" by the catch block
       await expect(jiraService.getAccessToken('test-code')).rejects.toThrow(
-        'No access token received'
+        'Failed to exchange authorization code'
       );
     });
   });
@@ -103,16 +105,27 @@ describe('JiraService', () => {
         issueType: 'Bug',
       };
 
-      prismaMock.integration.findFirst.mockResolvedValue({
+      // createIssue calls ensureValidToken -> getIntegration -> prisma.integration.findUnique
+      prismaMock.integration.findUnique.mockResolvedValue({
         id: 'integration-123',
+        provider: 'jira',
+        connected: true,
         accessToken: 'test-token',
-        cloudId: 'cloud-123',
+        refreshToken: 'test-refresh',
+        expiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour from now
+        config: {
+          cloudId: 'cloud-123',
+          siteName: 'test-site',
+          siteUrl: 'https://test.atlassian.net',
+          scope: 'read:jira-work write:jira-work',
+        },
       } as any);
 
       mockAxiosPost.mockResolvedValue({
         data: {
           id: 'issue-123',
           key: 'TEST-1',
+          self: 'https://api.atlassian.com/ex/jira/cloud-123/rest/api/3/issue/issue-123',
         },
       });
 

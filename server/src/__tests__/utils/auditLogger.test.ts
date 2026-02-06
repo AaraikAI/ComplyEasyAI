@@ -1,21 +1,21 @@
-import { PrismaClient } from '@prisma/client';
-import { AuditLogger } from '../../utils/auditLogger';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
-// Mock Prisma Client
-jest.mock('@prisma/client', () => {
-  const mockPrismaClient = {
-    auditLog: {
-      create: jest.fn(),
-      createMany: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-      deleteMany: jest.fn(),
-    },
-  };
-  return {
-    PrismaClient: jest.fn(() => mockPrismaClient),
-  };
-});
+// Create mock audit log methods
+const mockAuditLog = {
+  create: jest.fn() as jest.Mock<any>,
+  createMany: jest.fn() as jest.Mock<any>,
+  findMany: jest.fn() as jest.Mock<any>,
+  count: jest.fn() as jest.Mock<any>,
+  deleteMany: jest.fn() as jest.Mock<any>,
+};
+
+// Mock database module directly (not @prisma/client)
+jest.mock('../../config/database', () => ({
+  __esModule: true,
+  default: {
+    auditLog: mockAuditLog,
+  },
+}));
 
 // Mock logger
 jest.mock('../../config/logger', () => ({
@@ -26,13 +26,13 @@ jest.mock('../../config/logger', () => ({
   },
 }));
 
-describe('AuditLogger', () => {
-  let prisma: any;
+// Import after mocks
+import { AuditLogger } from '../../utils/auditLogger';
 
+describe('AuditLogger', () => {
   beforeEach(() => {
-    // Get the mocked Prisma instance
-    prisma = new (PrismaClient as any)();
-    jest.clearAllMocks();
+    // Re-establish mock implementations cleared by resetMocks: true
+    // (individual tests will set mockResolvedValue as needed)
   });
 
   describe('log', () => {
@@ -55,11 +55,11 @@ describe('AuditLogger', () => {
         timestamp: expect.any(Date),
       };
 
-      prisma.auditLog.create.mockResolvedValue(mockCreatedLog);
+      mockAuditLog.create.mockResolvedValue(mockCreatedLog);
 
       await AuditLogger.log(mockLogData);
 
-      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      expect(mockAuditLog.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           userId: mockLogData.userId,
           organizationId: mockLogData.organizationId,
@@ -84,7 +84,7 @@ describe('AuditLogger', () => {
         resourceId: 'user-123',
       };
 
-      prisma.auditLog.create.mockRejectedValue(new Error('Database error'));
+      mockAuditLog.create.mockRejectedValue(new Error('Database error'));
 
       // Should not throw
       await expect(AuditLogger.log(mockLogData)).resolves.not.toThrow();
@@ -99,11 +99,11 @@ describe('AuditLogger', () => {
         resourceId: 'user-123',
       };
 
-      prisma.auditLog.create.mockResolvedValue({});
+      mockAuditLog.create.mockResolvedValue({});
 
       await AuditLogger.log(mockLogData);
 
-      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      expect(mockAuditLog.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           metadata: {},
         }),
@@ -130,11 +130,11 @@ describe('AuditLogger', () => {
         },
       ];
 
-      prisma.auditLog.createMany.mockResolvedValue({ count: 2 });
+      mockAuditLog.createMany.mockResolvedValue({ count: 2 });
 
       await AuditLogger.logBatch(mockEvents);
 
-      expect(prisma.auditLog.createMany).toHaveBeenCalledWith({
+      expect(mockAuditLog.createMany).toHaveBeenCalledWith({
         data: expect.arrayContaining([
           expect.objectContaining({
             userId: 'user-1',
@@ -160,8 +160,8 @@ describe('AuditLogger', () => {
         { id: 'log-2', action: 'user.logout', userId: 'user-1' },
       ];
 
-      prisma.auditLog.findMany.mockResolvedValue(mockLogs);
-      prisma.auditLog.count.mockResolvedValue(2);
+      mockAuditLog.findMany.mockResolvedValue(mockLogs);
+      mockAuditLog.count.mockResolvedValue(2);
 
       const filters = {
         organizationId: 'org-123',
@@ -180,7 +180,7 @@ describe('AuditLogger', () => {
         offset: 0,
       });
 
-      expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
+      expect(mockAuditLog.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             organizationId: 'org-123',
@@ -195,8 +195,8 @@ describe('AuditLogger', () => {
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-12-31');
 
-      prisma.auditLog.findMany.mockResolvedValue([]);
-      prisma.auditLog.count.mockResolvedValue(0);
+      mockAuditLog.findMany.mockResolvedValue([]);
+      mockAuditLog.count.mockResolvedValue(0);
 
       await AuditLogger.query({
         organizationId: 'org-123',
@@ -204,7 +204,7 @@ describe('AuditLogger', () => {
         endDate,
       });
 
-      expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
+      expect(mockAuditLog.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             timestamp: {
@@ -220,12 +220,12 @@ describe('AuditLogger', () => {
   describe('cleanup', () => {
     it('should delete old audit logs based on retention period', async () => {
       const retentionDays = 90;
-      prisma.auditLog.deleteMany.mockResolvedValue({ count: 42 });
+      mockAuditLog.deleteMany.mockResolvedValue({ count: 42 });
 
       const result = await AuditLogger.cleanup(retentionDays);
 
       expect(result).toBe(42);
-      expect(prisma.auditLog.deleteMany).toHaveBeenCalledWith({
+      expect(mockAuditLog.deleteMany).toHaveBeenCalledWith({
         where: {
           timestamp: {
             lt: expect.any(Date),
@@ -235,11 +235,11 @@ describe('AuditLogger', () => {
     });
 
     it('should filter by organization if provided', async () => {
-      prisma.auditLog.deleteMany.mockResolvedValue({ count: 10 });
+      mockAuditLog.deleteMany.mockResolvedValue({ count: 10 });
 
       await AuditLogger.cleanup(90, 'org-123');
 
-      expect(prisma.auditLog.deleteMany).toHaveBeenCalledWith({
+      expect(mockAuditLog.deleteMany).toHaveBeenCalledWith({
         where: expect.objectContaining({
           organizationId: 'org-123',
         }),

@@ -3,15 +3,15 @@
  * Tests the complete authentication flow from registration to login
  */
 
-import { jest, describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import { prismaMock } from '../mocks/prisma';
+import { prismaMock, createMockUser, createMockOrganization } from '../mocks/prisma';
 
 jest.mock('../../config/database', () => ({
   __esModule: true,
   default: prismaMock,
-  testConnection: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
+  testConnection: jest.fn().mockResolvedValue(true),
 }));
 
 jest.mock('../../config/logger', () => ({
@@ -20,31 +20,60 @@ jest.mock('../../config/logger', () => ({
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
 jest.mock('../../services/emailService', () => ({
   __esModule: true,
   default: {
-    sendMagicLink: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
-    sendWelcomeEmail: (jest.fn() as jest.Mock<any>).mockResolvedValue(true),
+    sendMagicLink: jest.fn(),
+    sendWelcomeEmail: jest.fn(),
   },
 }));
 
-import app from '../../index';
+// Mock rate limiter to prevent rate limiting during tests
+jest.mock('../../middleware/rateLimiter', () => ({
+  authLimiter: (req: any, res: any, next: any) => next(),
+  apiLimiter: (req: any, res: any, next: any) => next(),
+  aiLimiter: (req: any, res: any, next: any) => next(),
+  frameworkLimiter: (req: any, res: any, next: any) => next(),
+}));
+
+import authRoutes from '../../routes/auth';
+import { errorHandler } from '../../middleware/errorHandler';
+
+// Create self-contained Express app for testing (avoids side effects of importing index.ts)
+const app = express();
+app.use(express.json());
+app.use('/api/auth', authRoutes);
+app.use(errorHandler);
 
 describe('E2E: Authentication Flow', () => {
-  beforeAll(() => {
-    // Setup test data
-  });
-
-  afterAll(() => {
-    // Cleanup
+  beforeEach(() => {
+    // Re-setup email service mocks (resetMocks: true clears implementations)
+    const emailService = require('../../services/emailService').default;
+    emailService.sendMagicLink.mockResolvedValue(true);
+    emailService.sendWelcomeEmail.mockResolvedValue(true);
   });
 
   describe('Complete User Registration and Login Flow', () => {
     it('should complete full registration and authentication flow', async () => {
+      const mockOrg = createMockOrganization();
+      const mockUser = createMockUser();
+
       // Step 1: Register new user
+      prismaMock.user.findUnique.mockResolvedValue(null);
+      prismaMock.organization.create.mockResolvedValue(mockOrg);
+      prismaMock.user.create.mockResolvedValue(mockUser);
+      prismaMock.magicLink.create.mockResolvedValue({
+        id: 'link-1',
+        email: 'test@example.com',
+        token: 'reg-token',
+        expiresAt: new Date(Date.now() + 900000),
+        used: false,
+      } as any);
+
       const registerResponse = await request(app)
         .post('/api/auth/register')
         .send({
@@ -55,84 +84,54 @@ describe('E2E: Authentication Flow', () => {
         .expect(201);
 
       expect(registerResponse.body).toHaveProperty('message');
+      expect(registerResponse.body.message).toContain('Registration successful');
 
       // Step 2: Verify magic link
-      const token = process.env.NODE_ENV === 'development'
-        ? registerResponse.body.devToken
-        : 'test-token';
-      
-      prismaMock.magicLink.findUnique.mockResolvedValueOnce({
+      const magicLink = {
+        id: 'link-1',
         email: 'test@example.com',
-        token,
+        token: 'verify-token',
         used: false,
         expiresAt: new Date(Date.now() + 900000),
+      };
+
+      prismaMock.magicLink.findUnique.mockResolvedValue(magicLink as any);
+      prismaMock.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        organization: mockOrg,
       } as any);
-      prismaMock.user.findUnique.mockResolvedValueOnce({
-        id: 'user-123',
-        email: 'test@example.com',
-        organization: { id: 'org-123' },
-      } as any);
-      prismaMock.magicLink.update.mockResolvedValueOnce({} as any);
+      prismaMock.magicLink.update.mockResolvedValue({ ...magicLink, used: true } as any);
+      prismaMock.user.update.mockResolvedValue(mockUser as any);
+      prismaMock.auditLog.create.mockResolvedValue({} as any);
 
       const verifyResponse = await request(app)
         .post('/api/auth/verify')
-        .send({ token })
+        .send({ token: 'verify-token' })
         .expect(200);
 
+      expect(verifyResponse.body).toHaveProperty('accessToken');
+      expect(verifyResponse.body).toHaveProperty('refreshToken');
       expect(verifyResponse.body).toHaveProperty('user');
       expect(verifyResponse.body.user).toHaveProperty('email', 'test@example.com');
-
-      // Step 2: Request magic link
-      const magicLinkResponse = await request(app)
-        .post('/api/auth/magic-link')
-        .send({
-          email: 'test@example.com',
-        })
-        .expect(200);
-
-      expect(magicLinkResponse.body).toHaveProperty('message');
-      
-      // In development, token is returned
-      if (process.env.NODE_ENV === 'development' && magicLinkResponse.body.devToken) {
-        const token = magicLinkResponse.body.devToken;
-
-        // Step 3: Verify magic link
-        const verifyResponse = await request(app)
-          .post('/api/auth/verify')
-          .send({
-            token,
-          })
-          .expect(200);
-
-        expect(verifyResponse.body).toHaveProperty('user');
-        expect(verifyResponse.body).toHaveProperty('accessToken');
-        expect(verifyResponse.body).toHaveProperty('refreshToken');
-
-        const accessToken = verifyResponse.body.accessToken;
-
-        // Step 4: Use access token for authenticated request
-        const protectedResponse = await request(app)
-          .get('/api/risks')
-          .set('Authorization', `Bearer ${accessToken}`)
-          .expect(200);
-
-        expect(protectedResponse.body).toBeDefined();
-      }
     });
   });
 
   describe('Magic Link Authentication Flow', () => {
     it('should handle magic link request and verification', async () => {
-      // Setup mocks
-      prismaMock.user.findUnique.mockResolvedValueOnce({
-        id: 'user-123',
-        email: 'existing@example.com',
-        organization: { id: 'org-123' },
+      const mockUser = createMockUser({ email: 'existing@example.com' });
+      const mockOrg = createMockOrganization();
+
+      // Setup mocks for requesting magic link
+      prismaMock.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        organization: mockOrg,
       } as any);
-      prismaMock.magicLink.create.mockResolvedValueOnce({
+      prismaMock.magicLink.create.mockResolvedValue({
+        id: 'link-2',
         email: 'existing@example.com',
         token: 'magic-token',
         expiresAt: new Date(Date.now() + 900000),
+        used: false,
       } as any);
 
       // Request magic link
@@ -144,50 +143,50 @@ describe('E2E: Authentication Flow', () => {
         .expect(200);
 
       expect(requestResponse.body).toHaveProperty('message');
-
-      // Verify with token (if in dev mode)
-      if (process.env.NODE_ENV === 'development' && requestResponse.body.devToken) {
-        const verifyResponse = await request(app)
-          .post('/api/auth/verify')
-          .send({
-            token: requestResponse.body.devToken,
-          })
-          .expect(200);
-
-        expect(verifyResponse.body).toHaveProperty('accessToken');
-      }
     });
   });
 
   describe('Token Refresh Flow', () => {
     it('should refresh access token using refresh token', async () => {
-      // First, get tokens through login
-      const loginResponse = await request(app)
-        .post('/api/auth/magic-link')
-        .send({
-          email: 'test@example.com',
-        });
+      const mockUser = createMockUser();
+      const mockOrg = createMockOrganization();
 
-      if (loginResponse.body.devToken) {
-        const verifyResponse = await request(app)
-          .post('/api/auth/verify')
-          .send({
-            token: loginResponse.body.devToken,
-          });
+      // First, get tokens through verify
+      const magicLink = {
+        id: 'link-3',
+        email: 'test@example.com',
+        token: 'refresh-test-token',
+        used: false,
+        expiresAt: new Date(Date.now() + 900000),
+      };
 
+      prismaMock.magicLink.findUnique.mockResolvedValue(magicLink as any);
+      prismaMock.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        organization: mockOrg,
+      } as any);
+      prismaMock.magicLink.update.mockResolvedValue({ ...magicLink, used: true } as any);
+      prismaMock.user.update.mockResolvedValue(mockUser as any);
+      prismaMock.auditLog.create.mockResolvedValue({} as any);
+
+      const verifyResponse = await request(app)
+        .post('/api/auth/verify')
+        .send({ token: 'refresh-test-token' });
+
+      if (verifyResponse.body.refreshToken) {
         const refreshToken = verifyResponse.body.refreshToken;
+
+        // Setup mock for refresh flow
+        prismaMock.user.findUnique.mockResolvedValue(mockUser as any);
 
         // Refresh access token
         const refreshResponse = await request(app)
           .post('/api/auth/refresh')
-          .send({
-            refreshToken,
-          })
-          .expect(200);
+          .send({ refreshToken });
 
+        expect(refreshResponse.status).toBe(200);
         expect(refreshResponse.body).toHaveProperty('accessToken');
       }
     });
   });
 });
-

@@ -27,6 +27,14 @@ jest.mock('../../../utils/auditLogger', () => ({
   },
 }));
 
+// Mock notificationService (dynamically imported by issueManagementService)
+jest.mock('../../../services/notificationService', () => ({
+  __esModule: true,
+  default: {
+    sendNotification: jest.fn().mockResolvedValue({}),
+  },
+}));
+
 // Import after mocking
 import issueManagementService from '../../../services/issueManagementService';
 import { AuditLogger } from '../../../utils/auditLogger';
@@ -77,16 +85,20 @@ describe('IssueManagementService', () => {
         createdById: 'user-123',
       });
 
-      expect(prismaMock.issue.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          priority: 'Critical',
-        }),
-      });
+      expect(prismaMock.issue.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            priority: 'Critical',
+          }),
+        })
+      );
     });
   });
 
   describe('updateIssueStatus()', () => {
     it('should update an existing issue status', async () => {
+      const existingIssue = createMockIssue({ status: 'Open' });
+      prismaMock.issue.findUnique.mockResolvedValue(existingIssue);
       const updatedIssue = createMockIssue({ status: 'In_Progress' });
       prismaMock.issue.update.mockResolvedValue(updatedIssue);
 
@@ -190,8 +202,8 @@ describe('IssueManagementService', () => {
       const dashboard = await issueManagementService.getIssueDashboard('org-123');
 
       expect(dashboard).toHaveProperty('totalIssues');
-      expect(dashboard).toHaveProperty('byStatus');
-      expect(dashboard).toHaveProperty('byPriority');
+      expect(dashboard).toHaveProperty('statusDistribution');
+      expect(dashboard).toHaveProperty('priorityDistribution');
     });
   });
 

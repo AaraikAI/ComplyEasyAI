@@ -9,42 +9,16 @@ import { prismaMock } from '../../../mocks/prisma';
 jest.mock('axios', () => ({
   __esModule: true,
   default: {
-    post: (jest.fn() as jest.Mock<any>).mockImplementation((url: string) => {
-      // Handle policy evaluation
-      if (url.includes('/v1/data/compliance/')) {
-        return Promise.resolve({
-          data: {
-            result: {
-              allow: true,
-              violations: [],
-            },
-          },
-        });
-      }
-      // Handle compile/validation
-      if (url.includes('/v1/compile')) {
-        return Promise.resolve({
-          data: { result: true },
-        });
-      }
-      return Promise.resolve({
-        data: { result: {} },
-      });
-    }),
-    put: (jest.fn() as jest.Mock<any>).mockResolvedValue({
-      data: {},
-      status: 200,
-    }),
-    get: (jest.fn() as jest.Mock<any>).mockResolvedValue({
-      data: { policies: [] },
-    }),
+    post: jest.fn(),
+    put: jest.fn(),
+    get: jest.fn(),
   },
 }));
 
 jest.mock('fs', () => ({
-  existsSync: (jest.fn() as jest.Mock<any>).mockReturnValue(true),
+  existsSync: jest.fn(),
   mkdirSync: jest.fn(),
-  readFileSync: (jest.fn() as jest.Mock<any>).mockReturnValue('package compliance\n\nallow if { true }'),
+  readFileSync: jest.fn(),
   writeFileSync: jest.fn(),
 }));
 
@@ -65,30 +39,65 @@ jest.mock('../../../../config/database', () => ({
 import complianceAsCodeService from '../../../../services/advanced/complianceAsCodeService';
 
 describe('ComplianceAsCodeService', () => {
+  let axiosMock: any;
+  let fsMock: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    // Mock compliancePolicy for getPoliciesByFramework
-    (prismaMock as any).compliancePolicy = {
-      findMany: jest.fn<any>().mockResolvedValue([
-        {
-          id: 'policy-1',
-          name: 'Test Policy',
-          framework: 'SOC2',
-          rego: 'package compliance\n\nallow { true }',
-          severity: 'high',
-          tags: ['test'],
-        },
-      ]),
-      create: jest.fn<any>().mockResolvedValue({
+
+    axiosMock = require('axios').default;
+    fsMock = require('fs');
+
+    // Re-establish axios mock implementations (cleared by resetMocks)
+    axiosMock.post.mockImplementation((url: string) => {
+      if (url.includes('/v1/data/compliance/')) {
+        return Promise.resolve({
+          data: {
+            result: {
+              allow: true,
+              violations: [],
+            },
+          },
+        });
+      }
+      if (url.includes('/v1/compile')) {
+        return Promise.resolve({
+          data: { result: true },
+        });
+      }
+      return Promise.resolve({
+        data: { result: {} },
+      });
+    });
+    axiosMock.put.mockResolvedValue({ data: {}, status: 200 });
+    axiosMock.get.mockResolvedValue({ data: { policies: [] } });
+
+    // Re-establish fs mock implementations
+    fsMock.existsSync.mockReturnValue(true);
+    fsMock.readFileSync.mockReturnValue('package compliance\n\nallow if { true }');
+    fsMock.writeFileSync.mockImplementation(() => {});
+    fsMock.mkdirSync.mockImplementation(() => {});
+
+    // Mock compliancePolicy
+    (prismaMock.compliancePolicy.findMany as jest.Mock<any>).mockResolvedValue([
+      {
         id: 'policy-1',
         name: 'Test Policy',
         framework: 'SOC2',
-        rego: 'package compliance',
+        rego: 'package compliance\n\nallow { true }',
         severity: 'high',
         tags: ['test'],
-      }),
-      upsert: jest.fn<any>().mockResolvedValue({}),
-    };
+      },
+    ]);
+    (prismaMock.compliancePolicy.create as jest.Mock<any>).mockResolvedValue({
+      id: 'policy-1',
+      name: 'Test Policy',
+      framework: 'SOC2',
+      rego: 'package compliance',
+      severity: 'high',
+      tags: ['test'],
+    });
+
     // Mock organization data queries used in getOrganizationComplianceData
     (prismaMock.organization.findUnique as jest.Mock<any>).mockResolvedValue({
       id: 'org-123',
@@ -98,9 +107,7 @@ describe('ComplianceAsCodeService', () => {
     (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.policy.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
-    (prismaMock as any).evidenceAnalysis = {
-      findMany: jest.fn<any>().mockResolvedValue([]),
-    };
+    (prismaMock.evidenceAnalysis.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
   });
 
@@ -141,8 +148,7 @@ describe('ComplianceAsCodeService', () => {
     });
 
     it('should detect policy violations', async () => {
-      const axios = require('axios').default;
-      axios.post.mockResolvedValueOnce({
+      axiosMock.post.mockResolvedValueOnce({
         data: {
           result: {
             allow: false,

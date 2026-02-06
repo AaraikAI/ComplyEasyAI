@@ -28,6 +28,27 @@ describe('AgenticAIService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-establish mock implementations after resetMocks
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.user.count as jest.Mock<any>).mockResolvedValue(0);
+    (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.frameworkControl.update as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.complianceFramework.count as jest.Mock<any>).mockResolvedValue(0);
+    (prismaMock.riskItem.findUnique as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.agenticAction.create as jest.Mock<any>).mockResolvedValue({
+      id: 'action-1',
+      status: 'approved',
+    });
+    (prismaMock.agenticAction.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.agenticAction.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.agenticAction.update as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.agenticAction.findUnique as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.evidenceAnalysis.findUnique as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.complianceFramework.findUnique as jest.Mock<any>).mockResolvedValue(null);
   });
 
   describe('estimateBlastRadius', () => {
@@ -117,9 +138,10 @@ describe('AgenticAIService', () => {
     });
 
     it('should estimate blast radius for policy_create', async () => {
-      (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([
-        { id: 'fw-1', controls: [{ id: 'c-1' }, { id: 'c-2' }] },
+      (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([
+        { id: 'c-1' }, { id: 'c-2' },
       ]);
+      (prismaMock.complianceFramework.count as jest.Mock<any>).mockResolvedValue(1);
       (prismaMock.user.count as jest.Mock<any>).mockResolvedValue(3);
 
       const result = await agenticAIService.estimateBlastRadius(orgId, {
@@ -143,7 +165,6 @@ describe('AgenticAIService', () => {
         parameters: { status: 'Implemented' },
       };
 
-      // Mock blast radius
       const mockControl = {
         id: 'ctrl-1',
         name: 'Test',
@@ -153,6 +174,7 @@ describe('AgenticAIService', () => {
         framework: { id: 'fw-1', name: 'SOC2', organizationId: orgId },
       };
 
+      // Mock for blast radius estimation
       (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(mockControl);
       (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([mockControl]);
       (prismaMock.frameworkControl.update as jest.Mock<any>).mockResolvedValue({
@@ -163,13 +185,26 @@ describe('AgenticAIService', () => {
         { id: 'fw-1', controls: [mockControl] },
       ]);
       (prismaMock.user.count as jest.Mock<any>).mockResolvedValue(2);
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
-      const result = await agenticAIService.executeAction(orgId, action, userId, {
-        autoApprove: true,
+      // Mock for action execution
+      (prismaMock.agenticAction.create as jest.Mock<any>).mockResolvedValue({
+        id: 'action-1',
+        actionType: 'control_update',
+        targetId: 'ctrl-1',
+        parameters: action.parameters,
+        status: 'approved',
+        requiresApproval: false,
       });
+      (prismaMock.agenticAction.update as jest.Mock<any>).mockResolvedValue({});
+      (prismaMock.agenticAction.findFirst as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.agenticAction.findMany as jest.Mock<any>).mockResolvedValue([]);
+      (prismaMock.agenticAction.findUnique as jest.Mock<any>).mockResolvedValue({
+        id: 'action-1',
+        parameters: {},
+      });
+      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+
+      const result = await agenticAIService.executeAction(orgId, action, userId, true);
 
       expect(result).toBeDefined();
       expect(result.status).toBeDefined();
@@ -179,9 +214,12 @@ describe('AgenticAIService', () => {
       (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockRejectedValue(
         new Error('DB error')
       );
+      (prismaMock.agenticAction.create as jest.Mock<any>).mockResolvedValue({
+        id: 'action-1',
+        status: 'approved',
+      });
+      (prismaMock.agenticAction.findFirst as jest.Mock<any>).mockResolvedValue(null);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         agenticAIService.executeAction(orgId, {
@@ -195,44 +233,43 @@ describe('AgenticAIService', () => {
 
   describe('rollbackAction', () => {
     it('should rollback an action using action ID', async () => {
-      const mockActionLog = {
+      const mockDbAction = {
         id: 'action-1',
-        action: 'agentic.action_completed',
         organizationId: orgId,
-        details: JSON.stringify({
-          actionId: 'action-1',
-          actionType: 'control_update',
-          targetId: 'ctrl-1',
-          status: 'completed',
-          rollbackData: {
-            checkpoint: { status: 'Pending' },
-          },
-          parameters: {},
-        }),
+        actionType: 'control_update',
+        targetId: 'ctrl-1',
+        parameters: {},
+        blastRadius: {},
+        requiresApproval: false,
+        status: 'completed',
+        rollbackData: {
+          previousStatus: 'Pending',
+          controlId: 'ctrl-1',
+          expiresAt: new Date(Date.now() + 86400000).toISOString(),
+        },
+        executedAt: new Date(),
+        rolledBackAt: null,
       };
 
-      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(mockActionLog);
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
+      (prismaMock.agenticAction.findFirst as jest.Mock<any>).mockResolvedValue(mockDbAction);
+      (prismaMock.agenticAction.findMany as jest.Mock<any>).mockResolvedValue([]);
+      (prismaMock.agenticAction.update as jest.Mock<any>).mockResolvedValue({});
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue({
-        id: 'ctrl-1',
-        status: 'Implemented',
-      });
       (prismaMock.frameworkControl.update as jest.Mock<any>).mockResolvedValue({
         id: 'ctrl-1',
         status: 'Pending',
       });
 
-      const result = await agenticAIService.rollbackAction(orgId, 'action-1', userId);
+      const result = await agenticAIService.rollbackAction('action-1', orgId, userId);
 
       expect(result).toBeDefined();
     });
 
     it('should throw error if action not found', async () => {
-      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.agenticAction.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
-        agenticAIService.rollbackAction(orgId, 'nonexistent', userId)
+        agenticAIService.rollbackAction('nonexistent', orgId, userId)
       ).rejects.toThrow();
     });
   });
@@ -241,7 +278,7 @@ describe('AgenticAIService', () => {
     it('should approve a pending action', async () => {
       const mockActionLog = {
         id: 'log-1',
-        action: 'agentic.action_pending_approval',
+        action: 'agentic_action.created',
         organizationId: orgId,
         details: JSON.stringify({
           actionId: 'action-1',
@@ -253,7 +290,13 @@ describe('AgenticAIService', () => {
 
       (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(mockActionLog);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
+      // Mock for executeActionInternal
+      (prismaMock.agenticAction.update as jest.Mock<any>).mockResolvedValue({});
+      (prismaMock.agenticAction.findMany as jest.Mock<any>).mockResolvedValue([]);
+      (prismaMock.agenticAction.findUnique as jest.Mock<any>).mockResolvedValue({
+        id: 'action-1',
+        parameters: {},
+      });
       (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'ctrl-1',
         status: 'Pending',
@@ -263,11 +306,8 @@ describe('AgenticAIService', () => {
         id: 'ctrl-1',
         status: 'Implemented',
       });
-      (prismaMock.user.count as jest.Mock<any>).mockResolvedValue(5);
-      (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
 
-      const result = await agenticAIService.approveAction(orgId, 'action-1', userId);
+      const result = await agenticAIService.approveAction('action-1', orgId, userId);
 
       expect(result).toBeDefined();
     });
@@ -276,22 +316,20 @@ describe('AgenticAIService', () => {
       (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
-        agenticAIService.approveAction(orgId, 'nonexistent', userId)
+        agenticAIService.approveAction('nonexistent', orgId, userId)
       ).rejects.toThrow();
     });
   });
 
   describe('cleanupExpiredCheckpoints', () => {
     it('should cleanup expired checkpoints and return count', async () => {
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([
+      (prismaMock.agenticAction.findMany as jest.Mock<any>).mockResolvedValue([
         {
-          id: 'log-1',
-          details: JSON.stringify({
-            rollbackData: { expiresAt: new Date(Date.now() - 86400000).toISOString() },
-          }),
+          id: 'action-1',
+          rollbackData: { expiresAt: new Date(Date.now() - 86400000).toISOString() },
         },
       ]);
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+      (prismaMock.agenticAction.update as jest.Mock<any>).mockResolvedValue({});
 
       const result = await agenticAIService.cleanupExpiredCheckpoints(orgId);
 

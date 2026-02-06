@@ -64,6 +64,43 @@ describe('TemporalGraphNetworkService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish mock implementations (cleared by resetMocks)
+    const mlModelsService = require('../../../../services/advanced/mlModelsService').default;
+    mlModelsService.buildTemporalGraph.mockReturnValue({
+      nodes: [
+        { id: 'r-1', type: 'risk', category: 'Security', severity: 'High', data: {} },
+      ],
+      edges: [],
+    });
+    mlModelsService.predictRisksWithTGN.mockResolvedValue([
+      {
+        riskType: 'Security',
+        probability: 0.7,
+        severity: 'High',
+        predictedDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        confidence: 0.8,
+        factors: ['Historical frequency'],
+      },
+    ]);
+
+    const notificationService = require('../../../../services/notificationService').default;
+    notificationService.sendNotification.mockResolvedValue(undefined);
+    notificationService.notifyAdmins.mockResolvedValue(undefined);
+
+    const webhookService = require('../../../../services/webhookService').default;
+    webhookService.triggerWebhook.mockResolvedValue(undefined);
+
+    // Prisma mocks
+    (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.complianceFramework.findUnique as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.user.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.integration.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.regulatoryChange.findMany as jest.Mock<any>).mockResolvedValue([]);
   });
 
   const setupPredictionMocks = () => {

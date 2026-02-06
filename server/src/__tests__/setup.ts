@@ -17,6 +17,7 @@ process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
 process.env.GEMINI_API_KEY = 'test-gemini-key';
 process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
 process.env.SENDGRID_API_KEY = 'SG.test';
+process.env.SENDGRID_FROM_EMAIL = 'test@complyeasy.ai';
 process.env.CORS_ORIGIN = 'http://localhost:3000';
 process.env.LOG_LEVEL = 'error'; // Reduce logging in tests
 

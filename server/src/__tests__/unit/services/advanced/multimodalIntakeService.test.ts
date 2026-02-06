@@ -122,6 +122,89 @@ import multimodalIntakeService from '../../../../services/advanced/multimodalInt
 describe('MultimodalIntakeService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish mock implementations (cleared by resetMocks)
+    const whisperService = require('../../../../services/advanced/whisperService').default;
+    whisperService.transcribeAudio.mockResolvedValue({
+      text: 'This is a test transcription of the audio file.',
+      confidence: 0.92,
+      language: 'en',
+      duration: 60,
+      segments: [
+        { id: 0, start: 0, end: 5, text: 'This is a test', confidence: 0.95 },
+        { id: 1, start: 5, end: 10, text: 'transcription of the audio file.', confidence: 0.89 },
+      ],
+    });
+    whisperService.transcribeVideo.mockResolvedValue({
+      text: 'Video transcription text.',
+      confidence: 0.88,
+      language: 'en',
+      duration: 120,
+    });
+
+    const Tesseract = require('tesseract.js').default;
+    Tesseract.createWorker.mockReturnValue({
+      loadLanguage: jest.fn<any>().mockResolvedValue(undefined),
+      initialize: jest.fn<any>().mockResolvedValue(undefined),
+      recognize: jest.fn<any>().mockResolvedValue({
+        data: {
+          text: 'OCR recognized text',
+          confidence: 85,
+          words: [{ text: 'OCR', confidence: 90, bbox: { x0: 0, y0: 0, x1: 50, y1: 20 } }],
+        },
+      }),
+      terminate: jest.fn<any>().mockResolvedValue(undefined),
+    });
+
+    const sharp = require('sharp');
+    sharp.mockReturnValue({
+      metadata: jest.fn<any>().mockResolvedValue({
+        width: 1920,
+        height: 1080,
+        format: 'jpeg',
+        channels: 3,
+      }),
+      stats: jest.fn<any>().mockResolvedValue({
+        channels: [
+          { mean: 120, stdev: 50, min: 0, max: 255 },
+          { mean: 130, stdev: 45, min: 0, max: 255 },
+          { mean: 110, stdev: 55, min: 0, max: 255 },
+        ],
+      }),
+      raw: jest.fn<any>().mockReturnThis(),
+      resize: jest.fn<any>().mockReturnThis(),
+      toBuffer: jest.fn<any>().mockResolvedValue(Buffer.alloc(100)),
+      jpeg: jest.fn<any>().mockReturnThis(),
+      png: jest.fn<any>().mockReturnThis(),
+    });
+
+    const ffmpeg = require('fluent-ffmpeg').default;
+    ffmpeg.mockReturnValue({
+      ffprobe: jest.fn<any>().mockImplementation((cb: any) => cb(null, {
+        format: { duration: 60 },
+        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
+      })),
+      outputOptions: jest.fn<any>().mockReturnThis(),
+      output: jest.fn<any>().mockReturnThis(),
+      on: jest.fn<any>().mockReturnThis(),
+      run: jest.fn(),
+      seek: jest.fn<any>().mockReturnThis(),
+      frames: jest.fn<any>().mockReturnThis(),
+      pipe: jest.fn<any>().mockReturnThis(),
+      noVideo: jest.fn<any>().mockReturnThis(),
+      audioCodec: jest.fn<any>().mockReturnThis(),
+      format: jest.fn<any>().mockReturnThis(),
+    });
+
+    const fs = require('fs');
+    fs.existsSync.mockReturnValue(true);
+    fs.mkdirSync.mockImplementation(() => {});
+    fs.writeFileSync.mockImplementation(() => {});
+    fs.writeFile.mockImplementation((_path: any, _data: any, cb: any) => { if (cb) cb(null); });
+    fs.readFileSync.mockReturnValue(Buffer.alloc(100));
+    fs.unlinkSync.mockImplementation(() => {});
+    fs.unlink.mockImplementation((_path: any, cb: any) => { if (cb) cb(null); });
+    fs.createReadStream.mockReturnValue({});
   });
 
   describe('transcribeAudio', () => {
