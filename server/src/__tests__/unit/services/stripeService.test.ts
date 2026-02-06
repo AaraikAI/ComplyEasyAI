@@ -50,15 +50,34 @@ jest.mock('../../../config/database', () => ({
   default: prismaMock,
 }));
 
-jest.mock('../../../config', () => ({
-  __esModule: true,
-  default: {
-    stripe: {
-      secretKey: 'sk_test_key',
-      webhookSecret: 'whsec_test_secret',
+jest.mock('../../../config', () => {
+  // Set env vars for Stripe price IDs before stripeService module loads
+  process.env.STRIPE_ESSENTIALS_MONTHLY_PRICE_ID = 'price_essentials_monthly';
+  process.env.STRIPE_ESSENTIALS_ANNUAL_PRICE_ID = 'price_essentials_annual';
+  process.env.STRIPE_FOUNDATION_MONTHLY_PRICE_ID = 'price_foundation_monthly';
+  process.env.STRIPE_FOUNDATION_ANNUAL_PRICE_ID = 'price_foundation_annual';
+  process.env.STRIPE_GROWTH_MONTHLY_PRICE_ID = 'price_growth_monthly';
+  process.env.STRIPE_GROWTH_ANNUAL_PRICE_ID = 'price_growth_annual';
+  process.env.STRIPE_VISIONARY_MONTHLY_PRICE_ID = 'price_visionary_monthly';
+  process.env.STRIPE_VISIONARY_ANNUAL_PRICE_ID = 'price_visionary_annual';
+  return {
+    __esModule: true,
+    default: {
+      stripe: {
+        secretKey: 'sk_test_key',
+        webhookSecret: 'whsec_test_secret',
+      },
     },
-  },
-}));
+  };
+});
+
+// Add stripeEvent to prismaMock
+const createStripeEventMockFn = (): jest.Mock<(...args: any[]) => any> => jest.fn() as jest.Mock<(...args: any[]) => any>;
+(prismaMock as any).stripeEvent = {
+  create: createStripeEventMockFn(),
+  update: createStripeEventMockFn(),
+  findUnique: createStripeEventMockFn(),
+};
 
 import stripeService from '../../../services/stripeService';
 
@@ -183,21 +202,24 @@ describe('StripeService', () => {
       const signature = 'test signature';
 
       const mockEvent = {
+        id: 'evt_test123',
         type: 'customer.subscription.created',
         data: {
           object: {
             id: 'sub_test123',
             customer: 'cus_test123',
             status: 'active',
+            metadata: { organizationId: 'org-123', tierName: 'Essentials' },
+            start_date: Math.floor(Date.now() / 1000),
+            current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
+            trial_end: null,
           },
         },
       };
 
       mockWebhooksConstructEvent.mockReturnValue(mockEvent);
-      prismaMock.organization.findFirst.mockResolvedValue({
-        id: 'org-123',
-        stripeCustomerId: 'cus_test123',
-      } as any);
+      (prismaMock as any).stripeEvent.create.mockResolvedValue({});
+      (prismaMock as any).stripeEvent.update.mockResolvedValue({});
       prismaMock.organization.update.mockResolvedValue({} as any);
 
       await stripeService.handleWebhook(payload, signature);
@@ -206,7 +228,7 @@ describe('StripeService', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             stripeSubscriptionId: 'sub_test123',
-            subscriptionStatus: 'Active',
+            subscriptionStatus: 'active',
           }),
         })
       );
@@ -217,27 +239,38 @@ describe('StripeService', () => {
       const signature = 'test';
 
       const mockEvent = {
+        id: 'evt_test456',
         type: 'customer.subscription.updated',
         data: {
           object: {
             id: 'sub_test123',
+            customer: 'cus_test123',
             status: 'canceled',
+            metadata: {},
+            items: { data: [] },
+            current_period_end: Math.floor(Date.now() / 1000) + 86400 * 30,
+            cancel_at_period_end: false,
           },
         },
       };
 
       mockWebhooksConstructEvent.mockReturnValue(mockEvent);
-      prismaMock.organization.findFirst.mockResolvedValue({
+      (prismaMock as any).stripeEvent.create.mockResolvedValue({});
+      (prismaMock as any).stripeEvent.update.mockResolvedValue({});
+      prismaMock.organization.findUnique.mockResolvedValue({
         id: 'org-123',
+        plan: 'Essentials',
+        subscriptionStatus: 'active',
       } as any);
       prismaMock.organization.update.mockResolvedValue({} as any);
+      prismaMock.subscriptionHistory.create.mockResolvedValue({} as any);
 
       await stripeService.handleWebhook(payload, signature);
 
       expect(prismaMock.organization.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            subscriptionStatus: 'Canceled',
+            subscriptionStatus: 'canceled',
           }),
         })
       );

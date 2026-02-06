@@ -122,10 +122,12 @@ describe('PersonnelService', () => {
       const mockPersonnel = {
         id: personnelId,
         userId: 'user-123',
-        offboardingStatus: 'In_Progress',
+        onboardingStatus: 'Offboarding',
       };
 
       prismaMock.personnel.update.mockResolvedValue(mockPersonnel as any);
+      prismaMock.user.update.mockResolvedValue({} as any);
+      prismaMock.accessReview.create.mockResolvedValue({} as any);
 
       const result = await personnelService.startOffboarding(
         personnelId,
@@ -134,7 +136,7 @@ describe('PersonnelService', () => {
         organizationId
       );
 
-      expect(result).toHaveProperty('offboardingStatus', 'In_Progress');
+      expect(result).toHaveProperty('onboardingStatus', 'Offboarding');
       expect(prismaMock.personnel.update).toHaveBeenCalled();
     });
   });

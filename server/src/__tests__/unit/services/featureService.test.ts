@@ -153,6 +153,53 @@ const mockFeatureSubscription = (overrides: Record<string, unknown> = {}) => ({
 describe('FeatureService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-set mock implementations (cleared by jest config resetMocks: true)
+    const features = require('../../../config/features');
+    features.getFeature.mockImplementation((id: string) => {
+      if (id === 'valid-feature') {
+        return {
+          id: 'valid-feature',
+          name: 'Valid Feature',
+          description: 'A valid feature',
+          availableAsAddOn: true,
+          tierFeatureKey: 'aiContractAnalyzer',
+          requiresTier: undefined,
+        };
+      }
+      if (id === 'unavailable-feature') {
+        return { id: 'unavailable-feature', name: 'Unavailable', availableAsAddOn: false };
+      }
+      if (id === 'requires-growth') {
+        return { id: 'requires-growth', name: 'Growth Feature', availableAsAddOn: true, requiresTier: 'Growth' };
+      }
+      return null;
+    });
+    features.getAvailableFeatures.mockReturnValue([
+      { id: 'valid-feature', name: 'Valid Feature', availableAsAddOn: true, tierFeatureKey: 'aiContractAnalyzer' },
+    ]);
+    features.getAvailableBundles.mockReturnValue([]);
+    features.calculateFeaturePrice.mockReturnValue(100);
+    features.getBundle.mockImplementation((id: string) => {
+      if (id === 'valid-bundle') {
+        return { id: 'valid-bundle', name: 'Valid Bundle', availableAsAddOn: true, featureIds: ['valid-feature'], requiresTier: undefined };
+      }
+      if (id === 'unavailable-bundle') {
+        return { id: 'unavailable-bundle', availableAsAddOn: false };
+      }
+      return null;
+    });
+
+    const tiers = require('../../../config/tiers');
+    tiers.getTier.mockReturnValue({
+      name: 'Foundation',
+      features: { aiContractAnalyzer: false },
+      limits: {},
+    });
+    tiers.getTierIndex.mockImplementation((tier: string) => {
+      const map: Record<string, number> = { Foundation: 0, Essentials: 1, Growth: 2, Visionary: 3 };
+      return map[tier] ?? 0;
+    });
   });
 
   // ======================================================================

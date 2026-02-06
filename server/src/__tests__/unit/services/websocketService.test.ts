@@ -10,10 +10,12 @@ import { prismaMock } from '../../mocks/prisma';
 const mockEmit = jest.fn();
 const mockOn = jest.fn();
 const mockUse = jest.fn();
-const mockTo = jest.fn().mockReturnValue({ emit: mockEmit });
+const mockExcept = jest.fn().mockReturnValue({ emit: mockEmit });
+const mockTo = jest.fn().mockReturnValue({ emit: mockEmit, except: mockExcept });
 const mockSockets = {
   emit: mockEmit,
   to: mockTo,
+  sockets: new Map(),
 };
 
 jest.mock('socket.io', () => ({
@@ -40,6 +42,7 @@ jest.mock('../../../config/logger', () => ({
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
@@ -68,6 +71,27 @@ describe('WebSocketService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockHttpServer = {};
+
+    // Re-set mock implementations (cleared by jest config resetMocks: true)
+    mockTo.mockReturnValue({ emit: mockEmit, except: mockExcept });
+    mockExcept.mockReturnValue({ emit: mockEmit });
+
+    const socketIo = require('socket.io');
+    socketIo.Server.mockImplementation(() => ({
+      use: mockUse,
+      on: mockOn,
+      to: mockTo,
+      sockets: mockSockets,
+    }));
+
+    const jwt = require('jsonwebtoken');
+    jwt.verify.mockReturnValue({
+      userId: 'user-123',
+      email: 'test@example.com',
+      role: 'admin',
+      organizationId: 'org-123',
+    });
+
     prismaMock.user.findUnique.mockResolvedValue({
       id: 'user-123',
       email: 'test@example.com',
@@ -89,7 +113,7 @@ describe('WebSocketService', () => {
       websocketService.initialize(mockHttpServer as HTTPServer);
       websocketService.broadcastToOrganization('org-123', 'test-event', { data: 'test' });
 
-      expect(mockTo).toHaveBeenCalledWith('org-org-123');
+      expect(mockTo).toHaveBeenCalledWith('org:org-123');
     });
   });
 

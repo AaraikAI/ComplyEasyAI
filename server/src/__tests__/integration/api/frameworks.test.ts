@@ -18,6 +18,7 @@ jest.mock('../../../config/logger', () => ({
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
@@ -27,9 +28,39 @@ jest.mock('../../../utils/auditLogger', () => ({
   },
 }));
 
+// Mock auth middleware so the router's built-in authenticate/authorize work
+jest.mock('../../../middleware/auth', () => ({
+  authenticate: (req: any, res: any, next: any) => {
+    if ((req as any).user) {
+      next();
+      return;
+    }
+    res.status(401).json({ error: 'No token provided' });
+  },
+  authorize: (..._roles: string[]) => (req: any, res: any, next: any) => {
+    if (!(req as any).user) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+    next();
+  },
+  AuthRequest: {},
+}));
+
+// Mock rate limiter to prevent rate limiting during tests
+jest.mock('../../../middleware/rateLimiter', () => ({
+  frameworkLimiter: (req: any, res: any, next: any) => next(),
+  authLimiter: (req: any, res: any, next: any) => next(),
+  apiLimiter: (req: any, res: any, next: any) => next(),
+}));
+
+// Mock tier middleware
+jest.mock('../../../middleware/tierMiddleware', () => ({
+  enforceLimit: () => (req: any, res: any, next: any) => next(),
+}));
+
 import frameworksRoutes from '../../../routes/frameworks';
 import { errorHandler } from '../../../middleware/errorHandler';
-import { authenticate } from '../../../middleware/auth';
 
 const app = express();
 app.use(express.json());
@@ -40,6 +71,8 @@ app.use((req, res, next) => {
     id: 'user-123',
     organizationId: 'org-123',
     role: 'admin',
+    email: 'test@example.com',
+    name: 'Test User',
   };
   next();
 });
@@ -48,10 +81,6 @@ app.use('/api/frameworks', frameworksRoutes);
 app.use(errorHandler);
 
 describe('Frameworks API', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should list frameworks', async () => {
     const mockFrameworks = [
       {
@@ -80,7 +109,10 @@ describe('Frameworks API', () => {
       status: 'Active',
     };
 
-    prismaMock.complianceFramework.findUnique.mockResolvedValue(mockFramework);
+    // Controller uses findFirst, not findUnique
+    prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework);
+    prismaMock.frameworkControl.findMany.mockResolvedValue([]);
+    prismaMock.frameworkControl.count.mockResolvedValue(0);
 
     const response = await request(app)
       .get('/api/frameworks/fw-1')
@@ -92,17 +124,19 @@ describe('Frameworks API', () => {
   it('should create framework', async () => {
     const newFramework = {
       name: 'ISO27001',
-      organizationId: 'org-123',
+      nextAuditDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
     const createdFramework = {
       id: 'fw-2',
       ...newFramework,
+      organizationId: 'org-123',
       status: 'Active',
       createdAt: new Date(),
     };
 
     prismaMock.complianceFramework.create.mockResolvedValue(createdFramework);
+    prismaMock.auditLog.create.mockResolvedValue({} as any);
 
     const response = await request(app)
       .post('/api/frameworks')
@@ -113,4 +147,3 @@ describe('Frameworks API', () => {
     expect(response.body).toHaveProperty('name', 'ISO27001');
   });
 });
-

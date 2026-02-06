@@ -14,46 +14,42 @@ const mockAlertsList = jest.fn() as jest.Mock<any>;
 const mockPolicyAssignmentsList = jest.fn() as jest.Mock<any>;
 const mockGraphUsersList = jest.fn() as jest.Mock<any>;
 
+// Named constructor mocks (so we can re-apply implementations in beforeEach)
+const MockClientSecretCredential = jest.fn() as jest.Mock<any>;
+const MockResourceManagementClient = jest.fn() as jest.Mock<any>;
+const MockSubscriptionClient = jest.fn() as jest.Mock<any>;
+const MockSecurityCenter = jest.fn() as jest.Mock<any>;
+const MockPolicyClient = jest.fn() as jest.Mock<any>;
+const MockGraphRbacManagementClient = jest.fn() as jest.Mock<any>;
+
 jest.mock('@azure/identity', () => ({
   __esModule: true,
-  ClientSecretCredential: jest.fn().mockImplementation(() => ({})),
+  ClientSecretCredential: MockClientSecretCredential,
 }));
 
 jest.mock('@azure/arm-resources', () => ({
   __esModule: true,
-  ResourceManagementClient: jest.fn().mockImplementation(() => ({
-    resources: { list: mockResourcesList },
-    resourceGroups: { list: mockResourceGroupsList },
-  })),
+  ResourceManagementClient: MockResourceManagementClient,
 }));
 
 jest.mock('@azure/arm-subscriptions', () => ({
   __esModule: true,
-  SubscriptionClient: jest.fn().mockImplementation(() => ({
-    subscriptions: { get: mockSubscriptionGet },
-  })),
+  SubscriptionClient: MockSubscriptionClient,
 }));
 
 jest.mock('@azure/arm-security', () => ({
   __esModule: true,
-  SecurityCenter: jest.fn().mockImplementation(() => ({
-    assessments: { list: mockAssessmentsList },
-    alerts: { list: mockAlertsList },
-  })),
+  SecurityCenter: MockSecurityCenter,
 }));
 
 jest.mock('@azure/arm-policy', () => ({
   __esModule: true,
-  PolicyClient: jest.fn().mockImplementation(() => ({
-    policyAssignments: { list: mockPolicyAssignmentsList },
-  })),
+  PolicyClient: MockPolicyClient,
 }));
 
 jest.mock('@azure/graph', () => ({
   __esModule: true,
-  GraphRbacManagementClient: jest.fn().mockImplementation(() => ({
-    users: { list: mockGraphUsersList },
-  })),
+  GraphRbacManagementClient: MockGraphRbacManagementClient,
 }));
 
 jest.mock('../../../../config/database', () => ({
@@ -106,6 +102,25 @@ describe('AzureService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-apply constructor implementations after resetMocks clears them
+    MockClientSecretCredential.mockImplementation(() => ({}));
+    MockResourceManagementClient.mockImplementation(() => ({
+      resources: { list: mockResourcesList },
+      resourceGroups: { list: mockResourceGroupsList },
+    }));
+    MockSubscriptionClient.mockImplementation(() => ({
+      subscriptions: { get: mockSubscriptionGet },
+    }));
+    MockSecurityCenter.mockImplementation(() => ({
+      assessments: { list: mockAssessmentsList },
+      alerts: { list: mockAlertsList },
+    }));
+    MockPolicyClient.mockImplementation(() => ({
+      policyAssignments: { list: mockPolicyAssignmentsList },
+    }));
+    MockGraphRbacManagementClient.mockImplementation(() => ({
+      users: { list: mockGraphUsersList },
+    }));
   });
 
   // -------------------------------------------------------------------

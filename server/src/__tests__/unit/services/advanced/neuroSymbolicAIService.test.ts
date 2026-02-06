@@ -59,6 +59,37 @@ describe('NeuroSymbolicAIService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish mock implementations (cleared by resetMocks)
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    GoogleGenerativeAI.mockImplementation(() => ({
+      getGenerativeModel: jest.fn<any>().mockReturnValue({
+        generateContent: mockGenerateContent,
+      }),
+    }));
+
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: jest.fn<any>().mockReturnValue(JSON.stringify({
+          prediction: 'Compliance risk detected',
+          confidence: 0.85,
+          factors: ['Missing controls', 'Policy gaps'],
+        })),
+      },
+    });
+
+    const { Engine } = require('json-rules-engine');
+    Engine.mockImplementation(() => ({
+      addRule: jest.fn(),
+      run: jest.fn<any>().mockResolvedValue({ events: [] }),
+    }));
+
+    // Prisma mocks
+    (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
   });
 
   describe('performHybridReasoning', () => {

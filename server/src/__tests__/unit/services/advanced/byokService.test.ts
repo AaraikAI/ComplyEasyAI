@@ -6,12 +6,15 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
 const mockSend = jest.fn<any>();
+const mockCryptoEncrypt = jest.fn<any>();
+const mockCryptoDecrypt = jest.fn<any>();
+const mockGcpEncrypt = jest.fn<any>();
+const mockGcpDecrypt = jest.fn<any>();
+const mockGcpCryptoKeyPath = jest.fn<any>();
 
 // Mock AWS SDK
 jest.mock('@aws-sdk/client-kms', () => ({
-  KMSClient: jest.fn().mockImplementation(() => ({
-    send: mockSend,
-  })),
+  KMSClient: jest.fn(),
   EncryptCommand: jest.fn(),
   DecryptCommand: jest.fn(),
   GenerateDataKeyCommand: jest.fn(),
@@ -22,33 +25,20 @@ jest.mock('@aws-sdk/client-kms', () => ({
 
 // Mock Azure SDK
 jest.mock('@azure/keyvault-keys', () => ({
-  KeyClient: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
-    getKey: (jest.fn() as jest.Mock<any>).mockResolvedValue({
-      name: 'test-key',
-      properties: { enabled: true },
-    }),
-    createKey: (jest.fn() as jest.Mock<any>).mockResolvedValue({ name: 'test-key' }),
-  })),
-  CryptographyClient: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
-    encrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue({ result: Buffer.alloc(32) }),
-    decrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue({ result: Buffer.alloc(32) }),
-  })),
+  KeyClient: jest.fn(),
+  CryptographyClient: jest.fn(),
 }));
 
 jest.mock('@azure/identity', () => ({
-  DefaultAzureCredential: jest.fn().mockImplementation(() => ({})),
+  DefaultAzureCredential: jest.fn(),
 }));
 
 jest.mock('@google-cloud/kms', () => ({
-  KeyManagementServiceClient: jest.fn().mockImplementation(() => ({
-    cryptoKeyPath: jest.fn().mockReturnValue('projects/test/locations/us/keyRings/kr/cryptoKeys/k'),
-    encrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue([{ ciphertext: Buffer.alloc(32) }]),
-    decrypt: (jest.fn() as jest.Mock<any>).mockResolvedValue([{ plaintext: Buffer.alloc(32) }]),
-  })),
+  KeyManagementServiceClient: jest.fn(),
 }));
 
 jest.mock('../../../../utils/urlValidator', () => ({
-  isUrlSafe: jest.fn().mockReturnValue(true),
+  isUrlSafe: jest.fn(),
 }));
 
 jest.mock('../../../../config/logger', () => ({
@@ -70,23 +60,56 @@ import byokService from '../../../../services/advanced/byokService';
 describe('BYOKService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Mock keyUsage for trackKeyUsage
-    (prismaMock as any).keyUsage = {
-      create: jest.fn<any>().mockResolvedValue({}),
-      findMany: jest.fn<any>().mockResolvedValue([]),
-    };
-    // Mock encryptionMetadata for storeEncryptionMetadata
-    (prismaMock as any).encryptionMetadata = {
-      upsert: jest.fn<any>().mockResolvedValue({}),
-      create: jest.fn<any>().mockResolvedValue({}),
-    };
-    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-    // Default AWS KMS send mock for generateDataKey
+
+    // Re-establish all mock implementations after resetMocks
+    const { KMSClient } = require('@aws-sdk/client-kms');
+    KMSClient.mockImplementation(() => ({ send: mockSend }));
+
+    const { KeyClient, CryptographyClient } = require('@azure/keyvault-keys');
+    KeyClient.mockImplementation(() => ({
+      getKey: jest.fn<any>().mockResolvedValue({
+        name: 'test-key',
+        properties: { enabled: true },
+      }),
+      createKey: jest.fn<any>().mockResolvedValue({ name: 'test-key' }),
+    }));
+    CryptographyClient.mockImplementation(() => ({
+      encrypt: mockCryptoEncrypt,
+      decrypt: mockCryptoDecrypt,
+    }));
+
+    const { DefaultAzureCredential } = require('@azure/identity');
+    DefaultAzureCredential.mockImplementation(() => ({}));
+
+    const { KeyManagementServiceClient } = require('@google-cloud/kms');
+    KeyManagementServiceClient.mockImplementation(() => ({
+      cryptoKeyPath: mockGcpCryptoKeyPath,
+      encrypt: mockGcpEncrypt,
+      decrypt: mockGcpDecrypt,
+    }));
+
+    const { isUrlSafe } = require('../../../../utils/urlValidator');
+    isUrlSafe.mockReturnValue(true);
+
+    // Set up mock return values
     mockSend.mockResolvedValue({
       Plaintext: Buffer.alloc(32),
       CiphertextBlob: Buffer.alloc(64),
       KeyMetadata: { Enabled: true },
     });
+    mockCryptoEncrypt.mockResolvedValue({ result: Buffer.alloc(32) });
+    mockCryptoDecrypt.mockResolvedValue({ result: Buffer.alloc(32) });
+    mockGcpCryptoKeyPath.mockReturnValue('projects/test/locations/us/keyRings/kr/cryptoKeys/k');
+    mockGcpEncrypt.mockResolvedValue([{ ciphertext: Buffer.alloc(32) }]);
+    mockGcpDecrypt.mockResolvedValue([{ plaintext: Buffer.alloc(32) }]);
+
+    // Mock prisma tables
+    (prismaMock.keyUsage.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.keyUsage.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+
+    // Clear internal client caches by creating a fresh service
+    // The singleton caches clients, so we need the mocks ready before first use
   });
 
   describe('generateDataKey()', () => {
@@ -163,11 +186,6 @@ describe('BYOKService', () => {
       // First encrypt some data to get valid encrypted payload
       const plaintext = Buffer.from('sensitive data');
       const encrypted = await byokService.encryptData(plaintext, config, 'org-123');
-
-      // Mock the DecryptCommand response to return the same key
-      mockSend.mockResolvedValueOnce({
-        Plaintext: Buffer.alloc(32), // same 32-byte key
-      });
 
       const result = await byokService.decryptData(encrypted, config);
 

@@ -75,6 +75,8 @@ describe('EUAIActService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-establish $transaction mock implementation (cleared by resetMocks: true in jest config)
+    (prismaMock as any).$transaction.mockImplementation(async (cb: any) => cb(prismaMock));
   });
 
   // -------------------------------------------------------------------

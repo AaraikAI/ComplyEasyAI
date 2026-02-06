@@ -59,6 +59,34 @@ import mqttService from '../../../../services/advanced/mqttService';
 describe('MQTTService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish mock implementations (cleared by resetMocks)
+    const mqtt = require('mqtt');
+    mqtt.connect.mockReturnValue(mockMqttClient);
+
+    mockMqttClient.on.mockReturnThis();
+    mockMqttClient.once.mockImplementation(function (this: any, event: string, cb: (...args: any[]) => void) {
+      if (event === 'connect') {
+        setTimeout(() => cb(), 10);
+      }
+      return this;
+    });
+    mockMqttClient.subscribe.mockImplementation((_topic: string, cb: (err: Error | null) => void) => {
+      cb(null);
+    });
+    mockMqttClient.unsubscribe.mockImplementation((_topic: string, cb: (err: Error | null) => void) => {
+      cb(null);
+    });
+    mockMqttClient.publish.mockImplementation((_topic: string, _msg: string, _opts: any, cb: (err: Error | null) => void) => {
+      if (cb) cb(null);
+    });
+    mockMqttClient.end.mockImplementation(() => {});
+    mockMqttClient.connected = true;
+
+    const physicalAIService = require('../../../../services/advanced/physicalAIService').default;
+    physicalAIService.receiveSensorData.mockResolvedValue({});
+    physicalAIService.getDevices.mockResolvedValue([]);
+
     // Reset internal state by accessing private properties
     (mqttService as any).client = null;
     (mqttService as any).isConnected = false;

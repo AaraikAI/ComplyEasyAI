@@ -208,12 +208,13 @@ describe('RiskManagementService', () => {
 
       prismaMock.riskItem.findMany.mockResolvedValue(mockRisks);
       prismaMock.riskItem.count.mockResolvedValue(4);
+      prismaMock.riskAssessment.findMany.mockResolvedValue([]);
 
       const dashboard = await riskManagementService.getRiskDashboard('org-123');
 
       expect(dashboard).toHaveProperty('totalRisks');
-      expect(dashboard).toHaveProperty('bySeverity');
-      expect(dashboard).toHaveProperty('byStatus');
+      expect(dashboard).toHaveProperty('severityDistribution');
+      expect(dashboard).toHaveProperty('assessmentMetrics');
       expect(prismaMock.riskItem.findMany).toHaveBeenCalled();
     });
   });
@@ -231,7 +232,9 @@ describe('RiskManagementService', () => {
       const heatmap = await riskManagementService.getRiskHeatMap('org-123');
 
       expect(heatmap).toBeDefined();
-      expect(Array.isArray(heatmap)).toBe(true);
+      expect(heatmap).toHaveProperty('heatMap');
+      expect(heatmap).toHaveProperty('risks');
+      expect(Array.isArray(heatmap.heatMap)).toBe(true);
     });
   });
 

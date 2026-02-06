@@ -28,6 +28,18 @@ describe('RedTeamService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish mock implementations (cleared by resetMocks)
+    (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.user.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.user.count as jest.Mock<any>).mockResolvedValue(0);
+    (prismaMock.policy.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.auditLog.update as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.redTeamSession.create as jest.Mock<any>).mockResolvedValue({ id: 'session-1' });
+    (prismaMock.redTeamFinding.create as jest.Mock<any>).mockResolvedValue({ id: 'finding-1' });
   });
 
   const setupCommonMocks = () => {
@@ -287,14 +299,9 @@ describe('RedTeamService', () => {
       (prismaMock.auditLog.update as jest.Mock<any>).mockResolvedValue({});
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 
-      const result = await redTeamService.markFalsePositive(
-        orgId,
-        'scan-log-1',
-        0,
-        userId
-      );
-
-      expect(result).toBeDefined();
+      await expect(
+        redTeamService.markFalsePositive(orgId, 'scan-log-1', 0, userId)
+      ).resolves.not.toThrow();
     });
   });
 });

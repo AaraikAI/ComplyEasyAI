@@ -38,6 +38,22 @@ describe('PhysicalAIService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish mock implementations (cleared by resetMocks)
+    const mqttService = require('../../../../services/advanced/mqttService').default;
+    mqttService.getConnectionStatus.mockReturnValue(false);
+    mqttService.subscribe.mockImplementation(() => {});
+    mqttService.publish.mockImplementation(() => {});
+    mqttService.connect.mockResolvedValue(undefined);
+
+    // Prisma mocks
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.ioTDevice.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.ioTDevice.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.ioTDevice.update as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.ioTDevice.delete as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.edgeComplianceCheck.create as jest.Mock<any>).mockResolvedValue({});
   });
 
   describe('constructor', () => {

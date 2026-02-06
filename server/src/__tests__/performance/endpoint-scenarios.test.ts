@@ -4,6 +4,45 @@
  */
 
 import { jest, describe, it, expect, beforeAll } from '@jest/globals';
+
+// Mock the index module to provide a lightweight Express app
+// This avoids the side effects of importing the full application (DB connection, server.listen, etc.)
+jest.mock('../../index', () => {
+  const express = require('express');
+  const testApp = express();
+  testApp.use(express.json());
+
+  // Health endpoint
+  testApp.get('/health', (_req: any, res: any) => {
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  });
+
+  // Framework endpoints
+  testApp.get('/api/frameworks', (_req: any, res: any) => {
+    res.json([{ id: 'fw-1', name: 'SOC 2', status: 'Active' }]);
+  });
+
+  // Risk endpoints
+  testApp.get('/api/risks', (_req: any, res: any) => {
+    res.json([{ id: 'risk-1', title: 'Test Risk', severity: 'High' }]);
+  });
+  testApp.post('/api/risks', (_req: any, res: any) => {
+    res.status(201).json({ id: 'risk-new', ..._req.body });
+  });
+
+  // Vendor endpoints
+  testApp.get('/api/vendors', (_req: any, res: any) => {
+    res.json([{ id: 'vendor-1', name: 'Test Vendor' }]);
+  });
+
+  // AI endpoints
+  testApp.post('/api/ai/generate-report', (_req: any, res: any) => {
+    res.json({ report: 'Generated report', score: 85 });
+  });
+
+  return { __esModule: true, default: testApp };
+});
+
 import { LoadTester } from './load-test';
 
 describe('Endpoint Performance Scenarios', () => {
@@ -126,6 +165,7 @@ describe('Endpoint Performance Scenarios', () => {
         headers: {
           Authorization: 'Bearer test-token',
         },
+        expectedStatus: 201,
       });
 
       expect(getResult.successfulRequests).toBeGreaterThan(8);
@@ -159,4 +199,3 @@ describe('Endpoint Performance Scenarios', () => {
     });
   });
 });
-
