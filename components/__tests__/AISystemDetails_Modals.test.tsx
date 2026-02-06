@@ -99,8 +99,8 @@ describe('CreateRiskActivityModal', () => {
 
   it('shows the description textarea as required', () => {
     render(<CreateRiskActivityModal systemId="sys-1" teamMembers={[]} onClose={mockOnClose} />);
-    const textarea = screen.getByRole('textbox');
-    expect(textarea).toBeInTheDocument();
+    const textareas = screen.getAllByRole('textbox');
+    expect(textareas.length).toBeGreaterThan(0);
   });
 
   it('calls onClose when close button is clicked', () => {
@@ -125,7 +125,7 @@ describe('CreateActorModal', () => {
 
   it('renders the modal with form fields', () => {
     render(<CreateActorModal systemId="sys-1" teamMembers={[]} onClose={mockOnClose} />);
-    expect(screen.getByText(/Actor|Create/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Actor|Create/i).length).toBeGreaterThan(0);
   });
 
   it('calls onClose when close button is clicked', () => {

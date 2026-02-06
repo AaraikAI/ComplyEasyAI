@@ -6,6 +6,8 @@ import TierCard from '../TierCard';
 
 const mockTier = {
   name: 'Growth' as any,
+  displayName: 'Growth',
+  tagline: 'For growing teams',
   pricing: { annualMin: 8500, annualMax: 25000, monthlyMin: 850, monthlyMultiplier: 1.2, netAfterStripeMin: 7800, netAfterStripeMax: 23000, margin: '85%' },
   limits: { maxUsers: 1000, maxFrameworks: 50, maxWorkspaces: 25 },
   features: { dashboard: true, riskManagement: true, acosGoals: true },

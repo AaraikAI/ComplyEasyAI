@@ -98,14 +98,13 @@ describe('SignupPage', () => {
 
   it('renders the email input field', () => {
     render(<SignupPage />);
-    const emailInputs = screen.getAllByPlaceholderText(/email/i);
-    expect(emailInputs.length).toBeGreaterThan(0);
+    const emailInput = screen.getByPlaceholderText('you@company.com');
+    expect(emailInput).toBeTruthy();
   });
 
   it('allows typing into the email field', () => {
     render(<SignupPage />);
-    const emailInputs = screen.getAllByPlaceholderText(/email/i);
-    const emailInput = emailInputs[0] as HTMLInputElement;
+    const emailInput = screen.getByPlaceholderText('you@company.com') as HTMLInputElement;
     fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
     expect(emailInput.value).toBe('user@example.com');
   });

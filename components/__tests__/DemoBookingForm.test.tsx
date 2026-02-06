@@ -99,7 +99,7 @@ describe('DemoBookingForm', () => {
 
   it('renders the form when isOpen is true', () => {
     render(<DemoBookingForm isOpen={true} onClose={mockOnClose} />);
-    expect(screen.getByText(/Book a Demo|Schedule|demo/i)).toBeTruthy();
+    expect(screen.getAllByText(/Book a Demo|Schedule|demo/i).length).toBeGreaterThan(0);
   });
 
   it('renders input fields for name and email', () => {
