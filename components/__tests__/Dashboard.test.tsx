@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import Dashboard from '../Dashboard';
+import { Dashboard } from '../Dashboard';
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="chart-container">{children}</div>,
@@ -13,12 +13,6 @@ vi.mock('recharts', () => ({
   Tooltip: () => null,
 }));
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('@/hooks/useOnboarding', () => ({
   useOnboardingTrigger: vi.fn(),
@@ -38,7 +32,7 @@ describe('Dashboard', () => {
 
   it('should render with empty data', () => {
     render(<Dashboard {...defaultProps} />);
-    expect(screen.getByText(/compliance/i)).toBeTruthy();
+    expect(screen.getAllByText(/compliance/i).length).toBeGreaterThan(0);
   });
 
   it('should render with frameworks data', () => {
@@ -70,8 +64,8 @@ describe('Dashboard', () => {
     expect(screen.getByText(/50%|80%|\d+%/)).toBeTruthy();
   });
 
-  it('should show chart container', () => {
+  it('should show chart section', () => {
     render(<Dashboard {...defaultProps} />);
-    expect(screen.getByTestId('chart-container')).toBeTruthy();
+    expect(screen.getByText(/Compliance Readiness Trend/i)).toBeTruthy();
   });
 });

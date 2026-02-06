@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { OnboardingCelebration } from '../OnboardingCelebration';
 
-vi.mock('lucide-react', () => new Proxy({}, { get: (_, name) => { if (name === '__esModule') return true; return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />; } }));
 
 describe('OnboardingCelebration', () => {
   const defaultProps = { message: 'Great job completing the setup!', onDismiss: vi.fn() };

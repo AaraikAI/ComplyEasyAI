@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { VendorScorer } from '../VendorScorer';
 
-vi.mock('lucide-react', () => new Proxy({}, { get: (_, name) => { if (name === '__esModule') return true; return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />; } }));
 vi.mock('react-markdown', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('@/services/api', () => ({ api: { ai: { scoreVendor: vi.fn().mockResolvedValue({ result: 'Vendor risk score: 7/10' }) } }, getAuthToken: vi.fn().mockReturnValue('token') }));
 vi.mock('@/hooks/useOnboarding', () => ({ useOnboardingTrigger: vi.fn() }));

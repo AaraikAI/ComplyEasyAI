@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { OnboardingWelcome } from '../OnboardingWelcome';
 
-vi.mock('lucide-react', () => new Proxy({}, { get: (_, name) => { if (name === '__esModule') return true; return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />; } }));
 vi.mock('@/components/Onboarding/OnboardingTierBadge', () => ({ OnboardingTierBadge: ({ tier }: any) => <span>{tier}</span> }));
 
 describe('OnboardingWelcome', () => {

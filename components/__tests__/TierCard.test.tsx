@@ -3,12 +3,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import TierCard from '../TierCard';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 const mockTier = {
   name: 'Growth' as any,
