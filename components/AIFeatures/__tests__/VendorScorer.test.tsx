@@ -12,8 +12,8 @@ describe('VendorScorer', () => {
   const mockOnBack = vi.fn();
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it('should render vendor scoring form', () => { render(<VendorScorer onBack={mockOnBack} />); expect(screen.getByText(/vendor/i)).toBeTruthy(); });
+  it('should render vendor scoring form', () => { render(<VendorScorer onBack={mockOnBack} />); expect(screen.getByText('Vendor Risk Scorer')).toBeTruthy(); });
   it('should have input fields', () => { render(<VendorScorer onBack={mockOnBack} />); const inputs = document.querySelectorAll('input, textarea, select'); expect(inputs.length).toBeGreaterThan(0); });
-  it('should have back button', () => { render(<VendorScorer onBack={mockOnBack} />); const backBtn = screen.getByText(/back|←/i); if (backBtn) fireEvent.click(backBtn); });
+  it('should have back button', () => { render(<VendorScorer onBack={mockOnBack} />); const backBtn = screen.getByTestId('icon-ArrowLeft').closest('button')!; fireEvent.click(backBtn); expect(mockOnBack).toHaveBeenCalled(); });
   it('should have generate button', () => { render(<VendorScorer onBack={mockOnBack} />); const buttons = screen.getAllByRole('button'); expect(buttons.length).toBeGreaterThan(0); });
 });

@@ -69,12 +69,14 @@ vi.mock('@/constants/tierLimits', () => ({
   UPGRADE_LINK: '/settings?tab=billing',
 }));
 
-const mockNextStep = vi.fn();
-const mockPrevStep = vi.fn();
-const mockSkipFlow = vi.fn();
-const mockCompleteFlow = vi.fn();
-const mockUpdatePreferences = vi.fn();
-const mockDismissCelebration = vi.fn();
+const { mockNextStep, mockPrevStep, mockSkipFlow, mockCompleteFlow, mockUpdatePreferences, mockDismissCelebration } = vi.hoisted(() => ({
+  mockNextStep: vi.fn(),
+  mockPrevStep: vi.fn(),
+  mockSkipFlow: vi.fn(),
+  mockCompleteFlow: vi.fn(),
+  mockUpdatePreferences: vi.fn(),
+  mockDismissCelebration: vi.fn(),
+}));
 
 vi.mock('@/hooks/useOnboarding', () => ({
   useOnboarding: vi.fn().mockReturnValue({

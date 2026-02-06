@@ -69,7 +69,9 @@ vi.mock('@/constants/tierLimits', () => ({
   UPGRADE_LINK: '/settings?tab=billing',
 }));
 
-const mockStartFlowForItem = vi.fn();
+const { mockStartFlowForItem } = vi.hoisted(() => ({
+  mockStartFlowForItem: vi.fn(),
+}));
 
 vi.mock('@/hooks/useOnboarding', () => ({
   useOnboarding: vi.fn().mockReturnValue({ isOnboarding: false }),
