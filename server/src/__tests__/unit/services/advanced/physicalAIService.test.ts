@@ -39,14 +39,12 @@ describe('PhysicalAIService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Re-establish mock implementations (cleared by resetMocks)
     const mqttService = require('../../../../services/advanced/mqttService').default;
     mqttService.getConnectionStatus.mockReturnValue(false);
     mqttService.subscribe.mockImplementation(() => {});
     mqttService.publish.mockImplementation(() => {});
     mqttService.connect.mockResolvedValue(undefined);
 
-    // Prisma mocks
     (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
     (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue(null);
     (prismaMock.ioTDevice.findMany as jest.Mock<any>).mockResolvedValue([]);
@@ -65,19 +63,16 @@ describe('PhysicalAIService', () => {
 
   describe('registerDevice', () => {
     it('should register a new IoT device', async () => {
-      (prismaMock.ioTDevice as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(null),
-        create: jest.fn<any>().mockResolvedValue({
-          id: 'device-uuid-1',
-          deviceId: 'sensor-001',
-          deviceType: 'temperature_sensor',
-          location: 'Server Room A',
-          complianceStatus: 'pending_review',
-          lastSeen: new Date(),
-          organizationId: orgId,
-        }),
-      };
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+      (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.ioTDevice.create as jest.Mock<any>).mockResolvedValue({
+        id: 'device-uuid-1',
+        deviceId: 'sensor-001',
+        deviceType: 'temperature_sensor',
+        location: 'Server Room A',
+        complianceStatus: 'pending_review',
+        lastSeen: new Date(),
+        organizationId: orgId,
+      });
 
       const result = await physicalAIService.registerDevice(
         orgId,
@@ -96,13 +91,11 @@ describe('PhysicalAIService', () => {
     });
 
     it('should reject duplicate device registration', async () => {
-      (prismaMock.ioTDevice as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue({
-          id: 'existing-device',
-          deviceId: 'sensor-001',
-          organizationId: orgId,
-        }),
-      };
+      (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue({
+        id: 'existing-device',
+        deviceId: 'sensor-001',
+        organizationId: orgId,
+      });
 
       await expect(
         physicalAIService.registerDevice(
@@ -118,11 +111,8 @@ describe('PhysicalAIService', () => {
     });
 
     it('should validate device certificates if provided', async () => {
-      (prismaMock.ioTDevice as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(null),
-      };
+      (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
-      // Expired certificate
       await expect(
         physicalAIService.registerDevice(
           orgId,
@@ -134,7 +124,7 @@ describe('PhysicalAIService', () => {
               type: 'x509',
               issuer: 'TestCA',
               validFrom: new Date('2020-01-01'),
-              validUntil: new Date('2021-01-01'), // Expired
+              validUntil: new Date('2021-01-01'),
               fingerprint: 'a'.repeat(40),
             }],
           },
@@ -162,11 +152,8 @@ describe('PhysicalAIService', () => {
         complianceChecks: [],
       };
 
-      (prismaMock.ioTDevice as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(mockDevice),
-        update: jest.fn<any>().mockResolvedValue(mockDevice),
-      };
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+      (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue(mockDevice);
+      (prismaMock.ioTDevice.update as jest.Mock<any>).mockResolvedValue(mockDevice);
 
       const result = await physicalAIService.performEdgeComplianceCheck(
         orgId,
@@ -178,9 +165,7 @@ describe('PhysicalAIService', () => {
     });
 
     it('should throw error if device not found', async () => {
-      (prismaMock.ioTDevice as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(null),
-      };
+      (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         physicalAIService.performEdgeComplianceCheck(orgId, 'nonexistent')
@@ -191,10 +176,7 @@ describe('PhysicalAIService', () => {
   describe('startHealthMonitoring', () => {
     it('should start health monitoring interval', () => {
       physicalAIService.startHealthMonitoring(60000);
-
       expect((physicalAIService as any).healthCheckInterval).toBeDefined();
-
-      // Clean up
       physicalAIService.shutdown();
     });
 
@@ -206,19 +188,16 @@ describe('PhysicalAIService', () => {
       const secondInterval = (physicalAIService as any).healthCheckInterval;
 
       expect(firstInterval).not.toBe(secondInterval);
-
       physicalAIService.shutdown();
     });
   });
 
   describe('getDevices', () => {
     it('should return all devices for an organization', async () => {
-      (prismaMock.ioTDevice as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([
-          { id: 'd-1', deviceId: 'sensor-001', deviceType: 'temp', complianceStatus: 'compliant' },
-          { id: 'd-2', deviceId: 'sensor-002', deviceType: 'camera', complianceStatus: 'non_compliant' },
-        ]),
-      };
+      (prismaMock.ioTDevice.findMany as jest.Mock<any>).mockResolvedValue([
+        { id: 'd-1', deviceId: 'sensor-001', deviceType: 'temp', complianceStatus: 'compliant' },
+        { id: 'd-2', deviceId: 'sensor-002', deviceType: 'camera', complianceStatus: 'non_compliant' },
+      ]);
 
       const result = await physicalAIService.getDevices(orgId);
 
@@ -235,11 +214,8 @@ describe('PhysicalAIService', () => {
         organizationId: orgId,
       };
 
-      (prismaMock.ioTDevice as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(mockDevice),
-        delete: jest.fn<any>().mockResolvedValue(mockDevice),
-      };
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+      (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue(mockDevice);
+      (prismaMock.ioTDevice.delete as jest.Mock<any>).mockResolvedValue(mockDevice);
 
       await expect(
         physicalAIService.deregisterDevice(orgId, 'sensor-001', userId)
@@ -247,9 +223,7 @@ describe('PhysicalAIService', () => {
     });
 
     it('should throw error if device not found', async () => {
-      (prismaMock.ioTDevice as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(null),
-      };
+      (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         physicalAIService.deregisterDevice(orgId, 'nonexistent', userId)
@@ -267,11 +241,8 @@ describe('PhysicalAIService', () => {
         complianceChecks: [],
       };
 
-      (prismaMock.ioTDevice as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(mockDevice),
-        update: jest.fn<any>().mockResolvedValue(mockDevice),
-      };
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+      (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue(mockDevice);
+      (prismaMock.ioTDevice.update as jest.Mock<any>).mockResolvedValue(mockDevice);
 
       const result = await physicalAIService.receiveSensorData(
         orgId,
@@ -285,18 +256,16 @@ describe('PhysicalAIService', () => {
 
   describe('getHealthDashboard', () => {
     it('should return health dashboard data', async () => {
-      (prismaMock.ioTDevice as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([
-          {
-            id: 'd-1',
-            deviceId: 'sensor-001',
-            lastSeen: new Date(),
-            complianceStatus: 'compliant',
-            sensorData: { battery: 85 },
-            complianceChecks: [{ status: 'pass', checkType: 'encryption' }],
-          },
-        ]),
-      };
+      (prismaMock.ioTDevice.findMany as jest.Mock<any>).mockResolvedValue([
+        {
+          id: 'd-1',
+          deviceId: 'sensor-001',
+          lastSeen: new Date(),
+          complianceStatus: 'compliant',
+          sensorData: { battery: 85 },
+          complianceChecks: [{ status: 'pass', checkType: 'encryption' }],
+        },
+      ]);
 
       const result = await physicalAIService.getHealthDashboard(orgId);
 
@@ -307,14 +276,11 @@ describe('PhysicalAIService', () => {
 
   describe('bulkRegisterDevices', () => {
     it('should register multiple devices', async () => {
-      (prismaMock.ioTDevice as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(null),
-        create: jest.fn<any>().mockImplementation((args: any) => Promise.resolve({
-          id: 'uuid-' + Math.random(),
-          ...args.data,
-        })),
-      };
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+      (prismaMock.ioTDevice.findFirst as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.ioTDevice.create as jest.Mock<any>).mockImplementation((args: any) => Promise.resolve({
+        id: 'uuid-' + Math.random(),
+        ...args.data,
+      }));
 
       const devices = [
         { deviceId: 's-001', deviceType: 'sensor', location: 'Room A' },

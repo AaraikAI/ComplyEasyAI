@@ -193,6 +193,16 @@ describe('BYOKService', () => {
     });
 
     it('should decrypt data using Azure Key Vault', async () => {
+      // Capture the DEK during encrypt so decrypt returns the same key
+      let capturedDek: Buffer | null = null;
+      mockCryptoEncrypt.mockImplementation(async (params: any) => {
+        capturedDek = Buffer.from(params.plaintext);
+        return { result: Buffer.alloc(32) };
+      });
+      mockCryptoDecrypt.mockImplementation(async () => {
+        return { result: capturedDek || Buffer.alloc(32) };
+      });
+
       const config = {
         provider: 'azure_kv' as const,
         keyId: 'test-key',
