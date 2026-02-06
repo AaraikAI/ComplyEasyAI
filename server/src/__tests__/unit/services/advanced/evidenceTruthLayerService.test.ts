@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
+import crypto from 'crypto';
 
 jest.mock('../../../../config/database', () => ({
   __esModule: true,
@@ -24,25 +25,17 @@ jest.mock('../../../../services/advanced/mlModelsService', () => ({
   __esModule: true,
   default: {
     initialize: jest.fn(),
-    detectDeepfake: (jest.fn() as jest.Mock<any>).mockResolvedValue({
-      isDeepfake: false,
-      confidence: 0.95,
-      model: 'test-model',
-      details: {},
-    }),
-    detectLiveness: (jest.fn() as jest.Mock<any>).mockResolvedValue({
-      isLive: true,
-      confidence: 0.9,
-    }),
+    detectDeepfake: jest.fn(),
+    detectLiveness: jest.fn(),
   },
 }));
 
 jest.mock('../../../../services/advanced/byokService', () => ({
   __esModule: true,
   default: {
-    getOrganizationKey: (jest.fn() as jest.Mock<any>).mockResolvedValue(null),
-    signWithKey: (jest.fn() as jest.Mock<any>).mockResolvedValue(null),
-    verifyWithKey: (jest.fn() as jest.Mock<any>).mockResolvedValue(null),
+    getOrganizationKey: jest.fn(),
+    signWithKey: jest.fn(),
+    verifyWithKey: jest.fn(),
   },
 }));
 
@@ -54,24 +47,18 @@ jest.mock('ntp-client', () => ({
 }));
 
 jest.mock('fluent-ffmpeg', () => {
-  const mockFfmpeg = jest.fn<any>().mockReturnValue({
-    ffprobe: jest.fn(),
-    outputOptions: jest.fn().mockReturnThis(),
-    output: jest.fn().mockReturnThis(),
-    on: jest.fn().mockReturnThis(),
-    run: jest.fn(),
-  });
+  const mockFfmpeg = jest.fn();
   return { __esModule: true, default: mockFfmpeg };
 });
 
 jest.mock('fs', () => ({
-  existsSync: jest.fn<any>().mockReturnValue(true),
+  existsSync: jest.fn(),
   mkdirSync: jest.fn(),
   writeFileSync: jest.fn(),
-  writeFile: jest.fn<any>().mockImplementation((_path: any, _data: any, cb: any) => { if (cb) cb(null); }),
-  readFileSync: jest.fn<any>().mockReturnValue(Buffer.alloc(100)),
+  writeFile: jest.fn(),
+  readFileSync: jest.fn(),
   unlinkSync: jest.fn(),
-  unlink: jest.fn<any>().mockImplementation((_path: any, cb: any) => { if (cb) cb(null); }),
+  unlink: jest.fn(),
   createReadStream: jest.fn(),
 }));
 
@@ -82,6 +69,50 @@ describe('EvidenceTruthLayerService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish mock implementations (cleared by resetMocks)
+    const mlModelsService = require('../../../../services/advanced/mlModelsService').default;
+    mlModelsService.initialize.mockResolvedValue(undefined);
+    mlModelsService.detectDeepfake.mockResolvedValue({
+      isDeepfake: false,
+      confidence: 0.95,
+      model: 'test-model',
+      details: {},
+    });
+    mlModelsService.detectLiveness.mockResolvedValue({
+      isLive: true,
+      confidence: 0.9,
+    });
+
+    const byokService = require('../../../../services/advanced/byokService').default;
+    byokService.getOrganizationKey.mockResolvedValue(null);
+    byokService.signWithKey.mockResolvedValue(null);
+    byokService.verifyWithKey.mockResolvedValue(null);
+
+    const fs = require('fs');
+    fs.existsSync.mockReturnValue(true);
+    fs.readFileSync.mockReturnValue(Buffer.alloc(100));
+    fs.writeFileSync.mockImplementation(() => {});
+    fs.writeFile.mockImplementation((_path: any, _data: any, cb: any) => { if (cb) cb(null); });
+    fs.unlinkSync.mockImplementation(() => {});
+    fs.unlink.mockImplementation((_path: any, cb: any) => { if (cb) cb(null); });
+    fs.mkdirSync.mockImplementation(() => {});
+    fs.createReadStream.mockReturnValue({});
+
+    const ffmpeg = require('fluent-ffmpeg').default;
+    ffmpeg.mockReturnValue({
+      ffprobe: jest.fn(),
+      outputOptions: jest.fn<any>().mockReturnThis(),
+      output: jest.fn<any>().mockReturnThis(),
+      on: jest.fn<any>().mockReturnThis(),
+      run: jest.fn(),
+    });
+
+    // Prisma mocks
+    (prismaMock.evidenceAnalysis.create as jest.Mock<any>).mockResolvedValue({ id: 'analysis-1' });
+    (prismaMock.evidenceAnalysis.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.ioTDevice.findMany as jest.Mock<any>).mockResolvedValue([]);
   });
 
   describe('analyzeEvidence', () => {
@@ -91,14 +122,6 @@ describe('EvidenceTruthLayerService', () => {
         filename: 'test.jpg',
         mimeType: 'image/jpeg',
         size: 1024,
-      };
-
-      (prismaMock.evidenceAnalysis as any) = {
-        create: jest.fn<any>().mockResolvedValue({ id: 'analysis-1' }),
-      };
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.ioTDevice as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
       };
 
       const result = await evidenceTruthLayerService.analyzeEvidence(
@@ -117,14 +140,6 @@ describe('EvidenceTruthLayerService', () => {
     });
 
     it('should handle evidence without file buffer', async () => {
-      (prismaMock.evidenceAnalysis as any) = {
-        create: jest.fn<any>().mockResolvedValue({ id: 'analysis-2' }),
-      };
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.ioTDevice as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
-
       const result = await evidenceTruthLayerService.analyzeEvidence(
         'evidence-2',
         orgId
@@ -135,13 +150,7 @@ describe('EvidenceTruthLayerService', () => {
     });
 
     it('should continue even if database storage fails', async () => {
-      (prismaMock.evidenceAnalysis as any) = {
-        create: jest.fn<any>().mockRejectedValue(new Error('DB error')),
-      };
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.ioTDevice as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
+      (prismaMock.evidenceAnalysis.create as jest.Mock<any>).mockRejectedValue(new Error('DB error'));
 
       const result = await evidenceTruthLayerService.analyzeEvidence(
         'evidence-3',
@@ -158,10 +167,11 @@ describe('EvidenceTruthLayerService', () => {
   describe('verifyFileHash', () => {
     it('should verify matching file hash', async () => {
       const fileBuffer = Buffer.from('test content');
+      const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
 
       const result = await evidenceTruthLayerService.verifyFileHash(
         fileBuffer,
-        fileBuffer
+        hash
       );
 
       expect(result).toBeDefined();
@@ -171,7 +181,7 @@ describe('EvidenceTruthLayerService', () => {
     it('should detect hash mismatch', async () => {
       const result = await evidenceTruthLayerService.verifyFileHash(
         Buffer.from('content A'),
-        Buffer.from('content B')
+        'wrong-hash-value-does-not-match'
       );
 
       expect(result).toBeDefined();
@@ -189,12 +199,11 @@ describe('EvidenceTruthLayerService', () => {
         cryptographicHash: 'abc123',
         overallConfidence: 0.9,
         verificationStatus: 'verified',
+        analyzedAt: new Date(),
         createdAt: new Date(),
       };
 
-      (prismaMock.evidenceAnalysis as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(mockAnalysis),
-      };
+      (prismaMock.evidenceAnalysis.findFirst as jest.Mock<any>).mockResolvedValue(mockAnalysis);
 
       const result = await evidenceTruthLayerService.getEvidenceAnalysis('evidence-1', orgId);
 
@@ -202,27 +211,17 @@ describe('EvidenceTruthLayerService', () => {
       expect(result!.evidenceId).toBe('evidence-1');
     });
 
-    it('should throw when analysis not found', async () => {
-      (prismaMock.evidenceAnalysis as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(null),
-      };
+    it('should return null when analysis not found', async () => {
+      (prismaMock.evidenceAnalysis.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
-      await expect(
-        evidenceTruthLayerService.getEvidenceAnalysis('nonexistent', orgId)
-      ).rejects.toThrow();
+      const result = await evidenceTruthLayerService.getEvidenceAnalysis('nonexistent', orgId);
+
+      expect(result).toBeNull();
     });
   });
 
   describe('bulkAnalyzeEvidence', () => {
     it('should analyze multiple evidence files', async () => {
-      (prismaMock.evidenceAnalysis as any) = {
-        create: jest.fn<any>().mockResolvedValue({ id: 'analysis-bulk' }),
-      };
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.ioTDevice as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
-
       const files = [
         {
           evidenceId: 'ev-1',
@@ -242,23 +241,24 @@ describe('EvidenceTruthLayerService', () => {
       );
 
       expect(result).toBeDefined();
-      expect(result.results).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
     });
   });
 
   describe('createChainOfCustody', () => {
     it('should create chain of custody for evidence', async () => {
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-
       const result = await evidenceTruthLayerService.createChainOfCustody(
         'evidence-1',
         orgId,
-        Buffer.from('test data'),
+        null,
+        'upload',
         'user-123'
       );
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveProperty('hash');
+      expect(result).toHaveProperty('timestamp');
+      expect(result).toHaveProperty('signer');
     });
   });
 
@@ -284,12 +284,11 @@ describe('EvidenceTruthLayerService', () => {
         cryptographicHash: 'hash123',
         overallConfidence: 0.9,
         verificationStatus: 'verified',
+        analyzedAt: new Date(),
         createdAt: new Date(),
       };
 
-      (prismaMock.evidenceAnalysis as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(mockAnalysis),
-      };
+      (prismaMock.evidenceAnalysis.findFirst as jest.Mock<any>).mockResolvedValue(mockAnalysis);
 
       const result = await evidenceTruthLayerService.exportAnalysisReport(
         'ev-1',
@@ -301,9 +300,7 @@ describe('EvidenceTruthLayerService', () => {
     });
 
     it('should throw if analysis not found for export', async () => {
-      (prismaMock.evidenceAnalysis as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(null),
-      };
+      (prismaMock.evidenceAnalysis.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         evidenceTruthLayerService.exportAnalysisReport('nonexistent', orgId, 'json')

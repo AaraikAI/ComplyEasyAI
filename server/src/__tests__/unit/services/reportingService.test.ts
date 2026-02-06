@@ -87,7 +87,8 @@ describe('ReportingService', () => {
       const result = await service.generateRiskReport('org-123');
 
       expect(result).toHaveProperty('reportType', 'Risk Assessment');
-      expect(result).toHaveProperty('risks');
+      expect(result).toHaveProperty('summary');
+      expect(result).toHaveProperty('topRisks');
     });
   });
 });

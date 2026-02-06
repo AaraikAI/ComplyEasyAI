@@ -59,6 +59,33 @@ import zeroKnowledgeService from '../../../../services/advanced/zeroKnowledgeSer
 describe('ZeroKnowledgeService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish mock implementations (cleared by resetMocks)
+    const snarkjs = require('snarkjs');
+    snarkjs.groth16.fullProve.mockResolvedValue({
+      proof: {
+        pi_a: ['1', '2'],
+        pi_b: [['3', '4'], ['5', '6']],
+        pi_c: ['7', '8'],
+      },
+      publicSignals: ['100', '200'],
+    });
+    snarkjs.groth16.verify.mockResolvedValue(true);
+    snarkjs.plonk.fullProve.mockResolvedValue({
+      proof: {
+        A: '1',
+        B: '2',
+        C: '3',
+      },
+      publicSignals: ['100', '200'],
+    });
+    snarkjs.plonk.verify.mockResolvedValue(true);
+
+    const fsMock = require('fs');
+    fsMock.existsSync.mockReturnValue(true);
+    fsMock.mkdirSync.mockImplementation(() => {});
+    fsMock.readFileSync.mockReturnValue('circuit-data');
+    fsMock.writeFileSync.mockImplementation(() => {});
   });
 
   describe('generateComplianceProof()', () => {

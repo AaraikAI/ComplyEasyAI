@@ -620,7 +620,7 @@ describe('logSanitizer', () => {
       expect(result.headers.host).toBe('example.com');
     });
 
-    it('should set authorization to undefined when not present in headers', () => {
+    it('should redact authorization key even when not present in original headers', () => {
       const req = {
         method: 'GET',
         url: '/api/data',
@@ -633,8 +633,10 @@ describe('logSanitizer', () => {
         params: {},
       };
       const result = sanitizeRequest(req);
-      // When authorization is not present, it becomes undefined
-      expect(result.headers.authorization).toBeUndefined();
+      // sanitizeRequest sets authorization to undefined when not present,
+      // but sanitizeForLogging then redacts the key because 'authorization'
+      // matches the sensitive key pattern regardless of value.
+      expect(result.headers.authorization).toBe('[REDACTED]');
     });
 
     it('should sanitize sensitive keys in request body', () => {

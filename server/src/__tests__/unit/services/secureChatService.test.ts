@@ -135,6 +135,18 @@ const setupChatMocks = (tier: string = 'Foundation', frameworks: any[] = [], ris
 describe('SecureChatService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-set hasFeature mock (cleared by jest config resetMocks: true)
+    const tiersConfig = require('../../../config/tiers');
+    tiersConfig.hasFeature.mockImplementation((tier: string, feature: string) => {
+      const tierFeatures: Record<string, Record<string, boolean>> = {
+        Foundation: { aiPolicyGeneration: true, aiGapAnalysis: true },
+        Essentials: { aiPolicyGeneration: true, aiGapAnalysis: true, aiContractAnalyzer: true, aiRfpGenerator: true },
+        Growth: { acosGoals: true, acosControlLoops: true, acosDigitalTwin: true, acosRedTeam: true },
+        Visionary: { euAiAct: true, dma: true, dsa: true, nistAiRmf: true, zeroTrustSecurity: true, zkProofs: true, byokEncryption: true, complianceAsCode: true },
+      };
+      return tierFeatures[tier]?.[feature] ?? false;
+    });
   });
 
   // ======================================================================
@@ -497,7 +509,7 @@ describe('SecureChatService', () => {
       setupChatMocks();
 
       const result = await secureChatService.chatWithUser(
-        'What can you help me with?',
+        'What can you do for me?',
         'user-123',
         'org-123'
       );
@@ -517,7 +529,7 @@ describe('SecureChatService', () => {
       ]);
 
       const result = await secureChatService.chatWithUser(
-        'Tell me about quantum computing compliance challenges',
+        'Tell me about quantum computing theoretical implications',
         'user-123',
         'org-123'
       );

@@ -65,6 +65,49 @@ describe('RegulatoryIntelligenceFabricService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish mock implementations (cleared by resetMocks)
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    GoogleGenerativeAI.mockImplementation(() => ({
+      getGenerativeModel: jest.fn<any>().mockReturnValue({
+        generateContent: mockGenerateContent,
+      }),
+    }));
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: jest.fn<any>().mockReturnValue(JSON.stringify({
+          requirements: ['Implement access controls', 'Maintain audit logs'],
+        })),
+      },
+    });
+
+    const axios = require('axios').default;
+    axios.get.mockResolvedValue({
+      data: '<html><body>Regulation text content</body></html>',
+    });
+
+    const { isUrlSafe } = require('../../../../utils/urlValidator');
+    isUrlSafe.mockReturnValue(true);
+
+    const notificationService = require('../../../../services/notificationService').default;
+    notificationService.sendNotification.mockResolvedValue(undefined);
+    notificationService.notifyAdmins.mockResolvedValue(undefined);
+
+    // Prisma mocks
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.frameworkControl.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.frameworkControl.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.user.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.regulatoryChange.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.regulatoryChange.findUnique as jest.Mock<any>).mockResolvedValue(null);
+    (prismaMock.regulatoryChange.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.regulatoryChange.update as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.regulatoryFeed.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.regulatoryFeed.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.regulatoryFeed.delete as jest.Mock<any>).mockResolvedValue({});
   });
 
   describe('ingestRegulation', () => {

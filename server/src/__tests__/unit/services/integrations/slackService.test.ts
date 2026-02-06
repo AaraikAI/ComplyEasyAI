@@ -5,19 +5,29 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
-// Mock Slack WebClient
-const mockChatPostMessage = jest.fn() as jest.Mock<any>;
-const mockConversationsList = jest.fn() as jest.Mock<any>;
+// Mock axios (the service uses axios, not @slack/web-api)
+const mockAxiosGet = jest.fn() as jest.Mock<any>;
+const mockAxiosPost = jest.fn() as jest.Mock<any>;
 
-jest.mock('@slack/web-api', () => ({
-  WebClient: (jest.fn() as jest.Mock<any>).mockImplementation(() => ({
-    chat: {
-      postMessage: mockChatPostMessage,
+jest.mock('axios', () => ({
+  __esModule: true,
+  default: {
+    get: mockAxiosGet,
+    post: mockAxiosPost,
+  },
+}));
+
+jest.mock('../../../../config', () => ({
+  __esModule: true,
+  default: {
+    oauth: {
+      slack: {
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        callbackUrl: 'http://localhost:3001/api/integrations/slack/callback',
+      },
     },
-    conversations: {
-      list: mockConversationsList,
-    },
-  })),
+  },
 }));
 
 jest.mock('../../../../config/logger', () => ({
@@ -25,6 +35,7 @@ jest.mock('../../../../config/logger', () => ({
   default: {
     info: jest.fn(),
     error: jest.fn(),
+    warn: jest.fn(),
   },
 }));
 
@@ -46,45 +57,58 @@ describe('SlackService', () => {
       const channel = '#compliance';
       const text = 'Test message';
 
-      prismaMock.integration.findFirst.mockResolvedValue({
+      // postMessage calls getIntegration -> prisma.integration.findUnique
+      prismaMock.integration.findUnique.mockResolvedValue({
         id: 'integration-123',
+        provider: 'slack',
+        connected: true,
         accessToken: 'xoxb-test-token',
       } as any);
 
-      mockChatPostMessage.mockResolvedValue({
-        ok: true,
-        ts: '1234567890.123456',
+      // postMessage uses axios.post to call Slack API
+      mockAxiosPost.mockResolvedValue({
+        data: {
+          ok: true,
+          channel: channel,
+          ts: '1234567890.123456',
+          message: { text: text },
+        },
       });
 
       const result = await slackService.postMessage(organizationId, channel, text);
 
-      expect(result).toHaveProperty('ok', true);
-      expect(result).toHaveProperty('ts');
+      expect(result).toHaveProperty('channel');
+      expect(result).toHaveProperty('timestamp');
     });
   });
 
   describe('listChannels()', () => {
     it('should list Slack channels', async () => {
-      const integrationId = 'integration-123';
+      const organizationId = 'org-123';
 
+      // listChannels calls getIntegration -> prisma.integration.findUnique
       prismaMock.integration.findUnique.mockResolvedValue({
-        id: integrationId,
+        id: 'integration-123',
+        provider: 'slack',
+        connected: true,
         accessToken: 'xoxb-test-token',
       } as any);
 
-      mockConversationsList.mockResolvedValue({
-        ok: true,
-        channels: [
-          { id: 'C123', name: 'general' },
-          { id: 'C456', name: 'compliance' },
-        ],
+      // listChannels calls makeRequest -> axios.get
+      mockAxiosGet.mockResolvedValue({
+        data: {
+          ok: true,
+          channels: [
+            { id: 'C123', name: 'general', is_private: false, is_member: true, num_members: 10, topic: { value: '' }, purpose: { value: '' }, created: 1609459200 },
+            { id: 'C456', name: 'compliance', is_private: false, is_member: true, num_members: 5, topic: { value: '' }, purpose: { value: '' }, created: 1609459200 },
+          ],
+        },
       });
 
-      const result = await slackService.listChannels(integrationId);
+      const result = await slackService.listChannels(organizationId);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(2);
     });
   });
 });
-

@@ -95,7 +95,8 @@ describe('MultiWorkspaceService', () => {
 
       const result = await service.getOrganizationHierarchy(organizationId);
 
-      expect(result).toHaveProperty('id', organizationId);
+      expect(result).toHaveProperty('current');
+      expect(result.current).toHaveProperty('id', organizationId);
     });
   });
 });
