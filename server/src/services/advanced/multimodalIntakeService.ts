@@ -17,6 +17,8 @@ import { FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision';
 import sharp from 'sharp';
 import ffmpeg from 'fluent-ffmpeg';
 import { promisify } from 'util';
+import deepfakeDetectionService, { DeepfakeAnalysisResult } from './deepfakeDetectionService';
+import livenessDetectionService, { LivenessResult, LivenessChallenge } from './livenessDetectionService';
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
@@ -1784,6 +1786,88 @@ class MultimodalIntakeService {
       // Return fallback text
       return '[PDF text extraction failed. Please review document manually.]';
     }
+  }
+
+  // ─── Production Deepfake Detection (FaceForensics++ Pipeline) ─────────
+
+  /**
+   * Analyze an image for deepfake manipulation using the production
+   * FaceForensics++ pipeline (frequency domain, facial consistency,
+   * blending artifact detection, compression analysis).
+   */
+  async detectDeepfakeImage(imageBuffer: Buffer): Promise<DeepfakeAnalysisResult> {
+    logger.info('[Multimodal] Running production deepfake detection on image');
+    return deepfakeDetectionService.analyzeImage(imageBuffer);
+  }
+
+  /**
+   * Analyze a video for deepfake manipulation using the production
+   * FaceForensics++ pipeline with temporal consistency analysis.
+   */
+  async detectDeepfakeVideo(
+    videoBuffer: Buffer,
+    format: string = 'mp4'
+  ): Promise<DeepfakeAnalysisResult> {
+    logger.info('[Multimodal] Running production deepfake detection on video');
+    return deepfakeDetectionService.analyzeVideo(videoBuffer, format);
+  }
+
+  /**
+   * Train the deepfake detection model with new labeled data.
+   */
+  async trainDeepfakeModel(
+    data: Array<{ features: number[]; label: number }>,
+    options?: { epochs?: number; batchSize?: number }
+  ): Promise<{ finalLoss: number; finalAccuracy: number }> {
+    logger.info(`[Multimodal] Training deepfake model with ${data.length} samples`);
+    return deepfakeDetectionService.trainClassifier(data, options);
+  }
+
+  // ─── Production Liveness Detection (MediaPipe / OpenCV) ─────────────
+
+  /**
+   * Verify liveness of a single image (eye blink, head pose, texture,
+   * depth, specular reflection analysis).
+   */
+  async verifyLivenessImage(
+    imageBuffer: Buffer,
+    sessionId?: string
+  ): Promise<LivenessResult> {
+    logger.info('[Multimodal] Running production liveness detection on image');
+    return livenessDetectionService.analyzeImage(imageBuffer, sessionId);
+  }
+
+  /**
+   * Verify liveness from a video stream (multi-frame blink pattern,
+   * head movement analysis, temporal texture consistency, motion naturalness).
+   */
+  async verifyLivenessVideo(
+    videoBuffer: Buffer,
+    format: string = 'mp4',
+    sessionId?: string
+  ): Promise<LivenessResult> {
+    logger.info('[Multimodal] Running production liveness detection on video');
+    return livenessDetectionService.analyzeVideo(videoBuffer, format, sessionId);
+  }
+
+  /**
+   * Create a challenge-response liveness verification (random actions
+   * such as blink, turn head, smile, etc.).
+   */
+  createLivenessChallenge(numActions: number = 3): LivenessChallenge {
+    return livenessDetectionService.createChallenge(numActions);
+  }
+
+  /**
+   * Verify a challenge-response liveness verification from video frames.
+   */
+  async verifyLivenessChallenge(
+    challengeId: string,
+    videoFrames: Array<{ buffer: Buffer; timestamp: number }>,
+    sessionId?: string
+  ): Promise<LivenessResult> {
+    logger.info(`[Multimodal] Verifying liveness challenge ${challengeId}`);
+    return livenessDetectionService.verifyChallengeResponse(challengeId, videoFrames, sessionId);
   }
 }
 

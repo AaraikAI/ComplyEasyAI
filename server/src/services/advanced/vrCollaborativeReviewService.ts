@@ -13,6 +13,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import crypto from 'crypto';
+import webrtcSignalingService, { WebRTCPeer, WebRTCSessionConfig } from './webrtcSignalingService';
 
 // VR Session Types
 export interface VRSession {
@@ -3327,19 +3328,113 @@ class VRCollaborativeReviewService {
     };
     return sizes[severity] || 0.3;
   }
-}
 
-interface SessionSummary {
-  sessionId: string;
-  sessionName: string;
-  sessionType: string;
-  duration: number;
-  participantCount: number;
-  frameworksReviewed: number;
-  controlsReviewed: number;
-  annotationsCreated: number;
-  decisionsRecorded: number;
-  actionItemsCreated: number;
+  // ─── Production WebRTC Signaling Integration ─────────────────────────
+
+  /**
+   * Attach the WebRTC signaling server to an HTTP server.
+   * Must be called during application bootstrap to enable real-time
+   * peer-to-peer audio/video and data channel communication.
+   */
+  attachWebRTCSignaling(httpServer: any): void {
+    webrtcSignalingService.attachToServer(httpServer);
+    logger.info('[VR Review] WebRTC signaling server attached');
+  }
+
+  /**
+   * Initialize a WebRTC session for a VR collaborative review.
+   * Creates peer connection management, ICE server config, and
+   * data channels for spatial audio, position sync, and annotations.
+   */
+  async initializeWebRTCSession(
+    sessionId: string,
+    options?: {
+      maxPeers?: number;
+      topology?: 'mesh' | 'sfu';
+    }
+  ): Promise<WebRTCSessionConfig> {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) throw new Error('VR session not found');
+
+    const config: WebRTCSessionConfig = {
+      sessionId,
+      maxPeers: options?.maxPeers || session.maxParticipants || 20,
+      topology: options?.topology || (session.participants.length > 6 ? 'sfu' : 'mesh'),
+      iceServers: webrtcSignalingService.getICEServers(),
+      mediaConstraints: {
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 },
+        },
+      },
+      dataChannels: [
+        { label: 'spatial-audio', ordered: true },
+        { label: 'position-sync', ordered: false, maxRetransmits: 0 },
+        { label: 'gesture-sync', ordered: false, maxRetransmits: 1 },
+        { label: 'annotation-sync', ordered: true },
+        { label: 'chat', ordered: true },
+      ],
+    };
+
+    webrtcSignalingService.createSession(config);
+    logger.info(`[VR Review] WebRTC session initialized for ${sessionId}`);
+    return config;
+  }
+
+  /**
+   * Get the connection status of all WebRTC peers in a VR session.
+   */
+  getWebRTCPeers(sessionId: string): WebRTCPeer[] {
+    return webrtcSignalingService.getSessionPeers(sessionId);
+  }
+
+  /**
+   * Get WebRTC connection quality metrics for a session.
+   */
+  getWebRTCQuality(sessionId: string): {
+    peers: Array<{
+      peerId: string;
+      userId: string;
+      connectionState: string;
+      rtt: number;
+      packetLoss: number;
+      jitter: number;
+    }>;
+    averageQuality: number;
+  } {
+    const peers = webrtcSignalingService.getSessionPeers(sessionId);
+    const peerStats = peers.map(p => ({
+      peerId: p.peerId,
+      userId: p.userId,
+      connectionState: p.connectionState,
+      rtt: p.quality.rtt,
+      packetLoss: p.quality.packetLoss,
+      jitter: p.quality.jitter,
+    }));
+
+    const connectedPeers = peers.filter(p => p.connectionState === 'connected');
+    const avgQuality = connectedPeers.length > 0
+      ? connectedPeers.reduce((sum, p) => {
+          const qualityScore = Math.max(0, 1 - (p.quality.packetLoss / 10) - (p.quality.rtt / 500) - (p.quality.jitter / 100));
+          return sum + qualityScore;
+        }, 0) / connectedPeers.length
+      : 0;
+
+    return { peers: peerStats, averageQuality: Math.max(0, Math.min(1, avgQuality)) };
+  }
+
+  /**
+   * Terminate all WebRTC connections for a VR session.
+   */
+  async terminateWebRTCSession(sessionId: string): Promise<void> {
+    webrtcSignalingService.destroySession(sessionId);
+    logger.info(`[VR Review] WebRTC session terminated for ${sessionId}`);
+  }
 }
 
 export default new VRCollaborativeReviewService();
