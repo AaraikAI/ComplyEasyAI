@@ -50,7 +50,7 @@ describe('Dashboard', () => {
       { id: '1', title: 'Data Breach Risk', severity: 'High' as any, status: 'Open' as any, description: 'test', category: 'Security' },
     ];
     render(<Dashboard {...defaultProps} risks={risks} />);
-    expect(screen.getByText(/risk/i)).toBeTruthy();
+    expect(screen.getAllByText(/risk/i).length).toBeGreaterThan(0);
   });
 
   it('should display compliance score', () => {
@@ -61,11 +61,11 @@ describe('Dashboard', () => {
       ]},
     ];
     render(<Dashboard {...defaultProps} frameworks={frameworks} />);
-    expect(screen.getByText(/50%|80%|\d+%/)).toBeTruthy();
+    expect(screen.getAllByText(/50%|80%|\d+%/).length).toBeGreaterThan(0);
   });
 
   it('should show chart section', () => {
     render(<Dashboard {...defaultProps} />);
-    expect(screen.getByText(/Compliance Readiness Trend/i)).toBeTruthy();
+    expect(screen.getAllByText(/Compliance Readiness Trend/i).length).toBeGreaterThan(0);
   });
 });

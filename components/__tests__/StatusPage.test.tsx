@@ -97,17 +97,17 @@ describe('StatusPage', () => {
 
   it('displays service status entries', () => {
     render(<StatusPage />);
-    expect(screen.getByText('Web Application')).toBeInTheDocument();
-    expect(screen.getByText('API Services')).toBeInTheDocument();
+    expect(screen.getAllByText('Web Application').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('API Services').length).toBeGreaterThan(0);
   });
 
   it('shows operational status indicators', () => {
     render(<StatusPage />);
-    expect(screen.getByText('Database Cluster')).toBeInTheDocument();
+    expect(screen.getAllByText('Database Cluster').length).toBeGreaterThan(0);
   });
 
   it('displays AI Processing Engine status', () => {
     render(<StatusPage />);
-    expect(screen.getByText('AI Processing Engine')).toBeInTheDocument();
+    expect(screen.getAllByText('AI Processing Engine').length).toBeGreaterThan(0);
   });
 });

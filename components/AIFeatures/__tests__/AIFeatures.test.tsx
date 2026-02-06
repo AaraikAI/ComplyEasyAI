@@ -24,6 +24,18 @@ vi.mock('../../../services/geminiService', () => ({
   generateBCP: vi.fn().mockResolvedValue({ plan: '# Recovery Plan', contactTree: [] })
 }));
 
+// Mock onboarding hooks
+vi.mock('../../../hooks/useOnboarding', () => ({
+  useOnboardingTrigger: vi.fn(),
+  useOnboarding: vi.fn().mockReturnValue({ isOnboarding: false }),
+  useOnboardingFlow: vi.fn().mockReturnValue({ isActive: false }),
+}));
+
+vi.mock('../../../contexts/OnboardingContext', () => ({
+  OnboardingProvider: ({ children }: any) => children,
+  useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true }),
+}));
+
 describe('AI Features', () => {
   beforeEach(() => {
     vi.clearAllMocks();

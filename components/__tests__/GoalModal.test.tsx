@@ -28,7 +28,7 @@ describe('GoalModal', () => {
 
   it('should render when open', () => {
     render(<GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
-    expect(screen.getByText(/goal/i)).toBeTruthy();
+    expect(screen.getAllByText(/goal/i).length).toBeGreaterThan(0);
   });
 
   it('should not render when closed', () => {

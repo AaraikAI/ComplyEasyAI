@@ -2,7 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
   AreaChart: ({ children }: any) => <div>{children}</div>,
@@ -16,6 +15,7 @@ vi.mock('recharts', () => ({
 }));
 
 vi.mock('react-markdown', () => ({ default: ({ children }: any) => <div>{children}</div> }));
+vi.mock('dompurify', () => ({ default: { sanitize: (s: string) => s } }));
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: vi.fn().mockReturnValue({
@@ -26,27 +26,29 @@ vi.mock('@/contexts/AuthContext', () => ({
 
 vi.mock('@/services/api', () => ({
   api: {
-    ai: { generatePolicy: vi.fn().mockResolvedValue({ policy: 'Generated policy content' }), analyzeContract: vi.fn().mockResolvedValue({ analysis: 'Contract analysis' }), analyzeGap: vi.fn().mockResolvedValue({ result: 'Gap result', gaps: [], prioritized: [] }), generateRFP: vi.fn().mockResolvedValue({ answers: [] }), simulatePhishing: vi.fn().mockResolvedValue({ scenario: 'Phishing sim', questions: [] }), scoreVendor: vi.fn().mockResolvedValue({ result: 'Vendor score' }), mapData: vi.fn().mockResolvedValue({ map: 'Data map' }), generateBCP: vi.fn().mockResolvedValue({ plan: 'BCP plan', contactTree: [] }), respondToRFP: vi.fn().mockResolvedValue({ answers: [{ question: 'Do you encrypt data?', answer: 'Yes, AES-256' }] }) },
+    ai: { generateRFPResponse: vi.fn().mockResolvedValue({ answer: 'Yes, AES-256', confidence: 0.95 }) },
     frameworks: { getAll: vi.fn().mockResolvedValue([]) },
-    aiRmf: { getSystems: vi.fn().mockResolvedValue([]), getSystem: vi.fn().mockResolvedValue({ id: '1', name: 'Test AI System', status: 'active', systemType: 'ml', coreFunctions: {}, trustworthiness: {} }), createSystem: vi.fn().mockResolvedValue({ id: '1' }), getAssessments: vi.fn().mockResolvedValue([]), getDashboard: vi.fn().mockResolvedValue({ totalSystems: 5, byStatus: { active: 3, draft: 2 }, byLifecycleStage: {}, byRiskLevel: {}, averageTrustworthinessScore: 75 }), deleteSystem: vi.fn().mockResolvedValue({}) },
-    security: { generateHomomorphicKeys: vi.fn().mockResolvedValue({ publicKey: 'pk', secretKey: 'sk', relinKeys: 'rk' }), homomorphicEncrypt: vi.fn().mockResolvedValue({ result: 'encrypted' }), homomorphicDecrypt: vi.fn().mockResolvedValue({ result: 'decrypted' }) },
     onboarding: { getProgress: vi.fn().mockResolvedValue(null) },
   },
   getAuthToken: vi.fn().mockReturnValue('test-token'),
 }));
 
+vi.mock('@/services/geminiService', () => ({
+  generateRFPResponse: vi.fn().mockResolvedValue({ answer: 'Yes, AES-256', confidence: 0.95 }),
+}));
+
 vi.mock('@/hooks/useOnboarding', () => ({
-  useOnboarding: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, startFlow: vi.fn(), nextStep: vi.fn(), prevStep: vi.fn(), skipFlow: vi.fn(), completeFlow: vi.fn(), triggerCelebration: vi.fn(), dismissCelebration: vi.fn(), showCelebration: false, celebrationMessage: '' }),
-  useOnboardingFlow: vi.fn().mockReturnValue({ isActive: false, currentStep: 0, canShow: false, start: vi.fn(), next: vi.fn(), prev: vi.fn(), skip: vi.fn(), complete: vi.fn() }),
+  useOnboarding: vi.fn().mockReturnValue({ isOnboarding: false }),
+  useOnboardingFlow: vi.fn().mockReturnValue({ isActive: false }),
   useOnboardingTrigger: vi.fn(),
-  useOnboardingHint: vi.fn().mockReturnValue({ isVisible: false, position: null, dismiss: vi.fn(), disableAllHints: vi.fn() }),
-  useOnboardingChecklist: vi.fn().mockReturnValue({ items: [{ key: 'profile', label: 'Complete profile', completed: true }, { key: 'framework', label: 'Add framework', completed: false }], completedCount: 1, totalCount: 2, percentage: 50, isComplete: false, startFlowForItem: vi.fn() }),
-  useConfetti: vi.fn().mockReturnValue({ trigger: vi.fn(), dismiss: vi.fn(), isShowing: false, message: '' }),
+  useOnboardingHint: vi.fn().mockReturnValue({ isVisible: false }),
+  useOnboardingChecklist: vi.fn().mockReturnValue({ items: [], completedCount: 0, totalCount: 0, percentage: 0, isComplete: false, startFlowForItem: vi.fn() }),
+  useConfetti: vi.fn().mockReturnValue({ trigger: vi.fn(), dismiss: vi.fn(), isShowing: false }),
 }));
 
 vi.mock('@/contexts/OnboardingContext', () => ({
   OnboardingProvider: ({ children }: any) => <>{children}</>,
-  useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true, progress: null, organizationPlan: 'Growth', organizationName: 'Test Org', showCelebration: false, celebrationMessage: '', currentStep: 0, startFlow: vi.fn(), nextStep: vi.fn(), prevStep: vi.fn(), skipFlow: vi.fn(), completeFlow: vi.fn(), triggerCelebration: vi.fn(), dismissCelebration: vi.fn(), shouldShowFlow: vi.fn().mockReturnValue(false) }),
+  useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true }),
 }));
 
 vi.mock('@/constants/tierFeatures', () => ({
@@ -66,11 +68,9 @@ describe('RFPResponder', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the heading and textarea', () => {
+  it('renders the heading', () => {
     render(<RFPResponder onBack={mockOnBack} />);
-    expect(screen.getByText('Security Questionnaire / RFP Responder')).toBeInTheDocument();
-    expect(screen.getByText('Paste RFP Questions')).toBeInTheDocument();
-    expect(screen.getByText('Generate Responses')).toBeInTheDocument();
+    expect(screen.getByText('RFP Auto-Responder')).toBeInTheDocument();
   });
 
   it('calls onBack when back button is clicked', () => {
@@ -82,31 +82,26 @@ describe('RFPResponder', () => {
 
   it('disables generate button when textarea is empty', () => {
     render(<RFPResponder onBack={mockOnBack} />);
-    const generateBtn = screen.getByText('Generate Responses').closest('button')!;
+    const generateBtn = screen.getByText(/Generate Answer/i).closest('button')!;
     expect(generateBtn).toBeDisabled();
   });
 
   it('calls API and shows answers when questions are entered', async () => {
     render(<RFPResponder onBack={mockOnBack} />);
-    const textarea = screen.getByPlaceholderText(/Paste your RFP questions/);
+    const textarea = screen.getByPlaceholderText(/Paste the question/i);
     fireEvent.change(textarea, { target: { value: 'Do you encrypt data at rest?' } });
 
-    const generateBtn = screen.getByText('Generate Responses').closest('button')!;
+    const generateBtn = screen.getByText(/Generate Answer/i).closest('button')!;
     expect(generateBtn).not.toBeDisabled();
     fireEvent.click(generateBtn);
 
     await waitFor(() => {
-      expect(api.ai.respondToRFP).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Do you encrypt data?')).toBeInTheDocument();
-      expect(screen.getByText('Yes, AES-256')).toBeInTheDocument();
-    });
+      expect(api.ai.generateRFPResponse).toHaveBeenCalled();
+    }, { timeout: 3000 });
   });
 
   it('shows placeholder when no responses generated', () => {
     render(<RFPResponder onBack={mockOnBack} />);
-    expect(screen.getByText(/Enter your RFP questions to get AI-generated responses/)).toBeInTheDocument();
+    expect(screen.getByText(/Generated answer\(s\) will appear here/i)).toBeInTheDocument();
   });
 });

@@ -227,6 +227,69 @@ vi.mock('lucide-react', () => ({
   Zap: mockIcon('Zap'),
 }));
 
+// Mock react-markdown globally
+vi.mock('react-markdown', () => ({
+  default: ({ children }: any) => React.createElement('div', { 'data-testid': 'markdown' }, children),
+}));
+
+// Mock dompurify globally
+vi.mock('dompurify', () => ({
+  default: { sanitize: (s: string) => s },
+}));
+
+// Mock OnboardingContext globally so components don't crash without provider
+vi.mock('@/contexts/OnboardingContext', () => ({
+  OnboardingProvider: ({ children }: any) => children,
+  useOnboardingContext: vi.fn().mockReturnValue({
+    isOnboarding: false,
+    currentFlow: null,
+    currentStep: 0,
+    isLoaded: true,
+    progress: null,
+    organizationPlan: 'Growth',
+    organizationName: 'Test Org',
+    showCelebration: false,
+    celebrationMessage: '',
+    startFlow: vi.fn(),
+    nextStep: vi.fn(),
+    prevStep: vi.fn(),
+    skipFlow: vi.fn(),
+    completeFlow: vi.fn(),
+    triggerCelebration: vi.fn(),
+    dismissCelebration: vi.fn(),
+    shouldShowFlow: vi.fn().mockReturnValue(false),
+    updatePreferences: vi.fn(),
+  }),
+}));
+
+// Mock useOnboarding hooks globally
+vi.mock('@/hooks/useOnboarding', () => ({
+  useOnboarding: vi.fn().mockReturnValue({
+    isOnboarding: false,
+    currentFlow: null,
+    currentStep: 0,
+    progress: { reducedMotion: false },
+    organizationPlan: 'Growth',
+    organizationName: 'Test Org',
+    nextStep: vi.fn(),
+    prevStep: vi.fn(),
+    skipFlow: vi.fn(),
+    completeFlow: vi.fn(),
+    updatePreferences: vi.fn(),
+    showCelebration: false,
+    celebrationMessage: '',
+    dismissCelebration: vi.fn(),
+  }),
+  useOnboardingFlow: vi.fn().mockReturnValue({ isActive: false, currentStep: 0, canShow: false, start: vi.fn(), next: vi.fn(), prev: vi.fn(), skip: vi.fn(), complete: vi.fn() }),
+  useOnboardingTrigger: vi.fn(),
+  useOnboardingHint: vi.fn().mockReturnValue({ isVisible: false, position: null, dismiss: vi.fn(), disableAllHints: vi.fn() }),
+  useOnboardingChecklist: vi.fn().mockReturnValue({ items: [], completedCount: 0, totalCount: 0, percentage: 0, isComplete: false, startFlowForItem: vi.fn() }),
+  useConfetti: vi.fn().mockReturnValue({ trigger: vi.fn(), dismiss: vi.fn(), isShowing: false, message: '' }),
+}));
+
+// Add scrollIntoView mock for jsdom
+Element.prototype.scrollIntoView = vi.fn();
+
 // Mock Recharts to avoid rendering complex SVG in JSDOM
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => React.createElement('div', { className: "recharts-responsive-container" }, children),

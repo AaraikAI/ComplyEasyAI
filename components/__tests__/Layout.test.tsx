@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import Layout from '../Layout';
+import { Layout } from '../Layout';
 
 
 vi.mock('@/contexts/AuthContext', () => ({
@@ -27,6 +27,16 @@ vi.mock('@/components/Onboarding', () => ({
   OnboardingChecklistWidget: () => <div data-testid="onboarding-checklist" />,
   OnboardingHint: () => null,
   OnboardingOverlay: () => null,
+}));
+
+vi.mock('@/services/api', () => ({
+  api: {
+    risks: { list: vi.fn().mockResolvedValue([]) },
+  },
+}));
+
+vi.mock('@/components/ComplianceChat', () => ({
+  ComplianceChat: () => <div data-testid="compliance-chat" />,
 }));
 
 describe('Layout', () => {
