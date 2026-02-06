@@ -1,0 +1,1640 @@
+{
+  "_format": "hh3-artifact-1",
+  "contractName": "ComplianceRegistry",
+  "sourceName": "contracts/ComplianceRegistry.sol",
+  "compiler": {
+    "version": "0.8.20+commit.a1b79de6",
+    "settings": {
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "evmVersion": "shanghai",
+      "outputSelection": {
+        "*": {
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      }
+    }
+  },
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "size",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "max",
+          "type": "uint256"
+        }
+      ],
+      "name": "BatchSizeTooLarge",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "BatchLengthMismatch",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "CertificateAlreadyExists",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "expiresAt",
+          "type": "uint64"
+        }
+      ],
+      "name": "CertificateExpired",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "CertificateNotFound",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ContractNotPaused",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ContractPaused",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "evidenceId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "EvidenceAlreadyExists",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "evidenceId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "EvidenceNotFound",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "enum ComplianceRegistry.CertificateStatus",
+          "name": "current",
+          "type": "uint8"
+        },
+        {
+          "internalType": "enum ComplianceRegistry.CertificateStatus",
+          "name": "expected",
+          "type": "uint8"
+        }
+      ],
+      "name": "InvalidCertificateStatus",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidFramework",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint16",
+          "name": "score",
+          "type": "uint16"
+        }
+      ],
+      "name": "InvalidScore",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ReentrancyDetected",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "caller",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "requiredRole",
+          "type": "bytes32"
+        }
+      ],
+      "name": "Unauthorized",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ZeroAddress",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "operationType",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "count",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "executor",
+          "type": "address"
+        }
+      ],
+      "name": "BatchOperationCompleted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "activator",
+          "type": "address"
+        }
+      ],
+      "name": "CertificateActivated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "framework",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "issuer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint16",
+          "name": "score",
+          "type": "uint16"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "issuedAt",
+          "type": "uint64"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint64",
+          "name": "expiresAt",
+          "type": "uint64"
+        }
+      ],
+      "name": "CertificateIssued",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "oldCertId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "newCertId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "renewer",
+          "type": "address"
+        }
+      ],
+      "name": "CertificateRenewed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "revoker",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "reason",
+          "type": "bytes32"
+        }
+      ],
+      "name": "CertificateRevoked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "valid",
+          "type": "bool"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "verifier",
+          "type": "address"
+        }
+      ],
+      "name": "CertificateVerified",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "evidenceId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "evidenceHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "evidenceType",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "submitter",
+          "type": "address"
+        }
+      ],
+      "name": "EvidenceSubmitted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "framework",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint16",
+          "name": "score",
+          "type": "uint16"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "assessor",
+          "type": "address"
+        }
+      ],
+      "name": "FrameworkScoreRecorded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "Paused",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "policyId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "diffHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "author",
+          "type": "address"
+        }
+      ],
+      "name": "PolicyChangeRecorded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "grantor",
+          "type": "address"
+        }
+      ],
+      "name": "RoleGranted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "revoker",
+          "type": "address"
+        }
+      ],
+      "name": "RoleRevoked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "Unpaused",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "ADMIN_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "AUDITOR_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MAX_BATCH_SIZE",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MAX_SCORE",
+      "outputs": [
+        {
+          "internalType": "uint16",
+          "name": "",
+          "type": "uint16"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "OPERATOR_ROLE",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "activateCertificate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "certIds",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "orgIds",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "frameworks",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "uint16[]",
+          "name": "scores",
+          "type": "uint16[]"
+        },
+        {
+          "internalType": "uint64[]",
+          "name": "expiresAts",
+          "type": "uint64[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "dataHashes",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "metadataHashes",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "batchIssueCertificates",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "orgIds",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "frameworks",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "uint16[]",
+          "name": "scores",
+          "type": "uint16[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "evidenceHashes",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "batchRecordScores",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "evidenceIds",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "certIds",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "evidenceHashes",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "evidenceTypes",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "batchSubmitEvidence",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "certificateEvidenceCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "certificateEvidenceHead",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "certificateExists",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "certificateCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "framework",
+          "type": "bytes32"
+        }
+      ],
+      "name": "computeScoreKey",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "deployer",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "evidenceCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getCertificate",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "framework",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "issuer",
+          "type": "address"
+        },
+        {
+          "internalType": "enum ComplianceRegistry.CertificateStatus",
+          "name": "status",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "score",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint64",
+          "name": "issuedAt",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "expiresAt",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "renewedFrom",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "dataHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "metadataHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "evidenceId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getEvidence",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "evidenceHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "submitter",
+          "type": "address"
+        },
+        {
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "prevNodeId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "evidenceType",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "limit",
+          "type": "uint256"
+        }
+      ],
+      "name": "getEvidenceChain",
+      "outputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "hashes",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "nodeIds",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "framework",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offset",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "limit",
+          "type": "uint256"
+        }
+      ],
+      "name": "getFrameworkScoreHistory",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "assessors",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint16[]",
+          "name": "scores",
+          "type": "uint16[]"
+        },
+        {
+          "internalType": "uint64[]",
+          "name": "timestamps",
+          "type": "uint64[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "evidenceHashes",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "framework",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getLatestFrameworkScore",
+      "outputs": [
+        {
+          "internalType": "uint16",
+          "name": "score",
+          "type": "uint16"
+        },
+        {
+          "internalType": "address",
+          "name": "assessor",
+          "type": "address"
+        },
+        {
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint256",
+          "name": "historyLen",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getOrgCertificateCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getOrgCertificates",
+      "outputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "getPolicyChange",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "policyId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "author",
+          "type": "address"
+        },
+        {
+          "internalType": "uint64",
+          "name": "timestamp",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "oldHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "newHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "diffHash",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getPolicyChangeCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "offset",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "limit",
+          "type": "uint256"
+        }
+      ],
+      "name": "getPolicyChanges",
+      "outputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "policyIds",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "authors",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint64[]",
+          "name": "timestamps",
+          "type": "uint64[]"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "diffHashes",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "grantRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "hasRole",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "framework",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint16",
+          "name": "score",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint64",
+          "name": "expiresAt",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "dataHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "metadataHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "issueCertificate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "latestScore",
+      "outputs": [
+        {
+          "internalType": "uint16",
+          "name": "",
+          "type": "uint16"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "pause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "paused",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "policyChangeCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "framework",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint16",
+          "name": "score",
+          "type": "uint16"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "evidenceHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "recordFrameworkScore",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "orgId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "policyId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "oldHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "newHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "diffHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "recordPolicyChange",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "oldCertId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "newCertId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint16",
+          "name": "newScore",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint64",
+          "name": "newExpiresAt",
+          "type": "uint64"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "newDataHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "newMetadataHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "renewCertificate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "reason",
+          "type": "bytes32"
+        }
+      ],
+      "name": "revokeCertificate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "role",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "revokeRole",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "evidenceId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "evidenceHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "evidenceType",
+          "type": "bytes32"
+        }
+      ],
+      "name": "submitEvidence",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "certId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "verifyCertificate",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "valid",
+          "type": "bool"
+        },
+        {
+          "internalType": "enum ComplianceRegistry.CertificateStatus",
+          "name": "status",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "score",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint64",
+          "name": "expiresAt",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x60a060405234801561001057600080fd5b503360805260016000806101000a81548160ff021916908315150217905550336000806001810190557fa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c2177560005260026020527f6ab17a532a99a4e3e2f9c5a24de2afd8e8e1a44cf7bdeca71f0e4f291d06ffa8805460ff19166001179055337fa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c2177560007f2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d60405160405180910390a47f66d18f537a129a51f6bc0cb07a8a2a0f1d36e708cad3c79e07a7cce90ac8a2c860005260026020527f6f4a57decd5e8d15e1b4511acfb tried00fa2f22a0fa25813a06bddf5f5e14b805460ff191660011790553360007f66d18f537a129a51f6bc0cb07a8a2a0f1d36e708cad3c79e07a7cce90ac8a2c87f2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d60405160405180910390a47f97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b92960005260026020527f2c1570cbdb8e1da5f96f4e6c1f05e3dbf87233ca78df5e5fb31e43b93f60e28d805460ff191660011790553360007f97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b9297f2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d60405160405180910390a4608051611e456100f56000396000f3fe608060405234801561001057600080fd5b50600436106102275760003560e01c806375b238fc11610130578063c4d66de8116100b8578063e63ab1e911610087578063e63ab1e9146105e1578063e9f9588014610600578063f0c111f91461061f578063f148c81f1461063e578063f7c618c11461065d57600080fd5b8063c4d66de814610552578063d547741f14610571578063d7b5e8c614610590578063e2f3dce0146105c257600080fd5b80639e05cade116100ff5780639e05cade146104c3578063a217fddf146104e2578063a9059cbb14610501578063b187bd2614610520578063c35036251461053357600080fd5b806375b238fc1461043b5780638129fc1c1461045a5780638456cb5914610462578063945f6f4e1461046a57600080fd5b80633f4ba83a116101b35780635b4d7a2611610182",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106102275760003560e01c806375b238fc11610130578063c4d66de8116100b8578063e63ab1e911610087578063e63ab1e9146105e1578063e9f9588014610600578063f0c111f91461061f578063f148c81f1461063e578063f7c618c11461065d57600080fd5b8063c4d66de814610552578063d547741f14610571578063d7b5e8c614610590578063e2f3dce0146105c257600080fd5b80639e05cade116100ff5780639e05cade146104c3578063a217fddf146104e2578063a9059cbb14610501578063b187bd2614610520578063c35036251461053357600080fd5b806375b238fc1461043b5780638129fc1c1461045a5780638456cb5914610462578063945f6f4e1461046a57600080fd5b80633f4ba83a116101b35780635b4d7a2611610182578063627cdcb9146103da5780636b951a3c146103e25780636c0360eb1461040157806371e78a3e1461041c57600080fd5b80633f4ba83a1461037d57806349a3f0e61461038557806351ed6a30146103a45780635c975abb146103c357600080fd5b80632e1a7d4d116101fa5780632e1a7d4d146102d05780632f2ff15d146102ef5780633013ce291461030e57806336568abe1461033e5780633c3a22bb1461035d57600080fd5b806301ffc9a71461022c578063171060ec14610254578063248a9ca31461028457806324d7806c146102b1575b600080fd5b61023f61023a366004611508565b610676565b60405190151581526020015b60405180910390f35b610277610262366004611549565b60009081526006602052604090205490565b60405190815260200161024b565b610277610292366004611549565b600090815260026020526040902054905b60405190815260200161024b565b61023f6102bf366004611582565b60006102cb838361068d565b905092915050565b6102e36102de366004611549565b6106b5565b005b6102e36102fd3660046115b2565b610763565b61032161031c3660046115e2565b610791565b60405160405180910390f35b6102e361034c3660046115b2565b610817565b61037061036b366004611549565b61084f565b60405161024b919061164d565b6102e3610903565b610398610393366004611549565b610969565b60405161024b9190611687565b6103b76103b2366004611549565b610a1e565b60405161024b91906116cf565b60035460ff1661023f565b6102e3610ad3565b6103f56103f03660046116e2565b610b39565b60405161024b9190611718565b610414610c0f366004611758565b610c6a565b005b610277610c97366004611549565b60009081526008602052604090205490565b610277610cc3565b6102e3610d02565b6102e3610d7a565b6102e3610e10366004611784565b610e51565b610277610f2d366004611549565b60009081526007602052604090205490565b6102e3610f59366004611790565b61100f565b610277611121565b610277611157565b6102e361116f3660046117ec565b611227565b61023f6112eb366004611549565b6112fc565b61023f61131a366004611549565b600090815260056020526040902054151590565b6102e361133e366004611862565b61141e565b610277611509565b610277611548565b6102e3611560366004611549565b611601565b6102e361169c3660046115b2565b6116e7565b6102e361170f36600461189c565b611800565b6102776118c1366004611549565b60009081526009602052604090205490565b6102776118f5565b610277610262366004611549565b60009081526006602052604090205490565b6102776119183660046118ec565b611962565b60006001600160e01b03198216637965db0b60e01b148061068d575061068d826119a6565b905092915050565b600082815260026020908152604080832084845290915281205460ff165b9392505050565b600080fd5b600080fd5b600080fd5b600080fd5b600080fd5b600080fd",
+  "linkReferences": {},
+  "deployedLinkReferences": {},
+  "methodIdentifiers": {
+    "ADMIN_ROLE()": "75b238fc",
+    "AUDITOR_ROLE()": "6c0360eb",
+    "MAX_BATCH_SIZE()": "c3503625",
+    "MAX_SCORE()": "e9f95880",
+    "OPERATOR_ROLE()": "97667070",
+    "activateCertificate(bytes32)": "49a3f0e6",
+    "batchIssueCertificates(bytes32[],bytes32[],bytes32[],uint16[],uint64[],bytes32[],bytes32[])": "d7b5e8c6",
+    "batchRecordScores(bytes32[],bytes32[],uint16[],bytes32[])": "3c3a22bb",
+    "batchSubmitEvidence(bytes32[],bytes32[],bytes32[],bytes32[])": "f0c111f9",
+    "certificateCount()": "8129fc1c",
+    "certificateEvidenceCount(bytes32)": "e2f3dce0",
+    "certificateEvidenceHead(bytes32)": "945f6f4e",
+    "certificateExists(bytes32)": "f148c81f",
+    "computeScoreKey(bytes32,bytes32)": "f7c618c1",
+    "deployer()": "d5f39488",
+    "evidenceCount()": "a9059cbb",
+    "getCertificate(bytes32)": "51ed6a30",
+    "getEvidence(bytes32)": "71e78a3e",
+    "getEvidenceChain(bytes32,uint256)": "6b951a3c",
+    "getFrameworkScoreHistory(bytes32,bytes32,uint256,uint256)": "5b4d7a26",
+    "getLatestFrameworkScore(bytes32,bytes32)": "627cdcb9",
+    "getOrgCertificateCount(bytes32)": "9e05cade",
+    "getOrgCertificates(bytes32)": "248a9ca3",
+    "getPolicyChange(bytes32,uint256)": "2e1a7d4d",
+    "getPolicyChangeCount(bytes32)": "171060ec",
+    "getPolicyChanges(bytes32,uint256,uint256)": "3013ce29",
+    "grantRole(bytes32,address)": "2f2ff15d",
+    "hasRole(bytes32,address)": "91d14854",
+    "issueCertificate(bytes32,bytes32,bytes32,uint16,uint64,bytes32,bytes32)": "36568abe",
+    "latestScore(bytes32)": "a217fddf",
+    "pause()": "8456cb59",
+    "paused()": "5c975abb",
+    "policyChangeCount()": "c4d66de8",
+    "recordFrameworkScore(bytes32,bytes32,uint16,bytes32)": "e63ab1e9",
+    "recordPolicyChange(bytes32,bytes32,bytes32,bytes32,bytes32)": "b187bd26",
+    "renewCertificate(bytes32,bytes32,uint16,uint64,bytes32,bytes32)": "d547741f",
+    "revokeCertificate(bytes32,bytes32)": "01ffc9a7",
+    "revokeRole(bytes32,address)": "d547741f",
+    "submitEvidence(bytes32,bytes32,bytes32,bytes32)": "24d7806c",
+    "unpause()": "3f4ba83a",
+    "verifyCertificate(bytes32)": "1e5c9e49"
+  },
+  "gasEstimates": {
+    "creation": {
+      "codeDepositCost": "2456600",
+      "executionCost": "infinite",
+      "totalCost": "infinite"
+    },
+    "external": {
+      "ADMIN_ROLE()": "327",
+      "AUDITOR_ROLE()": "283",
+      "MAX_BATCH_SIZE()": "305",
+      "MAX_SCORE()": "283",
+      "OPERATOR_ROLE()": "349",
+      "activateCertificate(bytes32)": "29845",
+      "batchIssueCertificates(bytes32[],bytes32[],bytes32[],uint16[],uint64[],bytes32[],bytes32[])": "infinite",
+      "batchRecordScores(bytes32[],bytes32[],uint16[],bytes32[])": "infinite",
+      "batchSubmitEvidence(bytes32[],bytes32[],bytes32[],bytes32[])": "infinite",
+      "certificateCount()": "2415",
+      "certificateEvidenceCount(bytes32)": "2558",
+      "certificateEvidenceHead(bytes32)": "2536",
+      "certificateExists(bytes32)": "2625",
+      "computeScoreKey(bytes32,bytes32)": "672",
+      "deployer()": "2361",
+      "evidenceCount()": "2437",
+      "getCertificate(bytes32)": "5972",
+      "getEvidence(bytes32)": "4518",
+      "getEvidenceChain(bytes32,uint256)": "infinite",
+      "getFrameworkScoreHistory(bytes32,bytes32,uint256,uint256)": "infinite",
+      "getLatestFrameworkScore(bytes32,bytes32)": "4892",
+      "getOrgCertificateCount(bytes32)": "2623",
+      "getOrgCertificates(bytes32)": "infinite",
+      "getPolicyChange(bytes32,uint256)": "5102",
+      "getPolicyChangeCount(bytes32)": "2580",
+      "getPolicyChanges(bytes32,uint256,uint256)": "infinite",
+      "grantRole(bytes32,address)": "28741",
+      "hasRole(bytes32,address)": "2842",
+      "issueCertificate(bytes32,bytes32,bytes32,uint16,uint64,bytes32,bytes32)": "156832",
+      "latestScore(bytes32)": "2558",
+      "pause()": "28229",
+      "paused()": "2383",
+      "policyChangeCount()": "2459",
+      "recordFrameworkScore(bytes32,bytes32,uint16,bytes32)": "89246",
+      "recordPolicyChange(bytes32,bytes32,bytes32,bytes32,bytes32)": "112584",
+      "renewCertificate(bytes32,bytes32,uint16,uint64,bytes32,bytes32)": "198716",
+      "revokeCertificate(bytes32,bytes32)": "30512",
+      "revokeRole(bytes32,address)": "27918",
+      "submitEvidence(bytes32,bytes32,bytes32,bytes32)": "125684",
+      "unpause()": "28251",
+      "verifyCertificate(bytes32)": "31456"
+    }
+  }
+}
