@@ -29,9 +29,15 @@ const fillStep1 = () => {
   fireEvent.change(screen.getByPlaceholderText('Confirm your password'), { target: { value: VALID_PASSWORD } });
 };
 
+const submitCurrentForm = () => {
+  // Use fireEvent.submit on the form to bypass HTML5 required attribute validation in jsdom
+  const forms = document.querySelectorAll('form');
+  const form = forms[forms.length - 1]; // get the currently visible form
+  fireEvent.submit(form);
+};
+
 const submitForm = () => {
-  const continueBtn = screen.getByText('Continue');
-  fireEvent.click(continueBtn);
+  submitCurrentForm();
 };
 
 describe('SignupPage', () => {
@@ -114,7 +120,9 @@ describe('SignupPage', () => {
       fireEvent.change(screen.getByPlaceholderText('Create a strong password'), { target: { value: VALID_PASSWORD } });
       fireEvent.change(screen.getByPlaceholderText('Confirm your password'), { target: { value: 'DifferentP@ss1234' } });
       submitForm();
-      expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
+      // Both the inline warning and form error show "Passwords do not match"
+      const matches = screen.getAllByText('Passwords do not match');
+      expect(matches.length).toBeGreaterThanOrEqual(1);
     });
 
     it('shows inline mismatch warning while typing confirm password', () => {
@@ -189,14 +197,14 @@ describe('SignupPage', () => {
 
     it('shows error if full name is empty', () => {
       goToStep2();
-      submitForm();
+      submitCurrentForm();
       expect(screen.getByText('Please enter your full name')).toBeInTheDocument();
     });
 
     it('shows error if organization name is empty', () => {
       goToStep2();
       fireEvent.change(screen.getByPlaceholderText('John Smith'), { target: { value: 'John Smith' } });
-      submitForm();
+      submitCurrentForm();
       expect(screen.getByText('Please enter your organization name')).toBeInTheDocument();
     });
 
@@ -347,7 +355,9 @@ describe('SignupPage', () => {
     it('shows trial details section', () => {
       goToStep4();
       expect(screen.getByText('3-Day Free Trial')).toBeInTheDocument();
-      expect(screen.getByText('No credit card required')).toBeInTheDocument();
+      // "No credit card required" may appear in both features sidebar and trial details
+      const matches = screen.getAllByText('No credit card required');
+      expect(matches.length).toBeGreaterThanOrEqual(1);
     });
 
     it('shows Terms of Service checkbox', () => {

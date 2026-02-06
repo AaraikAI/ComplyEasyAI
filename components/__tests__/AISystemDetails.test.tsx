@@ -10,7 +10,8 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
-const mockSystem = {
+const { mockSystem } = vi.hoisted(() => {
+  const mockSystem = {
   id: 'sys-1',
   name: 'Test AI System',
   description: 'A machine learning system',
@@ -58,6 +59,8 @@ const mockSystem = {
     { id: 'ac-2', name: 'Compliance Officer', role: 'Reviewer', actorType: 'Reviewer', user: null, responsibilities: [], involvementStages: [] },
   ],
 };
+  return { mockSystem };
+});
 
 vi.mock('@/services/api', () => ({
   api: {

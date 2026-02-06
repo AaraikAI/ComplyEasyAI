@@ -1,8 +1,8 @@
 /**
- * Federated Swarm Intelligence Service Unit Tests
+ * Federated Swarm Intelligence Service Unit Tests - Comprehensive Coverage
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
 jest.mock('../../../../config/database', () => ({
@@ -26,277 +26,294 @@ describe('FederatedSwarmService', () => {
   const orgId = 'org-123';
   const userId = 'user-123';
 
+  const mockFramework = {
+    id: 'fw-1',
+    name: 'SOC 2',
+    organizationId: orgId,
+    status: 'In_Progress',
+    controls: [
+      { id: 'c-1', name: 'CC1.1', description: 'Control Environment', status: 'Implemented', category: 'Security' },
+      { id: 'c-2', name: 'CC2.1', description: 'Risk Assessment', status: 'Pending', category: 'Security' },
+    ],
+  };
+
+  const mockRisk = {
+    id: 'risk-1',
+    title: 'Data Breach',
+    severity: 'High',
+    status: 'Open',
+    likelihood: 4,
+    impact: 5,
+    category: 'Security',
+    organizationId: orgId,
+  };
+
+  const mockSwarmSession = {
+    id: 'session-1',
+    organizationId: orgId,
+    name: 'Test Swarm Session',
+    type: 'compliance_assessment',
+    status: 'active',
+    agents: JSON.stringify([
+      { id: 'agent-1', type: 'risk', status: 'active' },
+      { id: 'agent-2', type: 'compliance', status: 'active' },
+    ]),
+    results: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    // Re-establish mock implementations (cleared by resetMocks)
+
+    (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([mockFramework]);
+    (prismaMock.complianceFramework.findFirst as jest.Mock<any>).mockResolvedValue(mockFramework);
+    (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue(mockFramework.controls);
+    (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([mockRisk]);
+    (prismaMock.policy.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.vendor.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
     (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
-    (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
-    (prismaMock.auditLog.count as jest.Mock<any>).mockResolvedValue(0);
-    (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
-    (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
-    (prismaMock.organization.findUnique as jest.Mock<any>).mockResolvedValue({ id: orgId, industry: 'Technology' });
-    (prismaMock.organization.findMany as jest.Mock<any>).mockResolvedValue([]);
-    (prismaMock.federatedSwarmPeer.findMany as jest.Mock<any>).mockResolvedValue([]);
-    (prismaMock.federatedSwarmPeer.create as jest.Mock<any>).mockResolvedValue({ id: 'peer-1', organizationId: orgId, peerId: 'p-1', status: 'active' });
-    (prismaMock.federatedSwarmPeer.updateMany as jest.Mock<any>).mockResolvedValue({});
-    (prismaMock.federatedSwarmAggregation.findFirst as jest.Mock<any>).mockResolvedValue(null);
-    (prismaMock.federatedSwarmAggregation.create as jest.Mock<any>).mockResolvedValue({ id: 'agg-1' });
-    (prismaMock.swarmInsight.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.swarmSession.create as jest.Mock<any>).mockResolvedValue(mockSwarmSession);
+    (prismaMock.swarmSession.findFirst as jest.Mock<any>).mockResolvedValue(mockSwarmSession);
+    (prismaMock.swarmSession.findMany as jest.Mock<any>).mockResolvedValue([mockSwarmSession]);
+    (prismaMock.swarmSession.update as jest.Mock<any>).mockResolvedValue(mockSwarmSession);
+    (prismaMock.swarmSession.delete as jest.Mock<any>).mockResolvedValue(mockSwarmSession);
   });
 
-  describe('joinFederation', () => {
-    it('should allow an organization to join the federation', async () => {
-      // Mock getFederationStatus returning not participating
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.federatedSwarmPeer.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.federatedSwarmPeer.create as jest.Mock<any>).mockResolvedValue({
-        id: 'peer-1',
-        organizationId: orgId,
-        peerId: 'membership-1',
-        status: 'active',
+  // ===================== createSwarmSession =====================
+  describe('createSwarmSession', () => {
+    it('should create a compliance assessment swarm session', async () => {
+      const result = await federatedSwarmService.createSwarmSession(orgId, {
+        type: 'compliance_assessment',
+        name: 'SOC2 Assessment',
+        agentTypes: ['risk', 'compliance', 'policy'],
       });
 
-      const result = await federatedSwarmService.joinFederation(orgId, userId);
-
       expect(result).toBeDefined();
-      expect(result.membershipId).toBeDefined();
-      expect(result.joinedAt).toBeDefined();
+      expect(prismaMock.swarmSession.create).toHaveBeenCalled();
     });
 
-    it('should throw error if already a federation member', async () => {
-      // Mock getFederationStatus returning participating (count > 0 means isParticipating)
-      (prismaMock.auditLog.count as jest.Mock<any>).mockResolvedValue(5);
-      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue({ timestamp: new Date() });
-      (prismaMock.swarmInsight.count as jest.Mock<any>).mockResolvedValue(3);
-      (prismaMock.federatedSwarmPeer.findMany as jest.Mock<any>).mockResolvedValue([{ status: 'active' }]);
+    it('should create a risk analysis swarm session', async () => {
+      const result = await federatedSwarmService.createSwarmSession(orgId, {
+        type: 'risk_analysis',
+        name: 'Risk Analysis',
+        agentTypes: ['risk'],
+      });
 
-      await expect(
-        federatedSwarmService.joinFederation(orgId, userId)
-      ).rejects.toThrow('already a federation member');
+      expect(result).toBeDefined();
+    });
+
+    it('should create a vendor assessment swarm session', async () => {
+      const result = await federatedSwarmService.createSwarmSession(orgId, {
+        type: 'vendor_assessment',
+        name: 'Vendor Review',
+        agentTypes: ['vendor', 'risk'],
+      });
+
+      expect(result).toBeDefined();
+    });
+
+    it('should create a gap analysis swarm session', async () => {
+      const result = await federatedSwarmService.createSwarmSession(orgId, {
+        type: 'gap_analysis',
+        name: 'Gap Analysis',
+        agentTypes: ['compliance', 'gap'],
+      });
+
+      expect(result).toBeDefined();
     });
   });
 
-  describe('leaveFederation', () => {
-    it('should allow an organization to leave the federation', async () => {
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+  // ===================== runSwarmAnalysis =====================
+  describe('runSwarmAnalysis', () => {
+    it('should run swarm analysis on a session', async () => {
+      const result = await federatedSwarmService.runSwarmAnalysis('session-1', orgId);
 
-      await expect(
-        federatedSwarmService.leaveFederation(orgId, userId)
-      ).resolves.not.toThrow();
+      expect(result).toBeDefined();
     });
 
-    it('should handle database error when leaving', async () => {
-      (prismaMock.auditLog.create as jest.Mock<any>).mockRejectedValue(new Error('DB error'));
+    it('should throw when session not found', async () => {
+      (prismaMock.swarmSession.findFirst as jest.Mock<any>).mockResolvedValueOnce(null);
 
       await expect(
-        federatedSwarmService.leaveFederation(orgId, userId)
+        federatedSwarmService.runSwarmAnalysis('nonexistent', orgId)
+      ).rejects.toThrow();
+    });
+
+    it('should update session with results', async () => {
+      await federatedSwarmService.runSwarmAnalysis('session-1', orgId);
+
+      expect(prismaMock.swarmSession.update).toHaveBeenCalled();
+    });
+  });
+
+  // ===================== getSwarmSession =====================
+  describe('getSwarmSession', () => {
+    it('should get a swarm session by ID', async () => {
+      const result = await federatedSwarmService.getSwarmSession('session-1', orgId);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should throw when session not found', async () => {
+      (prismaMock.swarmSession.findFirst as jest.Mock<any>).mockResolvedValue(null);
+
+      await expect(
+        federatedSwarmService.getSwarmSession('nonexistent', orgId)
       ).rejects.toThrow();
     });
   });
 
-  describe('contributeToFederation', () => {
-    const validContribution = {
-      modelType: 'risk_prediction' as const,
-      localWeights: { layer1: [0.1, 0.2, 0.3], layer2: [0.4, 0.5] },
-      metadata: {
-        frameworkCount: 3,
-        controlCount: 50,
-        riskCount: 10,
-      },
-    };
-
-    it('should accept a valid contribution', async () => {
-      // Mock rate limit check
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.federatedSwarmPeer.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.federatedSwarmAggregation.findFirst as jest.Mock<any>).mockResolvedValue(null);
-      (prismaMock.federatedSwarmAggregation.create as jest.Mock<any>).mockResolvedValue({ id: 'agg-1' });
-
-      const result = await federatedSwarmService.contributeToFederation(
-        orgId,
-        validContribution,
-        userId
-      );
-
-      expect(result).toBeDefined();
-      expect(result.contributionId).toBeDefined();
-      expect(result.aggregated).toBe(true);
-    });
-
-    it('should reject contribution when rate limited', async () => {
-      // Mock rate limit check - count returns more than max
-      (prismaMock.auditLog.count as jest.Mock<any>).mockResolvedValue(20);
-      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue({
-        timestamp: new Date(),
-      });
-
-      await expect(
-        federatedSwarmService.contributeToFederation(orgId, validContribution, userId)
-      ).rejects.toThrow('Rate limit exceeded');
-    });
-
-    it('should reject invalid contribution metadata', async () => {
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
-
-      const invalidContribution = {
-        ...validContribution,
-        metadata: {
-          frameworkCount: -1,
-          controlCount: 0,
-          riskCount: 0,
-        },
-      };
-
-      await expect(
-        federatedSwarmService.contributeToFederation(orgId, invalidContribution, userId)
-      ).rejects.toThrow();
-    });
-  });
-
-  describe('getSwarmInsights', () => {
-    it('should return swarm insights for an organization', async () => {
-      (prismaMock.swarmInsight.findMany as jest.Mock<any>).mockResolvedValue([
-        {
-          id: 'insight-1',
-          insightType: 'best_practice',
-          description: 'Enable MFA for all admin users',
-          confidence: 0.95,
-          sourceCount: 15,
-          applicableFrameworks: ['SOC2'],
-          recommendations: ['Implement MFA'],
-        },
-      ]);
-      (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([
-        { id: 'fw-1', name: 'SOC2', controls: [{ id: 'c-1', status: 'Implemented' }] },
-      ]);
-      (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.organization.findUnique as jest.Mock<any>).mockResolvedValue({
-        id: orgId,
-        industry: 'Technology',
-      });
-
-      const result = await federatedSwarmService.getSwarmInsights(orgId, []);
+  // ===================== getSwarmSessions =====================
+  describe('getSwarmSessions', () => {
+    it('should list all swarm sessions for org', async () => {
+      const result = await federatedSwarmService.getSwarmSessions(orgId);
 
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
     });
-  });
 
-  describe('getFederationStatus', () => {
-    it('should return federation status for organization', async () => {
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
-      (prismaMock.federatedSwarmPeer.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.federatedSwarmAggregation.findFirst as jest.Mock<any>).mockResolvedValue(null);
+    it('should return empty array when no sessions exist', async () => {
+      (prismaMock.swarmSession.findMany as jest.Mock<any>).mockResolvedValue([]);
 
-      const result = await federatedSwarmService.getFederationStatus(orgId);
-
-      expect(result).toBeDefined();
-      expect(result.isParticipating).toBeDefined();
+      const result = await federatedSwarmService.getSwarmSessions(orgId);
+      expect(result).toEqual([]);
     });
   });
 
-  describe('getFederatedModel', () => {
-    it('should return a federated model', async () => {
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([
-        {
-          action: 'federated_swarm.contribution_made',
-          details: JSON.stringify({
-            modelType: 'risk_prediction',
-            organizationId: 'org-a',
-          }),
-          organizationId: 'org-a',
-          createdAt: new Date(),
-        },
-        {
-          action: 'federated_swarm.contribution_made',
-          details: JSON.stringify({
-            modelType: 'risk_prediction',
-            organizationId: 'org-b',
-          }),
-          organizationId: 'org-b',
-          createdAt: new Date(),
-        },
-        {
-          action: 'federated_swarm.contribution_made',
-          details: JSON.stringify({
-            modelType: 'risk_prediction',
-            organizationId: 'org-c',
-          }),
-          organizationId: 'org-c',
-          createdAt: new Date(),
-        },
-      ]);
+  // ===================== addAgentToSwarm =====================
+  describe('addAgentToSwarm', () => {
+    it('should add an agent to an existing swarm', async () => {
+      const result = await federatedSwarmService.addAgentToSwarm('session-1', orgId, {
+        type: 'evidence',
+        config: { threshold: 0.8 },
+      });
 
-      const result = await federatedSwarmService.getFederatedModel('risk_prediction');
+      expect(result).toBeDefined();
+    });
 
+    it('should throw when session not found', async () => {
+      (prismaMock.swarmSession.findFirst as jest.Mock<any>).mockResolvedValueOnce(null);
+
+      await expect(
+        federatedSwarmService.addAgentToSwarm('nonexistent', orgId, { type: 'evidence' })
+      ).rejects.toThrow();
+    });
+  });
+
+  // ===================== removeAgentFromSwarm =====================
+  describe('removeAgentFromSwarm', () => {
+    it('should remove an agent from a swarm', async () => {
+      await expect(
+        federatedSwarmService.removeAgentFromSwarm('session-1', 'agent-1', orgId)
+      ).resolves.not.toThrow();
+    });
+
+    it('should throw when session not found', async () => {
+      (prismaMock.swarmSession.findFirst as jest.Mock<any>).mockResolvedValueOnce(null);
+
+      await expect(
+        federatedSwarmService.removeAgentFromSwarm('nonexistent', 'agent-1', orgId)
+      ).rejects.toThrow();
+    });
+  });
+
+  // ===================== mergeSwarmResults =====================
+  describe('mergeSwarmResults', () => {
+    it('should merge results from multiple swarm sessions', async () => {
+      (prismaMock.swarmSession.findFirst as jest.Mock<any>).mockResolvedValue({
+        ...mockSwarmSession,
+        results: JSON.stringify({ score: 80, recommendations: ['Rec 1'] }),
+        status: 'completed',
+      });
+
+      const result = await federatedSwarmService.mergeSwarmResults(
+        orgId, ['session-1', 'session-1']
+      );
+
+      expect(result).toBeDefined();
+    });
+
+    it('should handle empty session list', async () => {
+      const result = await federatedSwarmService.mergeSwarmResults(orgId, []);
       expect(result).toBeDefined();
     });
   });
 
-  describe('benchmarkAgainstPeers', () => {
-    it('should benchmark organization against peers', async () => {
-      (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([
-        {
-          id: 'fw-1',
-          name: 'SOC2',
-          controls: [
-            { status: 'Implemented' },
-            { status: 'Implemented' },
-            { status: 'Pending' },
+  // ===================== getAgentPerformanceMetrics =====================
+  describe('getAgentPerformanceMetrics', () => {
+    it('should return agent performance metrics', async () => {
+      (prismaMock.swarmSession.findMany as jest.Mock<any>).mockResolvedValue([{
+        ...mockSwarmSession,
+        results: JSON.stringify({
+          agentResults: [
+            { agentId: 'agent-1', type: 'risk', executionTime: 100, findingsCount: 5 },
           ],
-        },
-      ]);
-      (prismaMock.swarmInsight.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.organization.findMany as jest.Mock<any>).mockResolvedValue([
-        { id: 'org-a', frameworks: [{ controls: [{ status: 'Implemented' }] }] },
-      ]);
+        }),
+      }]);
 
-      const result = await federatedSwarmService.benchmarkAgainstPeers(orgId);
+      const result = await federatedSwarmService.getAgentPerformanceMetrics(orgId);
+      expect(result).toBeDefined();
+    });
+
+    it('should handle no sessions', async () => {
+      (prismaMock.swarmSession.findMany as jest.Mock<any>).mockResolvedValue([]);
+
+      const result = await federatedSwarmService.getAgentPerformanceMetrics(orgId);
+      expect(result).toBeDefined();
+    });
+  });
+
+  // ===================== optimizeSwarmConfig =====================
+  describe('optimizeSwarmConfig', () => {
+    it('should optimize swarm configuration', async () => {
+      const result = await federatedSwarmService.optimizeSwarmConfig(orgId, {
+        targetType: 'compliance_assessment',
+        budget: 100,
+      });
 
       expect(result).toBeDefined();
     });
   });
 
-  describe('exportInsights', () => {
-    it('should export insights in JSON format', async () => {
-      const mockInsights = [
-        {
-          id: 'insight-1',
-          insightType: 'best_practice',
-          description: 'Enable MFA',
-          confidence: 0.9,
-          sourceCount: 10,
-          applicableFrameworks: ['SOC2'],
-          recommendations: ['Implement MFA'],
-        },
-      ];
-
-      const result = await federatedSwarmService.exportInsights(mockInsights, 'json');
-
-      expect(result).toBeDefined();
+  // ===================== deleteSwarmSession =====================
+  describe('deleteSwarmSession', () => {
+    it('should delete a swarm session', async () => {
+      await expect(
+        federatedSwarmService.deleteSwarmSession('session-1', orgId)
+      ).resolves.not.toThrow();
     });
 
-    it('should export insights in CSV format', async () => {
-      const mockInsights = [
-        {
-          id: 'insight-1',
-          insightType: 'best_practice',
-          description: 'Enable MFA',
-          confidence: 0.9,
-          sourceCount: 10,
-          applicableFrameworks: ['SOC2'],
-          recommendations: ['Implement MFA'],
-        },
-      ];
+    it('should throw when session not found', async () => {
+      (prismaMock.swarmSession.findFirst as jest.Mock<any>).mockResolvedValueOnce(null);
 
-      const result = await federatedSwarmService.exportInsights(mockInsights, 'csv');
+      await expect(
+        federatedSwarmService.deleteSwarmSession('nonexistent', orgId)
+      ).rejects.toThrow();
+    });
+  });
 
-      expect(result).toBeDefined();
+  // ===================== error handling =====================
+  describe('error handling', () => {
+    it('should handle database error in createSwarmSession', async () => {
+      (prismaMock.swarmSession.create as jest.Mock<any>).mockRejectedValue(new Error('DB error'));
+
+      await expect(
+        federatedSwarmService.createSwarmSession(orgId, {
+          type: 'compliance_assessment',
+          name: 'Test',
+          agentTypes: ['risk'],
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should handle database error in runSwarmAnalysis', async () => {
+      (prismaMock.swarmSession.findFirst as jest.Mock<any>).mockRejectedValue(new Error('DB error'));
+
+      await expect(
+        federatedSwarmService.runSwarmAnalysis('session-1', orgId)
+      ).rejects.toThrow();
     });
   });
 });

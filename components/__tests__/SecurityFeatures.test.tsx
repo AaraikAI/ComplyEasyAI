@@ -12,20 +12,27 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
-// API mock functions
-const getZeroTrustPolicies = vi.fn().mockResolvedValue([]);
-const getDeviceTrusts = vi.fn().mockResolvedValue([]);
-const createZeroTrustPolicy = vi.fn().mockResolvedValue({ id: 'p1' });
-const verifyDeviceTrust = vi.fn().mockResolvedValue({ deviceId: 'dev1', trustScore: 85, isTrusted: true });
-const getZKProofs = vi.fn().mockResolvedValue([]);
-const generateComplianceProof = vi.fn().mockResolvedValue({ proofId: 'proof-1', proof: { data: 'abc' } });
-const generateCredentialProof = vi.fn().mockResolvedValue({ proofId: 'cred-1', isValid: true, proof: { data: 'xyz' } });
-const generateOwnershipProof = vi.fn().mockResolvedValue({ proofId: 'own-1', isValid: true, proof: { data: 'def' } });
-const getBYOKKeys = vi.fn().mockResolvedValue([]);
-const generateBYOKKey = vi.fn().mockResolvedValue({ keyId: 'key-1', region: 'us-east-1' });
-const getCompliancePolicies = vi.fn().mockResolvedValue([]);
-const getComplianceReports = vi.fn().mockResolvedValue([]);
-const createCompliancePolicy = vi.fn().mockResolvedValue({ id: 'cp1', name: 'Test Policy', framework: 'SOC2', severity: 'high', rego: 'package test' });
+// Hoisted mock functions
+const {
+  getZeroTrustPolicies, getDeviceTrusts, createZeroTrustPolicy, verifyDeviceTrust,
+  getZKProofs, generateComplianceProof, generateCredentialProof, generateOwnershipProof,
+  getBYOKKeys, generateBYOKKey,
+  getCompliancePolicies, getComplianceReports, createCompliancePolicy,
+} = vi.hoisted(() => ({
+  getZeroTrustPolicies: vi.fn(),
+  getDeviceTrusts: vi.fn(),
+  createZeroTrustPolicy: vi.fn(),
+  verifyDeviceTrust: vi.fn(),
+  getZKProofs: vi.fn(),
+  generateComplianceProof: vi.fn(),
+  generateCredentialProof: vi.fn(),
+  generateOwnershipProof: vi.fn(),
+  getBYOKKeys: vi.fn(),
+  generateBYOKKey: vi.fn(),
+  getCompliancePolicies: vi.fn(),
+  getComplianceReports: vi.fn(),
+  createCompliancePolicy: vi.fn(),
+}));
 
 vi.mock('@/services/api', () => ({
   api: {
@@ -56,6 +63,20 @@ describe('SecurityFeatures', () => {
     vi.clearAllMocks();
     vi.spyOn(window, 'alert').mockImplementation(() => {});
     sessionStorage.clear();
+    // Set default mock implementations
+    getZeroTrustPolicies.mockResolvedValue([]);
+    getDeviceTrusts.mockResolvedValue([]);
+    createZeroTrustPolicy.mockResolvedValue({ id: 'p1' });
+    verifyDeviceTrust.mockResolvedValue({ deviceId: 'dev1', trustScore: 85, isTrusted: true });
+    getZKProofs.mockResolvedValue([]);
+    generateComplianceProof.mockResolvedValue({ proofId: 'proof-1', proof: { data: 'abc' } });
+    generateCredentialProof.mockResolvedValue({ proofId: 'cred-1', isValid: true, proof: { data: 'xyz' } });
+    generateOwnershipProof.mockResolvedValue({ proofId: 'own-1', isValid: true, proof: { data: 'def' } });
+    getBYOKKeys.mockResolvedValue([]);
+    generateBYOKKey.mockResolvedValue({ keyId: 'key-1', region: 'us-east-1' });
+    getCompliancePolicies.mockResolvedValue([]);
+    getComplianceReports.mockResolvedValue([]);
+    createCompliancePolicy.mockResolvedValue({ id: 'cp1', name: 'Test Policy', framework: 'SOC2', severity: 'high', rego: 'package test' });
   });
 
   // ---------------------------------------------------------------------------
