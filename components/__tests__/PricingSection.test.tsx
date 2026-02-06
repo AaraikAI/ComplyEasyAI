@@ -2,12 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
@@ -98,21 +92,21 @@ describe('PricingSection', () => {
 
   it('renders without crashing', () => {
     render(<PricingSection />);
-    expect(screen.getByText(/Foundation/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Foundation/i).length).toBeGreaterThan(0);
   });
 
   it('displays all tier names', () => {
     render(<PricingSection />);
-    expect(screen.getByText(/Foundation/i)).toBeInTheDocument();
-    expect(screen.getByText(/Essentials/i)).toBeInTheDocument();
-    expect(screen.getByText(/Growth/i)).toBeInTheDocument();
-    expect(screen.getByText(/Visionary/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Foundation/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Essentials/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Growth/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Visionary/i).length).toBeGreaterThan(0);
   });
 
   it('shows billing cycle toggle between monthly and annual', () => {
     render(<PricingSection />);
-    expect(screen.getByText(/Annual/i)).toBeInTheDocument();
-    expect(screen.getByText(/Monthly/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Annual/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Monthly/i).length).toBeGreaterThan(0);
   });
 
   it('calls onSelectTier when a tier is selected', () => {

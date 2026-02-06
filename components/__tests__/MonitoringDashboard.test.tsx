@@ -2,12 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
@@ -99,7 +93,7 @@ describe('MonitoringDashboard', () => {
   it('renders without crashing', async () => {
     render(<MonitoringDashboard />);
     await waitFor(() => {
-      expect(screen.getByText(/Continuous Monitoring|Monitor/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Continuous Monitoring|Monitor/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -114,7 +108,7 @@ describe('MonitoringDashboard', () => {
   it('shows dashboard view by default', async () => {
     render(<MonitoringDashboard />);
     await waitFor(() => {
-      expect(screen.getByText(/Continuous Monitoring|Monitor/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Continuous Monitoring|Monitor/i).length).toBeGreaterThan(0);
     });
   });
 });

@@ -30,12 +30,17 @@ jest.mock('../../../../services/advanced/physicalAIService', () => ({
 
 // Mock mqtt module
 const mockMqttClient = {
-  on: jest.fn<any>().mockReturnThis(),
+  on: jest.fn<any>().mockImplementation(function (this: any, event: string, cb: (...args: any[]) => void) {
+    if (event === 'connect') {
+      setTimeout(() => cb(), 5);
+    }
+    return mockMqttClient;
+  }),
   once: jest.fn<any>().mockImplementation(function (this: any, event: string, cb: (...args: any[]) => void) {
     if (event === 'connect') {
       setTimeout(() => cb(), 10);
     }
-    return this;
+    return mockMqttClient;
   }),
   subscribe: jest.fn<any>().mockImplementation((_topic: string, cb: (err: Error | null) => void) => {
     cb(null);
@@ -64,12 +69,17 @@ describe('MQTTService', () => {
     const mqtt = require('mqtt');
     mqtt.connect.mockReturnValue(mockMqttClient);
 
-    mockMqttClient.on.mockReturnThis();
+    mockMqttClient.on.mockImplementation(function (this: any, event: string, cb: (...args: any[]) => void) {
+      if (event === 'connect') {
+        setTimeout(() => cb(), 5);
+      }
+      return mockMqttClient;
+    });
     mockMqttClient.once.mockImplementation(function (this: any, event: string, cb: (...args: any[]) => void) {
       if (event === 'connect') {
         setTimeout(() => cb(), 10);
       }
-      return this;
+      return mockMqttClient;
     });
     mockMqttClient.subscribe.mockImplementation((_topic: string, cb: (err: Error | null) => void) => {
       cb(null);

@@ -51,15 +51,13 @@ describe('FederatedSwarmService', () => {
       (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
       (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.federatedSwarmPeer as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-        create: jest.fn<any>().mockResolvedValue({
-          id: 'peer-1',
-          organizationId: orgId,
-          peerId: 'membership-1',
-          status: 'active',
-        }),
-      };
+      (prismaMock.federatedSwarmPeer.findMany as jest.Mock<any>).mockResolvedValue([]);
+      (prismaMock.federatedSwarmPeer.create as jest.Mock<any>).mockResolvedValue({
+        id: 'peer-1',
+        organizationId: orgId,
+        peerId: 'membership-1',
+        status: 'active',
+      });
 
       const result = await federatedSwarmService.joinFederation(orgId, userId);
 
@@ -69,18 +67,11 @@ describe('FederatedSwarmService', () => {
     });
 
     it('should throw error if already a federation member', async () => {
-      // Mock getFederationStatus returning participating
-      (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([
-        {
-          action: 'federated_swarm.joined',
-          details: JSON.stringify({ membershipId: 'existing' }),
-          createdAt: new Date(),
-        },
-      ]);
-      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
-      (prismaMock.federatedSwarmPeer as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([{ status: 'active' }]),
-      };
+      // Mock getFederationStatus returning participating (count > 0 means isParticipating)
+      (prismaMock.auditLog.count as jest.Mock<any>).mockResolvedValue(5);
+      (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue({ timestamp: new Date() });
+      (prismaMock.swarmInsight.count as jest.Mock<any>).mockResolvedValue(3);
+      (prismaMock.federatedSwarmPeer.findMany as jest.Mock<any>).mockResolvedValue([{ status: 'active' }]);
 
       await expect(
         federatedSwarmService.joinFederation(orgId, userId)
@@ -121,13 +112,9 @@ describe('FederatedSwarmService', () => {
       // Mock rate limit check
       (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
-      (prismaMock.federatedSwarmPeer as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
-      (prismaMock.federatedSwarmAggregation as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(null),
-        create: jest.fn<any>().mockResolvedValue({ id: 'agg-1' }),
-      };
+      (prismaMock.federatedSwarmPeer.findMany as jest.Mock<any>).mockResolvedValue([]);
+      (prismaMock.federatedSwarmAggregation.findFirst as jest.Mock<any>).mockResolvedValue(null);
+      (prismaMock.federatedSwarmAggregation.create as jest.Mock<any>).mockResolvedValue({ id: 'agg-1' });
 
       const result = await federatedSwarmService.contributeToFederation(
         orgId,
@@ -172,19 +159,17 @@ describe('FederatedSwarmService', () => {
 
   describe('getSwarmInsights', () => {
     it('should return swarm insights for an organization', async () => {
-      (prismaMock.swarmInsight as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([
-          {
-            id: 'insight-1',
-            insightType: 'best_practice',
-            description: 'Enable MFA for all admin users',
-            confidence: 0.95,
-            sourceCount: 15,
-            applicableFrameworks: ['SOC2'],
-            recommendations: ['Implement MFA'],
-          },
-        ]),
-      };
+      (prismaMock.swarmInsight.findMany as jest.Mock<any>).mockResolvedValue([
+        {
+          id: 'insight-1',
+          insightType: 'best_practice',
+          description: 'Enable MFA for all admin users',
+          confidence: 0.95,
+          sourceCount: 15,
+          applicableFrameworks: ['SOC2'],
+          recommendations: ['Implement MFA'],
+        },
+      ]);
       (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([
         { id: 'fw-1', name: 'SOC2', controls: [{ id: 'c-1', status: 'Implemented' }] },
       ]);
@@ -194,7 +179,7 @@ describe('FederatedSwarmService', () => {
         industry: 'Technology',
       });
 
-      const result = await federatedSwarmService.getSwarmInsights(orgId);
+      const result = await federatedSwarmService.getSwarmInsights(orgId, []);
 
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
@@ -205,12 +190,8 @@ describe('FederatedSwarmService', () => {
     it('should return federation status for organization', async () => {
       (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
       (prismaMock.auditLog.findFirst as jest.Mock<any>).mockResolvedValue(null);
-      (prismaMock.federatedSwarmPeer as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
-      (prismaMock.federatedSwarmAggregation as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(null),
-      };
+      (prismaMock.federatedSwarmPeer.findMany as jest.Mock<any>).mockResolvedValue([]);
+      (prismaMock.federatedSwarmAggregation.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       const result = await federatedSwarmService.getFederationStatus(orgId);
 
@@ -270,9 +251,7 @@ describe('FederatedSwarmService', () => {
           ],
         },
       ]);
-      (prismaMock.swarmInsight as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
+      (prismaMock.swarmInsight.findMany as jest.Mock<any>).mockResolvedValue([]);
       (prismaMock.organization.findMany as jest.Mock<any>).mockResolvedValue([
         { id: 'org-a', frameworks: [{ controls: [{ status: 'Implemented' }] }] },
       ]);
@@ -285,25 +264,37 @@ describe('FederatedSwarmService', () => {
 
   describe('exportInsights', () => {
     it('should export insights in JSON format', async () => {
-      (prismaMock.swarmInsight as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
-      (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
+      const mockInsights = [
+        {
+          id: 'insight-1',
+          insightType: 'best_practice',
+          description: 'Enable MFA',
+          confidence: 0.9,
+          sourceCount: 10,
+          applicableFrameworks: ['SOC2'],
+          recommendations: ['Implement MFA'],
+        },
+      ];
 
-      const result = await federatedSwarmService.exportInsights(orgId, 'json');
+      const result = await federatedSwarmService.exportInsights(mockInsights, 'json');
 
       expect(result).toBeDefined();
     });
 
     it('should export insights in CSV format', async () => {
-      (prismaMock.swarmInsight as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
-      (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
+      const mockInsights = [
+        {
+          id: 'insight-1',
+          insightType: 'best_practice',
+          description: 'Enable MFA',
+          confidence: 0.9,
+          sourceCount: 10,
+          applicableFrameworks: ['SOC2'],
+          recommendations: ['Implement MFA'],
+        },
+      ];
 
-      const result = await federatedSwarmService.exportInsights(orgId, 'csv');
+      const result = await federatedSwarmService.exportInsights(mockInsights, 'csv');
 
       expect(result).toBeDefined();
     });

@@ -2,12 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
@@ -89,7 +83,7 @@ vi.mock('@/contexts/OnboardingContext', () => ({
   useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true, showCelebration: false }),
 }));
 
-import { PolicyManagement } from '@/components/PolicyManagement';
+import PolicyManagement from '@/components/PolicyManagement';
 
 describe('PolicyManagement', () => {
   beforeEach(() => {
@@ -99,21 +93,21 @@ describe('PolicyManagement', () => {
   it('renders without crashing', async () => {
     render(<PolicyManagement />);
     await waitFor(() => {
-      expect(screen.getByText(/Policy|Policies/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Policy|Policies/i).length).toBeGreaterThan(0);
     });
   });
 
   it('shows dashboard view by default', async () => {
     render(<PolicyManagement />);
     await waitFor(() => {
-      expect(screen.getByText(/Policy|Policies/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Policy|Policies/i).length).toBeGreaterThan(0);
     });
   });
 
   it('displays policy management header', async () => {
     render(<PolicyManagement />);
     await waitFor(() => {
-      expect(screen.getByText(/Policy/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Policy/i).length).toBeGreaterThan(0);
     });
   });
 });

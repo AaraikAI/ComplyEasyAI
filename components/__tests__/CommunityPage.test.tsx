@@ -2,12 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
@@ -98,21 +92,21 @@ describe('CommunityPage', () => {
 
   it('renders without crashing', () => {
     render(<CommunityPage />);
-    expect(screen.getByText(/Community/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Community/i).length).toBeGreaterThan(0);
   });
 
   it('displays forum posts', () => {
     render(<CommunityPage />);
-    expect(screen.getByText(/SOC 2 evidence/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/SOC 2 evidence/i).length).toBeGreaterThan(0);
   });
 
   it('shows community events or resources section', () => {
     render(<CommunityPage />);
-    expect(screen.getByText(/Azure DevOps/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Azure DevOps/i).length).toBeGreaterThan(0);
   });
 
   it('displays forum categories', () => {
     render(<CommunityPage />);
-    expect(screen.getByText(/Best Practices/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Best Practices/i).length).toBeGreaterThan(0);
   });
 });

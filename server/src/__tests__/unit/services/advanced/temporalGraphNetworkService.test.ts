@@ -54,6 +54,7 @@ jest.mock('../../../../services/webhookService', () => ({
   __esModule: true,
   default: {
     triggerWebhook: jest.fn<any>().mockResolvedValue(undefined),
+    dispatchEvent: jest.fn<any>().mockResolvedValue(undefined),
   },
 }));
 
@@ -90,6 +91,7 @@ describe('TemporalGraphNetworkService', () => {
 
     const webhookService = require('../../../../services/webhookService').default;
     webhookService.triggerWebhook.mockResolvedValue(undefined);
+    webhookService.dispatchEvent.mockResolvedValue(undefined);
 
     // Prisma mocks
     (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([]);
@@ -101,6 +103,8 @@ describe('TemporalGraphNetworkService', () => {
     (prismaMock.user.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.integration.findFirst as jest.Mock<any>).mockResolvedValue(null);
     (prismaMock.regulatoryChange.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.riskPrediction.create as jest.Mock<any>).mockResolvedValue({ id: 'pred-1' });
+    (prismaMock.riskPrediction.findMany as jest.Mock<any>).mockResolvedValue([]);
   });
 
   const setupPredictionMocks = () => {
@@ -139,10 +143,8 @@ describe('TemporalGraphNetworkService', () => {
         ],
       },
     ]);
-    (prismaMock.riskPrediction as any) = {
-      create: jest.fn<any>().mockResolvedValue({ id: 'pred-1' }),
-      findMany: jest.fn<any>().mockResolvedValue([]),
-    };
+    (prismaMock.riskPrediction.create as jest.Mock<any>).mockResolvedValue({ id: 'pred-1' });
+    (prismaMock.riskPrediction.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
     (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
   };
@@ -217,6 +219,7 @@ describe('TemporalGraphNetworkService', () => {
         id: 'fw-1',
         name: 'SOC2',
         status: 'In_Progress',
+        progress: 50,
         controls: [
           { id: 'c-1', status: 'Implemented' },
           { id: 'c-2', status: 'Pending' },
@@ -266,9 +269,7 @@ describe('TemporalGraphNetworkService', () => {
         controls: [{ status: 'Implemented' }, { status: 'Pending' }],
       });
       (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.regulatoryChange as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
+      (prismaMock.regulatoryChange.findMany as jest.Mock<any>).mockResolvedValue([]);
       (prismaMock.user.findMany as jest.Mock<any>).mockResolvedValue([]);
       (prismaMock.integration.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
@@ -286,9 +287,7 @@ describe('TemporalGraphNetworkService', () => {
         controls: [{ status: 'Implemented' }],
       });
       (prismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.regulatoryChange as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([]),
-      };
+      (prismaMock.regulatoryChange.findMany as jest.Mock<any>).mockResolvedValue([]);
       (prismaMock.user.findMany as jest.Mock<any>).mockResolvedValue([]);
       (prismaMock.integration.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
@@ -303,18 +302,16 @@ describe('TemporalGraphNetworkService', () => {
 
   describe('getHistoricalAccuracy', () => {
     it('should return historical accuracy metrics', async () => {
-      (prismaMock.riskPrediction as any) = {
-        findMany: jest.fn<any>().mockResolvedValue([
-          {
-            id: 'pred-1',
-            riskType: 'Security',
-            predictedProbability: 0.8,
-            predictedSeverity: 'High',
-            predictedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-            confidence: 0.75,
-          },
-        ]),
-      };
+      (prismaMock.riskPrediction.findMany as jest.Mock<any>).mockResolvedValue([
+        {
+          id: 'pred-1',
+          riskType: 'Security',
+          predictedProbability: 0.8,
+          predictedSeverity: 'High',
+          predictedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          confidence: 0.75,
+        },
+      ]);
       (prismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([
         {
           id: 'risk-1',

@@ -2,12 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
@@ -102,14 +96,14 @@ describe('FeatureMarketplace', () => {
   it('renders without crashing', async () => {
     render(<FeatureMarketplace />);
     await waitFor(() => {
-      expect(screen.getByText(/Feature Marketplace|Features|Add-On/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Feature Marketplace|Features|Add-On/i)[0]).toBeInTheDocument();
     });
   });
 
   it('displays billing cycle toggle', async () => {
     render(<FeatureMarketplace />);
     await waitFor(() => {
-      expect(screen.getByText(/Annual|Monthly/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Annual|Monthly/i)[0]).toBeInTheDocument();
     });
   });
 
