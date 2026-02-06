@@ -106,7 +106,7 @@ describe('AISystemCreate', () => {
   it('shows validation errors for empty name on submit', async () => {
     render(<AISystemCreate onBack={mockOnBack} onSuccess={mockOnSuccess} />);
     const form = screen.getAllByText('Create AI System')[0].closest('div')!;
-    const submitButton = screen.getByText(/Create System|Save/i);
+    const submitButton = screen.getAllByText(/Create System|Save/i).pop()!;
     fireEvent.click(submitButton);
     await waitFor(() => {
       expect(screen.getByText('Name is required')).toBeInTheDocument();

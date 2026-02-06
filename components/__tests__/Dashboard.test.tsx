@@ -41,8 +41,8 @@ describe('Dashboard', () => {
       { id: '2', name: 'GDPR', status: 'Compliant' as any, progress: 100, controls: [] },
     ];
     render(<Dashboard {...defaultProps} frameworks={frameworks} />);
-    expect(screen.getAllByText('SOC 2').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('GDPR').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/SOC 2/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/GDPR/i).length).toBeGreaterThan(0);
   });
 
   it('should render with risks data', () => {
