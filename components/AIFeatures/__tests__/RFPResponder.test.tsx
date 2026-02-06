@@ -26,7 +26,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 
 vi.mock('@/services/api', () => ({
   api: {
-    ai: { generateRFPResponse: vi.fn().mockResolvedValue({ answer: 'Yes, AES-256', confidence: 0.95 }) },
+    ai: { generateRFPResponse: vi.fn().mockResolvedValue({ response: 'Yes, AES-256', confidence: 0.95 }) },
     frameworks: { getAll: vi.fn().mockResolvedValue([]) },
     onboarding: { getProgress: vi.fn().mockResolvedValue(null) },
   },
