@@ -1055,6 +1055,8 @@ describe('AuthController', () => {
 
     it('should accept image/gif files', async () => {
       mockReq.file = { mimetype: 'image/gif', size: 100000 };
+      const s3Service = (await import('../../../services/s3Service')).default;
+      (s3Service.uploadFile as jest.Mock<any>).mockResolvedValue({ url: 'https://s3.example.com/avatar.gif' });
       (prismaMock.user.update as jest.Mock<any>).mockResolvedValue({
         id: 'user-1', name: 'Test', email: 'test@example.com', role: 'admin',
         avatar: 'https://s3.example.com/avatar.gif', organizationId: 'org-1',

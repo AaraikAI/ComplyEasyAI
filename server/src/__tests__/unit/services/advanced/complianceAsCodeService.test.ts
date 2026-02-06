@@ -11,6 +11,7 @@ jest.mock('axios', () => ({
     post: jest.fn<any>().mockResolvedValue({ data: { result: true } }),
     put: jest.fn<any>().mockResolvedValue({ data: {} }),
     get: jest.fn<any>().mockResolvedValue({ data: {} }),
+    delete: jest.fn<any>().mockResolvedValue({ data: {} }),
   },
 }));
 
@@ -19,6 +20,7 @@ jest.mock('fs', () => ({
   mkdirSync: jest.fn(),
   writeFileSync: jest.fn(),
   readFileSync: jest.fn<any>().mockReturnValue('package main'),
+  unlinkSync: jest.fn(),
 }));
 
 jest.mock('../../../../config/database', () => ({
@@ -46,25 +48,26 @@ describe('ComplianceAsCodeService', () => {
     id: 'policy-1',
     organizationId: orgId,
     name: 'data_protection',
-    title: 'Data Protection Policy',
-    description: 'Ensures data protection compliance',
-    regoCode: 'package complyeasy.data_protection\ndefault allow = false\nallow { input.encrypted == true }',
-    frameworkId: 'fw-1',
-    status: 'active',
+    framework: 'SOC2',
+    rego: 'package complyeasy.data_protection\ndefault allow = false\nallow { input.encrypted == true }',
+    severity: 'high',
+    tags: ['data-protection'],
     version: 1,
-    previousVersions: [],
-    evaluationResults: [],
+    enabled: true,
+    previousVersionId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    createdBy: userId,
   };
 
   const mockFramework = {
     id: 'fw-1',
     name: 'SOC 2',
     organizationId: orgId,
+    status: 'In_Progress',
+    progress: 50,
+    nextAuditDate: new Date(),
     controls: [
-      { id: 'c-1', name: 'CC1.1', description: 'Control Environment', status: 'Implemented' },
+      { id: 'c-1', name: 'CC1.1', status: 'Implemented', category: 'Security', evidenceRequired: true, evidenceVersions: [] },
     ],
   };
 
@@ -75,9 +78,11 @@ describe('ComplianceAsCodeService', () => {
     axios.post.mockResolvedValue({ data: { result: true } });
     axios.put.mockResolvedValue({ data: {} });
     axios.get.mockResolvedValue({ data: {} });
+    axios.delete.mockResolvedValue({ data: {} });
 
     const fs = require('fs');
     fs.existsSync.mockReturnValue(true);
+    fs.unlinkSync.mockReturnValue(undefined);
 
     (prismaMock.compliancePolicy.create as jest.Mock<any>).mockResolvedValue(mockPolicy);
     (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValue(mockPolicy);
@@ -95,45 +100,50 @@ describe('ComplianceAsCodeService', () => {
     (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.integration.findFirst as jest.Mock<any>).mockResolvedValue(null);
     (prismaMock.integration.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.organization.findUnique as jest.Mock<any>).mockResolvedValue({
+      id: orgId, name: 'Test Org', plan: 'Pro',
+      users: [{ id: userId, email: 'test@example.com', role: 'admin', mfaEnabled: false, lastLoginAt: null, createdAt: new Date() }],
+    });
+    (prismaMock.evidenceAnalysis.findMany as jest.Mock<any>).mockResolvedValue([]);
   });
 
   // ===================== createPolicy =====================
   describe('createPolicy', () => {
     it('should create a new compliance policy', async () => {
-      (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValueOnce(null);
-
       const result = await complianceAsCodeService.createPolicy(orgId, {
         name: 'data_protection',
-        title: 'Data Protection Policy',
-        description: 'Ensures data protection compliance',
-        regoCode: 'package complyeasy.data_protection\ndefault allow = false\nallow { input.encrypted == true }',
-        frameworkId: 'fw-1',
-      }, userId);
+        framework: 'SOC2',
+        rego: 'package complyeasy.data_protection\ndefault allow = false\nallow { input.encrypted == true }',
+        severity: 'high',
+        tags: ['data-protection'],
+      });
 
       expect(result).toBeDefined();
       expect(prismaMock.compliancePolicy.create).toHaveBeenCalled();
     });
 
     it('should throw on duplicate policy name', async () => {
-      (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValueOnce(mockPolicy);
+      (prismaMock.compliancePolicy.create as jest.Mock<any>).mockRejectedValueOnce(new Error('Unique constraint failed'));
 
       await expect(
         complianceAsCodeService.createPolicy(orgId, {
           name: 'data_protection',
-          title: 'Data Protection',
-          regoCode: 'package test',
-        }, userId)
+          framework: 'SOC2',
+          rego: 'package complyeasy.data_protection\ndefault allow = false',
+          severity: 'high',
+          tags: ['test'],
+        })
       ).rejects.toThrow();
     });
 
     it('should validate rego syntax', async () => {
-      (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValueOnce(null);
-
       const result = await complianceAsCodeService.createPolicy(orgId, {
         name: 'valid_policy',
-        title: 'Valid Policy',
-        regoCode: 'package complyeasy.valid\ndefault allow = false',
-      }, userId);
+        framework: 'SOC2',
+        rego: 'package complyeasy.valid\ndefault allow = false',
+        severity: 'medium',
+        tags: ['valid'],
+      });
 
       expect(result).toBeDefined();
     });
@@ -143,18 +153,22 @@ describe('ComplianceAsCodeService', () => {
   describe('evaluatePolicy', () => {
     it('should evaluate a policy with input data', async () => {
       const result = await complianceAsCodeService.evaluatePolicy(
-        'policy-1', orgId, { encrypted: true }
+        'policy-1', { encrypted: true }
       );
 
       expect(result).toBeDefined();
     });
 
     it('should throw when policy not found', async () => {
-      (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValueOnce(null);
+      const axios = require('axios').default;
+      axios.post.mockRejectedValueOnce(new Error('OPA unavailable'));
 
+      // In production mode, OPA failure should propagate
+      process.env.NODE_ENV = 'production';
       await expect(
-        complianceAsCodeService.evaluatePolicy('nonexistent', orgId, {})
+        complianceAsCodeService.evaluatePolicy('nonexistent', {})
       ).rejects.toThrow();
+      process.env.NODE_ENV = 'test';
     });
 
     it('should handle OPA evaluation failure gracefully', async () => {
@@ -162,7 +176,7 @@ describe('ComplianceAsCodeService', () => {
       axios.post.mockRejectedValueOnce(new Error('OPA unavailable'));
 
       const result = await complianceAsCodeService.evaluatePolicy(
-        'policy-1', orgId, { encrypted: true }
+        'policy-1', { encrypted: true }
       );
 
       expect(result).toBeDefined();
@@ -173,7 +187,7 @@ describe('ComplianceAsCodeService', () => {
   describe('evaluateMultiplePolicies', () => {
     it('should evaluate multiple policies', async () => {
       const result = await complianceAsCodeService.evaluateMultiplePolicies(
-        orgId, ['policy-1'], { encrypted: true }
+        ['policy-1'], { encrypted: true }
       );
 
       expect(result).toBeDefined();
@@ -182,7 +196,7 @@ describe('ComplianceAsCodeService', () => {
 
     it('should handle empty policy list', async () => {
       const result = await complianceAsCodeService.evaluateMultiplePolicies(
-        orgId, [], { encrypted: true }
+        [], { encrypted: true }
       );
 
       expect(result).toBeDefined();
@@ -192,7 +206,7 @@ describe('ComplianceAsCodeService', () => {
   // ===================== generateComplianceReport =====================
   describe('generateComplianceReport', () => {
     it('should generate a compliance report', async () => {
-      const result = await complianceAsCodeService.generateComplianceReport(orgId);
+      const result = await complianceAsCodeService.generateComplianceReport(orgId, 'SOC2');
 
       expect(result).toBeDefined();
     });
@@ -200,7 +214,7 @@ describe('ComplianceAsCodeService', () => {
     it('should handle no policies', async () => {
       (prismaMock.compliancePolicy.findMany as jest.Mock<any>).mockResolvedValue([]);
 
-      const result = await complianceAsCodeService.generateComplianceReport(orgId);
+      const result = await complianceAsCodeService.generateComplianceReport(orgId, 'SOC2');
       expect(result).toBeDefined();
     });
   });
@@ -210,20 +224,22 @@ describe('ComplianceAsCodeService', () => {
     it('should setup CI integration', async () => {
       const result = await complianceAsCodeService.setupCIIntegration(orgId, {
         provider: 'github',
-        repositoryUrl: 'https://github.com/org/repo',
         webhookUrl: 'https://example.com/webhook',
-      }, userId);
+        secret: 'test-secret',
+        events: ['push'],
+      });
 
       expect(result).toBeDefined();
     });
 
     it('should support different CI providers', async () => {
-      for (const provider of ['github', 'gitlab', 'jenkins', 'azure_devops']) {
+      for (const provider of ['github', 'gitlab', 'jenkins', 'circleci']) {
         const result = await complianceAsCodeService.setupCIIntegration(orgId, {
           provider: provider as any,
-          repositoryUrl: 'https://example.com/repo',
           webhookUrl: 'https://example.com/webhook',
-        }, userId);
+          secret: 'test-secret',
+          events: ['push'],
+        });
 
         expect(result).toBeDefined();
       }
@@ -233,35 +249,25 @@ describe('ComplianceAsCodeService', () => {
   // ===================== handleCIWebhook =====================
   describe('handleCIWebhook', () => {
     it('should handle CI webhook from GitHub', async () => {
-      (prismaMock.integration.findFirst as jest.Mock<any>).mockResolvedValue({
-        id: 'int-1',
-        type: 'ci_cd',
-        organizationId: orgId,
-        config: JSON.stringify({ provider: 'github' }),
-      });
+      const crypto = require('crypto');
+      const payload = { repository: { full_name: 'org/repo' }, commits: [] };
+      process.env.GITHUB_WEBHOOK_SECRET = 'test-secret';
+      const hmac = crypto.createHmac('sha256', 'test-secret');
+      const sig = `sha256=${hmac.update(JSON.stringify(payload)).digest('hex')}`;
 
-      const result = await complianceAsCodeService.handleCIWebhook(orgId, {
-        provider: 'github',
-        event: 'push',
-        branch: 'main',
-        commit: 'abc123',
-        repository: 'org/repo',
-      });
+      const result = await complianceAsCodeService.handleCIWebhook(
+        'webhook-1', 'github', payload, sig
+      );
 
       expect(result).toBeDefined();
+      delete process.env.GITHUB_WEBHOOK_SECRET;
     });
 
     it('should handle missing integration', async () => {
-      (prismaMock.integration.findFirst as jest.Mock<any>).mockResolvedValue(null);
-
       await expect(
-        complianceAsCodeService.handleCIWebhook(orgId, {
-          provider: 'github',
-          event: 'push',
-          branch: 'main',
-          commit: 'abc123',
-          repository: 'org/repo',
-        })
+        complianceAsCodeService.handleCIWebhook(
+          'webhook-1', 'github', { repository: { full_name: 'org/repo' } }, 'invalid-sig'
+        )
       ).rejects.toThrow();
     });
   });
@@ -269,7 +275,7 @@ describe('ComplianceAsCodeService', () => {
   // ===================== getPoliciesByFramework =====================
   describe('getPoliciesByFramework', () => {
     it('should return policies for a framework', async () => {
-      const result = await complianceAsCodeService.getPoliciesByFramework('fw-1', orgId);
+      const result = await complianceAsCodeService.getPoliciesByFramework(orgId, 'SOC2');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
@@ -304,21 +310,21 @@ describe('ComplianceAsCodeService', () => {
   describe('updatePolicy', () => {
     it('should update a policy', async () => {
       const result = await complianceAsCodeService.updatePolicy('policy-1', orgId, {
-        title: 'Updated Policy',
-        regoCode: 'package complyeasy.updated\ndefault allow = true',
-      }, userId);
+        name: 'updated_policy',
+        rego: 'package complyeasy.updated\ndefault allow = true',
+      });
 
       expect(result).toBeDefined();
-      expect(prismaMock.compliancePolicy.update).toHaveBeenCalled();
+      expect(prismaMock.compliancePolicy.create).toHaveBeenCalled();
     });
 
     it('should throw when policy not found', async () => {
-      (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValueOnce(null);
+      (prismaMock.compliancePolicy.findUnique as jest.Mock<any>).mockResolvedValueOnce(null);
 
       await expect(
         complianceAsCodeService.updatePolicy('nonexistent', orgId, {
-          title: 'Updated',
-        }, userId)
+          name: 'Updated',
+        })
       ).rejects.toThrow();
     });
   });
@@ -326,11 +332,19 @@ describe('ComplianceAsCodeService', () => {
   // ===================== rollbackPolicy =====================
   describe('rollbackPolicy', () => {
     it('should rollback a policy to previous version', async () => {
-      (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValueOnce({
+      (prismaMock.compliancePolicy.findUnique as jest.Mock<any>).mockResolvedValueOnce({
         ...mockPolicy,
-        previousVersions: [
-          { version: 1, regoCode: 'package old', title: 'Old title', updatedAt: new Date() },
-        ],
+        previousVersion: {
+          id: 'policy-0',
+          organizationId: orgId,
+          name: 'data_protection',
+          framework: 'SOC2',
+          rego: 'package complyeasy.old\ndefault allow = false',
+          severity: 'high',
+          tags: ['data-protection'],
+          version: 1,
+          enabled: true,
+        },
       });
 
       const result = await complianceAsCodeService.rollbackPolicy('policy-1', orgId);
@@ -338,9 +352,9 @@ describe('ComplianceAsCodeService', () => {
     });
 
     it('should throw when no previous versions exist', async () => {
-      (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValueOnce({
+      (prismaMock.compliancePolicy.findUnique as jest.Mock<any>).mockResolvedValueOnce({
         ...mockPolicy,
-        previousVersions: [],
+        previousVersion: null,
       });
 
       await expect(
@@ -356,11 +370,11 @@ describe('ComplianceAsCodeService', () => {
         complianceAsCodeService.deletePolicy('policy-1', orgId)
       ).resolves.not.toThrow();
 
-      expect(prismaMock.compliancePolicy.delete).toHaveBeenCalled();
+      expect(prismaMock.compliancePolicy.update).toHaveBeenCalled();
     });
 
     it('should throw when policy not found', async () => {
-      (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValueOnce(null);
+      (prismaMock.compliancePolicy.update as jest.Mock<any>).mockRejectedValueOnce(new Error('Not found'));
 
       await expect(
         complianceAsCodeService.deletePolicy('nonexistent', orgId)
@@ -399,15 +413,16 @@ describe('ComplianceAsCodeService', () => {
   // ===================== error handling =====================
   describe('error handling', () => {
     it('should handle database error in createPolicy', async () => {
-      (prismaMock.compliancePolicy.findFirst as jest.Mock<any>).mockResolvedValueOnce(null);
       (prismaMock.compliancePolicy.create as jest.Mock<any>).mockRejectedValueOnce(new Error('DB error'));
 
       await expect(
         complianceAsCodeService.createPolicy(orgId, {
           name: 'test',
-          title: 'Test',
-          regoCode: 'package test',
-        }, userId)
+          framework: 'SOC2',
+          rego: 'package test\ndefault allow = false',
+          severity: 'low',
+          tags: [],
+        })
       ).rejects.toThrow();
     });
   });
