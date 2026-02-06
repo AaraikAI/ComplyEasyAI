@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { DeviceTrust as PrismaDeviceTrust, ZeroTrustPolicy as PrismaZeroTrustPolicy, NetworkSegment as PrismaNetworkSegment } from '@prisma/client';
+import ldapPermissionService, { ADUser, PermissionEvaluationResult, RoleMapping } from './ldapPermissionService';
 
 // Type aliases for Prisma models
 type DeviceTrust = PrismaDeviceTrust & {
@@ -1173,6 +1174,90 @@ class ZeroTrustService {
     }
 
     return deviceTrust.isTrusted;
+  }
+
+  // ─── Production LDAP / Active Directory Integration ──────────────────
+
+  /**
+   * Initialize the LDAP/AD permission service.
+   * Call during application bootstrap to establish the connection pool.
+   */
+  async initializeLDAP(config?: Record<string, any>): Promise<void> {
+    await ldapPermissionService.initialize(config);
+    logger.info('[ZeroTrust] LDAP permission service initialized');
+  }
+
+  /**
+   * Authenticate a user against Active Directory.
+   * Validates credentials via LDAP bind and returns the AD user profile.
+   */
+  async authenticateWithAD(
+    username: string,
+    password: string
+  ): Promise<{ authenticated: boolean; user?: ADUser; error?: string }> {
+    try {
+      return await ldapPermissionService.authenticateUser(username, password);
+    } catch (error: any) {
+      logger.error(`[ZeroTrust] AD authentication error for ${username}`, error);
+      return { authenticated: false, error: error.message };
+    }
+  }
+
+  /**
+   * Resolve a user's application roles from their AD group memberships.
+   * Includes nested group resolution and role-mapping application.
+   */
+  async resolveADRoles(
+    username: string
+  ): Promise<{ roles: string[]; permissions: string[]; mappings: RoleMapping[] }> {
+    return ldapPermissionService.resolveUserRoles(username);
+  }
+
+  /**
+   * Evaluate a fine-grained permission check using the LDAP-backed
+   * RBAC/ABAC authorization engine.
+   */
+  async evaluateADPermission(
+    userId: string,
+    resourceId: string,
+    resourceType: string,
+    action: string,
+    context?: Record<string, any>
+  ): Promise<PermissionEvaluationResult> {
+    return ldapPermissionService.evaluatePermission(userId, resourceId, resourceType, action, context);
+  }
+
+  /**
+   * Add an AD group to application role mapping.
+   */
+  addADRoleMapping(mapping: RoleMapping): void {
+    ldapPermissionService.addRoleMapping(mapping);
+  }
+
+  /**
+   * Synchronize all AD permissions for an organization.
+   */
+  async syncADPermissions(organizationId: string): Promise<{
+    usersProcessed: number;
+    permissionsGranted: number;
+    permissionsRevoked: number;
+    errors: string[];
+  }> {
+    return ldapPermissionService.syncAllPermissions(organizationId);
+  }
+
+  /**
+   * Generate an access-review/compliance report from AD data.
+   */
+  async generateADAccessReview(organizationId: string): Promise<any> {
+    return ldapPermissionService.generateAccessReviewReport(organizationId);
+  }
+
+  /**
+   * Health check for the LDAP connection pool.
+   */
+  async ldapHealthCheck(): Promise<{ healthy: boolean; poolSize: number; available: number; latencyMs: number }> {
+    return ldapPermissionService.healthCheck();
   }
 }
 

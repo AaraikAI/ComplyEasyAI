@@ -2,6 +2,13 @@
  * Blockchain Verification Service
  * Real blockchain integration for immutable audit logs and compliance verification
  * Supports both Ethereum and Hyperledger Fabric
+ *
+ * Extended with ComplianceRegistry integration for:
+ * - Certificate lifecycle management (issue, verify, revoke, renew)
+ * - Framework compliance scoring with history tracking
+ * - Evidence chain-of-custody tracking
+ * - Policy change audit trail
+ * - Real-time blockchain event processing
  */
 
 import { ethers } from 'ethers';
@@ -13,6 +20,9 @@ import { Wallets } from 'fabric-network';
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// Import ComplianceRegistry artifact for the new contract integration
+import ComplianceRegistryArtifact from '../../blockchain/artifacts/ComplianceRegistry.json';
 
 type BlockchainNetwork = 'ethereum' | 'polygon' | 'hyperledger';
 
@@ -44,6 +54,93 @@ interface ComplianceProof {
   auditorSignature?: string;
 }
 
+// ---------------------------------------------------------------------------
+// ComplianceRegistry types
+// ---------------------------------------------------------------------------
+
+/** Certificate status enum matching the Solidity contract. */
+enum RegistryCertificateStatus {
+  None = 0,
+  Issued = 1,
+  Active = 2,
+  Revoked = 3,
+  Expired = 4,
+  Renewed = 5,
+}
+
+/** Parameters for issuing a certificate via the registry contract. */
+interface RegistryIssueCertificateParams {
+  certId: string;
+  orgId: string;
+  framework: string;
+  score: number;
+  expiresAt: number;
+  dataHash: string;
+  metadataHash: string;
+}
+
+/** Parameters for renewing a certificate via the registry contract. */
+interface RegistryRenewCertificateParams {
+  oldCertId: string;
+  newCertId: string;
+  newScore: number;
+  newExpiresAt: number;
+  newDataHash: string;
+  newMetadataHash: string;
+}
+
+/** On-chain certificate data returned by getCertificate. */
+interface RegistryCertificateData {
+  orgId: string;
+  framework: string;
+  issuer: string;
+  status: RegistryCertificateStatus;
+  score: number;
+  issuedAt: number;
+  expiresAt: number;
+  renewedFrom: string;
+  dataHash: string;
+  metadataHash: string;
+}
+
+/** On-chain evidence node data returned by getEvidence. */
+interface RegistryEvidenceData {
+  certId: string;
+  evidenceHash: string;
+  submitter: string;
+  timestamp: number;
+  prevNodeId: string;
+  evidenceType: string;
+}
+
+/** On-chain framework score data. */
+interface RegistryFrameworkScoreData {
+  score: number;
+  assessor: string;
+  timestamp: number;
+  historyLen: number;
+}
+
+/** On-chain policy change record. */
+interface RegistryPolicyChangeData {
+  policyId: string;
+  author: string;
+  timestamp: number;
+  oldHash: string;
+  newHash: string;
+  diffHash: string;
+}
+
+/** Result wrapper for registry contract write transactions. */
+interface RegistryTxResult {
+  transactionHash: string;
+  blockNumber: number;
+  gasUsed: string;
+}
+
+/** Callback for registry contract event listeners. */
+type RegistryEventCallback = (...args: any[]) => void;
+
 /**
  * Blockchain Service for immutable verification
  *
@@ -62,6 +159,11 @@ class BlockchainService {
   private hyperledgerGateway: Gateway | null = null;
   private hyperledgerNetwork: Network | null = null;
   private hyperledgerContract: Contract | null = null;
+
+  // ComplianceRegistry contract instance (new)
+  private registryContract: ethers.Contract | null = null;
+  // Track active event listener unsubscribe functions for cleanup
+  private registryEventListeners: Array<() => void> = [];
 
   // Smart contract ABI for compliance verification
   private readonly COMPLIANCE_CONTRACT_ABI = [
@@ -103,6 +205,19 @@ class BlockchainService {
           this.COMPLIANCE_CONTRACT_ABI,
           this.wallet
         );
+      }
+
+      // Initialize ComplianceRegistry contract
+      const registryAddress = process.env.COMPLIANCE_REGISTRY_ADDRESS;
+      if (registryAddress && this.wallet) {
+        this.registryContract = new ethers.Contract(
+          registryAddress,
+          ComplianceRegistryArtifact.abi,
+          this.wallet
+        );
+        logger.info(`[Blockchain] ComplianceRegistry connected at ${registryAddress}`);
+      } else {
+        logger.warn('[Blockchain] ComplianceRegistry not configured (set COMPLIANCE_REGISTRY_ADDRESS)');
       }
 
       // Initialize Hyperledger Fabric
@@ -1004,6 +1119,1011 @@ class BlockchainService {
       throw new Error('Gas price estimation failed');
     }
   }
+
+  // ===========================================================================
+  //  ComplianceRegistry Integration - New Methods
+  // ===========================================================================
+
+  /**
+   * Ensure the ComplianceRegistry contract is available.
+   * @throws Error if the registry contract is not initialized.
+   */
+  private ensureRegistryContract(): ethers.Contract {
+    if (!this.registryContract) {
+      throw new Error(
+        'ComplianceRegistry contract not initialized. Set COMPLIANCE_REGISTRY_ADDRESS and BLOCKCHAIN_PRIVATE_KEY environment variables.'
+      );
+    }
+    return this.registryContract;
+  }
+
+  /**
+   * Helper: execute a registry contract write call and wait for receipt.
+   */
+  private async executeRegistryTx(
+    method: string,
+    args: any[]
+  ): Promise<RegistryTxResult> {
+    const contract = this.ensureRegistryContract();
+    const tx = await contract[method](...args);
+    const receipt = await tx.wait();
+    return {
+      transactionHash: receipt.hash,
+      blockNumber: receipt.blockNumber,
+      gasUsed: receipt.gasUsed.toString(),
+    };
+  }
+
+  // ---- Deploy ComplianceRegistry ----
+
+  /**
+   * Deploy the ComplianceRegistry contract from its compiled artifact.
+   * Returns the deployed contract address.
+   *
+   * @param network The target EVM network ('ethereum' or 'polygon').
+   */
+  async deployRegistryContract(
+    network: BlockchainNetwork = 'polygon'
+  ): Promise<{ contractAddress: string; transactionHash: string; blockNumber: number }> {
+    try {
+      if (!this.wallet) {
+        throw new Error('Wallet not initialized');
+      }
+      const provider = network === 'ethereum' ? this.ethereumProvider : this.polygonProvider;
+      if (!provider) {
+        throw new Error(`Provider not initialized for ${network}`);
+      }
+
+      const abi = ComplianceRegistryArtifact.abi;
+      const bytecode = ComplianceRegistryArtifact.bytecode;
+      if (!bytecode) {
+        throw new Error('ComplianceRegistry bytecode not found in artifact');
+      }
+
+      const walletWithProvider = this.wallet.connect(provider);
+      const factory = new ethers.ContractFactory(abi, bytecode, walletWithProvider);
+
+      logger.info(`[Blockchain] Deploying ComplianceRegistry to ${network}...`);
+
+      // Estimate gas
+      const deployTx = await factory.getDeployTransaction();
+      const estimatedGas = await provider.estimateGas(deployTx);
+      logger.info(`[Blockchain] Estimated deployment gas: ${estimatedGas.toString()}`);
+
+      const contract = await factory.deploy({
+        gasLimit: (estimatedGas * 120n) / 100n, // 20% safety buffer
+      });
+
+      await contract.waitForDeployment();
+      const contractAddress = await contract.getAddress();
+
+      // Verify bytecode was deployed
+      const code = await provider.getCode(contractAddress);
+      if (code === '0x' || code === '0x0') {
+        throw new Error('Contract deployment verification failed - no code at deployed address');
+      }
+
+      const txHash = contract.deploymentTransaction()?.hash || '';
+      const receipt = txHash ? await provider.getTransactionReceipt(txHash) : null;
+      const blockNumber = receipt?.blockNumber ?? 0;
+
+      // Wire up the newly deployed contract for immediate use
+      this.registryContract = new ethers.Contract(contractAddress, abi, this.wallet);
+
+      logger.info(
+        `[Blockchain] ComplianceRegistry deployed to ${network}: ${contractAddress} (block ${blockNumber})`
+      );
+
+      return { contractAddress, transactionHash: txHash, blockNumber };
+    } catch (error) {
+      logger.error('[Blockchain] Error deploying ComplianceRegistry', error);
+      throw new Error(
+        `ComplianceRegistry deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  // ---- Certificate Lifecycle ----
+
+  /**
+   * Issue a compliance certificate on the ComplianceRegistry contract.
+   */
+  async registryIssueCertificate(
+    params: RegistryIssueCertificateParams
+  ): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('issueCertificate', [
+        params.certId,
+        params.orgId,
+        params.framework,
+        params.score,
+        params.expiresAt,
+        params.dataHash,
+        params.metadataHash,
+      ]);
+
+      logger.info(`[Blockchain] Certificate issued: ${params.certId} (tx: ${result.transactionHash})`);
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error issuing registry certificate', error);
+      throw new Error('Registry certificate issuance failed');
+    }
+  }
+
+  /**
+   * Activate an issued certificate (transition Issued -> Active).
+   */
+  async registryActivateCertificate(certId: string): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('activateCertificate', [certId]);
+      logger.info(`[Blockchain] Certificate activated: ${certId}`);
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error activating registry certificate', error);
+      throw new Error('Registry certificate activation failed');
+    }
+  }
+
+  /**
+   * Revoke a certificate on the ComplianceRegistry.
+   * @param certId Certificate to revoke.
+   * @param reason bytes32 hash of the revocation reason.
+   */
+  async registryRevokeCertificate(
+    certId: string,
+    reason: string
+  ): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('revokeCertificate', [certId, reason]);
+      logger.info(`[Blockchain] Certificate revoked: ${certId}`);
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error revoking registry certificate', error);
+      throw new Error('Registry certificate revocation failed');
+    }
+  }
+
+  /**
+   * Renew a certificate, creating a successor and marking the old one Renewed.
+   */
+  async registryRenewCertificate(
+    params: RegistryRenewCertificateParams
+  ): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('renewCertificate', [
+        params.oldCertId,
+        params.newCertId,
+        params.newScore,
+        params.newExpiresAt,
+        params.newDataHash,
+        params.newMetadataHash,
+      ]);
+      logger.info(
+        `[Blockchain] Certificate renewed: ${params.oldCertId} -> ${params.newCertId}`
+      );
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error renewing registry certificate', error);
+      throw new Error('Registry certificate renewal failed');
+    }
+  }
+
+  /**
+   * Verify a certificate on-chain (performs lazy expiry if needed).
+   * This is a state-mutating call. Use `registryGetCertificate` for read-only.
+   */
+  async registryVerifyCertificate(
+    certId: string
+  ): Promise<{
+    valid: boolean;
+    status: RegistryCertificateStatus;
+    score: number;
+    expiresAt: number;
+    transactionHash: string;
+  }> {
+    try {
+      const contract = this.ensureRegistryContract();
+
+      // Use staticCall to read return values without sending a transaction
+      const staticResult = await contract.verifyCertificate.staticCall(certId);
+      const valid: boolean = staticResult[0];
+      const status = Number(staticResult[1]) as RegistryCertificateStatus;
+      const score = Number(staticResult[2]);
+      const expiresAt = Number(staticResult[3]);
+
+      // Now execute the actual state-changing transaction (lazy expiry)
+      const tx = await contract.verifyCertificate(certId);
+      const receipt = await tx.wait();
+
+      logger.info(
+        `[Blockchain] Certificate verified: ${certId} valid=${valid} status=${RegistryCertificateStatus[status]}`
+      );
+
+      return {
+        valid,
+        status,
+        score,
+        expiresAt,
+        transactionHash: receipt.hash,
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error verifying registry certificate', error);
+      throw new Error('Registry certificate verification failed');
+    }
+  }
+
+  /**
+   * Get certificate data from the registry (read-only, no lazy expiry).
+   */
+  async registryGetCertificate(certId: string): Promise<RegistryCertificateData> {
+    try {
+      const contract = this.ensureRegistryContract();
+      const result = await contract.getCertificate(certId);
+      return {
+        orgId: result[0],
+        framework: result[1],
+        issuer: result[2],
+        status: Number(result[3]) as RegistryCertificateStatus,
+        score: Number(result[4]),
+        issuedAt: Number(result[5]),
+        expiresAt: Number(result[6]),
+        renewedFrom: result[7],
+        dataHash: result[8],
+        metadataHash: result[9],
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error reading registry certificate', error);
+      throw new Error('Failed to read registry certificate');
+    }
+  }
+
+  /**
+   * Check whether a certificate exists on-chain.
+   */
+  async registryCertificateExists(certId: string): Promise<boolean> {
+    try {
+      const contract = this.ensureRegistryContract();
+      return contract.certificateExists(certId);
+    } catch (error) {
+      logger.error('[Blockchain] Error checking certificate existence', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get all certificate IDs for an organisation from the registry.
+   */
+  async registryGetOrgCertificates(orgId: string): Promise<string[]> {
+    try {
+      const contract = this.ensureRegistryContract();
+      return contract.getOrgCertificates(orgId);
+    } catch (error) {
+      logger.error('[Blockchain] Error fetching org certificates', error);
+      return [];
+    }
+  }
+
+  // ---- Framework Compliance Scoring ----
+
+  /**
+   * Record a framework compliance score on-chain.
+   * @param orgId       Organisation identifier hash (bytes32).
+   * @param framework   Framework identifier hash (bytes32).
+   * @param score       Score in basis points (0-10000).
+   * @param evidenceHash Hash of supporting evidence (bytes32).
+   */
+  async registryRecordFrameworkScore(
+    orgId: string,
+    framework: string,
+    score: number,
+    evidenceHash: string
+  ): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('recordFrameworkScore', [
+        orgId,
+        framework,
+        score,
+        evidenceHash,
+      ]);
+      logger.info(
+        `[Blockchain] Framework score recorded: org=${orgId.slice(0, 10)}... framework=${framework.slice(0, 10)}... score=${score}`
+      );
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error recording framework score', error);
+      throw new Error('Registry framework score recording failed');
+    }
+  }
+
+  /**
+   * Get the latest framework score for an organisation.
+   */
+  async registryGetLatestFrameworkScore(
+    orgId: string,
+    framework: string
+  ): Promise<RegistryFrameworkScoreData> {
+    try {
+      const contract = this.ensureRegistryContract();
+      const result = await contract.getLatestFrameworkScore(orgId, framework);
+      return {
+        score: Number(result[0]),
+        assessor: result[1],
+        timestamp: Number(result[2]),
+        historyLen: Number(result[3]),
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error reading latest framework score', error);
+      throw new Error('Failed to read latest framework score');
+    }
+  }
+
+  /**
+   * Get paginated framework score history.
+   */
+  async registryGetFrameworkScoreHistory(
+    orgId: string,
+    framework: string,
+    offset: number = 0,
+    limit: number = 50
+  ): Promise<{
+    assessors: string[];
+    scores: number[];
+    timestamps: number[];
+    evidenceHashes: string[];
+  }> {
+    try {
+      const contract = this.ensureRegistryContract();
+      const result = await contract.getFrameworkScoreHistory(orgId, framework, offset, limit);
+      return {
+        assessors: result[0] as string[],
+        scores: (result[1] as bigint[]).map(Number),
+        timestamps: (result[2] as bigint[]).map(Number),
+        evidenceHashes: result[3] as string[],
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error reading framework score history', error);
+      throw new Error('Failed to read framework score history');
+    }
+  }
+
+  // ---- Evidence Chain-of-Custody ----
+
+  /**
+   * Submit evidence linked to a certificate on the ComplianceRegistry.
+   * @param evidenceId   Unique evidence identifier (bytes32).
+   * @param certId       Certificate the evidence relates to (bytes32).
+   * @param evidenceHash Hash of the evidence artefact (bytes32).
+   * @param evidenceType Hash of the evidence type label (bytes32).
+   */
+  async registrySubmitEvidence(
+    evidenceId: string,
+    certId: string,
+    evidenceHash: string,
+    evidenceType: string
+  ): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('submitEvidence', [
+        evidenceId,
+        certId,
+        evidenceHash,
+        evidenceType,
+      ]);
+      logger.info(
+        `[Blockchain] Evidence submitted: ${evidenceId} -> cert ${certId} (tx: ${result.transactionHash})`
+      );
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error submitting evidence', error);
+      throw new Error('Registry evidence submission failed');
+    }
+  }
+
+  /**
+   * Retrieve a single evidence node from the registry.
+   */
+  async registryGetEvidence(evidenceId: string): Promise<RegistryEvidenceData> {
+    try {
+      const contract = this.ensureRegistryContract();
+      const result = await contract.getEvidence(evidenceId);
+      return {
+        certId: result[0],
+        evidenceHash: result[1],
+        submitter: result[2],
+        timestamp: Number(result[3]),
+        prevNodeId: result[4],
+        evidenceType: result[5],
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error reading evidence', error);
+      throw new Error('Failed to read evidence from registry');
+    }
+  }
+
+  /**
+   * Walk the evidence chain for a certificate, returning up to `limit` entries.
+   */
+  async registryGetEvidenceChain(
+    certId: string,
+    limit: number = 0
+  ): Promise<{ hashes: string[]; nodeIds: string[] }> {
+    try {
+      const contract = this.ensureRegistryContract();
+      const result = await contract.getEvidenceChain(certId, limit);
+      return {
+        hashes: result[0] as string[],
+        nodeIds: result[1] as string[],
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error reading evidence chain', error);
+      throw new Error('Failed to read evidence chain from registry');
+    }
+  }
+
+  // ---- Policy Change Audit Trail ----
+
+  /**
+   * Record a policy change on-chain.
+   */
+  async registryRecordPolicyChange(
+    orgId: string,
+    policyId: string,
+    oldHash: string,
+    newHash: string,
+    diffHash: string
+  ): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('recordPolicyChange', [
+        orgId,
+        policyId,
+        oldHash,
+        newHash,
+        diffHash,
+      ]);
+      logger.info(
+        `[Blockchain] Policy change recorded: org=${orgId.slice(0, 10)}... policy=${policyId.slice(0, 10)}...`
+      );
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error recording policy change', error);
+      throw new Error('Registry policy change recording failed');
+    }
+  }
+
+  /**
+   * Get the count of policy changes for an organisation.
+   */
+  async registryGetPolicyChangeCount(orgId: string): Promise<number> {
+    try {
+      const contract = this.ensureRegistryContract();
+      const count = await contract.getPolicyChangeCount(orgId);
+      return Number(count);
+    } catch (error) {
+      logger.error('[Blockchain] Error getting policy change count', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get a single policy change record by index.
+   */
+  async registryGetPolicyChange(
+    orgId: string,
+    index: number
+  ): Promise<RegistryPolicyChangeData> {
+    try {
+      const contract = this.ensureRegistryContract();
+      const result = await contract.getPolicyChange(orgId, index);
+      return {
+        policyId: result[0],
+        author: result[1],
+        timestamp: Number(result[2]),
+        oldHash: result[3],
+        newHash: result[4],
+        diffHash: result[5],
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error reading policy change', error);
+      throw new Error('Failed to read policy change from registry');
+    }
+  }
+
+  /**
+   * Get paginated policy changes for an organisation.
+   */
+  async registryGetPolicyChanges(
+    orgId: string,
+    offset: number = 0,
+    limit: number = 50
+  ): Promise<{
+    policyIds: string[];
+    authors: string[];
+    timestamps: number[];
+    diffHashes: string[];
+  }> {
+    try {
+      const contract = this.ensureRegistryContract();
+      const result = await contract.getPolicyChanges(orgId, offset, limit);
+      return {
+        policyIds: result[0] as string[],
+        authors: result[1] as string[],
+        timestamps: (result[2] as bigint[]).map(Number),
+        diffHashes: result[3] as string[],
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error reading policy changes', error);
+      throw new Error('Failed to read policy changes from registry');
+    }
+  }
+
+  // ---- Role Management ----
+
+  /**
+   * Check whether an account holds a specific role on the registry.
+   */
+  async registryHasRole(role: string, account: string): Promise<boolean> {
+    try {
+      const contract = this.ensureRegistryContract();
+      return contract.hasRole(role, account);
+    } catch (error) {
+      logger.error('[Blockchain] Error checking role', error);
+      return false;
+    }
+  }
+
+  /**
+   * Grant a role to an account on the registry.
+   */
+  async registryGrantRole(role: string, account: string): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('grantRole', [role, account]);
+      logger.info(`[Blockchain] Role granted: role=${role.slice(0, 10)}... account=${account}`);
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error granting role', error);
+      throw new Error('Registry role grant failed');
+    }
+  }
+
+  /**
+   * Revoke a role from an account on the registry.
+   */
+  async registryRevokeRole(role: string, account: string): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('revokeRole', [role, account]);
+      logger.info(`[Blockchain] Role revoked: role=${role.slice(0, 10)}... account=${account}`);
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error revoking role', error);
+      throw new Error('Registry role revocation failed');
+    }
+  }
+
+  // ---- Pause / Unpause ----
+
+  /**
+   * Pause the ComplianceRegistry (circuit breaker).
+   */
+  async registryPause(): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('pause', []);
+      logger.warn('[Blockchain] ComplianceRegistry PAUSED');
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error pausing registry', error);
+      throw new Error('Registry pause failed');
+    }
+  }
+
+  /**
+   * Unpause the ComplianceRegistry.
+   */
+  async registryUnpause(): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('unpause', []);
+      logger.info('[Blockchain] ComplianceRegistry UNPAUSED');
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error unpausing registry', error);
+      throw new Error('Registry unpause failed');
+    }
+  }
+
+  /**
+   * Check if the registry is paused.
+   */
+  async registryIsPaused(): Promise<boolean> {
+    try {
+      const contract = this.ensureRegistryContract();
+      return contract.paused();
+    } catch (error) {
+      logger.error('[Blockchain] Error checking paused state', error);
+      return false;
+    }
+  }
+
+  // ---- Batch Operations ----
+
+  /**
+   * Batch-issue multiple certificates in a single transaction.
+   */
+  async registryBatchIssueCertificates(
+    certs: RegistryIssueCertificateParams[]
+  ): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('batchIssueCertificates', [
+        certs.map((c) => c.certId),
+        certs.map((c) => c.orgId),
+        certs.map((c) => c.framework),
+        certs.map((c) => c.score),
+        certs.map((c) => c.expiresAt),
+        certs.map((c) => c.dataHash),
+        certs.map((c) => c.metadataHash),
+      ]);
+      logger.info(`[Blockchain] Batch issued ${certs.length} certificates`);
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error batch issuing certificates', error);
+      throw new Error('Registry batch certificate issuance failed');
+    }
+  }
+
+  /**
+   * Batch-submit multiple evidence nodes in a single transaction.
+   */
+  async registryBatchSubmitEvidence(
+    evidence: Array<{
+      evidenceId: string;
+      certId: string;
+      evidenceHash: string;
+      evidenceType: string;
+    }>
+  ): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('batchSubmitEvidence', [
+        evidence.map((e) => e.evidenceId),
+        evidence.map((e) => e.certId),
+        evidence.map((e) => e.evidenceHash),
+        evidence.map((e) => e.evidenceType),
+      ]);
+      logger.info(`[Blockchain] Batch submitted ${evidence.length} evidence nodes`);
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error batch submitting evidence', error);
+      throw new Error('Registry batch evidence submission failed');
+    }
+  }
+
+  /**
+   * Batch-record multiple framework scores in a single transaction.
+   */
+  async registryBatchRecordScores(
+    scores: Array<{
+      orgId: string;
+      framework: string;
+      score: number;
+      evidenceHash: string;
+    }>
+  ): Promise<RegistryTxResult> {
+    try {
+      const result = await this.executeRegistryTx('batchRecordScores', [
+        scores.map((s) => s.orgId),
+        scores.map((s) => s.framework),
+        scores.map((s) => s.score),
+        scores.map((s) => s.evidenceHash),
+      ]);
+      logger.info(`[Blockchain] Batch recorded ${scores.length} framework scores`);
+      return result;
+    } catch (error) {
+      logger.error('[Blockchain] Error batch recording scores', error);
+      throw new Error('Registry batch score recording failed');
+    }
+  }
+
+  // ---- Registry Statistics ----
+
+  /**
+   * Get aggregate statistics from the registry contract.
+   */
+  async registryGetStats(): Promise<{
+    certificateCount: number;
+    evidenceCount: number;
+    policyChangeCount: number;
+    paused: boolean;
+    deployer: string;
+  }> {
+    try {
+      const contract = this.ensureRegistryContract();
+      const [certCount, evidCount, policyCount, paused, deployer] = await Promise.all([
+        contract.certificateCount(),
+        contract.evidenceCount(),
+        contract.policyChangeCount(),
+        contract.paused(),
+        contract.deployer(),
+      ]);
+      return {
+        certificateCount: Number(certCount),
+        evidenceCount: Number(evidCount),
+        policyChangeCount: Number(policyCount),
+        paused,
+        deployer,
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error fetching registry stats', error);
+      throw new Error('Failed to fetch registry statistics');
+    }
+  }
+
+  // ---- Event Listener Integration ----
+
+  /**
+   * Start listening to ComplianceRegistry events in real-time.
+   * Logs events and stores records in the database.
+   *
+   * Call `stopRegistryEventListeners()` to clean up.
+   */
+  async startRegistryEventListeners(): Promise<void> {
+    const contract = this.ensureRegistryContract();
+
+    // CertificateIssued
+    const onIssued = async (
+      certId: string,
+      orgId: string,
+      framework: string,
+      issuer: string,
+      score: bigint,
+      issuedAt: bigint,
+      expiresAt: bigint,
+      event: ethers.EventLog
+    ) => {
+      logger.info(
+        `[Blockchain Event] CertificateIssued: certId=${certId} org=${orgId.slice(0, 10)}... score=${Number(score)}`
+      );
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: 'Blockchain: registry_certificate_issued',
+            organizationId: orgId,
+            hash: certId,
+            details: JSON.stringify({
+              event: 'CertificateIssued',
+              certId,
+              orgId,
+              framework,
+              issuer,
+              score: Number(score),
+              issuedAt: Number(issuedAt),
+              expiresAt: Number(expiresAt),
+              transactionHash: event.transactionHash,
+              blockNumber: event.blockNumber,
+            }),
+          },
+        });
+      } catch (err) {
+        logger.error('[Blockchain Event] Failed to persist CertificateIssued event', err);
+      }
+    };
+    contract.on('CertificateIssued', onIssued);
+    this.registryEventListeners.push(() => contract.off('CertificateIssued', onIssued));
+
+    // CertificateRevoked
+    const onRevoked = async (
+      certId: string,
+      revoker: string,
+      reason: string,
+      event: ethers.EventLog
+    ) => {
+      logger.info(`[Blockchain Event] CertificateRevoked: certId=${certId} revoker=${revoker}`);
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: 'Blockchain: registry_certificate_revoked',
+            hash: certId,
+            details: JSON.stringify({
+              event: 'CertificateRevoked',
+              certId,
+              revoker,
+              reason,
+              transactionHash: event.transactionHash,
+              blockNumber: event.blockNumber,
+            }),
+          },
+        });
+      } catch (err) {
+        logger.error('[Blockchain Event] Failed to persist CertificateRevoked event', err);
+      }
+    };
+    contract.on('CertificateRevoked', onRevoked);
+    this.registryEventListeners.push(() => contract.off('CertificateRevoked', onRevoked));
+
+    // CertificateRenewed
+    const onRenewed = async (
+      oldCertId: string,
+      newCertId: string,
+      renewer: string,
+      event: ethers.EventLog
+    ) => {
+      logger.info(
+        `[Blockchain Event] CertificateRenewed: ${oldCertId} -> ${newCertId} by ${renewer}`
+      );
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: 'Blockchain: registry_certificate_renewed',
+            hash: newCertId,
+            details: JSON.stringify({
+              event: 'CertificateRenewed',
+              oldCertId,
+              newCertId,
+              renewer,
+              transactionHash: event.transactionHash,
+              blockNumber: event.blockNumber,
+            }),
+          },
+        });
+      } catch (err) {
+        logger.error('[Blockchain Event] Failed to persist CertificateRenewed event', err);
+      }
+    };
+    contract.on('CertificateRenewed', onRenewed);
+    this.registryEventListeners.push(() => contract.off('CertificateRenewed', onRenewed));
+
+    // EvidenceSubmitted
+    const onEvidence = async (
+      evidenceId: string,
+      certId: string,
+      evidenceHash: string,
+      evidenceType: string,
+      submitter: string,
+      event: ethers.EventLog
+    ) => {
+      logger.info(
+        `[Blockchain Event] EvidenceSubmitted: ${evidenceId} -> cert ${certId} by ${submitter}`
+      );
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: 'Blockchain: registry_evidence_submitted',
+            hash: evidenceId,
+            details: JSON.stringify({
+              event: 'EvidenceSubmitted',
+              evidenceId,
+              certId,
+              evidenceHash,
+              evidenceType,
+              submitter,
+              transactionHash: event.transactionHash,
+              blockNumber: event.blockNumber,
+            }),
+          },
+        });
+      } catch (err) {
+        logger.error('[Blockchain Event] Failed to persist EvidenceSubmitted event', err);
+      }
+    };
+    contract.on('EvidenceSubmitted', onEvidence);
+    this.registryEventListeners.push(() => contract.off('EvidenceSubmitted', onEvidence));
+
+    // FrameworkScoreRecorded
+    const onScore = async (
+      orgId: string,
+      framework: string,
+      score: bigint,
+      assessor: string,
+      event: ethers.EventLog
+    ) => {
+      logger.info(
+        `[Blockchain Event] FrameworkScoreRecorded: org=${orgId.slice(0, 10)}... score=${Number(score)}`
+      );
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: 'Blockchain: registry_score_recorded',
+            organizationId: orgId,
+            details: JSON.stringify({
+              event: 'FrameworkScoreRecorded',
+              orgId,
+              framework,
+              score: Number(score),
+              assessor,
+              transactionHash: event.transactionHash,
+              blockNumber: event.blockNumber,
+            }),
+          },
+        });
+      } catch (err) {
+        logger.error('[Blockchain Event] Failed to persist FrameworkScoreRecorded event', err);
+      }
+    };
+    contract.on('FrameworkScoreRecorded', onScore);
+    this.registryEventListeners.push(() => contract.off('FrameworkScoreRecorded', onScore));
+
+    // PolicyChangeRecorded
+    const onPolicy = async (
+      orgId: string,
+      policyId: string,
+      diffHash: string,
+      author: string,
+      event: ethers.EventLog
+    ) => {
+      logger.info(
+        `[Blockchain Event] PolicyChangeRecorded: org=${orgId.slice(0, 10)}... policy=${policyId.slice(0, 10)}...`
+      );
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: 'Blockchain: registry_policy_change',
+            organizationId: orgId,
+            hash: policyId,
+            details: JSON.stringify({
+              event: 'PolicyChangeRecorded',
+              orgId,
+              policyId,
+              diffHash,
+              author,
+              transactionHash: event.transactionHash,
+              blockNumber: event.blockNumber,
+            }),
+          },
+        });
+      } catch (err) {
+        logger.error('[Blockchain Event] Failed to persist PolicyChangeRecorded event', err);
+      }
+    };
+    contract.on('PolicyChangeRecorded', onPolicy);
+    this.registryEventListeners.push(() => contract.off('PolicyChangeRecorded', onPolicy));
+
+    // Paused / Unpaused
+    const onPaused = (account: string) => {
+      logger.warn(`[Blockchain Event] Registry PAUSED by ${account}`);
+    };
+    const onUnpaused = (account: string) => {
+      logger.info(`[Blockchain Event] Registry UNPAUSED by ${account}`);
+    };
+    contract.on('Paused', onPaused);
+    contract.on('Unpaused', onUnpaused);
+    this.registryEventListeners.push(() => contract.off('Paused', onPaused));
+    this.registryEventListeners.push(() => contract.off('Unpaused', onUnpaused));
+
+    logger.info('[Blockchain] Registry event listeners started');
+  }
+
+  /**
+   * Stop all ComplianceRegistry event listeners.
+   */
+  stopRegistryEventListeners(): void {
+    for (const unsub of this.registryEventListeners) {
+      try {
+        unsub();
+      } catch {
+        // Ignore errors on cleanup
+      }
+    }
+    this.registryEventListeners = [];
+    logger.info('[Blockchain] Registry event listeners stopped');
+  }
+
+  // ---- Utility Helpers ----
+
+  /**
+   * Hash a human-readable string to a bytes32 value (keccak256).
+   */
+  static toBytes32(value: string): string {
+    return ethers.keccak256(ethers.toUtf8Bytes(value));
+  }
+
+  /**
+   * Convert a Date to a Solidity-compatible uint64 timestamp (seconds).
+   */
+  static toTimestamp(date: Date): number {
+    return Math.floor(date.getTime() / 1000);
+  }
+
+  /**
+   * Well-known ComplianceRegistry role hashes.
+   */
+  static readonly REGISTRY_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('ADMIN_ROLE'));
+  static readonly REGISTRY_AUDITOR_ROLE = ethers.keccak256(ethers.toUtf8Bytes('AUDITOR_ROLE'));
+  static readonly REGISTRY_OPERATOR_ROLE = ethers.keccak256(ethers.toUtf8Bytes('OPERATOR_ROLE'));
 }
 
 export default new BlockchainService();
