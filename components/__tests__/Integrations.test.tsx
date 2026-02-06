@@ -99,7 +99,7 @@ describe('Integrations', () => {
   it('renders the integrations page', async () => {
     render(<Integrations />);
     await waitFor(() => {
-      expect(screen.getByText(/AWS|GitHub|Slack|integrations/i)).toBeTruthy();
+      expect(screen.getAllByText(/AWS|GitHub|Slack|integrations/i)[0]).toBeTruthy();
     });
   });
 

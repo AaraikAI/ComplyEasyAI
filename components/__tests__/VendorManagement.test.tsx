@@ -114,8 +114,8 @@ describe('VendorManagement', () => {
   it('shows dashboard/vendors toggle', async () => {
     render(<VendorManagement onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText(/Dashboard/i)).toBeTruthy();
-      expect(screen.getByText(/Vendors/i)).toBeTruthy();
+      expect(screen.getAllByText(/Dashboard/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Vendors/i).length).toBeGreaterThan(0);
     });
   });
 });

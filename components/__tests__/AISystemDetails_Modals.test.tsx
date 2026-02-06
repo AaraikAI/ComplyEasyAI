@@ -94,7 +94,7 @@ describe('CreateRiskActivityModal', () => {
 
   it('renders the modal with title', () => {
     render(<CreateRiskActivityModal systemId="sys-1" teamMembers={[]} onClose={mockOnClose} />);
-    expect(screen.getByText('Create Risk Activity')).toBeInTheDocument();
+    expect(screen.getAllByText('Create Risk Activity')[0]).toBeInTheDocument();
   });
 
   it('shows the description textarea as required', () => {

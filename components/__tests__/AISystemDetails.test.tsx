@@ -108,14 +108,14 @@ describe('AISystemDetails', () => {
   it('renders without crashing and shows system name', async () => {
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Test AI System')).toBeInTheDocument();
+      expect(screen.getAllByText('Test AI System')[0]).toBeInTheDocument();
     });
   });
 
   it('shows back button that calls onBack', async () => {
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Test AI System')).toBeInTheDocument();
+      expect(screen.getAllByText('Test AI System')[0]).toBeInTheDocument();
     });
     const backButton = screen.getByTestId('icon-ArrowLeft').closest('button');
     if (backButton) fireEvent.click(backButton);

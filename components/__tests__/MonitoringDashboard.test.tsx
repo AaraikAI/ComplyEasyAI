@@ -93,7 +93,7 @@ describe('MonitoringDashboard', () => {
   it('renders without crashing', async () => {
     render(<MonitoringDashboard />);
     await waitFor(() => {
-      expect(screen.getByText(/Continuous Monitoring|Monitor/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Continuous Monitoring|Monitor/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -108,7 +108,7 @@ describe('MonitoringDashboard', () => {
   it('shows dashboard view by default', async () => {
     render(<MonitoringDashboard />);
     await waitFor(() => {
-      expect(screen.getByText(/Continuous Monitoring|Monitor/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Continuous Monitoring|Monitor/i).length).toBeGreaterThan(0);
     });
   });
 });

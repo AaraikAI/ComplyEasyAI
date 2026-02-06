@@ -104,14 +104,13 @@ describe('DemoBookingForm', () => {
 
   it('renders input fields for name and email', () => {
     render(<DemoBookingForm isOpen={true} onClose={mockOnClose} />);
-    expect(screen.getAllByPlaceholderText(/first name/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByPlaceholderText(/email/i).length).toBeGreaterThan(0);
+    expect(screen.getByPlaceholderText('John')).toBeTruthy();
+    expect(screen.getByPlaceholderText('john@company.com')).toBeTruthy();
   });
 
   it('allows typing into form fields', () => {
     render(<DemoBookingForm isOpen={true} onClose={mockOnClose} />);
-    const emailFields = screen.getAllByPlaceholderText(/email/i);
-    const emailField = emailFields[0] as HTMLInputElement;
+    const emailField = screen.getByPlaceholderText('john@company.com') as HTMLInputElement;
     fireEvent.change(emailField, { target: { value: 'demo@example.com' } });
     expect(emailField.value).toBe('demo@example.com');
   });

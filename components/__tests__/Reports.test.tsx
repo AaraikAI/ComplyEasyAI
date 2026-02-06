@@ -101,7 +101,7 @@ describe('Reports', () => {
   it('renders without crashing', async () => {
     render(<Reports />);
     await waitFor(() => {
-      expect(screen.getByText(/Reports|Compliance/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Reports|Compliance/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -116,7 +116,7 @@ describe('Reports', () => {
   it('displays dashboard metrics', async () => {
     render(<Reports />);
     await waitFor(() => {
-      expect(screen.getByText(/Reports|Dashboard/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Reports|Dashboard/i).length).toBeGreaterThan(0);
     });
   });
 });

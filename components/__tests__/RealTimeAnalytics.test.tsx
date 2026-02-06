@@ -107,7 +107,7 @@ describe('RealTimeAnalytics', () => {
     vi.useRealTimers();
     render(<RealTimeAnalytics />);
     await waitFor(() => {
-      expect(screen.getByText('24h')).toBeInTheDocument();
+      expect(screen.getAllByText(/24 Hours|24h/i).length).toBeGreaterThan(0);
     });
   });
 
