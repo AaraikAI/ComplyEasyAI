@@ -50,7 +50,8 @@ describe('LandingPage', () => {
 
   it('renders the navbar with brand name', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('ComplyEasy AI')).toBeInTheDocument();
+    // Brand appears in both navbar and footer
+    expect(screen.getAllByText('ComplyEasy AI').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders navigation links', () => {
@@ -67,8 +68,9 @@ describe('LandingPage', () => {
   it('scrolls to top when brand logo is clicked', () => {
     const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     renderWithRouter(<LandingPage />);
-    const brand = screen.getByText('ComplyEasy AI');
-    fireEvent.click(brand);
+    // Brand appears in both navbar and footer
+    const brands = screen.getAllByText('ComplyEasy AI');
+    fireEvent.click(brands[0]);
     expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
     scrollToSpy.mockRestore();
   });

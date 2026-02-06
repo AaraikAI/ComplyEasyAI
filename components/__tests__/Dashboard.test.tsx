@@ -189,7 +189,8 @@ describe('Dashboard', () => {
     ];
     render(<Dashboard {...defaultProps} frameworks={frameworks} />);
     expect(screen.getByText('30d')).toBeInTheDocument();
-    expect(screen.getByText('SOC 2')).toBeInTheDocument();
+    // SOC 2 appears in both Active Frameworks card and Upcoming Audit card
+    expect(screen.getAllByText('SOC 2').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows "Overdue" when audit date is in the past', () => {

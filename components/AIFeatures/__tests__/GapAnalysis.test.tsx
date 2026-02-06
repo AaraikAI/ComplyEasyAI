@@ -11,22 +11,11 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
-const frameworksList = vi.fn().mockResolvedValue([
-  { name: 'My SOC 2', id: 'fw1' },
-  { name: 'Custom ISO', id: 'fw2' },
-]);
-
-const performGapAnalysis = vi.fn().mockResolvedValue({
-  analysis: 'Gap analysis result summary',
-  gaps: [
-    { control: 'Access Control', criticality: 'High', effort: 'Medium', remediation: 'Implement MFA' },
-    { control: 'Encryption', criticality: 'Critical', effort: 'High', remediation: 'Enable TLS' },
-  ],
-  prioritized: [
-    { control: 'Access Control', priority: 9, rationale: 'High impact' },
-    { control: 'Encryption', priority: 10, rationale: 'Critical data exposure' },
-  ],
-});
+// Hoisted mock functions
+const { frameworksList, performGapAnalysis } = vi.hoisted(() => ({
+  frameworksList: vi.fn(),
+  performGapAnalysis: vi.fn(),
+}));
 
 vi.mock('@/services/api', () => ({
   api: {
@@ -216,11 +205,7 @@ describe('GapAnalysis', () => {
     // Select a target
     const allGdpr = screen.getAllByText('GDPR');
     fireEvent.click(allGdpr[allGdpr.length - 1]);
-    // Force the button to be clickable (even though it's disabled, we can test the validation path)
-    // The button checks both currentFrameworks.length and targetFrameworks.length
-    // Actually the button is enabled now since target > 0 but current === 0
-    // The handler checks and returns error
-    // Wait - the button has disabled={loading || currentFrameworks.length === 0 || targetFrameworks.length === 0}
+    // The button has disabled={loading || currentFrameworks.length === 0 || targetFrameworks.length === 0}
     // So current=0 => disabled. Let's verify:
     const runBtn = screen.getByText('Run Gap Analysis').closest('button')!;
     expect(runBtn).toBeDisabled();
@@ -326,7 +311,6 @@ describe('GapAnalysis', () => {
   it('exports analysis as JSON when Export clicked', async () => {
     const createObjectURL = vi.fn().mockReturnValue('blob:url');
     const revokeObjectURL = vi.fn();
-    const createElement = vi.spyOn(document, 'createElement');
     global.URL.createObjectURL = createObjectURL;
     global.URL.revokeObjectURL = revokeObjectURL;
 

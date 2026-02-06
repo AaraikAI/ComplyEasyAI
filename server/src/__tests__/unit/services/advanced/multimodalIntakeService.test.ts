@@ -1,8 +1,14 @@
 /**
- * Multimodal Intake Service Unit Tests
+ * Multimodal Intake Service Unit Tests - Comprehensive Coverage
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { prismaMock } from '../../../mocks/prisma';
+
+jest.mock('../../../../config/database', () => ({
+  __esModule: true,
+  default: prismaMock,
+}));
 
 jest.mock('../../../../config/logger', () => ({
   __esModule: true,
@@ -14,375 +20,401 @@ jest.mock('../../../../config/logger', () => ({
   },
 }));
 
-jest.mock('../../../../services/advanced/whisperService', () => ({
-  __esModule: true,
-  default: {
-    transcribeAudio: (jest.fn() as jest.Mock<any>).mockResolvedValue({
-      text: 'This is a test transcription of the audio file.',
-      confidence: 0.92,
-      language: 'en',
-      duration: 60,
-      segments: [
-        { id: 0, start: 0, end: 5, text: 'This is a test', confidence: 0.95 },
-        { id: 1, start: 5, end: 10, text: 'transcription of the audio file.', confidence: 0.89 },
-      ],
-    }),
-    transcribeVideo: (jest.fn() as jest.Mock<any>).mockResolvedValue({
-      text: 'Video transcription text.',
-      confidence: 0.88,
-      language: 'en',
-      duration: 120,
-    }),
+const mockGenerateContent = jest.fn<any>().mockResolvedValue({
+  response: {
+    text: jest.fn<any>().mockReturnValue(JSON.stringify({
+      extractedData: { title: 'Test', content: 'Extracted content' },
+      requirements: ['Requirement 1'],
+    })),
   },
-}));
-
-jest.mock('tesseract.js', () => ({
-  __esModule: true,
-  default: {
-    recognize: jest.fn<any>().mockResolvedValue({
-      data: {
-        text: 'OCR recognized text',
-        confidence: 85,
-        words: [{ text: 'OCR', confidence: 90, bbox: { x0: 0, y0: 0, x1: 50, y1: 20 } }],
-      },
-    }),
-    createWorker: jest.fn<any>().mockReturnValue({
-      loadLanguage: jest.fn<any>().mockResolvedValue(undefined),
-      initialize: jest.fn<any>().mockResolvedValue(undefined),
-      recognize: jest.fn<any>().mockResolvedValue({
-        data: {
-          text: 'OCR recognized text',
-          confidence: 85,
-          words: [{ text: 'OCR', confidence: 90, bbox: { x0: 0, y0: 0, x1: 50, y1: 20 } }],
-        },
-      }),
-      terminate: jest.fn<any>().mockResolvedValue(undefined),
-    }),
-  },
-}));
-
-jest.mock('@mediapipe/tasks-vision', () => ({
-  FilesetResolver: {
-    forVisionTasks: jest.fn<any>().mockRejectedValue(new Error('Not available in test')),
-  },
-  FaceDetector: {
-    createFromOptions: jest.fn<any>().mockRejectedValue(new Error('Not available in test')),
-  },
-}));
-
-jest.mock('sharp', () => {
-  return jest.fn<any>().mockReturnValue({
-    metadata: jest.fn<any>().mockResolvedValue({
-      width: 1920,
-      height: 1080,
-      format: 'jpeg',
-      channels: 3,
-    }),
-    stats: jest.fn<any>().mockResolvedValue({
-      channels: [
-        { mean: 120, stdev: 50, min: 0, max: 255 },
-        { mean: 130, stdev: 45, min: 0, max: 255 },
-        { mean: 110, stdev: 55, min: 0, max: 255 },
-      ],
-    }),
-    raw: jest.fn().mockReturnThis(),
-    resize: jest.fn().mockReturnThis(),
-    toBuffer: jest.fn<any>().mockResolvedValue(Buffer.alloc(100)),
-    jpeg: jest.fn().mockReturnThis(),
-    png: jest.fn().mockReturnThis(),
-  });
 });
 
-jest.mock('fluent-ffmpeg', () => {
-  const createFfmpegInstance = () => {
-    const cbs: Record<string, Function> = {};
-    const inst: any = {
-      _cbs: cbs,
-      ffprobe: jest.fn<any>().mockImplementation((cb: any) => cb(null, {
-        format: { duration: 60 },
-        streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
-      })),
-      outputOptions: jest.fn<any>().mockImplementation(() => inst),
-      output: jest.fn<any>().mockImplementation(() => inst),
-      on: jest.fn<any>().mockImplementation((event: string, cb: Function) => {
-        cbs[event] = cb;
-        return inst;
-      }),
-      run: jest.fn<any>().mockImplementation(() => {
-        if (cbs['end']) process.nextTick(() => cbs['end']());
-      }),
-      seekInput: jest.fn<any>().mockImplementation(() => inst),
-      seek: jest.fn<any>().mockImplementation(() => inst),
-      frames: jest.fn<any>().mockImplementation(() => inst),
-      pipe: jest.fn<any>().mockImplementation(() => inst),
-      noVideo: jest.fn<any>().mockImplementation(() => inst),
-      audioCodec: jest.fn<any>().mockImplementation(() => inst),
-      format: jest.fn<any>().mockImplementation(() => inst),
-    };
-    return inst;
-  };
-  const mockFfmpeg = jest.fn<any>().mockImplementation(() => createFfmpegInstance());
-  return { __esModule: true, default: mockFfmpeg };
-});
+jest.mock('@google/generative-ai', () => ({
+  GoogleGenerativeAI: jest.fn<any>().mockImplementation(() => ({
+    getGenerativeModel: jest.fn<any>().mockReturnValue({
+      generateContent: mockGenerateContent,
+    }),
+  })),
+}));
 
-jest.mock('fs', () => ({
-  existsSync: jest.fn<any>().mockReturnValue(true),
-  mkdirSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  writeFile: jest.fn<any>().mockImplementation((_path: any, _data: any, cb: any) => { if (cb) cb(null); }),
-  readFileSync: jest.fn<any>().mockReturnValue(Buffer.alloc(100)),
-  unlinkSync: jest.fn(),
-  unlink: jest.fn<any>().mockImplementation((_path: any, cb: any) => { if (cb) cb(null); }),
-  createReadStream: jest.fn(),
+jest.mock('../../../../services/notificationService', () => ({
+  __esModule: true,
+  default: {
+    sendNotification: jest.fn<any>().mockResolvedValue(undefined),
+  },
 }));
 
 import multimodalIntakeService from '../../../../services/advanced/multimodalIntakeService';
 
 describe('MultimodalIntakeService', () => {
+  const orgId = 'org-123';
+  const userId = 'user-123';
+
+  const mockIntake = {
+    id: 'intake-1',
+    organizationId: orgId,
+    sourceType: 'document',
+    fileName: 'test.pdf',
+    mimeType: 'application/pdf',
+    status: 'completed',
+    extractedData: {
+      title: 'Test Document',
+      content: 'Document content',
+      requirements: ['Req 1', 'Req 2'],
+    },
+    metadata: {},
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdBy: userId,
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Re-establish mock implementations (cleared by resetMocks)
-    const whisperService = require('../../../../services/advanced/whisperService').default;
-    whisperService.transcribeAudio.mockResolvedValue({
-      text: 'This is a test transcription of the audio file.',
-      confidence: 0.92,
-      language: 'en',
-      duration: 60,
-      segments: [
-        { id: 0, start: 0, end: 5, text: 'This is a test', confidence: 0.95 },
-        { id: 1, start: 5, end: 10, text: 'transcription of the audio file.', confidence: 0.89 },
-      ],
-    });
-    whisperService.transcribeVideo.mockResolvedValue({
-      text: 'Video transcription text.',
-      confidence: 0.88,
-      language: 'en',
-      duration: 120,
-    });
-
-    const Tesseract = require('tesseract.js').default;
-    Tesseract.recognize.mockResolvedValue({
-      data: {
-        text: 'OCR recognized text',
-        confidence: 85,
-        words: [{ text: 'OCR', confidence: 90, bbox: { x0: 0, y0: 0, x1: 50, y1: 20 } }],
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    GoogleGenerativeAI.mockImplementation(() => ({
+      getGenerativeModel: jest.fn<any>().mockReturnValue({
+        generateContent: mockGenerateContent,
+      }),
+    }));
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: jest.fn<any>().mockReturnValue(JSON.stringify({
+          extractedData: { title: 'Test', content: 'Extracted content' },
+          requirements: ['Requirement 1'],
+        })),
       },
     });
-    Tesseract.createWorker.mockReturnValue({
-      loadLanguage: jest.fn<any>().mockResolvedValue(undefined),
-      initialize: jest.fn<any>().mockResolvedValue(undefined),
-      recognize: jest.fn<any>().mockResolvedValue({
-        data: {
-          text: 'OCR recognized text',
-          confidence: 85,
-          words: [{ text: 'OCR', confidence: 90, bbox: { x0: 0, y0: 0, x1: 50, y1: 20 } }],
-        },
-      }),
-      terminate: jest.fn<any>().mockResolvedValue(undefined),
+
+    (prismaMock.multimodalIntake.create as jest.Mock<any>).mockResolvedValue(mockIntake);
+    (prismaMock.multimodalIntake.findFirst as jest.Mock<any>).mockResolvedValue(mockIntake);
+    (prismaMock.multimodalIntake.findMany as jest.Mock<any>).mockResolvedValue([mockIntake]);
+    (prismaMock.multimodalIntake.findUnique as jest.Mock<any>).mockResolvedValue(mockIntake);
+    (prismaMock.multimodalIntake.update as jest.Mock<any>).mockResolvedValue(mockIntake);
+    (prismaMock.multimodalIntake.delete as jest.Mock<any>).mockResolvedValue(mockIntake);
+    (prismaMock.multimodalIntake.count as jest.Mock<any>).mockResolvedValue(1);
+    (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.auditLog.findMany as jest.Mock<any>).mockResolvedValue([]);
+    (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
+  });
+
+  // ===================== processDocument =====================
+  describe('processDocument', () => {
+    it('should process a text document', async () => {
+      const result = await multimodalIntakeService.processDocument(orgId, {
+        content: 'This is a compliance document about data protection requirements.',
+        fileName: 'policy.txt',
+        mimeType: 'text/plain',
+      }, userId);
+
+      expect(result).toBeDefined();
+      expect(prismaMock.multimodalIntake.create).toHaveBeenCalled();
     });
 
-    const sharp = require('sharp');
-    sharp.mockReturnValue({
-      metadata: jest.fn<any>().mockResolvedValue({
-        width: 1920,
-        height: 1080,
-        format: 'jpeg',
-        channels: 3,
-      }),
-      stats: jest.fn<any>().mockResolvedValue({
-        channels: [
-          { mean: 120, stdev: 50, min: 0, max: 255 },
-          { mean: 130, stdev: 45, min: 0, max: 255 },
-          { mean: 110, stdev: 55, min: 0, max: 255 },
+    it('should process a PDF document buffer', async () => {
+      const result = await multimodalIntakeService.processDocument(orgId, {
+        buffer: Buffer.from('PDF content'),
+        fileName: 'policy.pdf',
+        mimeType: 'application/pdf',
+      }, userId);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should process an image document', async () => {
+      const result = await multimodalIntakeService.processDocument(orgId, {
+        buffer: Buffer.from('image content'),
+        fileName: 'screenshot.png',
+        mimeType: 'image/png',
+      }, userId);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should process a spreadsheet', async () => {
+      const result = await multimodalIntakeService.processDocument(orgId, {
+        content: 'col1,col2\nval1,val2',
+        fileName: 'data.csv',
+        mimeType: 'text/csv',
+      }, userId);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should handle AI extraction failure gracefully', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('AI unavailable'));
+
+      const result = await multimodalIntakeService.processDocument(orgId, {
+        content: 'Test content',
+        fileName: 'test.txt',
+        mimeType: 'text/plain',
+      }, userId);
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  // ===================== processAudio =====================
+  describe('processAudio', () => {
+    it('should process an audio file', async () => {
+      const result = await multimodalIntakeService.processAudio(orgId, {
+        buffer: Buffer.from('audio data'),
+        fileName: 'recording.mp3',
+        mimeType: 'audio/mpeg',
+        duration: 120,
+      }, userId);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should process a WAV audio file', async () => {
+      const result = await multimodalIntakeService.processAudio(orgId, {
+        buffer: Buffer.from('wav audio data'),
+        fileName: 'recording.wav',
+        mimeType: 'audio/wav',
+        duration: 60,
+      }, userId);
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  // ===================== processVideo =====================
+  describe('processVideo', () => {
+    it('should process a video file', async () => {
+      const result = await multimodalIntakeService.processVideo(orgId, {
+        buffer: Buffer.from('video data'),
+        fileName: 'compliance_training.mp4',
+        mimeType: 'video/mp4',
+        duration: 300,
+      }, userId);
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  // ===================== processEmail =====================
+  describe('processEmail', () => {
+    it('should process an email', async () => {
+      const result = await multimodalIntakeService.processEmail(orgId, {
+        from: 'auditor@example.com',
+        to: ['compliance@company.com'],
+        subject: 'Audit Findings',
+        body: 'Please find attached the audit findings for Q4 2025.',
+        attachments: [],
+      }, userId);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should process email with attachments', async () => {
+      const result = await multimodalIntakeService.processEmail(orgId, {
+        from: 'auditor@example.com',
+        to: ['compliance@company.com'],
+        subject: 'Audit Report',
+        body: 'See attached report.',
+        attachments: [
+          { fileName: 'report.pdf', mimeType: 'application/pdf', content: Buffer.from('pdf content') },
         ],
-      }),
-      raw: jest.fn<any>().mockReturnThis(),
-      resize: jest.fn<any>().mockReturnThis(),
-      toBuffer: jest.fn<any>().mockResolvedValue(Buffer.alloc(100)),
-      jpeg: jest.fn<any>().mockReturnThis(),
-      png: jest.fn<any>().mockReturnThis(),
-    });
-
-    const ffmpeg = require('fluent-ffmpeg').default;
-    ffmpeg.mockImplementation(() => {
-      const cbs: Record<string, Function> = {};
-      const inst: any = {
-        _cbs: cbs,
-        ffprobe: jest.fn<any>().mockImplementation((cb: any) => cb(null, {
-          format: { duration: 60 },
-          streams: [{ codec_type: 'video' }, { codec_type: 'audio' }],
-        })),
-        outputOptions: jest.fn<any>().mockImplementation(() => inst),
-        output: jest.fn<any>().mockImplementation(() => inst),
-        on: jest.fn<any>().mockImplementation((event: string, cb: Function) => {
-          cbs[event] = cb;
-          return inst;
-        }),
-        run: jest.fn<any>().mockImplementation(() => {
-          if (cbs['end']) process.nextTick(() => cbs['end']());
-        }),
-        seekInput: jest.fn<any>().mockImplementation(() => inst),
-        seek: jest.fn<any>().mockImplementation(() => inst),
-        frames: jest.fn<any>().mockImplementation(() => inst),
-        pipe: jest.fn<any>().mockImplementation(() => inst),
-        noVideo: jest.fn<any>().mockImplementation(() => inst),
-        audioCodec: jest.fn<any>().mockImplementation(() => inst),
-        format: jest.fn<any>().mockImplementation(() => inst),
-      };
-      return inst;
-    });
-
-    const fs = require('fs');
-    fs.existsSync.mockReturnValue(true);
-    fs.mkdirSync.mockImplementation(() => {});
-    fs.writeFileSync.mockImplementation(() => {});
-    fs.writeFile.mockImplementation((_path: any, _data: any, cb: any) => { if (cb) cb(null); });
-    fs.readFileSync.mockReturnValue(Buffer.alloc(100));
-    fs.unlinkSync.mockImplementation(() => {});
-    fs.unlink.mockImplementation((_path: any, cb: any) => { if (cb) cb(null); });
-    fs.createReadStream.mockReturnValue({});
-  });
-
-  describe('transcribeAudio', () => {
-    it('should transcribe audio buffer successfully', async () => {
-      // Create a buffer that looks like an MP3
-      const mp3Buffer = Buffer.alloc(1024);
-      mp3Buffer[0] = 0xFF;
-      mp3Buffer[1] = 0xFB;
-
-      const result = await multimodalIntakeService.transcribeAudio(
-        mp3Buffer,
-        { language: 'en', format: 'audio/mpeg' },
-        'org-123',
-        'evidence-1'
-      );
+      }, userId);
 
       expect(result).toBeDefined();
-      expect(result.text).toBeDefined();
-      expect(typeof result.confidence).toBe('number');
-      expect(result.language).toBe('en');
+    });
+  });
+
+  // ===================== processWebhook =====================
+  describe('processWebhook', () => {
+    it('should process a webhook payload', async () => {
+      const result = await multimodalIntakeService.processWebhook(orgId, {
+        source: 'github',
+        event: 'push',
+        payload: { repository: 'org/repo', branch: 'main' },
+      }, userId);
+
+      expect(result).toBeDefined();
     });
 
-    it('should throw for unsupported audio format', async () => {
-      const audioBuffer = Buffer.alloc(100);
+    it('should process a Jira webhook', async () => {
+      const result = await multimodalIntakeService.processWebhook(orgId, {
+        source: 'jira',
+        event: 'issue_created',
+        payload: { issue: { key: 'COMP-123', summary: 'New compliance task' } },
+      }, userId);
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  // ===================== getIntakes =====================
+  describe('getIntakes', () => {
+    it('should return all intakes for an organization', async () => {
+      const result = await multimodalIntakeService.getIntakes(orgId);
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should filter by source type', async () => {
+      const result = await multimodalIntakeService.getIntakes(orgId, { sourceType: 'document' });
+      expect(result).toBeDefined();
+    });
+
+    it('should filter by status', async () => {
+      const result = await multimodalIntakeService.getIntakes(orgId, { status: 'completed' });
+      expect(result).toBeDefined();
+    });
+
+    it('should return empty array when no intakes', async () => {
+      (prismaMock.multimodalIntake.findMany as jest.Mock<any>).mockResolvedValue([]);
+
+      const result = await multimodalIntakeService.getIntakes(orgId);
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ===================== getIntake =====================
+  describe('getIntake', () => {
+    it('should get an intake by ID', async () => {
+      const result = await multimodalIntakeService.getIntake('intake-1', orgId);
+      expect(result).toBeDefined();
+    });
+
+    it('should throw when intake not found', async () => {
+      (prismaMock.multimodalIntake.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
-        multimodalIntakeService.transcribeAudio(
-          audioBuffer,
-          { format: 'audio/unsupported_format' }
-        )
-      ).rejects.toThrow('Unsupported audio format');
-    });
-
-    it('should auto-detect audio format from buffer header', async () => {
-      const wavBuffer = Buffer.alloc(1024);
-      wavBuffer[0] = 0x52; // R
-      wavBuffer[1] = 0x49; // I
-      wavBuffer[2] = 0x46; // F
-      wavBuffer[3] = 0x46; // F
-
-      const result = await multimodalIntakeService.transcribeAudio(wavBuffer);
-
-      expect(result).toBeDefined();
-      expect(result.text).toBeDefined();
+        multimodalIntakeService.getIntake('nonexistent', orgId)
+      ).rejects.toThrow();
     });
   });
 
-  describe('analyzeVideo', () => {
-    it('should analyze a video buffer', async () => {
-      // Create a buffer that looks like MP4
-      const mp4Buffer = Buffer.alloc(1024);
-      mp4Buffer[4] = 0x66; // f
-      mp4Buffer[5] = 0x74; // t
-      mp4Buffer[6] = 0x79; // y
-      mp4Buffer[7] = 0x70; // p
-      mp4Buffer[8] = 0x6D; // m
-      mp4Buffer[9] = 0x70; // p
-      mp4Buffer[10] = 0x34; // 4
+  // ===================== deleteIntake =====================
+  describe('deleteIntake', () => {
+    it('should delete an intake', async () => {
+      await expect(
+        multimodalIntakeService.deleteIntake('intake-1', orgId)
+      ).resolves.not.toThrow();
 
-      const result = await multimodalIntakeService.analyzeVideo(
-        mp4Buffer,
-        { format: 'video/mp4' },
-        'org-123',
-        'evidence-2'
-      );
-
-      expect(result).toBeDefined();
-      expect(result.format).toBeDefined();
-      expect(result.duration).toBeDefined();
+      expect(prismaMock.multimodalIntake.delete).toHaveBeenCalled();
     });
 
-    it('should throw for unsupported video format', async () => {
-      const videoBuffer = Buffer.alloc(100);
+    it('should throw when intake not found', async () => {
+      (prismaMock.multimodalIntake.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
-        multimodalIntakeService.analyzeVideo(
-          videoBuffer,
-          { format: 'video/unsupported_format' }
-        )
-      ).rejects.toThrow('Unsupported video format');
+        multimodalIntakeService.deleteIntake('nonexistent', orgId)
+      ).rejects.toThrow();
     });
   });
 
-  describe('processMultimodalEvidence', () => {
-    it('should process multiple evidence files', async () => {
-      const files = [
+  // ===================== reprocessIntake =====================
+  describe('reprocessIntake', () => {
+    it('should reprocess an existing intake', async () => {
+      const result = await multimodalIntakeService.reprocessIntake('intake-1', orgId);
+      expect(result).toBeDefined();
+    });
+
+    it('should throw when intake not found', async () => {
+      (prismaMock.multimodalIntake.findFirst as jest.Mock<any>).mockResolvedValue(null);
+
+      await expect(
+        multimodalIntakeService.reprocessIntake('nonexistent', orgId)
+      ).rejects.toThrow();
+    });
+  });
+
+  // ===================== getIntakeStatistics =====================
+  describe('getIntakeStatistics', () => {
+    it('should return intake statistics', async () => {
+      const result = await multimodalIntakeService.getIntakeStatistics(orgId);
+      expect(result).toBeDefined();
+    });
+
+    it('should handle no intakes in statistics', async () => {
+      (prismaMock.multimodalIntake.findMany as jest.Mock<any>).mockResolvedValue([]);
+      (prismaMock.multimodalIntake.count as jest.Mock<any>).mockResolvedValue(0);
+
+      const result = await multimodalIntakeService.getIntakeStatistics(orgId);
+      expect(result).toBeDefined();
+    });
+  });
+
+  // ===================== bulkProcess =====================
+  describe('bulkProcess', () => {
+    it('should process multiple documents at once', async () => {
+      const result = await multimodalIntakeService.bulkProcess(orgId, [
+        { content: 'Doc 1', fileName: 'doc1.txt', mimeType: 'text/plain' },
+        { content: 'Doc 2', fileName: 'doc2.txt', mimeType: 'text/plain' },
+      ], userId);
+
+      expect(result).toBeDefined();
+      expect(result.successful).toBeDefined();
+      expect(result.failed).toBeDefined();
+    });
+
+    it('should handle empty document list', async () => {
+      const result = await multimodalIntakeService.bulkProcess(orgId, [], userId);
+      expect(result.successful).toHaveLength(0);
+    });
+
+    it('should handle partial failures in bulk processing', async () => {
+      (prismaMock.multimodalIntake.create as jest.Mock<any>)
+        .mockResolvedValueOnce(mockIntake)
+        .mockRejectedValueOnce(new Error('DB error'));
+
+      const result = await multimodalIntakeService.bulkProcess(orgId, [
+        { content: 'Doc 1', fileName: 'doc1.txt', mimeType: 'text/plain' },
+        { content: 'Doc 2', fileName: 'doc2.txt', mimeType: 'text/plain' },
+      ], userId);
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  // ===================== mapToFramework =====================
+  describe('mapToFramework', () => {
+    it('should map intake findings to frameworks', async () => {
+      (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([
         {
-          buffer: Buffer.alloc(100),
-          filename: 'recording.mp3',
-          mimeType: 'audio/mpeg',
-          size: 100,
+          id: 'fw-1',
+          name: 'SOC 2',
+          controls: [{ id: 'c-1', name: 'CC1.1', description: 'Control Environment' }],
         },
-      ];
+      ]);
 
-      // Mock transcription for audio processing
-      const result = await multimodalIntakeService.processMultimodalEvidence(
-        files,
-        'org-123',
-        'evidence-3'
-      );
-
+      const result = await multimodalIntakeService.mapToFramework('intake-1', orgId);
       expect(result).toBeDefined();
+    });
+
+    it('should handle intake not found in mapping', async () => {
+      (prismaMock.multimodalIntake.findFirst as jest.Mock<any>).mockResolvedValue(null);
+
+      await expect(
+        multimodalIntakeService.mapToFramework('nonexistent', orgId)
+      ).rejects.toThrow();
     });
   });
 
-  describe('extractTextFromPDF', () => {
-    it('should extract text from a PDF buffer', async () => {
-      const pdfBuffer = Buffer.from('%PDF-1.4 test content');
+  // ===================== error handling =====================
+  describe('error handling', () => {
+    it('should handle database error in processDocument', async () => {
+      (prismaMock.multimodalIntake.create as jest.Mock<any>).mockRejectedValue(new Error('DB error'));
 
-      const result = await multimodalIntakeService.extractTextFromPDF(pdfBuffer);
-
-      expect(result).toBeDefined();
-      expect(typeof result).toBe('string');
-    });
-  });
-
-  describe('format detection helpers', () => {
-    it('should detect MP3 format from buffer', () => {
-      const buffer = Buffer.alloc(100);
-      buffer[0] = 0xFF;
-      buffer[1] = 0xFB;
-
-      const format = (multimodalIntakeService as any).detectAudioFormat(buffer);
-      expect(format).toBe('audio/mpeg');
+      await expect(
+        multimodalIntakeService.processDocument(orgId, {
+          content: 'Test',
+          fileName: 'test.txt',
+          mimeType: 'text/plain',
+        }, userId)
+      ).rejects.toThrow();
     });
 
-    it('should detect WAV format from buffer', () => {
-      const buffer = Buffer.alloc(100);
-      buffer[0] = 0x52; // R
-      buffer[1] = 0x49; // I
-      buffer[2] = 0x46; // F
-      buffer[3] = 0x46; // F
+    it('should handle database error in getIntakes', async () => {
+      (prismaMock.multimodalIntake.findMany as jest.Mock<any>).mockRejectedValue(new Error('DB error'));
 
-      const format = (multimodalIntakeService as any).detectAudioFormat(buffer);
-      expect(format).toBe('audio/wav');
-    });
-
-    it('should detect noise level from audio buffer', () => {
-      const buffer = Buffer.alloc(1024);
-      const noiseLevel = (multimodalIntakeService as any).detectNoiseLevel(buffer);
-      expect(['low', 'medium', 'high']).toContain(noiseLevel);
+      await expect(
+        multimodalIntakeService.getIntakes(orgId)
+      ).rejects.toThrow();
     });
   });
 });
