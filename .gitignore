@@ -30,3 +30,8 @@ server/.env.local
 *.njsproj
 *.sln
 *.sw?
+
+# Coverage reports
+coverage/
+server/coverage/
+server/reports/
