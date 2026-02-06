@@ -44,18 +44,14 @@ describe('ComplianceDigitalTwinService', () => {
         ],
       },
     ]);
-    (prismaMock.simulationScenario as any) = {
-      create: jest.fn<any>().mockResolvedValue({
-        id: 'sim-1',
-        organizationId: orgId,
-        name: 'Test Sim',
-        scenarioType: 'control_change',
-        createdAt: new Date(),
-      }),
-    };
-    (prismaMock.simulationResult as any) = {
-      create: jest.fn<any>().mockResolvedValue({ id: 'result-1' }),
-    };
+    (prismaMock.simulationScenario.create as jest.Mock<any>).mockResolvedValue({
+      id: 'sim-1',
+      organizationId: orgId,
+      name: 'Test Sim',
+      scenarioType: 'control_change',
+      createdAt: new Date(),
+    });
+    (prismaMock.simulationResult.create as jest.Mock<any>).mockResolvedValue({ id: 'result-1' });
     (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
   };
 
@@ -147,12 +143,8 @@ describe('ComplianceDigitalTwinService', () => {
 
     it('should handle database creation failure with temporary ID', async () => {
       (prismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([]);
-      (prismaMock.simulationScenario as any) = {
-        create: jest.fn<any>().mockRejectedValue(new Error('DB error')),
-      };
-      (prismaMock.simulationResult as any) = {
-        create: jest.fn<any>().mockResolvedValue({ id: 'result-1' }),
-      };
+      (prismaMock.simulationScenario.create as jest.Mock<any>).mockRejectedValue(new Error('DB error'));
+      (prismaMock.simulationResult.create as jest.Mock<any>).mockResolvedValue({ id: 'result-1' });
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 
       const result = await complianceDigitalTwinService.runSimulation(
@@ -186,7 +178,7 @@ describe('ComplianceDigitalTwinService', () => {
         orgId,
         'control_change',
         { controlId: 'c-1', newStatus: 'Pending' },
-        10,
+        50,
         userId
       );
 
@@ -251,13 +243,11 @@ describe('ComplianceDigitalTwinService', () => {
 
   describe('loadSimulationState', () => {
     it('should load a saved simulation state', async () => {
-      (prismaMock.simulationScenario as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue({
-          id: 'sim-1',
-          organizationId: orgId,
-          parameters: { savedState: { score: 85 } },
-        }),
-      };
+      (prismaMock.simulationScenario.findFirst as jest.Mock<any>).mockResolvedValue({
+        id: 'sim-1',
+        organizationId: orgId,
+        parameters: { savedState: { score: 85 } },
+      });
 
       const result = await complianceDigitalTwinService.loadSimulationState('sim-1', orgId);
 
@@ -265,9 +255,7 @@ describe('ComplianceDigitalTwinService', () => {
     });
 
     it('should throw error if simulation not found', async () => {
-      (prismaMock.simulationScenario as any) = {
-        findFirst: jest.fn<any>().mockResolvedValue(null),
-      };
+      (prismaMock.simulationScenario.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
         complianceDigitalTwinService.loadSimulationState('nonexistent', orgId)
