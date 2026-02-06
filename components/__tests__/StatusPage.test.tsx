@@ -92,7 +92,7 @@ describe('StatusPage', () => {
 
   it('renders without crashing', () => {
     render(<StatusPage />);
-    expect(screen.getByText(/Status|System Status/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Status|System Status/i).length).toBeGreaterThan(0);
   });
 
   it('displays service status entries', () => {

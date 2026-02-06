@@ -92,7 +92,7 @@ describe('DocsPage', () => {
 
   it('renders without crashing', () => {
     render(<DocsPage />);
-    expect(screen.getByText(/Documentation|Docs/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Documentation|Docs/i).length).toBeGreaterThan(0);
   });
 
   it('displays doc sections like Getting Started', () => {

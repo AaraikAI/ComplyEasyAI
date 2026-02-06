@@ -92,21 +92,21 @@ describe('LearnPage', () => {
 
   it('renders without crashing', () => {
     render(<LearnPage />);
-    expect(screen.getByText(/Learn|Academy|Training/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Learn|Academy|Training/i).length).toBeGreaterThan(0);
   });
 
   it('displays course listings', () => {
     render(<LearnPage />);
-    expect(screen.getByText(/SOC 2 Compliance Masterclass/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/SOC 2 Compliance Masterclass/i).length).toBeGreaterThan(0);
   });
 
   it('shows course categories or filters', () => {
     render(<LearnPage />);
-    expect(screen.getByText(/ISO 27001/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/ISO 27001/i).length).toBeGreaterThan(0);
   });
 
   it('displays GDPR course', () => {
     render(<LearnPage />);
-    expect(screen.getByText(/GDPR/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/GDPR/i).length).toBeGreaterThan(0);
   });
 });
