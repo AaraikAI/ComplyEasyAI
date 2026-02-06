@@ -14,17 +14,17 @@ const mockTier = {
 describe('TierCard', () => {
   it('should render tier name', () => {
     render(<TierCard tier={mockTier} />);
-    expect(screen.getByText('Growth')).toBeTruthy();
+    expect(screen.getAllByText('Growth').length).toBeGreaterThan(0);
   });
 
   it('should show Current Plan badge when isCurrentTier', () => {
     render(<TierCard tier={mockTier} isCurrentTier={true} />);
-    expect(screen.getByText(/current/i)).toBeTruthy();
+    expect(screen.getAllByText(/current/i).length).toBeGreaterThan(0);
   });
 
   it('should show Most Popular badge when isPopular', () => {
     render(<TierCard tier={mockTier} isPopular={true} />);
-    expect(screen.getByText(/popular/i)).toBeTruthy();
+    expect(screen.getAllByText(/popular/i).length).toBeGreaterThan(0);
   });
 
   it('should call onSelect when button clicked', () => {

@@ -112,7 +112,7 @@ describe('OnboardingChecklistWidget', () => {
 
   it('displays progress count', () => {
     render(<OnboardingChecklistWidget />);
-    expect(screen.getByText('1/3')).toBeInTheDocument();
+    expect(screen.getByText(/1 of 3 tasks/)).toBeInTheDocument();
   });
 
   it('expands when clicked', () => {

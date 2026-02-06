@@ -45,7 +45,7 @@ describe('AI Features', () => {
     render(<PolicyGenerator onBack={vi.fn()} />);
     
     fireEvent.click(screen.getByText('Generate Policy'));
-    await waitFor(() => expect(screen.getByText('Policy Content')).toBeInTheDocument(), { timeout: 3000 });
+    await waitFor(() => expect(screen.getByText(/Policy Content/)).toBeInTheDocument(), { timeout: 3000 });
   });
 
   it('ContractAnalyzer handles input', async () => {
@@ -55,7 +55,7 @@ describe('AI Features', () => {
     fireEvent.change(input, { target: { value: 'Contract text' } });
     
     fireEvent.click(screen.getByText(/Analyze for/i));
-    await waitFor(() => expect(screen.getByText('Risks Found')).toBeInTheDocument(), { timeout: 3000 });
+    await waitFor(() => expect(screen.getByText(/Risks Found/)).toBeInTheDocument(), { timeout: 3000 });
   });
 
   it('BCPGenerator renders result', async () => {

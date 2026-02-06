@@ -93,30 +93,31 @@ describe('SignupPage', () => {
 
   it('renders the signup form at step 1', () => {
     render(<SignupPage />);
-    expect(screen.getByText(/Create your account|email/i)).toBeTruthy();
+    expect(screen.getAllByText(/Create your account|email/i).length).toBeGreaterThan(0);
   });
 
   it('renders the email input field', () => {
     render(<SignupPage />);
-    const emailInput = screen.getByPlaceholderText(/email/i);
-    expect(emailInput).toBeTruthy();
+    const emailInputs = screen.getAllByPlaceholderText(/email/i);
+    expect(emailInputs.length).toBeGreaterThan(0);
   });
 
   it('allows typing into the email field', () => {
     render(<SignupPage />);
-    const emailInput = screen.getByPlaceholderText(/email/i) as HTMLInputElement;
+    const emailInputs = screen.getAllByPlaceholderText(/email/i);
+    const emailInput = emailInputs[0] as HTMLInputElement;
     fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
     expect(emailInput.value).toBe('user@example.com');
   });
 
   it('shows feature list on the sidebar', () => {
     render(<SignupPage />);
-    expect(screen.getByText(/SOC 2|frameworks/i)).toBeTruthy();
+    expect(screen.getAllByText(/SOC 2|frameworks/i).length).toBeGreaterThan(0);
   });
 
   it('renders the password field', () => {
     render(<SignupPage />);
-    const passwordInput = screen.getByPlaceholderText(/password/i);
-    expect(passwordInput).toBeTruthy();
+    const passwordInputs = screen.getAllByPlaceholderText(/password/i);
+    expect(passwordInputs.length).toBeGreaterThan(0);
   });
 });

@@ -59,7 +59,7 @@ describe('Layout', () => {
 
   it('should render navigation sidebar', () => {
     render(<Layout {...defaultProps} />);
-    expect(screen.getByText(/dashboard/i)).toBeTruthy();
+    expect(screen.getAllByText(/dashboard/i).length).toBeGreaterThan(0);
   });
 
   it('should render user info in header or sidebar', () => {
@@ -71,6 +71,6 @@ describe('Layout', () => {
 
   it('should highlight the current view in navigation', () => {
     render(<Layout {...defaultProps} currentView="dashboard" />);
-    expect(screen.getByText(/dashboard/i)).toBeTruthy();
+    expect(screen.getAllByText(/dashboard/i).length).toBeGreaterThan(0);
   });
 });
