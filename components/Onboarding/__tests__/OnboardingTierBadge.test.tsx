@@ -4,7 +4,6 @@ import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import { OnboardingTierBadge } from '../OnboardingTierBadge';
 
-vi.mock('lucide-react', () => new Proxy({}, { get: (_, name) => { if (name === '__esModule') return true; return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />; } }));
 
 describe('OnboardingTierBadge', () => {
   it('should render Foundation tier', () => { render(<OnboardingTierBadge tier="Foundation" />); expect(screen.getByText('Foundation')).toBeTruthy(); });

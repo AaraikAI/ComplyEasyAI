@@ -3,7 +3,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { OnboardingHint } from '../OnboardingHint';
 
-vi.mock('lucide-react', () => new Proxy({}, { get: (_, name) => { if (name === '__esModule') return true; return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />; } }));
 
 describe('OnboardingHint', () => {
   const defaultProps = { message: 'Try clicking here!', position: { top: 100, left: 200 }, isVisible: true, onDismiss: vi.fn(), onDisableAll: vi.fn() };

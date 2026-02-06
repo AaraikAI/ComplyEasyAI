@@ -2,12 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
@@ -105,18 +99,18 @@ describe('DemoBookingForm', () => {
 
   it('renders the form when isOpen is true', () => {
     render(<DemoBookingForm isOpen={true} onClose={mockOnClose} />);
-    expect(screen.getByText(/Book a Demo|Schedule|demo/i)).toBeTruthy();
+    expect(screen.getAllByText(/Book a Demo|Schedule|demo/i).length).toBeGreaterThan(0);
   });
 
   it('renders input fields for name and email', () => {
     render(<DemoBookingForm isOpen={true} onClose={mockOnClose} />);
-    expect(screen.getByPlaceholderText(/first name/i)).toBeTruthy();
-    expect(screen.getByPlaceholderText(/email/i)).toBeTruthy();
+    expect(screen.getByPlaceholderText('John')).toBeTruthy();
+    expect(screen.getByPlaceholderText('john@company.com')).toBeTruthy();
   });
 
   it('allows typing into form fields', () => {
     render(<DemoBookingForm isOpen={true} onClose={mockOnClose} />);
-    const emailField = screen.getByPlaceholderText(/email/i) as HTMLInputElement;
+    const emailField = screen.getByPlaceholderText('john@company.com') as HTMLInputElement;
     fireEvent.change(emailField, { target: { value: 'demo@example.com' } });
     expect(emailField.value).toBe('demo@example.com');
   });

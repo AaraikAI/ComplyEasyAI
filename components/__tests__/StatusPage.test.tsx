@@ -2,12 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
@@ -98,22 +92,22 @@ describe('StatusPage', () => {
 
   it('renders without crashing', () => {
     render(<StatusPage />);
-    expect(screen.getByText(/Status|System Status/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Status|System Status/i).length).toBeGreaterThan(0);
   });
 
   it('displays service status entries', () => {
     render(<StatusPage />);
-    expect(screen.getByText('Web Application')).toBeInTheDocument();
-    expect(screen.getByText('API Services')).toBeInTheDocument();
+    expect(screen.getAllByText('Web Application').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('API Services').length).toBeGreaterThan(0);
   });
 
   it('shows operational status indicators', () => {
     render(<StatusPage />);
-    expect(screen.getByText('Database Cluster')).toBeInTheDocument();
+    expect(screen.getAllByText('Database Cluster').length).toBeGreaterThan(0);
   });
 
   it('displays AI Processing Engine status', () => {
     render(<StatusPage />);
-    expect(screen.getByText('AI Processing Engine')).toBeInTheDocument();
+    expect(screen.getAllByText('AI Processing Engine').length).toBeGreaterThan(0);
   });
 });

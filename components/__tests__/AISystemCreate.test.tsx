@@ -2,12 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
@@ -101,7 +95,7 @@ describe('AISystemCreate', () => {
 
   it('renders form without crashing', () => {
     render(<AISystemCreate onBack={mockOnBack} onSuccess={mockOnSuccess} />);
-    expect(screen.getByText('Create AI System')).toBeInTheDocument();
+    expect(screen.getAllByText('Create AI System')[0]).toBeInTheDocument();
   });
 
   it('displays required form fields', () => {
@@ -111,8 +105,8 @@ describe('AISystemCreate', () => {
 
   it('shows validation errors for empty name on submit', async () => {
     render(<AISystemCreate onBack={mockOnBack} onSuccess={mockOnSuccess} />);
-    const form = screen.getByText('Create AI System').closest('div')!;
-    const submitButton = screen.getByText(/Create System|Save/i);
+    const form = screen.getAllByText('Create AI System')[0].closest('div')!;
+    const submitButton = screen.getAllByText(/Create AI System/i).pop()!;
     fireEvent.click(submitButton);
     await waitFor(() => {
       expect(screen.getByText('Name is required')).toBeInTheDocument();

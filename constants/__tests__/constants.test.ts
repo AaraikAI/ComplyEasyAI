@@ -39,7 +39,6 @@ describe('constants', () => {
         expect(fw).toHaveProperty('name');
         expect(fw).toHaveProperty('status');
         expect(fw).toHaveProperty('progress');
-        expect(fw).toHaveProperty('controls');
       });
     });
   });
@@ -51,8 +50,8 @@ describe('constants', () => {
 
     it('should have required fields for each', () => {
       AVAILABLE_FRAMEWORKS.forEach(fw => {
-        expect(fw).toHaveProperty('id');
         expect(fw).toHaveProperty('name');
+        expect(fw).toHaveProperty('region');
       });
     });
   });

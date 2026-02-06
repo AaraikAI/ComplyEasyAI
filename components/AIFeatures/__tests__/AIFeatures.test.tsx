@@ -24,6 +24,18 @@ vi.mock('../../../services/geminiService', () => ({
   generateBCP: vi.fn().mockResolvedValue({ plan: '# Recovery Plan', contactTree: [] })
 }));
 
+// Mock onboarding hooks
+vi.mock('../../../hooks/useOnboarding', () => ({
+  useOnboardingTrigger: vi.fn(),
+  useOnboarding: vi.fn().mockReturnValue({ isOnboarding: false }),
+  useOnboardingFlow: vi.fn().mockReturnValue({ isActive: false }),
+}));
+
+vi.mock('../../../contexts/OnboardingContext', () => ({
+  OnboardingProvider: ({ children }: any) => children,
+  useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true }),
+}));
+
 describe('AI Features', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -33,7 +45,7 @@ describe('AI Features', () => {
     render(<PolicyGenerator onBack={vi.fn()} />);
     
     fireEvent.click(screen.getByText('Generate Policy'));
-    await waitFor(() => expect(screen.getByText('Policy Content')).toBeInTheDocument(), { timeout: 3000 });
+    await waitFor(() => expect(screen.getByText(/Policy Content/)).toBeInTheDocument(), { timeout: 3000 });
   });
 
   it('ContractAnalyzer handles input', async () => {
@@ -43,7 +55,7 @@ describe('AI Features', () => {
     fireEvent.change(input, { target: { value: 'Contract text' } });
     
     fireEvent.click(screen.getByText(/Analyze for/i));
-    await waitFor(() => expect(screen.getByText('Risks Found')).toBeInTheDocument(), { timeout: 3000 });
+    await waitFor(() => expect(screen.getByText(/Risks Found/)).toBeInTheDocument(), { timeout: 3000 });
   });
 
   it('BCPGenerator renders result', async () => {

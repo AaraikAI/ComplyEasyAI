@@ -1,36 +1,15 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
-
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
-  AreaChart: ({ children }: any) => <div>{children}</div>,
-  Area: () => null, XAxis: () => null, YAxis: () => null,
-  CartesianGrid: () => null, Tooltip: () => null, Legend: () => null,
-  PieChart: ({ children }: any) => <div>{children}</div>,
-  Pie: () => null, Cell: () => null,
-  BarChart: ({ children }: any) => <div>{children}</div>,
-  Bar: () => null, LineChart: ({ children }: any) => <div>{children}</div>,
-  Line: () => null, RadialBarChart: ({ children }: any) => <div>{children}</div>,
-  RadialBar: () => null, RadarChart: ({ children }: any) => <div>{children}</div>,
-  Radar: () => null, PolarGrid: () => null, PolarAngleAxis: () => null, PolarRadiusAxis: () => null,
-}));
-
-vi.mock('react-markdown', () => ({ default: ({ children }: any) => <div>{children}</div> }));
+vi.mock('react-markdown', () => ({ default: ({ children }: any) => <div data-testid="markdown">{children}</div> }));
 
 vi.mock('dompurify', () => ({
   default: { sanitize: (html: string) => html },
 }));
 
 vi.mock('@/services/geminiService', () => ({
-  generateComplianceReport: vi.fn().mockResolvedValue('Generated report content'),
+  generateComplianceReport: vi.fn().mockResolvedValue('Generated AI report content about compliance status.'),
 }));
 
 vi.mock('@/contexts/AuthContext', () => ({
@@ -41,27 +20,73 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
+const mockFrameworks = [
+  { id: 'fw-1', name: 'SOC 2', status: 'In Progress', progress: 75, nextAuditDate: '2026-06-01', controls: [
+    { id: 'c1', name: 'AC-1', status: 'Implemented', description: 'Access control' },
+    { id: 'c2', name: 'AC-2', status: 'Not Started', description: 'Encryption', evidence: 'doc.pdf' },
+  ]},
+  { id: 'fw-2', name: 'GDPR', status: 'Compliant', progress: 100, nextAuditDate: '2026-07-15', controls: [
+    { id: 'c3', name: 'DP-1', status: 'Compliant', description: 'Data processing' },
+  ]},
+  { id: 'fw-3', name: 'HIPAA', status: 'In Progress', progress: 30, nextAuditDate: '2026-08-01', controls: [] },
+];
+
 vi.mock('@/services/api', () => ({
   api: {
-    risks: { getAll: vi.fn().mockResolvedValue([]), list: vi.fn().mockResolvedValue([]) },
-    frameworks: { getAll: vi.fn().mockResolvedValue([]), list: vi.fn().mockResolvedValue([]) },
-    ai: { generatePolicy: vi.fn().mockResolvedValue({}), analyzeContract: vi.fn().mockResolvedValue({}), analyzeGap: vi.fn().mockResolvedValue({}), generateRFP: vi.fn().mockResolvedValue({}), simulatePhishing: vi.fn().mockResolvedValue({}), scoreVendor: vi.fn().mockResolvedValue({}), mapData: vi.fn().mockResolvedValue({}), generateBCP: vi.fn().mockResolvedValue({}) },
-    billing: { getSubscription: vi.fn().mockResolvedValue({ status: 'active', plan: 'Growth' }), getUsage: vi.fn().mockResolvedValue({}) },
-    team: { getMembers: vi.fn().mockResolvedValue([]) },
-    organization: { get: vi.fn().mockResolvedValue({ name: 'Test Org' }) },
-    enterprise: { getQuestionnaires: vi.fn().mockResolvedValue([]), getPolicies: vi.fn().mockResolvedValue([]), getMonitors: vi.fn().mockResolvedValue([]), getIssues: vi.fn().mockResolvedValue([]), getReports: vi.fn().mockResolvedValue([]), reports: { getExecutiveSummary: vi.fn().mockResolvedValue({}), getRiskReport: vi.fn().mockResolvedValue({}), getVendorRiskReport: vi.fn().mockResolvedValue({}) }, autopilot: { run: vi.fn().mockResolvedValue({}) } },
-    audit: { list: vi.fn().mockResolvedValue({ logs: [], total: 0 }) },
-    integrations: { getAll: vi.fn().mockResolvedValue([]) },
-    vendors: { getAll: vi.fn().mockResolvedValue([]) },
-    acos: { getGoals: vi.fn().mockResolvedValue([]), getControlLoops: vi.fn().mockResolvedValue([]) },
-    security: { getZeroTrust: vi.fn().mockResolvedValue({}), getHomomorphicKeys: vi.fn().mockResolvedValue(null) },
-    aiRmf: { getSystems: vi.fn().mockResolvedValue([]), getSystem: vi.fn().mockResolvedValue(null), createSystem: vi.fn().mockResolvedValue({ id: '1' }), getAssessments: vi.fn().mockResolvedValue([]), getDashboard: vi.fn().mockResolvedValue({ totalSystems: 0, byStatus: {}, byLifecycleStage: {}, byRiskLevel: {}, averageTrustworthinessScore: 0 }), deleteSystem: vi.fn().mockResolvedValue({}) },
-    euRegulations: { getAISystems: vi.fn().mockResolvedValue([]), getDMAGatekeepers: vi.fn().mockResolvedValue([]), getDSAPlatforms: vi.fn().mockResolvedValue([]) },
-    onboarding: { getProgress: vi.fn().mockResolvedValue(null) },
-    demo: { submit: vi.fn().mockResolvedValue({}) },
-    webhooks: { getAll: vi.fn().mockResolvedValue([]) },
-    twoFactor: { getStatus: vi.fn().mockResolvedValue({ enabled: false }) },
-    auth: { requestMagicLink: vi.fn().mockResolvedValue({}), register: vi.fn().mockResolvedValue({}) },
+    frameworks: { list: vi.fn().mockResolvedValue(mockFrameworks) },
+    risks: { list: vi.fn().mockResolvedValue([
+      { id: 'r1', severity: 'High', description: 'Data breach risk', title: 'Data Breach', status: 'Open', detectedAt: new Date().toISOString() },
+    ])},
+    enterprise: {
+      reports: {
+        getExecutiveSummary: vi.fn().mockResolvedValue({
+          overallComplianceScore: 82,
+          frameworkSummaries: [
+            { name: 'SOC 2', score: 75, status: 'In Progress', trend: 'up' },
+            { name: 'GDPR', score: 100, status: 'Compliant', trend: 'stable' },
+          ],
+          riskHighlights: [{ category: 'Security', count: 5, criticalCount: 2 }],
+          keyMetrics: { totalControls: 50, compliantControls: 40, openIssues: 5, overdueTasks: 2 },
+          recommendations: ['Improve SOC 2 controls', 'Review HIPAA policy'],
+          narrative: 'Overall compliance is strong with areas for improvement.',
+        }),
+        getRiskReport: vi.fn().mockResolvedValue({
+          totalRisks: 15,
+          criticalRisks: 3,
+          highRisks: 5,
+          mediumRisks: 4,
+          lowRisks: 3,
+          risksByCategory: [{ category: 'Security', count: 8 }, { category: 'Data', count: 7 }],
+          trends: [{ period: 'Jan', count: 10 }, { period: 'Feb', count: 12 }, { period: 'Mar', count: 15 }],
+          topRisks: [
+            { title: 'Unpatched servers', severity: 'Critical', status: 'Open', framework: 'SOC 2' },
+            { title: 'Data leakage', severity: 'High', status: 'Open' },
+          ],
+          summary: 'Risk posture has deteriorated over the past quarter.',
+        }),
+        getVendorRiskReport: vi.fn().mockResolvedValue({
+          totalVendors: 20,
+          highRiskVendors: 3,
+          averageScore: 72,
+          vendorsByRiskLevel: [{ level: 'High', count: 3 }, { level: 'Medium', count: 10 }, { level: 'Low', count: 7 }],
+          topRiskyVendors: [
+            { name: 'VendorA', score: 45, riskLevel: 'High', dataAccess: 'Full' },
+            { name: 'VendorB', score: 55, riskLevel: 'Medium', dataAccess: 'Read Only' },
+          ],
+          summary: 'Three vendors pose elevated risk to the organization.',
+        }),
+      },
+      autopilot: {
+        run: vi.fn().mockResolvedValue({
+          gapsIdentified: [{ gap: 'Missing encryption policy', framework: 'SOC 2', severity: 'High', recommendation: 'Implement AES-256' }],
+          actionsProposed: [{ action: 'Enable encryption', priority: 'High', estimatedEffort: '2 days' }],
+          actionsExecuted: [{ action: 'Updated firewall rules', result: 'Success', timestamp: '2026-01-15T10:00:00Z' }],
+          itemsRequiringApproval: [{ item: 'Policy change', reason: 'Requires CISO approval', suggestedAction: 'Review and approve' }],
+          summary: 'Autopilot identified 1 gap and executed 1 fix.',
+          overallScore: 78,
+        }),
+      },
+    },
   },
   getAuthToken: vi.fn().mockReturnValue('test-token'),
   clearAuthToken: vi.fn(),
@@ -83,20 +108,6 @@ vi.mock('@/constants/tierLimits', () => ({
   UPGRADE_LINK: '/settings?tab=billing',
 }));
 
-vi.mock('@/hooks/useOnboarding', () => ({
-  useOnboarding: vi.fn().mockReturnValue({ isOnboarding: false }),
-  useOnboardingFlow: vi.fn().mockReturnValue({ isActive: false, currentStep: 0, canShow: false, start: vi.fn(), next: vi.fn(), prev: vi.fn(), skip: vi.fn(), complete: vi.fn() }),
-  useOnboardingTrigger: vi.fn(),
-  useOnboardingHint: vi.fn().mockReturnValue({ isVisible: false, position: null, dismiss: vi.fn(), disableAllHints: vi.fn() }),
-  useOnboardingChecklist: vi.fn().mockReturnValue({ items: [], completedCount: 0, totalCount: 0, percentage: 0, isComplete: false, startFlowForItem: vi.fn() }),
-  useConfetti: vi.fn().mockReturnValue({ trigger: vi.fn(), dismiss: vi.fn(), isShowing: false }),
-}));
-
-vi.mock('@/contexts/OnboardingContext', () => ({
-  OnboardingProvider: ({ children }: any) => <>{children}</>,
-  useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true, showCelebration: false }),
-}));
-
 import { Reports } from '@/components/Reports';
 
 describe('Reports', () => {
@@ -104,10 +115,13 @@ describe('Reports', () => {
     vi.clearAllMocks();
   });
 
-  it('renders without crashing', async () => {
+  // ---- Dashboard View ----
+
+  it('renders dashboard heading', async () => {
     render(<Reports />);
     await waitFor(() => {
-      expect(screen.getByText(/Reports|Compliance/i)).toBeInTheDocument();
+      expect(screen.getByText('Compliance Reports')).toBeInTheDocument();
+      expect(screen.getByText('AI-powered compliance reporting and analytics')).toBeInTheDocument();
     });
   });
 
@@ -119,10 +133,549 @@ describe('Reports', () => {
     });
   });
 
-  it('displays dashboard metrics', async () => {
+  it('displays quick stat cards after loading', async () => {
     render(<Reports />);
     await waitFor(() => {
-      expect(screen.getByText(/Reports|Dashboard/i)).toBeInTheDocument();
+      expect(screen.getByText('Total Frameworks')).toBeInTheDocument();
+      expect(screen.getByText('Avg. Progress')).toBeInTheDocument();
+      expect(screen.getByText('Compliant')).toBeInTheDocument();
+      expect(screen.getByText('At Risk')).toBeInTheDocument();
+    });
+  });
+
+  it('shows correct framework count', async () => {
+    render(<Reports />);
+    await waitFor(() => {
+      expect(screen.getByText('3')).toBeInTheDocument(); // 3 total frameworks
+    });
+  });
+
+  it('calculates average progress', async () => {
+    render(<Reports />);
+    await waitFor(() => {
+      // (75 + 100 + 30) / 3 = 68.33, rounded to 68%
+      expect(screen.getByText('68%')).toBeInTheDocument();
+    });
+  });
+
+  it('calculates compliant frameworks count', async () => {
+    render(<Reports />);
+    await waitFor(() => {
+      expect(screen.getByText('1')).toBeInTheDocument(); // GDPR is Compliant
+    });
+  });
+
+  it('calculates at-risk frameworks count', async () => {
+    render(<Reports />);
+    await waitFor(() => {
+      // HIPAA has progress 30 < 50, so 1 at risk
+      const atRiskCard = screen.getByText('At Risk').closest('div');
+      expect(atRiskCard).toBeInTheDocument();
+    });
+  });
+
+  it('renders action buttons for report types', async () => {
+    render(<Reports />);
+    await waitFor(() => {
+      expect(screen.getByText('Generate Report')).toBeInTheDocument();
+      expect(screen.getByText('AI Executive Summary')).toBeInTheDocument();
+      expect(screen.getByText('Compliance Autopilot')).toBeInTheDocument();
+      expect(screen.getByText('Risk Report')).toBeInTheDocument();
+    });
+  });
+
+  it('renders additional report types', async () => {
+    render(<Reports />);
+    await waitFor(() => {
+      expect(screen.getByText('Additional Reports')).toBeInTheDocument();
+      expect(screen.getByText('Vendor Risk Report')).toBeInTheDocument();
+      expect(screen.getByText('Control Status Report')).toBeInTheDocument();
+      expect(screen.getByText('Audit Trail Report')).toBeInTheDocument();
+    });
+  });
+
+  it('shows framework progress chart when frameworks exist', async () => {
+    render(<Reports />);
+    await waitFor(() => {
+      expect(screen.getByText('Framework Progress')).toBeInTheDocument();
+    });
+  });
+
+  // ---- Generate Report View ----
+
+  it('switches to Generate Report view', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => {
+      expect(screen.getByText('Generate Compliance Report')).toBeInTheDocument();
+      expect(screen.getByText('Report Configuration')).toBeInTheDocument();
+    });
+  });
+
+  it('shows framework checkboxes in generate view', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => {
+      expect(screen.getByText('SOC 2')).toBeInTheDocument();
+      expect(screen.getByText('GDPR')).toBeInTheDocument();
+      expect(screen.getByText('HIPAA')).toBeInTheDocument();
+    });
+  });
+
+  it('shows back button that returns to dashboard', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => screen.getByText('Dashboard'));
+    fireEvent.click(screen.getByText('Dashboard'));
+    await waitFor(() => {
+      expect(screen.getByText('Compliance Reports')).toBeInTheDocument();
+    });
+  });
+
+  it('toggles framework selection', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => screen.getByText('SOC 2'));
+    const checkbox = screen.getByText('SOC 2').closest('label')!.querySelector('input[type="checkbox"]')!;
+    fireEvent.click(checkbox);
+    expect(screen.getByText('1 framework(s) selected')).toBeInTheDocument();
+    fireEvent.click(checkbox);
+    expect(screen.queryByText('1 framework(s) selected')).not.toBeInTheDocument();
+  });
+
+  it('shows error when generating report without selecting frameworks', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => screen.getByText('AI Generate Report'));
+    fireEvent.click(screen.getByText('AI Generate Report'));
+    await waitFor(() => {
+      expect(screen.getByText('Please select at least one framework')).toBeInTheDocument();
+    });
+  });
+
+  it('generates report after selecting a framework', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => screen.getByText('SOC 2'));
+    // Select SOC 2
+    const checkbox = screen.getByText('SOC 2').closest('label')!.querySelector('input[type="checkbox"]')!;
+    fireEvent.click(checkbox);
+    await act(async () => {
+      fireEvent.click(screen.getByText('AI Generate Report'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText(/Compliance Report/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows report preview with empty state initially', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => {
+      expect(screen.getByText('No report generated yet')).toBeInTheDocument();
+    });
+  });
+
+  it('shows customization options when toggle is clicked', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => screen.getByText('Show Customization'));
+    fireEvent.click(screen.getByText('Show Customization'));
+    await waitFor(() => {
+      expect(screen.getByText('Report Sections')).toBeInTheDocument();
+      expect(screen.getByText('Executive Summary')).toBeInTheDocument();
+      expect(screen.getByText('Framework Status')).toBeInTheDocument();
+      expect(screen.getByText('Control Status')).toBeInTheDocument();
+      expect(screen.getByText('Risk Summary')).toBeInTheDocument();
+      expect(screen.getByText('Evidence Summary')).toBeInTheDocument();
+      expect(screen.getByText('Recommendations')).toBeInTheDocument();
+    });
+  });
+
+  it('toggles report sections in customization', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => screen.getByText('Show Customization'));
+    fireEvent.click(screen.getByText('Show Customization'));
+    await waitFor(() => screen.getByText('Evidence Summary'));
+    const evidenceCheckbox = screen.getByText('Evidence Summary').closest('label')!.querySelector('input[type="checkbox"]')!;
+    fireEvent.click(evidenceCheckbox);
+    // It should toggle off the evidence section
+    expect((evidenceCheckbox as HTMLInputElement).checked).toBe(false);
+  });
+
+  it('hides customization when toggle is clicked again', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => screen.getByText('Show Customization'));
+    fireEvent.click(screen.getByText('Show Customization'));
+    await waitFor(() => screen.getByText('Hide Customization'));
+    fireEvent.click(screen.getByText('Hide Customization'));
+    expect(screen.queryByText('Report Sections')).not.toBeInTheDocument();
+  });
+
+  it('shows export buttons after generating report', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => screen.getByText('SOC 2'));
+    const checkbox = screen.getByText('SOC 2').closest('label')!.querySelector('input[type="checkbox"]')!;
+    fireEvent.click(checkbox);
+    await act(async () => {
+      fireEvent.click(screen.getByText('AI Generate Report'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Export Report')).toBeInTheDocument();
+      expect(screen.getByText('JSON')).toBeInTheDocument();
+      expect(screen.getByText('PDF')).toBeInTheDocument();
+    });
+  });
+
+  it('dismisses error when X is clicked', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Generate Report'));
+    fireEvent.click(screen.getByText('Generate Report'));
+    await waitFor(() => screen.getByText('AI Generate Report'));
+    fireEvent.click(screen.getByText('AI Generate Report'));
+    await waitFor(() => screen.getByText('Please select at least one framework'));
+    const closeButton = screen.getAllByTestId('icon-X')[0].closest('button');
+    if (closeButton) fireEvent.click(closeButton);
+    expect(screen.queryByText('Please select at least one framework')).not.toBeInTheDocument();
+  });
+
+  // ---- AI Executive Summary ----
+
+  it('generates executive summary when button is clicked', async () => {
+    const { api } = await import('@/services/api');
+    render(<Reports />);
+    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('AI Executive Summary'));
+    });
+    await waitFor(() => {
+      expect(api.enterprise.reports.getExecutiveSummary).toHaveBeenCalled();
+      expect(screen.getByText('Overall Compliance Score')).toBeInTheDocument();
+      expect(screen.getByText('82%')).toBeInTheDocument();
+    });
+  });
+
+  it('shows executive summary key metrics', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('AI Executive Summary'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Total Controls')).toBeInTheDocument();
+      expect(screen.getByText('50')).toBeInTheDocument();
+      expect(screen.getByText('Open Issues')).toBeInTheDocument();
+      expect(screen.getByText('Overdue Tasks')).toBeInTheDocument();
+    });
+  });
+
+  it('shows executive narrative', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('AI Executive Summary'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Executive Narrative')).toBeInTheDocument();
+      expect(screen.getByText(/Overall compliance is strong/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows framework summaries in executive view', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('AI Executive Summary'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Framework Status')).toBeInTheDocument();
+    });
+  });
+
+  it('shows recommendations in executive view', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('AI Executive Summary'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Key Recommendations')).toBeInTheDocument();
+      expect(screen.getByText('Improve SOC 2 controls')).toBeInTheDocument();
+      expect(screen.getByText('Review HIPAA policy')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Export JSON button in executive summary', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('AI Executive Summary'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Export JSON')).toBeInTheDocument();
+    });
+  });
+
+  // ---- Compliance Autopilot ----
+
+  it('runs compliance autopilot when button is clicked', async () => {
+    const { api } = await import('@/services/api');
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Compliance Autopilot'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Compliance Autopilot'));
+    });
+    await waitFor(() => {
+      expect(api.enterprise.autopilot.run).toHaveBeenCalled();
+      expect(screen.getByText('Compliance Autopilot Report')).toBeInTheDocument();
+    });
+  });
+
+  it('shows autopilot summary and score', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Compliance Autopilot'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Compliance Autopilot'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Autopilot Summary')).toBeInTheDocument();
+      expect(screen.getByText('Score: 78%')).toBeInTheDocument();
+      expect(screen.getByText(/Autopilot identified 1 gap/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows autopilot stats cards', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Compliance Autopilot'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Compliance Autopilot'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Gaps Identified')).toBeInTheDocument();
+      expect(screen.getByText('Actions Proposed')).toBeInTheDocument();
+      expect(screen.getByText('Actions Executed')).toBeInTheDocument();
+      expect(screen.getByText('Requiring Approval')).toBeInTheDocument();
+    });
+  });
+
+  it('shows gaps identified in autopilot', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Compliance Autopilot'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Compliance Autopilot'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Missing encryption policy')).toBeInTheDocument();
+      expect(screen.getByText('Implement AES-256')).toBeInTheDocument();
+    });
+  });
+
+  it('shows actions proposed in autopilot', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Compliance Autopilot'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Compliance Autopilot'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Enable encryption')).toBeInTheDocument();
+      expect(screen.getByText('2 days')).toBeInTheDocument();
+    });
+  });
+
+  it('shows executed actions in autopilot', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Compliance Autopilot'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Compliance Autopilot'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Updated firewall rules')).toBeInTheDocument();
+    });
+  });
+
+  it('shows items requiring approval in autopilot', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Compliance Autopilot'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Compliance Autopilot'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Policy change')).toBeInTheDocument();
+      expect(screen.getByText(/Requires CISO approval/)).toBeInTheDocument();
+      expect(screen.getByText(/Review and approve/)).toBeInTheDocument();
+    });
+  });
+
+  // ---- Risk Report ----
+
+  it('generates risk report when button is clicked', async () => {
+    const { api } = await import('@/services/api');
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Risk Report'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Risk Report'));
+    });
+    await waitFor(() => {
+      expect(api.enterprise.reports.getRiskReport).toHaveBeenCalled();
+      expect(screen.getByText('AI Risk Report')).toBeInTheDocument();
+    });
+  });
+
+  it('shows risk statistics cards', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Risk Report'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Risk Report'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Total Risks')).toBeInTheDocument();
+      expect(screen.getByText('15')).toBeInTheDocument();
+      expect(screen.getByText('Critical')).toBeInTheDocument();
+    });
+  });
+
+  it('shows risk analysis summary', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Risk Report'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Risk Report'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('AI Risk Analysis')).toBeInTheDocument();
+      expect(screen.getByText(/Risk posture has deteriorated/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows top risks table', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Risk Report'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Risk Report'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Top Risks')).toBeInTheDocument();
+      expect(screen.getByText('Unpatched servers')).toBeInTheDocument();
+      expect(screen.getByText('Data leakage')).toBeInTheDocument();
+    });
+  });
+
+  // ---- Vendor Risk Report ----
+
+  it('generates vendor risk report', async () => {
+    const { api } = await import('@/services/api');
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Vendor Risk Report'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Vendor Risk Report'));
+    });
+    await waitFor(() => {
+      expect(api.enterprise.reports.getVendorRiskReport).toHaveBeenCalled();
+      expect(screen.getByText('Vendor Risk Report')).toBeInTheDocument();
+    });
+  });
+
+  it('shows vendor statistics', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Vendor Risk Report'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Vendor Risk Report'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Total Vendors')).toBeInTheDocument();
+      expect(screen.getByText('20')).toBeInTheDocument();
+      expect(screen.getByText('High Risk Vendors')).toBeInTheDocument();
+      expect(screen.getByText('Average Score')).toBeInTheDocument();
+      expect(screen.getByText('72%')).toBeInTheDocument();
+    });
+  });
+
+  it('shows vendor analysis summary', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Vendor Risk Report'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Vendor Risk Report'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('AI Vendor Analysis')).toBeInTheDocument();
+      expect(screen.getByText(/Three vendors pose elevated risk/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows high risk vendors list', async () => {
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Vendor Risk Report'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Vendor Risk Report'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('High Risk Vendors')).toBeInTheDocument();
+      expect(screen.getByText('VendorA')).toBeInTheDocument();
+      expect(screen.getByText('VendorB')).toBeInTheDocument();
+      expect(screen.getByText('Data Access: Full')).toBeInTheDocument();
+    });
+  });
+
+  // ---- Error Handling ----
+
+  it('shows error when frameworks fail to load', async () => {
+    const { api } = await import('@/services/api');
+    (api.frameworks.list as any).mockRejectedValueOnce(new Error('API error'));
+    render(<Reports />);
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load frameworks')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error when executive summary fails', async () => {
+    const { api } = await import('@/services/api');
+    (api.enterprise.reports.getExecutiveSummary as any).mockRejectedValueOnce(new Error('Summary failed'));
+    render(<Reports />);
+    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('AI Executive Summary'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Summary failed')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error when autopilot fails', async () => {
+    const { api } = await import('@/services/api');
+    (api.enterprise.autopilot.run as any).mockRejectedValueOnce(new Error('Autopilot failed'));
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Compliance Autopilot'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Compliance Autopilot'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Autopilot failed')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error when risk report fails', async () => {
+    const { api } = await import('@/services/api');
+    (api.enterprise.reports.getRiskReport as any).mockRejectedValueOnce(new Error('Risk report failed'));
+    render(<Reports />);
+    await waitFor(() => screen.getByText('Risk Report'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Risk Report'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Risk report failed')).toBeInTheDocument();
     });
   });
 });

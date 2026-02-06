@@ -121,6 +121,16 @@ describe('ComplianceAsCodeService', () => {
         tags: ['encryption', 'soc2'],
       };
 
+      // Override mock to return policy with matching name/framework
+      (prismaMock.compliancePolicy.create as jest.Mock<any>).mockResolvedValueOnce({
+        id: 'policy-1',
+        name: policy.name,
+        framework: policy.framework,
+        rego: policy.rego,
+        severity: policy.severity,
+        tags: policy.tags,
+      });
+
       const result = await complianceAsCodeService.createPolicy('org-123', policy);
 
       expect(result).toHaveProperty('id');

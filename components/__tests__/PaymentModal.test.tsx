@@ -59,6 +59,6 @@ describe('PaymentModal Component', () => {
     
     // Verify the checkout was called
     const { api } = await import('../../services/api');
-    expect(api.billing.createCheckout).toHaveBeenCalledWith('Pro');
+    expect(api.billing.createCheckout).toHaveBeenCalledWith('Pro', 'annual');
   });
 });

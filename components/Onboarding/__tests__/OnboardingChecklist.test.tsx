@@ -2,12 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
@@ -75,7 +69,9 @@ vi.mock('@/constants/tierLimits', () => ({
   UPGRADE_LINK: '/settings?tab=billing',
 }));
 
-const mockStartFlowForItem = vi.fn();
+const { mockStartFlowForItem } = vi.hoisted(() => ({
+  mockStartFlowForItem: vi.fn(),
+}));
 
 vi.mock('@/hooks/useOnboarding', () => ({
   useOnboarding: vi.fn().mockReturnValue({ isOnboarding: false }),
@@ -116,7 +112,7 @@ describe('OnboardingChecklistWidget', () => {
 
   it('displays progress count', () => {
     render(<OnboardingChecklistWidget />);
-    expect(screen.getByText('1/3')).toBeInTheDocument();
+    expect(screen.getByText(/1 of 3 tasks/)).toBeInTheDocument();
   });
 
   it('expands when clicked', () => {

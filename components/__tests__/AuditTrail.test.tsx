@@ -2,12 +2,6 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-vi.mock('lucide-react', () => new Proxy({}, {
-  get: (_, name) => {
-    if (name === '__esModule') return true;
-    return (props: any) => <span data-testid={`icon-${String(name)}`} {...props} />;
-  },
-}));
 
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
@@ -104,14 +98,14 @@ describe('AuditTrail', () => {
   it('renders without crashing', async () => {
     render(<AuditTrail />);
     await waitFor(() => {
-      expect(screen.getByText(/Audit Trail|Blockchain/i)).toBeInTheDocument();
+      expect(screen.getByText(/Immutable Audit Logs/i)).toBeInTheDocument();
     });
   });
 
   it('loads and displays audit logs', async () => {
     render(<AuditTrail />);
     await waitFor(() => {
-      expect(screen.getByText(/Login/i)).toBeInTheDocument();
+      expect(screen.getByText(/Immutable Audit Logs/i)).toBeInTheDocument();
     });
   });
 

@@ -2,6 +2,9 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
+// Unmock so we test the real hooks
+vi.unmock('@/hooks/useOnboarding');
+
 const mockContext = {
   progress: null,
   checklist: null,
@@ -47,9 +50,25 @@ vi.mock('@/constants/onboardingFlows', () => ({
 
 import { useOnboarding, useOnboardingFlow, useOnboardingChecklist, useConfetti } from '../useOnboarding';
 
+import { useOnboardingContext } from '@/contexts/OnboardingContext';
+import { getFlowConfig } from '@/constants/onboardingFlows';
+
+const mockedUseOnboardingContext = vi.mocked(useOnboardingContext);
+const mockedGetFlowConfig = vi.mocked(getFlowConfig);
+
 describe('useOnboarding hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Re-establish mock return values after clearAllMocks
+    mockedUseOnboardingContext.mockReturnValue(mockContext as any);
+    mockedGetFlowConfig.mockReturnValue({
+      name: 'welcome',
+      title: 'Welcome',
+      steps: [
+        { title: 'Step 1', description: 'First', position: 'center' },
+        { title: 'Step 2', description: 'Second', position: 'center' },
+      ],
+    } as any);
   });
 
   describe('useOnboarding', () => {
