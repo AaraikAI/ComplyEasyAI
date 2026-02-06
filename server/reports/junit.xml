@@ -1,126 +1,235 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="28" failures="13" errors="0" time="3.426">
-  <testsuite name="VRCollaborativeReviewService" errors="0" failures="13" skipped="0" timestamp="2026-02-06T03:11:26" time="2.066" tests="28">
-    <testcase classname="VRCollaborativeReviewService createSession should create a new VR session with host participant" name="VRCollaborativeReviewService createSession should create a new VR session with host participant" time="0.097">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+<testsuites name="jest tests" tests="13" failures="12" errors="0" time="2.972">
+  <testsuite name="FederatedSwarmService" errors="0" failures="12" skipped="0" timestamp="2026-02-06T04:52:48" time="1.625" tests="13">
+    <testcase classname="FederatedSwarmService joinFederation should allow an organization to join the federation" name="FederatedSwarmService joinFederation should allow an organization to join the federation" time="0.106">
+    </testcase>
+    <testcase classname="FederatedSwarmService joinFederation should throw error if already a federation member" name="FederatedSwarmService joinFederation should throw error if already a federation member" time="0.004">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:79:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService createSession should create session with invited users" name="VRCollaborativeReviewService createSession should create session with invited users" time="0.01">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService leaveFederation should allow an organization to leave the federation" name="FederatedSwarmService leaveFederation should allow an organization to leave the federation" time="0.003">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:111:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService createSession should propagate errors from database failures" name="VRCollaborativeReviewService createSession should propagate errors from database failures" time="0.005">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService joinSession should allow a user to join an active session" name="VRCollaborativeReviewService joinSession should allow a user to join an active session" time="0.003">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService leaveFederation should handle database error when leaving" name="FederatedSwarmService leaveFederation should handle database error when leaving" time="0.003">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:160:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService joinSession should throw when session is not found" name="VRCollaborativeReviewService joinSession should throw when session is not found" time="0.007">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService joinSession should throw when session is full" name="VRCollaborativeReviewService joinSession should throw when session is full" time="0.003">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService contributeToFederation should accept a valid contribution" name="FederatedSwarmService contributeToFederation should accept a valid contribution" time="0.004">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:201:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService leaveSession should remove a participant from the session" name="VRCollaborativeReviewService leaveSession should remove a participant from the session" time="0.003">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService contributeToFederation should reject contribution when rate limited" name="FederatedSwarmService contributeToFederation should reject contribution when rate limited" time="0.003">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:235:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService leaveSession should throw when leaving a non-existent session" name="VRCollaborativeReviewService leaveSession should throw when leaving a non-existent session" time="0.004">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService startSession should start a session when called by the host" name="VRCollaborativeReviewService startSession should start a session when called by the host" time="0.004">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService contributeToFederation should reject invalid contribution metadata" name="FederatedSwarmService contributeToFederation should reject invalid contribution metadata" time="0.007">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:270:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService startSession should throw when a non-host tries to start" name="VRCollaborativeReviewService startSession should throw when a non-host tries to start" time="0.004">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService getSwarmInsights should return swarm insights for an organization" name="FederatedSwarmService getSwarmInsights should return swarm insights for an organization" time="0.003">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:288:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService startSession should throw when session not found" name="VRCollaborativeReviewService startSession should throw when session not found" time="0.004">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService endSession should end a session and return summary" name="VRCollaborativeReviewService endSession should end a session and return summary" time="0.003">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService getFederationStatus should return federation status for organization" name="FederatedSwarmService getFederationStatus should return federation status for organization" time="0.003">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:317:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService endSession should throw when session not found" name="VRCollaborativeReviewService endSession should throw when session not found" time="0.004">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService addAnnotation should add an annotation to an active session" name="VRCollaborativeReviewService addAnnotation should add an annotation to an active session" time="0.003">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService getFederatedModel should return a federated model" name="FederatedSwarmService getFederatedModel should return a federated model" time="0.004">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:346:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService addAnnotation should throw when session not found" name="VRCollaborativeReviewService addAnnotation should throw when session not found" time="0.004">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService updateParticipantState should update participant position and rotation" name="VRCollaborativeReviewService updateParticipantState should update participant position and rotation" time="0.003">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService benchmarkAgainstPeers should benchmark organization against peers" name="FederatedSwarmService benchmarkAgainstPeers should benchmark organization against peers" time="0.003">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:389:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService updateParticipantState should silently handle non-existent session" name="VRCollaborativeReviewService updateParticipantState should silently handle non-existent session" time="0.002">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService healthCheck should return valid for an active in-memory session" name="VRCollaborativeReviewService healthCheck should return valid for an active in-memory session" time="0.003">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService exportInsights should export insights in JSON format" name="FederatedSwarmService exportInsights should export insights in JSON format" time="0.003">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:420:23)</failure>
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
-    <testcase classname="VRCollaborativeReviewService healthCheck should return not valid for unknown session not in DB" name="VRCollaborativeReviewService healthCheck should return not valid for unknown session not in DB" time="0.003">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService healthCheck should return not valid for a completed DB session" name="VRCollaborativeReviewService healthCheck should return not valid for a completed DB session" time="0.009">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService getActiveSessions should return active sessions from memory and database" name="VRCollaborativeReviewService getActiveSessions should return active sessions from memory and database" time="0.003">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService getSessionDetails should return null for non-existent session" name="VRCollaborativeReviewService getSessionDetails should return null for non-existent session" time="0.004">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService getSessionDetails should return session details for an in-memory session" name="VRCollaborativeReviewService getSessionDetails should return session details for an in-memory session" time="0.003">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
+    <testcase classname="FederatedSwarmService exportInsights should export insights in CSV format" name="FederatedSwarmService exportInsights should export insights in CSV format" time="0.003">
+      <failure>TypeError: Cannot read properties of undefined (reading &apos;mockResolvedValue&apos;)
+    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/federatedSwarmService.test.ts:42:66)
+    at Promise.then.completed (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusHook (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:281:40)
     at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:482:23)</failure>
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService startRecording should start recording for an active session" name="VRCollaborativeReviewService startRecording should start recording for an active session" time="0.004">
-      <failure>TypeError: Cannot read properties of undefined (reading &apos;map&apos;)
-    at VRCollaborativeReviewService.loadComplianceDataForVR (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:2029:61)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-    at VRCollaborativeReviewService.createSession (/home/user/ComplyEasyAI/server/src/services/advanced/vrCollaborativeReviewService.ts:651:30)
-    at Object.&lt;anonymous&gt; (/home/user/ComplyEasyAI/server/src/__tests__/unit/services/advanced/vrCollaborativeReviewService.test.ts:505:23)</failure>
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService startRecording should throw when session not found for recording" name="VRCollaborativeReviewService startRecording should throw when session not found for recording" time="0.004">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService trackTrainingProgress should throw when training progress not found" name="VRCollaborativeReviewService trackTrainingProgress should throw when training progress not found" time="0.004">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService getTrainingHistory should return parsed training history from audit logs" name="VRCollaborativeReviewService getTrainingHistory should return parsed training history from audit logs" time="0.005">
-    </testcase>
-    <testcase classname="VRCollaborativeReviewService getTrainingHistory should return empty array on error" name="VRCollaborativeReviewService getTrainingHistory should return empty array on error" time="0.004">
+    at _runTest (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:246:5)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:121:9)
+    at run (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/home/user/ComplyEasyAI/server/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/home/user/ComplyEasyAI/server/node_modules/jest-runner/build/testWorker.js:106:12)</failure>
     </testcase>
   </testsuite>
 </testsuites>
