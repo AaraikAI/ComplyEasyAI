@@ -268,7 +268,9 @@ describe('ComplianceChat', () => {
     openChat();
     await typeAndSend('Delete this risk');
     await waitFor(() => {
-      expect(screen.getByText(/Delete operations are not available via chat/i)).toBeInTheDocument();
+      const markdowns = screen.getAllByTestId('markdown');
+      const lastMarkdown = markdowns[markdowns.length - 1];
+      expect(lastMarkdown.textContent).toContain('Delete operations are not available via chat');
     });
   });
 
@@ -384,40 +386,40 @@ describe('ComplianceChat', () => {
   // ---- aCOS sub-tab navigation ----
 
   it('navigates to aCOS overview tab', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     render(<ComplianceChat onNavigate={mockOnNavigate} />);
     openChat();
     await typeAndSend('Go to aCOS overview');
     await waitFor(() => {
-      expect(screen.getByText(/Navigating to aCOS/i)).toBeInTheDocument();
+      const markdowns = screen.getAllByTestId('markdown');
+      const hasAcosNav = markdowns.some(el => el.textContent?.includes('Navigating to aCOS'));
+      expect(hasAcosNav).toBe(true);
     });
-    vi.useRealTimers();
   });
 
   // ---- Security sub-tab navigation ----
 
   it('navigates to security zero trust', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     render(<ComplianceChat onNavigate={mockOnNavigate} />);
     openChat();
     await typeAndSend('Go to zero trust');
     await waitFor(() => {
-      expect(screen.getByText(/Security Features/i)).toBeInTheDocument();
+      const markdowns = screen.getAllByTestId('markdown');
+      const hasSecurityNav = markdowns.some(el => el.textContent?.includes('Security Features'));
+      expect(hasSecurityNav).toBe(true);
     });
-    vi.useRealTimers();
   });
 
   // ---- Settings sub-tab navigation ----
 
   it('navigates to settings billing', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     render(<ComplianceChat onNavigate={mockOnNavigate} />);
     openChat();
     await typeAndSend('Go to settings billing');
     await waitFor(() => {
-      expect(screen.getByText(/Navigating to Settings/i)).toBeInTheDocument();
+      const markdowns = screen.getAllByTestId('markdown');
+      const hasSettingsNav = markdowns.some(el => el.textContent?.includes('Navigating to Settings'));
+      expect(hasSettingsNav).toBe(true);
     });
-    vi.useRealTimers();
   });
 
   // ---- AI tool navigation ----

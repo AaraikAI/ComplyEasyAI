@@ -4,21 +4,18 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 
 // --- Mocks ---
 
-const mockLogout = vi.fn();
-const mockRisksList = vi.fn().mockResolvedValue([]);
-
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: vi.fn().mockReturnValue({
     user: { id: '1', name: 'Test User', email: 'test@test.com', role: 'admin', avatar: 'TU', organization: { plan: 'Growth', name: 'Test Org' } },
     isAuthenticated: true,
-    logout: mockLogout,
+    logout: vi.fn(),
   }),
 }));
 
 vi.mock('../../services/api', () => ({
   api: {
     risks: {
-      list: (...args: any[]) => mockRisksList(...args),
+      list: vi.fn().mockResolvedValue([]),
     },
   },
 }));
@@ -305,6 +302,7 @@ describe('Layout Component', () => {
   // ===== LOGOUT =====
   describe('Logout', () => {
     it('calls logout when Sign Out is clicked', async () => {
+      const { useAuth } = await import('../../contexts/AuthContext');
       render(
         <Layout currentView="dashboard" onNavigate={mockNavigate}>
           <div>Test</div>
@@ -312,7 +310,8 @@ describe('Layout Component', () => {
       );
       await act(async () => { vi.advanceTimersByTime(600); });
       fireEvent.click(screen.getByText('Sign Out'));
-      expect(mockLogout).toHaveBeenCalled();
+      const authResult = (useAuth as any)();
+      expect(authResult.logout).toHaveBeenCalled();
     });
   });
 
@@ -406,7 +405,8 @@ describe('Layout Component', () => {
     });
 
     it('shows notification badge when there are notifications', async () => {
-      mockRisksList.mockResolvedValueOnce([
+      const apiModule = await import('../../services/api');
+      (apiModule.api.risks.list as any).mockResolvedValueOnce([
         { id: 'r1', description: 'Risk alert', detectedAt: '2026-01-01', assignedTo: 'Test User' },
       ]);
       render(

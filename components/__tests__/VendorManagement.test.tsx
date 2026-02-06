@@ -24,54 +24,24 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
-const mockVendors = [
-  {
-    id: 'v1', name: 'CloudCorp', organizationId: 'org-1', website: 'https://cloudcorp.io',
-    contactName: 'Jane Doe', contactEmail: 'jane@cloud.io', contactPhone: '555-1111',
-    riskLevel: 'High' as const, riskScore: 72, status: 'Active' as const,
-    category: 'Cloud Infrastructure', serviceDescription: 'IaaS provider',
-    contractStart: '2024-01-01', contractEnd: '2025-12-31', annualSpend: 120000,
-    hasDataAccess: true, dataTypes: ['PII', 'Payment'],
-    securityContact: 'sec@cloud.io', soc2Report: true, iso27001Certified: false,
-    gdprCompliant: true, hipaaBaa: false,
-    createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-06-01T00:00:00Z',
-    assessments: [{ id: 'a1', assessmentType: 'Security Review', status: 'Completed', score: 85, assessedDate: '2024-03-01' }],
-    reviews: [], monitors: [],
-  },
-  {
-    id: 'v2', name: 'DataPipe', organizationId: 'org-1',
-    riskLevel: 'Low' as const, riskScore: 22, status: 'Onboarding' as const,
-    category: 'Data Analytics', hasDataAccess: false,
-    soc2Report: false, iso27001Certified: false, gdprCompliant: false, hipaaBaa: false,
-    createdAt: '2024-02-01T00:00:00Z', updatedAt: '2024-06-02T00:00:00Z',
-    assessments: [], reviews: [], monitors: [],
-  },
-];
-
-const mockDashboard = {
-  totalVendors: 2,
-  riskDistribution: { critical: 0, high: 1, medium: 0, low: 1 },
-  statusDistribution: { active: 1, onboarding: 1, offboarding: 0, suspended: 0 },
-  assessmentMetrics: { totalAssessments: 1, pendingAssessments: 0 },
-  reviewMetrics: { totalReviews: 0 },
-  monitoringMetrics: { activeMonitors: 3, alertsDetected: 1 },
-  complianceCertifications: { soc2: 1, iso27001: 0, gdpr: 1, hipaa: 0 },
-  topRiskVendors: [{ id: 'v1', name: 'CloudCorp', riskScore: 72, riskLevel: 'High', hasDataAccess: true }],
-};
-
-const vendorsList = vi.fn().mockResolvedValue(mockVendors);
-const vendorsGetDashboard = vi.fn().mockResolvedValue(mockDashboard);
-const vendorsCreate = vi.fn().mockResolvedValue({ id: 'v-new' });
-const vendorsUpdate = vi.fn().mockResolvedValue({ ...mockVendors[0], name: 'Updated' });
-const vendorsDelete = vi.fn().mockResolvedValue({});
-const vendorsGetById = vi.fn().mockImplementation((id: string) =>
-  Promise.resolve(mockVendors.find(v => v.id === id) || mockVendors[0])
-);
-const vendorsCreateAssessment = vi.fn().mockResolvedValue({});
-const aiScoreVendor = vi.fn().mockResolvedValue({ analysis: 'Risk score: 65. Moderate risk.' });
-const aiAnalyzeContract = vi.fn().mockResolvedValue({ analysis: 'Contract looks good.' });
-const aiGenerateReport = vi.fn().mockResolvedValue({ report: 'Due diligence complete.' });
-const aiChat = vi.fn().mockResolvedValue({ response: '1. Monitor uptime\n2. Check certs' });
+// Hoisted mock functions
+const {
+  vendorsList, vendorsGetDashboard, vendorsCreate, vendorsUpdate,
+  vendorsDelete, vendorsGetById, vendorsCreateAssessment,
+  aiScoreVendor, aiAnalyzeContract, aiGenerateReport, aiChat,
+} = vi.hoisted(() => ({
+  vendorsList: vi.fn(),
+  vendorsGetDashboard: vi.fn(),
+  vendorsCreate: vi.fn(),
+  vendorsUpdate: vi.fn(),
+  vendorsDelete: vi.fn(),
+  vendorsGetById: vi.fn(),
+  vendorsCreateAssessment: vi.fn(),
+  aiScoreVendor: vi.fn(),
+  aiAnalyzeContract: vi.fn(),
+  aiGenerateReport: vi.fn(),
+  aiChat: vi.fn(),
+}));
 
 vi.mock('@/services/api', () => ({
   api: {
@@ -111,6 +81,45 @@ vi.mock('@/constants/tierFeatures', () => ({
   VIEW_TO_FEATURE: {},
 }));
 
+// ---------------------------------------------------------------------------
+// Test data
+// ---------------------------------------------------------------------------
+
+const mockVendors = [
+  {
+    id: 'v1', name: 'CloudCorp', organizationId: 'org-1', website: 'https://cloudcorp.io',
+    contactName: 'Jane Doe', contactEmail: 'jane@cloud.io', contactPhone: '555-1111',
+    riskLevel: 'High' as const, riskScore: 72, status: 'Active' as const,
+    category: 'Cloud Infrastructure', serviceDescription: 'IaaS provider',
+    contractStart: '2024-01-01', contractEnd: '2025-12-31', annualSpend: 120000,
+    hasDataAccess: true, dataTypes: ['PII', 'Payment'],
+    securityContact: 'sec@cloud.io', soc2Report: true, iso27001Certified: false,
+    gdprCompliant: true, hipaaBaa: false,
+    createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-06-01T00:00:00Z',
+    assessments: [{ id: 'a1', assessmentType: 'Security Review', status: 'Completed', score: 85, assessedDate: '2024-03-01' }],
+    reviews: [], monitors: [],
+  },
+  {
+    id: 'v2', name: 'DataPipe', organizationId: 'org-1',
+    riskLevel: 'Low' as const, riskScore: 22, status: 'Onboarding' as const,
+    category: 'Data Analytics', hasDataAccess: false,
+    soc2Report: false, iso27001Certified: false, gdprCompliant: false, hipaaBaa: false,
+    createdAt: '2024-02-01T00:00:00Z', updatedAt: '2024-06-02T00:00:00Z',
+    assessments: [], reviews: [], monitors: [],
+  },
+];
+
+const mockDashboard = {
+  totalVendors: 2,
+  riskDistribution: { critical: 0, high: 1, medium: 0, low: 1 },
+  statusDistribution: { active: 1, onboarding: 1, offboarding: 0, suspended: 0 },
+  assessmentMetrics: { totalAssessments: 1, pendingAssessments: 0 },
+  reviewMetrics: { totalReviews: 0 },
+  monitoringMetrics: { activeMonitors: 3, alertsDetected: 1 },
+  complianceCertifications: { soc2: 1, iso27001: 0, gdpr: 1, hipaa: 0 },
+  topRiskVendors: [{ id: 'v1', name: 'CloudCorp', riskScore: 72, riskLevel: 'High', hasDataAccess: true }],
+};
+
 import VendorManagement from '../VendorManagement';
 
 describe('VendorManagement', () => {
@@ -120,6 +129,17 @@ describe('VendorManagement', () => {
     vi.clearAllMocks();
     vendorsList.mockResolvedValue(mockVendors);
     vendorsGetDashboard.mockResolvedValue(mockDashboard);
+    vendorsGetById.mockImplementation((id: string) =>
+      Promise.resolve(mockVendors.find(v => v.id === id) || mockVendors[0])
+    );
+    vendorsCreate.mockResolvedValue({ id: 'v-new' });
+    vendorsUpdate.mockResolvedValue({ ...mockVendors[0], name: 'Updated' });
+    vendorsDelete.mockResolvedValue({});
+    vendorsCreateAssessment.mockResolvedValue({});
+    aiScoreVendor.mockResolvedValue({ analysis: 'Risk score: 65. Moderate risk.' });
+    aiAnalyzeContract.mockResolvedValue({ analysis: 'Contract looks good.' });
+    aiGenerateReport.mockResolvedValue({ report: 'Due diligence complete.' });
+    aiChat.mockResolvedValue({ response: '1. Monitor uptime\n2. Check certs' });
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });

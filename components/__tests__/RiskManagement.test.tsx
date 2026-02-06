@@ -4,45 +4,25 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 vi.mock('react-markdown', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 
-const mockUser = { id: 'u1', name: 'Sarah', email: 'sarah@t.com', role: 'admin', organizationId: 'org-1', organization: { plan: 'Growth', name: 'TestOrg' } };
-
 vi.mock('../../contexts/AuthContext', () => ({
-  useAuth: () => ({ user: mockUser, isAuthenticated: true }),
+  useAuth: () => ({
+    user: { id: 'u1', name: 'Sarah', email: 'sarah@t.com', role: 'admin', organizationId: 'org-1', organization: { plan: 'Growth', name: 'TestOrg' } },
+    isAuthenticated: true,
+  }),
   AuthProvider: ({ children }: any) => <>{children}</>,
 }));
 
-const mockRisks = [
-  {
-    id: 'r1', title: 'Unencrypted S3 Bucket', description: 'Production S3 bucket lacks encryption',
-    category: 'Infrastructure', severity: 'High' as const, status: 'Open' as const,
-    detectedAt: '2024-12-01', likelihood: 4, impact: 5, riskScore: 20,
-    aiPriorityScore: 95, aiRationale: 'Critical data exposure risk',
-    assignedTo: { id: 'u1', name: 'Sarah' }, assignedToId: 'u1',
-    targetDate: '2025-03-01', mitigationPlan: 'Enable SSE-S3 encryption',
-  },
-  {
-    id: 'r2', title: 'Training Gap', description: '3 employees missing security training',
-    category: 'Personnel', severity: 'Medium' as const, status: 'Open' as const,
-    detectedAt: '2024-12-02', likelihood: 3, impact: 3, riskScore: 9,
-  },
-  {
-    id: 'r3', title: 'Old Firewall Rules', description: 'Firewall rules not reviewed in 6 months',
-    category: 'Network', severity: 'Low' as const, status: 'Resolved' as const,
-    detectedAt: '2024-11-15', likelihood: 2, impact: 2, riskScore: 4,
-  },
-];
-
-const mockTeam = [
-  { id: 'u1', name: 'Sarah', email: 'sarah@t.com' },
-  { id: 'u2', name: 'John', email: 'john@t.com' },
-];
-
-const risksList = vi.fn().mockResolvedValue(mockRisks);
-const risksCreate = vi.fn().mockResolvedValue({ id: 'r-new' });
-const risksUpdate = vi.fn().mockResolvedValue({});
-const risksScan = vi.fn().mockResolvedValue({ newRisks: [{ id: 'r-scan' }] });
-const risksGenerateRemediation = vi.fn().mockResolvedValue({ plan: 'Step 1: Fix it' });
-const teamList = vi.fn().mockResolvedValue(mockTeam);
+// Hoisted mock functions
+const {
+  risksList, risksCreate, risksUpdate, risksScan, risksGenerateRemediation, teamList,
+} = vi.hoisted(() => ({
+  risksList: vi.fn(),
+  risksCreate: vi.fn(),
+  risksUpdate: vi.fn(),
+  risksScan: vi.fn(),
+  risksGenerateRemediation: vi.fn(),
+  teamList: vi.fn(),
+}));
 
 vi.mock('../../services/api', () => ({
   api: {
@@ -80,6 +60,36 @@ vi.mock('../../constants/tierFeatures', () => ({
   TIER_ORDER: ['Foundation', 'Essentials', 'Growth', 'Visionary'],
 }));
 
+// ---------------------------------------------------------------------------
+// Test data
+// ---------------------------------------------------------------------------
+
+const mockRisks = [
+  {
+    id: 'r1', title: 'Unencrypted S3 Bucket', description: 'Production S3 bucket lacks encryption',
+    category: 'Infrastructure', severity: 'High' as const, status: 'Open' as const,
+    detectedAt: '2024-12-01', likelihood: 4, impact: 5, riskScore: 20,
+    aiPriorityScore: 95, aiRationale: 'Critical data exposure risk',
+    assignedTo: { id: 'u1', name: 'Sarah' }, assignedToId: 'u1',
+    targetDate: '2025-03-01', mitigationPlan: 'Enable SSE-S3 encryption',
+  },
+  {
+    id: 'r2', title: 'Training Gap', description: '3 employees missing security training',
+    category: 'Personnel', severity: 'Medium' as const, status: 'Open' as const,
+    detectedAt: '2024-12-02', likelihood: 3, impact: 3, riskScore: 9,
+  },
+  {
+    id: 'r3', title: 'Old Firewall Rules', description: 'Firewall rules not reviewed in 6 months',
+    category: 'Network', severity: 'Low' as const, status: 'Resolved' as const,
+    detectedAt: '2024-11-15', likelihood: 2, impact: 2, riskScore: 4,
+  },
+];
+
+const mockTeam = [
+  { id: 'u1', name: 'Sarah', email: 'sarah@t.com' },
+  { id: 'u2', name: 'John', email: 'john@t.com' },
+];
+
 import { RiskManagement } from '../RiskManagement';
 
 describe('RiskManagement', () => {
@@ -88,6 +98,10 @@ describe('RiskManagement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     risksList.mockResolvedValue(mockRisks);
+    risksCreate.mockResolvedValue({ id: 'r-new' });
+    risksUpdate.mockResolvedValue({});
+    risksScan.mockResolvedValue({ newRisks: [{ id: 'r-scan' }] });
+    risksGenerateRemediation.mockResolvedValue({ plan: 'Step 1: Fix it' });
     teamList.mockResolvedValue(mockTeam);
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     vi.spyOn(window, 'alert').mockImplementation(() => {});
@@ -298,7 +312,6 @@ describe('RiskManagement', () => {
     const manageButtons = screen.getAllByText('Manage');
     fireEvent.click(manageButtons[0]);
     await waitFor(() => expect(screen.getByText('Remediation & Task')).toBeInTheDocument());
-    const xBtn = screen.getByText('Remediation & Task').closest('div')?.querySelector('button');
     // The X button is at the header right side
     const headerDiv = screen.getByText('Remediation & Task').closest('div');
     const xButton = headerDiv?.parentElement?.querySelector('button:last-child');
