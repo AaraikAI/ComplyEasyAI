@@ -122,7 +122,7 @@ describe('Integrations', () => {
   it('renders category filter buttons', async () => {
     render(<Integrations />);
     await waitFor(() => {
-      expect(screen.getByText(/Cloud|Dev|HR|Security|All/i)).toBeTruthy();
+      expect(screen.getAllByText(/Cloud|Dev|HR|Security|All/i).length).toBeGreaterThan(0);
     });
   });
 });

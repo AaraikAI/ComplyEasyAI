@@ -101,13 +101,13 @@ describe('LandingPage', () => {
 
   it('renders the hero section with headline', () => {
     render(<LandingPage />);
-    expect(screen.getByText(/compliance/i)).toBeTruthy();
+    expect(screen.getAllByText(/compliance/i).length).toBeGreaterThan(0);
   });
 
   it('renders navigation links', () => {
     render(<LandingPage />);
-    expect(screen.getByText(/Features/i)).toBeTruthy();
-    expect(screen.getByText(/Pricing/i)).toBeTruthy();
+    expect(screen.getAllByText(/Features/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Pricing/i).length).toBeGreaterThan(0);
   });
 
   it('opens auth modal when Get Started is clicked', () => {
@@ -123,6 +123,6 @@ describe('LandingPage', () => {
 
   it('renders feature highlights', () => {
     render(<LandingPage />);
-    expect(screen.getByText(/AI/i)).toBeTruthy();
+    expect(screen.getAllByText(/AI/i).length).toBeGreaterThan(0);
   });
 });

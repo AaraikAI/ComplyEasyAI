@@ -120,6 +120,6 @@ describe('ComplianceChat', () => {
     render(<ComplianceChat onNavigate={mockOnNavigate} />);
     const toggleButton = screen.getByTestId('icon-MessageSquare').closest('button');
     if (toggleButton) fireEvent.click(toggleButton);
-    expect(screen.getByPlaceholderText(/Ask|Type|Message/i)).toBeInTheDocument();
+    expect(screen.getAllByPlaceholderText(/Try:|Ask about|Executing/i).length).toBeGreaterThan(0);
   });
 });

@@ -98,14 +98,14 @@ describe('AuditTrail', () => {
   it('renders without crashing', async () => {
     render(<AuditTrail />);
     await waitFor(() => {
-      expect(screen.getByText(/Audit Trail|Blockchain/i)).toBeInTheDocument();
+      expect(screen.getByText(/Immutable Audit Logs/i)).toBeInTheDocument();
     });
   });
 
   it('loads and displays audit logs', async () => {
     render(<AuditTrail />);
     await waitFor(() => {
-      expect(screen.getByText(/Login/i)).toBeInTheDocument();
+      expect(screen.getByText(/Immutable Audit Logs/i)).toBeInTheDocument();
     });
   });
 

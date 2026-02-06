@@ -110,7 +110,7 @@ describe('IntegrationModal', () => {
         onDisconnect={mockOnDisconnect}
       />
     );
-    expect(screen.getByText(/GitHub/i)).toBeTruthy();
+    expect(screen.getAllByText(/GitHub/i).length).toBeGreaterThan(0);
   });
 
   it('shows connect button for disconnected integration', () => {
@@ -122,7 +122,7 @@ describe('IntegrationModal', () => {
         onDisconnect={mockOnDisconnect}
       />
     );
-    expect(screen.getByText(/Connect|Authorize|OAuth/i)).toBeTruthy();
+    expect(screen.getAllByText(/Connect|Authorize|OAuth/i).length).toBeGreaterThan(0);
   });
 
   it('shows disconnect option for connected integration', () => {
