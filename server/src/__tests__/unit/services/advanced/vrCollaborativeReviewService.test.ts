@@ -83,15 +83,7 @@ describe('VRCollaborativeReviewService', () => {
   // =========================================================================
   describe('createSession', () => {
     it('should create a new VR session with host participant', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({
-        id: hostUserId,
-        name: 'Host User',
-      } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({
-        sessionId: 'vr_session_test',
-      } as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -115,15 +107,7 @@ describe('VRCollaborativeReviewService', () => {
     });
 
     it('should create session with invited users', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({
-        id: hostUserId,
-        name: 'Host User',
-      } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({
-        sessionId: 'vr_session_test',
-      } as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -143,12 +127,10 @@ describe('VRCollaborativeReviewService', () => {
     });
 
     it('should propagate errors from database failures', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: hostUserId, name: 'Host' } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
+      mockCreateSessionDeps();
       (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockRejectedValue(
         new Error('DB connection lost')
       );
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
 
       await expect(
         vrService.createSession(
@@ -165,14 +147,7 @@ describe('VRCollaborativeReviewService', () => {
   // =========================================================================
   describe('joinSession', () => {
     it('should allow a user to join an active session', async () => {
-      // First create a session so it exists in memory
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({
-        id: hostUserId,
-        name: 'Host User',
-      } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -185,7 +160,6 @@ describe('VRCollaborativeReviewService', () => {
         id: participantUserId,
         name: 'Participant',
       } as any);
-      (vrPrismaMock.vRCollaborativeSession.update as jest.Mock).mockResolvedValue({} as any);
 
       const { participant, spawnPoint } = await vrService.joinSession(
         session.id,
@@ -207,13 +181,7 @@ describe('VRCollaborativeReviewService', () => {
     });
 
     it('should throw when session is full', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({
-        id: hostUserId,
-        name: 'Host',
-      } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -243,11 +211,7 @@ describe('VRCollaborativeReviewService', () => {
   // =========================================================================
   describe('leaveSession', () => {
     it('should remove a participant from the session', async () => {
-      // Create and join a session
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: hostUserId, name: 'Host' } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -278,11 +242,7 @@ describe('VRCollaborativeReviewService', () => {
   // =========================================================================
   describe('startSession', () => {
     it('should start a session when called by the host', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: hostUserId, name: 'Host' } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (vrPrismaMock.vRCollaborativeSession.update as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -297,10 +257,7 @@ describe('VRCollaborativeReviewService', () => {
     });
 
     it('should throw when a non-host tries to start', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: hostUserId, name: 'Host' } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -325,11 +282,7 @@ describe('VRCollaborativeReviewService', () => {
   // =========================================================================
   describe('endSession', () => {
     it('should end a session and return summary', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: hostUserId, name: 'Host' } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (vrPrismaMock.vRCollaborativeSession.update as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -355,10 +308,7 @@ describe('VRCollaborativeReviewService', () => {
   // =========================================================================
   describe('addAnnotation', () => {
     it('should add an annotation to an active session', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: hostUserId, name: 'Host' } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -398,10 +348,7 @@ describe('VRCollaborativeReviewService', () => {
   // =========================================================================
   describe('updateParticipantState', () => {
     it('should update participant position and rotation', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: hostUserId, name: 'Host' } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -429,10 +376,7 @@ describe('VRCollaborativeReviewService', () => {
   // =========================================================================
   describe('healthCheck', () => {
     it('should return valid for an active in-memory session', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: hostUserId, name: 'Host' } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
@@ -490,10 +434,7 @@ describe('VRCollaborativeReviewService', () => {
     });
 
     it('should return session details for an in-memory session', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: hostUserId, name: 'Host' } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
       (vrPrismaMock.vRTrainingSession.findUnique as jest.Mock).mockResolvedValue(null);
 
       const session = await vrService.createSession(
@@ -514,10 +455,7 @@ describe('VRCollaborativeReviewService', () => {
   // =========================================================================
   describe('startRecording', () => {
     it('should start recording for an active session', async () => {
-      (prismaMock.user.findUnique as jest.Mock).mockResolvedValue({ id: hostUserId, name: 'Host' } as any);
-      (prismaMock.complianceFramework.findMany as jest.Mock).mockResolvedValue([] as any);
-      (vrPrismaMock.vRCollaborativeSession.create as jest.Mock).mockResolvedValue({} as any);
-      (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({} as any);
+      mockCreateSessionDeps();
 
       const session = await vrService.createSession(
         orgId,
