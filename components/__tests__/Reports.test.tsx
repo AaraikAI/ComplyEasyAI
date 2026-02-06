@@ -20,16 +20,19 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
-const mockFrameworks = [
-  { id: 'fw-1', name: 'SOC 2', status: 'In Progress', progress: 75, nextAuditDate: '2026-06-01', controls: [
-    { id: 'c1', name: 'AC-1', status: 'Implemented', description: 'Access control' },
-    { id: 'c2', name: 'AC-2', status: 'Not Started', description: 'Encryption', evidence: 'doc.pdf' },
-  ]},
-  { id: 'fw-2', name: 'GDPR', status: 'Compliant', progress: 100, nextAuditDate: '2026-07-15', controls: [
-    { id: 'c3', name: 'DP-1', status: 'Compliant', description: 'Data processing' },
-  ]},
-  { id: 'fw-3', name: 'HIPAA', status: 'In Progress', progress: 30, nextAuditDate: '2026-08-01', controls: [] },
-];
+const { mockFrameworks } = vi.hoisted(() => {
+  const mockFrameworks = [
+    { id: 'fw-1', name: 'SOC 2', status: 'In Progress', progress: 75, nextAuditDate: '2026-06-01', controls: [
+      { id: 'c1', name: 'AC-1', status: 'Implemented', description: 'Access control' },
+      { id: 'c2', name: 'AC-2', status: 'Not Started', description: 'Encryption', evidence: 'doc.pdf' },
+    ]},
+    { id: 'fw-2', name: 'GDPR', status: 'Compliant', progress: 100, nextAuditDate: '2026-07-15', controls: [
+      { id: 'c3', name: 'DP-1', status: 'Compliant', description: 'Data processing' },
+    ]},
+    { id: 'fw-3', name: 'HIPAA', status: 'In Progress', progress: 30, nextAuditDate: '2026-08-01', controls: [] },
+  ];
+  return { mockFrameworks };
+});
 
 vi.mock('@/services/api', () => ({
   api: {

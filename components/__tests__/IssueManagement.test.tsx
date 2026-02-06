@@ -22,19 +22,74 @@ vi.mock('recharts', () => ({
 
 vi.mock('react-markdown', () => ({ default: ({ children }: any) => <div data-testid="markdown">{children}</div> }));
 
-const mockUser = {
-  id: 'u1', name: 'Test Admin', email: 'admin@test.com', role: 'admin',
-  organizationId: 'org-1',
-  organization: { plan: 'Growth', name: 'Test Org' },
-};
-
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: vi.fn().mockReturnValue({
-    user: mockUser,
+    user: { id: 'u1', name: 'Test Admin', email: 'admin@test.com', role: 'admin', organizationId: 'org-1', organization: { plan: 'Growth', name: 'Test Org' } },
     isAuthenticated: true,
     logout: vi.fn(),
   }),
 }));
+
+// Hoisted mock functions – these are available inside vi.mock factories
+const {
+  issuesList, issuesGetDashboard, issuesCreate, issuesUpdate,
+  issuesGetById, issuesDelete, issuesUpdateStatus, issuesAssign,
+  issuesAddComment, teamList, aiChat,
+} = vi.hoisted(() => ({
+  issuesList: vi.fn(),
+  issuesGetDashboard: vi.fn(),
+  issuesCreate: vi.fn(),
+  issuesUpdate: vi.fn(),
+  issuesGetById: vi.fn(),
+  issuesDelete: vi.fn(),
+  issuesUpdateStatus: vi.fn(),
+  issuesAssign: vi.fn(),
+  issuesAddComment: vi.fn(),
+  teamList: vi.fn(),
+  aiChat: vi.fn(),
+}));
+
+vi.mock('@/services/api', () => ({
+  api: {
+    enterprise: {
+      issues: {
+        list: issuesList,
+        getDashboard: issuesGetDashboard,
+        create: issuesCreate,
+        update: issuesUpdate,
+        getById: issuesGetById,
+        delete: issuesDelete,
+        updateStatus: issuesUpdateStatus,
+        assign: issuesAssign,
+        addComment: issuesAddComment,
+      },
+    },
+    team: { list: teamList },
+    ai: { chat: aiChat },
+  },
+  getAuthToken: vi.fn().mockReturnValue('test-token'),
+  clearAuthToken: vi.fn(),
+}));
+
+vi.mock('@/constants/tierLimits', () => ({
+  getLimit: vi.fn().mockReturnValue(100),
+  isAtLimit: vi.fn().mockReturnValue(false),
+  getUpgradeMessage: vi.fn().mockReturnValue('Upgrade needed'),
+  LIMIT_LABELS: {},
+  UPGRADE_LINK: '/settings?tab=billing',
+}));
+
+vi.mock('@/constants/tierFeatures', () => ({
+  canAccessView: vi.fn().mockReturnValue(true),
+  normalizePlan: vi.fn().mockReturnValue('Growth'),
+  hasFeature: vi.fn().mockReturnValue(true),
+  TIER_ORDER: ['Foundation', 'Essentials', 'Growth', 'Visionary'],
+  VIEW_TO_FEATURE: {},
+}));
+
+// ---------------------------------------------------------------------------
+// Test data
+// ---------------------------------------------------------------------------
 
 const mockIssues = [
   {
@@ -85,58 +140,6 @@ const mockTeamUsers = [
   { id: 'u2', name: 'Bob', email: 'bob@test.com' },
 ];
 
-const issuesList = vi.fn().mockResolvedValue(mockIssues);
-const issuesGetDashboard = vi.fn().mockResolvedValue(mockDashboard);
-const issuesCreate = vi.fn().mockResolvedValue({ id: 'iss-new' });
-const issuesUpdate = vi.fn().mockResolvedValue({});
-const issuesGetById = vi.fn().mockImplementation((id: string) =>
-  Promise.resolve(mockIssues.find(i => i.id === id) || mockIssues[0])
-);
-const issuesDelete = vi.fn().mockResolvedValue({});
-const issuesUpdateStatus = vi.fn().mockResolvedValue({});
-const issuesAssign = vi.fn().mockResolvedValue({});
-const issuesAddComment = vi.fn().mockResolvedValue({});
-const teamList = vi.fn().mockResolvedValue(mockTeamUsers);
-const aiChat = vi.fn().mockResolvedValue({ response: '{"severity":"High","category":"Access Control","affectedFrameworks":["SOC2"],"suggestedPriority":"High","confidenceScore":90,"reasoning":"Needs MFA"}' });
-
-vi.mock('@/services/api', () => ({
-  api: {
-    enterprise: {
-      issues: {
-        list: issuesList,
-        getDashboard: issuesGetDashboard,
-        create: issuesCreate,
-        update: issuesUpdate,
-        getById: issuesGetById,
-        delete: issuesDelete,
-        updateStatus: issuesUpdateStatus,
-        assign: issuesAssign,
-        addComment: issuesAddComment,
-      },
-    },
-    team: { list: teamList },
-    ai: { chat: aiChat },
-  },
-  getAuthToken: vi.fn().mockReturnValue('test-token'),
-  clearAuthToken: vi.fn(),
-}));
-
-vi.mock('@/constants/tierLimits', () => ({
-  getLimit: vi.fn().mockReturnValue(100),
-  isAtLimit: vi.fn().mockReturnValue(false),
-  getUpgradeMessage: vi.fn().mockReturnValue('Upgrade needed'),
-  LIMIT_LABELS: {},
-  UPGRADE_LINK: '/settings?tab=billing',
-}));
-
-vi.mock('@/constants/tierFeatures', () => ({
-  canAccessView: vi.fn().mockReturnValue(true),
-  normalizePlan: vi.fn().mockReturnValue('Growth'),
-  hasFeature: vi.fn().mockReturnValue(true),
-  TIER_ORDER: ['Foundation', 'Essentials', 'Growth', 'Visionary'],
-  VIEW_TO_FEATURE: {},
-}));
-
 import IssueManagement from '../IssueManagement';
 
 // ---------------------------------------------------------------------------
@@ -148,7 +151,17 @@ describe('IssueManagement', () => {
     vi.clearAllMocks();
     issuesList.mockResolvedValue(mockIssues);
     issuesGetDashboard.mockResolvedValue(mockDashboard);
+    issuesGetById.mockImplementation((id: string) =>
+      Promise.resolve(mockIssues.find(i => i.id === id) || mockIssues[0])
+    );
+    issuesCreate.mockResolvedValue({ id: 'iss-new' });
+    issuesUpdate.mockResolvedValue({});
+    issuesDelete.mockResolvedValue({});
+    issuesUpdateStatus.mockResolvedValue({});
+    issuesAssign.mockResolvedValue({});
+    issuesAddComment.mockResolvedValue({});
     teamList.mockResolvedValue(mockTeamUsers);
+    aiChat.mockResolvedValue({ response: '{"severity":"High","category":"Access Control","affectedFrameworks":["SOC2"],"suggestedPriority":"High","confidenceScore":90,"reasoning":"Needs MFA"}' });
     // reset confirm/alert
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     vi.spyOn(window, 'alert').mockImplementation(() => {});
@@ -365,8 +378,6 @@ describe('IssueManagement', () => {
     await waitFor(() => expect(screen.getByText('Missing Encryption Policy')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Missing Encryption Policy'));
     await waitFor(() => expect(screen.getByText('Assign Issue')).toBeInTheDocument());
-    // Get the assign select (the one right after "Assign Issue")
-    const assignSelect = screen.getByRole('combobox', { name: '' });
     // Find the correct select in the assign section
     const selectElements = document.querySelectorAll('select');
     const assignSelectEl = selectElements[selectElements.length - 1]; // last select is the assign one
