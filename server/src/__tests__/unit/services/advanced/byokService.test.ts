@@ -143,7 +143,10 @@ describe('BYOKService', () => {
     it('should generate data key using GCP KMS', async () => {
       const config = {
         provider: 'gcp_kms' as const,
-        keyId: 'projects/test/locations/us/keyRings/kr/cryptoKeys/k',
+        keyId: 'test-key',
+        keyRing: 'kr',
+        location: 'us',
+        credentials: { projectId: 'test' },
       };
 
       const result = await byokService.generateDataKey(config, orgId);
@@ -188,7 +191,10 @@ describe('BYOKService', () => {
     it('should encrypt data using GCP KMS', async () => {
       const config = {
         provider: 'gcp_kms' as const,
-        keyId: 'projects/test/locations/us/keyRings/kr/cryptoKeys/k',
+        keyId: 'test-key',
+        keyRing: 'kr',
+        location: 'us',
+        credentials: { projectId: 'test' },
       };
 
       const result = await byokService.encryptData(Buffer.from('sensitive data'), config, orgId);
@@ -356,32 +362,31 @@ describe('BYOKService', () => {
   // ===================== setKeyRotationPolicy =====================
   describe('setKeyRotationPolicy', () => {
     it('should set key rotation policy', async () => {
-      const result = await byokService.setKeyRotationPolicy(orgId, {
-        provider: 'aws_kms',
+      (prismaMock.keyRotationPolicy.upsert as jest.Mock<any>).mockResolvedValue({});
+
+      await byokService.setKeyRotationPolicy(orgId, 'arn:aws:kms:us-east-1:123:key/test-key', 'aws_kms', {
         keyId: 'arn:aws:kms:us-east-1:123:key/test-key',
         rotationIntervalDays: 90,
         autoRotate: true,
+        notifyDaysBefore: 7,
+        nextRotation: new Date(Date.now() + 90 * 86400000),
       });
 
-      expect(result).toBeDefined();
+      expect(prismaMock.keyRotationPolicy.upsert).toHaveBeenCalled();
     });
 
     it('should update existing rotation policy', async () => {
-      (prismaMock.keyRotationPolicy.findFirst as jest.Mock<any>).mockResolvedValue({
-        id: 'policy-1',
-        provider: 'aws_kms',
-        keyId: 'test-key',
-        rotationIntervalDays: 90,
-      });
+      (prismaMock.keyRotationPolicy.upsert as jest.Mock<any>).mockResolvedValue({});
 
-      const result = await byokService.setKeyRotationPolicy(orgId, {
-        provider: 'aws_kms',
+      await byokService.setKeyRotationPolicy(orgId, 'test-key', 'aws_kms', {
         keyId: 'test-key',
         rotationIntervalDays: 60,
         autoRotate: false,
+        notifyDaysBefore: 7,
+        nextRotation: new Date(Date.now() + 60 * 86400000),
       });
 
-      expect(result).toBeDefined();
+      expect(prismaMock.keyRotationPolicy.upsert).toHaveBeenCalled();
     });
   });
 
@@ -411,8 +416,8 @@ describe('BYOKService', () => {
         region: 'us-east-1',
       };
 
-      const result = await byokService.scheduleKeyDeletion(config, orgId, 30);
-      expect(result).toBeDefined();
+      await byokService.scheduleKeyDeletion(config, 30);
+      expect(mockSend).toHaveBeenCalled();
     });
 
     it('should handle deletion scheduling error', async () => {
@@ -424,7 +429,7 @@ describe('BYOKService', () => {
         region: 'us-east-1',
       };
 
-      await expect(byokService.scheduleKeyDeletion(config, orgId, 30)).rejects.toThrow();
+      await expect(byokService.scheduleKeyDeletion(config, 30)).rejects.toThrow();
     });
   });
 

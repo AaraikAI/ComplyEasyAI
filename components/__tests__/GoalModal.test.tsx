@@ -39,6 +39,13 @@ describe('GoalModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFrameworksList.mockResolvedValue([
+      { name: 'SOC 2 Type II' },
+      { name: 'GDPR' },
+      { name: 'HIPAA' },
+    ]);
+    mockCreateGoal.mockResolvedValue({ id: 'goal-1' });
+    mockUpdateGoal.mockResolvedValue({ id: 'goal-1' });
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
@@ -224,21 +231,26 @@ describe('GoalModal', () => {
         <GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
       );
       await waitFor(() => {
-        expect(screen.getByText('Create Goal')).toBeInTheDocument();
+        expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(0);
       });
 
       fireEvent.change(screen.getByPlaceholderText('e.g., Maintain SOC 2 Type II compliance'), {
         target: { value: 'Test Goal' },
       });
 
+      fireEvent.click(screen.getAllByRole('checkbox')[0]);
+
+      // Wait for checkbox to be checked before changing score
+      await waitFor(() => {
+        expect(screen.getAllByRole('checkbox')[0]).toBeChecked();
+      });
+
       const targetInput = screen.getByDisplayValue('85');
       fireEvent.change(targetInput, { target: { value: '150' } });
 
+      // Wait for the value to be reflected
       await waitFor(() => {
-        const checkboxes = screen.getAllByRole('checkbox');
-        if (checkboxes.length > 0) {
-          fireEvent.click(checkboxes[0]);
-        }
+        expect(targetInput).toHaveValue(150);
       });
 
       fireEvent.click(screen.getByText('Create Goal'));

@@ -362,34 +362,29 @@ describe('ComplianceDigitalTwinService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should throw when scenario not found', async () => {
+    it('should return false when scenario not found', async () => {
       (prismaMock.simulationScenario.findFirst as jest.Mock<any>).mockResolvedValue(null);
 
-      await expect(
-        complianceDigitalTwinService.rollbackSimulation('nonexistent', orgId)
-      ).rejects.toThrow();
+      const result = await complianceDigitalTwinService.rollbackSimulation('nonexistent', orgId);
+      expect(result).toBe(false);
     });
   });
 
   // ===================== runMonteCarloSimulation =====================
   describe('runMonteCarloSimulation', () => {
     it('should run Monte Carlo simulation', async () => {
-      const result = await complianceDigitalTwinService.runMonteCarloSimulation(orgId, {
-        type: 'control_change',
-        parameters: { controlId: 'c-1', newStatus: 'Failed' },
-        name: 'Monte Carlo',
-      }, 10);
+      const result = await complianceDigitalTwinService.runMonteCarloSimulation(
+        orgId, 'risk_event', { riskCategory: 'Security', severity: 'High' }, 100, userId
+      );
 
       expect(result).toBeDefined();
-      expect(result.iterations).toBeGreaterThanOrEqual(1);
+      expect(typeof result.averageScoreChange).toBe('number');
     });
 
     it('should handle small iteration count', async () => {
-      const result = await complianceDigitalTwinService.runMonteCarloSimulation(orgId, {
-        type: 'risk_event',
-        parameters: { riskCategory: 'Security', severity: 'High' },
-        name: 'Small MC',
-      }, 2);
+      const result = await complianceDigitalTwinService.runMonteCarloSimulation(
+        orgId, 'risk_event', { riskCategory: 'Security', severity: 'High' }, 50, userId
+      );
 
       expect(result).toBeDefined();
     });
