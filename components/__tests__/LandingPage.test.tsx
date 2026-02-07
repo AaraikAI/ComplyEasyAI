@@ -146,9 +146,9 @@ describe('LandingPage', () => {
 
   it('renders aCOS feature cards', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText(/Autonomous Compliance Operating System/)).toBeInTheDocument();
-    expect(screen.getByText(/Agentic AI with Rollback/)).toBeInTheDocument();
-    expect(screen.getByText(/Temporal Graph Networks/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Autonomous Compliance Operating System/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Agentic AI with Rollback/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Temporal Graph Networks/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders security features', () => {
@@ -176,7 +176,7 @@ describe('LandingPage', () => {
     renderWithRouter(<LandingPage />);
     fireEvent.click(screen.getByText('Select Growth'));
     // Auth modal should be open with Create Account form
-    expect(screen.getByText('Create Account')).toBeInTheDocument();
+    expect(screen.getAllByText('Create Account').length).toBeGreaterThanOrEqual(1);
   });
 
   // ---- About Section ----
@@ -384,7 +384,7 @@ describe('LandingPage', () => {
   it('shows registration form when pricing tier is selected', () => {
     renderWithRouter(<LandingPage />);
     fireEvent.click(screen.getByText('Select Growth'));
-    expect(screen.getByText('Create Account')).toBeInTheDocument();
+    expect(screen.getAllByText('Create Account').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByPlaceholderText('Full Name')).toBeInTheDocument();
   });
 
@@ -395,7 +395,7 @@ describe('LandingPage', () => {
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'new@example.com' } });
     fireEvent.change(screen.getByPlaceholderText('Full Name'), { target: { value: 'New User' } });
     await act(async () => {
-      fireEvent.click(screen.getByText('Create Account'));
+      fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
     });
     await waitFor(() => {
       expect(api.auth.register).toHaveBeenCalledWith('New User', 'new@example.com', undefined, undefined);
@@ -410,7 +410,7 @@ describe('LandingPage', () => {
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'new@example.com' } });
     fireEvent.change(screen.getByPlaceholderText('Full Name'), { target: { value: 'New User' } });
     await act(async () => {
-      fireEvent.click(screen.getByText('Create Account'));
+      fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
     });
     await waitFor(() => {
       expect(screen.getByText('Check your email')).toBeInTheDocument();
@@ -425,7 +425,7 @@ describe('LandingPage', () => {
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'existing@example.com' } });
     fireEvent.change(screen.getByPlaceholderText('Full Name'), { target: { value: 'Existing User' } });
     await act(async () => {
-      fireEvent.click(screen.getByText('Create Account'));
+      fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
     });
     await waitFor(() => {
       expect(screen.getByText('Check your email')).toBeInTheDocument();
@@ -441,7 +441,7 @@ describe('LandingPage', () => {
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'fail@example.com' } });
     fireEvent.change(screen.getByPlaceholderText('Full Name'), { target: { value: 'Fail User' } });
     await act(async () => {
-      fireEvent.click(screen.getByText('Create Account'));
+      fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
     });
     await waitFor(() => {
       expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Cannot connect to server'));

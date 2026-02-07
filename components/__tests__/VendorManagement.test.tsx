@@ -315,7 +315,7 @@ describe('VendorManagement', () => {
     await waitFor(() => expect(screen.getByText('CloudCorp')).toBeInTheDocument());
     fireEvent.click(screen.getByText('CloudCorp'));
     await waitFor(() => expect(screen.getByText('Assessment History')).toBeInTheDocument());
-    expect(screen.getByText('Security Review')).toBeInTheDocument();
+    expect(screen.getAllByText('Security Review').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows AI-Powered Actions buttons in detail', async () => {
@@ -362,7 +362,7 @@ describe('VendorManagement', () => {
     await waitFor(() => expect(screen.getByText('Add New Vendor')).toBeInTheDocument());
     const nameInput = document.querySelector('input[required]') as HTMLInputElement;
     fireEvent.change(nameInput, { target: { value: 'NewVendor Co' } });
-    fireEvent.click(screen.getByText('Add Vendor', { selector: 'button[type="submit"] *' }).closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: /Add Vendor/ }));
     await waitFor(() => expect(vendorsCreate).toHaveBeenCalled());
   });
 
@@ -546,7 +546,7 @@ describe('VendorManagement', () => {
     await waitFor(() => expect(screen.getByText('Add New Vendor')).toBeInTheDocument());
     const nameInput = document.querySelector('input[required]') as HTMLInputElement;
     fireEvent.change(nameInput, { target: { value: 'Fail Corp' } });
-    fireEvent.click(screen.getByText('Add Vendor', { selector: 'button[type="submit"] *' }).closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: /Add Vendor/ }));
     await waitFor(() => expect(screen.getByText('Create failed')).toBeInTheDocument());
   });
 

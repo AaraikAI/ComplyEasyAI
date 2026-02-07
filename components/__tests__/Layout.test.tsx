@@ -430,7 +430,8 @@ describe('Layout Component', () => {
   describe('Null User', () => {
     it('returns null when user is not authenticated', async () => {
       const { useAuth } = await import('../../contexts/AuthContext');
-      (useAuth as any).mockReturnValueOnce({ user: null, isAuthenticated: false, logout: vi.fn() });
+      // Use mockReturnValue (not Once) because multiple components call useAuth()
+      (useAuth as any).mockReturnValue({ user: null, isAuthenticated: false, logout: vi.fn() });
 
       const { container } = render(
         <Layout currentView="dashboard" onNavigate={mockNavigate}>
@@ -438,6 +439,13 @@ describe('Layout Component', () => {
         </Layout>
       );
       expect(container.firstChild).toBeNull();
+
+      // Restore the default mock for other tests
+      (useAuth as any).mockReturnValue({
+        user: { id: '1', name: 'Test User', email: 'test@test.com', role: 'admin', avatar: 'TU', organization: { plan: 'Growth', name: 'Test Org' } },
+        isAuthenticated: true,
+        logout: vi.fn(),
+      });
     });
   });
 

@@ -312,8 +312,9 @@ const ZeroTrustTab: React.FC = () => {
             <h3 className="text-xl font-bold mb-4">Create Zero Trust Policy</h3>
             <form onSubmit={handleCreatePolicy} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Policy Name</label>
+                <label htmlFor="zt-policy-name" className="block text-sm font-medium text-slate-700 mb-1">Policy Name</label>
                 <input
+                  id="zt-policy-name"
                   type="text"
                   value={policyForm.name}
                   onChange={(e) => setPolicyForm({ ...policyForm, name: e.target.value })}
@@ -322,8 +323,9 @@ const ZeroTrustTab: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <label htmlFor="zt-policy-description" className="block text-sm font-medium text-slate-700 mb-1">Description</label>
                 <textarea
+                  id="zt-policy-description"
                   value={policyForm.description}
                   onChange={(e) => setPolicyForm({ ...policyForm, description: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -341,8 +343,9 @@ const ZeroTrustTab: React.FC = () => {
                   <span className="text-sm">Enabled</span>
                 </label>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Priority</label>
+                  <label htmlFor="zt-policy-priority" className="block text-sm font-medium text-slate-700 mb-1">Priority</label>
                   <input
+                    id="zt-policy-priority"
                     type="number"
                     value={policyForm.priority}
                     onChange={(e) => setPolicyForm({ ...policyForm, priority: parseInt(e.target.value) || 0 })}
@@ -378,8 +381,9 @@ const ZeroTrustTab: React.FC = () => {
             <h3 className="text-xl font-bold mb-4">Verify Device</h3>
             <form onSubmit={handleVerifyDevice} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Device ID</label>
+                <label htmlFor="zt-device-id" className="block text-sm font-medium text-slate-700 mb-1">Device ID</label>
                 <input
+                  id="zt-device-id"
                   type="text"
                   value={deviceForm.deviceId}
                   onChange={(e) => setDeviceForm({ ...deviceForm, deviceId: e.target.value })}
@@ -388,8 +392,9 @@ const ZeroTrustTab: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Device Type</label>
+                <label htmlFor="zt-device-type" className="block text-sm font-medium text-slate-700 mb-1">Device Type</label>
                 <select
+                  id="zt-device-type"
                   value={deviceForm.deviceType}
                   onChange={(e) => setDeviceForm({ ...deviceForm, deviceType: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -402,8 +407,9 @@ const ZeroTrustTab: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">MAC Address (optional)</label>
+                <label htmlFor="zt-mac-address" className="block text-sm font-medium text-slate-700 mb-1">MAC Address (optional)</label>
                 <input
+                  id="zt-mac-address"
                   type="text"
                   value={deviceForm.macAddress}
                   onChange={(e) => setDeviceForm({ ...deviceForm, macAddress: e.target.value })}
@@ -412,8 +418,9 @@ const ZeroTrustTab: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">IP Address (optional)</label>
+                <label htmlFor="zt-ip-address" className="block text-sm font-medium text-slate-700 mb-1">IP Address (optional)</label>
                 <input
+                  id="zt-ip-address"
                   type="text"
                   value={deviceForm.ipAddress}
                   onChange={(e) => setDeviceForm({ ...deviceForm, ipAddress: e.target.value })}
@@ -547,8 +554,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
           <h3 className="font-semibold mb-4">Generate Compliance Proof</h3>
           <form onSubmit={handleGenerateComplianceProof} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Framework ID</label>
+              <label htmlFor="zkp-framework-id" className="block text-sm font-medium text-slate-700 mb-1">Framework ID</label>
               <input
+                id="zkp-framework-id"
                 type="text"
                 value={complianceForm.frameworkId}
                 onChange={(e) => setComplianceForm({ ...complianceForm, frameworkId: e.target.value })}
@@ -558,8 +566,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Controls Implemented</label>
+                <label htmlFor="zkp-controls-implemented" className="block text-sm font-medium text-slate-700 mb-1">Controls Implemented</label>
                 <input
+                  id="zkp-controls-implemented"
                   type="number"
                   value={complianceForm.controlsImplemented}
                   onChange={(e) => setComplianceForm({ ...complianceForm, controlsImplemented: parseInt(e.target.value) || 0 })}
@@ -568,8 +577,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Total Controls</label>
+                <label htmlFor="zkp-total-controls" className="block text-sm font-medium text-slate-700 mb-1">Total Controls</label>
                 <input
+                  id="zkp-total-controls"
                   type="number"
                   value={complianceForm.totalControls}
                   onChange={(e) => setComplianceForm({ ...complianceForm, totalControls: parseInt(e.target.value) || 0 })}
@@ -579,8 +589,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Evidence Hash</label>
+              <label htmlFor="zkp-evidence-hash" className="block text-sm font-medium text-slate-700 mb-1">Evidence Hash</label>
               <input
+                id="zkp-evidence-hash"
                 type="text"
                 value={complianceForm.evidenceHash}
                 onChange={(e) => setComplianceForm({ ...complianceForm, evidenceHash: e.target.value })}
@@ -649,8 +660,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
             }
           }} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Credential Type</label>
+              <label htmlFor="zkp-credential-type" className="block text-sm font-medium text-slate-700 mb-1">Credential Type</label>
               <select
+                id="zkp-credential-type"
                 value={credentialForm.credentialType}
                 onChange={(e) => setCredentialForm({ ...credentialForm, credentialType: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -665,8 +677,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Credential Hash</label>
+              <label htmlFor="zkp-credential-hash" className="block text-sm font-medium text-slate-700 mb-1">Credential Hash</label>
               <input
+                id="zkp-credential-hash"
                 type="text"
                 value={credentialForm.credentialHash}
                 onChange={(e) => setCredentialForm({ ...credentialForm, credentialHash: e.target.value })}
@@ -676,8 +689,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Issuer</label>
+              <label htmlFor="zkp-issuer" className="block text-sm font-medium text-slate-700 mb-1">Issuer</label>
               <input
+                id="zkp-issuer"
                 type="text"
                 value={credentialForm.issuer}
                 onChange={(e) => setCredentialForm({ ...credentialForm, issuer: e.target.value })}
@@ -687,8 +701,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Expiration Date</label>
+              <label htmlFor="zkp-expiration-date" className="block text-sm font-medium text-slate-700 mb-1">Expiration Date</label>
               <input
+                id="zkp-expiration-date"
                 type="date"
                 value={credentialForm.expirationDate}
                 onChange={(e) => setCredentialForm({ ...credentialForm, expirationDate: e.target.value })}
@@ -759,8 +774,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
             }
           }} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Asset Type</label>
+              <label htmlFor="zkp-asset-type" className="block text-sm font-medium text-slate-700 mb-1">Asset Type</label>
               <select
+                id="zkp-asset-type"
                 value={ownershipForm.assetType}
                 onChange={(e) => setOwnershipForm({ ...ownershipForm, assetType: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -775,8 +791,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Asset ID</label>
+              <label htmlFor="zkp-asset-id" className="block text-sm font-medium text-slate-700 mb-1">Asset ID</label>
               <input
+                id="zkp-asset-id"
                 type="text"
                 value={ownershipForm.assetId}
                 onChange={(e) => setOwnershipForm({ ...ownershipForm, assetId: e.target.value })}
@@ -786,8 +803,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Ownership Hash</label>
+              <label htmlFor="zkp-ownership-hash" className="block text-sm font-medium text-slate-700 mb-1">Ownership Hash</label>
               <input
+                id="zkp-ownership-hash"
                 type="text"
                 value={ownershipForm.ownershipHash}
                 onChange={(e) => setOwnershipForm({ ...ownershipForm, ownershipHash: e.target.value })}
@@ -797,8 +815,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Timestamp</label>
+              <label htmlFor="zkp-timestamp" className="block text-sm font-medium text-slate-700 mb-1">Timestamp</label>
               <input
+                id="zkp-timestamp"
                 type="datetime-local"
                 value={ownershipForm.timestamp}
                 onChange={(e) => setOwnershipForm({ ...ownershipForm, timestamp: e.target.value })}
@@ -966,8 +985,9 @@ const BYOKTab: React.FC = () => {
             <h3 className="text-xl font-bold mb-4">Generate Encryption Key</h3>
             <form onSubmit={handleGenerateKey} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Provider</label>
+                <label htmlFor="byok-provider" className="block text-sm font-medium text-slate-700 mb-1">Provider</label>
                 <select
+                  id="byok-provider"
                   value={keyForm.provider}
                   onChange={(e) => setKeyForm({ ...keyForm, provider: e.target.value as any })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -981,8 +1001,9 @@ const BYOKTab: React.FC = () => {
               </div>
               {keyForm.provider === 'aws_kms' && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Region</label>
+                  <label htmlFor="byok-region" className="block text-sm font-medium text-slate-700 mb-1">Region</label>
                   <input
+                    id="byok-region"
                     type="text"
                     value={keyForm.region}
                     onChange={(e) => setKeyForm({ ...keyForm, region: e.target.value })}
@@ -995,8 +1016,9 @@ const BYOKTab: React.FC = () => {
               {keyForm.provider === 'azure_kv' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Vault URL</label>
+                    <label htmlFor="byok-vault-url" className="block text-sm font-medium text-slate-700 mb-1">Vault URL</label>
                     <input
+                      id="byok-vault-url"
                       type="text"
                       value={keyForm.vaultUrl}
                       onChange={(e) => setKeyForm({ ...keyForm, vaultUrl: e.target.value })}
@@ -1006,8 +1028,9 @@ const BYOKTab: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Key Name</label>
+                    <label htmlFor="byok-key-name" className="block text-sm font-medium text-slate-700 mb-1">Key Name</label>
                     <input
+                      id="byok-key-name"
                       type="text"
                       value={keyForm.keyName}
                       onChange={(e) => setKeyForm({ ...keyForm, keyName: e.target.value })}
@@ -1020,8 +1043,9 @@ const BYOKTab: React.FC = () => {
               {keyForm.provider === 'gcp_kms' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Project ID</label>
+                    <label htmlFor="byok-project-id" className="block text-sm font-medium text-slate-700 mb-1">Project ID</label>
                     <input
+                      id="byok-project-id"
                       type="text"
                       value={keyForm.projectId}
                       onChange={(e) => setKeyForm({ ...keyForm, projectId: e.target.value })}
@@ -1031,8 +1055,9 @@ const BYOKTab: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                    <label htmlFor="byok-location" className="block text-sm font-medium text-slate-700 mb-1">Location</label>
                     <input
+                      id="byok-location"
                       type="text"
                       value={keyForm.location}
                       onChange={(e) => setKeyForm({ ...keyForm, location: e.target.value })}
@@ -1042,8 +1067,9 @@ const BYOKTab: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Key Ring</label>
+                    <label htmlFor="byok-key-ring" className="block text-sm font-medium text-slate-700 mb-1">Key Ring</label>
                     <input
+                      id="byok-key-ring"
                       type="text"
                       value={keyForm.keyRing}
                       onChange={(e) => setKeyForm({ ...keyForm, keyRing: e.target.value })}
@@ -1053,8 +1079,9 @@ const BYOKTab: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Key ID</label>
+                    <label htmlFor="byok-key-id" className="block text-sm font-medium text-slate-700 mb-1">Key ID</label>
                     <input
+                      id="byok-key-id"
                       type="text"
                       value={keyForm.keyId}
                       onChange={(e) => setKeyForm({ ...keyForm, keyId: e.target.value })}
@@ -1068,8 +1095,9 @@ const BYOKTab: React.FC = () => {
               {keyForm.provider === 'hashicorp_vault' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Vault URL</label>
+                    <label htmlFor="byok-hc-vault-url" className="block text-sm font-medium text-slate-700 mb-1">Vault URL</label>
                     <input
+                      id="byok-hc-vault-url"
                       type="text"
                       value={keyForm.vaultUrl}
                       onChange={(e) => setKeyForm({ ...keyForm, vaultUrl: e.target.value })}
@@ -1079,8 +1107,9 @@ const BYOKTab: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Key Name</label>
+                    <label htmlFor="byok-hc-key-name" className="block text-sm font-medium text-slate-700 mb-1">Key Name</label>
                     <input
+                      id="byok-hc-key-name"
                       type="text"
                       value={keyForm.keyName}
                       onChange={(e) => setKeyForm({ ...keyForm, keyName: e.target.value })}
@@ -1091,8 +1120,9 @@ const BYOKTab: React.FC = () => {
                 </>
               )}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <label htmlFor="byok-description" className="block text-sm font-medium text-slate-700 mb-1">Description</label>
                 <input
+                  id="byok-description"
                   type="text"
                   value={keyForm.description}
                   onChange={(e) => setKeyForm({ ...keyForm, description: e.target.value })}
@@ -1234,8 +1264,9 @@ const ComplianceAsCodeTab: React.FC = () => {
             <form onSubmit={handleCreatePolicy} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Policy Name</label>
+                  <label htmlFor="cac-policy-name" className="block text-sm font-medium text-slate-700 mb-1">Policy Name</label>
                   <input
+                    id="cac-policy-name"
                     type="text"
                     value={policyForm.name}
                     onChange={(e) => setPolicyForm({ ...policyForm, name: e.target.value })}
@@ -1244,8 +1275,9 @@ const ComplianceAsCodeTab: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Framework</label>
+                  <label htmlFor="cac-framework" className="block text-sm font-medium text-slate-700 mb-1">Framework</label>
                   <select
+                    id="cac-framework"
                     value={policyForm.framework}
                     onChange={(e) => setPolicyForm({ ...policyForm, framework: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg"
@@ -1258,8 +1290,9 @@ const ComplianceAsCodeTab: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Rego Policy Code</label>
+                <label htmlFor="cac-rego" className="block text-sm font-medium text-slate-700 mb-1">Rego Policy Code</label>
                 <textarea
+                  id="cac-rego"
                   value={policyForm.rego}
                   onChange={(e) => setPolicyForm({ ...policyForm, rego: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono text-sm"
@@ -1269,8 +1302,9 @@ const ComplianceAsCodeTab: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Severity</label>
+                <label htmlFor="cac-severity" className="block text-sm font-medium text-slate-700 mb-1">Severity</label>
                 <select
+                  id="cac-severity"
                   value={policyForm.severity}
                   onChange={(e) => setPolicyForm({ ...policyForm, severity: e.target.value as any })}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg"

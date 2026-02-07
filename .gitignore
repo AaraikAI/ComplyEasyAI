@@ -36,3 +36,5 @@ coverage/
 server/coverage/
 server/reports/
 server/models/
+server/server/models/
+server/temp/
