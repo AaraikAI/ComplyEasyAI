@@ -381,15 +381,35 @@ Manage risks associated with third-party relationships.
   }
 
   /**
-   * Get policies by organization
+   * Get policies by organization (with pagination)
    */
   async getPoliciesByOrganization(
     organizationId: string,
     filters?: {
       category?: string;
       status?: string;
-    }
+    },
+    queryParams?: any
   ) {
+    // Use pagination utilities if query params provided
+    if (queryParams) {
+      const { paginatedQuery } = require('../utils/pagination');
+      return await paginatedQuery(
+        prisma.policy.findMany.bind(prisma.policy),
+        prisma.policy.count.bind(prisma.policy),
+        {
+          where: {
+            organizationId,
+            ...(filters?.category && { category: filters.category }),
+            ...(filters?.status && { status: filters.status }),
+          },
+          orderBy: { updatedAt: 'desc' },
+        },
+        queryParams
+      );
+    }
+
+    // Fallback for backward compatibility (limit to 100 for safety)
     return await prisma.policy.findMany({
       where: {
         organizationId,
@@ -397,6 +417,7 @@ Manage risks associated with third-party relationships.
         ...(filters?.status && { status: filters.status }),
       },
       orderBy: { updatedAt: 'desc' },
+      take: 100, // Safety limit
     });
   }
 
@@ -467,37 +488,67 @@ Manage risks associated with third-party relationships.
   }
 
   /**
-   * Get policy metrics
+   * Get policy metrics (optimized with aggregation queries)
    */
   async getPolicyMetrics(organizationId: string) {
-    const policies = await prisma.policy.findMany({
-      where: { organizationId },
-    });
-
     const now = new Date();
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
+    // Use parallel count queries for better performance
+    const [
+      total,
+      draftCount,
+      reviewCount,
+      approvedCount,
+      archivedCount,
+      reviewsDueCount,
+      overdueCount,
+      policiesForCategories,
+    ] = await Promise.all([
+      prisma.policy.count({ where: { organizationId } }),
+      prisma.policy.count({ where: { organizationId, status: 'Draft' } }),
+      prisma.policy.count({ where: { organizationId, status: 'In_Review' } }),
+      prisma.policy.count({ where: { organizationId, status: 'Approved' } }),
+      prisma.policy.count({ where: { organizationId, status: 'Archived' } }),
+      prisma.policy.count({
+        where: {
+          organizationId,
+          reviewDate: { lt: thirtyDaysFromNow },
+        },
+      }),
+      prisma.policy.count({
+        where: {
+          organizationId,
+          reviewDate: { lt: now },
+        },
+      }),
+      // Only fetch category field for distribution calculation
+      prisma.policy.findMany({
+        where: { organizationId },
+        select: { category: true },
+      }),
+    ]);
+
     return {
-      total: policies.length,
+      total,
       byStatus: {
-        draft: policies.filter((p) => p.status === 'Draft').length,
-        review: policies.filter((p) => p.status === 'In_Review').length,
-        approved: policies.filter((p) => p.status === 'Approved').length,
-        archived: policies.filter((p) => p.status === 'Archived').length,
+        draft: draftCount,
+        review: reviewCount,
+        approved: approvedCount,
+        archived: archivedCount,
       },
-      byCategory: this.getCategoryDistribution(policies),
-      reviewsDue: policies.filter(
-        (p) => p.reviewDate && p.reviewDate < thirtyDaysFromNow
-      ).length,
-      overdue: policies.filter((p) => p.reviewDate && p.reviewDate < now)
-        .length,
+      byCategory: this.getCategoryDistributionFromSelected(policiesForCategories),
+      reviewsDue: reviewsDueCount,
+      overdue: overdueCount,
     };
   }
 
   /**
-   * Private helper: Get category distribution
+   * Private helper: Get category distribution from selected data
    */
-  private getCategoryDistribution(policies: Policy[]) {
+  private getCategoryDistributionFromSelected(
+    policies: Array<{ category: string | null }>
+  ) {
     const distribution: Record<string, number> = {};
 
     policies.forEach((policy) => {
@@ -506,6 +557,15 @@ Manage risks associated with third-party relationships.
     });
 
     return distribution;
+  }
+
+  /**
+   * Private helper: Get category distribution (legacy - for backward compatibility)
+   */
+  private getCategoryDistribution(policies: Policy[]) {
+    return this.getCategoryDistributionFromSelected(
+      policies.map(p => ({ category: p.category }))
+    );
   }
 }
 
