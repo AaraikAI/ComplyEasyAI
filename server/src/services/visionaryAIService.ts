@@ -330,7 +330,7 @@ Make it professional, legally sound, and actionable.`;
         };
       }
     } catch (error) {
-      console.error('Policy generation failed:', error);
+      logger.error('Policy generation failed:', error);
     }
 
     // Fallback basic policy
