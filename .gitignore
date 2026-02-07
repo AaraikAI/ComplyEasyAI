@@ -35,3 +35,4 @@ server/.env.local
 coverage/
 server/coverage/
 server/reports/
+server/models/
