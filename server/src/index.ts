@@ -194,37 +194,71 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-// Health check endpoint
+// Health check endpoint - comprehensive system status
 app.get('/health', async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  const healthStatus: any = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    environment: config.server.env,
+    version: '2.0.0',
+    checks: {},
+  };
+
   try {
-    // Try database connection with timeout
+    // 1. Database connectivity check with timeout
     const dbCheck = Promise.race([
       prisma.$queryRaw`SELECT 1`,
-      new Promise((_, reject) => 
+      new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Database connection timeout')), 5000)
       )
     ]);
-    
+
     await dbCheck;
-    const wsConnected = websocketService.getIO() !== null;
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: config.server.env,
-      websocket: wsConnected ? 'connected' : 'disconnected',
-      database: 'connected',
-    });
+    healthStatus.checks.database = { status: 'connected', responseTime: Date.now() - startTime };
   } catch (error: any) {
-    // Log error but don't fail completely - allow server to start
-    logger.warn('Health check: Database connection issue:', error.message);
-    res.status(503).json({
-      status: 'unhealthy',
-      error: error.message || 'Database connection failed',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    });
+    healthStatus.checks.database = { status: 'disconnected', error: error.message };
+    healthStatus.status = 'unhealthy';
   }
+
+  // 2. WebSocket service check
+  try {
+    const wsConnected = websocketService.getIO() !== null;
+    healthStatus.checks.websocket = { status: wsConnected ? 'connected' : 'disconnected' };
+    if (!wsConnected) {
+      healthStatus.status = 'degraded';
+    }
+  } catch (error: any) {
+    healthStatus.checks.websocket = { status: 'error', error: error.message };
+    healthStatus.status = 'degraded';
+  }
+
+  // 3. Memory usage check
+  const memUsage = process.memoryUsage();
+  const memoryMB = {
+    rss: Math.round(memUsage.rss / 1024 / 1024),
+    heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+    heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+    external: Math.round(memUsage.external / 1024 / 1024),
+  };
+  healthStatus.checks.memory = {
+    status: memoryMB.heapUsed < 512 ? 'ok' : 'warning',
+    usage: memoryMB,
+    unit: 'MB'
+  };
+
+  // 4. Response time check
+  healthStatus.responseTime = Date.now() - startTime;
+
+  // Determine final status code
+  const statusCode = healthStatus.status === 'unhealthy' ? 503 : 200;
+
+  if (healthStatus.status !== 'healthy') {
+    logger.warn('Health check: System is not fully healthy:', healthStatus);
+  }
+
+  res.status(statusCode).json(healthStatus);
 });
 
 // API routes
