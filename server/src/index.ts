@@ -56,6 +56,9 @@ import onboardingRoutes from './routes/onboarding';
 // EU Regulations Routes
 import euRegulationsRoutes from './routes/euRegulations';
 
+// Export Routes
+import exportRoutes from './routes/export';
+
 // aCOS Services
 import mqttService from './services/advanced/mqttService';
 
@@ -296,6 +299,9 @@ app.use('/api/demo', apiLimiter, demoRoutes);
 
 // Onboarding routes
 app.use('/api/onboarding', apiLimiter, onboardingRoutes);
+
+// Export routes (CSV exports for all entities)
+app.use('/api/export', apiLimiter, exportRoutes);
 
 // 404 handler
 app.use(notFound);
