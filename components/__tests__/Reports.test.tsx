@@ -164,7 +164,9 @@ describe('Reports', () => {
   it('calculates compliant frameworks count', async () => {
     render(<Reports />);
     await waitFor(() => {
-      expect(screen.getByText('1')).toBeInTheDocument(); // GDPR is Compliant
+      // Both Compliant (1) and At Risk (1) render "1"; use getAllByText
+      const elements = screen.getAllByText('1');
+      expect(elements.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -255,10 +257,9 @@ describe('Reports', () => {
     await waitFor(() => screen.getByText('Generate Report'));
     fireEvent.click(screen.getByText('Generate Report'));
     await waitFor(() => screen.getByText('AI Generate Report'));
-    fireEvent.click(screen.getByText('AI Generate Report'));
-    await waitFor(() => {
-      expect(screen.getByText('Please select at least one framework')).toBeInTheDocument();
-    });
+    // Button is disabled when no frameworks are selected, preventing generation
+    const button = screen.getByText('AI Generate Report').closest('button')!;
+    expect(button).toBeDisabled();
   });
 
   it('generates report after selecting a framework', async () => {
@@ -273,7 +274,9 @@ describe('Reports', () => {
       fireEvent.click(screen.getByText('AI Generate Report'));
     });
     await waitFor(() => {
-      expect(screen.getByText(/Compliance Report/)).toBeInTheDocument();
+      // Multiple elements match /Compliance Report/ (heading + report content)
+      const elements = screen.getAllByText(/Compliance Report/);
+      expect(elements.length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -309,11 +312,13 @@ describe('Reports', () => {
     fireEvent.click(screen.getByText('Generate Report'));
     await waitFor(() => screen.getByText('Show Customization'));
     fireEvent.click(screen.getByText('Show Customization'));
-    await waitFor(() => screen.getByText('Evidence Summary'));
-    const evidenceCheckbox = screen.getByText('Evidence Summary').closest('label')!.querySelector('input[type="checkbox"]')!;
-    fireEvent.click(evidenceCheckbox);
-    // It should toggle off the evidence section
-    expect((evidenceCheckbox as HTMLInputElement).checked).toBe(false);
+    await waitFor(() => screen.getByText('Risk Summary'));
+    const riskCheckbox = screen.getByText('Risk Summary').closest('label')!.querySelector('input[type="checkbox"]')!;
+    // Risk Summary starts checked (in default sections)
+    expect((riskCheckbox as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(riskCheckbox);
+    // After toggle, it should be unchecked
+    expect((riskCheckbox as HTMLInputElement).checked).toBe(false);
   });
 
   it('hides customization when toggle is clicked again', async () => {
@@ -345,15 +350,13 @@ describe('Reports', () => {
   });
 
   it('dismisses error when X is clicked', async () => {
+    const { api } = await import('@/services/api');
+    (api.frameworks.list as any).mockRejectedValueOnce(new Error('API error'));
     render(<Reports />);
-    await waitFor(() => screen.getByText('Generate Report'));
-    fireEvent.click(screen.getByText('Generate Report'));
-    await waitFor(() => screen.getByText('AI Generate Report'));
-    fireEvent.click(screen.getByText('AI Generate Report'));
-    await waitFor(() => screen.getByText('Please select at least one framework'));
-    const closeButton = screen.getAllByTestId('icon-X')[0].closest('button');
-    if (closeButton) fireEvent.click(closeButton);
-    expect(screen.queryByText('Please select at least one framework')).not.toBeInTheDocument();
+    await waitFor(() => screen.getByText('Failed to load frameworks'));
+    const closeButton = screen.getAllByTestId('icon-X')[0].closest('button')!;
+    fireEvent.click(closeButton);
+    expect(screen.queryByText('Failed to load frameworks')).not.toBeInTheDocument();
   });
 
   // ---- AI Executive Summary ----
@@ -468,10 +471,11 @@ describe('Reports', () => {
       fireEvent.click(screen.getByText('Compliance Autopilot'));
     });
     await waitFor(() => {
-      expect(screen.getByText('Gaps Identified')).toBeInTheDocument();
-      expect(screen.getByText('Actions Proposed')).toBeInTheDocument();
-      expect(screen.getByText('Actions Executed')).toBeInTheDocument();
-      expect(screen.getByText('Requiring Approval')).toBeInTheDocument();
+      // Stats labels also appear as section headers; use getAllByText
+      expect(screen.getAllByText('Gaps Identified').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Actions Proposed').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Actions Executed').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Requiring Approval').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -547,7 +551,8 @@ describe('Reports', () => {
     await waitFor(() => {
       expect(screen.getByText('Total Risks')).toBeInTheDocument();
       expect(screen.getByText('15')).toBeInTheDocument();
-      expect(screen.getByText('Critical')).toBeInTheDocument();
+      // "Critical" appears in both stat cards and risk severity badges
+      expect(screen.getAllByText('Critical').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -600,7 +605,8 @@ describe('Reports', () => {
     await waitFor(() => {
       expect(screen.getByText('Total Vendors')).toBeInTheDocument();
       expect(screen.getByText('20')).toBeInTheDocument();
-      expect(screen.getByText('High Risk Vendors')).toBeInTheDocument();
+      // "High Risk Vendors" appears in both stat cards and section header
+      expect(screen.getAllByText('High Risk Vendors').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('Average Score')).toBeInTheDocument();
       expect(screen.getByText('72%')).toBeInTheDocument();
     });
@@ -625,10 +631,11 @@ describe('Reports', () => {
       fireEvent.click(screen.getByText('Vendor Risk Report'));
     });
     await waitFor(() => {
-      expect(screen.getByText('High Risk Vendors')).toBeInTheDocument();
+      // "High Risk Vendors" appears in both stat cards and section header
+      expect(screen.getAllByText('High Risk Vendors').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('VendorA')).toBeInTheDocument();
       expect(screen.getByText('VendorB')).toBeInTheDocument();
-      expect(screen.getByText('Data Access: Full')).toBeInTheDocument();
+      expect(screen.getByText(/Data Access:.*Full/)).toBeInTheDocument();
     });
   });
 

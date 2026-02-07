@@ -111,6 +111,7 @@ describe('BYOKService', () => {
     (prismaMock.keyRotationPolicy.findFirst as jest.Mock<any>).mockResolvedValue(null);
     (prismaMock.keyRotationPolicy.findMany as jest.Mock<any>).mockResolvedValue([]);
     (prismaMock.keyRotationPolicy.update as jest.Mock<any>).mockResolvedValue({});
+    (prismaMock.keyRotationPolicy.upsert as jest.Mock<any>).mockResolvedValue({});
   });
 
   // ===================== generateDataKey =====================
@@ -200,6 +201,17 @@ describe('BYOKService', () => {
       const result = await byokService.encryptData(Buffer.from('sensitive data'), config, orgId);
       expect(result).toHaveProperty('ciphertext');
       expect(result).toHaveProperty('provider', 'gcp_kms');
+    });
+
+    it('should encrypt string data', async () => {
+      const config = {
+        provider: 'aws_kms' as const,
+        keyId: 'arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012',
+        region: 'us-east-1',
+      };
+
+      const result = await byokService.encryptData('string data', config, orgId);
+      expect(result).toHaveProperty('ciphertext');
     });
   });
 
@@ -340,21 +352,21 @@ describe('BYOKService', () => {
         { operation: 'decrypt', provider: 'aws_kms', createdAt: new Date() },
       ]);
 
-      const result = await byokService.getKeyUsageStats(orgId);
+      const result = await byokService.getKeyUsageStats(orgId, 'test-key-id');
       expect(result).toBeDefined();
     });
 
     it('should return empty stats when no usage', async () => {
       (prismaMock.keyUsage.findMany as jest.Mock<any>).mockResolvedValue([]);
 
-      const result = await byokService.getKeyUsageStats(orgId);
+      const result = await byokService.getKeyUsageStats(orgId, 'test-key-id');
       expect(result).toBeDefined();
     });
 
     it('should handle stats with date range', async () => {
       (prismaMock.keyUsage.findMany as jest.Mock<any>).mockResolvedValue([]);
 
-      const result = await byokService.getKeyUsageStats(orgId, 30);
+      const result = await byokService.getKeyUsageStats(orgId, 'test-key-id', new Date('2025-01-01'), new Date());
       expect(result).toBeDefined();
     });
   });
@@ -362,8 +374,6 @@ describe('BYOKService', () => {
   // ===================== setKeyRotationPolicy =====================
   describe('setKeyRotationPolicy', () => {
     it('should set key rotation policy', async () => {
-      (prismaMock.keyRotationPolicy.upsert as jest.Mock<any>).mockResolvedValue({});
-
       await byokService.setKeyRotationPolicy(orgId, 'arn:aws:kms:us-east-1:123:key/test-key', 'aws_kms', {
         keyId: 'arn:aws:kms:us-east-1:123:key/test-key',
         rotationIntervalDays: 90,
@@ -376,8 +386,6 @@ describe('BYOKService', () => {
     });
 
     it('should update existing rotation policy', async () => {
-      (prismaMock.keyRotationPolicy.upsert as jest.Mock<any>).mockResolvedValue({});
-
       await byokService.setKeyRotationPolicy(orgId, 'test-key', 'aws_kms', {
         keyId: 'test-key',
         rotationIntervalDays: 60,

@@ -277,7 +277,7 @@ describe('GapAnalysis', () => {
     fireEvent.click(screen.getByText('Run Gap Analysis').closest('button')!);
 
     await waitFor(() => expect(screen.getByText('Prioritized Gaps')).toBeInTheDocument());
-    expect(screen.getByText('Access Control')).toBeInTheDocument();
+    expect(screen.getAllByText('Access Control').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Priority: 10')).toBeInTheDocument();
     expect(screen.getByText('Priority: 9')).toBeInTheDocument();
     expect(screen.getByText('Critical data exposure')).toBeInTheDocument();
@@ -293,7 +293,7 @@ describe('GapAnalysis', () => {
     fireEvent.click(screen.getByText('Run Gap Analysis').closest('button')!);
 
     await waitFor(() => expect(screen.getByText('Gap Details & Remediation')).toBeInTheDocument());
-    expect(screen.getByText('Remediation Steps:')).toBeInTheDocument();
+    expect(screen.getAllByText('Remediation Steps:').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows export button after analysis', async () => {
