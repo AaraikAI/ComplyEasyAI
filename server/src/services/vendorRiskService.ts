@@ -383,30 +383,45 @@ export class VendorRiskService {
 
   /**
    * Get vendor risk dashboard
+   * Optimized with aggregation queries instead of fetching all vendors
    */
   async getVendorRiskDashboard(organizationId: string) {
-    const vendors = await prisma.vendor.findMany({
-      where: { organizationId },
-      include: {
-        assessments: true,
-        reviews: true,
-        monitors: true,
-      },
-    });
+    // Use parallel count queries for better performance
+    const [
+      totalVendors,
+      criticalCount,
+      highCount,
+      mediumCount,
+      lowCount,
+      activeCount,
+      onboardingCount,
+      offboardingCount,
+      suspendedCount,
+    ] = await Promise.all([
+      prisma.vendor.count({ where: { organizationId } }),
+      prisma.vendor.count({ where: { organizationId, riskLevel: 'Critical' } }),
+      prisma.vendor.count({ where: { organizationId, riskLevel: 'High' } }),
+      prisma.vendor.count({ where: { organizationId, riskLevel: 'Medium' } }),
+      prisma.vendor.count({ where: { organizationId, riskLevel: 'Low' } }),
+      prisma.vendor.count({ where: { organizationId, status: 'Active' } }),
+      prisma.vendor.count({ where: { organizationId, status: 'Onboarding' } }),
+      prisma.vendor.count({ where: { organizationId, status: 'Offboarding' } }),
+      prisma.vendor.count({ where: { organizationId, status: 'Suspended' } }),
+    ]);
 
     const dashboard = {
-      totalVendors: vendors.length,
+      totalVendors,
       riskDistribution: {
-        critical: vendors.filter((v) => v.riskLevel === 'Critical').length,
-        high: vendors.filter((v) => v.riskLevel === 'High').length,
-        medium: vendors.filter((v) => v.riskLevel === 'Medium').length,
-        low: vendors.filter((v) => v.riskLevel === 'Low').length,
+        critical: criticalCount,
+        high: highCount,
+        medium: mediumCount,
+        low: lowCount,
       },
       statusDistribution: {
-        active: vendors.filter((v) => v.status === 'Active').length,
-        onboarding: vendors.filter((v) => v.status === 'Onboarding').length,
-        offboarding: vendors.filter((v) => v.status === 'Offboarding').length,
-        suspended: vendors.filter((v) => v.status === 'Suspended').length,
+        active: activeCount,
+        onboarding: onboardingCount,
+        offboarding: offboardingCount,
+        suspended: suspendedCount,
       },
       assessmentMetrics: {
         totalAssessments: vendors.reduce(
@@ -551,7 +566,7 @@ export class VendorRiskService {
   }
 
   /**
-   * Get vendors by organization
+   * Get vendors by organization (with pagination)
    */
   async getVendorsByOrganization(
     organizationId: string,
@@ -559,8 +574,42 @@ export class VendorRiskService {
       riskLevel?: VendorRiskLevel;
       status?: VendorStatus;
       hasDataAccess?: boolean;
-    }
+    },
+    queryParams?: any
   ) {
+    // Use pagination utilities if query params provided
+    if (queryParams) {
+      const { paginatedQuery } = require('../utils/pagination');
+      return await paginatedQuery(
+        prisma.vendor.findMany.bind(prisma.vendor),
+        prisma.vendor.count.bind(prisma.vendor),
+        {
+          where: {
+            organizationId,
+            ...(filters?.riskLevel && { riskLevel: filters.riskLevel }),
+            ...(filters?.status && { status: filters.status }),
+            ...(filters?.hasDataAccess !== undefined && {
+              hasDataAccess: filters.hasDataAccess,
+            }),
+          },
+          include: {
+            assessments: {
+              orderBy: { assessedDate: 'desc' },
+              take: 1,
+            },
+            reviews: {
+              orderBy: { reviewDate: 'desc' },
+              take: 1,
+            },
+            monitors: true,
+          },
+          orderBy: { riskScore: 'desc' },
+        },
+        queryParams
+      );
+    }
+
+    // Fallback for backward compatibility (limit to 100 for safety)
     return await prisma.vendor.findMany({
       where: {
         organizationId,
@@ -582,6 +631,7 @@ export class VendorRiskService {
         monitors: true,
       },
       orderBy: { riskScore: 'desc' },
+      take: 100, // Safety limit
     });
   }
 
