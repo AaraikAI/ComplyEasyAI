@@ -188,7 +188,8 @@ describe('IssueManagement', () => {
     render(<IssueManagement />);
     await waitFor(() => expect(screen.getByText('Total Issues')).toBeInTheDocument());
     expect(screen.getByText('3')).toBeInTheDocument(); // totalIssues
-    expect(screen.getByText('Open')).toBeInTheDocument();
+    // "Open" appears both as a stat card label and as a status badge in critical issues
+    expect(screen.getAllByText('Open').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Overdue')).toBeInTheDocument();
   });
 
@@ -401,7 +402,8 @@ describe('IssueManagement', () => {
     render(<IssueManagement />);
     await waitFor(() => expect(screen.getByText('New Issue')).toBeInTheDocument());
     fireEvent.click(screen.getByText('New Issue'));
-    await waitFor(() => expect(screen.getByText('Create Issue')).toBeInTheDocument());
+    // "Create Issue" appears both as the page heading and as the submit button text
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Create Issue' })).toBeInTheDocument());
     expect(screen.getByPlaceholderText('Brief description of the issue')).toBeInTheDocument();
   });
 

@@ -297,6 +297,13 @@ describe('AgenticAIService', () => {
         id: 'action-1',
         parameters: {},
       });
+      (prismaMock.agenticAction.findFirst as jest.Mock<any>).mockResolvedValue({
+        id: 'action-1',
+        status: 'pending',
+        organizationId: orgId,
+        parameters: {},
+        type: 'control_update',
+      });
       (prismaMock.frameworkControl.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'ctrl-1',
         status: 'Pending',
