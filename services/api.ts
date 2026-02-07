@@ -25,10 +25,11 @@ const clearAuthToken = (): void => {
   localStorage.removeItem('user_data');
 };
 
-// HTTP Client with authentication
+// HTTP Client with authentication and timeout
 async function fetchAPI<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  timeoutMs: number = 30000 // Default 30 second timeout
 ): Promise<T> {
   const token = getAuthToken();
 
@@ -41,11 +42,18 @@ async function fetchAPI<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  // Create AbortController for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -53,11 +61,18 @@ async function fetchAPI<T>(
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
           try {
+            // Add timeout to refresh token request
+            const refreshController = new AbortController();
+            const refreshTimeoutId = setTimeout(() => refreshController.abort(), 10000); // 10s for refresh
+
             const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ refreshToken }),
+              signal: refreshController.signal,
             });
+
+            clearTimeout(refreshTimeoutId);
 
             if (refreshResponse.ok) {
               const refreshData = await refreshResponse.json();
@@ -69,11 +84,18 @@ async function fetchAPI<T>(
                 ...options.headers,
                 'Authorization': `Bearer ${refreshData.accessToken}`,
               };
-              
+
+              // Add timeout to retry request
+              const retryController = new AbortController();
+              const retryTimeoutId = setTimeout(() => retryController.abort(), timeoutMs);
+
               const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
                 ...options,
                 headers: retryHeaders,
+                signal: retryController.signal,
               });
+
+              clearTimeout(retryTimeoutId);
 
               if (retryResponse.ok) {
                 return retryResponse.json();
@@ -115,6 +137,18 @@ async function fetchAPI<T>(
 
     return response.json();
   } catch (error: any) {
+    clearTimeout(timeoutId);
+
+    // Handle timeout/abort errors
+    if (error.name === 'AbortError') {
+      console.error('Request timeout:', {
+        endpoint,
+        timeoutMs,
+        url: `${API_BASE_URL}${endpoint}`,
+      });
+      throw new Error(`Request timeout after ${timeoutMs}ms. The server may be experiencing high load.`);
+    }
+
     // Handle network errors
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       console.error('Network error - Backend may be down:', {

@@ -1328,8 +1328,15 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                       const ownerId = e.target.value || undefined;
                       try {
                         await api.frameworks.updateControl(framework!.id, selectedControl.id, { ownerId });
-                        // TODO: Load user data for owner
-                        setSelectedControl({ ...selectedControl, ownerId });
+
+                        // Load user data for owner from teamMembers
+                        const owner = ownerId ? teamMembers.find(m => m.id === ownerId) : undefined;
+                        setSelectedControl({
+                          ...selectedControl,
+                          ownerId,
+                          owner: owner ? { id: owner.id, name: owner.name, email: owner.email } : undefined
+                        });
+
                         await loadFrameworkDetails();
                         alert('Owner updated. Notification sent to owner.');
                       } catch (error: any) {
