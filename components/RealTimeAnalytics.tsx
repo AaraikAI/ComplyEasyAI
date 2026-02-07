@@ -120,23 +120,76 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         low: risks.filter((r: any) => r.severity === 'Low' || r.severity === 'low').length,
       };
 
+      // Fetch additional data for complete metrics
+      let activeUsersCount = 0;
+      let avgResponseTime = 'N/A';
+      let complianceChange = 0;
+      let risksChange = 0;
+      let controlsChange = 0;
+
+      try {
+        // Get active users from user/organization endpoint
+        const orgData = await api.user.getOrganization?.().catch(() => null);
+        activeUsersCount = orgData?.users?.filter((u: any) => u.active)?.length || 0;
+      } catch (err) {
+        console.error('Failed to load active users:', err);
+      }
+
+      try {
+        // Get monitoring data for response time
+        const monitorData = await api.enterprise?.monitoring?.getMetrics?.().catch(() => null);
+        avgResponseTime = monitorData?.avgResponseTime || 'N/A';
+      } catch (err) {
+        console.error('Failed to load monitoring metrics:', err);
+      }
+
+      // Calculate historical changes (comparing to stored metrics)
+      // In production, this would query historical data from DB with time range filter
+      // For now, use localStorage to track previous values for demo purposes
+      const previousMetrics = localStorage.getItem('analytics_previous_metrics');
+      if (previousMetrics) {
+        try {
+          const prev = JSON.parse(previousMetrics);
+          const prevCompliance = parseFloat(prev.complianceScore || '0');
+          const currentCompliance = parseFloat(complianceScore);
+          complianceChange = prevCompliance > 0 ?
+            ((currentCompliance - prevCompliance) / prevCompliance) * 100 : 0;
+
+          risksChange = prev.risksCount > 0 ?
+            ((risks.length - prev.risksCount) / prev.risksCount) * 100 : 0;
+
+          controlsChange = prev.controlsCount > 0 ?
+            ((passedControls - prev.controlsCount) / prev.controlsCount) * 100 : 0;
+        } catch (err) {
+          console.error('Failed to parse previous metrics:', err);
+        }
+      }
+
+      // Store current metrics for next comparison
+      localStorage.setItem('analytics_previous_metrics', JSON.stringify({
+        complianceScore,
+        risksCount: risks.length,
+        controlsCount: passedControls,
+        timestamp: new Date().toISOString()
+      }));
+
       // Calculate metrics from real data
       const calculatedMetrics: Metric[] = [
         {
           id: 'compliance-score',
           label: 'Compliance Score',
           value: `${complianceScore}%`,
-          change: 2.3, // TODO: Calculate from historical data
-          trend: 'up',
+          change: Number(complianceChange.toFixed(1)),
+          trend: complianceChange > 0 ? 'up' : complianceChange < 0 ? 'down' : 'neutral',
           icon: <Shield className="w-5 h-5" />,
           color: 'text-green-600',
         },
         {
           id: 'active-users',
           label: 'Active Users',
-          value: '1,247', // TODO: Get from user service
-          change: 5.1,
-          trend: 'up',
+          value: activeUsersCount > 0 ? activeUsersCount.toLocaleString() : 'N/A',
+          change: 0, // Could be calculated from historical user data
+          trend: 'neutral',
           icon: <Users className="w-5 h-5" />,
           color: 'text-blue-600',
         },
@@ -144,8 +197,8 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           id: 'risks-detected',
           label: 'Risks Detected',
           value: risks.length.toString(),
-          change: -12.5, // TODO: Calculate from historical data
-          trend: risks.length > 0 ? 'down' : 'neutral',
+          change: Number(risksChange.toFixed(1)),
+          trend: risksChange < 0 ? 'up' : risksChange > 0 ? 'down' : 'neutral',
           icon: <AlertTriangle className="w-5 h-5" />,
           color: 'text-red-600',
         },
@@ -153,17 +206,17 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           id: 'controls-passed',
           label: 'Controls Passed',
           value: passedControls.toString(),
-          change: 3.2, // TODO: Calculate from historical data
-          trend: 'up',
+          change: Number(controlsChange.toFixed(1)),
+          trend: controlsChange > 0 ? 'up' : controlsChange < 0 ? 'down' : 'neutral',
           icon: <CheckCircle className="w-5 h-5" />,
           color: 'text-green-600',
         },
         {
           id: 'avg-response-time',
           label: 'Avg Response Time',
-          value: '142ms', // TODO: Get from monitoring service
-          change: -8.7,
-          trend: 'down',
+          value: avgResponseTime,
+          change: 0, // Could be calculated from historical monitoring data
+          trend: 'neutral',
           icon: <Clock className="w-5 h-5" />,
           color: 'text-blue-600',
         },

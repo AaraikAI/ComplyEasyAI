@@ -132,7 +132,28 @@ export class MonitoringService {
     remediationActions: any;
     alerts: any;
   }> {
-    // Simulate test execution based on monitor type
+    // DEVELOPMENT/DEMO MODE: Simulate test execution for demonstration purposes
+    // TODO: In production, this should call actual security scanning tools:
+    // - Infrastructure: AWS Config, Azure Policy, GCP Security Command Center
+    // - Cloud: CloudTrail, CloudWatch, Security Hub
+    // - Identity: Okta, Azure AD, AWS IAM Access Analyzer
+    // - Device: MDM APIs (Intune, Jamf), EDR tools
+    // - Code: Snyk, SonarQube, GitLab Security Scanning APIs
+    //
+    // For now, return simulated results to demonstrate the monitoring workflow
+    // Set ENABLE_REAL_MONITORING=true in production to use actual integrations
+    const useRealMonitoring = process.env.ENABLE_REAL_MONITORING === 'true';
+
+    if (useRealMonitoring) {
+      // Production path - call real monitoring integrations
+      logger.info(`Running real monitoring checks for ${monitor.monitorType} monitor ${monitor.id}`);
+      // TODO: Implement real integration calls here
+      // For now, throw error to make it clear this needs implementation
+      throw new Error('Real monitoring integrations not yet implemented. Please set ENABLE_REAL_MONITORING=false for demo mode.');
+    }
+
+    // Demo/Development path - simulated test results
+    logger.debug(`Running simulated monitoring checks for ${monitor.monitorType} monitor ${monitor.id} (demo mode)`);
     const testResults = {
       Infrastructure: {
         tests: [

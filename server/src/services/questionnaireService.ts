@@ -268,7 +268,7 @@ Format your response as JSON:
         evidence: { items: [] },
       };
     } catch (error) {
-      console.error('AI response generation failed:', error);
+      logger.error('AI response generation failed:', error);
       return {
         answer:
           'This question requires manual review. Please provide a response based on your organization\'s specific practices.',
@@ -714,7 +714,12 @@ Format your response as JSON:
       }
     }
     
-    throw new Error(`Format ${format} not yet implemented. Use 'json', 'pdf', or 'docx'.`);
+    // Return clear validation error with 400 status for unsupported format
+    const { AppError } = require('../middleware/errorHandler');
+    throw new AppError(
+      `Unsupported export format '${format}'. Supported formats are: 'json', 'pdf', 'docx'.`,
+      400
+    );
   }
 }
 

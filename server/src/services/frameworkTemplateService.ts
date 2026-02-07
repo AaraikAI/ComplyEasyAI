@@ -151,13 +151,32 @@ function resolveFrameworkKey(frameworkType: string): string | null {
 }
 
 export class FrameworkTemplateService {
+  // In-memory cache for processed templates with TTL
+  private templateCache: Map<string, { data: FrameworkControlTemplate[]; expires: number }> = new Map();
+  private categoryCacheMap: Map<string, { data: any[]; expires: number }> = new Map();
+  private readonly CACHE_TTL_MS = 3600000; // 1 hour cache
+
   /**
-   * Get all control templates for a given framework type
+   * Get all control templates for a given framework type (with caching)
    */
   getTemplatesForFramework(frameworkType: string): FrameworkControlTemplate[] {
     const key = resolveFrameworkKey(frameworkType);
     if (!key) return [];
-    return FRAMEWORK_TEMPLATE_MAP[key].controls;
+
+    // Check cache first
+    const cached = this.templateCache.get(key);
+    if (cached && cached.expires > Date.now()) {
+      return cached.data;
+    }
+
+    // Load from static map and cache
+    const controls = FRAMEWORK_TEMPLATE_MAP[key].controls;
+    this.templateCache.set(key, {
+      data: controls,
+      expires: Date.now() + this.CACHE_TTL_MS
+    });
+
+    return controls;
   }
 
   /**
@@ -183,13 +202,44 @@ export class FrameworkTemplateService {
   }
 
   /**
-   * Get categories/domains for a specific framework template
+   * Warm up cache by pre-loading all framework templates
+   * Call this on server startup for optimal performance
+   */
+  warmCache(): void {
+    const frameworks = Object.keys(FRAMEWORK_TEMPLATE_MAP);
+    frameworks.forEach(framework => {
+      this.getTemplatesForFramework(framework);
+      this.getTemplateCategories(framework);
+    });
+    console.log(`✓ Framework template cache warmed (${frameworks.length} frameworks)`);
+  }
+
+  /**
+   * Clear template cache (useful for testing or cache invalidation)
+   */
+  clearCache(): void {
+    this.templateCache.clear();
+    this.categoryCacheMap.clear();
+  }
+
+  /**
+   * Get categories/domains for a specific framework template (with caching)
    */
   getTemplateCategories(frameworkType: string): Array<{
     category: string;
     controlCount: number;
     controls: FrameworkControlTemplate[];
   }> {
+    const key = resolveFrameworkKey(frameworkType);
+    if (!key) return [];
+
+    // Check cache first
+    const cached = this.categoryCacheMap.get(key);
+    if (cached && cached.expires > Date.now()) {
+      return cached.data;
+    }
+
+    // Compute categories and cache
     const controls = this.getTemplatesForFramework(frameworkType);
     const categoryMap = new Map<string, FrameworkControlTemplate[]>();
 
@@ -199,11 +249,19 @@ export class FrameworkTemplateService {
       categoryMap.set(control.category, existing);
     }
 
-    return Array.from(categoryMap.entries()).map(([category, ctrls]) => ({
+    const result = Array.from(categoryMap.entries()).map(([category, ctrls]) => ({
       category,
       controlCount: ctrls.length,
       controls: ctrls,
     }));
+
+    // Cache the result
+    this.categoryCacheMap.set(key, {
+      data: result,
+      expires: Date.now() + this.CACHE_TTL_MS
+    });
+
+    return result;
   }
 
   /**
