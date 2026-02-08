@@ -5,7 +5,7 @@ const originalLocation = window.location;
 
 // We import the module; module-level code uses import.meta.env which Vitest provides.
 // API_BASE_URL will resolve to 'http://localhost:3001/api' (the default fallback).
-import { api, getAuthToken, setAuthToken, clearAuthToken } from '../api';
+import { api, getAuthToken, setAuthToken, clearAuthToken, __clearCsrfCacheForTest } from '../api';
 
 const API = 'http://localhost:3001/api';
 
@@ -33,12 +33,33 @@ function fail(status: number, body: any = {}, statusText = '') {
   };
 }
 
+/**
+ * Get the fetch call that matches the given URL path (e.g. '/billing/features/feat1/subscribe').
+ * For state-changing requests, fetchAPI may call getCsrfToken() first, so the first call is often
+ * to /csrf-token; the actual API call is a later call. Use this to get the call for the endpoint under test.
+ */
+function getCallForEndpoint(mock: ReturnType<typeof vi.fn>, pathPart: string): [string, RequestInit] | undefined {
+  const calls = mock.mock.calls as [string, RequestInit][];
+  return calls.find((c) => typeof c[0] === 'string' && c[0].includes(pathPart));
+}
+
+/** Parse request body from a fetch call; returns {} if no body. */
+function parseBodyFromCall(call: [string, RequestInit] | undefined): Record<string, unknown> {
+  if (!call?.[1]?.body) return {};
+  try {
+    return JSON.parse(typeof call[1].body === 'string' ? call[1].body : '{}');
+  } catch {
+    return {};
+  }
+}
+
 describe('api service', () => {
   let mockFetch: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    __clearCsrfCacheForTest();
 
     mockFetch = vi.fn().mockResolvedValue(ok({}));
     global.fetch = mockFetch as any;
@@ -117,17 +138,19 @@ describe('api service', () => {
       localStorage.setItem('authToken', 'old-token');
       localStorage.setItem('refreshToken', 'r-token');
 
-      // 1st call -> 401
+      // 1st call -> list returns 401
       mockFetch.mockResolvedValueOnce(fail(401, { error: 'Unauthorized' }));
-      // 2nd call -> refresh succeeds
+      // 2nd call -> getCsrfToken() (inside 401 handler before /auth/refresh)
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
+      // 3rd call -> refresh succeeds
       mockFetch.mockResolvedValueOnce(ok({ accessToken: 'new-token' }));
-      // 3rd call -> retry succeeds
+      // 4th call -> retry succeeds
       mockFetch.mockResolvedValueOnce(ok({ data: 'retried' }));
 
       const result = await api.audit.list();
       expect(result).toEqual({ data: 'retried' });
       expect(localStorage.getItem('authToken')).toBe('new-token');
-      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch).toHaveBeenCalledTimes(4);
     });
 
     // 401 handling: refresh fails (refresh response not ok)
@@ -136,6 +159,7 @@ describe('api service', () => {
       localStorage.setItem('refreshToken', 'r-tok');
 
       mockFetch.mockResolvedValueOnce(fail(401, { error: 'Unauthorized' }));
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
       mockFetch.mockResolvedValueOnce(fail(403, { error: 'Forbidden' }));
 
       await expect(api.audit.list()).rejects.toThrow('Session expired');
@@ -148,6 +172,7 @@ describe('api service', () => {
       localStorage.setItem('refreshToken', 'r-tok');
 
       mockFetch.mockResolvedValueOnce(fail(401, { error: 'Unauthorized' }));
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
       mockFetch.mockRejectedValueOnce(new Error('network'));
 
       await expect(api.audit.list()).rejects.toThrow('Session expired');
@@ -171,6 +196,7 @@ describe('api service', () => {
       localStorage.setItem('refreshToken', 'r-tok');
 
       mockFetch.mockResolvedValueOnce(fail(401, { error: 'Unauthorized' }));
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
       mockFetch.mockResolvedValueOnce(ok({ accessToken: 'new-token' }));
       mockFetch.mockResolvedValueOnce(fail(403, { error: 'Forbidden' }));
 
@@ -251,6 +277,7 @@ describe('api service', () => {
     });
 
     it('verifyMagicLink stores tokens, returns mapped user', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
       mockFetch.mockResolvedValueOnce(
         ok({
           accessToken: 'at',
@@ -276,6 +303,7 @@ describe('api service', () => {
     });
 
     it('verifyMagicLink uses avatar when provided', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
       mockFetch.mockResolvedValueOnce(
         ok({
           accessToken: 'at',
@@ -298,6 +326,7 @@ describe('api service', () => {
     });
 
     it('verifyMagicLink throws when no access token', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
       mockFetch.mockResolvedValueOnce(ok({ user: { id: '1' } }));
       await expect(api.auth.verifyMagicLink('tok')).rejects.toThrow('No access token received');
     });
@@ -325,6 +354,7 @@ describe('api service', () => {
     });
 
     it('login stores tokens and returns mapped user', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
       mockFetch.mockResolvedValueOnce(
         ok({
           accessToken: 'at',
@@ -346,6 +376,7 @@ describe('api service', () => {
 
     it('refreshToken sends POST and updates token', async () => {
       localStorage.setItem('refreshToken', 'rt');
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
       mockFetch.mockResolvedValueOnce(ok({ accessToken: 'new-at' }));
 
       await api.auth.refreshToken();
@@ -842,14 +873,16 @@ describe('api service', () => {
     it('performGapAnalysis converts string target to array', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.ai.performGapAnalysis(['ISO27001'], 'SOC2');
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.target).toEqual(['SOC2']);
     });
 
     it('performGapAnalysis keeps array target as array', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.ai.performGapAnalysis(['ISO27001'], ['SOC2', 'HIPAA']);
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.target).toEqual(['SOC2', 'HIPAA']);
     });
 
@@ -880,7 +913,8 @@ describe('api service', () => {
     it('generateBCP sends POST with optional params', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.ai.generateBCP('earthquake', '4h', '1h');
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body).toEqual({ scenario: 'earthquake', rto: '4h', rpo: '1h' });
     });
 
@@ -888,7 +922,8 @@ describe('api service', () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       const files = [{ filename: 'a.txt', content: 'data', type: 'text' }];
       await api.ai.chat('hello', files);
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.message).toBe('hello');
       expect(body.fileContext).toEqual(files);
     });
@@ -924,7 +959,8 @@ describe('api service', () => {
     it('createCheckout sends POST with tier and default billingCycle', async () => {
       mockFetch.mockResolvedValueOnce(ok({ url: 'https://stripe' }));
       await api.billing.createCheckout('Growth' as any);
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body).toEqual({ tier: 'Growth', billingCycle: 'annual' });
     });
 
@@ -949,7 +985,8 @@ describe('api service', () => {
     it('previewTierChange sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.billing.previewTierChange('Enterprise' as any, 'monthly');
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body).toEqual({ tier: 'Enterprise', billingCycle: 'monthly' });
     });
 
@@ -962,7 +999,8 @@ describe('api service', () => {
     it('cancelSubscription sends POST with default immediate=false', async () => {
       mockFetch.mockResolvedValueOnce(ok({ success: true }));
       await api.billing.cancelSubscription();
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.cancelImmediately).toBe(false);
     });
 
@@ -1158,7 +1196,8 @@ describe('api service', () => {
     it('connectWithApiKey sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.integrations.connectWithApiKey('jira', { apiKey: 'key' });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.type).toBe('api-key');
       expect(body.apiKey).toBe('key');
     });
@@ -1166,7 +1205,8 @@ describe('api service', () => {
     it('connectWithPat sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.integrations.connectWithPat('github', { token: 'pat123' });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.type).toBe('pat');
       expect(body.token).toBe('pat123');
     });
@@ -1174,21 +1214,24 @@ describe('api service', () => {
     it('connectWithApiKeySecret sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.integrations.connectWithApiKeySecret('prov', { apiKey: 'k', apiSecret: 's' });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.type).toBe('api-key-secret');
     });
 
     it('connectWithUsernamePassword sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.integrations.connectWithUsernamePassword('prov', { username: 'u', password: 'p' });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.type).toBe('username-password');
     });
 
     it('connectWithServiceAccount sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.integrations.connectWithServiceAccount('gcp', { serviceAccountJson: { key: 'val' } });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.type).toBe('service-account');
     });
   });
@@ -1519,7 +1562,8 @@ describe('api service', () => {
       it('predictRisks sends POST with default timeHorizon', async () => {
         mockFetch.mockResolvedValueOnce(ok({}));
         await api.enterprise.visionaryAI.predictRisks();
-        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
         expect(body.timeHorizonDays).toBe(90);
       });
 
@@ -1554,7 +1598,8 @@ describe('api service', () => {
       it('toggle sends PATCH with active flag', async () => {
         mockFetch.mockResolvedValueOnce(ok({}));
         await api.enterprise.monitoring.toggle('m1', true);
-        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
         expect(body.active).toBe(true);
       });
 
@@ -1622,14 +1667,16 @@ describe('api service', () => {
       it('run sends POST with options', async () => {
         mockFetch.mockResolvedValueOnce(ok({}));
         await api.enterprise.autopilot.run({ mode: 'full' });
-        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
         expect(body.options).toEqual({ mode: 'full' });
       });
 
       it('run sends POST with empty options by default', async () => {
         mockFetch.mockResolvedValueOnce(ok({}));
         await api.enterprise.autopilot.run();
-        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
         expect(body.options).toEqual({});
       });
     });
@@ -1705,6 +1752,7 @@ describe('api service', () => {
     });
 
     it('regenerateCodes sends POST', async () => {
+      mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
       mockFetch.mockResolvedValueOnce(ok({ backupCodes: ['a', 'b'] }));
       const result = await api.twoFactor.regenerateCodes();
       expect(result.backupCodes).toEqual(['a', 'b']);
@@ -1801,7 +1849,8 @@ describe('api service', () => {
     it('rollbackMultipleActions sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.acos.rollbackMultipleActions(['a1', 'a2']);
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.actionIds).toEqual(['a1', 'a2']);
     });
 
@@ -1884,14 +1933,16 @@ describe('api service', () => {
     it('denyJITAccessRequest sends POST with reason', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.acos.denyJITAccessRequest('r1', 'Not needed');
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.reason).toBe('Not needed');
     });
 
     it('generateHomomorphicKeys sends POST with defaults', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.acos.generateHomomorphicKeys();
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.scheme).toBe('CKKS');
       expect(body.securityLevel).toBe(128);
     });
@@ -1899,7 +1950,8 @@ describe('api service', () => {
     it('performHybridReasoning sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.acos.performHybridReasoning('query', { extra: 'data' });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.query).toBe('query');
       expect(body.context).toEqual({ extra: 'data' });
     });
@@ -1913,7 +1965,8 @@ describe('api service', () => {
     it('revokeJITSession sends POST with reason', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.acos.revokeJITSession('s1', 'expired');
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.reason).toBe('expired');
     });
   });
@@ -1956,7 +2009,8 @@ describe('api service', () => {
     it('scheduleDemo sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.demo.scheduleDemo('d1', '2025-01-01', 'https://meet', 'notes');
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.scheduledAt).toBe('2025-01-01');
       expect(body.meetingLink).toBe('https://meet');
     });
@@ -1990,7 +2044,8 @@ describe('api service', () => {
     it('evaluateAccessRequest sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.security.evaluateAccessRequest('res1', 'dev1', 'read');
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body).toEqual({ resourceId: 'res1', deviceId: 'dev1', action: 'read' });
     });
 
@@ -2040,7 +2095,8 @@ describe('api service', () => {
     it('evaluateCompliancePoliciesBatch sends POST', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.security.evaluateCompliancePoliciesBatch(['p1', 'p2'], { data: 'x' });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.policyIds).toEqual(['p1', 'p2']);
     });
 
@@ -2167,14 +2223,16 @@ describe('api service', () => {
     it('subscribeToFeature sends POST with default annual', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.subscribeToFeature('feat1');
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.billingCycle).toBe('annual');
     });
 
     it('subscribeToFeature sends POST with monthly', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.subscribeToFeature('feat1', 'monthly');
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.billingCycle).toBe('monthly');
     });
 
@@ -2202,7 +2260,8 @@ describe('api service', () => {
     it('subscribeToBundle sends POST with default annual', async () => {
       mockFetch.mockResolvedValueOnce(ok({}));
       await api.subscribeToBundle('bundle1');
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
       expect(body.billingCycle).toBe('annual');
     });
   });
@@ -2227,7 +2286,8 @@ describe('api service', () => {
       it('updateSystemStatus sends PATCH', async () => {
         mockFetch.mockResolvedValueOnce(ok({}));
         await api.euRegulations.aiAct.updateSystemStatus('s1', 'compliant');
-        const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+        const callWithBody = mockFetch.mock.calls.find((c: [string, RequestInit]) => c[1]?.body != null) as [string, RequestInit] | undefined;
+      const body = parseBodyFromCall(callWithBody);
         expect(body.complianceStatus).toBe('compliant');
       });
 

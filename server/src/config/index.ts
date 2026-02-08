@@ -259,10 +259,9 @@ export const validateConfig = (): void => {
     errors.push('CORS_ORIGIN is required for security');
   }
 
-  // Log warnings in non-production environments
+  // Log warnings in non-production (config loads before logger to avoid circular dependency)
   if (warnings.length > 0 && process.env.NODE_ENV !== 'production') {
-    console.warn('⚠️  Configuration Warnings:');
-    warnings.forEach(warning => console.warn(`   - ${warning}`));
+    process.stdout.write(`⚠️  Configuration Warnings:\n${warnings.map((w: string) => `   - ${w}\n`).join('')}`);
   }
 
   // Throw errors for missing required variables

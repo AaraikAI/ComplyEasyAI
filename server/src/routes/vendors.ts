@@ -2,6 +2,13 @@ import { Router } from 'express';
 import vendorRiskService from '../services/vendorRiskService';
 import { authenticate } from '../middleware/auth';
 import { enforceLimit } from '../middleware/tierMiddleware';
+import { validateBody } from '../middleware/validate';
+import {
+  createVendorSchema,
+  createVendorAssessmentSchema,
+  completeVendorAssessmentSchema,
+  updateVendorSchema,
+} from '../validators/vendorSchemas';
 import { authAsyncHandler, AuthenticatedRequest } from '../types/express';
 
 const router = Router();
@@ -11,9 +18,11 @@ router.use(authenticate);
 router.post(
   '/',
   enforceLimit('maxVendors'),
+  validateBody(createVendorSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const vendor = await vendorRiskService.createVendor({
       ...req.body,
+      organizationId: req.user.organizationId,
       userId: req.user.id,
     });
     res.status(201).json(vendor);
@@ -23,6 +32,7 @@ router.post(
 // Create vendor assessment
 router.post(
   '/:id/assessments',
+  validateBody(createVendorAssessmentSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const assessment = await vendorRiskService.createVendorAssessment({
       vendorId: req.params.id,
@@ -37,6 +47,7 @@ router.post(
 // Complete vendor assessment
 router.post(
   '/assessments/:id/complete',
+  validateBody(completeVendorAssessmentSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const assessment = await vendorRiskService.completeVendorAssessment(
       req.params.id,
@@ -95,6 +106,7 @@ router.get(
 // Update vendor
 router.put(
   '/:id',
+  validateBody(updateVendorSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const vendor = await vendorRiskService.updateVendor(
       req.params.id,

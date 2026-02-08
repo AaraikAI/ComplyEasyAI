@@ -525,6 +525,21 @@ curl -w "@curl-format.txt" -o /dev/null -s https://api.complyeasyai.com/health
 - Configure Elastic APM, New Relic, or Datadog
 - See `MONITORING_SETUP.md` for details
 
+### Continuous Monitoring (ENABLE_REAL_MONITORING)
+
+The **Continuous Monitoring** feature (monitors, run results, dashboards) supports two modes, controlled by the environment variable **`ENABLE_REAL_MONITORING`**:
+
+| `ENABLE_REAL_MONITORING` | Behavior |
+|--------------------------|----------|
+| **Unset or `false`**     | **Demo-only mode.** Monitor runs return **simulated** results (e.g. pass/fail counts and sample findings). No external security or scanning tools are called. Use this for development, demos, and UI testing. |
+| **`true`**               | **Production mode (not yet implemented).** The application is designed to call real integrations (e.g. AWS Config, CloudTrail, MDM APIs, Snyk). As of this release, setting `true` will cause monitor execution to return an error: *"Real monitoring integrations not yet implemented. Please set ENABLE_REAL_MONITORING=false for demo mode."* |
+
+**Recommendations:**
+- **Development / staging / demo:** Leave `ENABLE_REAL_MONITORING` unset or set it to `false`.
+- **Production:** Until real integrations are implemented, keep `ENABLE_REAL_MONITORING=false` and treat the Monitoring UI as demo-only, or implement the real integration calls in `server/src/services/monitoringService.ts` and then set `ENABLE_REAL_MONITORING=true`.
+
+See `server/src/services/monitoringService.ts` (e.g. `runMonitorTests`) for the gating logic and TODOs for real integration points.
+
 ### Step 2: Setup Logging
 
 **File Logs:**

@@ -5,6 +5,7 @@
  * and applies them to organization frameworks in the database.
  */
 import prisma from '../config/database';
+import logger from '../config/logger';
 import { SOC2_CONTROLS } from '../data/frameworks/soc2Controls';
 import { ISO27001_CONTROLS } from '../data/frameworks/iso27001Controls';
 import { HIPAA_CONTROLS } from '../data/frameworks/hipaaControls';
@@ -211,7 +212,7 @@ export class FrameworkTemplateService {
       this.getTemplatesForFramework(framework);
       this.getTemplateCategories(framework);
     });
-    console.log(`✓ Framework template cache warmed (${frameworks.length} frameworks)`);
+    logger.info(`Framework template cache warmed (${frameworks.length} frameworks)`);
   }
 
   /**
