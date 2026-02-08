@@ -1128,9 +1128,10 @@ class LDAPPermissionService {
             }
           }
 
-          // Revoke removed permissions
+          // Revoke removed permissions (permissions may be Set or array from resolveUserRoles)
+          const permissionsSet = permissions instanceof Set ? permissions : new Set(permissions as string[]);
           for (const existPerm of existingPerms) {
-            if (!permissions.has(existPerm)) {
+            if (!permissionsSet.has(existPerm)) {
               results.permissionsRevoked++;
             }
           }

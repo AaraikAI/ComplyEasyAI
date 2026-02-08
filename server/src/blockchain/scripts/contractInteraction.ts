@@ -285,7 +285,7 @@ export class ContractInteraction {
           gasUsed: receipt.gasUsed.toString(),
           effectiveGasPrice: (receipt.gasPrice ?? 0n).toString(),
           status: receipt.status ?? 0,
-          events: receipt.logs,
+          events: [...(receipt.logs ?? [])],
         };
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));

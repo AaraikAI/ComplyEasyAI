@@ -1,5 +1,6 @@
 import { MonitorStatus } from '@prisma/client';
 import prisma from '../config/database';
+import logger from '../config/logger';
 import { AuditLogger } from '../utils/auditLogger';
 import geminiService from './geminiService';
 

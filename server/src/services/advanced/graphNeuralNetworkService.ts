@@ -1520,7 +1520,7 @@ class GraphNeuralNetworkService {
     for (let epoch = 0; epoch < epochs; epoch++) {
       // Learning rate schedule: cosine annealing
       const currentLR = initialLR * 0.5 * (1 + Math.cos(Math.PI * epoch / epochs));
-      optimizer.setLearningRate(currentLR);
+      (optimizer as { setLearningRate?: (lr: number) => void }).setLearningRate?.(currentLR);
 
       // Training step
       const { loss: trainLoss, accuracy: trainAcc, predictions: trainPreds, probMatrix: trainProbMatrix } =
@@ -1842,7 +1842,7 @@ class GraphNeuralNetworkService {
       for (const fw of frameworks) {
         const nodeId = `framework_${fw.id}`;
         const progress = (fw.progress ?? 0) / 100;
-        const statusScore = fw.status === 'Active' ? 1 : fw.status === 'Draft' ? 0.5 : 0;
+        const statusScore = fw.status === 'Compliant' ? 1 : fw.status === 'In_Review' ? 0.5 : 0;
         const ageDays = (now - new Date(fw.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
 
         graph.addNode(nodeId, {

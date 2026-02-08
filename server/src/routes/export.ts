@@ -40,9 +40,10 @@ router.get('/vendors', authenticate, async (req: any, res) => {
       filename: 'vendors',
       excludeFields: ['organizationId'],
     });
+    return;
   } catch (error) {
     logger.error('Vendor export error:', error);
-    res.status(500).json({ error: 'Export failed' });
+    return res.status(500).json({ error: 'Export failed' });
   }
 });
 
@@ -68,9 +69,10 @@ router.get('/policies', authenticate, async (req: any, res) => {
       filename: 'policies',
       excludeFields: ['organizationId', 'content'], // Exclude large content field
     });
+    return;
   } catch (error) {
     logger.error('Policy export error:', error);
-    res.status(500).json({ error: 'Export failed' });
+    return res.status(500).json({ error: 'Export failed' });
   }
 });
 
@@ -85,7 +87,7 @@ router.get('/issues', authenticate, async (req: any, res) => {
     const issues = await prisma.issue.findMany({
       where: { organizationId },
       include: {
-        assignedToUser: {
+        assignedTo: {
           select: { name: true, email: true },
         },
       },
@@ -101,9 +103,10 @@ router.get('/issues', authenticate, async (req: any, res) => {
       filename: 'issues',
       excludeFields: ['organizationId'],
     });
+    return;
   } catch (error) {
     logger.error('Issue export error:', error);
-    res.status(500).json({ error: 'Export failed' });
+    return res.status(500).json({ error: 'Export failed' });
   }
 });
 
@@ -118,7 +121,7 @@ router.get('/risks', authenticate, async (req: any, res) => {
     const risks = await prisma.riskItem.findMany({
       where: { organizationId },
       include: {
-        assignedToUser: {
+        assignedTo: {
           select: { name: true, email: true },
         },
       },
@@ -134,9 +137,10 @@ router.get('/risks', authenticate, async (req: any, res) => {
       filename: 'risks',
       excludeFields: ['organizationId'],
     });
+    return;
   } catch (error) {
     logger.error('Risk export error:', error);
-    res.status(500).json({ error: 'Export failed' });
+    return res.status(500).json({ error: 'Export failed' });
   }
 });
 
@@ -167,9 +171,10 @@ router.get('/frameworks', authenticate, async (req: any, res) => {
       filename: 'frameworks',
       excludeFields: ['organizationId'],
     });
+    return;
   } catch (error) {
     logger.error('Framework export error:', error);
-    res.status(500).json({ error: 'Export failed' });
+    return res.status(500).json({ error: 'Export failed' });
   }
 });
 
@@ -212,9 +217,10 @@ router.get('/audit-logs', authenticate, async (req: any, res) => {
       filename: 'audit-logs',
       excludeFields: ['organizationId'],
     });
+    return;
   } catch (error) {
     logger.error('Audit log export error:', error);
-    res.status(500).json({ error: 'Export failed' });
+    return res.status(500).json({ error: 'Export failed' });
   }
 });
 
@@ -230,7 +236,7 @@ router.get('/monitors', authenticate, async (req: any, res) => {
       where: { organizationId },
       include: {
         results: {
-          orderBy: { executedAt: 'desc' },
+          orderBy: { runDate: 'desc' },
           take: 1,
         },
       },
@@ -246,9 +252,10 @@ router.get('/monitors', authenticate, async (req: any, res) => {
       filename: 'monitors',
       excludeFields: ['organizationId'],
     });
+    return;
   } catch (error) {
     logger.error('Monitor export error:', error);
-    res.status(500).json({ error: 'Export failed' });
+    return res.status(500).json({ error: 'Export failed' });
   }
 });
 

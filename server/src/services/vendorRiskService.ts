@@ -386,7 +386,8 @@ export class VendorRiskService {
    * Optimized with aggregation queries instead of fetching all vendors
    */
   async getVendorRiskDashboard(organizationId: string) {
-    // Use parallel count queries for better performance
+    const where = { organizationId };
+    // Parallel: counts + aggregation counts + top 10 vendors for list
     const [
       totalVendors,
       criticalCount,
@@ -397,16 +398,56 @@ export class VendorRiskService {
       onboardingCount,
       offboardingCount,
       suspendedCount,
+      totalAssessments,
+      pendingAssessments,
+      totalReviews,
+      activeMonitorsCount,
+      alertsDetectedCount,
+      soc2Count,
+      iso27001Count,
+      gdprCount,
+      hipaaCount,
+      topRiskVendors,
     ] = await Promise.all([
-      prisma.vendor.count({ where: { organizationId } }),
-      prisma.vendor.count({ where: { organizationId, riskLevel: 'Critical' } }),
-      prisma.vendor.count({ where: { organizationId, riskLevel: 'High' } }),
-      prisma.vendor.count({ where: { organizationId, riskLevel: 'Medium' } }),
-      prisma.vendor.count({ where: { organizationId, riskLevel: 'Low' } }),
-      prisma.vendor.count({ where: { organizationId, status: 'Active' } }),
-      prisma.vendor.count({ where: { organizationId, status: 'Onboarding' } }),
-      prisma.vendor.count({ where: { organizationId, status: 'Offboarding' } }),
-      prisma.vendor.count({ where: { organizationId, status: 'Suspended' } }),
+      prisma.vendor.count({ where }),
+      prisma.vendor.count({ where: { ...where, riskLevel: 'Critical' } }),
+      prisma.vendor.count({ where: { ...where, riskLevel: 'High' } }),
+      prisma.vendor.count({ where: { ...where, riskLevel: 'Medium' } }),
+      prisma.vendor.count({ where: { ...where, riskLevel: 'Low' } }),
+      prisma.vendor.count({ where: { ...where, status: 'Active' } }),
+      prisma.vendor.count({ where: { ...where, status: 'Onboarding' } }),
+      prisma.vendor.count({ where: { ...where, status: 'Offboarding' } }),
+      prisma.vendor.count({ where: { ...where, status: 'Suspended' } }),
+      prisma.vendorAssessment.count({ where: { vendor: { organizationId } } }),
+      prisma.vendorAssessment.count({
+        where: { vendor: { organizationId }, status: 'In_Progress' },
+      }),
+      prisma.vendorReview.count({ where: { vendor: { organizationId } } }),
+      prisma.vendorMonitor.count({
+        where: { vendor: { organizationId }, status: MonitorStatus.Passing },
+      }),
+      prisma.vendorMonitor.count({
+        where: {
+          vendor: { organizationId },
+          status: { in: [MonitorStatus.Failing, MonitorStatus.Warning] },
+        },
+      }),
+      prisma.vendor.count({ where: { ...where, soc2Report: true } }),
+      prisma.vendor.count({ where: { ...where, iso27001Certified: true } }),
+      prisma.vendor.count({ where: { ...where, gdprCompliant: true } }),
+      prisma.vendor.count({ where: { ...where, hipaaBaa: true } }),
+      prisma.vendor.findMany({
+        where,
+        orderBy: { riskScore: 'desc' },
+        take: 10,
+        select: {
+          id: true,
+          name: true,
+          riskScore: true,
+          riskLevel: true,
+          hasDataAccess: true,
+        },
+      }),
     ]);
 
     const dashboard = {
@@ -424,47 +465,29 @@ export class VendorRiskService {
         suspended: suspendedCount,
       },
       assessmentMetrics: {
-        totalAssessments: vendors.reduce(
-          (sum, v) => sum + v.assessments.length,
-          0
-        ),
-        pendingAssessments: vendors.reduce(
-          (sum, v) =>
-            sum +
-            v.assessments.filter((a) => a.status === 'In_Progress').length,
-          0
-        ),
+        totalAssessments,
+        pendingAssessments,
       },
       reviewMetrics: {
-        totalReviews: vendors.reduce((sum, v) => sum + v.reviews.length, 0),
+        totalReviews,
       },
       monitoringMetrics: {
-        activeMonitors: vendors.reduce(
-          (sum, v) => sum + v.monitors.filter((m) => m.status === MonitorStatus.Passing).length,
-          0
-        ),
-        alertsDetected: vendors.reduce((sum, v) => {
-          return sum + v.monitors.filter((m) => {
-            return m.status === MonitorStatus.Failing || m.status === MonitorStatus.Warning;
-          }).length;
-        }, 0),
+        activeMonitors: activeMonitorsCount,
+        alertsDetected: alertsDetectedCount,
       },
       complianceCertifications: {
-        soc2: vendors.filter((v) => v.soc2Report).length,
-        iso27001: vendors.filter((v) => v.iso27001Certified).length,
-        gdpr: vendors.filter((v) => v.gdprCompliant).length,
-        hipaa: vendors.filter((v) => v.hipaaBaa).length,
+        soc2: soc2Count,
+        iso27001: iso27001Count,
+        gdpr: gdprCount,
+        hipaa: hipaaCount,
       },
-      topRiskVendors: vendors
-        .sort((a, b) => b.riskScore - a.riskScore)
-        .slice(0, 10)
-        .map((v) => ({
-          id: v.id,
-          name: v.name,
-          riskScore: v.riskScore,
-          riskLevel: v.riskLevel,
-          hasDataAccess: v.hasDataAccess,
-        })),
+      topRiskVendors: topRiskVendors.map((v) => ({
+        id: v.id,
+        name: v.name,
+        riskScore: v.riskScore,
+        riskLevel: v.riskLevel,
+        hasDataAccess: v.hasDataAccess,
+      })),
     };
 
     return dashboard;

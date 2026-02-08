@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import crypto from 'crypto';
 import config, { validateConfig } from './config';
@@ -58,6 +59,9 @@ import euRegulationsRoutes from './routes/euRegulations';
 
 // Export Routes
 import exportRoutes from './routes/export';
+
+// CSRF protection for state-changing API routes (session/cookie-based)
+import { csrfProtection, generateCsrfToken } from './middleware/csrf';
 
 // aCOS Services
 import mqttService from './services/advanced/mqttService';
@@ -149,7 +153,7 @@ app.use(cors({
   origin: config.security.corsOrigin || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Webhook-Signature', 'X-Webhook-Timestamp', 'X-Webhook-Event'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-CSRF-Token', 'X-Webhook-Signature', 'X-Webhook-Timestamp', 'X-Webhook-Event'],
   exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
   maxAge: 86400, // 24 hours
 }));
@@ -159,6 +163,11 @@ app.use(cors({
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// CSRF protection for state-changing API routes (POST, PUT, PATCH, DELETE)
+// Skips GET/HEAD/OPTIONS and webhook paths; requires x-csrf-token header + cookie for mutating requests
+app.use('/api', csrfProtection);
 
 // Monitoring middleware (must be early in the stack)
 app.use(monitoringMiddleware);
@@ -174,6 +183,11 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'ComplyEasy AI API Docs',
 }));
+
+// CSRF token endpoint (must be before other /api routes; GET is skipped by csrfProtection)
+app.get('/api/csrf-token', (req: Request, res: Response) => {
+  generateCsrfToken(req, res);
+});
 
 // OpenAPI spec endpoint
 app.get('/api/docs.json', (req: Request, res: Response) => {

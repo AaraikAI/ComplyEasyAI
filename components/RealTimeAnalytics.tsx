@@ -129,16 +129,16 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
       try {
         // Get active users from user/organization endpoint
-        const orgData = await api.user.getOrganization?.().catch(() => null);
-        activeUsersCount = orgData?.users?.filter((u: any) => u.active)?.length || 0;
+        const orgData = await api.organization?.get?.().catch(() => null) as { users?: { active?: boolean }[] } | null;
+        activeUsersCount = orgData?.users?.filter((u: { active?: boolean }) => u.active !== false)?.length ?? 0;
       } catch (err) {
         console.error('Failed to load active users:', err);
       }
 
       try {
         // Get monitoring data for response time
-        const monitorData = await api.enterprise?.monitoring?.getMetrics?.().catch(() => null);
-        avgResponseTime = monitorData?.avgResponseTime || 'N/A';
+        const monitorData = await api.enterprise?.monitoring?.getDashboard?.().catch(() => null);
+        avgResponseTime = (monitorData as { avgResponseTime?: string } | null)?.avgResponseTime ?? 'N/A';
       } catch (err) {
         console.error('Failed to load monitoring metrics:', err);
       }

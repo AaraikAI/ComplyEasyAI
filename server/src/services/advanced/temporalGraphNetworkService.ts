@@ -1665,43 +1665,7 @@ class TemporalGraphNetworkService {
   ): Promise<GNNPrediction[]> {
     try {
       logger.info(`[TGN] Running production GNN prediction for org ${organizationId}`);
-
-      const risks = await prisma.riskItem.findMany({ where: { organizationId }, take: 500 });
-      const frameworks = await prisma.complianceFramework.findMany({ where: { organizationId }, take: 100 });
-      const controls = await prisma.frameworkControl.findMany({
-        where: { framework: { organizationId } },
-        take: 500,
-      });
-
-      // Build graph in GNN service format
-      const nodes = [
-        ...risks.map(r => ({
-          id: `risk_${r.id}`,
-          type: 'risk' as const,
-          features: { severity: r.severity, category: r.category, status: r.status },
-        })),
-        ...frameworks.map(f => ({
-          id: `framework_${f.id}`,
-          type: 'framework' as const,
-          features: { progress: f.progress, status: f.status },
-        })),
-        ...controls.map(c => ({
-          id: `control_${c.id}`,
-          type: 'control' as const,
-          features: { status: c.status },
-        })),
-      ];
-
-      const edges: Array<{ source: string; target: string; weight: number }> = [];
-      for (const control of controls) {
-        edges.push({
-          source: `control_${control.id}`,
-          target: `framework_${control.frameworkId}`,
-          weight: 1.0,
-        });
-      }
-
-      return graphNeuralNetworkService.predictNodeClassification(nodes, edges, options);
+      return graphNeuralNetworkService.predictRisks(organizationId);
     } catch (error) {
       logger.error('[TGN] GNN prediction failed', error);
       throw error;
@@ -1717,14 +1681,10 @@ class TemporalGraphNetworkService {
   ): Promise<GNNTrainingResult> {
     try {
       logger.info(`[TGN] Training GNN model for org ${organizationId}`);
-      const risks = await prisma.riskItem.findMany({ where: { organizationId }, take: 1000 });
-      const frameworks = await prisma.complianceFramework.findMany({ where: { organizationId } });
-      const controls = await prisma.frameworkControl.findMany({ where: { framework: { organizationId } }, take: 1000 });
-
-      return graphNeuralNetworkService.trainModel(
-        { risks, frameworks, controls },
-        options
-      );
+      return graphNeuralNetworkService.train(organizationId, {
+        epochs: options?.epochs,
+        learningRate: options?.learningRate,
+      });
     } catch (error) {
       logger.error('[TGN] GNN training failed', error);
       throw error;
@@ -1740,14 +1700,7 @@ class TemporalGraphNetworkService {
   ): Promise<GraphEmbedding[]> {
     try {
       logger.info(`[TGN] Generating graph embeddings for org ${organizationId}`);
-      const risks = await prisma.riskItem.findMany({ where: { organizationId }, take: 500 });
-      const frameworks = await prisma.complianceFramework.findMany({ where: { organizationId } });
-      const controls = await prisma.frameworkControl.findMany({ where: { framework: { organizationId } }, take: 500 });
-
-      return graphNeuralNetworkService.generateEmbeddings(
-        { risks, frameworks, controls },
-        options
-      );
+      return graphNeuralNetworkService.generateEmbeddings(organizationId);
     } catch (error) {
       logger.error('[TGN] Graph embedding generation failed', error);
       throw error;
