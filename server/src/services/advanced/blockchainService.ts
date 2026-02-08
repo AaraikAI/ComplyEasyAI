@@ -1863,6 +1863,11 @@ class BlockchainService {
    */
   async startRegistryEventListeners(): Promise<void> {
     const contract = this.ensureRegistryContract();
+    // Fallback org for events that do not include organizationId (CertificateRevoked, CertificateRenewed, EvidenceSubmitted)
+    const fallbackOrgId =
+      process.env.BLOCKCHAIN_AUDIT_ORG_ID ||
+      (await prisma.organization.findFirst({ select: { id: true } }))?.id ||
+      '';
 
     // CertificateIssued
     const onIssued = async (
@@ -1917,6 +1922,7 @@ class BlockchainService {
         await prisma.auditLog.create({
           data: {
             action: 'Blockchain: registry_certificate_revoked',
+            organizationId: fallbackOrgId,
             hash: certId,
             details: JSON.stringify({
               event: 'CertificateRevoked',
@@ -1949,6 +1955,7 @@ class BlockchainService {
         await prisma.auditLog.create({
           data: {
             action: 'Blockchain: registry_certificate_renewed',
+            organizationId: fallbackOrgId,
             hash: newCertId,
             details: JSON.stringify({
               event: 'CertificateRenewed',
@@ -1983,6 +1990,7 @@ class BlockchainService {
         await prisma.auditLog.create({
           data: {
             action: 'Blockchain: registry_evidence_submitted',
+            organizationId: fallbackOrgId,
             hash: evidenceId,
             details: JSON.stringify({
               event: 'EvidenceSubmitted',
@@ -2019,6 +2027,7 @@ class BlockchainService {
           data: {
             action: 'Blockchain: registry_score_recorded',
             organizationId: orgId,
+            hash: `score_${orgId}_${framework}_${event.blockNumber}`,
             details: JSON.stringify({
               event: 'FrameworkScoreRecorded',
               orgId,

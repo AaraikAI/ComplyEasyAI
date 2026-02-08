@@ -38,3 +38,8 @@ server/reports/
 server/models/
 server/server/models/
 server/temp/
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.auth/

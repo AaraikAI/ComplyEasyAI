@@ -302,6 +302,13 @@ class WebRTCSignalingService {
   }
 
   /**
+   * Get ICE server configuration (for clients that need it before creating a session).
+   */
+  getICEServers(): ICEServerConfig[] {
+    return this.buildICEServers();
+  }
+
+  /**
    * Trigger session recording start/stop signaling.
    */
   toggleRecording(sessionId: string, active: boolean): void {

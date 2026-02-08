@@ -85,6 +85,7 @@ interface FrameLivenessData {
   depthScore: number;
   motionScore: number;
   landmarks: FaceLandmarks | null;
+  faceRegionStats?: { mean: number; std: number };
 }
 
 // ─── Service ────────────────────────────────────────────────────────────────

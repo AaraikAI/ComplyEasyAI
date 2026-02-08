@@ -16,6 +16,19 @@ import crypto from 'crypto';
 import webrtcSignalingService, { WebRTCPeer, WebRTCSessionConfig } from './webrtcSignalingService';
 
 // VR Session Types
+export interface SessionSummary {
+  sessionId: string;
+  sessionName: string;
+  sessionType: string;
+  duration: number;
+  participantCount: number;
+  frameworksReviewed: number;
+  controlsReviewed: number;
+  annotationsCreated: number;
+  decisionsRecorded: number;
+  actionItemsCreated: number;
+}
+
 export interface VRSession {
   id: string;
   organizationId: string;
@@ -3356,33 +3369,18 @@ class VRCollaborativeReviewService {
     const session = this.activeSessions.get(sessionId);
     if (!session) throw new Error('VR session not found');
 
-    const config: WebRTCSessionConfig = {
+    const maxPeers = options?.maxPeers ?? session.maxParticipants ?? 20;
+    const topology = options?.topology ?? (session.participants.length > 6 ? 'sfu' : 'mesh');
+    webrtcSignalingService.createSession({
       sessionId,
-      maxPeers: options?.maxPeers || session.maxParticipants || 20,
-      topology: options?.topology || (session.participants.length > 6 ? 'sfu' : 'mesh'),
-      iceServers: webrtcSignalingService.getICEServers(),
-      mediaConstraints: {
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 30 },
-        },
-      },
-      dataChannels: [
-        { label: 'spatial-audio', ordered: true },
-        { label: 'position-sync', ordered: false, maxRetransmits: 0 },
-        { label: 'gesture-sync', ordered: false, maxRetransmits: 1 },
-        { label: 'annotation-sync', ordered: true },
-        { label: 'chat', ordered: true },
-      ],
-    };
-
-    webrtcSignalingService.createSession(config);
+      organizationId: session.organizationId,
+      hostUserId: session.hostUserId,
+      maxPeers,
+      topology,
+    });
+    const config = webrtcSignalingService.getSessionConfig(sessionId);
     logger.info(`[VR Review] WebRTC session initialized for ${sessionId}`);
+    if (!config) throw new Error('WebRTC session config not available');
     return config;
   }
 

@@ -25,6 +25,22 @@ const clearAuthToken = (): void => {
   localStorage.removeItem('user_data');
 };
 
+// CSRF token for state-changing requests (double-submit cookie)
+let csrfTokenCache: string | null = null;
+
+async function getCsrfToken(): Promise<string | null> {
+  if (csrfTokenCache) return csrfTokenCache;
+  try {
+    const res = await fetch(`${API_BASE_URL}/csrf-token`, { credentials: 'include' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    csrfTokenCache = data.csrfToken ?? null;
+    return csrfTokenCache;
+  } catch {
+    return null;
+  }
+}
+
 // HTTP Client with authentication and timeout
 async function fetchAPI<T>(
   endpoint: string,
@@ -42,6 +58,12 @@ async function fetchAPI<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const method = (options.method || 'GET').toUpperCase();
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrf = await getCsrfToken();
+    if (csrf) headers['X-CSRF-Token'] = csrf;
+  }
+
   // Create AbortController for timeout
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -50,12 +72,16 @@ async function fetchAPI<T>(
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
+      credentials: 'include',
       signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      if (response.status === 403) {
+        csrfTokenCache = null;
+      }
       if (response.status === 401) {
         // Try to refresh token before redirecting
         const refreshToken = localStorage.getItem('refreshToken');
@@ -65,10 +91,12 @@ async function fetchAPI<T>(
             const refreshController = new AbortController();
             const refreshTimeoutId = setTimeout(() => refreshController.abort(), 10000); // 10s for refresh
 
+            const refreshCsrf = await getCsrfToken();
             const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', ...(refreshCsrf ? { 'X-CSRF-Token': refreshCsrf } : {}) },
               body: JSON.stringify({ refreshToken }),
+              credentials: 'include',
               signal: refreshController.signal,
             });
 
@@ -92,6 +120,7 @@ async function fetchAPI<T>(
               const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
                 ...options,
                 headers: retryHeaders,
+                credentials: 'include',
                 signal: retryController.signal,
               });
 
