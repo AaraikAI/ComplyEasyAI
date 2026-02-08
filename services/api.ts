@@ -28,6 +28,11 @@ const clearAuthToken = (): void => {
 // CSRF token for state-changing requests (double-submit cookie)
 let csrfTokenCache: string | null = null;
 
+/** Clears CSRF cache (for tests only). */
+export function __clearCsrfCacheForTest(): void {
+  csrfTokenCache = null;
+}
+
 async function getCsrfToken(): Promise<string | null> {
   if (csrfTokenCache) return csrfTokenCache;
   try {

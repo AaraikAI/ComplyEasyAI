@@ -18,3 +18,5 @@ View your app in AI Studio: https://ai.studio/apps/drive/1JOjdOei1W7Pwyq2eAZdKcd
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+**Monitoring:** When `ENABLE_REAL_MONITORING=false` (default), monitoring is demo-only (simulated results). When `true`, real integrations are not yet implemented—see PRODUCTION_DEPLOYMENT_GUIDE.md and DEPLOYMENT_RUNBOOK.md.

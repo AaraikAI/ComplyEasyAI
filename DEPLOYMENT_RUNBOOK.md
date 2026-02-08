@@ -34,6 +34,10 @@ This runbook provides step-by-step instructions for deploying ComplyEasy AI to d
 - [ ] Monitoring tools configured
 - [ ] Backup strategy in place
 
+### Continuous Monitoring (ENABLE_REAL_MONITORING)
+- **Demo-only (default):** When `ENABLE_REAL_MONITORING` is unset or `false`, monitor runs return simulated results; no external scanning tools are called.
+- **Real integrations:** Setting `ENABLE_REAL_MONITORING=true` is intended for production use with real security/scanning integrations; as of this release, real integrations are not yet implemented and monitor execution will error. Keep `ENABLE_REAL_MONITORING=false` until real integrations are added in `server/src/services/monitoringService.ts`.
+
 ### Security
 - [ ] JWT secrets generated (32+ characters)
 - [ ] Encryption keys generated

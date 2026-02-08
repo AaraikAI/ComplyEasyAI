@@ -1,6 +1,34 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
 import { enforceLimit } from '../middleware/tierMiddleware';
+import { validateBody } from '../middleware/validate';
+import {
+  createRiskAssessmentSchema,
+  createQuestionnaireSchema,
+  questionnaireFromTemplateSchema,
+  updateQuestionnaireSchema,
+  questionnaireQuestionsSchema,
+  questionnaireResponseSchema,
+  createPolicySchema,
+  updatePolicySchema,
+  bulkImportPoliciesSchema,
+  createCertificateSchema,
+  generateCertificateSchema,
+  createChildOrganizationSchema,
+  moveUserSchema,
+  cloneFrameworkSchema,
+  createReportSchema,
+  createMonitorSchema,
+  updateMonitorSchema,
+  toggleMonitorSchema,
+  createIssueSchema,
+  assignIssueSchema,
+  issueCommentSchema,
+  updateIssueSchema,
+  issueStatusSchema,
+  predictRisksSchema,
+  autopilotOptionsSchema,
+} from '../validators/enterpriseSchemas';
 import { authAsyncHandler, asyncHandler, AuthenticatedRequest } from '../types/express';
 
 // Import all enterprise services
@@ -27,9 +55,11 @@ riskRouter.use(authenticate);
 riskRouter.post(
   '/assessments',
   enforceLimit('maxRiskAssessments'),
+  validateBody(createRiskAssessmentSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const assessment = await riskManagementService.createRiskAssessment({
       ...req.body,
+      organizationId: req.user.organizationId,
       userId: req.user.id,
     });
     res.status(201).json(assessment);
@@ -78,9 +108,11 @@ questionnaireRouter.use(authenticate);
 questionnaireRouter.post(
   '/',
   enforceLimit('maxQuestionnairesPerMonth'),
+  validateBody(createQuestionnaireSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const questionnaire = await questionnaireService.createQuestionnaire({
       ...req.body,
+      organizationId: req.user.organizationId,
       userId: req.user.id,
     });
     res.status(201).json(questionnaire);
@@ -145,6 +177,7 @@ questionnaireRouter.get(
 questionnaireRouter.post(
   '/from-template',
   enforceLimit('maxQuestionnairesPerMonth'),
+  validateBody(questionnaireFromTemplateSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const { questionnaireTemplates } = require('../data/questionnaireTemplates');
     const template = questionnaireTemplates.find((t: any) => t.id === req.body.templateId);
@@ -192,6 +225,7 @@ questionnaireRouter.get(
 // Update questionnaire
 questionnaireRouter.put(
   '/:id',
+  validateBody(updateQuestionnaireSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const prisma = require('../config/database').default;
     const updated = await prisma.questionnaire.update({
@@ -224,6 +258,7 @@ questionnaireRouter.delete(
 // Add questions
 questionnaireRouter.post(
   '/:id/questions',
+  validateBody(questionnaireQuestionsSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const questions = await questionnaireService.addQuestions(
       req.params.id,
@@ -238,6 +273,7 @@ questionnaireRouter.post(
 // Submit response
 questionnaireRouter.post(
   '/:id/responses',
+  validateBody(questionnaireResponseSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const response = await questionnaireService.submitResponse(
       req.params.id,
@@ -265,9 +301,11 @@ policyRouter.use(authenticate);
 policyRouter.post(
   '/',
   enforceLimit('maxPolicies'),
+  validateBody(createPolicySchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const policy = await policyLibraryService.createPolicy({
       ...req.body,
+      organizationId: req.user.organizationId,
       userId: req.user.id,
     });
     res.status(201).json(policy);
@@ -276,6 +314,7 @@ policyRouter.post(
 
 policyRouter.post(
   '/bulk-import',
+  validateBody(bulkImportPoliciesSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const policies = await policyLibraryService.bulkImportPolicies(
       req.user.organizationId,
@@ -333,6 +372,7 @@ policyRouter.get(
 // Update policy
 policyRouter.put(
   '/:id',
+  validateBody(updatePolicySchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const policy = await policyLibraryService.updatePolicy(
       req.params.id,
@@ -420,9 +460,11 @@ trustCenterRouter.use(authenticate);
 
 trustCenterRouter.post(
   '/certificates',
+  validateBody(createCertificateSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const certificate = await trustCenterService.createCertificate({
       ...req.body,
+      organizationId: req.user.organizationId,
       userId: req.user.id,
     });
     res.status(201).json(certificate);
@@ -431,6 +473,7 @@ trustCenterRouter.post(
 
 trustCenterRouter.post(
   '/generate-certificate',
+  validateBody(generateCertificateSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const certificate = await trustCenterService.generateComplianceCertificate(
       req.user.organizationId,
@@ -452,6 +495,7 @@ workspaceRouter.use(authenticate);
 workspaceRouter.post(
   '/child-organizations',
   enforceLimit('maxWorkspaces'),
+  validateBody(createChildOrganizationSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const child = await multiWorkspaceService.createChildOrganization(
       req.user.organizationId,
@@ -485,6 +529,7 @@ workspaceRouter.get(
 // Move user between organizations
 workspaceRouter.post(
   '/move-user',
+  validateBody(moveUserSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const result = await multiWorkspaceService.moveUserToOrganization(
       req.body.userId,
@@ -498,6 +543,7 @@ workspaceRouter.post(
 // Clone framework to child organizations
 workspaceRouter.post(
   '/clone-framework',
+  validateBody(cloneFrameworkSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const result = await multiWorkspaceService.cloneFrameworkToChildren(
       req.body.frameworkId,
@@ -520,9 +566,11 @@ reportRouter.use(authenticate);
 reportRouter.post(
   '/',
   enforceLimit('maxCustomReports'),
+  validateBody(createReportSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const report = await reportingService.createReport({
       ...req.body,
+      organizationId: req.user.organizationId,
       userId: req.user.id,
     });
     res.status(201).json(report);
@@ -581,9 +629,11 @@ monitorRouter.use(authenticate);
 monitorRouter.post(
   '/',
   enforceLimit('maxMonitors'),
+  validateBody(createMonitorSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const monitor = await monitoringService.createMonitor({
       ...req.body,
+      organizationId: req.user.organizationId,
       userId: req.user.id,
     });
     res.status(201).json(monitor);
@@ -638,6 +688,7 @@ monitorRouter.get(
 // Update monitor
 monitorRouter.patch(
   '/:id',
+  validateBody(updateMonitorSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const monitor = await monitoringService.updateMonitor(
       req.params.id,
@@ -677,6 +728,7 @@ monitorRouter.get(
 // Toggle monitor active status
 monitorRouter.patch(
   '/:id/toggle',
+  validateBody(toggleMonitorSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const monitor = await monitoringService.toggleMonitorActive(
       req.params.id,
@@ -736,9 +788,11 @@ issueRouter.use(authenticate);
 issueRouter.post(
   '/',
   enforceLimit('maxIssues'),
+  validateBody(createIssueSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const issue = await issueManagementService.createIssue({
       ...req.body,
+      organizationId: req.user.organizationId,
       createdById: req.user.id,
     });
     res.status(201).json(issue);
@@ -747,6 +801,7 @@ issueRouter.post(
 
 issueRouter.post(
   '/:id/assign',
+  validateBody(assignIssueSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const issue = await issueManagementService.assignIssue(
       req.params.id,
@@ -760,6 +815,7 @@ issueRouter.post(
 
 issueRouter.post(
   '/:id/comments',
+  validateBody(issueCommentSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const comment = await issueManagementService.addComment(
       req.params.id,
@@ -823,6 +879,7 @@ issueRouter.get(
 // Update issue
 issueRouter.patch(
   '/:id',
+  validateBody(updateIssueSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const prisma = require('../config/database').default;
     const issue = await prisma.issue.update({
@@ -851,6 +908,7 @@ issueRouter.patch(
 // Update issue status
 issueRouter.patch(
   '/:id/status',
+  validateBody(issueStatusSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const issue = await issueManagementService.updateIssueStatus(
       req.params.id,
@@ -911,6 +969,7 @@ aiRouter.get(
 // Feature 2: Predictive Risk Intelligence
 aiRouter.post(
   '/predict-risks',
+  validateBody(predictRisksSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const predictions = await visionaryAIService.predictFutureRisks(
       req.user.organizationId,
@@ -937,6 +996,7 @@ aiRouter.post(
 // Feature 4: Intelligent Compliance Autopilot
 aiRouter.post(
   '/autopilot/run',
+  validateBody(autopilotOptionsSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const result = await visionaryAIService.runComplianceAutopilot(
       req.user.organizationId,
