@@ -60,8 +60,28 @@ import euRegulationsRoutes from './routes/euRegulations';
 // Export Routes
 import exportRoutes from './routes/export';
 
+// API Versioning
+import v1Router from './routes/v1';
+import v2Router from './routes/v2';
+import { apiVersioningMiddleware } from './middleware/apiVersioning';
+
+// GraphQL
+import { graphqlMiddleware, graphqlPlayground } from './graphql';
+
+// Marketplace
+import marketplaceRoutes from './routes/marketplace/marketplaceRoutes';
+
 // CSRF protection for state-changing API routes (session/cookie-based)
 import { csrfProtection, generateCsrfToken } from './middleware/csrf';
+
+// Background Job Queue
+import jobQueueService from './services/queue/jobQueue';
+
+// Redis Cache
+import cacheService from './services/cache/redisCacheService';
+
+// Multi-Region
+import multiRegionService from './config/regions/multiRegionConfig';
 
 // aCOS Services
 import mqttService from './services/advanced/mqttService';
@@ -153,8 +173,8 @@ app.use(cors({
   origin: config.security.corsOrigin || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-CSRF-Token', 'X-Webhook-Signature', 'X-Webhook-Timestamp', 'X-Webhook-Event'],
-  exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-API-Version', 'X-CSRF-Token', 'X-Webhook-Signature', 'X-Webhook-Timestamp', 'X-Webhook-Event'],
+  exposedHeaders: ['X-Total-Count', 'X-Page-Count', 'X-Page', 'X-Page-Size', 'X-Total-Pages', 'X-Has-Next-Page', 'X-Has-Previous-Page', 'X-API-Version', 'Deprecation', 'Sunset'],
   maxAge: 86400, // 24 hours
 }));
 
@@ -265,7 +285,31 @@ app.get('/health', async (req: Request, res: Response) => {
     unit: 'MB'
   };
 
-  // 4. Response time check
+  // 4. Job Queue check
+  try {
+    const queueStats = jobQueueService.getQueueStats();
+    healthStatus.checks.jobQueue = { status: 'ok', mode: queueStats.mode, stats: queueStats.global };
+  } catch (error: any) {
+    healthStatus.checks.jobQueue = { status: 'unavailable', error: error.message };
+  }
+
+  // 5. Cache check
+  try {
+    const cacheStats = cacheService.getStats();
+    healthStatus.checks.cache = { status: 'ok', mode: cacheStats.mode, hitRate: cacheStats.hitRate, size: cacheStats.size };
+  } catch (error: any) {
+    healthStatus.checks.cache = { status: 'unavailable', error: error.message };
+  }
+
+  // 6. Multi-Region check
+  try {
+    const currentRegion = multiRegionService.getCurrentRegion();
+    healthStatus.checks.region = { status: 'ok', current: currentRegion.code, name: currentRegion.name };
+  } catch (error: any) {
+    healthStatus.checks.region = { status: 'unavailable', error: error.message };
+  }
+
+  // 7. Response time check
   healthStatus.responseTime = Date.now() - startTime;
 
   // Determine final status code
@@ -317,6 +361,18 @@ app.use('/api/onboarding', apiLimiter, onboardingRoutes);
 // Export routes (CSV exports for all entities)
 app.use('/api/export', apiLimiter, exportRoutes);
 
+// Marketplace routes (third-party integrations)
+app.use('/api/marketplace', apiLimiter, marketplaceRoutes);
+
+// GraphQL endpoint
+app.post('/api/graphql', graphqlMiddleware());
+app.get('/api/graphql', graphqlMiddleware());
+app.get('/api/graphql/playground', graphqlPlayground());
+
+// API Versioned routes (v1, v2)
+app.use('/api/v1', apiVersioningMiddleware(), v1Router);
+app.use('/api/v2', apiVersioningMiddleware(), v2Router);
+
 // 404 handler
 app.use(notFound);
 
@@ -331,6 +387,36 @@ const httpServer = createServer(app);
 
 // Initialize WebSocket
 websocketService.initialize(httpServer);
+
+// Initialize Job Queue
+(async () => {
+  try {
+    await jobQueueService.initialize();
+    logger.info('✓ Job queue service initialized');
+  } catch (error) {
+    logger.warn('⚠️  Job queue initialization failed (optional):', error);
+  }
+})();
+
+// Initialize Cache Service
+(async () => {
+  try {
+    await cacheService.initialize();
+    logger.info('✓ Cache service initialized');
+  } catch (error) {
+    logger.warn('⚠️  Cache service initialization failed (optional):', error);
+  }
+})();
+
+// Initialize Multi-Region Service
+(async () => {
+  try {
+    await multiRegionService.initialize();
+    logger.info('✓ Multi-region service initialized');
+  } catch (error) {
+    logger.warn('⚠️  Multi-region initialization failed (optional):', error);
+  }
+})();
 
 // Initialize Session Management (async initialization)
 (async () => {
@@ -455,9 +541,30 @@ const gracefulShutdown = async (signal: string) => {
         logger.warn('Session management shutdown error', error);
       }
 
+      // Shutdown job queue
+      try {
+        await jobQueueService.shutdown();
+      } catch (error) {
+        logger.warn('Job queue shutdown error', error);
+      }
+
+      // Shutdown cache
+      try {
+        await cacheService.shutdown();
+      } catch (error) {
+        logger.warn('Cache shutdown error', error);
+      }
+
+      // Shutdown multi-region
+      try {
+        multiRegionService.shutdown();
+      } catch (error) {
+        logger.warn('Multi-region shutdown error', error);
+      }
+
       // Disconnect MQTT
       mqttService.disconnect();
-      
+
       await prisma.$disconnect();
       logger.info('Database connection closed');
       process.exit(0);
