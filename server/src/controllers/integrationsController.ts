@@ -17,62 +17,106 @@ import jiraService from '../services/integrations/jiraService';
 import awsService from '../services/integrations/awsService';
 import azureService from '../services/integrations/azureService';
 import prisma from '../config/database';
+import cacheService from '../services/cache/redisCacheService';
 
-// Store OAuth states temporarily (in production, use Redis)
-const oauthStates = new Map<string, { organizationId: string; provider: string; timestamp: number }>();
+// ============================================================================
+// OAuth State Storage — Redis-backed with in-memory fallback
+// ============================================================================
 
-// Track active OAuth windows to prevent duplicates
-const activeOAuthWindows = new Map<string, { state: string; timestamp: number }>();
+// In-memory fallback (for development or when Redis is unavailable)
+const memoryOauthStates = new Map<string, { organizationId: string; provider: string; timestamp: number }>();
+const memoryActiveWindows = new Map<string, { state: string; timestamp: number }>();
 
-// Clean up expired states every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [state, data] of oauthStates.entries()) {
-    if (now - data.timestamp > 600000) { // 10 minutes
-      oauthStates.delete(state);
-    }
-  }
-  
-  // Clean up expired OAuth window tracking (15 minutes)
-  for (const [key, window] of activeOAuthWindows.entries()) {
-    if (now - window.timestamp > 900000) { // 15 minutes
-      activeOAuthWindows.delete(key);
-    }
-  }
-}, 600000);
+const OAUTH_STATE_TTL = 600; // 10 minutes in seconds
+const OAUTH_WINDOW_TTL = 900; // 15 minutes in seconds
 
 /**
- * Generate OAuth state parameter
+ * Generate OAuth state parameter and store in Redis (or memory fallback).
  */
-const generateState = (organizationId: string, provider: string): string => {
+const generateState = async (organizationId: string, provider: string): Promise<string> => {
   const state = uuidv4();
-  oauthStates.set(state, { organizationId, provider, timestamp: Date.now() });
+  const data = { organizationId, provider, timestamp: Date.now() };
+
+  const redis = cacheService.getRedisClient();
+  if (redis) {
+    await redis.setex(`oauth:state:${state}`, OAUTH_STATE_TTL, JSON.stringify(data));
+  } else {
+    memoryOauthStates.set(state, data);
+  }
+
   return state;
 };
 
 /**
- * Verify OAuth state parameter
+ * Verify OAuth state parameter — reads from Redis (or memory fallback).
  */
-const verifyState = (state: string, provider: string): string | null => {
-  const data = oauthStates.get(state);
+const verifyState = async (state: string, provider: string): Promise<string | null> => {
+  const redis = cacheService.getRedisClient();
+  let data: { organizationId: string; provider: string; timestamp: number } | null = null;
 
-  if (!data) {
-    return null;
+  if (redis) {
+    const raw = await redis.get(`oauth:state:${state}`);
+    if (raw) {
+      data = JSON.parse(raw);
+      await redis.del(`oauth:state:${state}`); // consume once
+    }
+  } else {
+    data = memoryOauthStates.get(state) || null;
+    memoryOauthStates.delete(state);
   }
 
-  if (data.provider !== provider) {
-    return null;
-  }
+  if (!data) return null;
+  if (data.provider !== provider) return null;
+  if (Date.now() - data.timestamp > OAUTH_STATE_TTL * 1000) return null;
 
-  // Check if state is expired (10 minutes)
-  if (Date.now() - data.timestamp > 600000) {
-    oauthStates.delete(state);
-    return null;
-  }
-
-  oauthStates.delete(state);
   return data.organizationId;
 };
+
+/**
+ * Get / set active OAuth window tracking.
+ */
+const getActiveWindow = async (key: string): Promise<{ state: string; timestamp: number } | null> => {
+  const redis = cacheService.getRedisClient();
+  if (redis) {
+    const raw = await redis.get(`oauth:window:${key}`);
+    return raw ? JSON.parse(raw) : null;
+  }
+  return memoryActiveWindows.get(key) || null;
+};
+
+const setActiveWindow = async (key: string, state: string): Promise<void> => {
+  const data = { state, timestamp: Date.now() };
+  const redis = cacheService.getRedisClient();
+  if (redis) {
+    await redis.setex(`oauth:window:${key}`, OAUTH_WINDOW_TTL, JSON.stringify(data));
+  } else {
+    memoryActiveWindows.set(key, data);
+  }
+};
+
+const deleteActiveWindow = async (key: string): Promise<void> => {
+  const redis = cacheService.getRedisClient();
+  if (redis) {
+    await redis.del(`oauth:window:${key}`);
+  } else {
+    memoryActiveWindows.delete(key);
+  }
+};
+
+// Clean up expired states every 10 minutes (memory fallback only)
+setInterval(() => {
+  const now = Date.now();
+  for (const [state, data] of memoryOauthStates.entries()) {
+    if (now - data.timestamp > OAUTH_STATE_TTL * 1000) {
+      memoryOauthStates.delete(state);
+    }
+  }
+  for (const [key, window] of memoryActiveWindows.entries()) {
+    if (now - window.timestamp > OAUTH_WINDOW_TTL * 1000) {
+      memoryActiveWindows.delete(key);
+    }
+  }
+}, 600000);
 
 // ============================================================================
 // GOOGLE OAUTH
@@ -83,27 +127,25 @@ export const authorizeGoogle: RequestHandler = async (req: Request, res: Respons
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const windowKey = `${organizationId}:google`;
-    
+
     // Check for active OAuth window
-    const activeWindow = activeOAuthWindows.get(windowKey);
+    const activeWindow = await getActiveWindow(windowKey);
     if (activeWindow) {
       const timeSinceStart = Date.now() - activeWindow.timestamp;
-      if (timeSinceStart < 900000) { // 15 minutes
-        // Return existing state if window is still active
-        res.json({ 
+      if (timeSinceStart < OAUTH_WINDOW_TTL * 1000) {
+        res.json({
           authUrl: googleService.getAuthorizationUrl(activeWindow.state),
           existingWindow: true,
           message: 'An OAuth window is already open. Please complete that authorization or wait for it to expire.'
         });
         return;
       } else {
-        // Clean up expired window
-        activeOAuthWindows.delete(windowKey);
+        await deleteActiveWindow(windowKey);
       }
     }
-    
-    const state = generateState(organizationId, 'google');
-    activeOAuthWindows.set(windowKey, { state, timestamp: Date.now() });
+
+    const state = await generateState(organizationId, 'google');
+    await setActiveWindow(windowKey, state);
     const authUrl = googleService.getAuthorizationUrl(state);
 
     res.json({ authUrl, existingWindow: false });
@@ -127,7 +169,7 @@ export const callbackGoogle: RequestHandler = async (req: Request, res: Response
         return;
       }
 
-      const organizationId = verifyState(state as string, 'google');
+      const organizationId = await verifyState(state as string, 'google');
 
       if (!organizationId) {
         res.status(400).json({ error: 'Invalid or expired state parameter' });
@@ -136,7 +178,7 @@ export const callbackGoogle: RequestHandler = async (req: Request, res: Response
 
       // Clean up active window
       const windowKey = `${organizationId}:google`;
-      activeOAuthWindows.delete(windowKey);
+      await deleteActiveWindow(windowKey);
 
       // Exchange code for tokens with retry logic for network failures
       let tokens;
@@ -253,7 +295,7 @@ export const authorizeGitHub: RequestHandler = async (req: Request, res: Respons
   try {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
-    const state = generateState(organizationId, 'github');
+    const state = await generateState(organizationId, 'github');
     const authUrl = githubService.getAuthorizationUrl(state);
 
     res.json({ authUrl });
@@ -272,7 +314,7 @@ export const callbackGitHub: RequestHandler = async (req: Request, res: Response
       return;
     }
 
-    const organizationId = verifyState(state as string, 'github');
+    const organizationId = await verifyState(state as string, 'github');
 
     if (!organizationId) {
       res.status(400).json({ error: 'Invalid or expired state parameter' });
@@ -356,7 +398,7 @@ export const authorizeSlack: RequestHandler = async (req: Request, res: Response
   try {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
-    const state = generateState(organizationId, 'slack');
+    const state = await generateState(organizationId, 'slack');
     const authUrl = slackService.getAuthorizationUrl(state);
 
     res.json({ authUrl });
@@ -375,7 +417,7 @@ export const callbackSlack: RequestHandler = async (req: Request, res: Response)
       return;
     }
 
-    const organizationId = verifyState(state as string, 'slack');
+    const organizationId = await verifyState(state as string, 'slack');
 
     if (!organizationId) {
       res.status(400).json({ error: 'Invalid or expired state parameter' });
@@ -468,7 +510,7 @@ export const authorizeJira: RequestHandler = async (req: Request, res: Response)
   try {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
-    const state = generateState(organizationId, 'jira');
+    const state = await generateState(organizationId, 'jira');
     const authUrl = jiraService.getAuthorizationUrl(state);
 
     res.json({ authUrl });
@@ -487,7 +529,7 @@ export const callbackJira: RequestHandler = async (req: Request, res: Response):
       return;
     }
 
-    const organizationId = verifyState(state as string, 'jira');
+    const organizationId = await verifyState(state as string, 'jira');
 
     if (!organizationId) {
       res.status(400).json({ error: 'Invalid or expired state parameter' });
@@ -769,8 +811,52 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
       return;
     }
 
-    // Validate Azure credentials (simplified - in production, actually validate)
-    // For now, we'll just save them
+    // Validate Azure credentials by acquiring an access token from Azure AD
+    let azureAccessToken: string | null = null;
+    try {
+      const axios = (await import('axios')).default;
+      const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+      const tokenResponse = await axios.post(tokenUrl, new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        scope: 'https://management.azure.com/.default',
+        grant_type: 'client_credentials',
+      }).toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 15000,
+      });
+
+      azureAccessToken = tokenResponse.data.access_token;
+      if (!azureAccessToken) {
+        res.status(400).json({ error: 'Azure credential validation failed: no access token returned' });
+        return;
+      }
+
+      // Verify subscription access with the management API
+      const subResponse = await axios.get(
+        `https://management.azure.com/subscriptions/${subscriptionId}?api-version=2022-12-01`,
+        {
+          headers: { Authorization: `Bearer ${azureAccessToken}` },
+          timeout: 15000,
+        }
+      );
+
+      if (!subResponse.data || !subResponse.data.subscriptionId) {
+        res.status(400).json({ error: 'Azure credentials valid but subscription not accessible' });
+        return;
+      }
+
+      logger.info(`Azure credentials validated for tenant ${tenantId}, subscription ${subscriptionId}`);
+    } catch (validationError: any) {
+      const errorMsg = validationError?.response?.data?.error_description
+        || validationError?.response?.data?.error?.message
+        || validationError?.message
+        || 'Invalid Azure credentials';
+      logger.error('Azure credential validation failed', errorMsg);
+      res.status(400).json({ error: `Azure credential validation failed: ${errorMsg}` });
+      return;
+    }
+
     await prisma.integration.upsert({
       where: {
         organizationId_provider: {
@@ -788,7 +874,6 @@ export const connectAzure: RequestHandler = async (req: Request, res: Response):
           subscriptionId,
           clientId,
           tenantId,
-          // In production, encrypt the secret
         },
         lastSync: new Date(),
       },
