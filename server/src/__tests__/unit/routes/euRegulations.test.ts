@@ -40,6 +40,7 @@ jest.mock('../../../controllers/euRegulationsController', () => ({
     processIllegalContentReport: jest.fn(),
     addAdToRepository: jest.fn(),
     getAdsFromRepository: jest.fn(),
+    getDSATransparencyReports: jest.fn(),
     generateDSATransparencyReport: jest.fn(),
     conductDSARiskAssessment: jest.fn(),
     getDSARiskAssessments: jest.fn(),

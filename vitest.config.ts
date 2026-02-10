@@ -40,7 +40,7 @@ export default defineConfig({
     // Include patterns
     include: ['**/*.{test,spec}.{ts,tsx}'],
     // Exclude patterns
-    exclude: ['node_modules', 'dist', 'server', '.git', '.next', 'e2e'],
+    exclude: ['node_modules', 'dist', 'server', 'mobile', '.git', '.next', 'e2e'],
   },
   resolve: {
     alias: {

@@ -14,6 +14,15 @@ jest.mock('@sentry/node', () => {
 jest.mock('@sentry/profiling-node', () => {
   throw new Error('Cannot find module \'@sentry/profiling-node\'');
 });
+jest.mock('../../../config/logger', () => ({
+  __esModule: true,
+  default: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
 
 // Store original env
 const originalEnv = { ...process.env };
@@ -33,58 +42,54 @@ describe('Monitoring Configuration', () => {
     it('should log message when Sentry is disabled', () => {
       process.env.SENTRY_ENABLED = 'false';
       delete process.env.SENTRY_DSN;
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
       const { initializeSentry } = require('../../../config/monitoring');
+      const logger = require('../../../config/logger').default;
       initializeSentry();
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(logger.info).toHaveBeenCalledWith(
         expect.stringContaining('Sentry disabled')
       );
-      consoleSpy.mockRestore();
     });
 
     it('should log message when DSN is not configured', () => {
       process.env.SENTRY_ENABLED = 'true';
       delete process.env.SENTRY_DSN;
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
       const { initializeSentry } = require('../../../config/monitoring');
+      const logger = require('../../../config/logger').default;
       initializeSentry();
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(logger.info).toHaveBeenCalledWith(
         expect.stringContaining('Sentry disabled or DSN not configured')
       );
-      consoleSpy.mockRestore();
     });
 
     it('should warn when Sentry packages are not installed', () => {
       process.env.SENTRY_ENABLED = 'true';
       process.env.SENTRY_DSN = 'https://example@sentry.io/123';
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       // Sentry module not available (default state since it is conditionally required)
       const { initializeSentry } = require('../../../config/monitoring');
+      const logger = require('../../../config/logger').default;
       initializeSentry();
 
       // Should warn about missing packages
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('Sentry packages not installed')
       );
-      consoleSpy.mockRestore();
     });
   });
 
   describe('initializeAPM()', () => {
     it('should log disabled message when APM is not enabled', () => {
       process.env.APM_ENABLED = 'false';
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
       const { initializeAPM } = require('../../../config/monitoring');
+      const logger = require('../../../config/logger').default;
       initializeAPM();
 
-      expect(consoleSpy).toHaveBeenCalledWith('APM disabled');
-      consoleSpy.mockRestore();
+      expect(logger.info).toHaveBeenCalledWith('APM disabled');
     });
 
     it('should not throw when APM is enabled but no APM server configured', () => {
