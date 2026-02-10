@@ -20,12 +20,14 @@ jest.mock('../../../config/logger', () => ({
 const mockQueryRaw = jest.fn();
 const mockDisconnect = jest.fn();
 const mockOn = jest.fn();
+const mockUse = jest.fn();
 
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
     $queryRaw: mockQueryRaw,
     $disconnect: mockDisconnect,
     $on: mockOn,
+    $use: mockUse,
   })),
 }));
 

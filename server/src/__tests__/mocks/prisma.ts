@@ -229,6 +229,7 @@ export const prismaMock = {
     findMany: createMockFn(),
     create: createMockFn(),
     update: createMockFn(),
+    count: createMockFn(),
   },
   vendorReview: {
     findUnique: createMockFn(),
@@ -236,6 +237,7 @@ export const prismaMock = {
     findMany: createMockFn(),
     create: createMockFn(),
     update: createMockFn(),
+    count: createMockFn(),
   },
   vendorMonitor: {
     findUnique: createMockFn(),
@@ -243,6 +245,7 @@ export const prismaMock = {
     findMany: createMockFn(),
     create: createMockFn(),
     update: createMockFn(),
+    count: createMockFn(),
   },
   complianceFramework: {
     findUnique: createMockFn(),
