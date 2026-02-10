@@ -6,6 +6,8 @@
  * data residency rules, service endpoint routing, and failover.
  */
 
+import https from 'https';
+import http from 'http';
 import logger from '../logger';
 
 // ============================================================================
@@ -451,9 +453,10 @@ class MultiRegionService {
     const config = REGIONS[regionCode];
     if (!config) return;
 
+    const healthUrl = `${config.endpoints.api}/health`;
     const startTime = Date.now();
     try {
-      // In production, this would make an HTTP request to the region's health endpoint
+      await this.httpHealthCheck(healthUrl, 5000);
       const latencyMs = Date.now() - startTime;
 
       this.healthState.set(regionCode, {
@@ -480,6 +483,31 @@ class MultiRegionService {
         }
       }
     }
+  }
+
+  /**
+   * Perform an actual HTTP health check against a region endpoint.
+   * Returns a promise that resolves on 2xx response, rejects on error/timeout.
+   */
+  private httpHealthCheck(url: string, timeoutMs: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const protocol = url.startsWith('https') ? https : http;
+      const req = protocol.get(url, { timeout: timeoutMs }, (res) => {
+        // Consume response body to free socket
+        res.resume();
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Health check returned status ${res.statusCode}`));
+        }
+      });
+
+      req.on('error', (err) => reject(err));
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error(`Health check timed out after ${timeoutMs}ms`));
+      });
+    });
   }
 
   /**
