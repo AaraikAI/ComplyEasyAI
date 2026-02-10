@@ -152,32 +152,30 @@ export function initializeAPM(): void {
     return;
   }
 
-  // APM can be integrated with:
-  // - New Relic
-  // - Datadog
-  // - AppDynamics
-  // - Elastic APM
-  
-  // Example: Elastic APM
+  // Elastic APM
   if (process.env.ELASTIC_APM_SERVER_URL) {
     try {
-      // Elastic APM would be initialized here
-      // const apm = require('elastic-apm-node').start({
-      //   serviceName: config.apm.serviceName,
-      //   serviceVersion: config.apm.serviceVersion,
-      //   serverUrl: process.env.ELASTIC_APM_SERVER_URL,
-      // });
+      const apm = require('elastic-apm-node').start({
+        serviceName: config.apm.serviceName,
+        serviceVersion: config.apm.serviceVersion,
+        serverUrl: process.env.ELASTIC_APM_SERVER_URL,
+        secretToken: process.env.ELASTIC_APM_SECRET_TOKEN || undefined,
+        apiKey: process.env.ELASTIC_APM_API_KEY || undefined,
+        environment: process.env.NODE_ENV || 'development',
+        active: true,
+        captureBody: 'errors',
+        transactionSampleRate: parseFloat(process.env.ELASTIC_APM_SAMPLE_RATE || '0.1'),
+      });
       logger.info('APM initialized (Elastic APM)');
     } catch (error) {
-      logger.error('Failed to initialize APM:', error);
+      logger.error('Failed to initialize Elastic APM:', error);
     }
   }
 
-  // Example: New Relic
+  // New Relic
   if (process.env.NEW_RELIC_LICENSE_KEY) {
     try {
-      // New Relic auto-instruments when require('newrelic') is called
-      // require('newrelic');
+      require('newrelic');
       logger.info('APM initialized (New Relic)');
     } catch (error) {
       logger.error('Failed to initialize New Relic:', error);

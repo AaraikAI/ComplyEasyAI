@@ -184,9 +184,7 @@ class FeatureService {
     // Calculate price
     const price = calculateFeaturePrice(feature, tier, billingCycle);
 
-    // Create Stripe subscription item
-    // Note: In production, you'll need to create Stripe Price objects first
-    // For now, we'll use a placeholder approach
+    // Create Stripe subscription item for this feature add-on
     let stripeSubscriptionItemId: string | null = null;
     let stripePriceId: string | null = null;
 
@@ -194,27 +192,54 @@ class FeatureService {
       // Get the base subscription
       const subscription = await stripe.subscriptions.retrieve(org.stripeSubscriptionId);
 
-      // Create price if not exists (in production, create these in Stripe dashboard)
-      // For now, we'll create a product and price first, then add to subscription
-      const unitAmount = billingCycle === 'annual' 
+      const unitAmount = billingCycle === 'annual'
         ? Math.round(price * 100) // Convert to cents
         : Math.round((price / 12) * 100);
 
-      // Create a product for this feature
-      const product = await stripe.products.create({
-        name: feature.name,
-        description: feature.description || undefined,
+      // Search for an existing product for this feature to avoid duplicates
+      const existingProducts = await stripe.products.search({
+        query: `metadata["featureId"]:"${featureId}"`,
+        limit: 1,
       });
 
-      // Create a recurring price for the product
-      const stripePrice = await stripe.prices.create({
-        product: product.id,
-        currency: 'usd',
-        unit_amount: unitAmount,
-        recurring: {
-          interval: billingCycle === 'annual' ? 'year' : 'month',
-        },
+      let productId: string;
+      if (existingProducts.data.length > 0 && existingProducts.data[0].active) {
+        productId = existingProducts.data[0].id;
+      } else {
+        const product = await stripe.products.create({
+          name: `Add-on: ${feature.name}`,
+          description: feature.description || undefined,
+          metadata: { featureId, type: 'addon' },
+        });
+        productId = product.id;
+      }
+
+      // Search for an existing price matching this product + amount + interval
+      const existingPrices = await stripe.prices.search({
+        query: `product:"${productId}" active:"true"`,
+        limit: 10,
       });
+
+      const matchingPrice = existingPrices.data.find(
+        (p) =>
+          p.unit_amount === unitAmount &&
+          p.recurring?.interval === (billingCycle === 'annual' ? 'year' : 'month')
+      );
+
+      let stripePrice: Stripe.Price;
+      if (matchingPrice) {
+        stripePrice = matchingPrice;
+      } else {
+        stripePrice = await stripe.prices.create({
+          product: productId,
+          currency: 'usd',
+          unit_amount: unitAmount,
+          recurring: {
+            interval: billingCycle === 'annual' ? 'year' : 'month',
+          },
+          metadata: { featureId, billingCycle },
+        });
+      }
 
       const subscriptionItem = await stripe.subscriptionItems.create({
         subscription: org.stripeSubscriptionId,
