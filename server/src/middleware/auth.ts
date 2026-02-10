@@ -4,6 +4,7 @@ import config from '../config';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import monitoring from '../config/monitoring';
+import tokenBlacklist from '../services/tokenBlacklistService';
 import { User, Organization } from '@prisma/client';
 import crypto from 'crypto';
 
@@ -47,6 +48,16 @@ const authenticateMiddleware = async (
         role: string;
         organizationId: string;
       };
+
+      // Check if token has been revoked (individual or user-wide)
+      const [revoked, revokedByReset] = await Promise.all([
+        tokenBlacklist.isRevoked(token),
+        tokenBlacklist.isRevokedByUserReset(token, decoded.userId),
+      ]);
+      if (revoked || revokedByReset) {
+        res.status(401).json({ error: 'Token has been revoked' });
+        return;
+      }
 
       // Fetch user from database
       const user = await prisma.user.findUnique({
