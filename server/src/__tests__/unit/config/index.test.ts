@@ -604,12 +604,12 @@ describe('Config Index', () => {
       process.env.NODE_ENV = 'development';
       jest.resetModules();
 
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const stdoutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
       const { validateConfig } = require('../../../config/index');
       validateConfig();
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(stdoutSpy).toHaveBeenCalled();
+      stdoutSpy.mockRestore();
     });
 
     it('should warn about missing AWS keys in non-production', () => {
@@ -627,12 +627,12 @@ describe('Config Index', () => {
       process.env.NODE_ENV = 'development';
       jest.resetModules();
 
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const stdoutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
       const { validateConfig } = require('../../../config/index');
       validateConfig();
 
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(stdoutSpy).toHaveBeenCalled();
+      stdoutSpy.mockRestore();
     });
 
     it('should accumulate multiple errors in a single throw', () => {
@@ -663,16 +663,16 @@ describe('Config Index', () => {
       process.env.NODE_ENV = 'production';
       jest.resetModules();
 
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const stdoutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
       const { validateConfig } = require('../../../config/index');
       validateConfig();
 
       // In production, warnings should be suppressed
-      const warnCalls = consoleSpy.mock.calls.filter(
+      const warnCalls = stdoutSpy.mock.calls.filter(
         (call) => typeof call[0] === 'string' && call[0].includes('Configuration Warnings')
       );
       expect(warnCalls.length).toBe(0);
-      consoleSpy.mockRestore();
+      stdoutSpy.mockRestore();
     });
 
     it('should include help text in error message', () => {

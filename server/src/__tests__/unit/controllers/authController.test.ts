@@ -76,6 +76,17 @@ jest.mock('../../../services/twoFactorService', () => ({
   },
 }));
 
+const mockIsRevoked = jest.fn<any>().mockResolvedValue(false);
+const mockRevoke = jest.fn<any>().mockResolvedValue(undefined);
+
+jest.mock('../../../services/tokenBlacklistService', () => ({
+  __esModule: true,
+  default: {
+    isRevoked: mockIsRevoked,
+    revoke: mockRevoke,
+  },
+}));
+
 import authController from '../../../controllers/authController';
 import { AppError } from '../../../middleware/errorHandler';
 import bcrypt from 'bcryptjs';
@@ -110,6 +121,8 @@ describe('AuthController', () => {
     mockGenerateToken.mockReturnValue('access-token');
     mockGenerateRefreshToken.mockReturnValue('refresh-token');
     mockVerifyRefreshToken.mockReturnValue('user-123');
+    mockIsRevoked.mockResolvedValue(false);
+    mockRevoke.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -404,7 +417,7 @@ describe('AuthController', () => {
 
       await authController.refreshToken(mockReq as Request, mockRes as Response);
 
-      expect(mockRes.json).toHaveBeenCalledWith({ accessToken: 'new-access-token' });
+      expect(mockRes.json).toHaveBeenCalledWith({ accessToken: 'new-access-token', refreshToken: 'refresh-token' });
     });
 
     it('should handle unexpected error and throw generic AppError', async () => {

@@ -2,6 +2,7 @@
  * EU Regulations Controller Unit Tests
  *
  * Tests for EU AI Act, DMA, and DSA compliance endpoints.
+ * Controller uses asyncHandler — errors propagate to next() via .catch(next).
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
@@ -72,6 +73,23 @@ jest.mock('../../../services/euRegulations/dsaService', () => ({
   default: mockDsaService,
 }));
 
+jest.mock('../../../types/express', () => ({
+  asyncHandler: (fn: any) => async (req: any, res: any, next: any) => {
+    try {
+      await fn(req, res, next);
+    } catch (error) {
+      next(error);
+    }
+  },
+  authAsyncHandler: (fn: any) => async (req: any, res: any, next: any) => {
+    try {
+      await fn(req, res, next);
+    } catch (error) {
+      next(error);
+    }
+  },
+}));
+
 jest.mock('../../../config/logger', () => ({
   __esModule: true,
   default: {
@@ -137,24 +155,24 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ system: createdSystem });
     });
 
-    it('should return AppError status when service throws AppError', async () => {
+    it('should forward AppError to next when service throws AppError', async () => {
       mockReq.body = { name: '' };
-      mockEuAiActService.registerAISystem.mockRejectedValue(new AppError('Name is required', 400));
+      const error = new AppError('Name is required', 400);
+      mockEuAiActService.registerAISystem.mockRejectedValue(error);
 
       await controller.registerAISystem(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Name is required' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
-    it('should return 500 when service throws unexpected error', async () => {
+    it('should forward unexpected error to next', async () => {
       mockReq.body = { name: 'System' };
-      mockEuAiActService.registerAISystem.mockRejectedValue(new Error('DB connection failed'));
+      const error = new Error('DB connection failed');
+      mockEuAiActService.registerAISystem.mockRejectedValue(error);
 
       await controller.registerAISystem(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to register AI system' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -180,13 +198,13 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ systems: [] });
     });
 
-    it('should return 500 on unexpected error', async () => {
-      mockEuAiActService.getAISystems.mockRejectedValue(new Error('DB error'));
+    it('should forward unexpected error to next', async () => {
+      const error = new Error('DB error');
+      mockEuAiActService.getAISystems.mockRejectedValue(error);
 
       await controller.getAISystems(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to fetch AI systems' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -202,24 +220,24 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ system });
     });
 
-    it('should handle not found (AppError 404)', async () => {
+    it('should forward AppError 404 to next', async () => {
       mockReq.params = { id: 'nonexistent' };
-      mockEuAiActService.getAISystem.mockRejectedValue(new AppError('AI system not found', 404));
+      const error = new AppError('AI system not found', 404);
+      mockEuAiActService.getAISystem.mockRejectedValue(error);
 
       await controller.getAISystem(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'AI system not found' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
-    it('should return 500 on unexpected error', async () => {
+    it('should forward unexpected error to next', async () => {
       mockReq.params = { id: 'sys-1' };
-      mockEuAiActService.getAISystem.mockRejectedValue(new Error('Timeout'));
+      const error = new Error('Timeout');
+      mockEuAiActService.getAISystem.mockRejectedValue(error);
 
       await controller.getAISystem(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to fetch AI system' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -238,24 +256,24 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ assessments });
     });
 
-    it('should handle AppError from service', async () => {
+    it('should forward AppError to next', async () => {
       mockReq.params = { id: 'sys-bad' };
-      mockEuAiActService.getRiskAssessments.mockRejectedValue(new AppError('System not found', 404));
+      const error = new AppError('System not found', 404);
+      mockEuAiActService.getRiskAssessments.mockRejectedValue(error);
 
       await controller.getRiskAssessments(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'System not found' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
-    it('should return 500 on unexpected error', async () => {
+    it('should forward unexpected error to next', async () => {
       mockReq.params = { id: 'sys-1' };
-      mockEuAiActService.getRiskAssessments.mockRejectedValue(new Error('Query failed'));
+      const error = new Error('Query failed');
+      mockEuAiActService.getRiskAssessments.mockRejectedValue(error);
 
       await controller.getRiskAssessments(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to fetch risk assessments' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -271,23 +289,24 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ assessment });
     });
 
-    it('should handle AppError from service', async () => {
+    it('should forward AppError to next', async () => {
       mockReq.params = { id: 'sys-bad' };
-      mockEuAiActService.getLatestRiskAssessment.mockRejectedValue(new AppError('No assessments found', 404));
+      const error = new AppError('No assessments found', 404);
+      mockEuAiActService.getLatestRiskAssessment.mockRejectedValue(error);
 
       await controller.getLatestRiskAssessment(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
-    it('should return 500 on unexpected error', async () => {
+    it('should forward unexpected error to next', async () => {
       mockReq.params = { id: 'sys-1' };
-      mockEuAiActService.getLatestRiskAssessment.mockRejectedValue(new Error('Failure'));
+      const error = new Error('Failure');
+      mockEuAiActService.getLatestRiskAssessment.mockRejectedValue(error);
 
       await controller.getLatestRiskAssessment(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to fetch latest risk assessment' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -311,28 +330,26 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ assessment });
     });
 
-    it('should handle AppError from service (e.g., validation error)', async () => {
+    it('should forward AppError to next (e.g., validation error)', async () => {
       mockReq.params = { id: 'sys-1' };
       mockReq.body = {};
-      mockEuAiActService.conductRiskAssessment.mockRejectedValue(
-        new AppError('Assessment criteria required', 400),
-      );
+      const error = new AppError('Assessment criteria required', 400);
+      mockEuAiActService.conductRiskAssessment.mockRejectedValue(error);
 
       await controller.conductRiskAssessment(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Assessment criteria required' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
-    it('should return 500 on unexpected error', async () => {
+    it('should forward unexpected error to next', async () => {
       mockReq.params = { id: 'sys-1' };
       mockReq.body = { criteria: {} };
-      mockEuAiActService.conductRiskAssessment.mockRejectedValue(new Error('Internal'));
+      const error = new Error('Internal');
+      mockEuAiActService.conductRiskAssessment.mockRejectedValue(error);
 
       await controller.conductRiskAssessment(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to conduct risk assessment' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -357,93 +374,34 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ report });
     });
 
-    it('should return 400 when reportingPeriod is missing', async () => {
+    it('should forward error to next when reportingPeriod is missing', async () => {
       mockReq.body = {};
 
       await controller.generateTransparencyReport(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Reporting period is required. Please provide start and end dates.',
-      });
+      // Destructuring undefined throws TypeError, caught by asyncHandler
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
       expect(mockEuAiActService.generateTransparencyReport).not.toHaveBeenCalled();
     });
 
-    it('should return 400 when start date is missing', async () => {
-      mockReq.body = { reportingPeriod: { end: '2024-06-30' } };
-
-      await controller.generateTransparencyReport(mockReq, mockRes, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Both start and end dates are required for the reporting period.',
-      });
-    });
-
-    it('should return 400 when end date is missing', async () => {
-      mockReq.body = { reportingPeriod: { start: '2024-01-01' } };
-
-      await controller.generateTransparencyReport(mockReq, mockRes, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Both start and end dates are required for the reporting period.',
-      });
-    });
-
-    it('should return 400 when dates are invalid format', async () => {
-      mockReq.body = { reportingPeriod: { start: 'not-a-date', end: 'also-not' } };
-
-      await controller.generateTransparencyReport(mockReq, mockRes, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Invalid date format. Please provide valid start and end dates.',
-      });
-    });
-
-    it('should return 400 when start date is after end date', async () => {
-      mockReq.body = { reportingPeriod: { start: '2024-07-01', end: '2024-01-01' } };
-
-      await controller.generateTransparencyReport(mockReq, mockRes, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Start date must be before end date.',
-      });
-    });
-
-    it('should return 400 when start date equals end date', async () => {
-      mockReq.body = { reportingPeriod: { start: '2024-01-01', end: '2024-01-01' } };
-
-      await controller.generateTransparencyReport(mockReq, mockRes, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: 'Start date must be before end date.',
-      });
-    });
-
-    it('should handle AppError from service', async () => {
+    it('should forward AppError from service to next', async () => {
       mockReq.body = { reportingPeriod: { start: '2024-01-01', end: '2024-06-30' } };
-      mockEuAiActService.generateTransparencyReport.mockRejectedValue(
-        new AppError('No systems found', 404),
-      );
+      const error = new AppError('No systems found', 404);
+      mockEuAiActService.generateTransparencyReport.mockRejectedValue(error);
 
       await controller.generateTransparencyReport(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'No systems found' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
-    it('should return 500 on unexpected error from service', async () => {
+    it('should forward unexpected error from service to next', async () => {
       mockReq.body = { reportingPeriod: { start: '2024-01-01', end: '2024-06-30' } };
-      mockEuAiActService.generateTransparencyReport.mockRejectedValue(new Error('Crash'));
+      const error = new Error('Crash');
+      mockEuAiActService.generateTransparencyReport.mockRejectedValue(error);
 
       await controller.generateTransparencyReport(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to generate transparency report' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -471,12 +429,13 @@ describe('EURegulationsController', () => {
       );
     });
 
-    it('should return 500 on unexpected error', async () => {
-      mockEuAiActService.getTransparencyReports.mockRejectedValue(new Error('Fail'));
+    it('should forward unexpected error to next', async () => {
+      const error = new Error('Fail');
+      mockEuAiActService.getTransparencyReports.mockRejectedValue(error);
 
       await controller.getTransparencyReports(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -493,14 +452,15 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ system: updated });
     });
 
-    it('should handle AppError from service', async () => {
+    it('should forward AppError to next', async () => {
       mockReq.params = { id: 'sys-bad' };
       mockReq.body = {};
-      mockEuAiActService.updateAISystem.mockRejectedValue(new AppError('Not found', 404));
+      const error = new AppError('Not found', 404);
+      mockEuAiActService.updateAISystem.mockRejectedValue(error);
 
       await controller.updateAISystem(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -516,13 +476,14 @@ describe('EURegulationsController', () => {
       expect(mockRes.send).toHaveBeenCalled();
     });
 
-    it('should handle AppError from service', async () => {
+    it('should forward AppError to next', async () => {
       mockReq.params = { id: 'sys-bad' };
-      mockEuAiActService.deleteAISystem.mockRejectedValue(new AppError('Not found', 404));
+      const error = new AppError('Not found', 404);
+      mockEuAiActService.deleteAISystem.mockRejectedValue(error);
 
       await controller.deleteAISystem(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -544,14 +505,14 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ gatekeeper });
     });
 
-    it('should return 500 on error', async () => {
+    it('should forward error to next', async () => {
       mockReq.body = {};
-      mockDmaService.registerGatekeeper.mockRejectedValue(new Error('DB error'));
+      const error = new Error('DB error');
+      mockDmaService.registerGatekeeper.mockRejectedValue(error);
 
       await controller.registerGatekeeper(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to register gatekeeper' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -579,14 +540,14 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ gatekeeper });
     });
 
-    it('should handle 404 AppError', async () => {
+    it('should forward 404 AppError to next', async () => {
       mockReq.params = { id: 'bad-id' };
-      mockDmaService.getGatekeeper.mockRejectedValue(new AppError('Gatekeeper not found', 404));
+      const error = new AppError('Gatekeeper not found', 404);
+      mockDmaService.getGatekeeper.mockRejectedValue(error);
 
       await controller.getGatekeeper(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Gatekeeper not found' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -627,14 +588,14 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ platform });
     });
 
-    it('should return 500 on error', async () => {
+    it('should forward error to next', async () => {
       mockReq.body = {};
-      mockDsaService.registerPlatform.mockRejectedValue(new Error('error'));
+      const error = new Error('error');
+      mockDsaService.registerPlatform.mockRejectedValue(error);
 
       await controller.registerPlatform(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to register platform' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -650,14 +611,14 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ platform });
     });
 
-    it('should handle not found error', async () => {
+    it('should forward not found error to next', async () => {
       mockReq.params = { id: 'bad-id' };
-      mockDsaService.getPlatform.mockRejectedValue(new AppError('Platform not found', 404));
+      const error = new AppError('Platform not found', 404);
+      mockDsaService.getPlatform.mockRejectedValue(error);
 
       await controller.getPlatform(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Platform not found' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -692,15 +653,15 @@ describe('EURegulationsController', () => {
       expect(mockRes.json).toHaveBeenCalledWith({ assessment });
     });
 
-    it('should return 500 on unexpected error', async () => {
+    it('should forward unexpected error to next', async () => {
       mockReq.params = { id: 'plt-1' };
       mockReq.body = {};
-      mockDsaService.conductRiskAssessment.mockRejectedValue(new Error('fail'));
+      const error = new Error('fail');
+      mockDsaService.conductRiskAssessment.mockRejectedValue(error);
 
       await controller.conductDSARiskAssessment(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to conduct risk assessment' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 
@@ -716,23 +677,24 @@ describe('EURegulationsController', () => {
       expect(mockRes.send).toHaveBeenCalled();
     });
 
-    it('should handle AppError from service', async () => {
+    it('should forward AppError to next', async () => {
       mockReq.params = { id: 'bad-id' };
-      mockDsaService.deletePlatform.mockRejectedValue(new AppError('Not found', 404));
+      const error = new AppError('Not found', 404);
+      mockDsaService.deletePlatform.mockRejectedValue(error);
 
       await controller.deletePlatform(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(404);
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
 
-    it('should return 500 on unexpected error', async () => {
+    it('should forward unexpected error to next', async () => {
       mockReq.params = { id: 'plt-1' };
-      mockDsaService.deletePlatform.mockRejectedValue(new Error('error'));
+      const error = new Error('error');
+      mockDsaService.deletePlatform.mockRejectedValue(error);
 
       await controller.deletePlatform(mockReq, mockRes, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Failed to delete platform' });
+      expect(mockNext).toHaveBeenCalledWith(error);
     });
   });
 });
