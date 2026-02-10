@@ -3,6 +3,8 @@
  * Application Performance Monitoring (APM) and Error Tracking
  */
 
+import logger from './logger';
+
 // Sentry is optional - only import if enabled
 let Sentry: any = null;
 let ProfilingIntegration: any = null;
@@ -13,7 +15,7 @@ try {
     ProfilingIntegration = require('@sentry/profiling-node').ProfilingIntegration;
   }
 } catch (error) {
-  console.warn('Sentry packages not installed. Install with: npm install @sentry/node @sentry/profiling-node');
+  logger.warn('Sentry packages not installed. Install with: npm install @sentry/node @sentry/profiling-node');
 }
 
 interface MonitoringConfig {
@@ -65,12 +67,12 @@ const config: MonitoringConfig = {
  */
 export function initializeSentry(): void {
   if (!config.sentry.enabled || !config.sentry.dsn) {
-    console.log('Sentry disabled or DSN not configured');
+    logger.info('Sentry disabled or DSN not configured');
     return;
   }
 
   if (!Sentry) {
-    console.warn('Sentry packages not installed. Install with: npm install @sentry/node @sentry/profiling-node');
+    logger.warn('Sentry packages not installed. Install with: npm install @sentry/node @sentry/profiling-node');
     return;
   }
 
@@ -135,9 +137,9 @@ export function initializeSentry(): void {
       },
     });
 
-    console.log('Sentry initialized successfully');
+    logger.info('Sentry initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize Sentry:', error);
+    logger.error('Failed to initialize Sentry:', error);
   }
 }
 
@@ -146,7 +148,7 @@ export function initializeSentry(): void {
  */
 export function initializeAPM(): void {
   if (!config.apm.enabled) {
-    console.log('APM disabled');
+    logger.info('APM disabled');
     return;
   }
 
@@ -165,9 +167,9 @@ export function initializeAPM(): void {
       //   serviceVersion: config.apm.serviceVersion,
       //   serverUrl: process.env.ELASTIC_APM_SERVER_URL,
       // });
-      console.log('APM initialized (Elastic APM)');
+      logger.info('APM initialized (Elastic APM)');
     } catch (error) {
-      console.error('Failed to initialize APM:', error);
+      logger.error('Failed to initialize APM:', error);
     }
   }
 
@@ -176,9 +178,9 @@ export function initializeAPM(): void {
     try {
       // New Relic auto-instruments when require('newrelic') is called
       // require('newrelic');
-      console.log('APM initialized (New Relic)');
+      logger.info('APM initialized (New Relic)');
     } catch (error) {
-      console.error('Failed to initialize New Relic:', error);
+      logger.error('Failed to initialize New Relic:', error);
     }
   }
 }
@@ -267,14 +269,14 @@ export function startTransaction(name: string, op: string): any {
             op,
           });
         } catch (error) {
-          console.warn('Failed to start Sentry transaction (old API):', error);
+          logger.warn('Failed to start Sentry transaction (old API):', error);
         }
       }
       // For Sentry v8+, Express integration handles transactions automatically
       // Return a no-op object since Express integration manages transactions
     } catch (error) {
       // If Sentry is initialized but API is incompatible, return no-op
-      console.warn('Sentry transaction API not available:', error);
+      logger.warn('Sentry transaction API not available:', error);
     }
   }
   
