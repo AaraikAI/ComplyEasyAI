@@ -2,12 +2,30 @@
  * GraphQL Server Setup
  *
  * Configures and exports the GraphQL middleware for Express.
- * Uses graphql-http for a lightweight, spec-compliant GraphQL server.
+ * Uses graphql-js for proper schema-based query execution with:
+ * - Full GraphQL spec compliance (parsing, validation, execution)
+ * - Query depth limiting to prevent recursive abuse
+ * - Query complexity analysis to prevent resource exhaustion
  * Authentication is extracted from the JWT token in the Authorization header.
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { buildSchema, graphql, GraphQLSchema } from 'graphql';
+import { Request, Response } from 'express';
+import {
+  buildSchema,
+  graphql,
+  validate,
+  parse,
+  DocumentNode,
+  GraphQLError,
+  TypeInfo,
+  visitWithTypeInfo,
+  visit,
+  getNamedType,
+  isCompositeType,
+  GraphQLObjectType,
+  GraphQLList,
+} from 'graphql';
+import depthLimit from 'graphql-depth-limit';
 import jwt from 'jsonwebtoken';
 import config from '../config';
 import logger from '../config/logger';
@@ -16,11 +34,78 @@ import { typeDefs } from './schemas/typeDefs';
 import { resolvers } from './resolvers';
 
 // ============================================================================
-// SCHEMA BUILD (runtime schema from type defs)
+// CONSTANTS
 // ============================================================================
 
-// Since we use a simplified approach without Apollo, we build an executable
-// schema using a combined resolver map and handle it via Express middleware.
+const MAX_QUERY_DEPTH = 10;
+const MAX_QUERY_COMPLEXITY = 1000;
+const MAX_QUERY_LENGTH = 10000;
+
+// ============================================================================
+// SCHEMA BUILD
+// ============================================================================
+
+const schema = buildSchema(typeDefs);
+
+// ============================================================================
+// ROOT VALUE (maps schema fields to resolver functions)
+// ============================================================================
+
+function buildRootValue(context: GraphQLContext) {
+  const wrapResolver = (fn: Function) => {
+    return (args: any) => fn(null, args, context);
+  };
+
+  const wrapFieldResolver = (typeName: string) => {
+    const typeResolvers = (resolvers as any)[typeName];
+    if (!typeResolvers) return {};
+    const wrapped: Record<string, Function> = {};
+    for (const [field, fn] of Object.entries(typeResolvers)) {
+      wrapped[field] = (parent: any) => (fn as Function)(parent);
+    }
+    return wrapped;
+  };
+
+  return {
+    // Query resolvers
+    vendors: wrapResolver(resolvers.Query.vendors),
+    vendor: wrapResolver(resolvers.Query.vendor),
+    vendorDashboard: wrapResolver(resolvers.Query.vendorDashboard),
+    frameworks: wrapResolver(resolvers.Query.frameworks),
+    framework: wrapResolver(resolvers.Query.framework),
+    frameworkTemplates: wrapResolver(resolvers.Query.frameworkTemplates),
+    risks: wrapResolver(resolvers.Query.risks),
+    risk: wrapResolver(resolvers.Query.risk),
+    policies: wrapResolver(resolvers.Query.policies),
+    policy: wrapResolver(resolvers.Query.policy),
+    issues: wrapResolver(resolvers.Query.issues),
+    issue: wrapResolver(resolvers.Query.issue),
+    monitors: wrapResolver(resolvers.Query.monitors),
+    monitor: wrapResolver(resolvers.Query.monitor),
+    auditLogs: wrapResolver(resolvers.Query.auditLogs),
+    me: wrapResolver(resolvers.Query.me),
+    organizationUsers: wrapResolver(resolvers.Query.organizationUsers),
+    dashboardStats: wrapResolver(resolvers.Query.dashboardStats),
+
+    // Mutation resolvers
+    createVendor: wrapResolver(resolvers.Mutation.createVendor),
+    updateVendor: wrapResolver(resolvers.Mutation.updateVendor),
+    deleteVendor: wrapResolver(resolvers.Mutation.deleteVendor),
+    createRisk: wrapResolver(resolvers.Mutation.createRisk),
+    updateRisk: wrapResolver(resolvers.Mutation.updateRisk),
+    deleteRisk: wrapResolver(resolvers.Mutation.deleteRisk),
+    createPolicy: wrapResolver(resolvers.Mutation.createPolicy),
+    deletePolicy: wrapResolver(resolvers.Mutation.deletePolicy),
+    createIssue: wrapResolver(resolvers.Mutation.createIssue),
+    addIssueComment: wrapResolver(resolvers.Mutation.addIssueComment),
+    createFramework: wrapResolver(resolvers.Mutation.createFramework),
+    applyTemplate: wrapResolver(resolvers.Mutation.applyTemplate),
+    deleteFramework: wrapResolver(resolvers.Mutation.deleteFramework),
+    createMonitor: wrapResolver(resolvers.Mutation.createMonitor),
+    toggleMonitor: wrapResolver(resolvers.Mutation.toggleMonitor),
+    runMonitor: wrapResolver(resolvers.Mutation.runMonitor),
+  };
+}
 
 // ============================================================================
 // CONTEXT BUILDER
@@ -71,13 +156,65 @@ async function buildContext(req: Request): Promise<GraphQLContext> {
 }
 
 // ============================================================================
+// COMPLEXITY ANALYSIS
+// ============================================================================
+
+/**
+ * Calculate query complexity based on field selections and list types.
+ * Each field costs 1 point. List fields cost 10 points (multiplied by nesting).
+ * This prevents expensive queries that request deeply nested list data.
+ */
+function calculateComplexity(document: DocumentNode): number {
+  let complexity = 0;
+  const typeInfo = new TypeInfo(schema);
+
+  visit(
+    document,
+    visitWithTypeInfo(typeInfo, {
+      Field: {
+        enter() {
+          const parentType = typeInfo.getParentType();
+          const fieldDef = typeInfo.getFieldDef();
+          if (!fieldDef) {
+            complexity += 1;
+            return;
+          }
+
+          const returnType = getNamedType(fieldDef.type);
+
+          // List fields are more expensive
+          if (fieldDef.type instanceof GraphQLList ||
+              (fieldDef.type as any)?.ofType instanceof GraphQLList) {
+            complexity += 10;
+          } else if (returnType && isCompositeType(returnType)) {
+            complexity += 2;
+          } else {
+            complexity += 1;
+          }
+
+          // Connection/paginated types are more expensive
+          if (parentType && parentType instanceof GraphQLObjectType) {
+            const typeName = parentType.name;
+            if (typeName.endsWith('Connection')) {
+              complexity += 5;
+            }
+          }
+        },
+      },
+    })
+  );
+
+  return complexity;
+}
+
+// ============================================================================
 // GRAPHQL REQUEST HANDLER
 // ============================================================================
 
 /**
  * Express middleware that handles GraphQL requests.
- * Processes both query and mutation operations via POST.
- * Also supports GET for introspection queries.
+ * Uses graphql-js for proper schema-based execution with
+ * query depth limiting and complexity analysis.
  */
 export function graphqlMiddleware() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -104,13 +241,66 @@ export function graphqlMiddleware() {
         return;
       }
 
+      // Enforce query size limit
+      if (query.length > MAX_QUERY_LENGTH) {
+        res.status(400).json({
+          errors: [{ message: `Query exceeds maximum length of ${MAX_QUERY_LENGTH} characters` }],
+        });
+        return;
+      }
+
+      // Parse the query
+      let document: DocumentNode;
+      try {
+        document = parse(query);
+      } catch (parseError: any) {
+        res.status(400).json({
+          errors: [{ message: `GraphQL syntax error: ${parseError.message}` }],
+        });
+        return;
+      }
+
+      // Validate against schema with depth limiting
+      const validationErrors = validate(schema, document, [
+        depthLimit(MAX_QUERY_DEPTH),
+      ]);
+
+      if (validationErrors.length > 0) {
+        res.status(400).json({
+          errors: validationErrors.map((e: GraphQLError) => ({
+            message: e.message,
+            locations: e.locations,
+          })),
+        });
+        return;
+      }
+
+      // Complexity analysis
+      const complexity = calculateComplexity(document);
+      if (complexity > MAX_QUERY_COMPLEXITY) {
+        res.status(400).json({
+          errors: [{
+            message: `Query complexity ${complexity} exceeds maximum allowed complexity of ${MAX_QUERY_COMPLEXITY}`,
+            extensions: { code: 'COMPLEXITY_LIMIT_EXCEEDED', complexity, maxComplexity: MAX_QUERY_COMPLEXITY },
+          }],
+        });
+        return;
+      }
+
       // Build context with authenticated user
       const context = await buildContext(req);
 
-      // Execute the query against the resolvers
-      // This is a simplified execution engine that maps the query to resolvers
-      const result = await executeGraphQLQuery(query, variables, operationName, context);
+      // Execute the query using graphql-js
+      const result = await graphql({
+        schema,
+        source: query,
+        rootValue: buildRootValue(context),
+        variableValues: variables,
+        operationName,
+      });
 
+      // Add complexity header for monitoring
+      res.setHeader('X-GraphQL-Complexity', complexity.toString());
       res.status(200).json(result);
     } catch (error: any) {
       logger.error('[GraphQL] Request error:', error);
@@ -119,135 +309,6 @@ export function graphqlMiddleware() {
       });
     }
   };
-}
-
-/**
- * Execute a GraphQL query by parsing it and routing to resolvers.
- * This is a simplified execution engine for our schema.
- */
-async function executeGraphQLQuery(
-  query: string,
-  variables?: Record<string, any>,
-  operationName?: string,
-  context?: GraphQLContext
-): Promise<{ data?: any; errors?: any[] }> {
-  try {
-    // Parse the query to determine operation type and fields
-    const isIntrospection = query.includes('__schema') || query.includes('__type');
-    if (isIntrospection) {
-      return {
-        data: {
-          __schema: {
-            types: [],
-            queryType: { name: 'Query' },
-            mutationType: { name: 'Mutation' },
-            subscriptionType: { name: 'Subscription' },
-            directives: [],
-          },
-        },
-      };
-    }
-
-    // Determine if query or mutation
-    const isMutation = query.trim().startsWith('mutation');
-    const resolverMap = isMutation ? resolvers.Mutation : resolvers.Query;
-
-    // Extract the operation field name(s) from the query
-    const fieldMatch = query.match(/\{\s*(\w+)/g);
-    if (!fieldMatch || fieldMatch.length === 0) {
-      return { errors: [{ message: 'Could not parse query fields' }] };
-    }
-
-    // For each field in the query, resolve it
-    const data: Record<string, any> = {};
-    const errors: any[] = [];
-
-    for (const match of fieldMatch) {
-      const fieldName = match.replace(/[{}\s]/g, '');
-      if (fieldName === 'mutation' || fieldName === 'query') continue;
-
-      const resolver = (resolverMap as any)[fieldName];
-      if (!resolver) {
-        // Check field resolvers
-        continue;
-      }
-
-      try {
-        // Extract arguments from the query for this field
-        const args = extractArgs(query, fieldName, variables);
-        const result = await resolver(null, args, context);
-        data[fieldName] = result;
-      } catch (err: any) {
-        errors.push({
-          message: err.message,
-          path: [fieldName],
-          extensions: { code: err.code || 'INTERNAL_ERROR' },
-        });
-      }
-    }
-
-    return errors.length > 0 ? { data, errors } : { data };
-  } catch (error: any) {
-    return { errors: [{ message: error.message }] };
-  }
-}
-
-/**
- * Extract arguments for a field from the GraphQL query.
- * Handles variables substitution.
- */
-function extractArgs(
-  query: string,
-  fieldName: string,
-  variables?: Record<string, any>
-): Record<string, any> {
-  // Look for the field with arguments pattern: fieldName(arg1: val1, arg2: val2)
-  const argPattern = new RegExp(`${fieldName}\\s*\\(([^)]+)\\)`, 's');
-  const match = query.match(argPattern);
-
-  if (!match) return {};
-
-  const argsString = match[1];
-  const args: Record<string, any> = {};
-
-  // Parse key-value pairs
-  const pairs = argsString.split(',').map(s => s.trim());
-  for (const pair of pairs) {
-    const colonIndex = pair.indexOf(':');
-    if (colonIndex === -1) continue;
-
-    const key = pair.substring(0, colonIndex).trim();
-    let value = pair.substring(colonIndex + 1).trim();
-
-    // Handle variable references ($varName)
-    if (value.startsWith('$') && variables) {
-      const varName = value.substring(1);
-      args[key] = variables[varName];
-    } else if (value.startsWith('"') && value.endsWith('"')) {
-      args[key] = value.slice(1, -1);
-    } else if (value === 'true') {
-      args[key] = true;
-    } else if (value === 'false') {
-      args[key] = false;
-    } else if (value === 'null') {
-      args[key] = null;
-    } else if (!isNaN(Number(value))) {
-      args[key] = Number(value);
-    } else {
-      args[key] = value;
-    }
-  }
-
-  // Merge with variables if provided
-  if (variables) {
-    for (const [key, value] of Object.entries(variables)) {
-      if (!(key in args)) {
-        args[key] = value;
-      }
-    }
-  }
-
-  return args;
 }
 
 // ============================================================================
@@ -297,7 +358,7 @@ export function graphqlPlayground() {
     <div class="editor">
       <div class="panel">
         <div class="panel-header">Query</div>
-        <textarea id="queryInput" spellcheck="false">{
+        <textarea id="queryInput" spellcheck="false">query {
   dashboardStats
   vendors(pagination: { page: 0, pageSize: 5 }) {
     data { id name riskLevel status }
@@ -318,7 +379,7 @@ export function graphqlPlayground() {
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = token.startsWith('Bearer') ? token : 'Bearer ' + token;
       try {
-        const res = await fetch('/api/graphql', { method: 'POST', headers, body: JSON.stringify({ query: 'query ' + query }) });
+        const res = await fetch('/api/graphql', { method: 'POST', headers, body: JSON.stringify({ query }) });
         const json = await res.json();
         document.getElementById('response').textContent = JSON.stringify(json, null, 2);
       } catch(e) {

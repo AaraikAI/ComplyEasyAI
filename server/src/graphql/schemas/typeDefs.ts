@@ -71,10 +71,10 @@ export const typeDefs = `#graphql
   }
 
   enum MonitorStatus {
-    Active
-    Paused
-    Error
-    Disabled
+    Passing
+    Failing
+    Warning
+    Unknown
   }
 
   enum SortOrder {
@@ -223,11 +223,12 @@ export const typeDefs = `#graphql
   type ComplianceFramework {
     id: ID!
     name: String!
-    type: String!
-    description: String
-    version: String
+    notes: String
+    version: Int
     region: String
-    status: FrameworkStatus!
+    status: String!
+    progress: Int
+    nextAuditDate: DateTime
     organizationId: String!
     controls: [FrameworkControl!]
     controlCount: Int
@@ -300,10 +301,10 @@ export const typeDefs = `#graphql
     title: String!
     content: String
     category: String
-    status: PolicyStatus!
+    status: String!
     version: String
-    ownerId: String
-    approverId: String
+    owner: String
+    approver: String
     effectiveDate: DateTime
     reviewDate: DateTime
     organizationId: String!
@@ -324,15 +325,16 @@ export const typeDefs = `#graphql
     id: ID!
     title: String!
     description: String
-    severity: IssueSeverity!
+    issueType: String!
+    priority: String!
     status: IssueStatus!
     category: String
-    assigneeId: String
+    assignedToId: String
     assignee: User
-    reporterId: String
+    createdById: String!
     reporter: User
     dueDate: DateTime
-    resolvedAt: DateTime
+    resolvedDate: DateTime
     organizationId: String!
     comments: [IssueComment!]
     createdAt: DateTime!
@@ -342,9 +344,8 @@ export const typeDefs = `#graphql
   type IssueComment {
     id: ID!
     issueId: String!
-    content: String!
-    authorId: String!
-    author: User
+    comment: String!
+    author: String!
     createdAt: DateTime!
   }
 
@@ -360,12 +361,13 @@ export const typeDefs = `#graphql
   type ContinuousMonitor {
     id: ID!
     name: String!
-    type: String!
+    monitorType: String!
     status: MonitorStatus!
-    schedule: String
-    config: JSON
-    lastRunAt: DateTime
-    nextRunAt: DateTime
+    frequency: String
+    configuration: JSON
+    active: Boolean!
+    lastRun: DateTime
+    nextRun: DateTime
     organizationId: String!
     results: [MonitorResult!]
     createdAt: DateTime!
@@ -375,11 +377,11 @@ export const typeDefs = `#graphql
   type MonitorResult {
     id: ID!
     monitorId: String!
-    status: String!
+    status: MonitorStatus!
     findings: JSON
-    score: Float
-    executedAt: DateTime!
-    createdAt: DateTime!
+    passedTests: Int
+    failedTests: Int
+    runDate: DateTime!
   }
 
   type MonitorConnection {
@@ -447,14 +449,15 @@ export const typeDefs = `#graphql
   type AuditLog {
     id: ID!
     action: String!
-    entityType: String!
-    entityId: String
+    resourceType: String
+    resourceId: String
     userId: String
     user: User
-    details: JSON
+    details: String
+    metadata: JSON
     ipAddress: String
     organizationId: String!
-    createdAt: DateTime!
+    timestamp: DateTime!
   }
 
   type AuditLogConnection {
@@ -520,25 +523,24 @@ export const typeDefs = `#graphql
   input CreateIssueInput {
     title: String!
     description: String
-    severity: IssueSeverity!
+    issueType: String
     category: String
-    assigneeId: String
+    assignedToId: String
     dueDate: DateTime
   }
 
   input CreateFrameworkInput {
     name: String!
-    type: String
-    description: String
-    version: String
+    notes: String
     region: String
+    nextAuditDate: DateTime
   }
 
   input CreateMonitorInput {
     name: String!
-    type: String!
-    schedule: String
-    config: JSON
+    monitorType: String!
+    frequency: String
+    configuration: JSON
   }
 
   # ============================================================================
