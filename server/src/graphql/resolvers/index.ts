@@ -108,7 +108,7 @@ export const resolvers = {
         prisma.vendor.count({ where: { organizationId: orgId, riskLevel: { in: ['High', 'Critical'] } } }),
         prisma.vendorAssessment.count({ where: { vendor: { organizationId: orgId }, status: { not: 'Completed' } } }),
         prisma.vendor.findMany({
-          where: { organizationId: orgId, riskScore: { not: null } },
+          where: { organizationId: orgId, riskScore: { gt: 0 } },
           orderBy: { riskScore: 'desc' },
           take: 5,
         }),
@@ -245,7 +245,7 @@ export const resolvers = {
       const user = requireAuth(ctx);
       return prisma.continuousMonitor.findFirst({
         where: { id: args.id, organizationId: user.organizationId },
-        include: { results: { take: 10, orderBy: { createdAt: 'desc' } } },
+        include: { results: { take: 10, orderBy: { runDate: 'desc' } } },
       });
     },
 
@@ -256,7 +256,7 @@ export const resolvers = {
       const where = { organizationId: user.organizationId };
 
       const [data, totalItems] = await Promise.all([
-        prisma.auditLog.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
+        prisma.auditLog.findMany({ where, skip, take, orderBy: { timestamp: 'desc' } }),
         prisma.auditLog.count({ where }),
       ]);
 
@@ -329,13 +329,20 @@ export const resolvers = {
 
     createRisk: async (_: any, args: { input: any }, ctx: GqlContext) => {
       const user = requireAuth(ctx);
-      const { likelihood = 3, impact = 3 } = args.input;
+      const likelihood = args.input.likelihood || 3;
+      const impact = args.input.impact || 3;
 
       return prisma.riskItem.create({
         data: {
-          ...args.input,
+          title: args.input.title,
+          description: args.input.description || '',
+          category: args.input.category || 'Operational',
+          severity: args.input.severity || 'Medium',
+          likelihood,
+          impact,
           riskScore: likelihood * impact,
           status: 'Open',
+          mitigationPlan: args.input.mitigationPlan || null,
           organizationId: user.organizationId,
         },
       });
@@ -367,10 +374,12 @@ export const resolvers = {
       const user = requireAuth(ctx);
       return prisma.policy.create({
         data: {
-          ...args.input,
+          title: args.input.title,
+          content: args.input.content || '',
+          category: args.input.category || 'General',
           status: args.input.status || 'Draft',
           version: args.input.version || '1.0',
-          ownerId: user.id,
+          owner: user.email,
           organizationId: user.organizationId,
         },
       });
@@ -389,9 +398,12 @@ export const resolvers = {
       const user = requireAuth(ctx);
       return prisma.issue.create({
         data: {
-          ...args.input,
+          title: args.input.title,
+          description: args.input.description || '',
+          issueType: args.input.issueType || 'General',
+          category: args.input.category || null,
           status: 'Open',
-          reporterId: user.id,
+          createdById: user.id,
           organizationId: user.organizationId,
         },
       });
@@ -404,9 +416,9 @@ export const resolvers = {
 
       return prisma.issueComment.create({
         data: {
-          content: args.content,
+          comment: args.content,
           issueId: args.issueId,
-          authorId: user.id,
+          author: user.email,
         },
       });
     },
@@ -415,9 +427,12 @@ export const resolvers = {
       const user = requireAuth(ctx);
       return prisma.complianceFramework.create({
         data: {
-          ...args.input,
-          type: args.input.type || args.input.name,
-          status: 'Active',
+          name: args.input.name,
+          status: 'In_Review',
+          progress: 0,
+          nextAuditDate: args.input.nextAuditDate ? new Date(args.input.nextAuditDate) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+          region: args.input.region || null,
+          notes: args.input.notes || null,
           organizationId: user.organizationId,
         },
       });
@@ -447,8 +462,11 @@ export const resolvers = {
       const user = requireAuth(ctx);
       return prisma.continuousMonitor.create({
         data: {
-          ...args.input,
-          status: 'Active',
+          name: args.input.name,
+          monitorType: args.input.monitorType || 'Custom',
+          configuration: args.input.configuration || {},
+          status: 'Unknown',
+          active: true,
           organizationId: user.organizationId,
         },
       });
@@ -461,7 +479,7 @@ export const resolvers = {
 
       return prisma.continuousMonitor.update({
         where: { id: args.id },
-        data: { status: args.enabled ? 'Active' : 'Paused' },
+        data: { active: args.enabled },
       });
     },
 
@@ -473,16 +491,14 @@ export const resolvers = {
       const result = await prisma.monitorResult.create({
         data: {
           monitorId: args.id,
-          status: 'Completed',
+          status: 'Passing',
           findings: {},
-          score: 100,
-          executedAt: new Date(),
         },
       });
 
       await prisma.continuousMonitor.update({
         where: { id: args.id },
-        data: { lastRunAt: new Date() },
+        data: { lastRun: new Date() },
       });
 
       return result;
@@ -509,18 +525,12 @@ export const resolvers = {
 
   Issue: {
     assignee: async (parent: any) => {
-      if (!parent.assigneeId) return null;
-      return prisma.user.findUnique({ where: { id: parent.assigneeId } });
+      if (!parent.assignedToId) return null;
+      return prisma.user.findUnique({ where: { id: parent.assignedToId } });
     },
     reporter: async (parent: any) => {
-      if (!parent.reporterId) return null;
-      return prisma.user.findUnique({ where: { id: parent.reporterId } });
-    },
-  },
-
-  IssueComment: {
-    author: async (parent: any) => {
-      return prisma.user.findUnique({ where: { id: parent.authorId } });
+      if (!parent.createdById) return null;
+      return prisma.user.findUnique({ where: { id: parent.createdById } });
     },
   },
 
