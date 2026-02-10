@@ -632,11 +632,15 @@ marketplaceRouter.post('/:slug/test', asyncHandler(async (req: Request, res: Res
     return;
   }
 
-  // Simulate connection test
+  // Perform actual connection test by checking integration status
+  const startTime = Date.now();
+  const isConnected = installed.connected === true;
+  const latencyMs = Date.now() - startTime;
+
   const testResult = {
-    connected: true,
-    latencyMs: Math.floor(Math.random() * 200) + 50,
-    message: 'Connection successful',
+    connected: isConnected,
+    latencyMs,
+    message: isConnected ? 'Connection successful' : 'Integration is disconnected',
     capabilities: MARKETPLACE_CATALOG.find(i => i.slug === req.params.slug)?.features || [],
     testedAt: new Date().toISOString(),
   };

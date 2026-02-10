@@ -158,6 +158,16 @@ class JobQueueService extends EventEmitter {
     }
 
     const redisUrl = process.env.REDIS_URL || process.env.REDIS_HOST;
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (!redisUrl && isProduction) {
+      const errorMsg = '[JobQueue] FATAL: REDIS_URL is required in production. ' +
+        'In-memory queues are not suitable for production deployments — ' +
+        'jobs will be lost on restart and cannot scale across instances. ' +
+        'Set REDIS_URL environment variable to a Redis connection string.';
+      logger.error(errorMsg);
+      throw new Error(errorMsg);
+    }
 
     if (redisUrl) {
       try {
@@ -168,11 +178,15 @@ class JobQueueService extends EventEmitter {
         this.redisConnected = true;
         logger.info('[JobQueue] Redis-backed queue initialized');
       } catch (error) {
+        if (isProduction) {
+          logger.error('[JobQueue] FATAL: Redis connection failed in production', error);
+          throw error;
+        }
         logger.warn('[JobQueue] Redis unavailable, falling back to in-memory queue', error);
         this.redisConnected = false;
       }
     } else {
-      logger.info('[JobQueue] No REDIS_URL configured, using in-memory queue (suitable for development)');
+      logger.info('[JobQueue] No REDIS_URL configured, using in-memory queue (development only)');
       this.redisConnected = false;
     }
 
