@@ -106,23 +106,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // SECURE STORAGE HELPERS
 // ============================================================================
 
-// In-memory token store for development. In production, replace with expo-secure-store:
-// import * as SecureStore from 'expo-secure-store';
-const tokenStore: Record<string, string> = {};
+import * as SecureStore from 'expo-secure-store';
 
 async function saveSecure(key: string, value: string): Promise<void> {
-  // Production: await SecureStore.setItemAsync(key, value);
-  tokenStore[key] = value;
+  await SecureStore.setItemAsync(key, value);
 }
 
 async function getSecure(key: string): Promise<string | null> {
-  // Production: return await SecureStore.getItemAsync(key);
-  return tokenStore[key] || null;
+  return await SecureStore.getItemAsync(key);
 }
 
 async function deleteSecure(key: string): Promise<void> {
-  // Production: await SecureStore.deleteItemAsync(key);
-  delete tokenStore[key];
+  await SecureStore.deleteItemAsync(key);
 }
 
 // ============================================================================

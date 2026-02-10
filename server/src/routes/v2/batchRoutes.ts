@@ -64,14 +64,15 @@ function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => P
  *
  * Body: { items: Array<{ name, website?, contactEmail?, category?, ... }> }
  */
-batchRouter.post('/vendors', asyncHandler(async (req: Request, res: Response) => {
+batchRouter.post('/vendors', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { items } = req.body;
   const user = (req as any).user;
   const organizationId = user.organizationId;
 
   const validationError = validateBatchPayload(items, 'vendor');
   if (validationError) {
-    return res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    return;
   }
 
   const result: BatchResult<any> = {
@@ -115,7 +116,8 @@ batchRouter.post('/vendors', asyncHandler(async (req: Request, res: Response) =>
     result.failed = items.length;
     result.errors.push({ index: -1, error: error.message });
     logger.error('[BatchRoutes] Vendor batch creation failed', error);
-    return res.status(400).json(result);
+    res.status(400).json(result);
+    return;
   }
 
   logger.info(`[BatchRoutes] Created ${result.created} vendors for org ${organizationId}`);
@@ -132,14 +134,15 @@ batchRouter.post('/vendors', asyncHandler(async (req: Request, res: Response) =>
  *
  * Body: { items: Array<{ title, description?, likelihood?, impact?, ... }> }
  */
-batchRouter.post('/risks', asyncHandler(async (req: Request, res: Response) => {
+batchRouter.post('/risks', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { items } = req.body;
   const user = (req as any).user;
   const organizationId = user.organizationId;
 
   const validationError = validateBatchPayload(items, 'risk');
   if (validationError) {
-    return res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    return;
   }
 
   const result: BatchResult<any> = {
@@ -164,6 +167,7 @@ batchRouter.post('/risks', asyncHandler(async (req: Request, res: Response) => {
             title: item.title,
             description: item.description || '',
             category: item.category || 'Operational',
+            severity: item.severity || 'Medium',
             likelihood: item.likelihood || 3,
             impact: item.impact || 3,
             riskScore: (item.likelihood || 3) * (item.impact || 3),
@@ -184,7 +188,8 @@ batchRouter.post('/risks', asyncHandler(async (req: Request, res: Response) => {
     result.failed = items.length;
     result.errors.push({ index: -1, error: error.message });
     logger.error('[BatchRoutes] Risk batch creation failed', error);
-    return res.status(400).json(result);
+    res.status(400).json(result);
+    return;
   }
 
   logger.info(`[BatchRoutes] Created ${result.created} risks for org ${organizationId}`);
@@ -201,14 +206,15 @@ batchRouter.post('/risks', asyncHandler(async (req: Request, res: Response) => {
  *
  * Body: { items: Array<{ title, content?, category?, ... }> }
  */
-batchRouter.post('/policies', asyncHandler(async (req: Request, res: Response) => {
+batchRouter.post('/policies', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { items } = req.body;
   const user = (req as any).user;
   const organizationId = user.organizationId;
 
   const validationError = validateBatchPayload(items, 'policy');
   if (validationError) {
-    return res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    return;
   }
 
   const result: BatchResult<any> = {
@@ -235,7 +241,7 @@ batchRouter.post('/policies', asyncHandler(async (req: Request, res: Response) =
             category: item.category || 'General',
             status: item.status || 'Draft',
             version: item.version || '1.0',
-            ownerId: user.id,
+            owner: user.email || null,
             organizationId,
           },
         });
@@ -251,7 +257,8 @@ batchRouter.post('/policies', asyncHandler(async (req: Request, res: Response) =
     result.failed = items.length;
     result.errors.push({ index: -1, error: error.message });
     logger.error('[BatchRoutes] Policy batch creation failed', error);
-    return res.status(400).json(result);
+    res.status(400).json(result);
+    return;
   }
 
   logger.info(`[BatchRoutes] Created ${result.created} policies for org ${organizationId}`);
@@ -268,14 +275,15 @@ batchRouter.post('/policies', asyncHandler(async (req: Request, res: Response) =
  *
  * Body: { items: Array<{ name, type?, description?, region?, ... }> }
  */
-batchRouter.post('/frameworks', asyncHandler(async (req: Request, res: Response) => {
+batchRouter.post('/frameworks', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { items } = req.body;
   const user = (req as any).user;
   const organizationId = user.organizationId;
 
   const validationError = validateBatchPayload(items, 'framework');
   if (validationError) {
-    return res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    return;
   }
 
   const result: BatchResult<any> = {
@@ -298,11 +306,11 @@ batchRouter.post('/frameworks', asyncHandler(async (req: Request, res: Response)
         const framework = await tx.complianceFramework.create({
           data: {
             name: item.name,
-            type: item.type || item.name,
-            description: item.description || '',
-            version: item.version || '1.0',
+            notes: item.description || null,
+            version: item.version || 1,
             region: item.region || 'US',
-            status: item.status || 'Active',
+            status: item.status || 'In_Review',
+            nextAuditDate: item.nextAuditDate ? new Date(item.nextAuditDate) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
             organizationId,
           },
         });
@@ -318,7 +326,8 @@ batchRouter.post('/frameworks', asyncHandler(async (req: Request, res: Response)
     result.failed = items.length;
     result.errors.push({ index: -1, error: error.message });
     logger.error('[BatchRoutes] Framework batch creation failed', error);
-    return res.status(400).json(result);
+    res.status(400).json(result);
+    return;
   }
 
   logger.info(`[BatchRoutes] Created ${result.created} frameworks for org ${organizationId}`);

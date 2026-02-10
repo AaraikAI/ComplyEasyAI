@@ -6,6 +6,7 @@ import { generateToken, generateRefreshToken, verifyRefreshToken } from '../midd
 import emailService from '../services/emailService';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
+import tokenBlacklist from '../services/tokenBlacklistService';
 
 class AuthController {
   async requestMagicLink(req: Request, res: Response): Promise<void> {
@@ -268,6 +269,12 @@ class AuthController {
         throw new AppError('Refresh token is required', 400);
       }
 
+      // Check if the refresh token has been revoked
+      const isRevoked = await tokenBlacklist.isRevoked(refreshToken);
+      if (isRevoked) {
+        throw new AppError('Refresh token has been revoked', 401);
+      }
+
       const userId = verifyRefreshToken(refreshToken);
 
       if (!userId) {
@@ -282,7 +289,10 @@ class AuthController {
         throw new AppError('User not found', 404);
       }
 
-      // Generate new access token
+      // Blacklist the old refresh token (rotation)
+      await tokenBlacklist.revoke(refreshToken, 'token_rotation');
+
+      // Generate new tokens
       const accessToken = generateToken({
         userId: user.id,
         email: user.email,
@@ -290,7 +300,9 @@ class AuthController {
         organizationId: user.organizationId,
       });
 
-      res.json({ accessToken });
+      const newRefreshToken = generateRefreshToken(user.id);
+
+      res.json({ accessToken, refreshToken: newRefreshToken });
     } catch (error) {
       logger.error('Refresh token error', error);
       if (error instanceof AppError) throw error;
@@ -959,15 +971,27 @@ class AuthController {
 
   async logout(req: Request, res: Response): Promise<void> {
     try {
+      const accessToken = req.headers.authorization?.substring(7);
+
+      // Blacklist the access token so it cannot be reused
+      if (accessToken) {
+        await tokenBlacklist.revoke(accessToken, 'logout');
+      }
+
+      // Blacklist the refresh token if provided in the body
+      const { refreshToken } = req.body || {};
+      if (refreshToken) {
+        await tokenBlacklist.revoke(refreshToken, 'logout');
+      }
+
       // Terminate session if session management is enabled
       try {
         const authReq = req as any;
         if (authReq.user) {
           const sessionManagement = await import('../services/sessionManagementService');
           if (sessionManagement.default) {
-            const token = req.headers.authorization?.substring(7);
-            if (token) {
-              const sessionId = require('crypto').createHash('sha256').update(token).digest('hex');
+            if (accessToken) {
+              const sessionId = require('crypto').createHash('sha256').update(accessToken).digest('hex');
               await sessionManagement.default.terminateSession(sessionId, 'logout');
             }
           }
@@ -976,7 +1000,6 @@ class AuthController {
         logger.warn('[Auth] Session termination not available', error);
       }
 
-      // In a more complex setup, you might invalidate the refresh token here
       res.json({ message: 'Logged out successfully' });
     } catch (error) {
       logger.error('Logout error', error);

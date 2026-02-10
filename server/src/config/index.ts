@@ -89,6 +89,9 @@ interface Config {
     clientSecret: string;
     orgId: string;
   };
+  encryption: {
+    key: string;
+  };
 }
 
 const config: Config = {
@@ -175,6 +178,9 @@ const config: Config = {
     clientId: process.env.EU_AI_DB_CLIENT_ID || '',
     clientSecret: process.env.EU_AI_DB_CLIENT_SECRET || '',
     orgId: process.env.EU_AI_DB_ORG_ID || '',
+  },
+  encryption: {
+    key: process.env.ENCRYPTION_KEY || '',
   },
 };
 

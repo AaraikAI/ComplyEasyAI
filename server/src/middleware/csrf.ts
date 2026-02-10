@@ -1,6 +1,10 @@
 /**
  * CSRF (Cross-Site Request Forgery) Protection Middleware
- * Implements double-submit cookie pattern for stateless CSRF protection
+ * Implements double-submit cookie pattern for stateless CSRF protection.
+ *
+ * Token storage:
+ * - Redis (via REDIS_URL) for multi-instance production deployments
+ * - In-memory Map fallback for development/single-instance
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -12,49 +16,186 @@ const CSRF_TOKEN_LENGTH = 32;
 const CSRF_COOKIE_NAME = 'csrf_token';
 const CSRF_HEADER_NAME = 'x-csrf-token';
 const CSRF_TOKEN_EXPIRY = 3600000; // 1 hour in milliseconds
+const CSRF_TOKEN_EXPIRY_SECONDS = 3600; // 1 hour for Redis TTL
 
-// Store active tokens in memory (for production, use Redis or similar)
-const tokenStore = new Map<string, { expires: number; userId?: string }>();
+// ============================================================================
+// TOKEN STORE INTERFACE
+// ============================================================================
 
-/**
- * Generates a cryptographically secure CSRF token
- */
-function generateToken(): string {
-  return crypto.randomBytes(CSRF_TOKEN_LENGTH).toString('hex');
+interface TokenData {
+  expires: number;
+  userId?: string;
 }
 
-/**
- * Cleans up expired tokens from the store
- */
-function cleanupExpiredTokens(): void {
-  const now = Date.now();
-  for (const [token, data] of tokenStore.entries()) {
-    if (data.expires < now) {
-      tokenStore.delete(token);
+interface TokenStore {
+  get(token: string): Promise<TokenData | undefined>;
+  set(token: string, data: TokenData): Promise<void>;
+  delete(token: string): Promise<void>;
+  size(): Promise<number>;
+}
+
+// ============================================================================
+// IN-MEMORY TOKEN STORE (development fallback)
+// ============================================================================
+
+class InMemoryTokenStore implements TokenStore {
+  private store = new Map<string, TokenData>();
+  private cleanupTimer: NodeJS.Timeout;
+
+  constructor() {
+    // Cleanup expired tokens every 15 minutes
+    this.cleanupTimer = setInterval(() => this.cleanup(), 15 * 60 * 1000);
+  }
+
+  async get(token: string): Promise<TokenData | undefined> {
+    return this.store.get(token);
+  }
+
+  async set(token: string, data: TokenData): Promise<void> {
+    this.store.set(token, data);
+  }
+
+  async delete(token: string): Promise<void> {
+    this.store.delete(token);
+  }
+
+  async size(): Promise<number> {
+    return this.store.size;
+  }
+
+  private cleanup(): void {
+    const now = Date.now();
+    for (const [token, data] of this.store.entries()) {
+      if (data.expires < now) {
+        this.store.delete(token);
+      }
     }
   }
 }
 
-// Cleanup expired tokens every 15 minutes
-setInterval(cleanupExpiredTokens, 15 * 60 * 1000);
+// ============================================================================
+// REDIS TOKEN STORE (production - multi-instance scalable)
+// ============================================================================
+
+class RedisTokenStore implements TokenStore {
+  private redisUrl: string;
+  private prefix = 'csrf:';
+
+  constructor(redisUrl: string) {
+    this.redisUrl = redisUrl;
+    logger.info('[CSRF] Using Redis token store for multi-instance scalability');
+  }
+
+  private async getRedisClient() {
+    // Lazy import to avoid requiring ioredis when not using Redis
+    const { default: Redis } = await import('ioredis' as string);
+    return new Redis(this.redisUrl, {
+      maxRetriesPerRequest: 1,
+      lazyConnect: true,
+      connectTimeout: 5000,
+    });
+  }
+
+  async get(token: string): Promise<TokenData | undefined> {
+    let client;
+    try {
+      client = await this.getRedisClient();
+      await client.connect();
+      const data = await client.get(this.prefix + token);
+      await client.quit();
+      return data ? JSON.parse(data) : undefined;
+    } catch (error) {
+      if (client) await client.quit().catch(() => {});
+      logger.warn('[CSRF] Redis get failed, token not found');
+      return undefined;
+    }
+  }
+
+  async set(token: string, data: TokenData): Promise<void> {
+    let client;
+    try {
+      client = await this.getRedisClient();
+      await client.connect();
+      await client.setex(this.prefix + token, CSRF_TOKEN_EXPIRY_SECONDS, JSON.stringify(data));
+      await client.quit();
+    } catch (error) {
+      if (client) await client.quit().catch(() => {});
+      logger.error('[CSRF] Redis set failed', error);
+    }
+  }
+
+  async delete(token: string): Promise<void> {
+    let client;
+    try {
+      client = await this.getRedisClient();
+      await client.connect();
+      await client.del(this.prefix + token);
+      await client.quit();
+    } catch (error) {
+      if (client) await client.quit().catch(() => {});
+      logger.warn('[CSRF] Redis delete failed');
+    }
+  }
+
+  async size(): Promise<number> {
+    let client;
+    try {
+      client = await this.getRedisClient();
+      await client.connect();
+      const keys = await client.keys(this.prefix + '*');
+      await client.quit();
+      return keys.length;
+    } catch (error) {
+      if (client) await client.quit().catch(() => {});
+      return 0;
+    }
+  }
+}
+
+// ============================================================================
+// INITIALIZE TOKEN STORE
+// ============================================================================
+
+function createTokenStore(): TokenStore {
+  const redisUrl = process.env.REDIS_URL;
+  if (redisUrl) {
+    return new RedisTokenStore(redisUrl);
+  }
+  logger.info('[CSRF] Using in-memory token store (not suitable for multi-instance production)');
+  return new InMemoryTokenStore();
+}
+
+const tokenStore: TokenStore = createTokenStore();
+
+// ============================================================================
+// TOKEN GENERATION
+// ============================================================================
+
+function generateToken(): string {
+  return crypto.randomBytes(CSRF_TOKEN_LENGTH).toString('hex');
+}
+
+// ============================================================================
+// CSRF MIDDLEWARE
+// ============================================================================
 
 /**
  * CSRF Token Generation Middleware
  * Generates and sends CSRF token to client
  * GET /api/csrf-token
  */
-export const generateCsrfToken = (req: Request, res: Response): void => {
+export const generateCsrfToken = async (req: Request, res: Response): Promise<void> => {
   const token = generateToken();
   const expires = Date.now() + CSRF_TOKEN_EXPIRY;
 
   // Store token with user association if authenticated
   const userId = (req as any).user?.id;
-  tokenStore.set(token, { expires, userId });
+  await tokenStore.set(token, { expires, userId });
 
   // Set CSRF token as HTTP-only cookie
   res.cookie(CSRF_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: CSRF_TOKEN_EXPIRY,
   });
@@ -69,17 +210,8 @@ export const generateCsrfToken = (req: Request, res: Response): void => {
 /**
  * CSRF Protection Middleware
  * Validates CSRF token on state-changing requests (POST, PUT, PATCH, DELETE)
- *
- * Usage:
- * ```typescript
- * import { csrfProtection } from './middleware/csrf';
- *
- * router.post('/api/vendors', authenticate, csrfProtection, async (req, res) => {
- *   // Handler code
- * });
- * ```
  */
-export const csrfProtection = (req: Request, res: Response, next: NextFunction): void => {
+export const csrfProtection = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   // Skip CSRF for safe methods (GET, HEAD, OPTIONS)
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
@@ -117,7 +249,7 @@ export const csrfProtection = (req: Request, res: Response, next: NextFunction):
   }
 
   // Check if token exists in store and hasn't expired
-  const tokenData = tokenStore.get(headerToken);
+  const tokenData = await tokenStore.get(headerToken);
   if (!tokenData) {
     logger.warn(`CSRF validation failed: Token not found in store - Path: ${req.path}, IP: ${req.ip}`);
     res.status(403).json({
@@ -129,7 +261,7 @@ export const csrfProtection = (req: Request, res: Response, next: NextFunction):
 
   // Check token expiry
   if (tokenData.expires < Date.now()) {
-    tokenStore.delete(headerToken);
+    await tokenStore.delete(headerToken);
     logger.warn(`CSRF validation failed: Token expired - Path: ${req.path}, IP: ${req.ip}`);
     res.status(403).json({
       error: 'CSRF token expired',
@@ -158,17 +290,17 @@ export const csrfProtection = (req: Request, res: Response, next: NextFunction):
  * Optional: Rotate CSRF token after successful use
  * Call this in critical operations for extra security
  */
-export const rotateCsrfToken = (req: Request, res: Response): string => {
+export const rotateCsrfToken = async (req: Request, res: Response): Promise<string> => {
   const oldToken = req.cookies?.[CSRF_COOKIE_NAME];
   if (oldToken) {
-    tokenStore.delete(oldToken);
+    await tokenStore.delete(oldToken);
   }
 
   const newToken = generateToken();
   const expires = Date.now() + CSRF_TOKEN_EXPIRY;
   const userId = (req as any).user?.id;
 
-  tokenStore.set(newToken, { expires, userId });
+  await tokenStore.set(newToken, { expires, userId });
 
   res.cookie(CSRF_COOKIE_NAME, newToken, {
     httpOnly: true,
@@ -183,8 +315,8 @@ export const rotateCsrfToken = (req: Request, res: Response): string => {
 /**
  * Get CSRF token store size (for monitoring/debugging)
  */
-export function getCsrfTokenStoreSize(): number {
-  return tokenStore.size;
+export async function getCsrfTokenStoreSize(): Promise<number> {
+  return tokenStore.size();
 }
 
 export default {

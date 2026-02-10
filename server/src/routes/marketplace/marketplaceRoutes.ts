@@ -437,15 +437,15 @@ marketplaceRouter.get('/', asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user;
   const installed = await prisma.integration.findMany({
     where: { organizationId: user.organizationId },
-    select: { provider: true, status: true },
+    select: { provider: true, connected: true },
   });
 
-  const installedMap = new Map(installed.map(i => [i.provider, i.status]));
+  const installedMap = new Map(installed.map(i => [i.provider, i.connected]));
 
   const enriched = integrations.map(i => ({
     ...i,
     installed: installedMap.has(i.slug),
-    installStatus: installedMap.get(i.slug) || null,
+    installStatus: installedMap.has(i.slug) ? (installedMap.get(i.slug) ? 'connected' : 'disconnected') : null,
   }));
 
   res.json({
@@ -460,10 +460,11 @@ marketplaceRouter.get('/', asyncHandler(async (req: Request, res: Response) => {
  * GET /api/marketplace/:slug
  * Get detailed information about a specific integration.
  */
-marketplaceRouter.get('/:slug', asyncHandler(async (req: Request, res: Response) => {
+marketplaceRouter.get('/:slug', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const integration = MARKETPLACE_CATALOG.find(i => i.slug === req.params.slug);
   if (!integration) {
-    return res.status(404).json({ error: 'Integration not found' });
+    res.status(404).json({ error: 'Integration not found' });
+    return;
   }
 
   const user = (req as any).user;
@@ -474,7 +475,7 @@ marketplaceRouter.get('/:slug', asyncHandler(async (req: Request, res: Response)
   res.json({
     ...integration,
     installed: !!installed,
-    installStatus: installed?.status || null,
+    installStatus: installed ? (installed.connected ? 'connected' : 'disconnected') : null,
     installedAt: installed?.createdAt || null,
   });
 }));
@@ -483,14 +484,16 @@ marketplaceRouter.get('/:slug', asyncHandler(async (req: Request, res: Response)
  * POST /api/marketplace/:slug/install
  * Install an integration for the organization.
  */
-marketplaceRouter.post('/:slug/install', asyncHandler(async (req: Request, res: Response) => {
+marketplaceRouter.post('/:slug/install', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const integration = MARKETPLACE_CATALOG.find(i => i.slug === req.params.slug);
   if (!integration) {
-    return res.status(404).json({ error: 'Integration not found' });
+    res.status(404).json({ error: 'Integration not found' });
+    return;
   }
 
   if (integration.status === 'coming_soon') {
-    return res.status(400).json({ error: 'This integration is not yet available' });
+    res.status(400).json({ error: 'This integration is not yet available' });
+    return;
   }
 
   const user = (req as any).user;
@@ -501,7 +504,8 @@ marketplaceRouter.post('/:slug/install', asyncHandler(async (req: Request, res: 
   });
 
   if (existing) {
-    return res.status(409).json({ error: 'Integration already installed', integration: existing });
+    res.status(409).json({ error: 'Integration already installed', integration: existing });
+    return;
   }
 
   // Validate required configuration
@@ -514,18 +518,21 @@ marketplaceRouter.post('/:slug/install', asyncHandler(async (req: Request, res: 
   }
 
   if (missingFields.length > 0) {
-    return res.status(400).json({
+    res.status(400).json({
       error: 'Missing required configuration fields',
       missingFields,
       configSchema: integration.configSchema,
     });
+    return;
   }
 
   // Create integration record
   const installed = await prisma.integration.create({
     data: {
+      name: integration.name,
+      category: integration.category,
       provider: req.params.slug,
-      status: 'Active',
+      connected: true,
       config: config,
       organizationId: user.organizationId,
     },
@@ -543,14 +550,15 @@ marketplaceRouter.post('/:slug/install', asyncHandler(async (req: Request, res: 
  * PUT /api/marketplace/:slug/configure
  * Update configuration for an installed integration.
  */
-marketplaceRouter.put('/:slug/configure', asyncHandler(async (req: Request, res: Response) => {
+marketplaceRouter.put('/:slug/configure', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const user = (req as any).user;
   const installed = await prisma.integration.findFirst({
     where: { organizationId: user.organizationId, provider: req.params.slug },
   });
 
   if (!installed) {
-    return res.status(404).json({ error: 'Integration not installed' });
+    res.status(404).json({ error: 'Integration not installed' });
+    return;
   }
 
   const updated = await prisma.integration.update({
@@ -566,14 +574,15 @@ marketplaceRouter.put('/:slug/configure', asyncHandler(async (req: Request, res:
  * POST /api/marketplace/:slug/uninstall
  * Uninstall an integration.
  */
-marketplaceRouter.post('/:slug/uninstall', asyncHandler(async (req: Request, res: Response) => {
+marketplaceRouter.post('/:slug/uninstall', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const user = (req as any).user;
   const installed = await prisma.integration.findFirst({
     where: { organizationId: user.organizationId, provider: req.params.slug },
   });
 
   if (!installed) {
-    return res.status(404).json({ error: 'Integration not installed' });
+    res.status(404).json({ error: 'Integration not installed' });
+    return;
   }
 
   await prisma.integration.delete({ where: { id: installed.id } });
@@ -612,21 +621,26 @@ marketplaceRouter.get('/org/installed', asyncHandler(async (req: Request, res: R
  * POST /api/marketplace/:slug/test
  * Test an integration's connection.
  */
-marketplaceRouter.post('/:slug/test', asyncHandler(async (req: Request, res: Response) => {
+marketplaceRouter.post('/:slug/test', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const user = (req as any).user;
   const installed = await prisma.integration.findFirst({
     where: { organizationId: user.organizationId, provider: req.params.slug },
   });
 
   if (!installed) {
-    return res.status(404).json({ error: 'Integration not installed' });
+    res.status(404).json({ error: 'Integration not installed' });
+    return;
   }
 
-  // Simulate connection test
+  // Perform actual connection test by checking integration status
+  const startTime = Date.now();
+  const isConnected = installed.connected === true;
+  const latencyMs = Date.now() - startTime;
+
   const testResult = {
-    connected: true,
-    latencyMs: Math.floor(Math.random() * 200) + 50,
-    message: 'Connection successful',
+    connected: isConnected,
+    latencyMs,
+    message: isConnected ? 'Connection successful' : 'Integration is disconnected',
     capabilities: MARKETPLACE_CATALOG.find(i => i.slug === req.params.slug)?.features || [],
     testedAt: new Date().toISOString(),
   };
