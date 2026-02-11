@@ -27,9 +27,11 @@ const mockStripeSubscriptions = {
 };
 const mockStripeProducts = {
   create: jest.fn() as jest.Mock<any>,
+  search: jest.fn() as jest.Mock<any>,
 };
 const mockStripePrices = {
   create: jest.fn() as jest.Mock<any>,
+  search: jest.fn() as jest.Mock<any>,
 };
 const mockStripeSubscriptionItems = {
   create: jest.fn() as jest.Mock<any>,
@@ -284,7 +286,9 @@ describe('FeatureService', () => {
       prismaMock.featureSubscription.findFirst.mockResolvedValue(null);
 
       mockStripeSubscriptions.retrieve.mockResolvedValue({ id: 'sub_123' });
+      mockStripeProducts.search.mockResolvedValue({ data: [] });
       mockStripeProducts.create.mockResolvedValue({ id: 'prod_123' });
+      mockStripePrices.search.mockResolvedValue({ data: [] });
       mockStripePrices.create.mockResolvedValue({ id: 'price_123' });
       mockStripeSubscriptionItems.create.mockResolvedValue({ id: 'si_123' });
 
