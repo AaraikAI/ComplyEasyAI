@@ -1,48 +1,57 @@
-# ============================================
-# ComplyEasy AI - Docker Compose
-# Development Environment
-# ============================================
-
-version: '3.9'
+# =============================================================================
+# ComplyEasyAI — Docker Compose (Development + Production)
+# =============================================================================
+# Usage:
+#   Development: docker compose up -d
+#   Production:  docker compose --profile production up -d
+#   All tools:   docker compose --profile tools up -d
+#
+# Required: Copy .env.example to .env and configure values before starting.
+# =============================================================================
 
 services:
-  # ============================================
-  # PostgreSQL Database
-  # ============================================
+  # =========================================================================
+  # PostgreSQL Database (shared between dev and prod)
+  # =========================================================================
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: complyeasy-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-complyeasy}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdev123}
-      POSTGRES_DB: ${POSTGRES_DB:-complyeasy_db}
+      POSTGRES_DB: ${POSTGRES_DB:-complyeasy}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./server/prisma/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-complyeasy} -d ${POSTGRES_DB:-complyeasy_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-complyeasy} -d ${POSTGRES_DB:-complyeasy}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - complyeasy-network
 
-  # ============================================
-  # Redis (Cache & Sessions)
-  # ============================================
+  # =========================================================================
+  # Redis (cache, job queue, sessions)
+  # =========================================================================
   redis:
     image: redis:7-alpine
     container_name: complyeasy-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-localredis123}
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-localredis123}
     volumes:
       - redis_data:/data
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-localredis123}", "ping"]
       interval: 10s
@@ -51,26 +60,68 @@ services:
     networks:
       - complyeasy-network
 
-  # ============================================
-  # Backend API Server
-  # ============================================
-  api:
+  # =========================================================================
+  # Database Migrations (one-shot init container)
+  # =========================================================================
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-production
+    container_name: complyeasy-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:-localdev123}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
+    command: ["npx", "prisma", "migrate", "deploy"]
+    restart: "no"
+    networks:
+      - complyeasy-network
+
+  # =========================================================================
+  # OPA (Open Policy Agent) — compliance policy engine
+  # =========================================================================
+  opa:
+    build:
+      context: ./server/docker/opa
+      dockerfile: Dockerfile
+    container_name: complyeasy-opa
+    restart: unless-stopped
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./server/docker/opa/policies:/policies
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8181/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - complyeasy-network
+
+  # =========================================================================
+  # DEVELOPMENT: Backend API (hot-reload)
+  # =========================================================================
+  api-dev:
     build:
       context: .
       dockerfile: Dockerfile
       target: development
-    container_name: complyeasy-api
+    container_name: complyeasy-api-dev
     restart: unless-stopped
     working_dir: /app/server
     command: npm run dev
+    profiles: ["default"]
     environment:
       NODE_ENV: development
-      PORT: 5000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:-localdev123}@postgres:5432/${POSTGRES_DB:-complyeasy_db}?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD:-localredis123}@redis:6379
-      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:-localdev123}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-localredis123}@redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-prod-min-32chars}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-32chars}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-dev-32-char-encryption-key!!!!!}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
@@ -79,40 +130,41 @@ services:
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
       SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-noreply@localhost}
       CLIENT_URL: http://localhost:3000
-      API_URL: http://localhost:5000
+      API_URL: http://localhost:3001
     volumes:
       - ./server/src:/app/server/src:ro
       - ./server/prisma:/app/server/prisma:ro
       - /app/server/node_modules
     ports:
-      - "5000:5000"
+      - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     networks:
       - complyeasy-network
 
-  # ============================================
-  # Frontend (Vite Dev Server)
-  # ============================================
-  frontend:
+  # =========================================================================
+  # DEVELOPMENT: Frontend (Vite dev server)
+  # =========================================================================
+  frontend-dev:
     build:
       context: .
       dockerfile: Dockerfile
       target: development
-    container_name: complyeasy-frontend
+    container_name: complyeasy-frontend-dev
     restart: unless-stopped
     working_dir: /app
     command: npm run dev -- --host 0.0.0.0
+    profiles: ["default"]
     environment:
-      VITE_API_URL: http://localhost:5000/api
+      VITE_API_URL: http://localhost:3001/api
     volumes:
       - ./App.tsx:/app/App.tsx:ro
       - ./index.tsx:/app/index.tsx:ro
@@ -122,25 +174,108 @@ services:
       - ./components:/app/components:ro
       - ./services:/app/services:ro
       - ./contexts:/app/contexts:ro
+      - ./hooks:/app/hooks:ro
+      - ./constants:/app/constants:ro
       - /app/node_modules
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      - api-dev
     networks:
       - complyeasy-network
 
-  # ============================================
-  # Database Admin (pgAdmin)
-  # ============================================
+  # =========================================================================
+  # PRODUCTION: Backend API
+  # =========================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-production
+    container_name: complyeasy-api
+    restart: unless-stopped
+    profiles: ["production"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-localredis123}@redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Set ENCRYPTION_KEY in .env}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://complyeasyai.com}
+      CLIENT_URL: ${CLIENT_URL:-https://complyeasyai.com}
+      API_URL: ${API_URL:-https://complyeasyai.com/api}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-noreply@complyeasyai.com}
+      SENDGRID_FROM_NAME: ${SENDGRID_FROM_NAME:-ComplyEasy AI}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      ENABLE_REAL_MONITORING: ${ENABLE_REAL_MONITORING:-false}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "3001:3001"
+    networks:
+      - complyeasy-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # =========================================================================
+  # PRODUCTION: Frontend (Nginx + SPA + API reverse proxy)
+  # =========================================================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend-production
+    container_name: complyeasy-web
+    restart: unless-stopped
+    profiles: ["production"]
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-80}:80"
+    networks:
+      - complyeasy-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # =========================================================================
+  # TOOLS: pgAdmin (optional)
+  # =========================================================================
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: complyeasy-pgadmin
     restart: unless-stopped
+    profiles: ["tools"]
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@complyeasy.local}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_SERVER_MODE: "False"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     ports:
@@ -149,12 +284,10 @@ services:
       - postgres
     networks:
       - complyeasy-network
-    profiles:
-      - tools
 
-  # ============================================
-  # Prisma Studio
-  # ============================================
+  # =========================================================================
+  # TOOLS: Prisma Studio (optional)
+  # =========================================================================
   prisma-studio:
     build:
       context: .
@@ -163,8 +296,9 @@ services:
     container_name: complyeasy-prisma-studio
     working_dir: /app/server
     command: npx prisma studio
+    profiles: ["tools"]
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:-localdev123}@postgres:5432/${POSTGRES_DB:-complyeasy_db}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:-localdev123}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
     ports:
       - "5555:5555"
     depends_on:
@@ -172,12 +306,7 @@ services:
         condition: service_healthy
     networks:
       - complyeasy-network
-    profiles:
-      - tools
 
-# ============================================
-# Volumes
-# ============================================
 volumes:
   postgres_data:
     driver: local
@@ -186,9 +315,6 @@ volumes:
   pgadmin_data:
     driver: local
 
-# ============================================
-# Networks
-# ============================================
 networks:
   complyeasy-network:
     driver: bridge
