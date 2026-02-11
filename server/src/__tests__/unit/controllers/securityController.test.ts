@@ -82,6 +82,7 @@ const mockLoadPolicyBundle = jest.fn();
 const mockEvaluatePolicies = jest.fn();
 const mockGenerateRules = jest.fn();
 const mockExportOPARego = jest.fn();
+const mockGenerateComplianceReport = jest.fn();
 
 jest.mock('../../../services/advanced/complianceAsCodeService', () => ({
   __esModule: true,
@@ -90,6 +91,7 @@ jest.mock('../../../services/advanced/complianceAsCodeService', () => ({
     evaluatePolicies: mockEvaluatePolicies,
     generateRulesFromFramework: mockGenerateRules,
     exportToOPARego: mockExportOPARego,
+    generateComplianceReport: mockGenerateComplianceReport,
   },
 }));
 
@@ -330,6 +332,11 @@ describe('SecurityController', () => {
         mockRequest.params = { policyId: 'policy-123' };
         mockRequest.body = { name: 'Updated Policy' };
 
+        (mockGetPolicies as any).mockResolvedValue([
+          { id: 'policy-123', name: 'Original Policy', enabled: true },
+        ]);
+        prismaMock.auditLog.create.mockResolvedValue({} as any);
+
         await securityController.updateZeroTrustPolicy(
           mockRequest as Request,
           mockResponse as Response,
@@ -337,7 +344,7 @@ describe('SecurityController', () => {
         );
 
         expect(mockResponse.json).toHaveBeenCalledWith(
-          expect.objectContaining({ success: true })
+          expect.objectContaining({ id: 'policy-123', name: 'Updated Policy' })
         );
       });
     });
@@ -346,13 +353,20 @@ describe('SecurityController', () => {
       it('should delete policy', async () => {
         mockRequest.params = { policyId: 'policy-123' };
 
+        (mockGetPolicies as any).mockResolvedValue([
+          { id: 'policy-123', name: 'Test Policy' },
+        ]);
+        prismaMock.auditLog.create.mockResolvedValue({} as any);
+
         await securityController.deleteZeroTrustPolicy(
           mockRequest as Request,
           mockResponse as Response,
           mockNext
         );
 
-        expect(mockResponse.json).toHaveBeenCalledWith({ success: true });
+        expect(mockResponse.json).toHaveBeenCalledWith(
+          expect.objectContaining({ success: true })
+        );
       });
     });
 
@@ -645,6 +659,16 @@ describe('SecurityController', () => {
       it('should return specific proof', async () => {
         mockRequest.params = { proofId: 'proof-123' };
 
+        prismaMock.auditLog.findFirst.mockResolvedValue({
+          id: 'log-1',
+          hash: 'proof-123',
+          action: 'ZK Proof Generated: compliance',
+          details: JSON.stringify({ type: 'compliance', verified: true }),
+          timestamp: new Date(),
+          organizationId: 'org-123',
+          userId: 'user-123',
+        } as any);
+
         await securityController.getZKProof(
           mockRequest as Request,
           mockResponse as Response,
@@ -714,6 +738,12 @@ describe('SecurityController', () => {
 
     describe('getComplianceReports()', () => {
       it('should return all compliance reports', async () => {
+        (mockGenerateComplianceReport as any).mockResolvedValue({
+          framework: 'SOC2',
+          score: 85,
+          controls: [],
+        });
+
         await securityController.getComplianceReports(
           mockRequest as Request,
           mockResponse as Response,
@@ -726,6 +756,18 @@ describe('SecurityController', () => {
 
     describe('getCICDIntegrations()', () => {
       it('should return CI/CD integrations', async () => {
+        prismaMock.auditLog.findMany.mockResolvedValue([
+          {
+            id: 'log-1',
+            action: 'CI/CD Integration Created',
+            details: JSON.stringify({ provider: 'github', webhookUrl: 'https://example.com' }),
+            hash: 'int-1',
+            timestamp: new Date(),
+            organizationId: 'org-123',
+            userId: 'user-123',
+          } as any,
+        ]);
+
         await securityController.getCICDIntegrations(
           mockRequest as Request,
           mockResponse as Response,
