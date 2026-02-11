@@ -1,135 +1,147 @@
-# ============================================
-# ComplyEasy AI - Multi-stage Docker Build
-# ============================================
+# =============================================================================
+# ComplyEasyAI — Multi-stage Production Dockerfile
+# =============================================================================
+# Targets:
+#   backend-production  — Node.js API server (default)
+#   frontend-production — Nginx serving static frontend + API reverse proxy
+#   development         — Full dev environment with hot-reload
+#
+# Build examples:
+#   docker build --target backend-production  -t complyeasy-api .
+#   docker build --target frontend-production -t complyeasy-web .
+#   docker build --target development         -t complyeasy-dev .
+# =============================================================================
 
-# ============================================
-# Stage 1: Base
-# ============================================
+# ---------------------------------------------------------------------------
+# Stage 1: Base — shared Node.js layer
+# ---------------------------------------------------------------------------
 FROM node:20-alpine AS base
 WORKDIR /app
-
-# Install dependencies for native modules
 RUN apk add --no-cache libc6-compat openssl
 
-# ============================================
-# Stage 2: Dependencies
-# ============================================
-FROM base AS deps
-
-# Copy package files
-COPY package*.json ./
-COPY server/package*.json ./server/
-
-# Install root dependencies (for frontend build)
-RUN npm ci --only=production
-
-# Install server dependencies
-WORKDIR /app/server
+# ---------------------------------------------------------------------------
+# Stage 2: Install frontend dependencies
+# ---------------------------------------------------------------------------
+FROM base AS frontend-deps
+COPY package.json package-lock.json ./
 RUN npm ci
 
-# ============================================
-# Stage 3: Build Frontend
-# ============================================
-FROM base AS frontend-builder
-
-COPY --from=deps /app/node_modules ./node_modules
-COPY package*.json ./
-COPY tsconfig.json ./
-COPY vite.config.ts ./
-COPY index.html ./
-COPY App.tsx ./
-COPY index.tsx ./
-COPY types.ts ./
-COPY constants.ts ./
-COPY components ./components
-COPY services ./services
-COPY contexts ./contexts
-
-# Build frontend
-RUN npm run build
-
-# ============================================
-# Stage 4: Build Backend
-# ============================================
-FROM base AS backend-builder
-
-COPY --from=deps /app/server/node_modules ./server/node_modules
-COPY server/package*.json ./server/
-COPY server/tsconfig.json ./server/
-COPY server/prisma ./server/prisma
-COPY server/src ./server/src
-
+# ---------------------------------------------------------------------------
+# Stage 3: Install backend dependencies
+# ---------------------------------------------------------------------------
+FROM base AS backend-deps
 WORKDIR /app/server
-
-# Generate Prisma client
+COPY server/package.json server/package-lock.json ./
+RUN npm ci
+COPY server/prisma ./prisma
 RUN npx prisma generate
 
-# Build TypeScript
+# ---------------------------------------------------------------------------
+# Stage 4: Build frontend (Vite → static assets)
+# ---------------------------------------------------------------------------
+FROM base AS frontend-build
+COPY --from=frontend-deps /app/node_modules ./node_modules
+COPY package.json package-lock.json tsconfig.json vite.config.ts index.html ./
+COPY App.tsx App.test.tsx index.tsx types.ts constants.ts setupTests.ts ./
+COPY components/ ./components/
+COPY contexts/ ./contexts/
+COPY constants/ ./constants/
+COPY services/ ./services/
+COPY hooks/ ./hooks/
 RUN npm run build
 
-# ============================================
-# Stage 5: Production
-# ============================================
-FROM base AS production
+# ---------------------------------------------------------------------------
+# Stage 5: Build backend (TypeScript → JavaScript)
+# ---------------------------------------------------------------------------
+FROM base AS backend-build
+WORKDIR /app/server
+COPY --from=backend-deps /app/server/node_modules ./node_modules
+COPY server/ ./
+RUN npm run build
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 complyeasy
+# ---------------------------------------------------------------------------
+# Stage 6 (default): Production backend image
+# ---------------------------------------------------------------------------
+FROM base AS backend-production
 
-# Set environment
-ENV NODE_ENV=production
-ENV PORT=5000
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser  --system --uid 1001 complyeasy
 
-WORKDIR /app
+WORKDIR /app/server
 
-# Copy server production files
-COPY --from=backend-builder --chown=complyeasy:nodejs /app/server/dist ./server/dist
-COPY --from=backend-builder --chown=complyeasy:nodejs /app/server/node_modules ./server/node_modules
-COPY --from=backend-builder --chown=complyeasy:nodejs /app/server/prisma ./server/prisma
-COPY --from=backend-builder --chown=complyeasy:nodejs /app/server/package.json ./server/package.json
+# Install only production dependencies
+COPY server/package.json server/package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts
+COPY server/prisma ./prisma
+RUN npx prisma generate
 
-# Copy frontend build
-COPY --from=frontend-builder --chown=complyeasy:nodejs /app/dist ./dist
+# Copy compiled backend code
+COPY --from=backend-build /app/server/dist ./dist
 
-# Switch to non-root user
+# Copy runtime data files (framework templates, control definitions)
+COPY --from=backend-build /app/server/src/data ./dist/data
+
+# Copy frontend build so Express can serve it (optional — when NOT using Nginx)
+COPY --from=frontend-build /app/dist ./public
+
 USER complyeasy
 
-# Expose port
-EXPOSE 5000
+ENV NODE_ENV=production
+ENV PORT=3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
+EXPOSE 3001
 
-# Start server
-WORKDIR /app/server
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:3001/health || exit 1
+
 CMD ["node", "dist/index.js"]
 
-# ============================================
-# Stage 6: Development
-# ============================================
+# ---------------------------------------------------------------------------
+# Stage 7: Production frontend via Nginx
+# ---------------------------------------------------------------------------
+FROM nginx:1.27-alpine AS frontend-production
+
+RUN rm /etc/nginx/conf.d/default.conf
+
+COPY nginx/nginx.conf  /etc/nginx/nginx.conf
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+
+COPY --from=frontend-build /app/dist /usr/share/nginx/html
+
+# Allow non-root Nginx to write to cache/log dirs
+RUN chown -R nginx:nginx /usr/share/nginx/html \
+ && chown -R nginx:nginx /var/cache/nginx \
+ && chown -R nginx:nginx /var/log/nginx \
+ && touch /var/run/nginx.pid \
+ && chown -R nginx:nginx /var/run/nginx.pid
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD wget -qO- http://localhost:80/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
+
+# ---------------------------------------------------------------------------
+# Stage 8: Development (hot-reload for both frontend & backend)
+# ---------------------------------------------------------------------------
 FROM base AS development
 
-# Install all dependencies (including devDependencies)
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm install
 
-COPY server/package*.json ./server/
+COPY server/package.json server/package-lock.json ./server/
 WORKDIR /app/server
 RUN npm install
 
-# Copy source code
+COPY server/prisma ./prisma
+RUN npx prisma generate
+
 WORKDIR /app
 COPY . .
 
-# Generate Prisma client
-WORKDIR /app/server
-RUN npx prisma generate
-
 ENV NODE_ENV=development
 
-# Expose ports for both frontend dev server and backend
-EXPOSE 3000 5000
+EXPOSE 3000 3001
 
-# Default command (can be overridden)
 CMD ["npm", "run", "dev"]
