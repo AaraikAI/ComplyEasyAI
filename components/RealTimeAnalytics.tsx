@@ -233,64 +233,64 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       setMetrics(calculatedMetrics);
     } catch (error) {
       console.error('Error loading metrics:', error);
-      // Fallback to mock data if API fails
-      const mockMetrics: Metric[] = [
+      // Show empty/error state instead of fake data
+      const errorMetrics: Metric[] = [
         {
           id: 'compliance-score',
           label: 'Compliance Score',
-          value: '94.2%',
-          change: 2.3,
-          trend: 'up',
+          value: '--',
+          change: 0,
+          trend: 'neutral',
           icon: <Shield className="w-5 h-5" />,
-          color: 'text-green-600',
+          color: 'text-gray-400',
         },
         {
           id: 'active-users',
           label: 'Active Users',
-          value: '1,247',
-          change: 5.1,
-          trend: 'up',
+          value: '--',
+          change: 0,
+          trend: 'neutral',
           icon: <Users className="w-5 h-5" />,
-          color: 'text-blue-600',
+          color: 'text-gray-400',
         },
         {
           id: 'risks-detected',
           label: 'Risks Detected',
-          value: '23',
-          change: -12.5,
-          trend: 'down',
+          value: '--',
+          change: 0,
+          trend: 'neutral',
           icon: <AlertTriangle className="w-5 h-5" />,
-          color: 'text-red-600',
+          color: 'text-gray-400',
         },
         {
           id: 'controls-passed',
           label: 'Controls Passed',
-          value: '892',
-          change: 3.2,
-          trend: 'up',
+          value: '--',
+          change: 0,
+          trend: 'neutral',
           icon: <CheckCircle className="w-5 h-5" />,
-          color: 'text-green-600',
+          color: 'text-gray-400',
         },
         {
           id: 'avg-response-time',
           label: 'Avg Response Time',
-          value: '142ms',
-          change: -8.7,
-          trend: 'down',
+          value: '--',
+          change: 0,
+          trend: 'neutral',
           icon: <Clock className="w-5 h-5" />,
-          color: 'text-blue-600',
+          color: 'text-gray-400',
         },
         {
           id: 'frameworks-active',
           label: 'Active Frameworks',
-          value: '12',
+          value: '--',
           change: 0,
           trend: 'neutral',
           icon: <BarChart3 className="w-5 h-5" />,
-          color: 'text-purple-600',
+          color: 'text-gray-400',
         },
       ];
-      setMetrics(mockMetrics);
+      setMetrics(errorMetrics);
     } finally {
       setLoading(false);
     }
