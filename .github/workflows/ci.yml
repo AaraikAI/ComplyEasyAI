@@ -10,6 +10,7 @@ env:
   NODE_VERSION: '20'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  AWS_REGION: us-east-1
 
 jobs:
   # ============================================
@@ -19,11 +20,8 @@ jobs:
     name: Lint & Type Check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -35,49 +33,43 @@ jobs:
         run: npm ci
 
       - name: Install server dependencies
-        working-directory: ./server
         run: npm ci
+        working-directory: ./server
 
       - name: Generate Prisma Client
-        working-directory: ./server
         run: npx prisma generate
-
-      - name: TypeScript Type Check (Server)
         working-directory: ./server
-        run: npx tsc --noEmit
 
-      - name: TypeScript Type Check (Frontend)
+      - name: TypeScript — Server
+        run: npx tsc --noEmit
+        working-directory: ./server
+
+      - name: TypeScript — Frontend
         run: npx tsc --noEmit
 
   # ============================================
-  # UNIT TESTS
+  # BACKEND UNIT TESTS
   # ============================================
-  test-unit:
-    name: Unit Tests
+  test-backend:
+    name: Backend Tests
     runs-on: ubuntu-latest
     needs: lint
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
 
-      - name: Install dependencies
+      - run: npm ci
         working-directory: ./server
-        run: npm ci
-
-      - name: Generate Prisma Client
+      - run: npx prisma generate
         working-directory: ./server
-        run: npx prisma generate
 
       - name: Run unit tests
+        run: npm run test:unit -- --coverage --ci --forceExit
         working-directory: ./server
-        run: npm run test:unit -- --coverage --ci
         env:
           NODE_ENV: test
           JWT_SECRET: test-jwt-secret-key-for-testing-purposes-only-min-32-chars
@@ -86,15 +78,14 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v4
         with:
           directory: ./server/coverage
-          flags: unittests
+          flags: backend
           fail_ci_if_error: false
 
   # ============================================
-  # INTEGRATION TESTS
+  # BACKEND INTEGRATION TESTS
   # ============================================
   test-integration:
     name: Integration Tests
@@ -102,155 +93,48 @@ jobs:
     needs: lint
     services:
       postgres:
-        image: postgres:15
+        image: postgres:16-alpine
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
           POSTGRES_DB: test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
 
-      - name: Install dependencies
+      - run: npm ci
         working-directory: ./server
-        run: npm ci
-
-      - name: Generate Prisma Client
+      - run: npx prisma generate
         working-directory: ./server
-        run: npx prisma generate
-
-      - name: Run database migrations
+      - run: npx prisma migrate deploy
         working-directory: ./server
-        run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
 
       - name: Run integration tests
+        run: npm run test:integration -- --ci --forceExit
         working-directory: ./server
-        run: npm run test:integration -- --ci
         env:
           NODE_ENV: test
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
           JWT_SECRET: test-jwt-secret-key-for-testing-purposes-only-min-32-chars
           JWT_EXPIRES_IN: 1h
           JWT_REFRESH_SECRET: test-refresh-secret-key-for-testing-purposes-only-min-32-chars
           JWT_REFRESH_EXPIRES_IN: 7d
           ENCRYPTION_KEY: test-encryption-key-32-chars-minimum-length-required!!!
           NODE_OPTIONS: --max-old-space-size=4096
-
-  # ============================================
-  # PERFORMANCE TESTS
-  # ============================================
-  test-performance:
-    name: Performance Tests
-    runs-on: ubuntu-latest
-    needs: [test-unit, test-integration]
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: server/package-lock.json
-
-      - name: Install dependencies
-        working-directory: ./server
-        run: npm ci
-
-      - name: Generate Prisma Client
-        working-directory: ./server
-        run: npx prisma generate
-
-      - name: Run database migrations
-        working-directory: ./server
-        run: npx prisma migrate deploy
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-
-      - name: Start server in background
-        working-directory: ./server
-        run: |
-          npm run build
-          npm start &
-          sleep 10
-        env:
-          NODE_ENV: test
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-          JWT_SECRET: test-jwt-secret-key-for-testing-purposes-only-min-32-chars
-          JWT_REFRESH_SECRET: test-refresh-secret-key-for-testing-purposes-only-min-32-chars
-          ENCRYPTION_KEY: test-encryption-key-32-chars-minimum-length-required!!!
-          PORT: 3001
-
-      - name: Run performance tests
-        working-directory: ./server
-        run: npm run test:performance -- --ci
-        env:
-          NODE_ENV: test
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-          API_URL: http://localhost:3001
-          NODE_OPTIONS: --max-old-space-size=4096
-
-      - name: Upload performance test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: performance-results
-          path: server/performance-results.json
-          retention-days: 30
-
-      - name: Check performance thresholds
-        working-directory: ./server
-        run: |
-          if [ -f performance-results.json ]; then
-            node -e "
-              const results = require('./performance-results.json');
-              const failed = results.filter(r => 
-                r.averageResponseTime > 1000 || 
-                r.errorRate > 5 || 
-                r.p95 > 2000
-              );
-              if (failed.length > 0) {
-                console.error('❌ Performance thresholds exceeded:');
-                failed.forEach(r => console.error(JSON.stringify(r, null, 2)));
-                process.exit(1);
-              }
-              console.log('✅ All performance tests passed');
-            "
-          fi
-        continue-on-error: true
 
   # ============================================
   # FRONTEND TESTS (Vitest)
@@ -260,44 +144,43 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run frontend Vitest tests
+      - run: npm ci
+      - name: Run Vitest
         run: npm test -- --run
         env:
           NODE_ENV: test
 
-      - name: Upload frontend coverage
-        uses: codecov/codecov-action@v4
-        with:
-          directory: ./coverage
-          flags: frontend
-          fail_ci_if_error: false
-
   # ============================================
-  # BUILD
+  # E2E TESTS (Playwright)
   # ============================================
-  build:
-    name: Build
+  test-e2e:
+    name: E2E Tests
     runs-on: ubuntu-latest
-    needs: [test-unit, test-integration, test-performance, test-frontend]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    needs: [test-backend, test-frontend]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -305,84 +188,58 @@ jobs:
             package-lock.json
             server/package-lock.json
 
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Install server dependencies
+      - run: npm ci
+      - run: npm ci
         working-directory: ./server
-        run: npm ci
 
-      - name: Generate Prisma Client
-        working-directory: ./server
-        run: npx prisma generate
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
 
-      - name: Build server
+      - run: npx prisma generate
         working-directory: ./server
-        run: npm run build
+      - run: npx prisma migrate deploy
+        working-directory: ./server
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
 
       - name: Build frontend
         run: npm run build
 
-      - name: Upload server build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Start backend
+        working-directory: ./server
+        run: |
+          npm run build
+          node dist/index.js &
+          for i in $(seq 1 30); do
+            wget -qO- http://localhost:3001/health > /dev/null 2>&1 && break
+            sleep 2
+          done
+        env:
+          NODE_ENV: test
+          PORT: 3001
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET: test-jwt-secret-key-for-testing-purposes-only-min-32-chars
+          JWT_REFRESH_SECRET: test-refresh-secret-key-for-testing-purposes-only-min-32-chars
+          ENCRYPTION_KEY: test-encryption-key-32-chars-minimum-length-required!!!
+          GEMINI_API_KEY: test-key
+          SENDGRID_API_KEY: SG.test-key
+          SENDGRID_FROM_EMAIL: test@test.com
+          CLIENT_URL: http://localhost:4173
+
+      - name: Run Playwright tests
+        run: npx playwright test --project=chromium
+        env:
+          CI: true
+          E2E_BASE_URL: http://localhost:4173
+          API_URL: http://localhost:3001
+
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: server-dist
-          path: server/dist
-          retention-days: 7
-
-      - name: Upload frontend build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist
-          retention-days: 7
-
-  # ============================================
-  # DOCKER BUILD & PUSH
-  # ============================================
-  docker:
-    name: Docker Build & Push
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
 
   # ============================================
   # SECURITY SCAN
@@ -392,20 +249,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run npm audit (root)
-        run: npm audit --audit-level=high || true
-        continue-on-error: true
-
-      - name: Run npm audit (server)
+      - uses: actions/checkout@v4
+      - run: npm audit --audit-level=high || true
+      - run: npm audit --audit-level=high || true
         working-directory: ./server
-        run: npm audit --audit-level=high || true
-        continue-on-error: true
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      - uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -414,7 +262,74 @@ jobs:
           ignore-unfixed: true
 
   # ============================================
-  # DEPLOY (Production)
+  # BUILD & PUSH DOCKER IMAGES
+  # ============================================
+  docker:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-integration, test-frontend, test-e2e]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- API image ---
+      - name: API metadata
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build & push API
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: backend-production
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # --- Web (Nginx) image ---
+      - name: Web metadata
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build & push Web
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: frontend-production
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================
+  # DEPLOY — Production (main branch)
   # ============================================
   deploy-production:
     name: Deploy to Production
@@ -423,23 +338,77 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: https://app.complyeasy.ai
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      url: https://complyeasyai.com
 
-      - name: Deploy to production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push API image to ECR
+        env:
+          ECR: ${{ steps.ecr.outputs.registry }}
         run: |
-          echo "🚀 Deploying to production..."
-          # Add your deployment commands here
-          # Examples:
-          # - kubectl set image deployment/api api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          # - aws ecs update-service --cluster production --service api --force-new-deployment
-          # - flyctl deploy --app complyeasy-api
-          echo "✅ Deployment complete!"
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest
+          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest $ECR/complyeasy-api:latest
+          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest $ECR/complyeasy-api:${{ github.sha }}
+          docker push $ECR/complyeasy-api:latest
+          docker push $ECR/complyeasy-api:${{ github.sha }}
+
+      - name: Run database migrations
+        run: |
+          cd server && npm ci --omit=dev && npx prisma generate && npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+
+      - name: Deploy API to ECS
+        run: |
+          aws ecs update-service \
+            --cluster complyeasy-production \
+            --service complyeasy-api \
+            --force-new-deployment
+
+      - name: Deploy frontend to S3 + CloudFront
+        run: |
+          docker create --name fe ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:latest
+          docker cp fe:/usr/share/nginx/html ./frontend-dist
+          docker rm fe
+          aws s3 sync ./frontend-dist s3://${{ secrets.S3_FRONTEND_BUCKET }} \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "index.html" --exclude "*.json"
+          aws s3 cp ./frontend-dist/index.html s3://${{ secrets.S3_FRONTEND_BUCKET }}/index.html \
+            --cache-control "no-cache, no-store, must-revalidate"
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      - name: Wait for ECS stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster complyeasy-production \
+            --services complyeasy-api
+
+      - name: Verify health
+        run: |
+          for i in $(seq 1 10); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://complyeasyai.com/health)
+            [ "$STATUS" = "200" ] && echo "Healthy" && exit 0
+            sleep 10
+          done
+          exit 1
 
   # ============================================
-  # DEPLOY (Staging)
+  # DEPLOY — Staging (develop branch)
   # ============================================
   deploy-staging:
     name: Deploy to Staging
@@ -448,16 +417,41 @@ jobs:
     if: github.ref == 'refs/heads/develop'
     environment:
       name: staging
-      url: https://staging.complyeasy.ai
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      url: https://staging.complyeasyai.com
 
-      - name: Deploy to staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push to ECR + deploy
+        env:
+          ECR: ${{ steps.ecr.outputs.registry }}
         run: |
-          echo "🚀 Deploying to staging..."
-          # Add your staging deployment commands here
-          echo "✅ Staging deployment complete!"
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:develop
+          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:develop $ECR/complyeasy-api:staging
+          docker push $ECR/complyeasy-api:staging
+
+      - name: Run migrations
+        run: cd server && npm ci --omit=dev && npx prisma generate && npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+
+      - name: Deploy to staging ECS
+        run: |
+          aws ecs update-service \
+            --cluster complyeasy-staging \
+            --service complyeasy-api \
+            --force-new-deployment
 
   # ============================================
   # NOTIFY
@@ -466,12 +460,10 @@ jobs:
     name: Notify
     runs-on: ubuntu-latest
     needs: [deploy-production, deploy-staging]
-    if: always()
-    env:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    if: always() && (needs.deploy-production.result == 'success' || needs.deploy-staging.result == 'success')
     steps:
-      - name: Send Slack notification
-        if: env.SLACK_WEBHOOK_URL != ''
+      - name: Slack notification
+        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
