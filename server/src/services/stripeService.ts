@@ -103,8 +103,86 @@ const ADDON_PRICE_IDS: Record<string, string> = {
   'on-prem-deployment': process.env.STRIPE_ADDON_ON_PREM_PRICE_ID || '',
   'custom-ai-models': process.env.STRIPE_ADDON_CUSTOM_AI_PRICE_ID || '',
   'vciso-service': process.env.STRIPE_ADDON_VCISO_PRICE_ID || '',
-  'audit-bundling': process.env.STRIPE_ADDON_AUDIT_BUNDLING_PRICE_ID || '', // Variable; often quote-based
+  'audit-bundling': process.env.STRIPE_ADDON_AUDIT_BUNDLING_PRICE_ID || '',
 };
+
+// Canonical annual pricing in cents for each tier (used for auto-provisioning)
+const TIER_ANNUAL_PRICES_CENTS: Record<TierName, number> = {
+  Foundation: 850000,   // $8,500/year
+  Essentials: 1700000,  // $17,000/year
+  Growth: 4250000,      // $42,500/year
+  Visionary: 6800000,   // $68,000/year
+};
+
+/**
+ * Ensure Stripe products & prices exist for every tier.
+ * Called once at service init when the Stripe key is present but price IDs
+ * have not been pre-configured via environment variables.
+ * Created prices are cached in the PRICE_IDS map for the lifetime of the process.
+ */
+let pricesProvisioned = false;
+async function ensureStripePricesExist(): Promise<void> {
+  if (pricesProvisioned) return;
+  if (!config.stripe.secretKey) return;
+
+  pricesProvisioned = true; // prevent re-entrance
+
+  for (const tier of Object.keys(PRICE_IDS) as TierName[]) {
+    const ids = PRICE_IDS[tier];
+    // Skip if already configured
+    if (ids.annual && ids.annual.startsWith('price_') && ids.monthly && ids.monthly.startsWith('price_')) {
+      continue;
+    }
+
+    try {
+      // Search for an existing product with matching metadata
+      const existingProducts = await stripe.products.search({
+        query: `metadata["tier"]:"${tier}"`,
+        limit: 1,
+      });
+
+      let productId: string;
+      if (existingProducts.data.length > 0) {
+        productId = existingProducts.data[0].id;
+      } else {
+        const product = await stripe.products.create({
+          name: `ComplyEasy – ${tier}`,
+          metadata: { tier },
+        });
+        productId = product.id;
+      }
+
+      // Create annual price if missing
+      if (!ids.annual || !ids.annual.startsWith('price_')) {
+        const annualPrice = await stripe.prices.create({
+          product: productId,
+          currency: 'usd',
+          unit_amount: TIER_ANNUAL_PRICES_CENTS[tier],
+          recurring: { interval: 'year' },
+          metadata: { tier, billingCycle: 'annual' },
+        });
+        ids.annual = annualPrice.id;
+      }
+
+      // Create monthly price if missing (annual / 12, rounded)
+      if (!ids.monthly || !ids.monthly.startsWith('price_')) {
+        const monthlyAmount = Math.round(TIER_ANNUAL_PRICES_CENTS[tier] / 12);
+        const monthlyPrice = await stripe.prices.create({
+          product: productId,
+          currency: 'usd',
+          unit_amount: monthlyAmount,
+          recurring: { interval: 'month' },
+          metadata: { tier, billingCycle: 'monthly' },
+        });
+        ids.monthly = monthlyPrice.id;
+      }
+
+      logger.info(`[Stripe] Prices provisioned for ${tier}: annual=${ids.annual}, monthly=${ids.monthly}`);
+    } catch (error) {
+      logger.error(`[Stripe] Failed to provision prices for ${tier}`, error);
+    }
+  }
+}
 
 // ============================================================================
 // STRIPE SERVICE CLASS
@@ -163,16 +241,18 @@ class StripeService {
         couponCode,
       } = options;
 
+      // Ensure Stripe prices exist (auto-provisions if env vars are empty)
+      await ensureStripePricesExist();
+
       // Get price ID for the tier and billing cycle
       const priceId = PRICE_IDS[tierName][billingCycle];
 
       // Validate price ID
       if (!priceId || !priceId.startsWith('price_')) {
-        // For development/demo, create a session placeholder
         if (!config.stripe.secretKey) {
           throw new Error('Stripe is not configured. Please contact support to upgrade your plan.');
         }
-        throw new Error(`Price ID for ${tierName} ${billingCycle} plan is not configured.`);
+        throw new Error(`Price ID for ${tierName} ${billingCycle} plan is not configured. Ensure STRIPE_${tierName.toUpperCase()}_${billingCycle.toUpperCase()}_PRICE_ID is set.`);
       }
 
       // Build line items
@@ -1250,12 +1330,18 @@ class StripeService {
           },
         });
 
-        // Record subscription history
+        // Record subscription history — fetch the org's actual plan
+        const org = await prisma.organization.findUnique({
+          where: { id: featureSubscription.organizationId },
+          select: { plan: true },
+        });
+        const actualPlan = (org?.plan || 'Foundation') as Plan;
+
         await prisma.subscriptionHistory.create({
           data: {
             organizationId: featureSubscription.organizationId,
-            previousPlan: 'Foundation' as Plan, // Placeholder
-            newPlan: 'Foundation' as Plan,
+            previousPlan: actualPlan,
+            newPlan: actualPlan,
             previousStatus: featureSubscription.status as SubscriptionStatus,
             newStatus: 'canceled',
             changeType: 'addon_removed',

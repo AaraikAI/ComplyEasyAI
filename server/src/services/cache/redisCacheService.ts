@@ -10,6 +10,7 @@
  */
 
 import logger from '../../config/logger';
+import Redis from 'ioredis';
 
 // ============================================================================
 // TYPES
@@ -120,6 +121,7 @@ class RedisCacheService {
   private initialized: boolean = false;
   private defaultNamespace: string = 'complyeasy';
   private redisConnected: boolean = false;
+  private redisClient: Redis | null = null;
 
   /**
    * Initialize the cache service.
@@ -133,15 +135,37 @@ class RedisCacheService {
     if (redisUrl) {
       try {
         logger.info(`[Cache] Connecting to Redis at ${redisUrl.replace(/\/\/.*@/, '//***@')}`);
-        // In production, this would create an ioredis or redis client:
-        // this.client = new Redis(redisUrl);
-        // await this.client.ping();
+
+        this.redisClient = new Redis(redisUrl, {
+          maxRetriesPerRequest: 3,
+          retryStrategy(times: number) {
+            if (times > 5) return null; // Stop retrying after 5 attempts
+            return Math.min(times * 200, 2000);
+          },
+          lazyConnect: true,
+          connectTimeout: 10000,
+          enableReadyCheck: true,
+        });
+
+        // Set up error handler to prevent unhandled errors
+        this.redisClient.on('error', (err) => {
+          logger.warn('[Cache] Redis connection error', err.message);
+        });
+
+        this.redisClient.on('reconnecting', () => {
+          logger.info('[Cache] Redis reconnecting...');
+        });
+
+        await this.redisClient.connect();
+        await this.redisClient.ping();
+
         this.redisConnected = true;
         this.stats.mode = 'redis';
         logger.info('[Cache] Redis cache initialized');
       } catch (error) {
         logger.warn('[Cache] Redis unavailable, using in-memory cache', error);
         this.redisConnected = false;
+        this.redisClient = null;
         this.stats.mode = 'memory';
       }
     } else {
@@ -149,7 +173,7 @@ class RedisCacheService {
       this.stats.mode = 'memory';
     }
 
-    // Start periodic cleanup for expired entries
+    // Start periodic cleanup for expired entries (in-memory only)
     this.cleanupInterval = setInterval(() => this.cleanup(), 60000); // Every minute
 
     this.initialized = true;
@@ -162,6 +186,26 @@ class RedisCacheService {
     if (!this.initialized) await this.initialize();
 
     const fullKey = this.buildKey(key, options?.namespace);
+
+    // Redis path
+    if (this.redisConnected && this.redisClient) {
+      try {
+        const raw = await this.redisClient.get(fullKey);
+        if (!raw) {
+          this.stats.misses++;
+          this.updateHitRate();
+          return null;
+        }
+        this.stats.hits++;
+        this.updateHitRate();
+        return JSON.parse(raw) as T;
+      } catch (error) {
+        logger.warn(`[Cache] Redis get error for key "${fullKey}", falling back to memory`, error);
+        // Fall through to in-memory
+      }
+    }
+
+    // In-memory path
     const entry = this.cache.get(fullKey);
 
     if (!entry) {
@@ -195,6 +239,33 @@ class RedisCacheService {
     const tags = options?.tags ?? [];
     const fullKey = this.buildKey(key, options?.namespace);
 
+    // Redis path
+    if (this.redisConnected && this.redisClient) {
+      try {
+        const serialized = JSON.stringify(value);
+        if (ttl > 0) {
+          await this.redisClient.setex(fullKey, ttl, serialized);
+        } else {
+          await this.redisClient.set(fullKey, serialized);
+        }
+
+        // Store tags in Redis using sets
+        for (const tag of tags) {
+          const tagKey = `${this.defaultNamespace}:__tag__:${tag}`;
+          await this.redisClient.sadd(tagKey, fullKey);
+          // Tag sets expire after the longest possible TTL (7 days) to self-clean
+          await this.redisClient.expire(tagKey, CACHE_TTL.WEEK);
+        }
+
+        this.stats.sets++;
+        return;
+      } catch (error) {
+        logger.warn(`[Cache] Redis set error for key "${fullKey}", falling back to memory`, error);
+        // Fall through to in-memory
+      }
+    }
+
+    // In-memory path
     // Evict if at capacity (LRU)
     if (this.cache.size >= this.maxMemoryEntries) {
       this.evictLRU();
@@ -228,6 +299,19 @@ class RedisCacheService {
     if (!this.initialized) await this.initialize();
 
     const fullKey = this.buildKey(key, options?.namespace);
+
+    // Redis path
+    if (this.redisConnected && this.redisClient) {
+      try {
+        const result = await this.redisClient.del(fullKey);
+        this.stats.deletes++;
+        return result > 0;
+      } catch (error) {
+        logger.warn(`[Cache] Redis del error for key "${fullKey}", falling back to memory`, error);
+      }
+    }
+
+    // In-memory path
     const entry = this.cache.get(fullKey);
 
     if (entry) {
@@ -249,6 +333,30 @@ class RedisCacheService {
     if (!this.initialized) await this.initialize();
 
     const prefix = this.buildKey(pattern.replace(/\*$/, ''), options?.namespace);
+
+    // Redis path
+    if (this.redisConnected && this.redisClient) {
+      try {
+        let deleted = 0;
+        let cursor = '0';
+        do {
+          const [nextCursor, keys] = await this.redisClient.scan(
+            cursor, 'MATCH', `${prefix}*`, 'COUNT', 100
+          );
+          cursor = nextCursor;
+          if (keys.length > 0) {
+            deleted += await this.redisClient.del(...keys);
+          }
+        } while (cursor !== '0');
+
+        this.stats.deletes += deleted;
+        return deleted;
+      } catch (error) {
+        logger.warn(`[Cache] Redis delPattern error, falling back to memory`, error);
+      }
+    }
+
+    // In-memory path
     let deleted = 0;
 
     for (const [key, entry] of this.cache.entries()) {
@@ -271,6 +379,25 @@ class RedisCacheService {
   async invalidateByTag(tag: string): Promise<number> {
     if (!this.initialized) await this.initialize();
 
+    // Redis path
+    if (this.redisConnected && this.redisClient) {
+      try {
+        const tagKey = `${this.defaultNamespace}:__tag__:${tag}`;
+        const keys = await this.redisClient.smembers(tagKey);
+        let deleted = 0;
+        if (keys.length > 0) {
+          deleted = await this.redisClient.del(...keys);
+          await this.redisClient.del(tagKey);
+        }
+        this.stats.deletes += deleted;
+        logger.debug(`[Cache] Invalidated ${deleted} entries with tag "${tag}" (Redis)`);
+        return deleted;
+      } catch (error) {
+        logger.warn(`[Cache] Redis invalidateByTag error, falling back to memory`, error);
+      }
+    }
+
+    // In-memory path
     const keys = this.tagIndex.get(tag);
     if (!keys || keys.size === 0) return 0;
 
@@ -317,6 +444,18 @@ class RedisCacheService {
     if (!this.initialized) await this.initialize();
 
     const fullKey = this.buildKey(key, options?.namespace);
+
+    // Redis path
+    if (this.redisConnected && this.redisClient) {
+      try {
+        const result = await this.redisClient.exists(fullKey);
+        return result === 1;
+      } catch (error) {
+        logger.warn(`[Cache] Redis exists error, falling back to memory`, error);
+      }
+    }
+
+    // In-memory path
     const entry = this.cache.get(fullKey);
 
     if (!entry) return false;
@@ -336,6 +475,18 @@ class RedisCacheService {
     if (!this.initialized) await this.initialize();
 
     const fullKey = this.buildKey(key, options?.namespace);
+
+    // Redis path
+    if (this.redisConnected && this.redisClient) {
+      try {
+        const result = await this.redisClient.ttl(fullKey);
+        return result; // Redis returns -2 for non-existent, -1 for no TTL
+      } catch (error) {
+        logger.warn(`[Cache] Redis ttl error, falling back to memory`, error);
+      }
+    }
+
+    // In-memory path
     const entry = this.cache.get(fullKey);
 
     if (!entry) return -1;
@@ -349,6 +500,25 @@ class RedisCacheService {
    * Clear the entire cache.
    */
   async flush(): Promise<void> {
+    // Redis path
+    if (this.redisConnected && this.redisClient) {
+      try {
+        // Only flush keys with our namespace prefix to avoid nuking other apps' data
+        let cursor = '0';
+        do {
+          const [nextCursor, keys] = await this.redisClient.scan(
+            cursor, 'MATCH', `${this.defaultNamespace}:*`, 'COUNT', 100
+          );
+          cursor = nextCursor;
+          if (keys.length > 0) {
+            await this.redisClient.del(...keys);
+          }
+        } while (cursor !== '0');
+      } catch (error) {
+        logger.warn('[Cache] Redis flush error', error);
+      }
+    }
+
     this.cache.clear();
     this.tagIndex.clear();
     this.stats.size = 0;
@@ -385,6 +555,21 @@ class RedisCacheService {
 
     const succeeded = results.filter(r => r.status === 'fulfilled').length;
     logger.info(`[Cache] Cache warmed: ${succeeded}/${entries.length} entries loaded`);
+  }
+
+  /**
+   * Get the underlying Redis client (for direct operations like pub/sub).
+   * Returns null if not connected to Redis.
+   */
+  getRedisClient(): Redis | null {
+    return this.redisConnected ? this.redisClient : null;
+  }
+
+  /**
+   * Check if Redis is connected.
+   */
+  isRedisConnected(): boolean {
+    return this.redisConnected;
   }
 
   // ============================================================================
@@ -469,6 +654,18 @@ class RedisCacheService {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
     }
+
+    // Disconnect Redis client
+    if (this.redisClient) {
+      try {
+        await this.redisClient.quit();
+      } catch {
+        // Ignore errors during shutdown
+      }
+      this.redisClient = null;
+      this.redisConnected = false;
+    }
+
     this.cache.clear();
     this.tagIndex.clear();
     this.initialized = false;
