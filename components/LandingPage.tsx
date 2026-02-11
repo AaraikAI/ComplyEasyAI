@@ -52,7 +52,7 @@ export const LandingPage: React.FC = () => {
       // In development, backend returns the token directly for testing
       if (response?.devToken) {
         setMockToken(response.devToken);
-        console.log('Development token received:', response.devToken);
+        if (process.env.NODE_ENV === 'development') console.log('Development token received');
       } else {
         // Fallback: generate a mock token (won't work with real backend)
         const testToken = `mock_token_${Date.now()}_${email}`;
@@ -86,7 +86,7 @@ export const LandingPage: React.FC = () => {
         // In development, backend returns the token directly for testing
         if (response?.devToken) {
           setMockToken(response.devToken);
-          console.log('Development token received for existing user:', response.devToken);
+          if (process.env.NODE_ENV === 'development') console.log('Development token received for existing user');
         }
         setAuthStep('magic-link-sent');
         setLoading(false);
@@ -97,7 +97,7 @@ export const LandingPage: React.FC = () => {
       // In development, backend returns the token directly for testing
       if (response?.devToken) {
         setMockToken(response.devToken);
-        console.log('Development token received for new user:', response.devToken);
+        if (process.env.NODE_ENV === 'development') console.log('Development token received for new user');
       } else {
         // Fallback: generate a mock token (won't work with real backend)
         const testToken = `mock_token_${Date.now()}_${email}`;
