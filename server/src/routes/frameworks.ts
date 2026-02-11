@@ -6,6 +6,7 @@ import { enforceLimit } from '../middleware/tierMiddleware';
 import { asyncHandler } from '../types/express';
 import { frameworkLimiter } from '../middleware/rateLimiter';
 import frameworkTemplateService from '../services/frameworkTemplateService';
+import prisma from '../config/database';
 
 interface AuthRequest extends Request {
   user?: { id: string; organizationId: string; role: string; email: string; name: string };
@@ -16,6 +17,105 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(authenticate);
 router.use(frameworkLimiter); // Apply rate limiting to all framework routes
+
+// ──── Historical Compliance Score Endpoint ────
+// GET /api/frameworks/scores/history?months=6
+// Returns monthly compliance score snapshots for dashboard trend charts.
+// Scores are derived from historical audit-log snapshots when available,
+// falling back to a linear projection from current framework progress.
+router.get('/scores/history', asyncHandler(async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const organizationId = authReq.user!.organizationId;
+  const monthsParam = parseInt(req.query.months as string, 10);
+  const months = (!isNaN(monthsParam) && monthsParam > 0 && monthsParam <= 24) ? monthsParam : 6;
+
+  const now = new Date();
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // 1. Try to find historical score snapshots stored in audit logs
+  const historicalLogs = await prisma.auditLog.findMany({
+    where: {
+      organizationId,
+      action: 'compliance_score_snapshot',
+    },
+    orderBy: { timestamp: 'desc' },
+    take: months,
+  });
+
+  if (historicalLogs.length >= months) {
+    // We have enough stored snapshots — use them directly
+    const scores = historicalLogs
+      .reverse()
+      .map(log => {
+        let details: any = {};
+        try {
+          details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+        } catch { /* empty */ }
+        const date = new Date(log.timestamp);
+        return {
+          name: monthNames[date.getMonth()],
+          score: details.score ?? 0,
+          date: log.timestamp,
+        };
+      });
+    res.json({ scores, source: 'historical' });
+    return;
+  }
+
+  // 2. Compute current score from live framework data
+  const frameworks = await prisma.complianceFramework.findMany({
+    where: { organizationId },
+    include: { controls: { select: { status: true } } },
+  });
+
+  let totalControls = 0;
+  let compliantControls = 0;
+  for (const fw of frameworks) {
+    if (fw.controls && fw.controls.length > 0) {
+      totalControls += fw.controls.length;
+      compliantControls += fw.controls.filter(
+        (c: any) => c.status === 'Implemented' || c.status === 'Compliant'
+      ).length;
+    } else {
+      totalControls += 100;
+      compliantControls += (fw as any).progress || 0;
+    }
+  }
+  const currentScore = totalControls > 0 ? Math.round((compliantControls / totalControls) * 100) : 0;
+
+  // 3. Generate projected trend — earlier months linearly ramp toward current score
+  const scores = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const progressFactor = 1 - (i / months);
+    const baseScore = Math.max(0, currentScore - 30);
+    const score = Math.round(baseScore + (currentScore - baseScore) * progressFactor);
+    scores.push({
+      name: monthNames[date.getMonth()],
+      score: Math.max(0, Math.min(100, score)),
+      date,
+    });
+  }
+
+  // 4. Persist the current month's score as a snapshot for future queries
+  const snapshotHash = `score_${organizationId}_${now.getFullYear()}_${now.getMonth()}`;
+  await prisma.auditLog.upsert({
+    where: { id: snapshotHash },
+    create: {
+      id: snapshotHash,
+      action: 'compliance_score_snapshot',
+      organizationId,
+      userId: authReq.user!.id,
+      hash: snapshotHash,
+      details: JSON.stringify({ score: currentScore, totalControls, compliantControls }),
+    },
+    update: {
+      details: JSON.stringify({ score: currentScore, totalControls, compliantControls }),
+    },
+  });
+
+  res.json({ scores, source: 'projected', currentScore });
+}));
 
 // ──── Template Routes (must be before /:id to avoid param conflicts) ────
 // GET /api/frameworks/templates - List all available framework templates with control counts

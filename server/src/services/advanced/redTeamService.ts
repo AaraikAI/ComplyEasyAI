@@ -1363,12 +1363,77 @@ class RedTeamService {
       }
 
       if (format === 'pdf') {
-        // In production, would generate PDF
+        const PDFDocument = require('pdfkit');
+        const { PassThrough } = require('stream');
+
+        const doc = new PDFDocument({ margin: 50 });
+        const stream = new PassThrough();
+        const chunks: Buffer[] = [];
+
+        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.pipe(stream);
+
+        // ── Title Page ──
+        doc.fontSize(24).font('Helvetica-Bold').text('Red Team Scan Report', { align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(12).font('Helvetica').text(`Generated: ${new Date().toISOString()}`, { align: 'center' });
+        doc.moveDown(1.5);
+
+        // ── Executive Summary ──
+        doc.fontSize(16).font('Helvetica-Bold').text('Executive Summary');
+        doc.moveDown(0.5);
+        const successRate = scanResults.length > 0
+          ? ((scanResults.filter(r => !r.success).length / scanResults.length) * 100).toFixed(1)
+          : '0';
+        doc.fontSize(11).font('Helvetica');
+        doc.text(`Total Scenarios Tested: ${exportData.totalScenarios}`);
+        doc.text(`Total Vulnerabilities Found: ${exportData.totalVulnerabilities}`);
+        doc.text(`Attack Success Rate: ${successRate}%`);
+        doc.moveDown(1);
+
+        // ── Findings Table ──
+        doc.fontSize(16).font('Helvetica-Bold').text('Scan Results');
+        doc.moveDown(0.5);
+
+        for (const result of scanResults) {
+          doc.fontSize(12).font('Helvetica-Bold').text(`Scenario: ${result.scenarioId}`);
+          doc.fontSize(10).font('Helvetica');
+          doc.text(`  Attack succeeded: ${result.success ? 'YES ⚠' : 'No'}`);
+          doc.text(`  Vulnerabilities: ${result.vulnerabilitiesFound.length}`);
+          doc.text(`  Execution Time: ${result.executionTime}ms`);
+
+          if (result.vulnerabilitiesFound.length > 0) {
+            doc.text('  Vulnerabilities:');
+            for (const vuln of result.vulnerabilitiesFound) {
+              const vulnName = typeof vuln === 'string' ? vuln : ((vuln as any).type || JSON.stringify(vuln));
+              doc.text(`    - ${vulnName}`);
+            }
+          }
+
+          if (result.report) {
+            const reportStr = typeof result.report === 'string' ? result.report : JSON.stringify(result.report);
+            doc.text(`  Report: ${reportStr.substring(0, 200)}...`);
+          }
+          doc.moveDown(0.5);
+
+          // Avoid running over page boundaries
+          if (doc.y > 700) doc.addPage();
+        }
+
+        doc.end();
+
+        // Wait for stream to finish
+        const pdfBuffer = await new Promise<Buffer>((resolve) => {
+          stream.on('end', () => resolve(Buffer.concat(chunks)));
+        });
+
         return {
           format: 'pdf',
-          content: JSON.stringify(exportData, null, 2),
+          content: pdfBuffer.toString('base64'),
+          contentType: 'application/pdf',
+          encoding: 'base64',
           filename: `red-team-scan-${new Date().toISOString().split('T')[0]}.pdf`,
-          note: 'PDF generation would be implemented with pdfkit or similar library',
+          size: pdfBuffer.length,
         };
       }
 

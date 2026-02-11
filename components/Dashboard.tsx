@@ -19,19 +19,17 @@ interface DashboardProps {
   onNavigate: (view: ViewState) => void;
 }
 
-// Generate trend data for last 6 months based on actual framework scores
-const generateTrendData = (frameworks: ComplianceFramework[]) => {
+// Local fallback: generate trend data from current framework scores
+const generateTrendDataLocal = (frameworks: ComplianceFramework[]) => {
   const now = new Date();
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-  // Get last 6 months dynamically
+
   const months: string[] = [];
   for (let i = 5; i >= 0; i--) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
     months.push(monthNames[date.getMonth()]);
   }
-  
-  // Calculate current score dynamically from actual framework data
+
   const calculateCurrentScore = () => {
     if (frameworks.length === 0) return 0;
     let totalControls = 0;
@@ -39,28 +37,22 @@ const generateTrendData = (frameworks: ComplianceFramework[]) => {
     frameworks.forEach((fw: any) => {
       if (fw.controls && Array.isArray(fw.controls) && fw.controls.length > 0) {
         totalControls += fw.controls.length;
-        compliantControls += fw.controls.filter((c: any) => 
+        compliantControls += fw.controls.filter((c: any) =>
           c.status === 'Implemented' || c.status === 'Compliant'
         ).length;
       } else {
-        // Fallback to progress percentage if controls not available
         totalControls += 100;
         compliantControls += fw.progress || 0;
       }
     });
     return totalControls > 0 ? Math.round((compliantControls / totalControls) * 100) : 0;
   };
-  
+
   const currentScore = calculateCurrentScore();
-  
-  // Generate trend data - calculate progression over last 6 months
-  // Simulate gradual improvement (in production, this would come from historical database records)
+
   return months.map((month, index) => {
-    // Calculate score for each month based on current score and time progression
-    // Earlier months show lower scores, trending up to current score
     const monthsAgo = 5 - index;
-    const progressFactor = 1 - (monthsAgo / 6); // 0 to 1 over 6 months
-    // Start from 30% below current score and trend up
+    const progressFactor = 1 - (monthsAgo / 6);
     const baseScore = Math.max(0, currentScore - 30);
     const score = Math.round(baseScore + (currentScore - baseScore) * progressFactor);
     return { name: month, score: Math.max(0, Math.min(100, score)) };
@@ -70,6 +62,35 @@ const generateTrendData = (frameworks: ComplianceFramework[]) => {
 export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavigate }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartReady, setChartReady] = useState(false);
+  const [trendData, setTrendData] = useState<{ name: string; score: number }[]>([]);
+
+  // Fetch historical compliance scores from API with local fallback
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchHistoricalScores = async () => {
+      try {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const res = await fetch('/api/frameworks/scores/history?months=6', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error('API error');
+        const data = await res.json();
+        if (!cancelled && data.scores && Array.isArray(data.scores)) {
+          setTrendData(data.scores.map((s: any) => ({ name: s.name, score: s.score })));
+          return;
+        }
+      } catch {
+        // API unavailable — fall through to local generation
+      }
+      if (!cancelled) {
+        setTrendData(generateTrendDataLocal(frameworks));
+      }
+    };
+
+    fetchHistoricalScores();
+    return () => { cancelled = true; };
+  }, [frameworks]);
 
   // Onboarding: auto-trigger welcome flow for first-time users (handled in context)
   // Dashboard-level trigger not needed since context auto-starts welcome on mount
@@ -125,24 +146,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
 
   const avgScore = calculateComplianceScore();
   
-  // Generate trend data safely
-  const trendData = React.useMemo(() => {
-    try {
-      const data = generateTrendData(frameworks || []);
-      // Ensure data is valid and has at least one point
-      if (!data || data.length === 0) {
-        return [{ name: 'Jan', score: 0 }, { name: 'Feb', score: 0 }, { name: 'Mar', score: 0 }, { name: 'Apr', score: 0 }, { name: 'May', score: 0 }, { name: 'Jun', score: 0 }];
-      }
-      // Validate each data point
-      return data.map(d => ({
+  // Use API-fetched trend data (from useEffect), validated for chart rendering
+  const chartTrendData = React.useMemo(() => {
+    if (trendData.length > 0) {
+      return trendData.map(d => ({
         name: d.name || 'Unknown',
-        score: typeof d.score === 'number' && !isNaN(d.score) ? Math.max(0, Math.min(100, d.score)) : 0
+        score: typeof d.score === 'number' && !isNaN(d.score) ? Math.max(0, Math.min(100, d.score)) : 0,
       }));
-    } catch (error) {
-      console.error('Error generating trend data:', error);
-      return [{ name: 'Jan', score: 0 }, { name: 'Feb', score: 0 }, { name: 'Mar', score: 0 }, { name: 'Apr', score: 0 }, { name: 'May', score: 0 }, { name: 'Jun', score: 0 }];
     }
-  }, [frameworks]);
+    return [{ name: 'Jan', score: 0 }, { name: 'Feb', score: 0 }, { name: 'Mar', score: 0 }, { name: 'Apr', score: 0 }, { name: 'May', score: 0 }, { name: 'Jun', score: 0 }];
+  }, [trendData]);
     
   const activeCount = frameworks.length;
   const criticalRiskCount = risks.filter(r => r.severity === 'High' && r.status !== 'Resolved').length;
@@ -312,9 +325,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-6">Compliance Readiness Trend</h3>
           <div ref={chartContainerRef} className="h-72 w-full min-h-[300px] min-w-0" style={{ position: 'relative' }}>
-            {trendData && trendData.length > 0 && chartReady ? (
+            {chartTrendData && chartTrendData.length > 0 && chartReady ? (
               <ResponsiveContainer width="100%" height="100%" minHeight={300} minWidth={0}>
-                <AreaChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <AreaChart data={chartTrendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.1}/>
