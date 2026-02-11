@@ -9,39 +9,47 @@ import { getLimit, isAtLimit, getUpgradeMessage } from './constants/tierLimits';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
-import { Reports } from './components/Reports';
-import { AuditTrail } from './components/AuditTrail';
-import { Frameworks } from './components/Frameworks';
-import { FrameworkDetails } from './components/FrameworkDetails';
-import { RiskManagement } from './components/RiskManagement';
-import { MyTasks } from './components/MyTasks';
-import { Integrations } from './components/Integrations';
-import { Settings } from './components/Settings';
-import ACOSDashboard from './components/ACOSDashboard';
-import SecurityFeatures from './components/SecurityFeatures';
-import RealTimeAnalytics from './components/RealTimeAnalytics';
-import { AIRMFDashboard } from './components/AIRMFDashboard';
-import { AISystemList } from './components/AISystemList';
-import { AISystemDetails } from './components/AISystemDetails';
-import { AISystemCreate } from './components/AISystemCreate';
-import { AIRMFAssessments } from './components/AIRMFAssessments';
-import { EUAIActDashboard } from './components/EUAIActDashboard';
-import { DMAGatekeeperManagement } from './components/DMAGatekeeperManagement';
-import { DSAPlatformManagement } from './components/DSAPlatformManagement';
-import VendorManagement from './components/VendorManagement';
-import PolicyManagement from './components/PolicyManagement';
-import MonitoringDashboard from './components/MonitoringDashboard';
-import WorkspaceManagement from './components/WorkspaceManagement';
-import QuestionnaireManagement from './components/QuestionnaireManagement';
-import IssueManagement from './components/IssueManagement';
+import { api } from './services/api';
 
-// Lazy load public pages for code splitting
+// ── Lazy-loaded public pages ──────────────────────────────────────────
 const SignupPage = lazy(() => import('./components/SignupPage'));
 const LearnPage = lazy(() => import('./components/LearnPage'));
 const CommunityPage = lazy(() => import('./components/CommunityPage'));
 const StatusPage = lazy(() => import('./components/StatusPage'));
 const DocsPage = lazy(() => import('./components/DocsPage'));
 
+// ── Lazy-loaded core views (named exports) ────────────────────────────
+const Reports = lazy(() => import('./components/Reports').then(m => ({ default: m.Reports })));
+const AuditTrail = lazy(() => import('./components/AuditTrail').then(m => ({ default: m.AuditTrail })));
+const Frameworks = lazy(() => import('./components/Frameworks').then(m => ({ default: m.Frameworks })));
+const FrameworkDetails = lazy(() => import('./components/FrameworkDetails').then(m => ({ default: m.FrameworkDetails })));
+const RiskManagement = lazy(() => import('./components/RiskManagement').then(m => ({ default: m.RiskManagement })));
+const MyTasks = lazy(() => import('./components/MyTasks').then(m => ({ default: m.MyTasks })));
+const Integrations = lazy(() => import('./components/Integrations').then(m => ({ default: m.Integrations })));
+const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
+
+// ── Lazy-loaded enterprise modules (default exports) ──────────────────
+const ACOSDashboard = lazy(() => import('./components/ACOSDashboard'));
+const SecurityFeatures = lazy(() => import('./components/SecurityFeatures'));
+const RealTimeAnalytics = lazy(() => import('./components/RealTimeAnalytics'));
+const VendorManagement = lazy(() => import('./components/VendorManagement'));
+const PolicyManagement = lazy(() => import('./components/PolicyManagement'));
+const MonitoringDashboard = lazy(() => import('./components/MonitoringDashboard'));
+const WorkspaceManagement = lazy(() => import('./components/WorkspaceManagement'));
+const QuestionnaireManagement = lazy(() => import('./components/QuestionnaireManagement'));
+const IssueManagement = lazy(() => import('./components/IssueManagement'));
+
+// ── Lazy-loaded AI/regulatory modules (named exports) ─────────────────
+const AIRMFDashboard = lazy(() => import('./components/AIRMFDashboard').then(m => ({ default: m.AIRMFDashboard })));
+const AISystemList = lazy(() => import('./components/AISystemList').then(m => ({ default: m.AISystemList })));
+const AISystemDetails = lazy(() => import('./components/AISystemDetails').then(m => ({ default: m.AISystemDetails })));
+const AISystemCreate = lazy(() => import('./components/AISystemCreate').then(m => ({ default: m.AISystemCreate })));
+const AIRMFAssessments = lazy(() => import('./components/AIRMFAssessments').then(m => ({ default: m.AIRMFAssessments })));
+const EUAIActDashboard = lazy(() => import('./components/EUAIActDashboard').then(m => ({ default: m.EUAIActDashboard })));
+const DMAGatekeeperManagement = lazy(() => import('./components/DMAGatekeeperManagement').then(m => ({ default: m.DMAGatekeeperManagement })));
+const DSAPlatformManagement = lazy(() => import('./components/DSAPlatformManagement').then(m => ({ default: m.DSAPlatformManagement })));
+
+// ── Lazy-loaded AI features (named exports) ───────────────────────────
 const PolicyGenerator = lazy(() => import('./components/AIFeatures/PolicyGenerator').then(m => ({ default: m.PolicyGenerator })));
 const ContractAnalyzer = lazy(() => import('./components/AIFeatures/ContractAnalyzer').then(m => ({ default: m.ContractAnalyzer })));
 const GapAnalysis = lazy(() => import('./components/AIFeatures/GapAnalysis').then(m => ({ default: m.GapAnalysis })));
@@ -50,7 +58,6 @@ const PhishingGenerator = lazy(() => import('./components/AIFeatures/PhishingGen
 const VendorScorer = lazy(() => import('./components/AIFeatures/VendorScorer').then(m => ({ default: m.VendorScorer })));
 const DataMapper = lazy(() => import('./components/AIFeatures/DataMapper').then(m => ({ default: m.DataMapper })));
 const BCPGenerator = lazy(() => import('./components/AIFeatures/BCPGenerator').then(m => ({ default: m.BCPGenerator })));
-import { api } from './services/api';
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -144,53 +151,21 @@ const MainApp: React.FC = () => {
       case 'integrations':
         return <Integrations />;
       case 'ai-policy':
-        return (
-          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Policy Generator...</div>}>
-            <PolicyGenerator onBack={() => setCurrentView('dashboard')} />
-          </Suspense>
-        );
+        return <PolicyGenerator onBack={() => setCurrentView('dashboard')} />;
       case 'ai-contract':
-        return (
-          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Contract Analyzer...</div>}>
-            <ContractAnalyzer onBack={() => setCurrentView('dashboard')} />
-          </Suspense>
-        );
+        return <ContractAnalyzer onBack={() => setCurrentView('dashboard')} />;
       case 'ai-gap':
-        return (
-          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Gap Analysis...</div>}>
-            <GapAnalysis onBack={() => setCurrentView('dashboard')} />
-          </Suspense>
-        );
+        return <GapAnalysis onBack={() => setCurrentView('dashboard')} />;
       case 'ai-rfp':
-        return (
-          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading RFP Responder...</div>}>
-            <RFPResponder onBack={() => setCurrentView('dashboard')} />
-          </Suspense>
-        );
+        return <RFPResponder onBack={() => setCurrentView('dashboard')} />;
       case 'ai-phishing':
-        return (
-          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Phishing Generator...</div>}>
-            <PhishingGenerator onBack={() => setCurrentView('dashboard')} />
-          </Suspense>
-        );
+        return <PhishingGenerator onBack={() => setCurrentView('dashboard')} />;
       case 'ai-vendor':
-        return (
-          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Vendor Scorer...</div>}>
-            <VendorScorer onBack={() => setCurrentView('dashboard')} />
-          </Suspense>
-        );
+        return <VendorScorer onBack={() => setCurrentView('dashboard')} />;
       case 'ai-data-map':
-        return (
-          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading Data Mapper...</div>}>
-            <DataMapper onBack={() => setCurrentView('dashboard')} />
-          </Suspense>
-        );
+        return <DataMapper onBack={() => setCurrentView('dashboard')} />;
       case 'ai-bcp':
-        return (
-          <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading BCP Generator...</div>}>
-            <BCPGenerator onBack={() => setCurrentView('dashboard')} />
-          </Suspense>
-        );
+        return <BCPGenerator onBack={() => setCurrentView('dashboard')} />;
       case 'settings':
         if (user?.role !== 'admin') return <div>Access Denied</div>;
         return <Settings onNavigateToIntegrations={() => setCurrentView('integrations')} />;
@@ -280,7 +255,13 @@ const MainApp: React.FC = () => {
   return (
     <OnboardingProvider onNavigate={handleNavigate}>
       <Layout currentView={currentView} onNavigate={handleNavigate}>
-        {renderContent()}
+        <Suspense fallback={
+          <div className="flex h-full items-center justify-center p-8">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        }>
+          {renderContent()}
+        </Suspense>
       </Layout>
     </OnboardingProvider>
   );
