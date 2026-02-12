@@ -79,6 +79,56 @@ class ZeroTrustService {
   private deviceTrustCache: Map<string, DeviceTrust> = new Map();
   private policyCache: Map<string, ZeroTrustPolicy> = new Map();
   private networkSegments: Map<string, NetworkSegment> = new Map();
+  private cacheService: typeof import('../../services/cache/redisCacheService').default | null = null;
+
+  /**
+   * Lazily load the cache service to avoid circular dependencies
+   */
+  private async getCache() {
+    if (!this.cacheService) {
+      try {
+        const mod = await import('../../services/cache/redisCacheService');
+        this.cacheService = mod.default;
+      } catch {
+        // Cache unavailable - continue with in-memory only
+      }
+    }
+    return this.cacheService;
+  }
+
+  /**
+   * Read from Redis cache, falling back to in-memory Map
+   */
+  private async cacheGet<T>(prefix: string, key: string, memoryMap: Map<string, T>): Promise<T | undefined> {
+    const cache = await this.getCache();
+    if (cache) {
+      try {
+        const cached = await cache.get<T>(`zt:${prefix}:${key}`);
+        if (cached) {
+          memoryMap.set(key, cached); // Warm in-memory cache
+          return cached;
+        }
+      } catch {
+        // Fall through to in-memory
+      }
+    }
+    return memoryMap.get(key);
+  }
+
+  /**
+   * Write to both Redis cache and in-memory Map
+   */
+  private async cacheSet<T>(prefix: string, key: string, value: T, memoryMap: Map<string, T>, ttl = 300): Promise<void> {
+    memoryMap.set(key, value);
+    const cache = await this.getCache();
+    if (cache) {
+      try {
+        await cache.set(`zt:${prefix}:${key}`, value, { ttl });
+      } catch {
+        // Redis write failure is non-fatal
+      }
+    }
+  }
 
   /**
    * Initialize Zero Trust service
@@ -87,10 +137,10 @@ class ZeroTrustService {
     try {
       // Load policies from database
       await this.loadPolicies(organizationId);
-      
+
       // Load network segments
       await this.loadNetworkSegments(organizationId);
-      
+
       logger.info(`Zero Trust service initialized for org ${organizationId}`);
     } catch (error) {
       logger.error('Error initializing Zero Trust service', error);
@@ -108,8 +158,8 @@ class ZeroTrustService {
     organizationId: string
   ): Promise<DeviceTrust> {
     try {
-      // Check cache first
-      const cached = this.deviceTrustCache.get(deviceId);
+      // Check cache first (Redis + in-memory)
+      const cached = await this.cacheGet('device', deviceId, this.deviceTrustCache);
       if (cached && cached.isTrusted && this.isRecentVerification(cached.lastVerified)) {
         return cached;
       }
@@ -158,8 +208,8 @@ class ZeroTrustService {
         updatedAt: new Date(),
       } as DeviceTrust;
 
-      // Cache the result
-      this.deviceTrustCache.set(deviceId, deviceTrust);
+      // Cache the result (Redis + in-memory, 5min TTL)
+      await this.cacheSet('device', deviceId, deviceTrust, this.deviceTrustCache, 300);
 
       // Store in database (don't fail verification if storage fails)
       try {

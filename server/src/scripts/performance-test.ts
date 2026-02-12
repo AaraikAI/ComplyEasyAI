@@ -10,6 +10,7 @@ import logger from '../config/logger';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- test script uses dynamic profiler/load-tester return types
 interface PerformanceReport {
   timestamp: Date;
   loadTestResults: any[];

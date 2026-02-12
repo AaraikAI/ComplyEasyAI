@@ -3,39 +3,40 @@ import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import acosController from '../controllers/acosController';
 import multer from 'multer';
+import { requireAcosFeature, requireVisionaryFeature, requireFeature } from '../middleware/tierMiddleware';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// All routes require authentication
+// All routes require authentication and Growth+ tier for aCOS features
 router.use(authenticate);
 
-// aCOS Goals
-router.post('/goals', authorize('admin', 'editor'), asyncHandler(acosController.createGoal));
-router.get('/goals', asyncHandler(acosController.getGoals));
-router.get('/goals/:goalId', asyncHandler(acosController.getGoal));
-router.patch('/goals/:goalId', authorize('admin', 'editor'), asyncHandler(acosController.updateGoal));
-router.delete('/goals/:goalId', authorize('admin', 'editor'), asyncHandler(acosController.deleteGoal));
-router.post('/goals/:goalId/restore', authorize('admin', 'editor'), asyncHandler(acosController.restoreGoal));
+// aCOS Goals (Growth+)
+router.post('/goals', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), asyncHandler(acosController.createGoal));
+router.get('/goals', ...requireAcosFeature('acosGoals'), asyncHandler(acosController.getGoals));
+router.get('/goals/:goalId', ...requireAcosFeature('acosGoals'), asyncHandler(acosController.getGoal));
+router.patch('/goals/:goalId', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), asyncHandler(acosController.updateGoal));
+router.delete('/goals/:goalId', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), asyncHandler(acosController.deleteGoal));
+router.post('/goals/:goalId/restore', ...requireAcosFeature('acosGoals'), authorize('admin', 'editor'), asyncHandler(acosController.restoreGoal));
 
-// Control Loops
-router.post('/control-loops', authorize('admin', 'editor'), asyncHandler(acosController.createControlLoop));
-router.get('/control-loops/:loopId', asyncHandler(acosController.getControlLoop));
-router.get('/control-loops/:loopId/history', asyncHandler(acosController.getControlLoopHistory));
-router.post('/control-loops/:loopId/execute', authorize('admin', 'editor'), asyncHandler(acosController.executeControlLoop));
-router.post('/control-loops/:loopId/pause', authorize('admin', 'editor'), asyncHandler(acosController.pauseControlLoop));
-router.post('/control-loops/:loopId/resume', authorize('admin', 'editor'), asyncHandler(acosController.resumeControlLoop));
-router.patch('/control-loops/:loopId', authorize('admin', 'editor'), asyncHandler(acosController.updateControlLoop));
-router.delete('/control-loops/:loopId', authorize('admin', 'editor'), asyncHandler(acosController.deleteControlLoop));
+// Control Loops (Growth+)
+router.post('/control-loops', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.createControlLoop));
+router.get('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), asyncHandler(acosController.getControlLoop));
+router.get('/control-loops/:loopId/history', ...requireAcosFeature('acosControlLoops'), asyncHandler(acosController.getControlLoopHistory));
+router.post('/control-loops/:loopId/execute', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.executeControlLoop));
+router.post('/control-loops/:loopId/pause', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.pauseControlLoop));
+router.post('/control-loops/:loopId/resume', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.resumeControlLoop));
+router.patch('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.updateControlLoop));
+router.delete('/control-loops/:loopId', ...requireAcosFeature('acosControlLoops'), authorize('admin', 'editor'), asyncHandler(acosController.deleteControlLoop));
 
-// Agentic AI
-router.post('/agentic/estimate-blast-radius', authorize('admin', 'editor'), asyncHandler(acosController.estimateBlastRadius));
-router.post('/agentic/execute-action', authorize('admin', 'editor'), asyncHandler(acosController.executeAction));
-router.post('/agentic/rollback/:actionId', authorize('admin'), asyncHandler(acosController.rollbackAction));
-router.post('/agentic/rollback-multiple', authorize('admin'), asyncHandler(acosController.rollbackMultipleActions));
+// Agentic AI (Growth+)
+router.post('/agentic/estimate-blast-radius', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), asyncHandler(acosController.estimateBlastRadius));
+router.post('/agentic/execute-action', ...requireAcosFeature('acosAgenticActions'), authorize('admin', 'editor'), asyncHandler(acosController.executeAction));
+router.post('/agentic/rollback/:actionId', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), asyncHandler(acosController.rollbackAction));
+router.post('/agentic/rollback-multiple', ...requireAcosFeature('acosAgenticActions'), authorize('admin'), asyncHandler(acosController.rollbackMultipleActions));
 
-// Evidence Truth Layer
-router.post('/evidence/:evidenceId/analyze', upload.single('file'), asyncHandler(acosController.analyzeEvidence));
+// Evidence Truth Layer (Growth+)
+router.post('/evidence/:evidenceId/analyze', ...requireAcosFeature('acosEvidenceTruth'), upload.single('file'), asyncHandler(acosController.analyzeEvidence));
 router.get('/evidence/:evidenceId/analysis', asyncHandler(acosController.getEvidenceAnalysis));
 router.post('/evidence/:evidenceId/reanalyze', upload.single('file'), authorize('admin', 'editor'), asyncHandler(acosController.reanalyzeEvidence));
 router.get('/evidence/:evidenceId/analysis/history', asyncHandler(acosController.getAnalysisHistory));
@@ -48,8 +49,8 @@ router.post('/evidence/timestamp', upload.single('file'), authorize('admin', 'ed
 router.post('/evidence/chain-of-custody', authorize('admin', 'editor'), asyncHandler(acosController.createChainOfCustody));
 router.post('/evidence/multi-party-attestation', upload.single('file'), authorize('admin', 'editor'), asyncHandler(acosController.createMultiPartyAttestation));
 
-// Regulatory Intelligence Fabric
-router.post('/rif/ingest-regulation', authorize('admin'), upload.single('file'), asyncHandler(acosController.ingestRegulation));
+// Regulatory Intelligence Fabric (Growth+)
+router.post('/rif/ingest-regulation', ...requireAcosFeature('acosRegulatoryIntelligence'), authorize('admin'), upload.single('file'), asyncHandler(acosController.ingestRegulation));
 router.post('/rif/detect-changes', authorize('admin'), asyncHandler(acosController.detectRegulatoryChanges));
 router.post('/rif/:regulatoryChangeId/auto-update', authorize('admin'), asyncHandler(acosController.autoUpdateControls));
 router.post('/rif/auto-update/rollback', authorize('admin'), asyncHandler(acosController.rollbackAutoUpdate));
@@ -61,13 +62,13 @@ router.post('/rif/feeds', authorize('admin'), asyncHandler(acosController.addFee
 router.delete('/rif/feeds/:feedId', authorize('admin'), asyncHandler(acosController.removeFeed));
 router.get('/rif/feeds/dashboard', asyncHandler(acosController.getFeedStatusDashboard));
 
-// Temporal Graph Networks
-router.get('/tgn/predict-risks', asyncHandler(acosController.predictFutureRisks));
-router.get('/tgn/frameworks/:frameworkId/trajectory', asyncHandler(acosController.predictComplianceTrajectory));
-router.get('/tgn/early-warnings', asyncHandler(acosController.getEarlyWarnings));
+// Temporal Graph Networks (Growth+)
+router.get('/tgn/predict-risks', ...requireAcosFeature('acosTemporalGraphs'), asyncHandler(acosController.predictFutureRisks));
+router.get('/tgn/frameworks/:frameworkId/trajectory', ...requireAcosFeature('acosTemporalGraphs'), asyncHandler(acosController.predictComplianceTrajectory));
+router.get('/tgn/early-warnings', ...requireAcosFeature('acosTemporalGraphs'), asyncHandler(acosController.getEarlyWarnings));
 
-// Compliance Digital Twin
-router.post('/digital-twin/simulate', authorize('admin', 'editor'), asyncHandler(acosController.runSimulation));
+// Compliance Digital Twin (Growth+)
+router.post('/digital-twin/simulate', ...requireAcosFeature('acosDigitalTwin'), authorize('admin', 'editor'), asyncHandler(acosController.runSimulation));
 router.post('/digital-twin/simulate/with-constraints', authorize('admin', 'editor'), asyncHandler(acosController.runSimulationWithConstraints));
 router.post('/digital-twin/compare-scenarios', authorize('admin', 'editor'), asyncHandler(acosController.compareScenarios));
 router.post('/digital-twin/simulations/:scenarioId/save-state', authorize('admin', 'editor'), asyncHandler(acosController.saveSimulationState));
@@ -75,8 +76,8 @@ router.get('/digital-twin/simulations/:scenarioId/load-state', asyncHandler(acos
 router.post('/digital-twin/simulations/:scenarioId/rollback', authorize('admin', 'editor'), asyncHandler(acosController.rollbackSimulation));
 router.post('/digital-twin/monte-carlo', authorize('admin', 'editor'), asyncHandler(acosController.runMonteCarlo));
 
-// Red Teaming
-router.post('/red-team/simulate', authorize('admin'), asyncHandler(acosController.runRedTeamSimulation));
+// Red Teaming (Growth+)
+router.post('/red-team/simulate', ...requireAcosFeature('acosRedTeam'), authorize('admin'), asyncHandler(acosController.runRedTeamSimulation));
 router.post('/red-team/automated-scan', authorize('admin'), asyncHandler(acosController.runAutomatedScan));
 router.get('/red-team/compliance-gaps', authorize('admin'), asyncHandler(acosController.scanForComplianceGaps));
 router.get('/red-team/misconfigurations', authorize('admin'), asyncHandler(acosController.scanForMisconfigurations));
@@ -86,8 +87,8 @@ router.post('/red-team/export-results', authorize('admin'), asyncHandler(acosCon
 router.post('/red-team/compare-results', authorize('admin'), asyncHandler(acosController.compareScanResults));
 router.post('/red-team/mark-false-positive', authorize('admin'), asyncHandler(acosController.markFalsePositive));
 
-// Federated Swarm
-router.post('/swarm/join', authorize('admin'), asyncHandler(acosController.joinFederation));
+// Federated Swarm (Growth+)
+router.post('/swarm/join', ...requireAcosFeature('acosFederatedLearning'), authorize('admin'), asyncHandler(acosController.joinFederation));
 router.post('/swarm/leave', authorize('admin'), asyncHandler(acosController.leaveFederation));
 router.post('/swarm/contribute', authorize('admin'), asyncHandler(acosController.contributeToFederation));
 router.get('/swarm/receive-model', asyncHandler(acosController.receiveFederatedModel));
@@ -103,12 +104,12 @@ router.post('/swarm/model/rollback', authorize('admin'), asyncHandler(acosContro
 router.post('/swarm/model/distribute', authorize('admin'), asyncHandler(acosController.distributeModel));
 router.get('/swarm/model/audit-trail', asyncHandler(acosController.getModelAuditTrail));
 
-// Multi-modal Intake
-router.post('/multimodal/transcribe-audio', upload.single('audio'), asyncHandler(acosController.transcribeAudio));
-router.post('/multimodal/analyze-video', upload.single('video'), asyncHandler(acosController.analyzeVideo));
+// Multi-modal Intake (Growth+)
+router.post('/multimodal/transcribe-audio', ...requireAcosFeature('acosMultiModal'), upload.single('audio'), asyncHandler(acosController.transcribeAudio));
+router.post('/multimodal/analyze-video', ...requireAcosFeature('acosMultiModal'), upload.single('video'), asyncHandler(acosController.analyzeVideo));
 
-// Physical AI
-router.post('/physical-ai/register-device', authorize('admin'), asyncHandler(acosController.registerDevice));
+// Physical AI (Visionary)
+router.post('/physical-ai/register-device', ...requireVisionaryFeature('acosPhysicalAi'), authorize('admin'), asyncHandler(acosController.registerDevice));
 router.post('/physical-ai/bulk-register', authorize('admin'), asyncHandler(acosController.bulkRegisterDevices));
 router.delete('/physical-ai/devices/:deviceId', authorize('admin'), asyncHandler(acosController.deregisterDevice));
 router.get('/physical-ai/devices', asyncHandler(acosController.getDevices));
@@ -123,8 +124,8 @@ router.get('/physical-ai/devices/:deviceId/health/history', asyncHandler(acosCon
 router.get('/physical-ai/devices/:deviceId/predictive-maintenance', asyncHandler(acosController.performPredictiveMaintenance));
 router.get('/physical-ai/health/bulk-check', asyncHandler(acosController.bulkHealthCheck));
 
-// VR Collaborative Review
-router.post('/vr/sessions', authorize('admin', 'editor'), asyncHandler(acosController.createVRSession));
+// VR Collaborative Review (Visionary)
+router.post('/vr/sessions', ...requireVisionaryFeature('acosVrTraining'), authorize('admin', 'editor'), asyncHandler(acosController.createVRSession));
 router.get('/vr/sessions', asyncHandler(acosController.getActiveVRSessions));
 router.get('/vr/sessions/:sessionId', asyncHandler(acosController.getVRSessionDetails));
 router.get('/vr/sessions/:sessionId/health', asyncHandler(acosController.checkVRSessionHealth));
@@ -157,8 +158,8 @@ router.get('/vr/training/sessions/:sessionId/evaluate', asyncHandler(acosControl
 router.post('/vr/training/sessions/:sessionId/complete', asyncHandler(acosController.completeVRTraining));
 router.get('/vr/training/history', asyncHandler(acosController.getVRTrainingHistory));
 
-// JIT Access
-router.post('/jit/request', authorize('admin', 'editor'), asyncHandler(acosController.requestJITAccess));
+// JIT Access (Visionary)
+router.post('/jit/request', ...requireVisionaryFeature('acosJitCompliance'), authorize('admin', 'editor'), asyncHandler(acosController.requestJITAccess));
 router.get('/jit/sessions', asyncHandler(acosController.getJITAccessSessions));
 router.post('/jit/sessions/:sessionId/revoke', authorize('admin'), asyncHandler(acosController.revokeJITSession));
 router.post('/jit/requests/:requestId/cancel', asyncHandler(acosController.cancelJITAccessRequest));
@@ -211,16 +212,16 @@ router.get('/change-impacts', asyncHandler(acosController.getChangeImpacts));
 router.post('/change-impacts/forecast', authorize('admin', 'editor'), asyncHandler(acosController.forecastChangeImpact));
 router.post('/change-impacts/:impactId/resolve', authorize('admin', 'editor'), asyncHandler(acosController.resolveChangeImpact));
 
-// NeuroSymbolic AI
-router.post('/neuro-symbolic/hybrid-reasoning', authorize('admin', 'editor'), asyncHandler(acosController.performHybridReasoning));
+// NeuroSymbolic AI (Visionary)
+router.post('/neuro-symbolic/hybrid-reasoning', ...requireVisionaryFeature('acosNeuroSymbolic'), authorize('admin', 'editor'), asyncHandler(acosController.performHybridReasoning));
 router.post('/neuro-symbolic/infer-rules', authorize('admin', 'editor'), asyncHandler(acosController.inferRulesFromPatterns));
 router.post('/neuro-symbolic/causal-reasoning', authorize('admin', 'editor'), asyncHandler(acosController.performCausalReasoning));
 router.post('/neuro-symbolic/explainable-decision', authorize('admin', 'editor'), asyncHandler(acosController.generateExplainableDecision));
 router.get('/neuro-symbolic/reasoning-history', asyncHandler(acosController.getReasoningHistory));
 router.post('/neuro-symbolic/inferences/:inferenceId/validate', authorize('admin', 'editor'), asyncHandler(acosController.validateInferredRule));
 
-// Homomorphic AI
-router.post('/homomorphic/keys/generate', authorize('admin', 'editor'), asyncHandler(acosController.generateHomomorphicKeys));
+// Homomorphic AI (Visionary)
+router.post('/homomorphic/keys/generate', ...requireVisionaryFeature('acosHomomorphicEncryption'), authorize('admin', 'editor'), asyncHandler(acosController.generateHomomorphicKeys));
 router.post('/homomorphic/encrypt', authorize('admin', 'editor'), asyncHandler(acosController.encryptData));
 router.post('/homomorphic/decrypt', authorize('admin', 'editor'), asyncHandler(acosController.decryptData));
 router.post('/homomorphic/linear-regression', authorize('admin', 'editor'), asyncHandler(acosController.performEncryptedLinearRegression));
