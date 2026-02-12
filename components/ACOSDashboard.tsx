@@ -841,9 +841,9 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
       }, 500);
       
       alert('Control loop created successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating control loop:', error);
-      alert(`Failed to create control loop: ${error.message || 'Unknown error'}`);
+      alert(`Failed to create control loop: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -1825,9 +1825,9 @@ const IoTTab: React.FC = () => {
       setDeviceForm({ deviceId: '', deviceType: '', location: '', mqttTopic: '' });
       await loadDevices(); // Reload devices
       alert('Device registered successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error registering device:', error);
-      alert(`Failed to register device: ${error.message || 'Unknown error'}`);
+      alert(`Failed to register device: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -1976,9 +1976,9 @@ const NeuroSymbolicTab: React.FC = () => {
       const result = await api.acos.performHybridReasoning(query, {});
       setReasoningResult(result);
       await loadHistory();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error performing hybrid reasoning:', error);
-      alert(`Failed to perform reasoning: ${error.message || 'Unknown error'}`);
+      alert(`Failed to perform reasoning: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -1993,9 +1993,9 @@ const NeuroSymbolicTab: React.FC = () => {
     try {
       const result = await api.acos.performCausalReasoning(violationData);
       setCausalResult(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error performing causal reasoning:', error);
-      alert(`Failed to perform causal reasoning: ${error.message || 'Unknown error'}`);
+      alert(`Failed to perform causal reasoning: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -2012,9 +2012,9 @@ const NeuroSymbolicTab: React.FC = () => {
       const result = await api.acos.inferRulesFromPatterns(validPatterns) as any;
       alert(`Inferred ${result.inferences?.length || 0} new rules from patterns`);
       await loadHistory();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error inferring rules:', error);
-      alert(`Failed to infer rules: ${error.message || 'Unknown error'}`);
+      alert(`Failed to infer rules: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -2457,9 +2457,9 @@ const VRCollaborationsTab: React.FC = () => {
                         alert('Joining VR session...');
                         // Refresh session list to get updated participant count
                         loadSessions();
-                      } catch (err: any) {
+                      } catch (err: unknown) {
                         console.error('Error joining session:', err);
-                        const errorMessage = err?.message || err?.error || err?.toString() || 'Failed to join session';
+                        const errorMessage = (err instanceof Error ? err.message : String(err)) || 'Failed to join session';
                         alert(errorMessage);
                         // If session not found, refresh the list
                         if (errorMessage.includes('not found') || errorMessage.includes('ended') || errorMessage.includes('inactive')) {
@@ -2671,9 +2671,9 @@ const JITAccessTab: React.FC = () => {
       await loadPendingRequests();
       await loadAllRequests();
       await loadSessions();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error approving request:', error);
-      alert(error.message || 'Failed to approve request');
+      alert((error instanceof Error ? error.message : String(error)) || 'Failed to approve request');
     }
   };
 
@@ -2694,9 +2694,9 @@ const JITAccessTab: React.FC = () => {
       await loadPendingRequests();
       await loadAllRequests();
       await loadSessions();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error denying request:', error);
-      alert(error.message || 'Failed to deny request');
+      alert((error instanceof Error ? error.message : String(error)) || 'Failed to deny request');
     }
   };
 
@@ -2730,9 +2730,9 @@ const JITAccessTab: React.FC = () => {
       }, 500);
       
       alert('JIT access requested successfully!');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error requesting JIT access:', error);
-      alert(error.message || 'Failed to request JIT access. Please try again.');
+      alert((error instanceof Error ? error.message : String(error)) || 'Failed to request JIT access. Please try again.');
     } finally {
       setRequesting(false);
     }
@@ -3023,9 +3023,9 @@ const JITAccessTab: React.FC = () => {
                                 }));
                                 // Reload to ensure consistency
                                 await loadSessions();
-                              } catch (err: any) {
+                              } catch (err: unknown) {
                                 console.error('Error canceling request:', err);
-                                alert(err.message || 'Failed to cancel request');
+                                alert((err instanceof Error ? err.message : String(err)) || 'Failed to cancel request');
                               }
                             }
                           }}

@@ -2,11 +2,13 @@ import { Router } from 'express';
 import aiRmfController from '../controllers/aiRmfController';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { requireVisionaryFeature } from '../middleware/tierMiddleware';
 
 const router = Router();
 
-// All routes require authentication
+// All routes require authentication + Visionary tier for NIST AI RMF
 router.use(authenticate);
+router.use(...requireVisionaryFeature('nistAiRmf'));
 
 // ============================================================================
 // AI System Management
