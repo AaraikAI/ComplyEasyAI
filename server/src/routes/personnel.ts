@@ -2,11 +2,13 @@ import { Router } from 'express';
 import personnelService from '../services/personnelService';
 import { authenticate } from '../middleware/auth';
 import { authAsyncHandler, AuthenticatedRequest } from '../types/express';
+import { requireEnterpriseFeature } from '../middleware/tierMiddleware';
 
 const router = Router();
 
-// All routes require authentication
+// All routes require authentication + Essentials tier for personnel management
 router.use(authenticate);
+router.use(...requireEnterpriseFeature('personnelManagement'));
 
 // Create personnel record
 router.post(

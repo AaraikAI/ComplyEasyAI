@@ -47,7 +47,7 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
         systemName: (systemsData as any[])[Math.floor(idx / (assessmentsArrays[0]?.length || 1))]?.name,
       }));
       setAllAssessments(allAssessments);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to load assessments:', error);
     } finally {
       setLoading(false);
@@ -64,9 +64,9 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
       // Note: Delete endpoint would need to be added to the API
       // For now, we'll just remove it from the list
       setAllAssessments(allAssessments.filter(a => a.id !== assessmentId));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to delete assessment:', error);
-      alert(`Failed to delete assessment: ${error.message || 'Unknown error'}`);
+      alert(`Failed to delete assessment: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setDeletingAssessment(null);
     }
@@ -593,9 +593,9 @@ const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect
         recommendations: formData.recommendations.filter(r => r.trim()),
       });
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create assessment:', error);
-      alert(`Failed to create assessment: ${error.message || 'Unknown error'}`);
+      alert(`Failed to create assessment: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setSubmitting(false);
     }

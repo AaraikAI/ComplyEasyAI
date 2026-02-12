@@ -285,9 +285,9 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
       
       // Show success message
       alert(`${integration.name} has been disconnected successfully.`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to disconnect integration:', error);
-      alert(`Failed to disconnect: ${error.message || 'Unknown error'}`);
+      alert(`Failed to disconnect: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -370,9 +370,9 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
       }));
       
       alert(`${integration.name} synced successfully!`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to sync integration:', error);
-      alert(`Failed to sync: ${error.message || 'Unknown error'}`);
+      alert(`Failed to sync: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

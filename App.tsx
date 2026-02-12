@@ -83,11 +83,16 @@ const MainApp: React.FC = () => {
   }, [user, userPlan, currentView]);
 
   const loadData = async () => {
-    // Load all core data
-    const fwData = await api.frameworks.list();
-    const risksData = await api.risks.list();
-    setFrameworks(fwData);
-    setRisks(risksData);
+    try {
+      const fwData = await api.frameworks.list();
+      const risksData = await api.risks.list();
+      setFrameworks(fwData);
+      setRisks(risksData);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      setFrameworks([]);
+      setRisks([]);
+    }
   };
 
   const handleAddFramework = async (name: string, region?: string) => {
@@ -97,7 +102,7 @@ const MainApp: React.FC = () => {
       return;
     }
     // Optimistic Update
-    const newFw: any = { id: 'temp', name, region, status: 'In Review', progress: 0, nextAuditDate: '2025-01-01' };
+    const newFw: ComplianceFramework = { id: 'temp', name, region: region || '', status: 'In Review', progress: 0, nextAuditDate: '2025-01-01' } as ComplianceFramework;
     setFrameworks([...frameworks, newFw]);
     // API Call
     await api.frameworks.create(newFw);
