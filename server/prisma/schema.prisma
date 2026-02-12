@@ -173,7 +173,7 @@ model Personnel {
   id                  String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
   userId              String         @unique
   organizationId      String
-  onboardingStatus    String         @default("Not_Started")
+  onboardingStatus    OnboardingStatus @default(Not_Started)
   onboardingDate      DateTime?
   offboardingDate     DateTime?
   offboardingReason   String?
@@ -2842,6 +2842,13 @@ enum Plan {
   Essentials
   Growth
   Visionary
+}
+
+enum OnboardingStatus {
+  Not_Started
+  In_Progress
+  Completed
+  Offboarding
 }
 
 enum AccessReviewStatus {

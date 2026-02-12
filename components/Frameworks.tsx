@@ -223,9 +223,9 @@ export const Frameworks: React.FC<FrameworksProps> = ({
       if (result.applied > 0) {
         handleAIGapAnalysis(frameworkId, frameworkName, result.applied);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to apply template:', err);
-      alert(`Failed to apply template: ${err.message || 'Unknown error'}`);
+      alert(`Failed to apply template: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setApplyingTemplate(null);
     }
@@ -281,7 +281,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({
 
       setAiGapAnalysis(parsedGaps);
       setShowGapAnalysisModal(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('AI Gap Analysis failed:', err);
       // Still show modal with basic info
       setAiGapAnalysis({
@@ -346,9 +346,9 @@ Return as JSON with: suggestedControl, suggestedControlId, confidenceScore, reas
           alternativeControls: []
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('AI Evidence Classification failed:', err);
-      alert('Failed to classify evidence: ' + (err.message || 'Unknown error'));
+      alert('Failed to classify evidence: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setEvidenceClassifyLoading(false);
     }
@@ -409,7 +409,7 @@ Return as JSON with: currentStatus, complianceGaps, requiredEvidence, requiredAc
           summary: response
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('AI Control Assessment failed:', err);
       setControlAssessment({
         currentStatus: 'Assessment Failed',
@@ -418,7 +418,7 @@ Return as JSON with: currentStatus, complianceGaps, requiredEvidence, requiredAc
         requiredActions: [],
         estimatedEffort: 'Unknown',
         priority: 'Unknown',
-        summary: `Failed to assess control: ${err.message || 'Unknown error'}`
+        summary: `Failed to assess control: ${err instanceof Error ? err.message : String(err)}`
       });
     } finally {
       setControlAssessLoading(false);
@@ -483,7 +483,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
       } else {
         setCoPilotRecommendations(frameworkRecommendations);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('AI Co-Pilot failed:', err);
       setCoPilotRecommendations([]);
     } finally {
@@ -514,9 +514,9 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
       if (onFrameworkDeleted) {
         onFrameworkDeleted();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to delete framework:', error);
-      alert(`Failed to delete framework: ${error.message || 'Unknown error'}`);
+      alert(`Failed to delete framework: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setDeletingFramework(null);
     }
@@ -577,9 +577,9 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to export control report:', error);
-      alert(`Failed to export control report: ${error.message || 'Unknown error'}`);
+      alert(`Failed to export control report: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

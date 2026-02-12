@@ -17,6 +17,11 @@ import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import crypto from 'crypto';
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 class WebhookController {
   /**
    * Get all webhooks for the organization
@@ -50,9 +55,9 @@ class WebhookController {
       const webhook = await webhookService.getWebhook(webhookId, organizationId);
 
       res.json(webhook);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Get webhook error', error);
-      if (error.message === 'Webhook not found') {
+      if (getErrorMessage(error) === 'Webhook not found') {
         throw new AppError('Webhook not found', 404);
       }
       throw new AppError('Failed to fetch webhook', 500);
@@ -100,10 +105,10 @@ class WebhookController {
         webhook,
         message: 'Webhook created successfully. Please save the secret securely.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Create webhook error', error);
-      if (error.message?.includes('already exists')) {
-        throw new AppError(error.message, 409);
+      if (getErrorMessage(error).includes('already exists')) {
+        throw new AppError(getErrorMessage(error), 409);
       }
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to create webhook', 500);
@@ -147,9 +152,9 @@ class WebhookController {
       });
 
       res.json(webhook);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Update webhook error', error);
-      if (error.message === 'Webhook not found') {
+      if (getErrorMessage(error) === 'Webhook not found') {
         throw new AppError('Webhook not found', 404);
       }
       if (error instanceof AppError) throw error;
@@ -169,9 +174,9 @@ class WebhookController {
       await webhookService.deleteWebhook(webhookId, organizationId);
 
       res.json({ success: true, message: 'Webhook deleted successfully' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Delete webhook error', error);
-      if (error.message === 'Webhook not found') {
+      if (getErrorMessage(error) === 'Webhook not found') {
         throw new AppError('Webhook not found', 404);
       }
       throw new AppError('Failed to delete webhook', 500);
@@ -205,9 +210,9 @@ class WebhookController {
           duration: result.duration,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Test webhook error', error);
-      if (error.message === 'Webhook not found') {
+      if (getErrorMessage(error) === 'Webhook not found') {
         throw new AppError('Webhook not found', 404);
       }
       throw new AppError('Failed to test webhook', 500);
@@ -230,9 +235,9 @@ class WebhookController {
         secret: newSecret,
         message: 'Secret regenerated. Please update your integration.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Regenerate secret error', error);
-      if (error.message === 'Webhook not found') {
+      if (getErrorMessage(error) === 'Webhook not found') {
         throw new AppError('Webhook not found', 404);
       }
       throw new AppError('Failed to regenerate secret', 500);
@@ -251,7 +256,7 @@ class WebhookController {
       const result = await webhookService.getEventHistory(organizationId, {
         webhookId: webhookId as string,
         eventType: eventType as string,
-        status: status as any,
+        status: status as 'pending' | 'delivered' | 'failed' | undefined,
         limit: limit ? parseInt(limit as string, 10) : undefined,
         offset: offset ? parseInt(offset as string, 10) : undefined,
       });
@@ -275,12 +280,12 @@ class WebhookController {
       await webhookService.retryEvent(eventId, organizationId);
 
       res.json({ success: true, message: 'Event retry initiated' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Retry event error', error);
-      if (error.message === 'Webhook event not found') {
+      if (getErrorMessage(error) === 'Webhook event not found') {
         throw new AppError('Event not found', 404);
       }
-      if (error.message === 'Event already delivered') {
+      if (getErrorMessage(error) === 'Event already delivered') {
         throw new AppError('Event already delivered', 400);
       }
       throw new AppError('Failed to retry event', 500);
@@ -385,9 +390,9 @@ class WebhookController {
         expiresAt: apiKey.expiresAt,
         message: 'API key created. Please save the key securely - it will not be shown again.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Create API key error', error);
-      if (error.code === 'P2002') {
+      if (error instanceof Error && (error as Error & { code?: string }).code === 'P2002') {
         throw new AppError('An API key with this name already exists', 409);
       }
       if (error instanceof AppError) throw error;
@@ -413,9 +418,9 @@ class WebhookController {
       });
 
       res.json({ success: true, message: 'API key revoked' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Revoke API key error', error);
-      if (error.code === 'P2025') {
+      if (error instanceof Error && (error as Error & { code?: string }).code === 'P2025') {
         throw new AppError('API key not found', 404);
       }
       throw new AppError('Failed to revoke API key', 500);
@@ -477,7 +482,7 @@ class WebhookController {
       });
 
       res.json({ id: webhook.id });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Zapier subscribe error', error);
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to create Zapier subscription', 500);
@@ -497,9 +502,9 @@ class WebhookController {
       await webhookService.deleteWebhook(id, organizationId);
 
       res.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Zapier unsubscribe error', error);
-      if (error.message === 'Webhook not found') {
+      if (getErrorMessage(error) === 'Webhook not found') {
         // Return success even if not found (Zapier expects this)
         res.json({ success: true });
         return;
@@ -648,7 +653,7 @@ class WebhookController {
       });
 
       res.json({ success: true, message: 'Webhook processed' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Incoming webhook error', error);
       if (error instanceof AppError) throw error;
       throw new AppError('Failed to process incoming webhook', 500);

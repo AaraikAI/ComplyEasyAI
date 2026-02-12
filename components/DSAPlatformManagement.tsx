@@ -130,8 +130,8 @@ export const DSAPlatformManagement: React.FC = () => {
       setLoading(true);
       const response = await api.euRegulations.dsa.getPlatforms();
       setPlatforms(response.platforms || []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load platforms');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load platforms');
     } finally {
       setLoading(false);
     }
@@ -153,8 +153,8 @@ export const DSAPlatformManagement: React.FC = () => {
         monthlyActiveUsers: '',
       });
       await loadPlatforms();
-    } catch (err: any) {
-      setError(err.message || 'Failed to register platform');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to register platform');
     }
   };
 
@@ -179,8 +179,8 @@ export const DSAPlatformManagement: React.FC = () => {
       
       // Reload platforms in the background
       await loadPlatforms();
-    } catch (err: any) {
-      setError(err.message || 'Failed to record content moderation');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to record content moderation');
     }
   };
 
@@ -198,7 +198,7 @@ export const DSAPlatformManagement: React.FC = () => {
           createdAt: r.createdAt,
         })),
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Do not block UI on history failure; just log error locally
       console.error('Failed to load moderation history', err);
     }
@@ -208,7 +208,7 @@ export const DSAPlatformManagement: React.FC = () => {
     try {
       const response = await api.euRegulations.dsa.getTransparencyReports(platformId);
       setTransparencyReports(response.reports || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load transparency reports', err);
     }
   };
@@ -217,7 +217,7 @@ export const DSAPlatformManagement: React.FC = () => {
     try {
       const response = await api.euRegulations.dsa.getRiskAssessments(platformId);
       setRiskAssessments(response.assessments || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load risk assessments', err);
     }
   };
@@ -248,7 +248,7 @@ export const DSAPlatformManagement: React.FC = () => {
           notes: '',
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load feed config', err);
     }
   };
@@ -269,8 +269,8 @@ export const DSAPlatformManagement: React.FC = () => {
         reason: '',
       });
       await loadPlatforms();
-    } catch (err: any) {
-      setError(err.message || 'Failed to report illegal content');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to report illegal content');
     }
   };
 
@@ -278,7 +278,7 @@ export const DSAPlatformManagement: React.FC = () => {
     try {
       const response = await api.euRegulations.dsa.getAdsFromRepository(platformId);
       setAdHistory(response.ads || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load ad history', err);
     }
   };
@@ -307,8 +307,8 @@ export const DSAPlatformManagement: React.FC = () => {
         isPoliticalAd: false,
       });
       await loadPlatforms();
-    } catch (err: any) {
-      setError(err.message || 'Failed to add ad to repository');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to add ad to repository');
     }
   };
 
@@ -334,8 +334,8 @@ export const DSAPlatformManagement: React.FC = () => {
       setSelectedDSAReport(response.report);
       setShowDSAReportModal(true);
       await loadTransparencyReports(selectedPlatform.id);
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate transparency report');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to generate transparency report');
     }
   };
 
@@ -363,8 +363,8 @@ export const DSAPlatformManagement: React.FC = () => {
       await loadRiskAssessments(selectedPlatform.id);
       await loadPlatforms();
       // Don't close modal - show results instead
-    } catch (err: any) {
-      setError(err.message || 'Failed to conduct risk assessment');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to conduct risk assessment');
     }
   };
 
@@ -381,8 +381,8 @@ export const DSAPlatformManagement: React.FC = () => {
       setShowFeedConfigModal(false);
       await loadFeedConfig(selectedPlatform.id);
       await loadPlatforms();
-    } catch (err: any) {
-      setError(err.message || 'Failed to configure non-personalized feed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to configure non-personalized feed');
     }
   };
 
@@ -1080,8 +1080,8 @@ export const DSAPlatformManagement: React.FC = () => {
                 setShowEditPlatformModal(false);
                 await loadPlatforms();
                 alert('Platform updated successfully');
-              } catch (err: any) {
-                setError(err.message || 'Failed to update platform');
+              } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'Failed to update platform');
               }
             }} className="p-6 space-y-4">
               <div>
@@ -1541,8 +1541,8 @@ export const DSAPlatformManagement: React.FC = () => {
                                 await api.euRegulations.dsa.updateRiskAssessment(assessment.id, { status: 'approved' });
                                 await loadRiskAssessments(selectedPlatform!.id);
                                 alert('Risk assessment approved successfully');
-                              } catch (err: any) {
-                                setError(err.message || 'Failed to approve assessment');
+                              } catch (err: unknown) {
+                                setError(err instanceof Error ? err.message : 'Failed to approve assessment');
                               }
                             }}
                             className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
@@ -1765,8 +1765,8 @@ export const DSAPlatformManagement: React.FC = () => {
                 setSelectedAssessment(null);
                 await loadRiskAssessments(selectedPlatform.id);
                 alert('Risk assessment updated successfully');
-              } catch (err: any) {
-                setError(err.message || 'Failed to update risk assessment');
+              } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'Failed to update risk assessment');
               }
             }} className="p-6 space-y-4">
               <div>

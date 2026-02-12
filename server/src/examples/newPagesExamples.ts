@@ -47,7 +47,7 @@ export async function createCourseEnrollment(userId: string, courseId: string) {
 
     logger.info(`Course enrollment created: ${enrollment.id}`);
     return enrollment;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating course enrollment:', error);
     throw error;
   }
@@ -76,7 +76,7 @@ export async function updateCourseProgress(
     });
 
     return enrollment;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating course progress:', error);
     throw error;
   }
@@ -122,7 +122,7 @@ export async function registerForWebinar(
     });
 
     return registration;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error registering for webinar:', error);
     throw error;
   }
@@ -156,7 +156,7 @@ export async function getUserCertifications(userId: string) {
     });
 
     return certifications;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching user certifications:', error);
     throw error;
   }
@@ -225,7 +225,7 @@ export async function createForumPost(
     });
 
     return post;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating forum post:', error);
     throw error;
   }
@@ -274,7 +274,7 @@ export async function addForumComment(
     });
 
     return comment;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error adding forum comment:', error);
     throw error;
   }
@@ -331,7 +331,7 @@ export async function voteOnForumContent(
     }
 
     return vote;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error voting on forum content:', error);
     throw error;
   }
@@ -388,7 +388,7 @@ export async function shareResource(
     await updateUserContribution(authorId, 'resource_shared', 10, resource.id, 'resource');
 
     return resource;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error sharing resource:', error);
     throw error;
   }
@@ -446,7 +446,7 @@ export async function updateUserContribution(
     });
 
     return contribution;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating user contribution:', error);
     throw error;
   }
@@ -499,7 +499,7 @@ export async function updateServiceStatus(
     });
 
     return service;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating service status:', error);
     throw error;
   }
@@ -561,7 +561,7 @@ export async function createIncident(
     });
 
     return incident;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating incident:', error);
     throw error;
   }
@@ -599,7 +599,7 @@ export async function addIncidentUpdate(
     });
 
     return update;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error adding incident update:', error);
     throw error;
   }
@@ -632,7 +632,7 @@ export async function createMaintenanceWindow(
     });
 
     return maintenance;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating maintenance window:', error);
     throw error;
   }
@@ -669,7 +669,7 @@ export async function subscribeToStatusUpdates(
     // TODO: Send verification email with verificationToken
 
     return subscription;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating status subscription:', error);
     throw error;
   }
@@ -711,7 +711,7 @@ export async function getFeaturedCourses(limit: number = 8) {
     });
 
     return courses;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching featured courses:', error);
     throw error;
   }
@@ -772,7 +772,7 @@ export async function getForumPosts(
         totalPages: Math.ceil(total / limit),
       },
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching forum posts:', error);
     throw error;
   }
@@ -804,7 +804,7 @@ export async function getServiceStatusWithHistory(serviceId: string) {
       service,
       history,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching service status:', error);
     throw error;
   }
