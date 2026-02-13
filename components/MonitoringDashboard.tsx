@@ -121,7 +121,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 };
 
 const PIE_COLORS = ['#22c55e', '#eab308', '#ef4444', '#9ca3af'];
-const TYPE_PIE_COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#6366f1'];
+const TYPE_PIE_COLORS = ['#3b82f6', '#06b6d4', '#f59e0b', '#10b981', '#0d9488'];
 
 const MONITOR_TYPES = ['Infrastructure', 'Cloud', 'Identity', 'Device', 'Code'];
 const FREQUENCIES = ['Hourly', 'Daily', 'Weekly', 'Monthly'];
@@ -479,7 +479,7 @@ export default function MonitoringDashboard() {
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis allowDecimals={false} />
                   <Tooltip />
-                  <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="value" fill="#0d9488" radius={[4, 4, 0, 0]}>
                     {typeData.map((_, i) => <Cell key={i} fill={TYPE_PIE_COLORS[i % TYPE_PIE_COLORS.length]} />)}
                   </Bar>
                 </BarChart>

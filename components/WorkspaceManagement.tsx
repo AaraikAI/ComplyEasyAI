@@ -81,7 +81,7 @@ interface PredictiveRisk {
 
 type ViewMode = 'dashboard' | 'ai-insights' | 'ai-benchmark' | 'ai-predict-risks' | 'create-child' | 'clone-framework' | 'move-user';
 
-const CHART_COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#6366f1', '#ec4899'];
+const CHART_COLORS = ['#3b82f6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444', '#0d9488', '#ec4899'];
 
 // ---------------------------------------------------------------------------
 // Component

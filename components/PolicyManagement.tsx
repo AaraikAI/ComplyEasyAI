@@ -84,7 +84,7 @@ const POLICY_TYPES = [
 ];
 
 const PIE_STATUS_COLORS = ['#6b7280', '#3b82f6', '#22c55e', '#eab308'];
-const BAR_COLOR = '#6366f1';
+const BAR_COLOR = '#0d9488';
 
 // ---------------------------------------------------------------------------
 // Helpers
