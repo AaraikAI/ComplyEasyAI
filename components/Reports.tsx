@@ -70,7 +70,7 @@ interface VendorRiskReport {
   summary: string;
 }
 
-const CHART_COLORS = ['#22c55e', '#eab308', '#f97316', '#ef4444', '#6366f1'];
+const CHART_COLORS = ['#22c55e', '#eab308', '#f97316', '#ef4444', '#0d9488'];
 const SEVERITY_COLORS: Record<string, string> = {
   Critical: 'bg-red-100 text-red-800 border-red-200',
   High: 'bg-orange-100 text-orange-800 border-orange-200',
@@ -1206,7 +1206,7 @@ export const Reports: React.FC = () => {
                   <XAxis dataKey="level" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="count" fill="#0d9488" radius={[4, 4, 0, 0]}>
                     {vendorReport.vendorsByRiskLevel.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}

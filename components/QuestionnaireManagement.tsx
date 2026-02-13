@@ -100,7 +100,7 @@ const STATUS_LABELS: Record<string, string> = {
   Approved: 'Approved',
 };
 
-const PIE_COLORS = ['#9ca3af', '#3b82f6', '#22c55e', '#8b5cf6', '#10b981'];
+const PIE_COLORS = ['#9ca3af', '#3b82f6', '#22c55e', '#06b6d4', '#10b981'];
 
 const QUESTIONNAIRE_TYPES = ['Security Assessment', 'Vendor Assessment', 'Privacy Assessment', 'Compliance Assessment', 'IT Controls', 'Custom'];
 
