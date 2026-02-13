@@ -1,0 +1,73 @@
+{
+  "evals": [
+    {
+      "id": "basic-keyword-generation",
+      "prompt": "Generate a programmatic SEO keyword strategy for the business described in sample-prd.md. Target the top 10 US cities for tech companies. Create all deliverables.",
+      "input_files": ["sample-prd.md"],
+      "expectations": [
+        "Creates keyword-universe.csv with at least 100 keywords",
+        "CSV includes all required columns: keyword, service, location, intent_modifier, cluster_type, priority_score",
+        "Generates at least 3 landing page templates",
+        "Creates seo-strategy.md with implementation roadmap",
+        "Includes competitor analysis with web search results",
+        "Keywords combine service (compliance/SOC2/HIPAA) + location + intent modifiers",
+        "Templates include {{variable}} placeholders for dynamic content",
+        "Priority scores are calculated and sorted descending"
+      ]
+    },
+    {
+      "id": "template-quality",
+      "prompt": "Using sample-prd.md, create landing page templates for compliance software targeting healthcare companies in major cities. Focus on template quality and SEO optimization.",
+      "input_files": ["sample-prd.md"],
+      "expectations": [
+        "Templates include proper SEO metadata (title, meta description)",
+        "Each template has clear {{variable}} definitions",
+        "Templates include schema.org markup examples",
+        "Local elements present (city-specific content suggestions)",
+        "CTA sections are clear and actionable",
+        "Templates avoid thin content with minimum length guidance",
+        "Industry-specific customization evident for healthcare vertical"
+      ]
+    },
+    {
+      "id": "competitor-research",
+      "prompt": "Research competitor SEO strategies for compliance automation software in San Francisco, Austin, and New York. Generate keyword opportunities based on SERP gaps.",
+      "input_files": ["sample-prd.md"],
+      "expectations": [
+        "Uses web_search to research actual competitors",
+        "Documents SERP intent patterns (what page types rank)",
+        "Identifies content gaps or opportunities",
+        "competitor-analysis.md file created with findings",
+        "Recommendations based on actual search results, not assumptions",
+        "Notes specific competitor strengths/weaknesses",
+        "Validates at least 5-10 keyword patterns with live searches"
+      ]
+    },
+    {
+      "id": "multi-framework-keywords",
+      "prompt": "Create keyword universe for all compliance frameworks mentioned in sample-prd.md (SOC2, ISO27001, GDPR, HIPAA, PCI). Target top 5 cities.",
+      "input_files": ["sample-prd.md"],
+      "expectations": [
+        "Keywords cover all 5 frameworks (SOC2, ISO27001, GDPR, HIPAA, PCI)",
+        "Service dimension includes framework-specific terms",
+        "At least 150 total keywords across all frameworks",
+        "Cluster types include framework comparison keywords",
+        "Priority scoring accounts for different framework popularity",
+        "Templates adaptable across different frameworks"
+      ]
+    },
+    {
+      "id": "industry-vertical-focus",
+      "prompt": "Generate programmatic SEO strategy specifically for healthcare and fintech industries mentioned in the PRD. Include vertical-specific landing pages.",
+      "input_files": ["sample-prd.md"],
+      "expectations": [
+        "Keywords include industry modifiers (for healthcare, for fintech)",
+        "Vertical-specific template created",
+        "Industry pain points from PRD incorporated into templates",
+        "Keyword clusters organized by industry vertical",
+        "Regulatory context specific to healthcare (HIPAA) and fintech (PCI) highlighted",
+        "Industry-specific case study placeholders in templates"
+      ]
+    }
+  ]
+}
