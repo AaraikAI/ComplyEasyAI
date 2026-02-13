@@ -589,7 +589,7 @@ const MetricCard: React.FC<{ metric: Metric }> = ({ metric }) => {
 };
 
 const ChartCard: React.FC<{ title: string; type: 'line' | 'bar' | 'pie'; data: ChartData }> = ({ title, type, data }) => {
-  const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6'];
+  const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#06b6d4'];
 
   const renderChart = () => {
     if (!data || !data.labels || data.labels.length === 0) {

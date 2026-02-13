@@ -247,7 +247,7 @@ export const LandingPage: React.FC = () => {
               <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="text-sm font-medium text-surface-600 hover:text-brand-600 transition-colors cursor-pointer">About</a>
               <button
                 onClick={() => { setAuthStep('email'); setShowAuthModal(true); }}
-                className="bg-brand-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20"
+                className="bg-amber-500 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20"
               >
                 Sign In
               </button>
@@ -292,13 +292,13 @@ export const LandingPage: React.FC = () => {
                   setShowSignupModal(true);
                   window.location.href = '/signup';
                 }}
-                className="w-full sm:w-auto px-8 py-4 bg-brand-600 text-white rounded-full font-semibold hover:bg-brand-700 transition-all transform hover:scale-105 shadow-xl shadow-brand-500/25 flex items-center justify-center text-lg"
+                className="w-full sm:w-auto px-8 py-4 bg-amber-500 text-white rounded-full font-semibold hover:bg-amber-600 transition-all transform hover:scale-105 shadow-xl shadow-amber-500/25 flex items-center justify-center text-lg"
               >
                 Start Free Trial <ArrowRight size={20} className="ml-2" />
               </button>
               <button
                 onClick={() => setShowDemoModal(true)}
-                className="w-full sm:w-auto px-8 py-4 bg-white/80 backdrop-blur text-brand-600 rounded-full font-semibold hover:bg-white transition-all transform hover:scale-105 shadow-xl flex items-center justify-center border border-brand-200 text-lg"
+                className="w-full sm:w-auto px-8 py-4 bg-white/80 backdrop-blur text-brand-700 rounded-full font-semibold hover:bg-white transition-all transform hover:scale-105 shadow-xl flex items-center justify-center border border-brand-200 text-lg"
               >
                 Book a Demo <ArrowRight size={20} className="ml-2" />
               </button>
@@ -690,7 +690,7 @@ export const LandingPage: React.FC = () => {
                   setShowSignupModal(false);
                   window.location.href = '/signup';
                 }}
-                className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 mb-3"
+                className="w-full bg-amber-500 text-white py-3 rounded-xl font-bold hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 mb-3"
               >
                 Get Started Free
                 <ArrowRight size={18} />
