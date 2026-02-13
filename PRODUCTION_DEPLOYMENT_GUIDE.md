@@ -66,8 +66,7 @@
 
 3. **Test SendGrid Connection:**
    ```bash
-   cd server
-   npm run test:sendgrid
+   cd server && npm run test:sendgrid
    ```
 
    This script will:

@@ -1,0 +1,168 @@
+{
+  "evals": [
+    {
+      "id": "e2e-user-registration",
+      "prompt": "Create comprehensive end-to-end tests for a user registration flow. The app has a signup form at /signup with name, email, password, and confirm password fields. After successful registration, users should be redirected to /dashboard. Include tests for: successful registration, validation errors (missing fields, invalid email, password mismatch, weak password), duplicate email detection, and verify the user is created in the database with hashed password.",
+      "expectations": [
+        "Generates E2E test file with multiple test cases covering happy path and error scenarios",
+        "Uses proper Playwright selectors (getByRole, getByLabel) instead of brittle CSS selectors",
+        "Includes database verification to confirm user was created in database",
+        "Validates that password is hashed (not stored in plaintext) in database",
+        "Tests all validation rules (required fields, email format, password strength, password confirmation)",
+        "Uses Page Object Model or reusable helper functions for login/signup",
+        "Includes proper assertions for redirects, error messages, and success states"
+      ]
+    },
+    {
+      "id": "api-crud-testing",
+      "prompt": "Write comprehensive API tests for a REST API managing books. Endpoints: GET /api/books (list all), GET /api/books/:id (get one), POST /api/books (create), PUT /api/books/:id (update), DELETE /api/books/:id (delete). Books have: title, author, isbn, publishedYear. Include authentication (Bearer token required). Test: successful CRUD operations, authentication failures, validation errors (missing required fields, invalid ISBN format), 404 for non-existent books, and database verification for each operation.",
+      "expectations": [
+        "Creates API test file testing all CRUD endpoints",
+        "Tests authentication by attempting requests without token (expects 401)",
+        "Tests with valid token and expects 200/201 responses",
+        "Validates request/response JSON structure",
+        "Tests validation errors (400 responses) for invalid data",
+        "Tests 404 responses for non-existent resources",
+        "Includes database verification confirming records are created/updated/deleted",
+        "Uses proper HTTP methods (GET, POST, PUT, DELETE)"
+      ]
+    },
+    {
+      "id": "database-integrity",
+      "prompt": "Create tests to verify database integrity for an e-commerce order system. The database has three tables: users (id, email, name), products (id, name, price), and orders (id, user_id, product_id, quantity, total, created_at). Test: foreign key constraints (cannot create order with invalid user_id or product_id), cascade delete (deleting user deletes their orders), soft delete vs hard delete, transaction rollback on error, and that order total matches product price * quantity.",
+      "expectations": [
+        "Generates database integrity tests",
+        "Tests foreign key constraints by attempting to create invalid references",
+        "Verifies cascade delete behavior when parent record is deleted",
+        "Tests both soft delete (deleted_at timestamp) and hard delete",
+        "Validates calculated fields (order total = price * quantity)",
+        "Tests transaction behavior and rollback scenarios",
+        "Uses proper SQL queries to verify database state",
+        "Includes test data cleanup after each test"
+      ]
+    },
+    {
+      "id": "visual-regression",
+      "prompt": "Set up visual regression testing for a product landing page at /products/laptop-pro. The page has: hero image, product title, price, features list, 'Add to Cart' button, and customer reviews section. Create baseline screenshots and tests to detect visual changes. Test at three breakpoints: mobile (375px), tablet (768px), and desktop (1920px). Include tests for different states: default view, hover state on 'Add to Cart' button, and modal open when clicking 'View Details'.",
+      "expectations": [
+        "Creates visual regression test file",
+        "Takes baseline screenshots at multiple viewport sizes (mobile, tablet, desktop)",
+        "Tests different component states (default, hover, modal open)",
+        "Uses Playwright's toHaveScreenshot() for visual comparison",
+        "Includes proper viewport configuration for each breakpoint",
+        "Handles dynamic content appropriately (masks timestamps, user-specific data)",
+        "Organizes screenshots with clear naming convention"
+      ]
+    },
+    {
+      "id": "performance-testing",
+      "prompt": "Create performance tests for a dashboard page at /dashboard that loads user analytics data. Test: page load time is under 3 seconds, API response for /api/analytics is under 500ms, Largest Contentful Paint (LCP) is under 2.5s, no JavaScript errors in console, network requests are optimized (no unnecessary requests), and the page remains responsive during data loading. Also verify that the API can handle 100 concurrent requests without errors.",
+      "expectations": [
+        "Creates performance test file with timing measurements",
+        "Measures and asserts page load time < 3000ms",
+        "Measures API response time < 500ms",
+        "Captures Core Web Vitals metrics (LCP, FID, CLS)",
+        "Monitors console for JavaScript errors",
+        "Tracks network requests and identifies unnecessary calls",
+        "Includes load testing scenario with concurrent requests",
+        "Uses performance.now() or Date.now() for accurate timing"
+      ]
+    },
+    {
+      "id": "security-testing",
+      "prompt": "Write security tests for a user profile page at /profile with a bio field that accepts user input. Test for: SQL injection attempts, XSS (cross-site scripting) vulnerabilities, CSRF protection, proper authentication (unauthenticated users redirected to login), authorization (users cannot edit other users' profiles), sensitive data exposure (passwords never returned in API responses), and secure headers (CSP, X-Frame-Options, HSTS). Include tests for common attack vectors.",
+      "expectations": [
+        "Creates security test file covering multiple vulnerability types",
+        "Tests SQL injection by submitting malicious SQL in input fields and verifying data integrity",
+        "Tests XSS by submitting script tags and verifying they are escaped/sanitized",
+        "Tests CSRF protection by attempting requests without CSRF token",
+        "Tests authentication by accessing protected routes without login",
+        "Tests authorization by attempting to access/modify other users' data",
+        "Verifies sensitive data (passwords, tokens) not exposed in responses",
+        "Checks security headers in HTTP responses"
+      ]
+    },
+    {
+      "id": "auto-fix-selectors",
+      "prompt": "You have an existing test file that uses CSS selectors: page.locator('.login-btn'), page.locator('#email-input'), page.locator('.error-msg'). The UI was recently refactored and these selectors are now broken. The new HTML has: button with role='button' and name='Log In', input with label='Email Address', and error message with test-id='login-error'. Analyze the test failures and automatically fix the selectors to use accessible, resilient selectors.",
+      "expectations": [
+        "Identifies that tests are failing due to broken selectors",
+        "Replaces CSS selectors with accessible selectors (getByRole, getByLabel, getByTestId)",
+        "Updates .login-btn to getByRole('button', { name: 'Log In' })",
+        "Updates #email-input to getByLabel('Email Address')",
+        "Updates .error-msg to getByTestId('login-error')",
+        "Re-runs tests to verify fixes work",
+        "Explains the changes made and why new selectors are more resilient"
+      ]
+    },
+    {
+      "id": "test-plan-generation",
+      "prompt": "Generate a comprehensive test plan for a todo application. The app has: user authentication (signup/login), todo CRUD operations (create, read, update, delete), filtering (all/active/completed), marking todos as complete/incomplete, and drag-and-drop reordering. Analyze the application structure, identify all user journeys, prioritize tests by business impact, and create a structured test plan with unit, integration, and E2E tests.",
+      "expectations": [
+        "Generates structured test plan document (JSON or Markdown)",
+        "Identifies all user journeys (auth, CRUD, filtering, reordering)",
+        "Prioritizes tests (P0: critical paths like auth and CRUD, P1: filtering, P2: nice-to-have features)",
+        "Categorizes tests by type (unit, integration, E2E)",
+        "Includes acceptance criteria for each test area",
+        "Identifies edge cases (empty state, many todos, special characters in text)",
+        "Suggests test data requirements",
+        "Provides clear next steps for implementation"
+      ]
+    },
+    {
+      "id": "coverage-gap-analysis",
+      "prompt": "Analyze the test coverage for a blog application with the following features: user authentication, create/edit/delete blog posts, comments on posts, search functionality, and user profiles. Current tests only cover: user signup, user login, and creating a blog post. Identify all untested features, categorize gaps by severity, suggest new test cases, and prioritize them.",
+      "expectations": [
+        "Identifies untested features: edit post, delete post, comments, search, profiles",
+        "Categorizes gaps by severity (critical: missing auth coverage for protected actions, high: CRUD gaps, medium: search, low: edge cases)",
+        "Suggests specific test cases for each gap",
+        "Prioritizes test cases based on business impact and risk",
+        "Includes edge cases that are currently untested",
+        "Provides rationale for prioritization",
+        "Recommends which gaps to address first"
+      ]
+    },
+    {
+      "id": "integration-auth-flow",
+      "prompt": "Create integration tests for an OAuth 2.0 authentication flow with Google. The flow: user clicks 'Sign in with Google', redirects to Google consent screen, after consent redirects back to /auth/callback with code, backend exchanges code for access token, creates/updates user in database, and returns JWT to frontend. Test: successful flow, handling of invalid auth code, network failure during token exchange, duplicate email handling, and database state verification.",
+      "expectations": [
+        "Creates integration test file for OAuth flow",
+        "Mocks Google OAuth endpoints (authorization URL, token exchange)",
+        "Tests successful authentication end-to-end",
+        "Tests error scenarios (invalid code, network failure, expired token)",
+        "Verifies JWT token is generated and valid",
+        "Includes database verification for user creation/update",
+        "Tests handling of duplicate emails from OAuth provider",
+        "Uses proper async/await patterns for OAuth flow"
+      ]
+    },
+    {
+      "id": "responsive-design",
+      "prompt": "Test responsive design for a pricing page at /pricing with three pricing tiers displayed in cards. Test: layout at mobile (375px), tablet (768px), and desktop (1920px) breakpoints. Verify: cards stack vertically on mobile, display 2 columns on tablet, display 3 columns on desktop. Test touch interactions on mobile (tap to expand details), hover effects on desktop (card elevation on hover), and all pricing information is readable at each breakpoint.",
+      "expectations": [
+        "Creates responsive design test file",
+        "Tests three breakpoints (375px, 768px, 1920px)",
+        "Verifies layout changes at each breakpoint (stacked, 2-col, 3-col)",
+        "Tests mobile-specific interactions (tap, swipe)",
+        "Tests desktop-specific interactions (hover effects)",
+        "Validates text readability and no overflow issues",
+        "Uses viewport configuration to test different screen sizes",
+        "Takes screenshots at each breakpoint for visual verification"
+      ]
+    },
+    {
+      "id": "flaky-test-fix",
+      "prompt": "You have a flaky test that intermittently fails with 'element not found' error. The test navigates to /products, waits 1 second with page.waitForTimeout(1000), then tries to click the first product card. The page loads product data from an API asynchronously. Analyze why the test is flaky and fix it using proper Playwright waiting mechanisms instead of hardcoded delays.",
+      "expectations": [
+        "Identifies root cause: race condition due to async data loading",
+        "Removes hardcoded waitForTimeout(1000)",
+        "Replaces with proper wait strategy (waitForSelector, waitForResponse, or auto-waiting)",
+        "Uses waitForResponse to wait for API call completion",
+        "Or uses waitForSelector with proper selector for product card",
+        "Leverages Playwright's built-in auto-waiting for actionability",
+        "Re-runs test multiple times to verify flakiness is eliminated",
+        "Explains why the new approach is more reliable"
+      ]
+    }
+  ]
+}

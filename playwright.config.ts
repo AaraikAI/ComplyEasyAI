@@ -117,5 +117,20 @@ export default defineConfig({
   /* Expect timeout for assertions */
   expect: {
     timeout: 15 * 1000,
+    /* Visual regression testing configuration */
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.05,
+      threshold: 0.2,
+      animations: 'disabled',
+    },
+    toMatchSnapshot: {
+      maxDiffPixelRatio: 0.05,
+    },
   },
+
+  /* Snapshot output directory */
+  snapshotDir: './e2e/visual/snapshots',
+
+  /* Screenshot output directory */
+  outputDir: './test-results',
 });
