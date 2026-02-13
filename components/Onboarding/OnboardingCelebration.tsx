@@ -11,8 +11,8 @@ export interface OnboardingCelebrationProps {
 // Generate confetti pieces with randomized properties
 const generateConfetti = (count: number) => {
   const colors = [
-    '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981',
-    '#3b82f6', '#ef4444', '#f97316', '#14b8a6', '#a855f7',
+    '#0d9488', '#06b6d4', '#ec4899', '#f59e0b', '#10b981',
+    '#3b82f6', '#ef4444', '#f97316', '#14b8a6', '#22d3ee',
   ];
 
   return Array.from({ length: count }, (_, i) => ({

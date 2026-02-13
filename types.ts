@@ -479,8 +479,8 @@ export type ViewState =
 export const TIER_ORDER: TierName[] = ['Foundation', 'Essentials', 'Growth', 'Visionary'];
 
 export const TIER_COLORS: Record<TierName, { primary: string; bg: string; border: string }> = {
-  Foundation: { primary: '#6366f1', bg: '#eef2ff', border: '#c7d2fe' },
-  Essentials: { primary: '#8b5cf6', bg: '#f5f3ff', border: '#ddd6fe' },
+  Foundation: { primary: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
+  Essentials: { primary: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
   Growth: { primary: '#ec4899', bg: '#fdf2f8', border: '#fbcfe8' },
   Visionary: { primary: '#f59e0b', bg: '#fffbeb', border: '#fde68a' },
 };

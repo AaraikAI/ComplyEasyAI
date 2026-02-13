@@ -697,7 +697,7 @@ Return a JSON object with:
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis allowDecimals={false} />
                   <Tooltip />
-                  <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="value" fill="#0d9488" radius={[4, 4, 0, 0]}>
                     {priorityData.map((_, i) => <Cell key={i} fill={PRIORITY_PIE_COLORS[i % PRIORITY_PIE_COLORS.length]} />)}
                   </Bar>
                 </BarChart>
