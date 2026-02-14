@@ -586,6 +586,381 @@ class JiraService {
       throw new Error('Failed to disconnect Jira integration');
     }
   }
+
+  /**
+   * Sync compliance issues bidirectionally between ComplyEasyAI and Jira
+   */
+  async syncComplianceIssues(
+    organizationId: string,
+    options?: {
+      direction?: 'push' | 'pull' | 'bidirectional';
+      since?: Date;
+      projectKey?: string;
+    }
+  ): Promise<{
+    pushed: number;
+    pulled: number;
+    updated: number;
+    errors: string[];
+  }> {
+    try {
+      const integration = await this.getIntegration(organizationId);
+      if (!integration || !integration.connected) {
+        throw new Error('Jira integration not connected');
+      }
+
+      const direction = options?.direction || 'bidirectional';
+      const since = options?.since || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Last 7 days
+      let pushed = 0;
+      let pulled = 0;
+      let updated = 0;
+      const errors: string[] = [];
+
+      // PUSH: Send local compliance issues to Jira
+      if (direction === 'push' || direction === 'bidirectional') {
+        try {
+          const localIssues = await prisma.issue.findMany({
+            where: {
+              organizationId,
+              updatedAt: { gte: since },
+              status: { not: 'closed' },
+            },
+            take: 100,
+          });
+
+          for (const issue of localIssues) {
+            try {
+              // Check if issue already synced
+              const existingSync = await prisma.auditLog.findFirst({
+                where: {
+                  organizationId,
+                  action: 'jira_sync.pushed',
+                  details: { contains: issue.id },
+                },
+              });
+
+              if (!existingSync) {
+                const jiraIssue = await this.createComplianceTicket(
+                  organizationId,
+                  options?.projectKey || '',
+                  {
+                    title: issue.title,
+                    description: issue.description || '',
+                    framework: (issue as any).framework || 'General',
+                    severity: issue.severity || 'medium',
+                    controlId: (issue as any).controlId,
+                  }
+                );
+
+                await prisma.auditLog.create({
+                  data: {
+                    action: 'jira_sync.pushed',
+                    organizationId,
+                    hash: issue.id,
+                    details: JSON.stringify({
+                      localIssueId: issue.id,
+                      jiraIssueKey: jiraIssue.key,
+                      jiraIssueId: jiraIssue.id,
+                    }),
+                  },
+                });
+
+                pushed++;
+              }
+            } catch (issueError: any) {
+              errors.push(`Push failed for issue ${issue.id}: ${issueError.message}`);
+            }
+          }
+        } catch (pushError: any) {
+          errors.push(`Push phase failed: ${pushError.message}`);
+        }
+      }
+
+      // PULL: Fetch Jira compliance issues and create/update local records
+      if (direction === 'pull' || direction === 'bidirectional') {
+        try {
+          const jiraIssues = await this.getComplianceIssues(organizationId, options?.projectKey);
+
+          for (const jiraIssue of jiraIssues) {
+            try {
+              // Check if already synced
+              const existingSync = await prisma.auditLog.findFirst({
+                where: {
+                  organizationId,
+                  action: 'jira_sync.pulled',
+                  details: { contains: jiraIssue.key },
+                },
+              });
+
+              if (existingSync) {
+                // Update existing local issue
+                const syncDetails = JSON.parse(existingSync.details || '{}');
+                if (syncDetails.localIssueId) {
+                  await prisma.issue.update({
+                    where: { id: syncDetails.localIssueId },
+                    data: {
+                      status: this.mapJiraStatusToLocal(jiraIssue.fields?.status?.name),
+                      updatedAt: new Date(),
+                    },
+                  }).catch(() => { /* Issue may not exist */ });
+                  updated++;
+                }
+              } else {
+                // Create new local issue
+                const localIssue = await prisma.issue.create({
+                  data: {
+                    organizationId,
+                    title: jiraIssue.fields?.summary || jiraIssue.key,
+                    description: jiraIssue.fields?.description || '',
+                    severity: this.mapJiraPriorityToSeverity(jiraIssue.fields?.priority?.name),
+                    status: this.mapJiraStatusToLocal(jiraIssue.fields?.status?.name),
+                    source: 'jira',
+                  },
+                });
+
+                await prisma.auditLog.create({
+                  data: {
+                    action: 'jira_sync.pulled',
+                    organizationId,
+                    hash: jiraIssue.key,
+                    details: JSON.stringify({
+                      localIssueId: localIssue.id,
+                      jiraIssueKey: jiraIssue.key,
+                      jiraIssueId: jiraIssue.id,
+                    }),
+                  },
+                });
+
+                pulled++;
+              }
+            } catch (issueError: any) {
+              errors.push(`Pull failed for Jira issue ${jiraIssue.key}: ${issueError.message}`);
+            }
+          }
+        } catch (pullError: any) {
+          errors.push(`Pull phase failed: ${pullError.message}`);
+        }
+      }
+
+      logger.info(`[Jira] Sync complete for org ${organizationId}: pushed=${pushed}, pulled=${pulled}, updated=${updated}, errors=${errors.length}`);
+
+      return { pushed, pulled, updated, errors };
+    } catch (error: any) {
+      logger.error('[Jira] Error syncing compliance issues', error);
+      throw new Error(`Issue sync failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update a synced Jira issue's status
+   */
+  async updateIssueStatus(
+    organizationId: string,
+    issueKey: string,
+    status: string,
+    comment?: string
+  ): Promise<{ success: boolean }> {
+    try {
+      const integration = await this.getIntegration(organizationId);
+      if (!integration || !integration.connected) {
+        throw new Error('Jira integration not connected');
+      }
+
+      const config = integration.config as any;
+      const cloudId = config?.cloudId;
+      if (!cloudId) throw new Error('Jira cloud ID not found');
+
+      await this.ensureValidToken(organizationId);
+      const updatedIntegration = await this.getIntegration(organizationId);
+      const accessToken = updatedIntegration?.accessToken;
+
+      // Get available transitions
+      const transitionsResponse = await axios.get(
+        `${this.apiBaseUrl}/ex/jira/${cloudId}/rest/api/3/issue/${issueKey}/transitions`,
+        { headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' } }
+      );
+
+      const transitions = transitionsResponse.data.transitions || [];
+      const targetTransition = transitions.find(
+        (t: any) => t.name.toLowerCase() === status.toLowerCase() ||
+                     t.to.name.toLowerCase() === status.toLowerCase()
+      );
+
+      if (targetTransition) {
+        await axios.post(
+          `${this.apiBaseUrl}/ex/jira/${cloudId}/rest/api/3/issue/${issueKey}/transitions`,
+          { transition: { id: targetTransition.id } },
+          { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Add comment if provided
+      if (comment) {
+        await axios.post(
+          `${this.apiBaseUrl}/ex/jira/${cloudId}/rest/api/3/issue/${issueKey}/comment`,
+          {
+            body: {
+              type: 'doc',
+              version: 1,
+              content: [{ type: 'paragraph', content: [{ type: 'text', text: comment }] }],
+            },
+          },
+          { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      logger.info(`[Jira] Issue ${issueKey} updated to status: ${status}`);
+      return { success: true };
+    } catch (error: any) {
+      logger.error(`[Jira] Error updating issue ${issueKey}`, error);
+      return { success: false };
+    }
+  }
+
+  /**
+   * Get sync status for an organization
+   */
+  async getSyncStatus(
+    organizationId: string
+  ): Promise<{
+    lastSync: Date | null;
+    totalSynced: number;
+    pendingSync: number;
+    syncErrors: number;
+  }> {
+    try {
+      const [lastSyncLog, totalSynced, syncErrors] = await Promise.all([
+        prisma.auditLog.findFirst({
+          where: {
+            organizationId,
+            action: { startsWith: 'jira_sync.' },
+          },
+          orderBy: { timestamp: 'desc' },
+        }),
+        prisma.auditLog.count({
+          where: {
+            organizationId,
+            action: { startsWith: 'jira_sync.' },
+          },
+        }),
+        prisma.auditLog.count({
+          where: {
+            organizationId,
+            action: 'jira_sync.error',
+          },
+        }),
+      ]);
+
+      // Count local issues not yet synced
+      const totalLocalIssues = await prisma.issue.count({
+        where: { organizationId, status: { not: 'closed' } },
+      });
+
+      const syncedIssueIds = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: 'jira_sync.pushed',
+        },
+        select: { hash: true },
+      });
+
+      const pendingSync = totalLocalIssues - syncedIssueIds.length;
+
+      return {
+        lastSync: lastSyncLog?.timestamp || null,
+        totalSynced,
+        pendingSync: Math.max(0, pendingSync),
+        syncErrors,
+      };
+    } catch (error) {
+      logger.error('[Jira] Error getting sync status', error);
+      return { lastSync: null, totalSynced: 0, pendingSync: 0, syncErrors: 0 };
+    }
+  }
+
+  /**
+   * Map Jira status to local issue status
+   */
+  private mapJiraStatusToLocal(jiraStatus?: string): string {
+    if (!jiraStatus) return 'open';
+    const statusLower = jiraStatus.toLowerCase();
+    if (['done', 'closed', 'resolved'].includes(statusLower)) return 'closed';
+    if (['in progress', 'in review'].includes(statusLower)) return 'in_progress';
+    if (['to do', 'open', 'backlog'].includes(statusLower)) return 'open';
+    return 'open';
+  }
+
+  /**
+   * Map Jira priority to local severity
+   */
+  private mapJiraPriorityToSeverity(jiraPriority?: string): string {
+    if (!jiraPriority) return 'medium';
+    const priorityLower = jiraPriority.toLowerCase();
+    if (['highest', 'blocker'].includes(priorityLower)) return 'critical';
+    if (['high'].includes(priorityLower)) return 'high';
+    if (['medium', 'normal'].includes(priorityLower)) return 'medium';
+    return 'low';
+  }
+
+  /**
+   * Process Jira webhook events for real-time sync
+   */
+  async processWebhookEvent(
+    organizationId: string,
+    event: {
+      webhookEvent: string;
+      issue?: any;
+      changelog?: any;
+    }
+  ): Promise<{ processed: boolean }> {
+    try {
+      const eventType = event.webhookEvent;
+
+      switch (eventType) {
+        case 'jira:issue_updated': {
+          // Find synced local issue and update it
+          if (event.issue?.key) {
+            const syncRecord = await prisma.auditLog.findFirst({
+              where: {
+                organizationId,
+                action: { startsWith: 'jira_sync.' },
+                details: { contains: event.issue.key },
+              },
+            });
+
+            if (syncRecord) {
+              const syncDetails = JSON.parse(syncRecord.details || '{}');
+              if (syncDetails.localIssueId) {
+                await prisma.issue.update({
+                  where: { id: syncDetails.localIssueId },
+                  data: {
+                    status: this.mapJiraStatusToLocal(event.issue.fields?.status?.name),
+                    updatedAt: new Date(),
+                  },
+                }).catch(() => {});
+              }
+            }
+          }
+          break;
+        }
+
+        case 'jira:issue_deleted': {
+          if (event.issue?.key) {
+            logger.info(`[Jira] Issue deleted in Jira: ${event.issue.key}`);
+          }
+          break;
+        }
+
+        default:
+          logger.debug(`[Jira] Unhandled webhook event: ${eventType}`);
+      }
+
+      return { processed: true };
+    } catch (error) {
+      logger.error('[Jira] Error processing webhook event', error);
+      return { processed: false };
+    }
+  }
 }
 
 export default new JiraService();

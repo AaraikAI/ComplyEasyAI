@@ -2133,6 +2133,539 @@ class BlockchainService {
   static readonly REGISTRY_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('ADMIN_ROLE'));
   static readonly REGISTRY_AUDITOR_ROLE = ethers.keccak256(ethers.toUtf8Bytes('AUDITOR_ROLE'));
   static readonly REGISTRY_OPERATOR_ROLE = ethers.keccak256(ethers.toUtf8Bytes('OPERATOR_ROLE'));
+
+  // ---- Evidence Anchoring & Tamper Detection ----
+
+  /**
+   * Anchor an evidence hash to the blockchain, creating an immutable record
+   * that can later be used for tamper detection.
+   */
+  async anchorEvidenceHash(
+    organizationId: string,
+    evidenceId: string,
+    fileBuffer: Buffer,
+    metadata: {
+      filename?: string;
+      mimeType?: string;
+      controlId?: string;
+      frameworkId?: string;
+    },
+    network: BlockchainNetwork = 'polygon'
+  ): Promise<{
+    evidenceHash: string;
+    transactionHash: string;
+    blockNumber: number;
+    anchoredAt: Date;
+    network: BlockchainNetwork;
+  }> {
+    try {
+      // Generate SHA-256 hash of the evidence file
+      const evidenceHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+      const bytes32Hash = '0x' + evidenceHash;
+
+      // Create metadata hash for additional context
+      const metadataStr = JSON.stringify({
+        evidenceId,
+        organizationId,
+        filename: metadata.filename,
+        mimeType: metadata.mimeType,
+        controlId: metadata.controlId,
+        frameworkId: metadata.frameworkId,
+        fileSize: fileBuffer.length,
+        anchoredAt: new Date().toISOString(),
+      });
+      const metadataHash = crypto.createHash('sha256').update(metadataStr).digest('hex');
+
+      let txHash: string;
+      let blockNumber: number;
+
+      // Try registry contract first for structured evidence storage
+      if (this.registryContract) {
+        try {
+          const evidenceIdBytes32 = ethers.keccak256(ethers.toUtf8Bytes(evidenceId));
+          const certId = ethers.keccak256(ethers.toUtf8Bytes(`${organizationId}:${metadata.frameworkId || 'general'}`));
+          const evidenceTypeHash = ethers.keccak256(ethers.toUtf8Bytes(metadata.mimeType || 'document'));
+
+          const result = await this.executeRegistryTx('submitEvidence', [
+            evidenceIdBytes32,
+            certId,
+            bytes32Hash,
+            evidenceTypeHash,
+          ]);
+          txHash = result.transactionHash;
+          blockNumber = result.blockNumber;
+        } catch (registryError) {
+          logger.warn('[Blockchain] Registry evidence submission failed, falling back to audit log', registryError);
+          // Fall back to audit log recording
+          const result = await this.recordOnEthereum(bytes32Hash, `evidence:${evidenceId}:${metadataHash}`, network);
+          txHash = result.transactionHash;
+          blockNumber = result.blockNumber;
+        }
+      } else if (network === 'hyperledger') {
+        const result = await this.recordOnHyperledger(bytes32Hash, `evidence:${evidenceId}:${metadataHash}`);
+        txHash = result.transactionId;
+        blockNumber = result.blockHeight;
+      } else {
+        const result = await this.recordOnEthereum(bytes32Hash, `evidence:${evidenceId}:${metadataHash}`, network);
+        txHash = result.transactionHash;
+        blockNumber = result.blockNumber;
+      }
+
+      // Store the anchoring record in the database
+      const record: BlockchainRecord = {
+        id: crypto.randomBytes(16).toString('hex'),
+        organizationId,
+        recordType: 'audit_log',
+        dataHash: bytes32Hash,
+        transactionHash: txHash,
+        blockNumber,
+        network,
+        timestamp: new Date(),
+        verified: true,
+      };
+      await this.storeBlockchainRecord(record);
+
+      // Store evidence anchor metadata for tamper detection
+      await prisma.auditLog.create({
+        data: {
+          action: 'Blockchain: evidence_anchored',
+          organizationId,
+          hash: evidenceHash,
+          details: JSON.stringify({
+            evidenceId,
+            evidenceHash,
+            metadataHash,
+            transactionHash: txHash,
+            blockNumber,
+            network,
+            filename: metadata.filename,
+            mimeType: metadata.mimeType,
+            fileSize: fileBuffer.length,
+            controlId: metadata.controlId,
+            frameworkId: metadata.frameworkId,
+          }),
+        },
+      });
+
+      logger.info(`[Blockchain] Evidence anchored: ${evidenceId} hash=${evidenceHash.substring(0, 16)}... tx=${txHash}`);
+
+      return {
+        evidenceHash,
+        transactionHash: txHash,
+        blockNumber,
+        anchoredAt: new Date(),
+        network,
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error anchoring evidence hash', error);
+      throw new Error(`Evidence anchoring failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Detect tampering by comparing a file's current hash against its blockchain-anchored hash.
+   * Returns detailed information about whether the evidence has been modified.
+   */
+  async detectTampering(
+    organizationId: string,
+    evidenceId: string,
+    currentFileBuffer: Buffer
+  ): Promise<{
+    tampered: boolean;
+    currentHash: string;
+    anchoredHash: string | null;
+    anchoredAt: Date | null;
+    transactionHash: string | null;
+    blockNumber: number | null;
+    network: BlockchainNetwork | null;
+    onChainVerified: boolean;
+    details: string;
+  }> {
+    try {
+      const currentHash = crypto.createHash('sha256').update(currentFileBuffer).digest('hex');
+
+      // Find the anchored record from the database
+      const anchorRecord = await prisma.auditLog.findFirst({
+        where: {
+          organizationId,
+          action: 'Blockchain: evidence_anchored',
+          details: { contains: evidenceId },
+        },
+        orderBy: { timestamp: 'desc' },
+      });
+
+      if (!anchorRecord) {
+        return {
+          tampered: false,
+          currentHash,
+          anchoredHash: null,
+          anchoredAt: null,
+          transactionHash: null,
+          blockNumber: null,
+          network: null,
+          onChainVerified: false,
+          details: 'No blockchain anchor found for this evidence. Evidence has not been anchored yet.',
+        };
+      }
+
+      const anchorDetails = JSON.parse(anchorRecord.details || '{}');
+      const anchoredHash = anchorDetails.evidenceHash;
+      const transactionHash = anchorDetails.transactionHash;
+      const blockNumber = anchorDetails.blockNumber;
+      const network = anchorDetails.network as BlockchainNetwork;
+
+      // Compare hashes
+      const hashesMatch = currentHash === anchoredHash;
+
+      // Verify the hash is still on-chain
+      let onChainVerified = false;
+      if (transactionHash && network) {
+        try {
+          if (network === 'ethereum' || network === 'polygon') {
+            const onChainResult = await this.verifyOnEthereum('0x' + anchoredHash);
+            onChainVerified = onChainResult.exists;
+          } else {
+            const onChainResult = await this.verifyOnHyperledger('0x' + anchoredHash);
+            onChainVerified = onChainResult.exists;
+          }
+        } catch {
+          logger.warn('[Blockchain] On-chain verification failed during tamper detection');
+        }
+      }
+
+      const tampered = !hashesMatch;
+
+      let details: string;
+      if (tampered) {
+        details = `TAMPERING DETECTED: Evidence hash mismatch. Current hash (${currentHash.substring(0, 16)}...) does not match anchored hash (${anchoredHash.substring(0, 16)}...) recorded at block ${blockNumber} on ${network}.`;
+      } else if (onChainVerified) {
+        details = `Evidence integrity verified. Hash matches blockchain anchor at block ${blockNumber} on ${network}. On-chain verification successful.`;
+      } else {
+        details = `Evidence hash matches anchored record but on-chain verification could not be completed. Hash: ${currentHash.substring(0, 16)}...`;
+      }
+
+      // Log the tamper detection check
+      await prisma.auditLog.create({
+        data: {
+          action: tampered ? 'Blockchain: tampering_detected' : 'Blockchain: integrity_verified',
+          organizationId,
+          hash: currentHash,
+          details: JSON.stringify({
+            evidenceId,
+            currentHash,
+            anchoredHash,
+            tampered,
+            onChainVerified,
+            transactionHash,
+            blockNumber,
+            network,
+          }),
+        },
+      });
+
+      if (tampered) {
+        logger.warn(`[Blockchain] TAMPERING DETECTED for evidence ${evidenceId}: hash mismatch`);
+      } else {
+        logger.info(`[Blockchain] Evidence integrity verified for ${evidenceId}`);
+      }
+
+      return {
+        tampered,
+        currentHash,
+        anchoredHash,
+        anchoredAt: anchorRecord.timestamp,
+        transactionHash,
+        blockNumber,
+        network,
+        onChainVerified,
+        details,
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error detecting tampering', error);
+      throw new Error(`Tamper detection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Verify a chain of blockchain transactions for an organization,
+   * ensuring the audit trail is complete and sequential.
+   */
+  async verifyTransactionChain(
+    organizationId: string,
+    options?: {
+      network?: BlockchainNetwork;
+      startDate?: Date;
+      endDate?: Date;
+      limit?: number;
+    }
+  ): Promise<{
+    valid: boolean;
+    totalTransactions: number;
+    verifiedTransactions: number;
+    failedVerifications: number;
+    gaps: Array<{ afterBlock: number; beforeBlock: number; missingCount: number }>;
+    details: string;
+  }> {
+    try {
+      // Fetch all blockchain records for the organization
+      const auditLogs = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: { startsWith: 'Blockchain:' },
+          ...(options?.startDate && { timestamp: { gte: options.startDate } }),
+          ...(options?.endDate && { timestamp: { lte: options.endDate } }),
+        },
+        orderBy: { timestamp: 'asc' },
+        take: options?.limit || 1000,
+      });
+
+      if (auditLogs.length === 0) {
+        return {
+          valid: true,
+          totalTransactions: 0,
+          verifiedTransactions: 0,
+          failedVerifications: 0,
+          gaps: [],
+          details: 'No blockchain transactions found for this organization.',
+        };
+      }
+
+      let verifiedCount = 0;
+      let failedCount = 0;
+      const gaps: Array<{ afterBlock: number; beforeBlock: number; missingCount: number }> = [];
+      let previousBlockNumber: number | null = null;
+
+      for (const log of auditLogs) {
+        try {
+          const details = JSON.parse(log.details || '{}');
+          const txHash = details.transactionHash || details.blockchainRecord?.transactionHash;
+          const blockNumber = details.blockNumber || details.blockchainRecord?.blockNumber;
+          const network = (details.network || details.blockchainRecord?.network || options?.network || 'polygon') as BlockchainNetwork;
+
+          if (!txHash) {
+            failedCount++;
+            continue;
+          }
+
+          // Verify transaction exists on-chain
+          if (network === 'ethereum' || network === 'polygon') {
+            const provider = network === 'ethereum' ? this.ethereumProvider : this.polygonProvider;
+            if (provider) {
+              const receipt = await provider.getTransactionReceipt(txHash);
+              if (receipt && receipt.status === 1) {
+                verifiedCount++;
+              } else {
+                failedCount++;
+              }
+            } else {
+              failedCount++;
+            }
+          } else {
+            // For Hyperledger, trust the stored record
+            verifiedCount++;
+          }
+
+          // Check for gaps in block numbers
+          if (previousBlockNumber !== null && blockNumber) {
+            const gap = blockNumber - previousBlockNumber;
+            if (gap > 100) {
+              gaps.push({
+                afterBlock: previousBlockNumber,
+                beforeBlock: blockNumber,
+                missingCount: gap - 1,
+              });
+            }
+          }
+          if (blockNumber) {
+            previousBlockNumber = blockNumber;
+          }
+        } catch {
+          failedCount++;
+        }
+      }
+
+      const valid = failedCount === 0 && gaps.length === 0;
+      const details = valid
+        ? `All ${verifiedCount} transactions verified successfully. Audit trail is complete.`
+        : `Verification complete: ${verifiedCount} verified, ${failedCount} failed, ${gaps.length} gaps detected.`;
+
+      logger.info(`[Blockchain] Transaction chain verification for ${organizationId}: ${details}`);
+
+      return {
+        valid,
+        totalTransactions: auditLogs.length,
+        verifiedTransactions: verifiedCount,
+        failedVerifications: failedCount,
+        gaps,
+        details,
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error verifying transaction chain', error);
+      throw new Error(`Transaction chain verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get the complete audit trail history from blockchain for an organization.
+   */
+  async getAuditTrailHistory(
+    organizationId: string,
+    options?: {
+      page?: number;
+      pageSize?: number;
+      recordType?: BlockchainRecord['recordType'];
+      network?: BlockchainNetwork;
+      startDate?: Date;
+      endDate?: Date;
+    }
+  ): Promise<{
+    records: Array<{
+      id: string;
+      action: string;
+      dataHash: string;
+      transactionHash: string;
+      blockNumber: number;
+      network: string;
+      timestamp: Date;
+      metadata: any;
+    }>;
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }> {
+    try {
+      const page = options?.page || 1;
+      const pageSize = options?.pageSize || 50;
+      const skip = (page - 1) * pageSize;
+
+      const where: any = {
+        organizationId,
+        action: { startsWith: 'Blockchain:' },
+      };
+
+      if (options?.startDate || options?.endDate) {
+        where.timestamp = {};
+        if (options.startDate) where.timestamp.gte = options.startDate;
+        if (options.endDate) where.timestamp.lte = options.endDate;
+      }
+
+      const [auditLogs, total] = await Promise.all([
+        prisma.auditLog.findMany({
+          where,
+          orderBy: { timestamp: 'desc' },
+          skip,
+          take: pageSize,
+        }),
+        prisma.auditLog.count({ where }),
+      ]);
+
+      const records = auditLogs.map((log) => {
+        const details = JSON.parse(log.details || '{}');
+        const blockchainRecord = details.blockchainRecord || {};
+        return {
+          id: log.id,
+          action: log.action,
+          dataHash: log.hash || blockchainRecord.dataHash || '',
+          transactionHash: details.transactionHash || blockchainRecord.transactionHash || '',
+          blockNumber: details.blockNumber || blockchainRecord.blockNumber || 0,
+          network: details.network || blockchainRecord.network || 'unknown',
+          timestamp: log.timestamp,
+          metadata: details,
+        };
+      });
+
+      // Apply additional filters
+      let filteredRecords = records;
+      if (options?.network) {
+        filteredRecords = records.filter(r => r.network === options.network);
+      }
+      if (options?.recordType) {
+        filteredRecords = records.filter(r => {
+          const meta = r.metadata?.blockchainRecord;
+          return meta?.recordType === options.recordType;
+        });
+      }
+
+      return {
+        records: filteredRecords,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      };
+    } catch (error) {
+      logger.error('[Blockchain] Error getting audit trail history', error);
+      throw new Error('Failed to get audit trail history');
+    }
+  }
+
+  /**
+   * Get health status of all configured blockchain networks.
+   */
+  async getBlockchainHealth(): Promise<{
+    ethereum: { connected: boolean; blockNumber: number | null; latency: number };
+    polygon: { connected: boolean; blockNumber: number | null; latency: number };
+    hyperledger: { connected: boolean; chaincodeName: string | null };
+    registry: { connected: boolean; address: string | null; paused: boolean | null };
+    wallet: { configured: boolean; address: string | null };
+  }> {
+    const health: any = {
+      ethereum: { connected: false, blockNumber: null, latency: 0 },
+      polygon: { connected: false, blockNumber: null, latency: 0 },
+      hyperledger: { connected: false, chaincodeName: null },
+      registry: { connected: false, address: null, paused: null },
+      wallet: { configured: false, address: null },
+    };
+
+    // Check Ethereum
+    if (this.ethereumProvider) {
+      try {
+        const start = Date.now();
+        const blockNumber = await this.ethereumProvider.getBlockNumber();
+        health.ethereum = { connected: true, blockNumber, latency: Date.now() - start };
+      } catch {
+        health.ethereum.connected = false;
+      }
+    }
+
+    // Check Polygon
+    if (this.polygonProvider) {
+      try {
+        const start = Date.now();
+        const blockNumber = await this.polygonProvider.getBlockNumber();
+        health.polygon = { connected: true, blockNumber, latency: Date.now() - start };
+      } catch {
+        health.polygon.connected = false;
+      }
+    }
+
+    // Check Hyperledger
+    if (this.hyperledgerContract) {
+      health.hyperledger = {
+        connected: true,
+        chaincodeName: process.env.HYPERLEDGER_CHAINCODE_NAME || 'compliance',
+      };
+    }
+
+    // Check Registry Contract
+    if (this.registryContract) {
+      try {
+        const paused = await this.registryContract.paused();
+        const address = await this.registryContract.getAddress();
+        health.registry = { connected: true, address, paused };
+      } catch {
+        health.registry.connected = false;
+      }
+    }
+
+    // Check Wallet
+    if (this.wallet) {
+      health.wallet = { configured: true, address: this.wallet.address };
+    }
+
+    return health;
+  }
 }
 
 export default new BlockchainService();

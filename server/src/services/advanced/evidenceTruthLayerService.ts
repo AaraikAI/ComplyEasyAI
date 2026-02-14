@@ -2071,6 +2071,345 @@ class EvidenceTruthLayerService {
       throw error;
     }
   }
+
+  // =========================================================================
+  // Blockchain Bridge - End-to-end evidence anchoring and tamper detection
+  // =========================================================================
+
+  /**
+   * Analyze evidence and anchor the result to the blockchain in a single operation.
+   * This creates an immutable on-chain record of the evidence analysis,
+   * enabling future tamper detection.
+   */
+  async analyzeAndAnchor(
+    evidenceId: string,
+    organizationId: string,
+    fileBuffer: Buffer,
+    metadata: {
+      filename?: string;
+      mimeType?: string;
+      size?: number;
+      controlId?: string;
+      frameworkId?: string;
+    },
+    options?: {
+      network?: 'ethereum' | 'polygon' | 'hyperledger';
+      skipBlockchain?: boolean;
+    }
+  ): Promise<EvidenceAnalysis & {
+    blockchainAnchor?: {
+      evidenceHash: string;
+      transactionHash: string;
+      blockNumber: number;
+      anchoredAt: Date;
+      network: string;
+    };
+  }> {
+    try {
+      // Step 1: Run full evidence analysis
+      const analysis = await this.analyzeEvidence(evidenceId, organizationId, fileBuffer, metadata);
+
+      // Step 2: Anchor to blockchain (unless explicitly skipped)
+      if (options?.skipBlockchain) {
+        return analysis;
+      }
+
+      let blockchainAnchor: any = undefined;
+      try {
+        const blockchainService = (await import('./blockchainService')).default;
+        const anchorResult = await blockchainService.anchorEvidenceHash(
+          organizationId,
+          evidenceId,
+          fileBuffer,
+          {
+            filename: metadata.filename,
+            mimeType: metadata.mimeType,
+            controlId: metadata.controlId,
+            frameworkId: metadata.frameworkId,
+          },
+          options?.network || 'polygon'
+        );
+
+        blockchainAnchor = anchorResult;
+
+        logger.info(
+          `[Evidence Truth Layer] Evidence analyzed and anchored: ${evidenceId}, ` +
+          `confidence=${analysis.overallConfidence}, tx=${anchorResult.transactionHash}`
+        );
+      } catch (blockchainError) {
+        logger.warn(
+          `[Evidence Truth Layer] Blockchain anchoring failed for ${evidenceId} (analysis still valid)`,
+          blockchainError
+        );
+      }
+
+      return { ...analysis, blockchainAnchor };
+    } catch (error) {
+      logger.error('[Evidence Truth Layer] Error in analyze and anchor', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verify evidence integrity against its blockchain-anchored record.
+   * Combines local analysis verification with on-chain tamper detection.
+   */
+  async verifyIntegrity(
+    evidenceId: string,
+    organizationId: string,
+    currentFileBuffer: Buffer
+  ): Promise<{
+    integrityVerified: boolean;
+    hashMatch: boolean;
+    blockchainVerified: boolean;
+    analysisConsistent: boolean;
+    currentHash: string;
+    originalHash: string | null;
+    tamperDetails: string | null;
+    lastAnalysis: EvidenceAnalysis | null;
+    blockchainRecord: {
+      transactionHash: string;
+      blockNumber: number;
+      network: string;
+      anchoredAt: Date;
+    } | null;
+  }> {
+    try {
+      const currentHash = crypto.createHash('sha256').update(currentFileBuffer).digest('hex');
+
+      // Step 1: Check blockchain for tamper detection
+      let blockchainResult: any = null;
+      let blockchainVerified = false;
+      try {
+        const blockchainService = (await import('./blockchainService')).default;
+        blockchainResult = await blockchainService.detectTampering(
+          organizationId,
+          evidenceId,
+          currentFileBuffer
+        );
+        blockchainVerified = !blockchainResult.tampered && blockchainResult.onChainVerified;
+      } catch {
+        logger.warn(`[Evidence Truth Layer] Blockchain verification unavailable for ${evidenceId}`);
+      }
+
+      // Step 2: Check local analysis history
+      let lastAnalysis: EvidenceAnalysis | null = null;
+      let analysisConsistent = true;
+      try {
+        const storedAnalysis = await prisma.evidenceAnalysis.findFirst({
+          where: { evidenceId, organizationId },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (storedAnalysis) {
+          // Verify stored hash matches current
+          if (storedAnalysis.cryptographicHash && storedAnalysis.cryptographicHash !== currentHash) {
+            analysisConsistent = false;
+          }
+
+          lastAnalysis = {
+            evidenceId,
+            deepfakeScore: storedAnalysis.deepfakeScore || 0,
+            cryptographicHash: storedAnalysis.cryptographicHash || '',
+            overallConfidence: storedAnalysis.overallConfidence || 0,
+            verificationStatus: (storedAnalysis.verificationStatus || 'failed') as any,
+            createdAt: storedAnalysis.createdAt,
+          };
+        }
+      } catch {
+        // Non-critical
+      }
+
+      const hashMatch = blockchainResult ? !blockchainResult.tampered : analysisConsistent;
+      const integrityVerified = hashMatch && (blockchainVerified || analysisConsistent);
+
+      const tamperDetails = !integrityVerified
+        ? blockchainResult?.details || 'Evidence hash does not match stored record'
+        : null;
+
+      // Log verification result
+      await prisma.auditLog.create({
+        data: {
+          action: integrityVerified
+            ? 'evidence_truth_layer.integrity_verified'
+            : 'evidence_truth_layer.integrity_failed',
+          organizationId,
+          hash: currentHash,
+          details: JSON.stringify({
+            evidenceId,
+            integrityVerified,
+            hashMatch,
+            blockchainVerified,
+            analysisConsistent,
+            currentHash: currentHash.substring(0, 16),
+            originalHash: blockchainResult?.anchoredHash?.substring(0, 16) || null,
+          }),
+          userId: 'system',
+        },
+      });
+
+      if (!integrityVerified) {
+        logger.warn(`[Evidence Truth Layer] INTEGRITY CHECK FAILED for evidence ${evidenceId}`);
+      } else {
+        logger.info(`[Evidence Truth Layer] Integrity verified for evidence ${evidenceId}`);
+      }
+
+      return {
+        integrityVerified,
+        hashMatch,
+        blockchainVerified,
+        analysisConsistent,
+        currentHash,
+        originalHash: blockchainResult?.anchoredHash || null,
+        tamperDetails,
+        lastAnalysis,
+        blockchainRecord: blockchainResult?.transactionHash ? {
+          transactionHash: blockchainResult.transactionHash,
+          blockNumber: blockchainResult.blockNumber,
+          network: blockchainResult.network,
+          anchoredAt: blockchainResult.anchoredAt,
+        } : null,
+      };
+    } catch (error) {
+      logger.error('[Evidence Truth Layer] Error verifying integrity', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a complete evidence provenance report including blockchain records
+   */
+  async getProvenanceReport(
+    evidenceId: string,
+    organizationId: string
+  ): Promise<{
+    evidenceId: string;
+    chainOfCustody: Array<{
+      action: string;
+      hash: string;
+      timestamp: Date;
+      actor: string;
+      blockchainTx?: string;
+    }>;
+    analyses: Array<{
+      timestamp: Date;
+      deepfakeScore: number;
+      confidence: number;
+      status: string;
+    }>;
+    blockchainAnchors: Array<{
+      hash: string;
+      transactionHash: string;
+      blockNumber: number;
+      network: string;
+      timestamp: Date;
+    }>;
+    attestations: Array<{
+      userId: string;
+      signature: string;
+      timestamp: Date;
+      role?: string;
+    }>;
+    integrityScore: number;
+  }> {
+    try {
+      // Get chain of custody records
+      const custodyLogs = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: 'evidence_truth_layer.chain_of_custody',
+          details: { contains: evidenceId },
+        },
+        orderBy: { timestamp: 'asc' },
+      });
+
+      const chainOfCustody = custodyLogs.map(log => {
+        const details = JSON.parse(log.details || '{}');
+        return {
+          action: details.action || log.action,
+          hash: details.hash || log.hash || '',
+          timestamp: log.timestamp,
+          actor: details.signer || log.userId || 'system',
+          blockchainTx: details.transactionHash,
+        };
+      });
+
+      // Get analysis history
+      const analysisRecords = await prisma.evidenceAnalysis.findMany({
+        where: { evidenceId, organizationId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+
+      const analyses = analysisRecords.map(a => ({
+        timestamp: a.createdAt,
+        deepfakeScore: a.deepfakeScore || 0,
+        confidence: a.overallConfidence || 0,
+        status: a.verificationStatus || 'unknown',
+      }));
+
+      // Get blockchain anchors
+      const anchorLogs = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: 'Blockchain: evidence_anchored',
+          details: { contains: evidenceId },
+        },
+        orderBy: { timestamp: 'desc' },
+      });
+
+      const blockchainAnchors = anchorLogs.map(log => {
+        const details = JSON.parse(log.details || '{}');
+        return {
+          hash: details.evidenceHash || log.hash || '',
+          transactionHash: details.transactionHash || '',
+          blockNumber: details.blockNumber || 0,
+          network: details.network || 'unknown',
+          timestamp: log.timestamp,
+        };
+      });
+
+      // Get attestations
+      const attestationLogs = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: 'evidence_truth_layer.multi_party_attestation',
+          details: { contains: evidenceId },
+        },
+        orderBy: { timestamp: 'desc' },
+      });
+
+      const attestations = attestationLogs.map(log => {
+        const details = JSON.parse(log.details || '{}');
+        return {
+          userId: details.userId || log.userId || '',
+          signature: details.signature || '',
+          timestamp: log.timestamp,
+          role: details.role,
+        };
+      });
+
+      // Calculate integrity score
+      let integrityScore = 0.5; // Base score
+      if (analyses.length > 0) integrityScore += 0.1;
+      if (blockchainAnchors.length > 0) integrityScore += 0.2;
+      if (attestations.length > 0) integrityScore += 0.1;
+      if (chainOfCustody.length > 0) integrityScore += 0.1;
+      if (analyses[0]?.status === 'verified') integrityScore = Math.min(1.0, integrityScore + 0.1);
+
+      return {
+        evidenceId,
+        chainOfCustody,
+        analyses,
+        blockchainAnchors,
+        attestations,
+        integrityScore: Math.round(integrityScore * 100) / 100,
+      };
+    } catch (error) {
+      logger.error('[Evidence Truth Layer] Error generating provenance report', error);
+      throw error;
+    }
+  }
 }
 
 export default new EvidenceTruthLayerService();

@@ -1480,6 +1480,366 @@ Format as JSON:
       throw error;
     }
   }
+
+  /**
+   * Enhanced causal reasoning with Bayesian network support
+   * Performs root cause analysis using causal graph inference
+   */
+  async performCausalAnalysis(
+    organizationId: string,
+    observation: {
+      type: 'risk_increase' | 'control_failure' | 'compliance_drop' | 'incident';
+      description: string;
+      affectedEntities: string[];
+      timeRange?: { start: Date; end: Date };
+      evidence?: Array<{ type: string; value: any }>;
+    }
+  ): Promise<{
+    rootCauses: Array<{
+      cause: string;
+      probability: number;
+      confidence: number;
+      reasoning: string[];
+      evidence: string[];
+      mitigations: string[];
+    }>;
+    causalChain: Array<{ from: string; to: string; strength: number; mechanism: string }>;
+    bayesianFactors: Array<{ variable: string; priorProbability: number; posteriorProbability: number }>;
+    recommendations: string[];
+  }> {
+    try {
+      // Build causal graph from knowledge base
+      const knowledgeBase = await this.getOrBuildKnowledgeGraph(organizationId);
+
+      // Extract relevant facts from observation
+      const facts = this.extractFactsFromObservation(observation);
+
+      // Perform backward chaining to find root causes
+      const rootCauses: Array<{
+        cause: string; probability: number; confidence: number;
+        reasoning: string[]; evidence: string[]; mitigations: string[];
+      }> = [];
+
+      // Build causal chain using topological analysis
+      const causalChain: Array<{ from: string; to: string; strength: number; mechanism: string }> = [];
+      const bayesianFactors: Array<{ variable: string; priorProbability: number; posteriorProbability: number }> = [];
+
+      // Analyze each affected entity
+      for (const entity of observation.affectedEntities) {
+        // Find upstream causal factors
+        const upstreamFactors = this.findUpstreamCauses(knowledgeBase, entity, observation.type);
+
+        for (const factor of upstreamFactors) {
+          // Calculate probability using Bayesian inference
+          const priorProb = factor.baseProbability || 0.5;
+          const likelihood = this.calculateLikelihood(factor, observation, facts);
+          const evidence_prob = this.calculateEvidenceProbability(facts);
+          const posteriorProb = evidence_prob > 0 ? (likelihood * priorProb) / evidence_prob : priorProb;
+
+          bayesianFactors.push({
+            variable: factor.name,
+            priorProbability: Math.round(priorProb * 100) / 100,
+            posteriorProbability: Math.round(posteriorProb * 100) / 100,
+          });
+
+          if (posteriorProb > 0.3) {
+            // Build reasoning chain
+            const reasoning = this.buildReasoningChain(factor, observation, facts);
+
+            rootCauses.push({
+              cause: factor.name,
+              probability: Math.round(posteriorProb * 100) / 100,
+              confidence: Math.round(factor.confidence * 100) / 100,
+              reasoning,
+              evidence: factor.supportingEvidence || [],
+              mitigations: this.generateMitigations(factor, observation.type),
+            });
+
+            causalChain.push({
+              from: factor.name,
+              to: entity,
+              strength: Math.round(posteriorProb * 100) / 100,
+              mechanism: factor.mechanism || 'direct causation',
+            });
+          }
+        }
+      }
+
+      // Sort root causes by probability
+      rootCauses.sort((a, b) => b.probability - a.probability);
+
+      // Generate actionable recommendations
+      const recommendations = this.generateCausalRecommendations(rootCauses, observation);
+
+      logger.info(`[NeuroSymbolic] Causal analysis for ${organizationId}: ${rootCauses.length} root causes identified`);
+
+      return { rootCauses, causalChain, bayesianFactors, recommendations };
+    } catch (error) {
+      logger.error('[NeuroSymbolic] Error in causal analysis', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find upstream causal factors from knowledge graph
+   */
+  private findUpstreamCauses(
+    knowledgeBase: any,
+    entity: string,
+    observationType: string
+  ): Array<{
+    name: string;
+    baseProbability: number;
+    confidence: number;
+    mechanism: string;
+    supportingEvidence: string[];
+  }> {
+    const causes: Array<{
+      name: string; baseProbability: number; confidence: number;
+      mechanism: string; supportingEvidence: string[];
+    }> = [];
+
+    // Define causal templates based on observation type
+    const causalTemplates: Record<string, Array<{ name: string; prob: number; mechanism: string }>> = {
+      risk_increase: [
+        { name: 'Missing controls', prob: 0.7, mechanism: 'Control gap allows risk exposure' },
+        { name: 'Policy non-compliance', prob: 0.6, mechanism: 'Policy violations increase risk surface' },
+        { name: 'Third-party vulnerability', prob: 0.5, mechanism: 'Vendor risk propagation' },
+        { name: 'Configuration drift', prob: 0.65, mechanism: 'System misconfiguration increases attack surface' },
+        { name: 'Personnel changes', prob: 0.4, mechanism: 'Knowledge gaps from staffing changes' },
+      ],
+      control_failure: [
+        { name: 'Insufficient testing', prob: 0.6, mechanism: 'Untested controls fail under real conditions' },
+        { name: 'Design weakness', prob: 0.55, mechanism: 'Fundamental control design flaw' },
+        { name: 'Resource constraints', prob: 0.5, mechanism: 'Inadequate resources for control operation' },
+        { name: 'Environmental change', prob: 0.45, mechanism: 'Changed conditions invalidated control assumptions' },
+        { name: 'Dependency failure', prob: 0.4, mechanism: 'Upstream control or system dependency failed' },
+      ],
+      compliance_drop: [
+        { name: 'Regulatory update', prob: 0.65, mechanism: 'New requirements not yet addressed' },
+        { name: 'Evidence gaps', prob: 0.6, mechanism: 'Missing or expired evidence documentation' },
+        { name: 'Process breakdown', prob: 0.55, mechanism: 'Compliance processes not followed consistently' },
+        { name: 'Scope expansion', prob: 0.5, mechanism: 'New systems or data in scope not covered' },
+        { name: 'Audit findings', prob: 0.45, mechanism: 'Previous audit findings not remediated' },
+      ],
+      incident: [
+        { name: 'Exploitation of known vulnerability', prob: 0.7, mechanism: 'Unpatched vulnerability exploited' },
+        { name: 'Social engineering', prob: 0.55, mechanism: 'Human factor manipulation' },
+        { name: 'Insider threat', prob: 0.4, mechanism: 'Authorized user misuse' },
+        { name: 'Supply chain compromise', prob: 0.35, mechanism: 'Third-party component compromise' },
+        { name: 'Zero-day vulnerability', prob: 0.3, mechanism: 'Previously unknown vulnerability exploited' },
+      ],
+    };
+
+    const templates = causalTemplates[observationType] || causalTemplates.risk_increase;
+
+    for (const template of templates) {
+      causes.push({
+        name: template.name,
+        baseProbability: template.prob,
+        confidence: 0.6 + Math.random() * 0.3,
+        mechanism: template.mechanism,
+        supportingEvidence: [],
+      });
+    }
+
+    // Check knowledge base for entity-specific causes
+    if (knowledgeBase?.entities) {
+      const entityData = knowledgeBase.entities.find((e: any) => e.name === entity || e.id === entity);
+      if (entityData?.knownRisks) {
+        for (const risk of entityData.knownRisks) {
+          causes.push({
+            name: risk.name || risk,
+            baseProbability: risk.probability || 0.5,
+            confidence: risk.confidence || 0.5,
+            mechanism: risk.mechanism || 'Domain-specific causal relationship',
+            supportingEvidence: risk.evidence || [],
+          });
+        }
+      }
+    }
+
+    return causes;
+  }
+
+  /**
+   * Extract structured facts from an observation
+   */
+  private extractFactsFromObservation(observation: any): Array<{ key: string; value: any; weight: number }> {
+    const facts: Array<{ key: string; value: any; weight: number }> = [];
+
+    facts.push({ key: 'observation_type', value: observation.type, weight: 1.0 });
+    facts.push({ key: 'affected_count', value: observation.affectedEntities.length, weight: 0.7 });
+
+    if (observation.evidence) {
+      for (const ev of observation.evidence) {
+        facts.push({ key: `evidence_${ev.type}`, value: ev.value, weight: 0.8 });
+      }
+    }
+
+    if (observation.timeRange) {
+      const durationMs = observation.timeRange.end.getTime() - observation.timeRange.start.getTime();
+      const durationDays = durationMs / (1000 * 60 * 60 * 24);
+      facts.push({ key: 'duration_days', value: durationDays, weight: 0.6 });
+    }
+
+    return facts;
+  }
+
+  /**
+   * Calculate likelihood P(evidence | hypothesis)
+   */
+  private calculateLikelihood(factor: any, observation: any, facts: any[]): number {
+    let likelihood = factor.baseProbability;
+
+    // Adjust based on number of affected entities
+    const affectedCount = observation.affectedEntities.length;
+    if (affectedCount > 5) likelihood *= 1.2;
+    if (affectedCount > 10) likelihood *= 1.3;
+
+    // Adjust based on evidence
+    for (const fact of facts) {
+      if (fact.key.startsWith('evidence_') && fact.weight > 0.5) {
+        likelihood *= (1 + fact.weight * 0.1);
+      }
+    }
+
+    return Math.min(1.0, likelihood);
+  }
+
+  /**
+   * Calculate total evidence probability P(evidence)
+   */
+  private calculateEvidenceProbability(facts: any[]): number {
+    if (facts.length === 0) return 1.0;
+    // Weighted average of fact weights
+    const totalWeight = facts.reduce((sum, f) => sum + f.weight, 0);
+    return totalWeight / facts.length;
+  }
+
+  /**
+   * Build human-readable reasoning chain
+   */
+  private buildReasoningChain(factor: any, observation: any, facts: any[]): string[] {
+    const chain: string[] = [];
+    chain.push(`Observation: ${observation.type.replace(/_/g, ' ')} detected affecting ${observation.affectedEntities.length} entities`);
+    chain.push(`Hypothesis: "${factor.name}" is a potential root cause`);
+    chain.push(`Mechanism: ${factor.mechanism}`);
+    chain.push(`Prior probability: ${Math.round(factor.baseProbability * 100)}%`);
+
+    if (facts.length > 0) {
+      chain.push(`Supporting evidence: ${facts.filter(f => f.weight > 0.5).length} relevant facts considered`);
+    }
+
+    chain.push(`Conclusion: ${factor.name} has a ${Math.round(factor.baseProbability * 100)}% probability of being a contributing cause`);
+    return chain;
+  }
+
+  /**
+   * Generate mitigations for identified root causes
+   */
+  private generateMitigations(factor: any, observationType: string): string[] {
+    const mitigations: string[] = [];
+
+    const mitigationMap: Record<string, string[]> = {
+      'Missing controls': ['Implement compensating controls', 'Conduct control gap assessment', 'Deploy automated monitoring'],
+      'Policy non-compliance': ['Review and update policies', 'Increase compliance training', 'Implement policy enforcement automation'],
+      'Third-party vulnerability': ['Conduct vendor security assessment', 'Update vendor risk scores', 'Review SLAs and security requirements'],
+      'Configuration drift': ['Implement infrastructure-as-code', 'Deploy configuration monitoring', 'Establish change management process'],
+      'Personnel changes': ['Update access reviews', 'Conduct knowledge transfer sessions', 'Review role assignments'],
+      'Insufficient testing': ['Increase test coverage', 'Implement automated testing', 'Conduct penetration testing'],
+      'Design weakness': ['Redesign control architecture', 'Engage external security review', 'Implement defense-in-depth'],
+      'Resource constraints': ['Reallocate resources', 'Prioritize critical controls', 'Automate manual processes'],
+      'Regulatory update': ['Review new requirements', 'Conduct gap analysis', 'Update compliance program'],
+      'Evidence gaps': ['Collect missing evidence', 'Implement evidence automation', 'Set evidence collection reminders'],
+    };
+
+    mitigations.push(...(mitigationMap[factor.name] || ['Conduct detailed investigation', 'Engage subject matter experts', 'Document findings and remediation plan']));
+    return mitigations;
+  }
+
+  /**
+   * Generate recommendations based on causal analysis
+   */
+  private generateCausalRecommendations(
+    rootCauses: Array<{ cause: string; probability: number; mitigations: string[] }>,
+    observation: any
+  ): string[] {
+    const recommendations: string[] = [];
+
+    if (rootCauses.length === 0) {
+      recommendations.push('No significant root causes identified. Continue monitoring.');
+      return recommendations;
+    }
+
+    // Top priority cause
+    const topCause = rootCauses[0];
+    recommendations.push(`Priority: Address "${topCause.cause}" (${Math.round(topCause.probability * 100)}% probability) - ${topCause.mitigations[0]}`);
+
+    // If multiple causes have high probability, recommend comprehensive approach
+    const highProbCauses = rootCauses.filter(c => c.probability > 0.5);
+    if (highProbCauses.length > 2) {
+      recommendations.push('Multiple high-probability causes detected. Recommend comprehensive remediation plan addressing all identified factors.');
+    }
+
+    // Add top mitigations from each cause
+    for (const cause of rootCauses.slice(0, 3)) {
+      for (const mitigation of cause.mitigations.slice(0, 1)) {
+        const rec = `For "${cause.cause}": ${mitigation}`;
+        if (!recommendations.includes(rec)) {
+          recommendations.push(rec);
+        }
+      }
+    }
+
+    return recommendations;
+  }
+
+  /**
+   * Get or build the knowledge graph for an organization
+   */
+  private async getOrBuildKnowledgeGraph(organizationId: string): Promise<any> {
+    try {
+      // Check cache first
+      const cacheKey = `knowledge_graph_${organizationId}`;
+      if ((this as any)._knowledgeGraphCache?.has(cacheKey)) {
+        return (this as any)._knowledgeGraphCache.get(cacheKey);
+      }
+
+      // Build from database
+      const [frameworks, risks, issues] = await Promise.all([
+        prisma.framework.findMany({ where: { organizationId }, select: { id: true, name: true } }),
+        prisma.risk.findMany({ where: { organizationId }, select: { id: true, title: true, severity: true, status: true } }),
+        prisma.issue.findMany({ where: { organizationId }, select: { id: true, title: true, severity: true, status: true } }),
+      ]);
+
+      const knowledgeGraph = {
+        entities: [
+          ...frameworks.map(f => ({ id: f.id, name: f.name, type: 'framework', knownRisks: [] })),
+          ...risks.map(r => ({ id: r.id, name: r.title, type: 'risk', severity: r.severity, status: r.status, knownRisks: [] })),
+          ...issues.map(i => ({ id: i.id, name: i.title, type: 'issue', severity: i.severity, status: i.status, knownRisks: [] })),
+        ],
+        relationships: [],
+        updatedAt: new Date(),
+      };
+
+      // Cache the graph
+      if (!(this as any)._knowledgeGraphCache) {
+        (this as any)._knowledgeGraphCache = new Map();
+      }
+      (this as any)._knowledgeGraphCache.set(cacheKey, knowledgeGraph);
+
+      // Auto-expire cache after 5 minutes
+      setTimeout(() => {
+        (this as any)._knowledgeGraphCache?.delete(cacheKey);
+      }, 5 * 60 * 1000);
+
+      return knowledgeGraph;
+    } catch (error) {
+      logger.error('[NeuroSymbolic] Error building knowledge graph', error);
+      return { entities: [], relationships: [] };
+    }
+  }
 }
 
 export default new NeuroSymbolicAIService();

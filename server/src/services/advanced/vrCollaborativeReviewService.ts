@@ -3433,6 +3433,393 @@ class VRCollaborativeReviewService {
     webrtcSignalingService.destroySession(sessionId);
     logger.info(`[VR Review] WebRTC session terminated for ${sessionId}`);
   }
+
+  /**
+   * Load a real VR training scenario from template library
+   * Supports compliance training, incident response, and audit simulation scenarios
+   */
+  async loadScenarioFromTemplate(
+    organizationId: string,
+    templateId: string,
+    customization?: {
+      difficulty?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+      framework?: string;
+      duration?: number;
+      participants?: number;
+      focusAreas?: string[];
+    }
+  ): Promise<{
+    scenarioId: string;
+    name: string;
+    description: string;
+    objectives: string[];
+    environment: {
+      type: string;
+      layout: string;
+      interactiveElements: Array<{ id: string; type: string; position: { x: number; y: number; z: number }; label: string }>;
+    };
+    stages: Array<{
+      id: string;
+      name: string;
+      description: string;
+      duration: number;
+      tasks: Array<{ id: string; description: string; type: string; points: number }>;
+      completionCriteria: string;
+    }>;
+    scoringRubric: Array<{ category: string; maxPoints: number; criteria: string[] }>;
+    estimatedDuration: number;
+    difficulty: string;
+  }> {
+    try {
+      // Template library with real compliance training scenarios
+      const templates: Record<string, any> = {
+        'incident-response': {
+          name: 'Incident Response Simulation',
+          description: 'Practice responding to a security incident in a virtual SOC environment',
+          objectives: [
+            'Identify and classify the security incident',
+            'Follow incident response procedures',
+            'Coordinate team response actions',
+            'Document findings and evidence',
+            'Conduct post-incident review',
+          ],
+          environmentType: 'security_operations_center',
+          stages: [
+            {
+              name: 'Detection & Triage',
+              description: 'Monitor alerts and identify the active incident',
+              duration: 300,
+              tasks: [
+                { description: 'Review security alert dashboard', type: 'observation', points: 10 },
+                { description: 'Classify incident severity level', type: 'decision', points: 20 },
+                { description: 'Initiate incident response protocol', type: 'action', points: 15 },
+              ],
+              completionCriteria: 'Incident correctly classified and response initiated',
+            },
+            {
+              name: 'Containment',
+              description: 'Contain the threat to prevent further damage',
+              duration: 600,
+              tasks: [
+                { description: 'Identify affected systems', type: 'analysis', points: 20 },
+                { description: 'Isolate compromised network segments', type: 'action', points: 25 },
+                { description: 'Preserve evidence for forensics', type: 'action', points: 15 },
+              ],
+              completionCriteria: 'Threat contained and evidence preserved',
+            },
+            {
+              name: 'Eradication & Recovery',
+              description: 'Remove the threat and restore normal operations',
+              duration: 600,
+              tasks: [
+                { description: 'Remove malicious artifacts', type: 'action', points: 20 },
+                { description: 'Verify system integrity', type: 'verification', points: 15 },
+                { description: 'Restore affected services', type: 'action', points: 15 },
+              ],
+              completionCriteria: 'All threats removed and systems restored',
+            },
+            {
+              name: 'Post-Incident Review',
+              description: 'Document lessons learned and improve procedures',
+              duration: 300,
+              tasks: [
+                { description: 'Complete incident report', type: 'documentation', points: 20 },
+                { description: 'Identify process improvements', type: 'analysis', points: 15 },
+                { description: 'Update runbooks', type: 'documentation', points: 10 },
+              ],
+              completionCriteria: 'Incident report completed with recommendations',
+            },
+          ],
+        },
+        'audit-walkthrough': {
+          name: 'Compliance Audit Walkthrough',
+          description: 'Simulate an external compliance audit with evidence review and control testing',
+          objectives: [
+            'Prepare audit documentation',
+            'Present evidence to auditors',
+            'Respond to auditor questions',
+            'Demonstrate control effectiveness',
+            'Address audit findings',
+          ],
+          environmentType: 'virtual_audit_room',
+          stages: [
+            {
+              name: 'Pre-Audit Preparation',
+              description: 'Organize evidence and prepare for auditor review',
+              duration: 600,
+              tasks: [
+                { description: 'Review control inventory', type: 'analysis', points: 15 },
+                { description: 'Organize evidence packages', type: 'action', points: 20 },
+                { description: 'Prepare control walkthroughs', type: 'preparation', points: 15 },
+              ],
+              completionCriteria: 'All evidence organized and walkthroughs prepared',
+            },
+            {
+              name: 'Auditor Interview',
+              description: 'Respond to auditor questions about controls and processes',
+              duration: 900,
+              tasks: [
+                { description: 'Explain control objectives', type: 'communication', points: 20 },
+                { description: 'Demonstrate control operation', type: 'demonstration', points: 25 },
+                { description: 'Present supporting evidence', type: 'presentation', points: 20 },
+              ],
+              completionCriteria: 'All auditor questions addressed satisfactorily',
+            },
+            {
+              name: 'Finding Remediation',
+              description: 'Address audit findings and create remediation plans',
+              duration: 600,
+              tasks: [
+                { description: 'Review audit findings', type: 'analysis', points: 15 },
+                { description: 'Create remediation plan', type: 'planning', points: 25 },
+                { description: 'Assign remediation tasks', type: 'action', points: 10 },
+              ],
+              completionCriteria: 'Remediation plan created for all findings',
+            },
+          ],
+        },
+        'data-breach-response': {
+          name: 'Data Breach Response Training',
+          description: 'Practice GDPR-compliant data breach notification and response',
+          objectives: [
+            'Detect and assess the data breach',
+            'Determine notification requirements',
+            'Notify supervisory authority within 72 hours',
+            'Communicate with affected data subjects',
+            'Document response actions',
+          ],
+          environmentType: 'crisis_management_center',
+          stages: [
+            {
+              name: 'Breach Detection',
+              description: 'Identify the data breach and assess its scope',
+              duration: 300,
+              tasks: [
+                { description: 'Analyze breach indicators', type: 'analysis', points: 20 },
+                { description: 'Determine data types affected', type: 'assessment', points: 20 },
+                { description: 'Estimate number of affected individuals', type: 'assessment', points: 15 },
+              ],
+              completionCriteria: 'Breach scope fully assessed',
+            },
+            {
+              name: 'Regulatory Notification',
+              description: 'Prepare and submit breach notification to supervisory authority',
+              duration: 600,
+              tasks: [
+                { description: 'Complete breach notification form', type: 'documentation', points: 25 },
+                { description: 'Determine if 72-hour deadline applies', type: 'decision', points: 15 },
+                { description: 'Submit notification to authority', type: 'action', points: 20 },
+              ],
+              completionCriteria: 'Notification submitted to supervisory authority',
+            },
+            {
+              name: 'Subject Notification',
+              description: 'Notify affected data subjects',
+              duration: 600,
+              tasks: [
+                { description: 'Draft data subject notification', type: 'documentation', points: 20 },
+                { description: 'Set up affected individual support', type: 'action', points: 15 },
+                { description: 'Document all communications', type: 'documentation', points: 10 },
+              ],
+              completionCriteria: 'All affected subjects notified',
+            },
+          ],
+        },
+        'risk-assessment-workshop': {
+          name: 'Risk Assessment Workshop',
+          description: 'Collaborative risk assessment using virtual risk matrices and heat maps',
+          objectives: [
+            'Identify organizational risks',
+            'Assess risk likelihood and impact',
+            'Map risks to controls',
+            'Prioritize risk treatment',
+          ],
+          environmentType: 'collaborative_workspace',
+          stages: [
+            {
+              name: 'Risk Identification',
+              description: 'Brainstorm and identify risks across the organization',
+              duration: 900,
+              tasks: [
+                { description: 'Identify asset-based risks', type: 'brainstorm', points: 20 },
+                { description: 'Identify threat-based risks', type: 'brainstorm', points: 20 },
+                { description: 'Categorize identified risks', type: 'organization', points: 10 },
+              ],
+              completionCriteria: 'Minimum 10 risks identified and categorized',
+            },
+            {
+              name: 'Risk Analysis',
+              description: 'Assess likelihood and impact of identified risks',
+              duration: 900,
+              tasks: [
+                { description: 'Score risk likelihood (1-5)', type: 'assessment', points: 15 },
+                { description: 'Score risk impact (1-5)', type: 'assessment', points: 15 },
+                { description: 'Place risks on heat map', type: 'visualization', points: 20 },
+              ],
+              completionCriteria: 'All risks scored and mapped',
+            },
+            {
+              name: 'Treatment Planning',
+              description: 'Define risk treatment strategies',
+              duration: 600,
+              tasks: [
+                { description: 'Select treatment strategy for each risk', type: 'decision', points: 20 },
+                { description: 'Map risks to mitigating controls', type: 'mapping', points: 15 },
+                { description: 'Create treatment timeline', type: 'planning', points: 15 },
+              ],
+              completionCriteria: 'Treatment plan defined for all high/critical risks',
+            },
+          ],
+        },
+      };
+
+      const template = templates[templateId];
+      if (!template) {
+        throw new Error(`Template "${templateId}" not found. Available: ${Object.keys(templates).join(', ')}`);
+      }
+
+      const difficulty = customization?.difficulty || 'intermediate';
+      const difficultyMultiplier: Record<string, number> = {
+        beginner: 0.7, intermediate: 1.0, advanced: 1.3, expert: 1.6,
+      };
+      const multiplier = difficultyMultiplier[difficulty] || 1.0;
+
+      // Generate scenario ID
+      const scenarioId = `vr_${templateId}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
+      // Build interactive environment
+      const interactiveElements: Array<{ id: string; type: string; position: { x: number; y: number; z: number }; label: string }> = [
+        { id: 'main_screen', type: 'display', position: { x: 0, y: 1.5, z: -3 }, label: 'Main Dashboard' },
+        { id: 'control_panel', type: 'interactive', position: { x: -2, y: 1, z: -2 }, label: 'Control Panel' },
+        { id: 'evidence_board', type: 'interactive', position: { x: 2, y: 1.5, z: -2 }, label: 'Evidence Board' },
+        { id: 'team_table', type: 'collaboration', position: { x: 0, y: 0.8, z: 0 }, label: 'Team Table' },
+        { id: 'timeline_wall', type: 'display', position: { x: -3, y: 1.5, z: 0 }, label: 'Timeline' },
+        { id: 'scoring_display', type: 'display', position: { x: 3, y: 2, z: -1 }, label: 'Score Tracker' },
+      ];
+
+      // Build stages with IDs and adjusted difficulty
+      const stages = template.stages.map((stage: any, idx: number) => ({
+        id: `stage_${idx + 1}`,
+        name: stage.name,
+        description: stage.description,
+        duration: Math.round(stage.duration * multiplier),
+        tasks: stage.tasks.map((task: any, tidx: number) => ({
+          id: `task_${idx + 1}_${tidx + 1}`,
+          description: task.description,
+          type: task.type,
+          points: Math.round(task.points * multiplier),
+        })),
+        completionCriteria: stage.completionCriteria,
+      }));
+
+      // Scoring rubric
+      const scoringRubric = [
+        { category: 'Technical Knowledge', maxPoints: Math.round(30 * multiplier), criteria: ['Correct identification', 'Proper procedures', 'Technical accuracy'] },
+        { category: 'Decision Making', maxPoints: Math.round(25 * multiplier), criteria: ['Timely decisions', 'Risk-aware choices', 'Escalation judgment'] },
+        { category: 'Communication', maxPoints: Math.round(20 * multiplier), criteria: ['Clear communication', 'Team coordination', 'Stakeholder updates'] },
+        { category: 'Documentation', maxPoints: Math.round(15 * multiplier), criteria: ['Complete records', 'Accurate details', 'Timely documentation'] },
+        { category: 'Time Management', maxPoints: Math.round(10 * multiplier), criteria: ['Stage completion within time', 'Priority management'] },
+      ];
+
+      const estimatedDuration = stages.reduce((sum: number, s: any) => sum + s.duration, 0);
+
+      // Store scenario
+      await prisma.auditLog.create({
+        data: {
+          action: 'vr.scenario_loaded',
+          organizationId,
+          hash: scenarioId,
+          details: JSON.stringify({
+            scenarioId,
+            templateId,
+            name: template.name,
+            difficulty,
+            estimatedDuration,
+            stageCount: stages.length,
+            framework: customization?.framework,
+          }),
+        },
+      });
+
+      logger.info(`[VR] Scenario loaded: ${scenarioId} (template=${templateId}, difficulty=${difficulty})`);
+
+      return {
+        scenarioId,
+        name: template.name,
+        description: template.description,
+        objectives: template.objectives,
+        environment: {
+          type: template.environmentType,
+          layout: 'standard_room',
+          interactiveElements,
+        },
+        stages,
+        scoringRubric,
+        estimatedDuration,
+        difficulty,
+      };
+    } catch (error) {
+      logger.error('[VR] Error loading scenario from template', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get available scenario templates
+   */
+  async getScenarioTemplates(): Promise<Array<{
+    id: string;
+    name: string;
+    description: string;
+    category: string;
+    difficulty: string[];
+    estimatedDuration: number;
+    stageCount: number;
+    frameworks: string[];
+  }>> {
+    return [
+      {
+        id: 'incident-response',
+        name: 'Incident Response Simulation',
+        description: 'Practice security incident response in a virtual SOC',
+        category: 'Security',
+        difficulty: ['beginner', 'intermediate', 'advanced', 'expert'],
+        estimatedDuration: 1800,
+        stageCount: 4,
+        frameworks: ['ISO 27001', 'NIST CSF', 'SOC 2'],
+      },
+      {
+        id: 'audit-walkthrough',
+        name: 'Compliance Audit Walkthrough',
+        description: 'Simulate an external compliance audit',
+        category: 'Compliance',
+        difficulty: ['intermediate', 'advanced', 'expert'],
+        estimatedDuration: 2100,
+        stageCount: 3,
+        frameworks: ['SOC 2', 'ISO 27001', 'HIPAA', 'PCI-DSS'],
+      },
+      {
+        id: 'data-breach-response',
+        name: 'Data Breach Response Training',
+        description: 'GDPR-compliant breach notification practice',
+        category: 'Privacy',
+        difficulty: ['intermediate', 'advanced'],
+        estimatedDuration: 1500,
+        stageCount: 3,
+        frameworks: ['GDPR', 'CCPA', 'HIPAA'],
+      },
+      {
+        id: 'risk-assessment-workshop',
+        name: 'Risk Assessment Workshop',
+        description: 'Collaborative risk assessment with virtual tools',
+        category: 'Risk Management',
+        difficulty: ['beginner', 'intermediate', 'advanced'],
+        estimatedDuration: 2400,
+        stageCount: 3,
+        frameworks: ['ISO 27005', 'NIST RMF', 'FAIR'],
+      },
+    ];
+  }
 }
 
 export default new VRCollaborativeReviewService();

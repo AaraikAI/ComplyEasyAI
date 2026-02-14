@@ -1869,6 +1869,332 @@ class MultimodalIntakeService {
     logger.info(`[Multimodal] Verifying liveness challenge ${challengeId}`);
     return livenessDetectionService.verifyChallengeResponse(challengeId, videoFrames, sessionId);
   }
+
+  /**
+   * Process documents (PDF, Word, Excel) with real content extraction
+   * Uses appropriate libraries for each format
+   */
+  async processDocument(
+    organizationId: string,
+    fileBuffer: Buffer,
+    metadata: {
+      filename: string;
+      mimeType: string;
+      size: number;
+    }
+  ): Promise<{
+    text: string;
+    pages?: number;
+    wordCount: number;
+    language: string;
+    documentMetadata: Record<string, any>;
+    sections: Array<{ heading: string; content: string }>;
+    tables: Array<{ headers: string[]; rows: string[][] }>;
+    complianceReferences: Array<{ reference: string; context: string }>;
+    processingTime: number;
+  }> {
+    const startTime = Date.now();
+
+    try {
+      let text = '';
+      let pages = 0;
+      let documentMetadata: Record<string, any> = {};
+      const sections: Array<{ heading: string; content: string }> = [];
+      const tables: Array<{ headers: string[]; rows: string[][] }> = [];
+
+      if (metadata.mimeType === 'application/pdf') {
+        // PDF extraction
+        try {
+          const pdfParse = require('pdf-parse');
+          const pdfData = await pdfParse(fileBuffer);
+          text = pdfData.text || '';
+          pages = pdfData.numpages || 0;
+          documentMetadata = pdfData.info || {};
+        } catch {
+          // Fallback: basic text extraction
+          text = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
+        }
+      } else if (metadata.mimeType?.includes('wordprocessingml') || metadata.filename?.endsWith('.docx')) {
+        // Word document extraction
+        try {
+          const mammoth = require('mammoth');
+          const result = await mammoth.extractRawText({ buffer: fileBuffer });
+          text = result.value || '';
+        } catch {
+          text = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
+        }
+      } else if (metadata.mimeType?.includes('spreadsheetml') || metadata.filename?.endsWith('.xlsx')) {
+        // Excel extraction
+        try {
+          const XLSX = require('xlsx');
+          const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+          const textParts: string[] = [];
+
+          for (const sheetName of workbook.SheetNames) {
+            const sheet = workbook.Sheets[sheetName];
+            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as string[][];
+
+            if (data.length > 0) {
+              const headers = data[0]?.map(String) || [];
+              const rows = data.slice(1).map(row => (row as any[]).map(String));
+              tables.push({ headers, rows });
+              textParts.push(`Sheet: ${sheetName}\n${data.map(row => (row as any[]).join('\t')).join('\n')}`);
+            }
+          }
+
+          text = textParts.join('\n\n');
+        } catch {
+          text = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
+        }
+      } else if (metadata.mimeType?.includes('csv') || metadata.filename?.endsWith('.csv')) {
+        text = fileBuffer.toString('utf-8');
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length > 0) {
+          const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          const rows = lines.slice(1).map(l => l.split(',').map(c => c.trim().replace(/"/g, '')));
+          tables.push({ headers, rows });
+        }
+      } else {
+        // Plain text or unknown format
+        text = fileBuffer.toString('utf-8');
+      }
+
+      // Extract sections from text
+      const lines = text.split('\n');
+      let currentSection: { heading: string; content: string[] } | null = null;
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        const isHeading = /^(\d+\.|\#{1,3}\s|[A-Z][A-Z\s]{3,}$|Article\s+\d+|Section\s+\d+)/i.test(trimmed);
+
+        if (isHeading) {
+          if (currentSection) {
+            sections.push({ heading: currentSection.heading, content: currentSection.content.join('\n') });
+          }
+          currentSection = { heading: trimmed, content: [] };
+        } else if (currentSection) {
+          currentSection.content.push(trimmed);
+        }
+      }
+      if (currentSection) {
+        sections.push({ heading: currentSection.heading, content: currentSection.content.join('\n') });
+      }
+
+      // Detect compliance references
+      const complianceReferences: Array<{ reference: string; context: string }> = [];
+      const refPatterns = [
+        /\b(ISO\s*\d+(?::\d+)?)/gi,
+        /\b(SOC\s*[12])/gi,
+        /\b(GDPR\s*(?:Article|Art\.?)\s*\d+)/gi,
+        /\b(HIPAA)/gi,
+        /\b(PCI[\s-]DSS)/gi,
+        /\b(NIST\s*(?:SP|CSF)\s*[\d-]+)/gi,
+      ];
+
+      for (const pattern of refPatterns) {
+        let match;
+        while ((match = pattern.exec(text)) !== null) {
+          const contextStart = Math.max(0, match.index - 40);
+          const contextEnd = Math.min(text.length, match.index + match[0].length + 40);
+          complianceReferences.push({
+            reference: match[1],
+            context: text.substring(contextStart, contextEnd).trim(),
+          });
+        }
+      }
+
+      // Detect language (simple heuristic)
+      const language = this.detectTextLanguage(text);
+      const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
+
+      logger.info(`[Multimodal] Document processed: ${metadata.filename}, ${wordCount} words, ${pages} pages, ${sections.length} sections`);
+
+      return {
+        text: text.substring(0, 100000), // Limit to 100K chars
+        pages: pages || undefined,
+        wordCount,
+        language,
+        documentMetadata,
+        sections,
+        tables,
+        complianceReferences,
+        processingTime: Date.now() - startTime,
+      };
+    } catch (error) {
+      logger.error('[Multimodal] Error processing document', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Analyze images for compliance data using real OCR
+   * Uses Tesseract.js for OCR and sharp for image preprocessing
+   */
+  async analyzeImage(
+    organizationId: string,
+    imageBuffer: Buffer,
+    options?: {
+      performOCR?: boolean;
+      detectFaces?: boolean;
+      extractMetadata?: boolean;
+      language?: string;
+    }
+  ): Promise<{
+    ocrText: string;
+    confidence: number;
+    words: Array<{ text: string; confidence: number; bbox?: { x: number; y: number; width: number; height: number } }>;
+    imageMetadata: {
+      width: number;
+      height: number;
+      format: string;
+      hasExif: boolean;
+    };
+    complianceFindings: Array<{ type: string; description: string; confidence: number }>;
+    processingTime: number;
+  }> {
+    const startTime = Date.now();
+
+    try {
+      let ocrText = '';
+      let confidence = 0;
+      const words: Array<{ text: string; confidence: number; bbox?: any }> = [];
+      let imageMetadata = { width: 0, height: 0, format: 'unknown', hasExif: false };
+
+      // Get image metadata using sharp
+      try {
+        const sharp = require('sharp');
+        const meta = await sharp(imageBuffer).metadata();
+        imageMetadata = {
+          width: meta.width || 0,
+          height: meta.height || 0,
+          format: meta.format || 'unknown',
+          hasExif: !!meta.exif,
+        };
+      } catch {
+        logger.debug('[Multimodal] sharp not available for image metadata');
+      }
+
+      // Perform OCR using Tesseract.js
+      if (options?.performOCR !== false) {
+        try {
+          const Tesseract = require('tesseract.js');
+          const lang = options?.language || 'eng';
+
+          const result = await Tesseract.recognize(imageBuffer, lang, {
+            logger: (m: any) => {
+              if (m.status === 'recognizing text') {
+                logger.debug(`[Multimodal] OCR progress: ${Math.round(m.progress * 100)}%`);
+              }
+            },
+          });
+
+          ocrText = result.data.text || '';
+          confidence = result.data.confidence / 100 || 0;
+
+          // Extract word-level details
+          if (result.data.words) {
+            for (const word of result.data.words) {
+              words.push({
+                text: word.text,
+                confidence: word.confidence / 100,
+                bbox: word.bbox ? {
+                  x: word.bbox.x0,
+                  y: word.bbox.y0,
+                  width: word.bbox.x1 - word.bbox.x0,
+                  height: word.bbox.y1 - word.bbox.y0,
+                } : undefined,
+              });
+            }
+          }
+        } catch (ocrError: any) {
+          logger.warn('[Multimodal] Tesseract OCR failed, returning empty result', ocrError.message);
+        }
+      }
+
+      // Detect compliance-relevant content in OCR text
+      const complianceFindings: Array<{ type: string; description: string; confidence: number }> = [];
+
+      if (ocrText) {
+        // Check for PII in extracted text
+        const piiPatterns = [
+          { pattern: /\b\d{3}-\d{2}-\d{4}\b/, type: 'pii_ssn', description: 'Social Security Number detected' },
+          { pattern: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/, type: 'pii_credit_card', description: 'Credit card number detected' },
+          { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/, type: 'pii_email', description: 'Email address detected' },
+          { pattern: /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/, type: 'pii_phone', description: 'Phone number detected' },
+        ];
+
+        for (const { pattern, type, description } of piiPatterns) {
+          if (pattern.test(ocrText)) {
+            complianceFindings.push({ type, description, confidence: 0.85 });
+          }
+        }
+
+        // Check for classification labels
+        const classificationPatterns = [
+          { pattern: /\b(CONFIDENTIAL|RESTRICTED|TOP SECRET|SECRET)\b/i, type: 'classification', description: 'Document classification label detected' },
+          { pattern: /\b(INTERNAL USE ONLY|NOT FOR DISTRIBUTION)\b/i, type: 'distribution_restriction', description: 'Distribution restriction detected' },
+        ];
+
+        for (const { pattern, type, description } of classificationPatterns) {
+          if (pattern.test(ocrText)) {
+            complianceFindings.push({ type, description, confidence: 0.9 });
+          }
+        }
+      }
+
+      logger.info(`[Multimodal] Image analyzed: ${imageMetadata.width}x${imageMetadata.height}, OCR confidence=${confidence.toFixed(2)}, ${complianceFindings.length} findings`);
+
+      return {
+        ocrText,
+        confidence: Math.round(confidence * 100) / 100,
+        words,
+        imageMetadata,
+        complianceFindings,
+        processingTime: Date.now() - startTime,
+      };
+    } catch (error) {
+      logger.error('[Multimodal] Error analyzing image', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Simple text language detection
+   */
+  private detectTextLanguage(text: string): string {
+    const sample = text.substring(0, 500).toLowerCase();
+
+    // Common word detection for major languages
+    const langIndicators: Record<string, string[]> = {
+      en: ['the', 'and', 'that', 'this', 'with', 'from', 'have'],
+      de: ['und', 'die', 'der', 'das', 'ist', 'nicht', 'mit'],
+      fr: ['les', 'des', 'une', 'est', 'dans', 'pour', 'que'],
+      es: ['los', 'las', 'una', 'por', 'que', 'del', 'con'],
+      it: ['che', 'per', 'non', 'una', 'del', 'con', 'sono'],
+      pt: ['que', 'para', 'com', 'uma', 'dos', 'por', 'mais'],
+      nl: ['het', 'een', 'van', 'dat', 'niet', 'met', 'zijn'],
+    };
+
+    let bestLang = 'en';
+    let bestScore = 0;
+
+    for (const [lang, words] of Object.entries(langIndicators)) {
+      let score = 0;
+      for (const word of words) {
+        const regex = new RegExp(`\\b${word}\\b`, 'g');
+        const matches = sample.match(regex);
+        if (matches) score += matches.length;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestLang = lang;
+      }
+    }
+
+    return bestLang;
+  }
 }
 
 export default new MultimodalIntakeService();

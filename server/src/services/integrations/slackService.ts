@@ -527,6 +527,281 @@ class SlackService {
       throw new Error('Failed to disconnect Slack integration');
     }
   }
+
+  /**
+   * Send a compliance alert to a configured Slack channel
+   * Supports different alert types with rich formatting
+   */
+  async sendComplianceAlert(
+    organizationId: string,
+    alert: {
+      type: 'risk_detected' | 'control_failed' | 'audit_finding' | 'policy_violation' | 'evidence_expiring' | 'framework_update';
+      title: string;
+      description: string;
+      severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+      resourceId?: string;
+      resourceType?: string;
+      actionUrl?: string;
+      fields?: Array<{ label: string; value: string }>;
+    }
+  ): Promise<{ success: boolean; messageId?: string }> {
+    try {
+      const integration = await this.getIntegration(organizationId);
+      if (!integration || !integration.connected || !integration.accessToken) {
+        logger.warn(`[Slack] No active integration for org ${organizationId}`);
+        return { success: false };
+      }
+
+      // Get configured alert channel from integration config
+      const config = integration.config as any;
+      const alertChannel = config?.alertChannel || config?.defaultChannel || 'general';
+
+      const severityEmoji: Record<string, string> = {
+        critical: ':rotating_light:',
+        high: ':warning:',
+        medium: ':large_orange_diamond:',
+        low: ':large_blue_diamond:',
+        info: ':information_source:',
+      };
+
+      const severityColor: Record<string, string> = {
+        critical: '#FF0000',
+        high: '#FF6600',
+        medium: '#FFAA00',
+        low: '#0066FF',
+        info: '#00AA00',
+      };
+
+      const blocks: any[] = [
+        {
+          type: 'header',
+          text: { type: 'plain_text', text: `${severityEmoji[alert.severity] || ''} ${alert.title}` },
+        },
+        {
+          type: 'section',
+          text: { type: 'mrkdwn', text: alert.description },
+        },
+        {
+          type: 'section',
+          fields: [
+            { type: 'mrkdwn', text: `*Type:*\n${alert.type.replace(/_/g, ' ')}` },
+            { type: 'mrkdwn', text: `*Severity:*\n${alert.severity.toUpperCase()}` },
+            ...(alert.fields || []).map(f => ({
+              type: 'mrkdwn',
+              text: `*${f.label}:*\n${f.value}`,
+            })),
+          ],
+        },
+      ];
+
+      if (alert.actionUrl) {
+        blocks.push({
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: { type: 'plain_text', text: 'View Details' },
+              url: alert.actionUrl,
+              style: alert.severity === 'critical' ? 'danger' : 'primary',
+            },
+          ],
+        });
+      }
+
+      blocks.push({
+        type: 'context',
+        elements: [
+          { type: 'mrkdwn', text: `ComplyEasy AI | ${new Date().toISOString()}` },
+        ],
+      });
+
+      const response = await axios.post(
+        `${this.apiBaseUrl}/chat.postMessage`,
+        {
+          channel: alertChannel,
+          text: `[${alert.severity.toUpperCase()}] ${alert.title}`,
+          blocks,
+          attachments: [{
+            color: severityColor[alert.severity],
+            fallback: `${alert.title}: ${alert.description}`,
+          }],
+        },
+        {
+          headers: { Authorization: `Bearer ${integration.accessToken}`, 'Content-Type': 'application/json' },
+        }
+      );
+
+      if (!response.data.ok) {
+        throw new Error(response.data.error || 'Failed to send Slack alert');
+      }
+
+      logger.info(`[Slack] Compliance alert sent to ${alertChannel}: ${alert.title}`);
+      return { success: true, messageId: response.data.ts };
+    } catch (error: any) {
+      logger.error('[Slack] Error sending compliance alert', error);
+      return { success: false };
+    }
+  }
+
+  /**
+   * Configure a Slack channel for compliance alerts
+   */
+  async configureAlertChannel(
+    organizationId: string,
+    channelId: string,
+    alertTypes?: string[]
+  ): Promise<void> {
+    try {
+      const integration = await this.getIntegration(organizationId);
+      if (!integration || !integration.connected) {
+        throw new Error('Slack integration not connected');
+      }
+
+      const currentConfig = (integration.config as any) || {};
+
+      await prisma.integration.update({
+        where: {
+          organizationId_provider: { organizationId, provider: 'slack' },
+        },
+        data: {
+          config: {
+            ...currentConfig,
+            alertChannel: channelId,
+            alertTypes: alertTypes || ['risk_detected', 'control_failed', 'audit_finding', 'policy_violation', 'evidence_expiring', 'framework_update'],
+          },
+        },
+      });
+
+      logger.info(`[Slack] Alert channel configured for org ${organizationId}: ${channelId}`);
+    } catch (error) {
+      logger.error('[Slack] Error configuring alert channel', error);
+      throw new Error('Failed to configure alert channel');
+    }
+  }
+
+  /**
+   * Send a weekly compliance digest to Slack
+   */
+  async sendComplianceDigest(
+    organizationId: string,
+    digest: {
+      period: string;
+      overallScore: number;
+      scoreChange: number;
+      openIssues: number;
+      resolvedIssues: number;
+      upcomingDeadlines: Array<{ title: string; date: string }>;
+      highlights: string[];
+    }
+  ): Promise<{ success: boolean }> {
+    try {
+      const integration = await this.getIntegration(organizationId);
+      if (!integration || !integration.connected || !integration.accessToken) {
+        return { success: false };
+      }
+
+      const config = integration.config as any;
+      const channel = config?.alertChannel || config?.defaultChannel || 'general';
+
+      const scoreEmoji = digest.scoreChange >= 0 ? ':chart_with_upwards_trend:' : ':chart_with_downwards_trend:';
+      const scoreColor = digest.overallScore >= 80 ? '#00AA00' : digest.overallScore >= 60 ? '#FFAA00' : '#FF0000';
+
+      const blocks: any[] = [
+        {
+          type: 'header',
+          text: { type: 'plain_text', text: `:clipboard: Compliance Digest - ${digest.period}` },
+        },
+        {
+          type: 'section',
+          fields: [
+            { type: 'mrkdwn', text: `*Overall Score:*\n${digest.overallScore}% ${scoreEmoji} (${digest.scoreChange >= 0 ? '+' : ''}${digest.scoreChange}%)` },
+            { type: 'mrkdwn', text: `*Open Issues:*\n${digest.openIssues}` },
+            { type: 'mrkdwn', text: `*Resolved:*\n${digest.resolvedIssues}` },
+            { type: 'mrkdwn', text: `*Upcoming Deadlines:*\n${digest.upcomingDeadlines.length}` },
+          ],
+        },
+      ];
+
+      if (digest.highlights.length > 0) {
+        blocks.push({
+          type: 'section',
+          text: { type: 'mrkdwn', text: `*Key Highlights:*\n${digest.highlights.map(h => `• ${h}`).join('\n')}` },
+        });
+      }
+
+      if (digest.upcomingDeadlines.length > 0) {
+        blocks.push({
+          type: 'section',
+          text: { type: 'mrkdwn', text: `*Upcoming Deadlines:*\n${digest.upcomingDeadlines.slice(0, 5).map(d => `• ${d.title} - ${d.date}`).join('\n')}` },
+        });
+      }
+
+      await axios.post(
+        `${this.apiBaseUrl}/chat.postMessage`,
+        {
+          channel,
+          text: `Compliance Digest - ${digest.period}: Score ${digest.overallScore}%`,
+          blocks,
+          attachments: [{ color: scoreColor, fallback: `Score: ${digest.overallScore}%` }],
+        },
+        {
+          headers: { Authorization: `Bearer ${integration.accessToken}`, 'Content-Type': 'application/json' },
+        }
+      );
+
+      logger.info(`[Slack] Compliance digest sent for org ${organizationId}`);
+      return { success: true };
+    } catch (error) {
+      logger.error('[Slack] Error sending compliance digest', error);
+      return { success: false };
+    }
+  }
+
+  /**
+   * Process incoming Slack webhook events
+   */
+  async processWebhookEvent(
+    event: {
+      type: string;
+      challenge?: string;
+      event?: any;
+      team_id?: string;
+    }
+  ): Promise<{ challenge?: string; processed: boolean }> {
+    try {
+      // Handle URL verification challenge
+      if (event.type === 'url_verification') {
+        return { challenge: event.challenge, processed: true };
+      }
+
+      if (event.type === 'event_callback' && event.event) {
+        const slackEvent = event.event;
+
+        // Handle different event types
+        switch (slackEvent.type) {
+          case 'message':
+            // Handle compliance-related messages
+            if (slackEvent.text?.includes('[compliance]') || slackEvent.text?.includes('[alert]')) {
+              logger.info(`[Slack] Compliance message received: ${slackEvent.text?.substring(0, 100)}`);
+            }
+            break;
+
+          case 'app_mention':
+            // Handle bot mentions for compliance queries
+            logger.info(`[Slack] Bot mentioned: ${slackEvent.text?.substring(0, 100)}`);
+            break;
+
+          default:
+            logger.debug(`[Slack] Unhandled event type: ${slackEvent.type}`);
+        }
+      }
+
+      return { processed: true };
+    } catch (error) {
+      logger.error('[Slack] Error processing webhook event', error);
+      return { processed: false };
+    }
+  }
 }
 
 export default new SlackService();
