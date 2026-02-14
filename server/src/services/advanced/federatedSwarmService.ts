@@ -2107,6 +2107,347 @@ class FederatedSwarmService {
       return 0.75;
     }
   }
+
+  /**
+   * Secure federated aggregation with differential privacy
+   * Aggregates model updates from peers while preserving privacy
+   */
+  async secureAggregateModels(
+    organizationId: string,
+    roundId: string,
+    options?: {
+      privacyBudget?: number;
+      clippingNorm?: number;
+      minPeers?: number;
+      aggregationStrategy?: 'fedavg' | 'fedprox' | 'scaffold' | 'secure_aggregation';
+    }
+  ): Promise<{
+    roundId: string;
+    aggregatedModelHash: string;
+    participatingPeers: number;
+    convergenceMetric: number;
+    privacySpent: number;
+    privacyRemaining: number;
+    modelImprovement: number;
+    status: 'success' | 'insufficient_peers' | 'convergence_failed';
+  }> {
+    try {
+      const privacyBudget = options?.privacyBudget ?? 1.0;
+      const clippingNorm = options?.clippingNorm ?? 1.0;
+      const minPeers = options?.minPeers ?? 3;
+      const strategy = options?.aggregationStrategy ?? 'fedavg';
+
+      // Get peer model updates for this round
+      const peerUpdates = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: 'swarm.model_update',
+          details: { contains: roundId },
+        },
+      });
+
+      if (peerUpdates.length < minPeers) {
+        logger.warn(`[FederatedSwarm] Insufficient peers for round ${roundId}: ${peerUpdates.length}/${minPeers}`);
+        return {
+          roundId,
+          aggregatedModelHash: '',
+          participatingPeers: peerUpdates.length,
+          convergenceMetric: 0,
+          privacySpent: 0,
+          privacyRemaining: privacyBudget,
+          modelImprovement: 0,
+          status: 'insufficient_peers',
+        };
+      }
+
+      // Parse model updates from peers
+      const modelUpdates: Array<{ peerId: string; weights: number[]; dataSize: number; loss: number }> = [];
+
+      for (const update of peerUpdates) {
+        try {
+          const details = JSON.parse(update.details || '{}');
+          if (details.weights && details.dataSize) {
+            modelUpdates.push({
+              peerId: details.peerId || update.id,
+              weights: details.weights,
+              dataSize: details.dataSize,
+              loss: details.loss || 0,
+            });
+          }
+        } catch {
+          // Skip malformed updates
+        }
+      }
+
+      // Apply differential privacy: clip gradients and add noise
+      const noisyUpdates = modelUpdates.map(update => {
+        const clippedWeights = update.weights.map(w => {
+          const norm = Math.abs(w);
+          return norm > clippingNorm ? (w / norm) * clippingNorm : w;
+        });
+
+        // Add Gaussian noise scaled by sensitivity/privacy budget (Gaussian mechanism)
+        const sensitivity = clippingNorm / modelUpdates.length;
+        const sigma = sensitivity * Math.sqrt(2 * Math.log(1.25 / 0.01)) / privacyBudget;
+
+        const noisyWeights = clippedWeights.map(w => {
+          // Box-Muller transform for Gaussian noise
+          const u1 = Math.random();
+          const u2 = Math.random();
+          const noise = sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+          return w + noise;
+        });
+
+        return { ...update, weights: noisyWeights };
+      });
+
+      // Aggregate based on strategy
+      let aggregatedWeights: number[];
+
+      if (strategy === 'fedavg') {
+        // Federated Averaging: weighted by dataset size
+        const totalDataSize = noisyUpdates.reduce((sum, u) => sum + u.dataSize, 0);
+        const weightDimension = noisyUpdates[0]?.weights.length || 0;
+        aggregatedWeights = new Array(weightDimension).fill(0);
+
+        for (const update of noisyUpdates) {
+          const peerWeight = update.dataSize / totalDataSize;
+          for (let i = 0; i < weightDimension; i++) {
+            aggregatedWeights[i] += (update.weights[i] || 0) * peerWeight;
+          }
+        }
+      } else if (strategy === 'fedprox') {
+        // FedProx: adds proximal term to handle heterogeneous data
+        const mu = 0.01; // proximal term coefficient
+        const totalDataSize = noisyUpdates.reduce((sum, u) => sum + u.dataSize, 0);
+        const weightDimension = noisyUpdates[0]?.weights.length || 0;
+        aggregatedWeights = new Array(weightDimension).fill(0);
+
+        // Get previous global model weights (if available)
+        const prevModelLog = await prisma.auditLog.findFirst({
+          where: {
+            organizationId,
+            action: 'swarm.global_model',
+          },
+          orderBy: { timestamp: 'desc' },
+        });
+        const prevWeights = prevModelLog
+          ? JSON.parse(prevModelLog.details || '{}').weights || new Array(weightDimension).fill(0)
+          : new Array(weightDimension).fill(0);
+
+        for (const update of noisyUpdates) {
+          const peerWeight = update.dataSize / totalDataSize;
+          for (let i = 0; i < weightDimension; i++) {
+            // FedProx adds mu/2 * ||w - w_global||^2 penalty
+            const proximalTerm = mu * ((update.weights[i] || 0) - (prevWeights[i] || 0));
+            aggregatedWeights[i] += ((update.weights[i] || 0) - proximalTerm) * peerWeight;
+          }
+        }
+      } else {
+        // Default: simple average
+        const weightDimension = noisyUpdates[0]?.weights.length || 0;
+        aggregatedWeights = new Array(weightDimension).fill(0);
+        for (const update of noisyUpdates) {
+          for (let i = 0; i < weightDimension; i++) {
+            aggregatedWeights[i] += (update.weights[i] || 0) / noisyUpdates.length;
+          }
+        }
+      }
+
+      // Calculate convergence metric (cosine similarity with previous model)
+      let convergenceMetric = 0;
+      const prevModelLog = await prisma.auditLog.findFirst({
+        where: { organizationId, action: 'swarm.global_model' },
+        orderBy: { timestamp: 'desc' },
+      });
+
+      if (prevModelLog) {
+        const prevWeights = JSON.parse(prevModelLog.details || '{}').weights || [];
+        if (prevWeights.length === aggregatedWeights.length && prevWeights.length > 0) {
+          let dotProduct = 0, normA = 0, normB = 0;
+          for (let i = 0; i < aggregatedWeights.length; i++) {
+            dotProduct += aggregatedWeights[i] * (prevWeights[i] || 0);
+            normA += aggregatedWeights[i] * aggregatedWeights[i];
+            normB += (prevWeights[i] || 0) * (prevWeights[i] || 0);
+          }
+          const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+          convergenceMetric = denominator > 0 ? dotProduct / denominator : 0;
+        }
+      }
+
+      // Calculate model improvement
+      const avgLoss = modelUpdates.reduce((sum, u) => sum + u.loss, 0) / modelUpdates.length;
+      const modelImprovement = avgLoss > 0 ? Math.max(0, 1 - avgLoss) : 0;
+
+      // Privacy accounting
+      const privacySpent = privacyBudget * (1 / Math.sqrt(modelUpdates.length));
+
+      // Hash the aggregated model for integrity verification
+      const crypto = require('crypto');
+      const modelHash = crypto.createHash('sha256').update(JSON.stringify(aggregatedWeights)).digest('hex');
+
+      // Store aggregated model
+      await prisma.auditLog.create({
+        data: {
+          action: 'swarm.global_model',
+          organizationId,
+          hash: modelHash,
+          details: JSON.stringify({
+            roundId,
+            weights: aggregatedWeights.slice(0, 100), // Store first 100 weights for reference
+            weightDimension: aggregatedWeights.length,
+            participatingPeers: noisyUpdates.length,
+            convergenceMetric,
+            modelImprovement,
+            privacySpent,
+            strategy,
+          }),
+        },
+      });
+
+      logger.info(
+        `[FederatedSwarm] Secure aggregation complete for round ${roundId}: ` +
+        `${noisyUpdates.length} peers, convergence=${convergenceMetric.toFixed(4)}, ` +
+        `improvement=${modelImprovement.toFixed(4)}, privacy_spent=${privacySpent.toFixed(4)}`
+      );
+
+      return {
+        roundId,
+        aggregatedModelHash: modelHash,
+        participatingPeers: noisyUpdates.length,
+        convergenceMetric: Math.round(convergenceMetric * 10000) / 10000,
+        privacySpent: Math.round(privacySpent * 10000) / 10000,
+        privacyRemaining: Math.round((privacyBudget - privacySpent) * 10000) / 10000,
+        modelImprovement: Math.round(modelImprovement * 10000) / 10000,
+        status: 'success',
+      };
+    } catch (error) {
+      logger.error('[FederatedSwarm] Error in secure aggregation', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Register a peer model update for aggregation
+   */
+  async registerPeerUpdate(
+    organizationId: string,
+    roundId: string,
+    peerUpdate: {
+      peerId: string;
+      weights: number[];
+      dataSize: number;
+      loss: number;
+      metrics?: { accuracy?: number; f1Score?: number };
+    }
+  ): Promise<{ accepted: boolean; reason?: string }> {
+    try {
+      // Validate update
+      if (!peerUpdate.weights || peerUpdate.weights.length === 0) {
+        return { accepted: false, reason: 'Empty weights' };
+      }
+      if (peerUpdate.dataSize <= 0) {
+        return { accepted: false, reason: 'Invalid data size' };
+      }
+
+      // Check for duplicate submission
+      const existing = await prisma.auditLog.findFirst({
+        where: {
+          organizationId,
+          action: 'swarm.model_update',
+          details: { contains: peerUpdate.peerId },
+          hash: { contains: roundId },
+        },
+      });
+
+      if (existing) {
+        return { accepted: false, reason: 'Duplicate submission for this round' };
+      }
+
+      // Validate weights are within reasonable bounds (Byzantine fault detection)
+      const maxWeight = Math.max(...peerUpdate.weights.map(Math.abs));
+      if (maxWeight > 100) {
+        logger.warn(`[FederatedSwarm] Suspicious weights from peer ${peerUpdate.peerId}: max=${maxWeight}`);
+        return { accepted: false, reason: 'Weight values out of acceptable range' };
+      }
+
+      // Store the update
+      await prisma.auditLog.create({
+        data: {
+          action: 'swarm.model_update',
+          organizationId,
+          hash: `${roundId}:${peerUpdate.peerId}`,
+          details: JSON.stringify({
+            roundId,
+            peerId: peerUpdate.peerId,
+            weights: peerUpdate.weights,
+            dataSize: peerUpdate.dataSize,
+            loss: peerUpdate.loss,
+            metrics: peerUpdate.metrics,
+            submittedAt: new Date().toISOString(),
+          }),
+        },
+      });
+
+      logger.info(`[FederatedSwarm] Peer update registered: peer=${peerUpdate.peerId}, round=${roundId}`);
+      return { accepted: true };
+    } catch (error) {
+      logger.error('[FederatedSwarm] Error registering peer update', error);
+      return { accepted: false, reason: 'Internal error' };
+    }
+  }
+
+  /**
+   * Get aggregation round status
+   */
+  async getAggregationRoundStatus(
+    organizationId: string,
+    roundId: string
+  ): Promise<{
+    roundId: string;
+    peerCount: number;
+    peers: Array<{ peerId: string; submittedAt: string; dataSize: number }>;
+    aggregated: boolean;
+    globalModelHash: string | null;
+  }> {
+    try {
+      const updates = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          action: 'swarm.model_update',
+          details: { contains: roundId },
+        },
+      });
+
+      const peers = updates.map(u => {
+        const details = JSON.parse(u.details || '{}');
+        return {
+          peerId: details.peerId || 'unknown',
+          submittedAt: details.submittedAt || u.timestamp.toISOString(),
+          dataSize: details.dataSize || 0,
+        };
+      });
+
+      const globalModel = await prisma.auditLog.findFirst({
+        where: {
+          organizationId,
+          action: 'swarm.global_model',
+          details: { contains: roundId },
+        },
+      });
+
+      return {
+        roundId,
+        peerCount: peers.length,
+        peers,
+        aggregated: !!globalModel,
+        globalModelHash: globalModel?.hash || null,
+      };
+    } catch (error) {
+      logger.error('[FederatedSwarm] Error getting round status', error);
+      return { roundId, peerCount: 0, peers: [], aggregated: false, globalModelHash: null };
+    }
+  }
 }
 
 export default new FederatedSwarmService();

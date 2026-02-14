@@ -2710,6 +2710,325 @@ Return only the resolution text, no JSON or formatting.`;
       return [];
     }
   }
+
+  /**
+   * Extract regulatory content from PDF documents using real PDF parsing
+   * Uses pdf-parse for text extraction and structural analysis
+   */
+  async extractFromPDF(
+    pdfBuffer: Buffer,
+    options?: {
+      extractTables?: boolean;
+      extractHeaders?: boolean;
+      maxPages?: number;
+      language?: string;
+    }
+  ): Promise<{
+    text: string;
+    pages: number;
+    metadata: {
+      title?: string;
+      author?: string;
+      subject?: string;
+      keywords?: string;
+      creationDate?: string;
+      modificationDate?: string;
+    };
+    sections: Array<{
+      heading: string;
+      content: string;
+      pageNumber: number;
+      level: number;
+    }>;
+    tables: Array<{
+      pageNumber: number;
+      headers: string[];
+      rows: string[][];
+    }>;
+    regulatoryReferences: Array<{
+      reference: string;
+      context: string;
+      pageNumber: number;
+    }>;
+    extractionConfidence: number;
+  }> {
+    try {
+      let pdfParse: any;
+      try {
+        pdfParse = require('pdf-parse');
+      } catch {
+        // pdf-parse not available, use fallback
+        logger.warn('[RIF] pdf-parse not available, using basic text extraction');
+        return this.basicPDFExtraction(pdfBuffer);
+      }
+
+      const pdfData = await pdfParse(pdfBuffer, {
+        max: options?.maxPages || 0, // 0 = all pages
+      });
+
+      const text = pdfData.text || '';
+      const pages = pdfData.numpages || 0;
+
+      // Extract metadata
+      const metadata: any = {};
+      if (pdfData.info) {
+        metadata.title = pdfData.info.Title;
+        metadata.author = pdfData.info.Author;
+        metadata.subject = pdfData.info.Subject;
+        metadata.keywords = pdfData.info.Keywords;
+        metadata.creationDate = pdfData.info.CreationDate;
+        metadata.modificationDate = pdfData.info.ModDate;
+      }
+
+      // Extract sections based on heading patterns
+      const sections = this.extractSections(text, pages);
+
+      // Extract tables (basic table detection from text)
+      const tables = options?.extractTables !== false ? this.extractTables(text, pages) : [];
+
+      // Extract regulatory references
+      const regulatoryReferences = this.extractRegulatoryReferences(text, pages);
+
+      // Calculate extraction confidence
+      let confidence = 0.7;
+      if (text.length > 100) confidence += 0.1;
+      if (sections.length > 0) confidence += 0.1;
+      if (metadata.title) confidence += 0.05;
+      if (regulatoryReferences.length > 0) confidence += 0.05;
+
+      logger.info(
+        `[RIF] PDF extracted: ${pages} pages, ${sections.length} sections, ` +
+        `${tables.length} tables, ${regulatoryReferences.length} references`
+      );
+
+      return {
+        text,
+        pages,
+        metadata,
+        sections,
+        tables,
+        regulatoryReferences,
+        extractionConfidence: Math.min(1.0, Math.round(confidence * 100) / 100),
+      };
+    } catch (error) {
+      logger.error('[RIF] Error extracting PDF content', error);
+      throw new Error(`PDF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Basic PDF extraction fallback when pdf-parse is unavailable
+   */
+  private basicPDFExtraction(pdfBuffer: Buffer): any {
+    // Extract text from PDF header/raw bytes
+    const rawText = pdfBuffer.toString('utf-8');
+
+    // Extract text between stream/endstream markers
+    const textParts: string[] = [];
+    const streamRegex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+    let match;
+    while ((match = streamRegex.exec(rawText)) !== null) {
+      // Filter out binary content and extract readable text
+      const content = match[1].replace(/[^\x20-\x7E\n\r\t]/g, ' ').trim();
+      if (content.length > 10) {
+        textParts.push(content);
+      }
+    }
+
+    const text = textParts.join('\n\n');
+
+    return {
+      text,
+      pages: 1,
+      metadata: {},
+      sections: [],
+      tables: [],
+      regulatoryReferences: this.extractRegulatoryReferences(text, 1),
+      extractionConfidence: 0.3,
+    };
+  }
+
+  /**
+   * Extract document sections from text
+   */
+  private extractSections(
+    text: string,
+    totalPages: number
+  ): Array<{ heading: string; content: string; pageNumber: number; level: number }> {
+    const sections: Array<{ heading: string; content: string; pageNumber: number; level: number }> = [];
+    const lines = text.split('\n');
+
+    // Heading patterns (numbered sections, all-caps lines, etc.)
+    const headingPatterns = [
+      { regex: /^(\d+\.)\s+([A-Z][A-Za-z\s]+)$/, level: 1 },
+      { regex: /^(\d+\.\d+\.?)\s+(.+)$/, level: 2 },
+      { regex: /^(\d+\.\d+\.\d+\.?)\s+(.+)$/, level: 3 },
+      { regex: /^(Article\s+\d+)[:\.]?\s*(.*)$/i, level: 1 },
+      { regex: /^(Section\s+\d+)[:\.]?\s*(.*)$/i, level: 1 },
+      { regex: /^(Chapter\s+\d+)[:\.]?\s*(.*)$/i, level: 1 },
+      { regex: /^([A-Z][A-Z\s]{5,})$/, level: 1 },
+    ];
+
+    let currentSection: { heading: string; content: string[]; pageNumber: number; level: number } | null = null;
+    const estimatedLinesPerPage = totalPages > 0 ? Math.ceil(lines.length / totalPages) : lines.length;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const pageNumber = Math.min(totalPages, Math.floor(i / estimatedLinesPerPage) + 1);
+      let isHeading = false;
+
+      for (const pattern of headingPatterns) {
+        const match = line.match(pattern.regex);
+        if (match) {
+          // Save previous section
+          if (currentSection) {
+            sections.push({
+              heading: currentSection.heading,
+              content: currentSection.content.join('\n').trim(),
+              pageNumber: currentSection.pageNumber,
+              level: currentSection.level,
+            });
+          }
+
+          currentSection = {
+            heading: line,
+            content: [],
+            pageNumber,
+            level: pattern.level,
+          };
+          isHeading = true;
+          break;
+        }
+      }
+
+      if (!isHeading && currentSection) {
+        currentSection.content.push(line);
+      }
+    }
+
+    // Save last section
+    if (currentSection) {
+      sections.push({
+        heading: currentSection.heading,
+        content: currentSection.content.join('\n').trim(),
+        pageNumber: currentSection.pageNumber,
+        level: currentSection.level,
+      });
+    }
+
+    return sections;
+  }
+
+  /**
+   * Extract tables from text (basic table detection)
+   */
+  private extractTables(
+    text: string,
+    totalPages: number
+  ): Array<{ pageNumber: number; headers: string[]; rows: string[][] }> {
+    const tables: Array<{ pageNumber: number; headers: string[]; rows: string[][] }> = [];
+    const lines = text.split('\n');
+    const estimatedLinesPerPage = totalPages > 0 ? Math.ceil(lines.length / totalPages) : lines.length;
+
+    let tableLines: string[] = [];
+    let tableStartLine = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // Detect table-like patterns (pipe-delimited or tab-delimited)
+      const isPipeDelimited = (line.match(/\|/g) || []).length >= 2;
+      const isTabDelimited = (line.match(/\t/g) || []).length >= 2;
+
+      if (isPipeDelimited || isTabDelimited) {
+        if (tableLines.length === 0) tableStartLine = i;
+        tableLines.push(line);
+      } else if (tableLines.length >= 2) {
+        // End of table
+        const delimiter = tableLines[0].includes('|') ? '|' : '\t';
+        const rows = tableLines.map(l =>
+          l.split(delimiter).map(cell => cell.trim()).filter(cell => cell.length > 0)
+        );
+
+        // Filter out separator rows (----)
+        const dataRows = rows.filter(row => !row.every(cell => /^[-=]+$/.test(cell)));
+
+        if (dataRows.length >= 2) {
+          tables.push({
+            pageNumber: Math.min(totalPages, Math.floor(tableStartLine / estimatedLinesPerPage) + 1),
+            headers: dataRows[0],
+            rows: dataRows.slice(1),
+          });
+        }
+
+        tableLines = [];
+      } else {
+        tableLines = [];
+      }
+    }
+
+    return tables;
+  }
+
+  /**
+   * Extract regulatory references from text
+   */
+  private extractRegulatoryReferences(
+    text: string,
+    totalPages: number
+  ): Array<{ reference: string; context: string; pageNumber: number }> {
+    const references: Array<{ reference: string; context: string; pageNumber: number }> = [];
+    const lines = text.split('\n');
+    const estimatedLinesPerPage = totalPages > 0 ? Math.ceil(lines.length / totalPages) : lines.length;
+
+    // Regulatory reference patterns
+    const patterns = [
+      /\b(GDPR\s*(?:Article|Art\.?)\s*\d+(?:\(\d+\))?)/gi,
+      /\b(EU\s*(?:Regulation|Directive)\s*\d+\/\d+)/gi,
+      /\b(ISO\s*\d+(?::\d+)?)/gi,
+      /\b(NIST\s*(?:SP|CSF)\s*\d+[-\d]*)/gi,
+      /\b(SOC\s*[12]\s*(?:Type\s*[12I]+)?)/gi,
+      /\b(PCI[\s-]DSS\s*(?:v?\d+\.?\d*)?)/gi,
+      /\b(HIPAA\s*§?\s*\d+(?:\.\d+)*)/gi,
+      /\b(SOX\s*(?:Section\s*)?\d+)/gi,
+      /\b(CCPA\s*§?\s*\d+(?:\.\d+)*)/gi,
+      /\b(AI\s*Act\s*(?:Article|Art\.?)\s*\d+)/gi,
+      /\b(DMA\s*(?:Article|Art\.?)\s*\d+)/gi,
+      /\b(DSA\s*(?:Article|Art\.?)\s*\d+)/gi,
+      /\b((?:Article|Art\.?)\s*\d+(?:\(\d+\))?(?:\s*of\s*(?:the\s+)?(?:Regulation|Directive|Act)))/gi,
+    ];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const pageNumber = Math.min(totalPages, Math.floor(i / estimatedLinesPerPage) + 1);
+
+      for (const pattern of patterns) {
+        pattern.lastIndex = 0;
+        let match;
+        while ((match = pattern.exec(line)) !== null) {
+          const contextStart = Math.max(0, match.index - 50);
+          const contextEnd = Math.min(line.length, match.index + match[0].length + 50);
+
+          references.push({
+            reference: match[1] || match[0],
+            context: line.substring(contextStart, contextEnd).trim(),
+            pageNumber,
+          });
+        }
+      }
+    }
+
+    // Deduplicate
+    const seen = new Set<string>();
+    return references.filter(ref => {
+      const key = ref.reference.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
 }
 
 export default new RegulatoryIntelligenceFabricService();
