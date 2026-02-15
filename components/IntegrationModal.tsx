@@ -52,77 +52,82 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
   useEffect(() => {
     const provider = getProviderId();
     const authTypeMap: Record<string, AuthType> = {
-      // OAuth integrations
+      // OAuth integrations (services with proper OAuth support)
       'google': 'oauth',
       'github': 'oauth',
       'slack': 'oauth',
       'jira': 'oauth',
-      'microsoft-teams': 'oauth',
-      'okta': 'oauth',
-      'auth0': 'oauth',
-      'onelogin': 'oauth',
-      'salesforce': 'oauth',
-      'hubspot': 'oauth',
-      'zendesk': 'oauth',
-      'paypal': 'oauth',
-      'discord': 'oauth',
-      'trello': 'oauth',
-      'asana': 'oauth',
-      'monday': 'oauth',
-      'confluence': 'oauth',
-      
+
       // IAM Credentials
       'aws': 'iam',
       'azure': 'iam',
       'gcp': 'service-account',
-      
-      // API Key + Secret
+
+      // API Key + Secret (Client ID + Client Secret style)
       'datadog': 'api-key-secret',
       'newrelic': 'api-key-secret',
       'sentry': 'api-key-secret',
       'pagerduty': 'api-key-secret',
       'twilio': 'api-key-secret',
       'sendgrid': 'api-key-secret',
-      
+      'auth0': 'api-key-secret',       // Auth0 Management API uses Client ID + Client Secret
+      'onelogin': 'api-key-secret',    // OneLogin uses Client ID + Client Secret
+      'salesforce': 'api-key-secret',  // Salesforce Connected App uses Consumer Key + Secret
+      'hubspot': 'api-key-secret',     // HubSpot Private App uses Access Token + optional secret
+      'paypal': 'api-key-secret',      // PayPal uses Client ID + Client Secret
+      'stripe': 'api-key-secret',      // Stripe uses API Key + optional webhook secret
+      'trello': 'api-key-secret',      // Trello uses API Key + Token
+      'microsoft-teams': 'api-key-secret', // MS Teams uses App ID + App Secret + Tenant ID
+
       // API Key only
       'qualys': 'api-key',
       'tenable': 'api-key',
       'crowdstrike': 'api-key',
       'paloalto': 'api-key',
       'rapid7': 'api-key',
-      
+      'okta': 'api-key',               // Okta uses API tokens
+      'zendesk': 'api-key',            // Zendesk uses email/token authentication
+
       // Username + Password + API Key
       'jenkins': 'username-password',
       'splunk': 'username-password',
       'bamboohr': 'api-key-url',
       'workday': 'api-key-url',
       'adp': 'api-key-url',
-      
-      // Personal Access Token (GitLab and Bitbucket use PAT, not OAuth)
+
+      // Personal Access Token
       'gitlab': 'pat',
       'bitbucket': 'pat',
       'circleci': 'pat',
       'travis': 'pat',
       'docker': 'pat',
-      
+      'heroku': 'pat',
+      'digitalocean': 'pat',
+      'confluence': 'pat',             // Confluence uses API tokens (email + API token)
+      'asana': 'pat',                  // Asana uses Personal Access Tokens
+      'monday': 'pat',                 // Monday.com uses API tokens
+      'discord': 'pat',                // Discord uses Bot tokens
+
       // API Key + URL
       'mongodb': 'api-key-url',
       'postgresql': 'api-key-url',
       'mysql': 'api-key-url',
       'redis': 'api-key-url',
       'elasticsearch': 'api-key-url',
-      'heroku': 'pat',
-      'digitalocean': 'pat',
       'kubernetes': 'api-key-url',
     };
-    
+
     setAuthType(authTypeMap[provider] || 'api-key');
-    
+
     // Set default URLs for some integrations
     if (provider === 'jenkins') setBaseUrl('https://your-jenkins-instance.com');
     if (provider === 'splunk') setBaseUrl('https://your-splunk-instance.com');
     if (provider === 'gitlab') setPatUrl('https://gitlab.com');
     if (provider === 'bitbucket') setPatUrl('https://bitbucket.org');
+    if (provider === 'confluence') setPatUrl('https://your-domain.atlassian.net');
+    if (provider === 'asana') setPatUrl('https://app.asana.com');
+    if (provider === 'monday') setPatUrl('https://api.monday.com');
+    if (provider === 'discord') setPatUrl('');
   }, [integration]);
 
   // Check URL params for OAuth callback status
@@ -719,33 +724,113 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         );
 
       case 'api-key':
+        const apiKeyProvider = getProviderId();
+        const apiKeyLabels: Record<string, { keyLabel: string; keyPlaceholder: string; urlLabel: string; urlPlaceholder: string; urlRequired: boolean; instructions: string }> = {
+          'okta': {
+            keyLabel: 'API Token',
+            keyPlaceholder: 'Enter your Okta API token',
+            urlLabel: 'Okta Domain',
+            urlPlaceholder: 'https://your-domain.okta.com',
+            urlRequired: true,
+            instructions: 'Create an API token: Security → API → Tokens → Create Token'
+          },
+          'zendesk': {
+            keyLabel: 'API Token',
+            keyPlaceholder: 'Enter your Zendesk API token',
+            urlLabel: 'Zendesk Subdomain',
+            urlPlaceholder: 'https://your-company.zendesk.com',
+            urlRequired: true,
+            instructions: 'Create a token: Admin Center → Apps and Integrations → APIs → Zendesk API'
+          },
+          'qualys': {
+            keyLabel: 'API Token',
+            keyPlaceholder: 'Enter your Qualys API token',
+            urlLabel: 'Qualys API URL',
+            urlPlaceholder: 'https://qualysapi.qualys.com',
+            urlRequired: true,
+            instructions: 'Get your API credentials from Qualys administration'
+          },
+          'tenable': {
+            keyLabel: 'API Key',
+            keyPlaceholder: 'Enter your Tenable API key',
+            urlLabel: 'API URL (optional)',
+            urlPlaceholder: 'https://cloud.tenable.com',
+            urlRequired: false,
+            instructions: 'Generate API keys: Settings → My Account → API Keys'
+          },
+          'crowdstrike': {
+            keyLabel: 'API Client ID',
+            keyPlaceholder: 'Enter your CrowdStrike Client ID',
+            urlLabel: 'Base URL',
+            urlPlaceholder: 'https://api.crowdstrike.com',
+            urlRequired: true,
+            instructions: 'Create API credentials: Support → API Clients and Keys'
+          },
+          'rapid7': {
+            keyLabel: 'API Key',
+            keyPlaceholder: 'Enter your Rapid7 API key',
+            urlLabel: 'API URL',
+            urlPlaceholder: 'https://us.api.insight.rapid7.com',
+            urlRequired: true,
+            instructions: 'Create an API key in your Rapid7 InsightVM settings'
+          },
+        };
+        const apiKeyConfig = apiKeyLabels[apiKeyProvider] || {
+          keyLabel: 'API Key',
+          keyPlaceholder: 'Enter your API key',
+          urlLabel: 'Base URL (optional)',
+          urlPlaceholder: 'https://api.example.com',
+          urlRequired: false,
+          instructions: `Enter your ${integration.name} API key`
+        };
+
         return (
           <form onSubmit={handleApiKeyConnect} className="space-y-4">
+            {apiKeyConfig.urlRequired && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {apiKeyConfig.urlLabel} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  placeholder={apiKeyConfig.urlPlaceholder}
+                  required
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                API Key <span className="text-red-500">*</span>
+                {apiKeyConfig.keyLabel} <span className="text-red-500">*</span>
               </label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                placeholder="Enter your API key"
+                placeholder={apiKeyConfig.keyPlaceholder}
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Base URL (optional)
-              </label>
-              <input
-                type="url"
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                placeholder="https://api.example.com"
-              />
-            </div>
+            {!apiKeyConfig.urlRequired && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {apiKeyConfig.urlLabel}
+                </label>
+                <input
+                  type="url"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  placeholder={apiKeyConfig.urlPlaceholder}
+                />
+              </div>
+            )}
+            <p className="text-xs text-gray-500">
+              {apiKeyConfig.instructions}
+            </p>
             <button
               type="submit"
               disabled={isConnecting}
@@ -767,46 +852,171 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         );
 
       case 'api-key-secret':
+        const secretProvider = getProviderId();
+        const secretLabels: Record<string, { keyLabel: string; keyPlaceholder: string; secretLabel: string; secretPlaceholder: string; urlLabel?: string; urlPlaceholder?: string; instructions: string }> = {
+          'trello': {
+            keyLabel: 'API Key',
+            keyPlaceholder: 'Enter your Trello API key',
+            secretLabel: 'API Token',
+            secretPlaceholder: 'Enter your Trello API token',
+            instructions: 'Get your API key and token at: trello.com/power-ups/admin → New → Generate API Key'
+          },
+          'auth0': {
+            keyLabel: 'Client ID',
+            keyPlaceholder: 'Enter your Auth0 Client ID',
+            secretLabel: 'Client Secret',
+            secretPlaceholder: 'Enter your Auth0 Client Secret',
+            urlLabel: 'Auth0 Domain',
+            urlPlaceholder: 'https://your-tenant.auth0.com',
+            instructions: 'Create a Machine-to-Machine application in Auth0 Dashboard → Applications'
+          },
+          'onelogin': {
+            keyLabel: 'Client ID',
+            keyPlaceholder: 'Enter your OneLogin Client ID',
+            secretLabel: 'Client Secret',
+            secretPlaceholder: 'Enter your OneLogin Client Secret',
+            urlLabel: 'OneLogin Subdomain',
+            urlPlaceholder: 'https://your-company.onelogin.com',
+            instructions: 'Create API credentials: Administration → Developers → API Credentials'
+          },
+          'salesforce': {
+            keyLabel: 'Consumer Key',
+            keyPlaceholder: 'Enter your Connected App Consumer Key',
+            secretLabel: 'Consumer Secret',
+            secretPlaceholder: 'Enter your Connected App Consumer Secret',
+            urlLabel: 'Instance URL',
+            urlPlaceholder: 'https://your-instance.salesforce.com',
+            instructions: 'Create a Connected App: Setup → App Manager → New Connected App'
+          },
+          'hubspot': {
+            keyLabel: 'Access Token',
+            keyPlaceholder: 'Enter your HubSpot Private App access token',
+            secretLabel: 'App ID (optional)',
+            secretPlaceholder: 'Enter your HubSpot App ID',
+            instructions: 'Create a Private App: Settings → Integrations → Private Apps → Create'
+          },
+          'paypal': {
+            keyLabel: 'Client ID',
+            keyPlaceholder: 'Enter your PayPal Client ID',
+            secretLabel: 'Client Secret',
+            secretPlaceholder: 'Enter your PayPal Client Secret',
+            urlLabel: 'Environment',
+            urlPlaceholder: 'https://api.paypal.com (or sandbox)',
+            instructions: 'Get credentials from PayPal Developer Dashboard → My Apps & Credentials'
+          },
+          'stripe': {
+            keyLabel: 'API Key (Secret)',
+            keyPlaceholder: 'sk_live_... or sk_test_...',
+            secretLabel: 'Webhook Secret (optional)',
+            secretPlaceholder: 'whsec_...',
+            instructions: 'Get your API keys from Stripe Dashboard → Developers → API keys'
+          },
+          'microsoft-teams': {
+            keyLabel: 'Application (client) ID',
+            keyPlaceholder: 'Enter your Azure AD App ID',
+            secretLabel: 'Client Secret',
+            secretPlaceholder: 'Enter your Azure AD Client Secret',
+            urlLabel: 'Tenant ID',
+            urlPlaceholder: 'Enter your Azure AD Tenant ID',
+            instructions: 'Register an app in Azure Portal → App registrations → New registration'
+          },
+          'datadog': {
+            keyLabel: 'API Key',
+            keyPlaceholder: 'Enter your Datadog API key',
+            secretLabel: 'Application Key',
+            secretPlaceholder: 'Enter your Datadog Application key',
+            instructions: 'Get keys from Organization Settings → API Keys & Application Keys'
+          },
+          'newrelic': {
+            keyLabel: 'API Key',
+            keyPlaceholder: 'Enter your New Relic API key',
+            secretLabel: 'Account ID',
+            secretPlaceholder: 'Enter your New Relic Account ID',
+            instructions: 'Get your API key from Account Settings → API Keys'
+          },
+          'twilio': {
+            keyLabel: 'Account SID',
+            keyPlaceholder: 'Enter your Twilio Account SID',
+            secretLabel: 'Auth Token',
+            secretPlaceholder: 'Enter your Twilio Auth Token',
+            instructions: 'Find credentials in Twilio Console → Account → API Keys'
+          },
+          'sendgrid': {
+            keyLabel: 'API Key',
+            keyPlaceholder: 'Enter your SendGrid API key',
+            secretLabel: 'API Key ID (optional)',
+            secretPlaceholder: 'Enter API Key ID if available',
+            instructions: 'Create an API key: Settings → API Keys → Create API Key'
+          },
+          'sentry': {
+            keyLabel: 'Auth Token',
+            keyPlaceholder: 'Enter your Sentry Auth Token',
+            secretLabel: 'Organization Slug',
+            secretPlaceholder: 'Enter your organization slug',
+            instructions: 'Create an auth token: User Settings → Auth Tokens → Create New Token'
+          },
+          'pagerduty': {
+            keyLabel: 'API Key',
+            keyPlaceholder: 'Enter your PagerDuty API key',
+            secretLabel: 'API Key ID (optional)',
+            secretPlaceholder: 'Optional API Key ID',
+            instructions: 'Create an API key: Integrations → API Access Keys → Create New API Key'
+          },
+        };
+        const secretConfig = secretLabels[secretProvider] || {
+          keyLabel: 'API Key',
+          keyPlaceholder: 'Enter your API key',
+          secretLabel: 'API Secret',
+          secretPlaceholder: 'Enter your API secret',
+          instructions: `Enter your ${integration.name} API credentials`
+        };
+
         return (
           <form onSubmit={handleApiKeySecretConnect} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                API Key <span className="text-red-500">*</span>
+                {secretConfig.keyLabel} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                placeholder="Enter your API key"
+                placeholder={secretConfig.keyPlaceholder}
                 required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                API Secret <span className="text-red-500">*</span>
+                {secretConfig.secretLabel} {!secretConfig.secretLabel.includes('optional') && <span className="text-red-500">*</span>}
               </label>
               <input
                 type="password"
                 value={apiSecret}
                 onChange={(e) => setApiSecret(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                placeholder="Enter your API secret"
-                required
+                placeholder={secretConfig.secretPlaceholder}
+                required={!secretConfig.secretLabel.includes('optional')}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Base URL (optional)
-              </label>
-              <input
-                type="url"
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                placeholder="https://api.example.com"
-              />
-            </div>
+            {secretConfig.urlLabel && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {secretConfig.urlLabel} {secretConfig.urlLabel.includes('optional') ? '' : <span className="text-red-500">*</span>}
+                </label>
+                <input
+                  type="text"
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                  placeholder={secretConfig.urlPlaceholder || 'https://api.example.com'}
+                  required={!secretConfig.urlLabel?.includes('optional')}
+                />
+              </div>
+            )}
+            <p className="text-xs text-gray-500">
+              {secretConfig.instructions}
+            </p>
             <button
               type="submit"
               disabled={isConnecting}
@@ -1083,36 +1293,124 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         );
 
       case 'pat':
+        const patProvider = getProviderId();
+        const patLabels: Record<string, { urlLabel: string; urlPlaceholder: string; tokenLabel: string; tokenPlaceholder: string; instructions: string }> = {
+          'confluence': {
+            urlLabel: 'Atlassian Site URL',
+            urlPlaceholder: 'https://your-domain.atlassian.net',
+            tokenLabel: 'API Token',
+            tokenPlaceholder: 'Enter your Atlassian API token',
+            instructions: 'Generate an API token at: Atlassian Account → Security → API tokens'
+          },
+          'asana': {
+            urlLabel: 'Asana URL (optional)',
+            urlPlaceholder: 'https://app.asana.com',
+            tokenLabel: 'Personal Access Token',
+            tokenPlaceholder: 'Enter your Asana PAT',
+            instructions: 'Generate a PAT in Asana: My Settings → Apps → Personal Access Tokens'
+          },
+          'monday': {
+            urlLabel: 'Monday.com URL (optional)',
+            urlPlaceholder: 'https://api.monday.com',
+            tokenLabel: 'API Token',
+            tokenPlaceholder: 'Enter your Monday.com API token',
+            instructions: 'Find your API token: Avatar → Admin → API'
+          },
+          'discord': {
+            urlLabel: '',
+            urlPlaceholder: '',
+            tokenLabel: 'Bot Token',
+            tokenPlaceholder: 'Enter your Discord bot token',
+            instructions: 'Get your bot token from Discord Developer Portal → Your App → Bot → Token'
+          },
+          'gitlab': {
+            urlLabel: 'GitLab Instance URL',
+            urlPlaceholder: 'https://gitlab.com or https://your-gitlab.com',
+            tokenLabel: 'Personal Access Token',
+            tokenPlaceholder: 'Enter your GitLab PAT',
+            instructions: 'Create a PAT: User Settings → Access Tokens (scopes: api, read_user)'
+          },
+          'bitbucket': {
+            urlLabel: 'Bitbucket URL (optional)',
+            urlPlaceholder: 'https://bitbucket.org',
+            tokenLabel: 'App Password',
+            tokenPlaceholder: 'Enter your Bitbucket app password',
+            instructions: 'Create an app password: Personal Settings → App passwords'
+          },
+          'heroku': {
+            urlLabel: '',
+            urlPlaceholder: '',
+            tokenLabel: 'API Key',
+            tokenPlaceholder: 'Enter your Heroku API key',
+            instructions: 'Find your API key: Account Settings → API Key'
+          },
+          'digitalocean': {
+            urlLabel: '',
+            urlPlaceholder: '',
+            tokenLabel: 'Personal Access Token',
+            tokenPlaceholder: 'Enter your DigitalOcean PAT',
+            instructions: 'Generate a token: API → Tokens/Keys → Generate New Token'
+          },
+          'circleci': {
+            urlLabel: '',
+            urlPlaceholder: '',
+            tokenLabel: 'Personal API Token',
+            tokenPlaceholder: 'Enter your CircleCI token',
+            instructions: 'Create a token: User Settings → Personal API Tokens'
+          },
+          'travis': {
+            urlLabel: '',
+            urlPlaceholder: '',
+            tokenLabel: 'API Access Token',
+            tokenPlaceholder: 'Enter your Travis CI token',
+            instructions: 'Get your token from Travis CI Settings page'
+          },
+          'docker': {
+            urlLabel: '',
+            urlPlaceholder: '',
+            tokenLabel: 'Access Token',
+            tokenPlaceholder: 'Enter your Docker Hub access token',
+            instructions: 'Create a token: Docker Hub → Account Settings → Security → Access Tokens'
+          },
+        };
+        const patConfig = patLabels[patProvider] || {
+          urlLabel: 'Instance URL (optional)',
+          urlPlaceholder: 'https://your-instance.com',
+          tokenLabel: 'Personal Access Token',
+          tokenPlaceholder: 'Enter your personal access token',
+          instructions: `Create a token with appropriate scopes in your ${integration.name} settings`
+        };
+
         return (
           <form onSubmit={handlePatConnect} className="space-y-4">
-            {patUrl && (
+            {patConfig.urlLabel && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Instance URL (optional)
+                  {patConfig.urlLabel}
                 </label>
                 <input
                   type="url"
                   value={patUrl}
                   onChange={(e) => setPatUrl(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                  placeholder="https://gitlab.com or https://your-instance.com"
+                  placeholder={patConfig.urlPlaceholder}
                 />
               </div>
             )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Personal Access Token <span className="text-red-500">*</span>
+                {patConfig.tokenLabel} <span className="text-red-500">*</span>
               </label>
               <input
                 type="password"
                 value={pat}
                 onChange={(e) => setPat(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
-                placeholder="Enter your personal access token"
+                placeholder={patConfig.tokenPlaceholder}
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                Create a token with appropriate scopes in your {integration.name} settings
+                {patConfig.instructions}
               </p>
             </div>
             <button

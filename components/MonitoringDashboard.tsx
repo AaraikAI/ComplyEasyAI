@@ -327,7 +327,40 @@ export default function MonitoringDashboard() {
     setAiLoading(true);
     setAiSuggestions(null);
     try {
-      const result = await api.enterprise.monitoring.aiSuggest();
+      let result = await api.enterprise.monitoring.aiSuggest();
+
+      // Handle case where result might be a string (raw JSON)
+      if (typeof result === 'string') {
+        try {
+          result = JSON.parse(result.replace(/```json?\s*/gi, '').replace(/```\s*/g, '').trim());
+        } catch {
+          result = { suggestions: [], summary: 'Unable to parse AI response' };
+        }
+      }
+
+      // Handle case where summary contains JSON (parsing failed on backend)
+      if (result && result.summary && typeof result.summary === 'string' && result.summary.includes('"suggestions"')) {
+        try {
+          const jsonMatch = result.summary.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+              result = {
+                suggestions: parsed.suggestions,
+                summary: parsed.summary || 'AI analysis complete. Review the suggested monitors below.',
+              };
+            }
+          }
+        } catch {
+          // Keep original result if parsing fails
+        }
+      }
+
+      // Ensure suggestions is an array
+      if (!result.suggestions || !Array.isArray(result.suggestions)) {
+        result.suggestions = [];
+      }
+
       setAiSuggestions(result);
       setViewMode('ai-suggest');
     } catch (err: any) {

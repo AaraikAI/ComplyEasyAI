@@ -63,6 +63,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
   const [showAddControl, setShowAddControl] = useState(false);
   const [uploadingControl, setUploadingControl] = useState<string | null>(null);
   const [deletingControl, setDeletingControl] = useState<string | null>(null);
+  const [regeneratingMappings, setRegeneratingMappings] = useState(false);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const smartUploadRef = useRef<HTMLInputElement>(null);
 
@@ -753,9 +754,41 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
               )}
             </div>
           </div>
-          <div className="mt-4 md:mt-0 text-right">
-             <div className="text-3xl font-bold text-brand-600">{readinessScore}%</div>
-             <div className="text-sm text-gray-400">Status Score</div>
+          <div className="mt-4 md:mt-0 flex flex-col items-end space-y-2">
+             <div className="text-right">
+               <div className="text-3xl font-bold text-brand-600">{readinessScore}%</div>
+               <div className="text-sm text-gray-400">Status Score</div>
+             </div>
+             {(user?.role === 'admin' || user?.role === 'editor') && (
+               <button
+                 onClick={async () => {
+                   if (!framework?.id) return;
+                   setRegeneratingMappings(true);
+                   try {
+                     const result = await api.frameworks.regenerateMappings(framework.id);
+                     alert(`Mappings regenerated: ${result.created} created, ${result.deleted} removed`);
+                     // Refresh data if needed
+                     if (onDataChanged) onDataChanged();
+                   } catch (error: any) {
+                     alert(`Failed to regenerate mappings: ${error.message}`);
+                   } finally {
+                     setRegeneratingMappings(false);
+                   }
+                 }}
+                 disabled={regeneratingMappings}
+                 className="text-xs px-3 py-1.5 bg-brand-50 text-brand-600 hover:bg-brand-100 rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-1"
+                 title="Regenerate cross-framework control mappings"
+               >
+                 {regeneratingMappings ? (
+                   <>
+                     <Loader2 size={12} className="animate-spin" />
+                     <span>Regenerating...</span>
+                   </>
+                 ) : (
+                   <span>Regenerate Mappings</span>
+                 )}
+               </button>
+             )}
           </div>
         </div>
 

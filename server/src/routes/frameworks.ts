@@ -173,6 +173,22 @@ router.post('/:id/apply-template', authorize('admin', 'editor'), asyncHandler(as
   });
 }));
 
+// POST /api/frameworks/:id/regenerate-mappings - Regenerate control mappings for a framework
+router.post('/:id/regenerate-mappings', authorize('admin', 'editor'), asyncHandler(async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const { id } = req.params;
+
+  const result = await frameworkTemplateService.regenerateControlMappings(
+    authReq.user!.organizationId,
+    id
+  );
+
+  res.json({
+    message: `Control mappings regenerated: ${result.created} created, ${result.deleted} deleted`,
+    ...result,
+  });
+}));
+
 router.get('/', asyncHandler(frameworksController.list.bind(frameworksController)));
 router.get('/:id', asyncHandler(frameworksController.getById.bind(frameworksController)));
 router.post('/', authorize('admin', 'editor'), enforceLimit('maxFrameworks'), asyncHandler(frameworksController.create.bind(frameworksController)));

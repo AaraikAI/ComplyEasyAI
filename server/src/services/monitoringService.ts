@@ -591,12 +591,42 @@ Return ONLY valid JSON in this format (no markdown):
     const aiResponse = await geminiService.chatWithBot(prompt, userId);
 
     try {
-      const parsed = JSON.parse(aiResponse.replace(/```json?\n?/g, '').replace(/```/g, '').trim());
-      return parsed;
-    } catch {
+      // Clean up the response - remove markdown code fences and extra whitespace
+      let cleanedResponse = aiResponse
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+
+      // Try to extract JSON if it's wrapped in other text
+      const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedResponse = jsonMatch[0];
+      }
+
+      const parsed = JSON.parse(cleanedResponse);
+
+      // Validate the parsed structure
+      if (parsed && typeof parsed === 'object') {
+        // Ensure suggestions is an array
+        if (!Array.isArray(parsed.suggestions)) {
+          parsed.suggestions = [];
+        }
+        // Ensure summary is a string
+        if (typeof parsed.summary !== 'string') {
+          parsed.summary = 'AI analysis complete. Review the suggested monitors below.';
+        }
+        return parsed;
+      }
+
+      throw new Error('Invalid response structure');
+    } catch (parseError) {
+      // If we can't parse the JSON, try to extract meaningful content
+      logger.warn('Failed to parse AI suggestion response:', parseError);
+
+      // Return a fallback with helpful message
       return {
         suggestions: [],
-        summary: aiResponse,
+        summary: 'AI was unable to generate monitor suggestions at this time. Please try again or add monitors manually.',
       };
     }
   }
