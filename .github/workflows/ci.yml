@@ -357,12 +357,13 @@ jobs:
       - name: Push API image to ECR
         env:
           ECR: ${{ steps.ecr.outputs.registry }}
+          ECR_REPO: complyeasy-production-api
         run: |
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest
-          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest $ECR/complyeasy-api:latest
-          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest $ECR/complyeasy-api:${{ github.sha }}
-          docker push $ECR/complyeasy-api:latest
-          docker push $ECR/complyeasy-api:${{ github.sha }}
+          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest $ECR/$ECR_REPO:latest
+          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest $ECR/$ECR_REPO:${{ github.sha }}
+          docker push $ECR/$ECR_REPO:latest
+          docker push $ECR/$ECR_REPO:${{ github.sha }}
 
       - name: Run database migrations
         run: |
@@ -374,19 +375,19 @@ jobs:
         run: |
           aws ecs update-service \
             --cluster complyeasy-production \
-            --service complyeasy-api \
+            --service complyeasy-production-api \
             --force-new-deployment
+
+      - name: Build frontend
+        run: npm ci && npm run build
 
       - name: Deploy frontend to S3 + CloudFront
         run: |
-          docker create --name fe ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:latest
-          docker cp fe:/usr/share/nginx/html ./frontend-dist
-          docker rm fe
-          aws s3 sync ./frontend-dist s3://${{ secrets.S3_FRONTEND_BUCKET }} \
+          aws s3 sync ./dist s3://${{ secrets.S3_FRONTEND_BUCKET }} \
             --delete \
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "index.html" --exclude "*.json"
-          aws s3 cp ./frontend-dist/index.html s3://${{ secrets.S3_FRONTEND_BUCKET }}/index.html \
+          aws s3 cp ./dist/index.html s3://${{ secrets.S3_FRONTEND_BUCKET }}/index.html \
             --cache-control "no-cache, no-store, must-revalidate"
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
@@ -396,7 +397,7 @@ jobs:
         run: |
           aws ecs wait services-stable \
             --cluster complyeasy-production \
-            --services complyeasy-api
+            --services complyeasy-production-api
 
       - name: Verify health
         run: |
@@ -436,10 +437,11 @@ jobs:
       - name: Push to ECR + deploy
         env:
           ECR: ${{ steps.ecr.outputs.registry }}
+          ECR_REPO: complyeasy-staging-api
         run: |
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:develop
-          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:develop $ECR/complyeasy-api:staging
-          docker push $ECR/complyeasy-api:staging
+          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:develop $ECR/$ECR_REPO:staging
+          docker push $ECR/$ECR_REPO:staging
 
       - name: Run migrations
         run: cd server && npm ci --omit=dev && npx prisma generate && npx prisma migrate deploy
@@ -450,7 +452,7 @@ jobs:
         run: |
           aws ecs update-service \
             --cluster complyeasy-staging \
-            --service complyeasy-api \
+            --service complyeasy-staging-api \
             --force-new-deployment
 
   # ============================================
