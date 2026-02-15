@@ -10,3 +10,5 @@ export { FrameworksPage } from './frameworks-page';
 export { VendorsPage } from './vendors-page';
 export { PoliciesPage } from './policies-page';
 export { RisksPage } from './risks-page';
+export { CommandPalettePage } from './command-palette';
+export { SidebarPage } from './sidebar-page';

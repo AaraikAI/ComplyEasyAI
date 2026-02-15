@@ -12,6 +12,8 @@ import {
   VendorsPage,
   PoliciesPage,
   RisksPage,
+  CommandPalettePage,
+  SidebarPage,
 } from './page-objects';
 
 test.describe('Authentication Flows', () => {
@@ -332,54 +334,90 @@ test.describe('Risk Management', () => {
 });
 
 test.describe('Dashboard & Navigation', () => {
-  test('Dashboard displays compliance overview', async ({ page }) => {
+  test('Dashboard displays welcome banner with greeting', async ({ page }) => {
     const dashboardPage = new DashboardPage(page);
 
     await dashboardPage.goto();
     await dashboardPage.expectDashboardLoaded();
 
-    // Check for key dashboard elements
-    await expect(
-      page.locator('[data-testid="compliance-score"], text=/compliance/i').first()
-    ).toBeVisible();
+    // Check for new welcome banner
+    const greeting = await dashboardPage.getGreetingText();
+    expect(greeting).toMatch(/Good (morning|afternoon|evening)/i);
   });
 
-  test('User can navigate to all main sections', async ({ page }) => {
+  test('Dashboard displays compliance score with SVG ring', async ({ page }) => {
+    const dashboardPage = new DashboardPage(page);
+
+    await dashboardPage.goto();
+    await dashboardPage.expectComplianceScoreVisible();
+
+    // Check for SVG ring visualization
+    const hasRing = await dashboardPage.complianceScoreRing.isVisible().catch(() => false);
+    expect(hasRing).toBeTruthy();
+  });
+
+  test('Quick Actions dropdown works', async ({ page }) => {
     const dashboardPage = new DashboardPage(page);
 
     await dashboardPage.goto();
 
-    const sections = [
-      { nav: /frameworks/i, url: /frameworks/ },
-      { nav: /vendor/i, url: /vendor/ },
-      { nav: /polic/i, url: /polic/ },
-      { nav: /risk/i, url: /risk/ },
-      { nav: /monitor/i, url: /monitor/ },
-    ];
+    // Check if quick actions button exists
+    if (await dashboardPage.quickActionsButton.isVisible()) {
+      await dashboardPage.openQuickActions();
+      await expect(dashboardPage.quickActionsDropdown).toBeVisible();
 
-    for (const section of sections) {
-      await page.getByRole('link', { name: section.nav }).first().click();
-      await page.waitForLoadState('networkidle');
-      await expect(page).toHaveURL(section.url);
-
-      // Go back to dashboard
-      await dashboardPage.goto();
+      // Select an action
+      await dashboardPage.selectQuickAction('frameworks');
+      await expect(page).toHaveURL(/frameworks/);
     }
   });
 
-  test('Search functionality works across the app', async ({ page }) => {
-    const dashboardPage = new DashboardPage(page);
+  test('User can navigate to all main sections via sidebar', async ({ page }) => {
+    const sidebar = new SidebarPage(page);
 
-    await dashboardPage.goto();
+    await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
 
-    const searchInput = page.locator('[placeholder*="Search"], [aria-label*="Search"]');
-    if (await searchInput.isVisible()) {
-      await searchInput.fill('compliance');
-      await page.waitForTimeout(1000);
+    const sections = [
+      { method: 'navigateToFrameworks', url: /frameworks/ },
+      { method: 'navigateToVendors', url: /vendors/ },
+      { method: 'navigateToPolicies', url: /policies/ },
+      { method: 'navigateToRisks', url: /risks/ },
+    ];
 
-      // Search results should appear
-      const results = await page.locator('[data-testid="search-result"]').count();
-      expect(results).toBeGreaterThanOrEqual(0);
+    for (const section of sections) {
+      await page.goto('/dashboard');
+      await page.waitForLoadState('networkidle');
+
+      await (sidebar as any)[section.method]();
+      await expect(page).toHaveURL(section.url);
+    }
+  });
+
+  test('Command Palette can navigate to pages', async ({ page }) => {
+    const commandPalette = new CommandPalettePage(page);
+
+    await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
+
+    await commandPalette.open();
+    await commandPalette.expectToBeOpen();
+
+    await commandPalette.selectByText('Frameworks');
+    await expect(page).toHaveURL(/frameworks/);
+  });
+
+  test('Sidebar collapsible sections work', async ({ page }) => {
+    const sidebar = new SidebarPage(page);
+
+    await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
+
+    // Test expanding regulatory section
+    if (await sidebar.regulatorySection.isVisible()) {
+      await sidebar.expandSection('regulatory');
+      const isExpanded = await sidebar.isSectionExpanded('regulatory');
+      expect(isExpanded).toBeTruthy();
     }
   });
 });

@@ -1,77 +1,122 @@
 /**
  * E2E Test Authentication Setup
  * Creates authenticated browser contexts for testing
- * Auto-fixed to be more resilient across different scenarios
+ * Uses localStorage injection for magic-link authentication
  */
 
 import { test as setup, expect } from '@playwright/test';
 
 const authFile = 'playwright/.auth/user.json';
 
+// Mock user data for E2E testing
+const TEST_USER = {
+  id: 'e2e-test-user-001',
+  name: 'E2E Test User',
+  email: process.env.TEST_USER_EMAIL || 'e2e-test@complyeasyai.com',
+  role: 'admin',
+  avatar: 'E2',
+  organizationId: 'e2e-test-org-001',
+  organization: {
+    id: 'e2e-test-org-001',
+    name: 'E2E Test Organization',
+    plan: 'Visionary' // Full access for testing all features
+  }
+};
+
 setup('authenticate', async ({ page }) => {
-  // Navigate to login page
+  // Navigate to the app
   await page.goto('/');
-
-  // Wait for page to load (with timeout fallback)
   await page.waitForLoadState('domcontentloaded');
+
+  // Inject authentication state into localStorage
+  // This simulates a logged-in user without needing to go through magic link flow
+  await page.evaluate((userData) => {
+    // Set auth tokens
+    localStorage.setItem('authToken', 'e2e-test-token-' + Date.now());
+    localStorage.setItem('session_token', 'e2e-session-' + Date.now());
+    localStorage.setItem('refreshToken', 'e2e-refresh-token-' + Date.now());
+
+    // Set user data
+    localStorage.setItem('user_data', JSON.stringify(userData));
+
+    // Mark signup modal as seen to prevent it from appearing
+    sessionStorage.setItem('hasSeenSignupModal', 'true');
+
+    // Skip onboarding modal
+    localStorage.setItem('onboarding_completed', 'true');
+    localStorage.setItem('onboarding_skipped', 'true');
+    localStorage.setItem('hasSeenOnboarding', 'true');
+  }, TEST_USER);
+
+  // Reload the page to pick up the auth state
+  await page.reload();
   await page.waitForLoadState('networkidle').catch(() => {});
-  await page.waitForTimeout(2000); // Allow initial render
 
-  // Check multiple indicators of being logged in
-  const isLoggedIn = await Promise.race([
-    page.locator('[data-testid="dashboard"]').isVisible().catch(() => false),
-    page.locator('text=/dashboard|welcome/i').isVisible().catch(() => false),
-    page.locator('[data-testid="user-menu"]').isVisible().catch(() => false),
-    page.locator('nav [data-testid="sidebar"]').isVisible().catch(() => false),
-  ]);
+  // Wait for app to process auth state and potentially redirect
+  await page.waitForTimeout(1000);
 
-  if (!isLoggedIn) {
-    // Try multiple selectors for email input
-    const emailInput = page.locator('[name="email"]')
-      .or(page.locator('[type="email"]'))
-      .or(page.getByLabel(/email/i))
-      .or(page.getByPlaceholder(/email/i))
-      .first();
+  // Navigate to dashboard to verify auth is working
+  await page.goto('/dashboard');
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.waitForTimeout(500);
 
-    // Check if login form exists
-    const loginFormExists = await emailInput.isVisible({ timeout: 5000 }).catch(() => false);
+  // Dismiss onboarding modal if it appears - look for "Skip onboarding" text
+  const skipOnboardingLink = page.getByText('Skip onboarding');
+  if (await skipOnboardingLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+    console.log('Found onboarding modal, clicking Skip onboarding...');
+    await skipOnboardingLink.click();
+    await page.waitForTimeout(1000);
+  }
 
-    if (loginFormExists) {
-      // Fill in login form
-      await emailInput.fill(process.env.TEST_USER_EMAIL || 'test@example.com');
+  // If modal still visible, try clicking elsewhere or pressing Escape
+  const onboardingModal = page.locator('text=Start Your Journey');
+  if (await onboardingModal.isVisible({ timeout: 1000 }).catch(() => false)) {
+    console.log('Onboarding modal still visible, pressing Escape...');
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(500);
+  }
 
-      // Try multiple selectors for password input
-      const passwordInput = page.locator('[name="password"]')
-        .or(page.locator('[type="password"]'))
-        .or(page.getByLabel(/password/i))
-        .first();
+  // Verify we're on the dashboard (not redirected to landing)
+  const isDashboard = await page.locator('h1:has-text("Good"), nav a[href="/dashboard"]').first().isVisible({ timeout: 10000 }).catch(() => false);
 
-      await passwordInput.fill(process.env.TEST_USER_PASSWORD || 'testpassword');
+  if (!isDashboard) {
+    // Check if we're on landing page - auth might not be accepted by backend
+    const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
 
-      // Click login button with multiple selector options
-      const loginButton = page.locator('[type="submit"]')
-        .or(page.getByRole('button', { name: /login|sign in/i }))
-        .or(page.locator('button:has-text("Login")'))
-        .or(page.locator('button:has-text("Sign In")'))
-        .first();
+    if (isLanding) {
+      console.log('Auth injection did not work - falling back to dev mode auth');
 
-      await loginButton.click();
+      // Dismiss any popup modals first (signup modal)
+      const closeButton = page.locator('[role="dialog"] button:has(svg), .fixed button:has-text("×"), button[aria-label*="close"]').first();
+      if (await closeButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await closeButton.click().catch(() => {});
+        await page.waitForTimeout(300);
+      }
 
-      // Wait for navigation or state change
-      await Promise.race([
-        page.waitForURL('**/dashboard', { timeout: 30000 }),
-        page.waitForURL('**/home', { timeout: 30000 }),
-        page.locator('[data-testid="dashboard"]').waitFor({ state: 'visible', timeout: 30000 }),
-        page.locator('text=/welcome|dashboard/i').waitFor({ state: 'visible', timeout: 30000 }),
-      ]).catch(() => {
-        console.log('Navigation wait timed out, continuing anyway...');
-      });
-    } else {
-      // No login form visible - might be auto-authenticated in dev mode
-      console.log('No login form found - possibly auto-authenticated in development mode');
+      // Click Sign In button to open modal
+      const signInButton = page.getByRole('button', { name: 'Sign In' }).first();
+      if (await signInButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await signInButton.click();
+        await page.waitForTimeout(500);
+
+        // Fill email and submit for magic link
+        const emailInput = page.locator('[role="dialog"] input[type="email"], .fixed input[type="email"]').first();
+        if (await emailInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await emailInput.fill(TEST_USER.email);
+
+          // Submit
+          const submitBtn = page.locator('[role="dialog"] button[type="submit"], .fixed button:has-text("Send Magic Link")').first();
+          await submitBtn.click().catch(() => {});
+
+          // In dev mode, check if we get a token
+          await page.waitForTimeout(2000);
+        }
+      }
     }
   }
 
-  // Save authentication state regardless of outcome
+  // Save authentication state
   await page.context().storageState({ path: authFile });
+
+  console.log('Auth setup complete');
 });

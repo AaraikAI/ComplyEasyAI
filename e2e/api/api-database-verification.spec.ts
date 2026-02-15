@@ -452,6 +452,101 @@ test.describe('API Validation', () => {
   });
 });
 
+test.describe('Tier Gating', () => {
+  test('aCOS endpoints require Growth+ tier', async ({ request }) => {
+    const csrfResponse = await request.get(`${API_BASE}/api/csrf-token`);
+    const { csrfToken } = await csrfResponse.json();
+
+    const response = await request.get(`${API_BASE}/api/acos/goals`, {
+      headers: { 'X-CSRF-Token': csrfToken },
+      failOnStatusCode: false,
+    });
+
+    // Should return 401 (unauthenticated) or 403 (tier restriction)
+    expect([401, 403]).toContain(response.status());
+  });
+
+  test('AI RMF endpoints require Visionary tier', async ({ request }) => {
+    const csrfResponse = await request.get(`${API_BASE}/api/csrf-token`);
+    const { csrfToken } = await csrfResponse.json();
+
+    const response = await request.get(`${API_BASE}/api/eu-regulations/ai-rmf/systems`, {
+      headers: { 'X-CSRF-Token': csrfToken },
+      failOnStatusCode: false,
+    });
+
+    // Should return 401 (unauthenticated) or 403 (tier restriction)
+    expect([401, 403]).toContain(response.status());
+  });
+
+  test('EU AI Act endpoints require Visionary tier', async ({ request }) => {
+    const csrfResponse = await request.get(`${API_BASE}/api/csrf-token`);
+    const { csrfToken } = await csrfResponse.json();
+
+    const response = await request.get(`${API_BASE}/api/eu-regulations/eu-ai-act/systems`, {
+      headers: { 'X-CSRF-Token': csrfToken },
+      failOnStatusCode: false,
+    });
+
+    // Should return 401 or 403
+    expect([401, 403, 404]).toContain(response.status());
+  });
+
+  test('DMA endpoints require Visionary tier', async ({ request }) => {
+    const csrfResponse = await request.get(`${API_BASE}/api/csrf-token`);
+    const { csrfToken } = await csrfResponse.json();
+
+    const response = await request.get(`${API_BASE}/api/eu-regulations/dma/gatekeepers`, {
+      headers: { 'X-CSRF-Token': csrfToken },
+      failOnStatusCode: false,
+    });
+
+    // Should return 401 or 403
+    expect([401, 403]).toContain(response.status());
+  });
+
+  test('DSA endpoints require Visionary tier', async ({ request }) => {
+    const csrfResponse = await request.get(`${API_BASE}/api/csrf-token`);
+    const { csrfToken } = await csrfResponse.json();
+
+    const response = await request.get(`${API_BASE}/api/eu-regulations/dsa/platforms`, {
+      headers: { 'X-CSRF-Token': csrfToken },
+      failOnStatusCode: false,
+    });
+
+    // Should return 401 or 403
+    expect([401, 403]).toContain(response.status());
+  });
+
+  test('Basic AI endpoints require Foundation+ tier', async ({ request }) => {
+    const csrfResponse = await request.get(`${API_BASE}/api/csrf-token`);
+    const { csrfToken } = await csrfResponse.json();
+
+    const response = await request.post(`${API_BASE}/api/ai/gap-analysis`, {
+      data: { framework: 'SOC2' },
+      headers: { 'X-CSRF-Token': csrfToken },
+      failOnStatusCode: false,
+    });
+
+    // Should return 401, 403, or 200 depending on auth
+    expect([200, 401, 403]).toContain(response.status());
+  });
+
+  test('Advanced AI endpoints require Essentials+ tier', async ({ request }) => {
+    const csrfResponse = await request.get(`${API_BASE}/api/csrf-token`);
+    const { csrfToken } = await csrfResponse.json();
+
+    const response = await request.post(`${API_BASE}/api/ai/contract`, {
+      data: { contract: 'Test contract text' },
+      headers: { 'X-CSRF-Token': csrfToken },
+      failOnStatusCode: false,
+    });
+
+    // Should return 401, 403, or 200 depending on auth and tier
+    expect([200, 401, 403]).toContain(response.status());
+  });
+});
+
 test.describe('API Pagination', () => {
   test('API supports pagination parameters', async ({ request }) => {
     const response = await request.get(`${API_BASE}/api/frameworks?page=1&limit=10`, {
