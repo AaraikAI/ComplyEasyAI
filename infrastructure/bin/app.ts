@@ -2,7 +2,7 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { NetworkStack } from '../lib/network-stack';
-import { DatabaseStack } from '../lib/database-stack';
+import { CacheStack } from '../lib/cache-stack';
 import { BackendStack } from '../lib/backend-stack';
 import { FrontendStack } from '../lib/frontend-stack';
 
@@ -32,19 +32,20 @@ const network = new NetworkStack(app, `ComplyEasy-Network`, {
 });
 
 // ---------------------------------------------------------------------------
-// Stack: Database (RDS PostgreSQL + ElastiCache Redis)
+// Stack: Cache (ElastiCache Redis)
+// Database is hosted externally on Supabase — no RDS provisioned here.
 // ---------------------------------------------------------------------------
-const database = new DatabaseStack(app, `ComplyEasy-Database`, {
+const cache = new CacheStack(app, `ComplyEasy-Cache`, {
   env,
   envName,
   vpc: network.vpc,
-  dbSecurityGroup: network.dbSecurityGroup,
   redisSecurityGroup: network.redisSecurityGroup,
-  description: 'ComplyEasyAI — RDS PostgreSQL 16 + ElastiCache Redis 7',
+  description: 'ComplyEasyAI — ElastiCache Redis 7 (DB on Supabase)',
 });
 
 // ---------------------------------------------------------------------------
 // Stack: Backend (ECR, ECS Fargate, ALB)
+// Connects to Supabase PostgreSQL via DATABASE_URL in Secrets Manager.
 // ---------------------------------------------------------------------------
 const backend = new BackendStack(app, `ComplyEasy-Backend`, {
   env,
@@ -52,10 +53,8 @@ const backend = new BackendStack(app, `ComplyEasy-Backend`, {
   vpc: network.vpc,
   albSecurityGroup: network.albSecurityGroup,
   ecsSecurityGroup: network.ecsSecurityGroup,
-  dbSecret: database.dbSecret,
-  dbEndpoint: database.dbInstance.dbInstanceEndpointAddress,
-  redisEndpoint: database.redisEndpoint,
-  redisPort: database.redisPort,
+  redisEndpoint: cache.redisEndpoint,
+  redisPort: cache.redisPort,
   certificateArn: apiCertificateArn,
   description: 'ComplyEasyAI — ECS Fargate API + ALB',
 });

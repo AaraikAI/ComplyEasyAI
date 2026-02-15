@@ -14,8 +14,6 @@ export interface BackendStackProps extends cdk.StackProps {
   vpc: ec2.Vpc;
   albSecurityGroup: ec2.SecurityGroup;
   ecsSecurityGroup: ec2.SecurityGroup;
-  dbSecret: secretsmanager.ISecret;
-  dbEndpoint: string;
   redisEndpoint: string;
   redisPort: string;
   /** ACM certificate ARN for HTTPS on ALB — optional */
@@ -27,6 +25,9 @@ export interface BackendStackProps extends cdk.StackProps {
 /**
  * BackendStack — ECR repository, ECS Fargate cluster, ALB, and auto-scaling
  * for the ComplyEasyAI backend API.
+ *
+ * Database is hosted on Supabase (external). The Supabase DATABASE_URL is
+ * stored in AWS Secrets Manager and injected into the container at runtime.
  *
  * MVP cost optimisation:
  *  - 0.5 vCPU / 1 GB RAM Fargate tasks
@@ -59,12 +60,12 @@ export class BackendStack extends cdk.Stack {
     });
 
     // ---------------------------------------------------------------
-    // Application Secrets — populate after deployment via AWS Console
-    // or CLI. The deploy script will guide you through this.
+    // Application Secrets — includes Supabase DATABASE_URL and all
+    // API keys. Populate after deployment via AWS Console or CLI.
     // ---------------------------------------------------------------
     const appSecret = new secretsmanager.Secret(this, 'AppSecrets', {
       secretName: `${prefix}/app-secrets`,
-      description: 'ComplyEasyAI application secrets (JWT, encryption, API keys)',
+      description: 'ComplyEasyAI application secrets (Supabase DB URL, JWT, encryption, API keys)',
     });
 
     // ---------------------------------------------------------------
@@ -85,8 +86,7 @@ export class BackendStack extends cdk.Stack {
       memoryLimitMiB: 1024,
     });
 
-    // IAM — read RDS and app secrets
-    props.dbSecret.grantRead(taskDef.taskRole);
+    // IAM — read app secrets
     appSecret.grantRead(taskDef.taskRole);
 
     // IAM — S3 file uploads
@@ -152,15 +152,11 @@ export class BackendStack extends cdk.Stack {
         AWS_REGION: cdk.Stack.of(this).region,
         AWS_S3_BUCKET: props.s3BucketName ?? '',
         LOG_LEVEL: 'info',
-        DB_HOST: props.dbEndpoint,
       },
       secrets: {
-        // Individual DB credential fields from the RDS-generated secret
-        DB_USERNAME: ecs.Secret.fromSecretsManager(props.dbSecret, 'username'),
-        DB_PASSWORD: ecs.Secret.fromSecretsManager(props.dbSecret, 'password'),
-        DB_NAME: ecs.Secret.fromSecretsManager(props.dbSecret, 'dbname'),
-        DB_PORT: ecs.Secret.fromSecretsManager(props.dbSecret, 'port'),
-        // Application secrets — individual fields
+        // Supabase DATABASE_URL — stored as a single connection string
+        DATABASE_URL: ecs.Secret.fromSecretsManager(appSecret, 'DATABASE_URL'),
+        // Application secrets
         JWT_SECRET: ecs.Secret.fromSecretsManager(appSecret, 'JWT_SECRET'),
         JWT_REFRESH_SECRET: ecs.Secret.fromSecretsManager(appSecret, 'JWT_REFRESH_SECRET'),
         ENCRYPTION_KEY: ecs.Secret.fromSecretsManager(appSecret, 'ENCRYPTION_KEY'),
@@ -303,7 +299,7 @@ export class BackendStack extends cdk.Stack {
     });
     new cdk.CfnOutput(this, 'AppSecretArn', {
       value: appSecret.secretArn,
-      description: 'Populate this secret with your API keys via AWS Console or CLI',
+      description: 'Populate this secret with your Supabase URL and API keys',
     });
   }
 }
