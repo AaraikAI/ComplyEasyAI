@@ -835,15 +835,28 @@ export default function WorkspaceManagement() {
               <div className="space-y-3">
                 {predictiveRisk.predictions.map((p: any, i: number) => (
                   <div key={i} className={`p-4 rounded-lg border-l-4 ${
-                    (p.severity || p.level) === 'Critical' ? 'border-l-red-500 bg-red-50' :
-                    (p.severity || p.level) === 'High' ? 'border-l-orange-500 bg-orange-50' :
+                    (p.severity || p.level || p.likelihood) === 'Critical' ? 'border-l-red-500 bg-red-50' :
+                    (p.severity || p.level || p.likelihood) === 'High' ? 'border-l-orange-500 bg-orange-50' :
                     'border-l-yellow-500 bg-yellow-50'
                   }`}>
-                    <p className="text-sm font-medium text-gray-900">{p.title || p.risk || p}</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {p.title || p.risk || p.category || (typeof p === 'string' ? p : 'Risk')}
+                    </p>
                     {p.description && <p className="text-xs text-gray-600 mt-1">{p.description}</p>}
+                    {p.predictedRisks !== undefined && (
+                      <p className="text-xs text-gray-600 mt-1">Predicted occurrences: {p.predictedRisks}</p>
+                    )}
                     <div className="flex gap-3 mt-2">
-                      {(p.severity || p.level) && <span className="text-xs font-medium">{p.severity || p.level}</span>}
-                      {p.probability && <span className="text-xs text-gray-500">Probability: {typeof p.probability === 'number' ? `${Math.round(p.probability * 100)}%` : p.probability}</span>}
+                      {(p.severity || p.level || p.likelihood) && (
+                        <span className="text-xs font-medium">{p.severity || p.level || p.likelihood}</span>
+                      )}
+                      {(p.probability || p.confidence) && (
+                        <span className="text-xs text-gray-500">
+                          Confidence: {typeof (p.probability || p.confidence) === 'number'
+                            ? `${Math.round((p.probability || p.confidence) * 100)}%`
+                            : (p.probability || p.confidence)}
+                        </span>
+                      )}
                       {p.timeframe && <span className="text-xs text-gray-500">Timeframe: {p.timeframe}</span>}
                     </div>
                   </div>
@@ -859,8 +872,22 @@ export default function WorkspaceManagement() {
               <div className="space-y-2">
                 {predictiveRisk.emergingThreats.map((t: any, i: number) => (
                   <div key={i} className="bg-white rounded-lg p-3 border border-red-100">
-                    <p className="text-sm font-medium text-gray-900">{t.title || t.threat || t}</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {t.title || t.threat || t.category || (typeof t === 'string' ? t : 'Emerging Threat')}
+                    </p>
                     {t.description && <p className="text-xs text-gray-600 mt-1">{t.description}</p>}
+                    {t.predictedRisks !== undefined && (
+                      <p className="text-xs text-gray-600 mt-1">Predicted occurrences: {t.predictedRisks}</p>
+                    )}
+                    {t.likelihood && (
+                      <span className={`inline-block mt-2 text-xs px-2 py-0.5 rounded ${
+                        t.likelihood === 'High' ? 'bg-red-100 text-red-700' :
+                        t.likelihood === 'Medium' ? 'bg-orange-100 text-orange-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {t.likelihood} likelihood
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -875,7 +902,21 @@ export default function WorkspaceManagement() {
                 {predictiveRisk.preventiveActions.map((a: any, i: number) => (
                   <li key={i} className="flex items-start gap-2 text-sm">
                     <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                    <span>{a.action || a.title || a}</span>
+                    <div>
+                      <span>{a.action || a.title || (typeof a === 'string' ? a : 'Take preventive action')}</span>
+                      {a.priority && (
+                        <span className={`ml-2 text-xs px-2 py-0.5 rounded ${
+                          a.priority === 'Critical' ? 'bg-red-100 text-red-700' :
+                          a.priority === 'High' ? 'bg-orange-100 text-orange-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {a.priority}
+                        </span>
+                      )}
+                      {a.category && (
+                        <span className="ml-2 text-xs text-gray-500">({a.category})</span>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

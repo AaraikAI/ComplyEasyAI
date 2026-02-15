@@ -1048,6 +1048,22 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
       'gcp': 'Google Cloud Platform',
       'twilio': 'Twilio',
       'sendgrid': 'SendGrid',
+      // Additional providers
+      'confluence': 'Confluence',
+      'trello': 'Trello',
+      'asana': 'Asana',
+      'monday': 'Monday.com',
+      'microsoft-teams': 'Microsoft Teams',
+      'discord': 'Discord',
+      'okta': 'Okta',
+      'auth0': 'Auth0',
+      'onelogin': 'OneLogin',
+      'salesforce': 'Salesforce',
+      'hubspot': 'HubSpot',
+      'zendesk': 'Zendesk',
+      'stripe': 'Stripe',
+      'paypal': 'PayPal',
+      'kubernetes': 'Kubernetes',
     };
 
     const displayName = providerNames[provider] || provider;
@@ -1298,6 +1314,22 @@ export const connectProvider: RequestHandler = async (req: Request, res: Respons
       'gcp': 'cloud',
       'twilio': 'dev',
       'sendgrid': 'dev',
+      // Additional providers
+      'confluence': 'dev',
+      'trello': 'dev',
+      'asana': 'dev',
+      'monday': 'dev',
+      'microsoft-teams': 'dev',
+      'discord': 'dev',
+      'okta': 'hr',
+      'auth0': 'hr',
+      'onelogin': 'hr',
+      'salesforce': 'hr',
+      'hubspot': 'hr',
+      'zendesk': 'hr',
+      'stripe': 'security',
+      'paypal': 'security',
+      'kubernetes': 'dev',
     };
 
     const category = categoryMap[provider] || 'dev';

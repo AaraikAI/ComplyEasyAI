@@ -109,10 +109,18 @@ export class MultiWorkspaceService {
   /**
    * Get consolidated metrics across workspace
    */
-  async getConsolidatedMetrics(parentOrganizationId: string) {
-    const parent = await prisma.organization.findUnique({
-      where: { id: parentOrganizationId },
+  async getConsolidatedMetrics(organizationId: string) {
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
       include: {
+        users: true,
+        frameworks: {
+          include: {
+            controls: true,
+          },
+        },
+        risks: true,
+        vendors: true,
         childOrganizations: {
           include: {
             users: true,
@@ -128,76 +136,89 @@ export class MultiWorkspaceService {
       },
     });
 
-    if (!parent || !parent.isParent) {
-      throw new Error('Parent organization not found');
+    if (!organization) {
+      throw new Error('Organization not found');
     }
 
-    // Aggregate metrics
-    const metrics = {
-      totalOrganizations: 1 + parent.childOrganizations.length,
-      totalUsers: parent.childOrganizations.reduce(
-        (sum, org) => sum + org.users.length,
-        0
-      ),
-      totalFrameworks: parent.childOrganizations.reduce(
-        (sum, org) => sum + org.frameworks.length,
-        0
-      ),
-      totalControls: parent.childOrganizations.reduce(
-        (sum, org) =>
-          sum +
-          org.frameworks.reduce((fSum, f) => fSum + f.controls.length, 0),
-        0
-      ),
-      implementedControls: parent.childOrganizations.reduce(
-        (sum, org) =>
-          sum +
-          org.frameworks.reduce(
-            (fSum, f) =>
-              fSum + f.controls.filter((c) => c.status === 'Implemented').length,
-            0
-          ),
-        0
-      ),
-      totalRisks: parent.childOrganizations.reduce(
-        (sum, org) => sum + org.risks.length,
-        0
-      ),
-      openRisks: parent.childOrganizations.reduce(
-        (sum, org) => sum + org.risks.filter((r) => r.status === 'Open').length,
-        0
-      ),
-      totalVendors: parent.childOrganizations.reduce(
-        (sum, org) => sum + org.vendors.length,
-        0
-      ),
-      organizationBreakdown: parent.childOrganizations.map((org) => ({
-        id: org.id,
-        name: org.name,
-        users: org.users.length,
-        frameworks: org.frameworks.length,
-        risks: org.risks.length,
-        vendors: org.vendors.length,
-        complianceRate:
-          org.frameworks.length > 0
-            ? Math.round(
-                (org.frameworks.reduce(
-                  (sum, f) =>
-                    sum +
-                    f.controls.filter((c) => c.status === 'Implemented').length,
-                  0
-                ) /
-                  org.frameworks.reduce(
-                    (sum, f) => sum + f.controls.length,
-                    0
-                  )) *
-                  100
-              )
-            : 0,
-      })),
-    };
+    // If this is a parent organization with children, aggregate metrics across all
+    if (organization.isParent && organization.childOrganizations.length > 0) {
+      const allOrgs = [organization, ...organization.childOrganizations];
 
-    return metrics;
+      const metrics = {
+        totalOrganizations: allOrgs.length,
+        totalUsers: allOrgs.reduce((sum, org) => sum + org.users.length, 0),
+        totalFrameworks: allOrgs.reduce((sum, org) => sum + org.frameworks.length, 0),
+        totalControls: allOrgs.reduce(
+          (sum, org) => sum + org.frameworks.reduce((fSum, f) => fSum + f.controls.length, 0),
+          0
+        ),
+        implementedControls: allOrgs.reduce(
+          (sum, org) =>
+            sum + org.frameworks.reduce(
+              (fSum, f) => fSum + f.controls.filter((c) => c.status === 'Implemented').length,
+              0
+            ),
+          0
+        ),
+        totalRisks: allOrgs.reduce((sum, org) => sum + org.risks.length, 0),
+        openRisks: allOrgs.reduce(
+          (sum, org) => sum + org.risks.filter((r) => r.status === 'Open').length,
+          0
+        ),
+        totalVendors: allOrgs.reduce((sum, org) => sum + org.vendors.length, 0),
+        organizationBreakdown: allOrgs.map((org) => ({
+          id: org.id,
+          name: org.name,
+          users: org.users.length,
+          frameworks: org.frameworks.length,
+          risks: org.risks.length,
+          vendors: org.vendors.length,
+          complianceRate:
+            org.frameworks.length > 0
+              ? Math.round(
+                  (org.frameworks.reduce(
+                    (sum, f) =>
+                      sum + f.controls.filter((c) => c.status === 'Implemented').length,
+                    0
+                  ) /
+                    Math.max(org.frameworks.reduce((sum, f) => sum + f.controls.length, 0), 1)) *
+                    100
+                )
+              : 0,
+        })),
+      };
+
+      return metrics;
+    }
+
+    // For non-parent organizations or parent orgs without children, return metrics for just this org
+    const totalControls = organization.frameworks.reduce((sum, f) => sum + f.controls.length, 0);
+    const implementedControls = organization.frameworks.reduce(
+      (sum, f) => sum + f.controls.filter((c) => c.status === 'Implemented').length,
+      0
+    );
+
+    return {
+      totalOrganizations: 1,
+      totalUsers: organization.users.length,
+      totalFrameworks: organization.frameworks.length,
+      totalControls,
+      implementedControls,
+      totalRisks: organization.risks.length,
+      openRisks: organization.risks.filter((r) => r.status === 'Open').length,
+      totalVendors: organization.vendors.length,
+      organizationBreakdown: [{
+        id: organization.id,
+        name: organization.name,
+        users: organization.users.length,
+        frameworks: organization.frameworks.length,
+        risks: organization.risks.length,
+        vendors: organization.vendors.length,
+        complianceRate: totalControls > 0
+          ? Math.round((implementedControls / totalControls) * 100)
+          : 0,
+      }],
+    };
   }
 
   /**

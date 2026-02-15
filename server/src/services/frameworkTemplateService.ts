@@ -19,6 +19,7 @@ import { FEDRAMP_CONTROLS } from '../data/frameworks/fedRampControls';
 import { CMMC_CONTROLS } from '../data/frameworks/cmmcControls';
 import { HITRUST_CONTROLS } from '../data/frameworks/hitrustControls';
 import { CIS_CONTROLS } from '../data/frameworks/cisControls';
+import { CONTROL_CROSSWALK, findMappedControls, getMappingsBetweenFrameworks } from '../data/frameworks/controlCrosswalk';
 import type { FrameworkControlTemplate } from '../data/frameworks/soc2Controls';
 
 export { FrameworkControlTemplate };
@@ -356,6 +357,17 @@ export class FrameworkTemplateService {
       });
     }
 
+    // Auto-generate control mappings with other organization frameworks
+    if (applied > 0) {
+      try {
+        const mappingsCreated = await this.applyControlMappings(organizationId, frameworkId, frameworkType);
+        logger.info(`Auto-generated ${mappingsCreated} control mappings for framework ${frameworkType}`);
+      } catch (mappingError) {
+        logger.warn('Failed to auto-generate control mappings, continuing without them', mappingError);
+        // Don't fail the template application if mapping fails
+      }
+    }
+
     return { applied, skipped, total: controls.length };
   }
 
@@ -371,6 +383,226 @@ export class FrameworkTemplateService {
    */
   getControlCount(frameworkType: string): number {
     return this.getTemplatesForFramework(frameworkType).length;
+  }
+
+  /**
+   * Automatically apply control mappings between the newly applied framework
+   * and other existing frameworks in the organization.
+   * This populates the "Also Satisfies" section in the UI.
+   */
+  async applyControlMappings(
+    organizationId: string,
+    frameworkId: string,
+    frameworkType: string
+  ): Promise<number> {
+    let mappingsCreated = 0;
+
+    // Get all frameworks in the organization (including the new one)
+    const orgFrameworks = await prisma.complianceFramework.findMany({
+      where: { organizationId },
+      include: {
+        controls: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    // Get the newly applied framework
+    const sourceFramework = orgFrameworks.find(f => f.id === frameworkId);
+    if (!sourceFramework || !sourceFramework.controls.length) {
+      return 0;
+    }
+
+    // Get other frameworks to map against
+    const otherFrameworks = orgFrameworks.filter(f => f.id !== frameworkId && f.controls.length > 0);
+    if (otherFrameworks.length === 0) {
+      return 0;
+    }
+
+    // For each other framework, find and create mappings
+    for (const targetFramework of otherFrameworks) {
+      // Get crosswalk mappings between these two framework types
+      const crosswalkMappings = getMappingsBetweenFrameworks(frameworkType, targetFramework.name);
+
+      if (crosswalkMappings.length === 0) {
+        continue;
+      }
+
+      // Build lookup maps for controls by their control ID prefix
+      const sourceControlMap = this.buildControlIdMap(sourceFramework.controls);
+      const targetControlMap = this.buildControlIdMap(targetFramework.controls);
+
+      // Create mappings based on crosswalk data
+      for (const crosswalk of crosswalkMappings) {
+        // Determine direction
+        const isSourceNew = this.normalizeFrameworkName(crosswalk.sourceFramework) ===
+                           this.normalizeFrameworkName(frameworkType);
+
+        const sourceControlId = isSourceNew ? crosswalk.sourceControlId : crosswalk.targetControlId;
+        const targetControlId = isSourceNew ? crosswalk.targetControlId : crosswalk.sourceControlId;
+        const sourceMap = isSourceNew ? sourceControlMap : targetControlMap;
+        const targetMap = isSourceNew ? targetControlMap : sourceControlMap;
+
+        // Find matching controls in the database
+        const sourceDbControlId = this.findControlByTemplateId(sourceMap, sourceControlId);
+        const targetDbControlId = this.findControlByTemplateId(targetMap, targetControlId);
+
+        if (sourceDbControlId && targetDbControlId) {
+          try {
+            // Check if mapping already exists
+            const existingMapping = await prisma.controlMapping.findFirst({
+              where: {
+                OR: [
+                  { sourceControlId: sourceDbControlId, targetControlId: targetDbControlId },
+                  { sourceControlId: targetDbControlId, targetControlId: sourceDbControlId },
+                ],
+              },
+            });
+
+            if (!existingMapping) {
+              await prisma.controlMapping.create({
+                data: {
+                  sourceControlId: sourceDbControlId,
+                  targetControlId: targetDbControlId,
+                  mappingType: crosswalk.mappingType,
+                  confidence: crosswalk.confidence,
+                },
+              });
+              mappingsCreated++;
+            }
+          } catch (createError: any) {
+            // Skip duplicate key errors silently
+            if (!createError.code || createError.code !== 'P2002') {
+              logger.warn(`Failed to create mapping ${sourceControlId} -> ${targetControlId}:`, createError.message);
+            }
+          }
+        }
+      }
+    }
+
+    return mappingsCreated;
+  }
+
+  /**
+   * Build a map of control IDs (from template) to database IDs
+   */
+  private buildControlIdMap(controls: { id: string; name: string }[]): Map<string, string> {
+    const map = new Map<string, string>();
+
+    for (const control of controls) {
+      // Extract control ID from name (format: "CC1.1: Control Name" or "A.5.1: Control Name")
+      const match = control.name.match(/^([A-Za-z0-9.\-]+):/);
+      if (match) {
+        map.set(match[1].trim(), control.id);
+      }
+      // Also store by full name for fallback
+      map.set(control.name, control.id);
+    }
+
+    return map;
+  }
+
+  /**
+   * Find a database control ID by its template control ID
+   */
+  private findControlByTemplateId(controlMap: Map<string, string>, templateControlId: string): string | null {
+    // Direct match
+    if (controlMap.has(templateControlId)) {
+      return controlMap.get(templateControlId)!;
+    }
+
+    // Try with common variations
+    const variations = [
+      templateControlId,
+      templateControlId.replace('-', '.'),
+      templateControlId.replace('.', '-'),
+      templateControlId.toUpperCase(),
+      templateControlId.toLowerCase(),
+    ];
+
+    for (const variant of variations) {
+      if (controlMap.has(variant)) {
+        return controlMap.get(variant)!;
+      }
+    }
+
+    // Try partial match (control ID might be part of the name)
+    for (const [key, value] of controlMap.entries()) {
+      if (key.includes(templateControlId) || templateControlId.includes(key.split(':')[0])) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Normalize framework name for comparison
+   */
+  private normalizeFrameworkName(name: string): string {
+    const normalized = name.toLowerCase().trim();
+
+    const aliases: Record<string, string> = {
+      'soc2': 'soc 2 type ii',
+      'soc 2': 'soc 2 type ii',
+      'soc 2 type 2': 'soc 2 type ii',
+      'iso27001': 'iso 27001',
+      'iso 27001:2022': 'iso 27001',
+      'pci-dss': 'pci dss',
+      'pci dss v4.0': 'pci dss',
+      'nist800-53': 'nist 800-53',
+      'nist 800-53 rev 5': 'nist 800-53',
+      'nist-csf': 'nist csf',
+      'nist csf 2.0': 'nist csf',
+      'fedramp moderate': 'fedramp',
+      'cmmc 2.0': 'cmmc',
+      'hitrust': 'hitrust csf',
+      'cis': 'cis controls',
+      'cis controls v8': 'cis controls',
+      'ccpa/cpra': 'ccpa',
+    };
+
+    return aliases[normalized] || normalized;
+  }
+
+  /**
+   * Manually trigger control mapping for an existing framework
+   * (useful if mappings weren't created during initial template application)
+   */
+  async regenerateControlMappings(
+    organizationId: string,
+    frameworkId: string
+  ): Promise<{ created: number; deleted: number }> {
+    // Get the framework
+    const framework = await prisma.complianceFramework.findFirst({
+      where: { id: frameworkId, organizationId },
+    });
+
+    if (!framework) {
+      throw new Error('Framework not found');
+    }
+
+    // Delete existing mappings for this framework's controls
+    const frameworkControls = await prisma.frameworkControl.findMany({
+      where: { frameworkId },
+      select: { id: true },
+    });
+
+    const controlIds = frameworkControls.map(c => c.id);
+
+    const deleteResult = await prisma.controlMapping.deleteMany({
+      where: {
+        OR: [
+          { sourceControlId: { in: controlIds } },
+          { targetControlId: { in: controlIds } },
+        ],
+      },
+    });
+
+    // Regenerate mappings
+    const created = await this.applyControlMappings(organizationId, frameworkId, framework.name);
+
+    return { created, deleted: deleteResult.count };
   }
 }
 

@@ -631,6 +631,11 @@ export const api = {
         body: JSON.stringify({ frameworkType }),
       });
     },
+    regenerateMappings: async (frameworkId: string) => {
+      return fetchAPI<{ message: string; created: number; deleted: number }>(`/frameworks/${frameworkId}/regenerate-mappings`, {
+        method: 'POST',
+      });
+    },
   },
 
   // --- AI ---

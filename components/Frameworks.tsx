@@ -124,6 +124,9 @@ export const Frameworks: React.FC<FrameworksProps> = ({
   const [coPilotLoading, setCoPilotLoading] = useState(false);
   const [showCoPilotModal, setShowCoPilotModal] = useState(false);
 
+  // Track frameworks that already have TEMPLATE controls applied (not user-created)
+  const [frameworksWithTemplateControls, setFrameworksWithTemplateControls] = useState<Set<string>>(new Set());
+
   // Load templates on mount
   useEffect(() => {
     const loadTemplates = async () => {
@@ -138,6 +141,91 @@ export const Frameworks: React.FC<FrameworksProps> = ({
     };
     loadTemplates();
   }, []);
+
+  // Check which frameworks already have TEMPLATE controls applied
+  // User-created controls should NOT hide the "Apply Template Controls" button
+  useEffect(() => {
+    const checkFrameworkControls = async () => {
+      const withTemplateControls = new Set<string>();
+
+      // Template control ID patterns for each framework type
+      const templatePatterns: Record<string, RegExp[]> = {
+        'SOC 2': [/^CC\d+\.\d+:/i, /^A\d+\.\d+:/i, /^P\d+\.\d+:/i, /^PI\d+\.\d+:/i, /^C\d+\.\d+:/i],
+        'SOC 2 Type II': [/^CC\d+\.\d+:/i, /^A\d+\.\d+:/i, /^P\d+\.\d+:/i, /^PI\d+\.\d+:/i, /^C\d+\.\d+:/i],
+        'ISO 27001': [/^A\.\d+\.\d+:/i, /^A\d+\.\d+:/i],
+        'HIPAA': [/^164\.\d+/i, /^\d{3}\.\d{3}/i],
+        'GDPR': [/^Art\.\d+/i, /^Article\s*\d+/i],
+        'PCI DSS': [/^Req\s*\d+/i, /^Requirement\s*\d+/i, /^\d+\.\d+/i],
+        'NIST 800-53': [/^[A-Z]{2}-\d+/i],
+        'NIST CSF': [/^(ID|PR|DE|RS|RC|GV)\.[A-Z]{2}-\d+/i, /^(ID|PR|DE|RS|RC|GV)\./i],
+        'CCPA': [/^CCPA-\d+/i, /^1798\.\d+/i],
+        'SOX': [/^SOX-ITGC/i, /^ITGC/i],
+        'FedRAMP': [/^[A-Z]{2}-\d+/i],
+        'CMMC': [/^[A-Z]{2}\.L\d+-/i, /^[A-Z]{2}\.\d+\.\d+/i],
+        'HITRUST CSF': [/^\d{2}\.[a-z]/i],
+        'CIS Controls': [/^CIS-\d+/i, /^Control\s*\d+/i],
+      };
+
+      for (const fw of activeFrameworks) {
+        try {
+          let controls: any[] = [];
+
+          // First check if controls are already in the prop data
+          if (fw.controls && fw.controls.length > 0) {
+            controls = fw.controls;
+          } else {
+            // Fetch framework details to check for controls
+            const fwData = await api.frameworks.getById(fw.id) as any;
+            controls = fwData.controls || [];
+          }
+
+          if (controls.length > 0) {
+            // Get the patterns for this framework type
+            const frameworkName = fw.name;
+            let patterns: RegExp[] = [];
+
+            // Find matching patterns for the framework
+            for (const [key, value] of Object.entries(templatePatterns)) {
+              if (frameworkName.toLowerCase().includes(key.toLowerCase()) ||
+                  key.toLowerCase().includes(frameworkName.toLowerCase())) {
+                patterns = value;
+                break;
+              }
+            }
+
+            // If no specific patterns found, use generic template patterns
+            if (patterns.length === 0) {
+              patterns = [
+                /^[A-Z]{1,3}\d+\.\d+:/i,  // Generic: CC1.1:, A.5.1:, etc.
+                /^[A-Z]{2}-\d+:/i,         // Generic: AC-1:, IR-4:, etc.
+                /^Req\s*\d+/i,             // Generic: Req 1, Requirement 1
+              ];
+            }
+
+            // Check if any control matches template patterns
+            const hasTemplateControls = controls.some((control: any) => {
+              const controlName = control.name || '';
+              return patterns.some(pattern => pattern.test(controlName));
+            });
+
+            // Only mark as having template controls if we find matches
+            if (hasTemplateControls) {
+              withTemplateControls.add(fw.id);
+            }
+          }
+        } catch (err) {
+          // Ignore errors - assume no template controls if we can't fetch
+        }
+      }
+      setFrameworksWithTemplateControls(withTemplateControls);
+    };
+
+    if (activeFrameworks.length > 0) {
+      checkFrameworkControls();
+    } else {
+      setFrameworksWithTemplateControls(new Set());
+    }
+  }, [activeFrameworks]);
 
   // Onboarding: trigger first_framework flow when user visits with no frameworks
   useOnboardingTrigger('first_framework', activeFrameworks.length === 0);
@@ -213,6 +301,11 @@ export const Frameworks: React.FC<FrameworksProps> = ({
     try {
       const result = await api.frameworks.applyTemplate(frameworkId, template.frameworkType);
       setApplyResult({ message: result.message, applied: result.applied, skipped: result.skipped });
+
+      // Mark this framework as having template controls applied
+      if (result.applied > 0 || result.skipped > 0) {
+        setFrameworksWithTemplateControls(prev => new Set(prev).add(frameworkId));
+      }
 
       // Refresh framework data
       if (onFrameworkDeleted) {
@@ -708,8 +801,8 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                   </button>
                 </div>
 
-                {/* Apply Template Button */}
-                {template && (
+                {/* Apply Template Button - only hide if framework already has TEMPLATE controls (user-created controls are OK) */}
+                {template && !frameworksWithTemplateControls.has(fw.id) && (
                   <div className="mb-4">
                     <button
                       onClick={(e) => {
@@ -737,16 +830,23 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                       )}
                     </button>
                     {applyResult && applyingTemplate !== fw.id && !aiGapLoading && (
-                      <div className="flex items-center justify-between mt-2">
-                        <p className="text-xs text-green-600">
-                          {applyResult.applied} controls added, {applyResult.skipped} skipped
-                        </p>
-                        <button
-                          onClick={() => handleAIGapAnalysis(fw.id, fw.name, applyResult.applied)}
-                          className="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1"
-                        >
-                          <Zap size={10} /> View AI Analysis
-                        </button>
+                      <div className="flex flex-col mt-2 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-green-600">
+                            {applyResult.applied} controls added, {applyResult.skipped} skipped
+                          </p>
+                          <button
+                            onClick={() => handleAIGapAnalysis(fw.id, fw.name, applyResult.applied)}
+                            className="text-xs text-purple-600 hover:text-purple-800 flex items-center gap-1"
+                          >
+                            <Zap size={10} /> View AI Analysis
+                          </button>
+                        </div>
+                        {applyResult.applied > 0 && (
+                          <p className="text-xs text-brand-600">
+                            ✓ Cross-framework mappings auto-generated for "Also Satisfies"
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
