@@ -3,17 +3,10 @@
 # entrypoint-wrapper.sh
 #
 # This script runs BEFORE the Node.js server starts in ECS Fargate.
-# It composes the DATABASE_URL from individual secret fields injected by
-# ECS task definition secrets (DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_NAME).
+# DATABASE_URL is injected directly from Secrets Manager (Supabase URL).
 # ---------------------------------------------------------------------------
 
 set -e
-
-# Compose DATABASE_URL from individual fields if not already set
-if [ -z "$DATABASE_URL" ] && [ -n "$DB_HOST" ]; then
-  export DATABASE_URL="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public"
-  echo "[entrypoint] DATABASE_URL composed from secret fields"
-fi
 
 # Compose CLIENT_URL from CloudFront domain if not set
 if [ -z "$CLIENT_URL" ] && [ -n "$CLOUDFRONT_DOMAIN" ]; then
@@ -23,7 +16,7 @@ fi
 
 # Run Prisma migrations (optional — controlled by RUN_MIGRATIONS env var)
 if [ "${RUN_MIGRATIONS}" = "true" ]; then
-  echo "[entrypoint] Running Prisma migrations..."
+  echo "[entrypoint] Running Prisma migrations against Supabase..."
   npx prisma migrate deploy
   echo "[entrypoint] Migrations complete"
 fi

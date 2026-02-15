@@ -2,6 +2,8 @@
 # ---------------------------------------------------------------------------
 # setup-secrets.sh — Interactive helper to populate AWS Secrets Manager
 #
+# Stores the Supabase DATABASE_URL and all application API keys.
+#
 # Usage:
 #   ./infrastructure/scripts/setup-secrets.sh
 # ---------------------------------------------------------------------------
@@ -15,6 +17,7 @@ PREFIX="complyeasy-${ENV_NAME}"
 echo "============================================"
 echo " ComplyEasyAI — Secrets Setup"
 echo " Environment: $ENV_NAME | Region: $AWS_REGION"
+echo " Database:    Supabase (external)"
 echo "============================================"
 echo ""
 
@@ -40,7 +43,19 @@ JWT_SECRET_DEFAULT=$(openssl rand -base64 32 2>/dev/null || echo "CHANGE_ME")
 JWT_REFRESH_DEFAULT=$(openssl rand -base64 32 2>/dev/null || echo "CHANGE_ME")
 ENCRYPTION_KEY_DEFAULT=$(openssl rand -hex 32 2>/dev/null || echo "CHANGE_ME")
 
-# Prompt for values
+# Prompt for Supabase DATABASE_URL
+echo "--- Supabase Database ---"
+echo "Get your connection string from: Supabase Dashboard > Settings > Database > Connection string (URI)"
+echo "Format: postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true"
+echo ""
+read -rp "DATABASE_URL: " DATABASE_URL
+if [ -z "$DATABASE_URL" ]; then
+  echo "ERROR: DATABASE_URL is required."
+  exit 1
+fi
+
+echo ""
+echo "--- Authentication ---"
 read -rp "JWT_SECRET [$JWT_SECRET_DEFAULT]: " JWT_SECRET
 JWT_SECRET="${JWT_SECRET:-$JWT_SECRET_DEFAULT}"
 
@@ -50,6 +65,8 @@ JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-$JWT_REFRESH_DEFAULT}"
 read -rp "ENCRYPTION_KEY [$ENCRYPTION_KEY_DEFAULT]: " ENCRYPTION_KEY
 ENCRYPTION_KEY="${ENCRYPTION_KEY:-$ENCRYPTION_KEY_DEFAULT}"
 
+echo ""
+echo "--- API Keys ---"
 read -rp "GEMINI_API_KEY: " GEMINI_API_KEY
 read -rp "SENDGRID_API_KEY: " SENDGRID_API_KEY
 read -rp "SENDGRID_FROM_EMAIL [noreply@complyeasyai.com]: " SENDGRID_FROM_EMAIL
@@ -65,6 +82,7 @@ aws secretsmanager put-secret-value \
   --secret-id "$APP_SECRET_ARN" \
   --secret-string "$(cat <<EOF
 {
+  "DATABASE_URL": "${DATABASE_URL}",
   "JWT_SECRET": "${JWT_SECRET}",
   "JWT_REFRESH_SECRET": "${JWT_REFRESH_SECRET}",
   "ENCRYPTION_KEY": "${ENCRYPTION_KEY}",

@@ -365,11 +365,11 @@ jobs:
           docker push $ECR/$ECR_REPO:latest
           docker push $ECR/$ECR_REPO:${{ github.sha }}
 
-      - name: Run database migrations
+      - name: Run database migrations (Supabase)
         run: |
           cd server && npm ci --omit=dev && npx prisma generate && npx prisma migrate deploy
         env:
-          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
 
       - name: Deploy API to ECS
         run: |
@@ -443,10 +443,10 @@ jobs:
           docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:develop $ECR/$ECR_REPO:staging
           docker push $ECR/$ECR_REPO:staging
 
-      - name: Run migrations
+      - name: Run migrations (Supabase)
         run: cd server && npm ci --omit=dev && npx prisma generate && npx prisma migrate deploy
         env:
-          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.SUPABASE_STAGING_DATABASE_URL }}
 
       - name: Deploy to staging ECS
         run: |
