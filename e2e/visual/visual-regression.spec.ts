@@ -16,7 +16,7 @@ test.describe('Visual Regression - Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000); // Wait for animations
+    await page.waitForTimeout(2000); // Wait for animations and SVG rendering
   });
 
   test('Dashboard - Desktop view', async ({ page }) => {
@@ -27,6 +27,8 @@ test.describe('Visual Regression - Dashboard', () => {
         page.locator('.timestamp'),
         page.locator('[data-testid="current-time"]'),
         page.locator('.user-avatar'),
+        page.locator('h1:has-text("Good")'), // Mask time-based greeting
+        page.locator('text=/\\d{1,2}.*\\d{4}/'), // Mask date
       ],
     });
   });
@@ -35,7 +37,11 @@ test.describe('Visual Regression - Dashboard', () => {
     await page.setViewportSize(VIEWPORTS.tablet);
     await expect(page).toHaveScreenshot('dashboard-tablet.png', {
       maxDiffPixelRatio: 0.05,
-      mask: [page.locator('.timestamp'), page.locator('.user-avatar')],
+      mask: [
+        page.locator('.timestamp'),
+        page.locator('.user-avatar'),
+        page.locator('h1:has-text("Good")'),
+      ],
     });
   });
 
@@ -43,8 +49,53 @@ test.describe('Visual Regression - Dashboard', () => {
     await page.setViewportSize(VIEWPORTS.mobile);
     await expect(page).toHaveScreenshot('dashboard-mobile.png', {
       maxDiffPixelRatio: 0.05,
-      mask: [page.locator('.timestamp'), page.locator('.user-avatar')],
+      mask: [
+        page.locator('.timestamp'),
+        page.locator('.user-avatar'),
+        page.locator('h1:has-text("Good")'),
+      ],
     });
+  });
+
+  test('Dashboard - Welcome Banner', async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS.desktop);
+
+    // Capture just the welcome banner
+    const welcomeBanner = page.locator('.bg-gradient-to-br').first();
+    if (await welcomeBanner.isVisible()) {
+      await expect(welcomeBanner).toHaveScreenshot('welcome-banner.png', {
+        maxDiffPixelRatio: 0.05,
+        mask: [page.locator('h1:has-text("Good")'), page.locator('text=/\\d{1,2}.*\\d{4}/')],
+      });
+    }
+  });
+
+  test('Dashboard - Compliance Score Ring', async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS.desktop);
+
+    // Capture compliance score card with SVG ring
+    const scoreCard = page.locator('[data-onboarding="compliance-score"]');
+    if (await scoreCard.isVisible()) {
+      await expect(scoreCard).toHaveScreenshot('compliance-score-ring.png', {
+        maxDiffPixelRatio: 0.05,
+      });
+    }
+  });
+
+  test('Dashboard - Quick Actions dropdown', async ({ page }) => {
+    await page.setViewportSize(VIEWPORTS.desktop);
+
+    // Open quick actions dropdown
+    const quickActionsBtn = page.getByRole('button', { name: /quick actions/i });
+    if (await quickActionsBtn.isVisible()) {
+      await quickActionsBtn.click();
+      await page.waitForTimeout(500);
+
+      await expect(page).toHaveScreenshot('quick-actions-dropdown.png', {
+        maxDiffPixelRatio: 0.05,
+        mask: [page.locator('h1:has-text("Good")')],
+      });
+    }
   });
 });
 
@@ -360,5 +411,83 @@ test.describe('Visual Regression - Responsive Navigation', () => {
       maxDiffPixelRatio: 0.05,
       mask: [page.locator('.user-avatar')],
     });
+  });
+});
+
+test.describe('Visual Regression - Command Palette', () => {
+  test('Command Palette - Open state', async ({ page }) => {
+    await page.goto('/dashboard');
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await page.waitForLoadState('networkidle');
+
+    // Open command palette
+    await page.keyboard.press('Meta+k');
+    await page.waitForTimeout(500);
+
+    // Check if command palette is visible
+    const commandPalette = page.locator('.fixed.inset-0').filter({
+      has: page.locator('input[placeholder*="Search"], input[placeholder*="command"]'),
+    });
+
+    if (await commandPalette.isVisible()) {
+      await expect(page).toHaveScreenshot('command-palette-open.png', {
+        maxDiffPixelRatio: 0.05,
+      });
+    }
+  });
+
+  test('Command Palette - Search results', async ({ page }) => {
+    await page.goto('/dashboard');
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await page.waitForLoadState('networkidle');
+
+    // Open and search
+    await page.keyboard.press('Meta+k');
+    await page.waitForTimeout(300);
+
+    const input = page.locator('input[placeholder*="Search"], input[placeholder*="command"]');
+    if (await input.isVisible()) {
+      await input.fill('frameworks');
+      await page.waitForTimeout(300);
+
+      await expect(page).toHaveScreenshot('command-palette-search.png', {
+        maxDiffPixelRatio: 0.05,
+      });
+    }
+  });
+});
+
+test.describe('Visual Regression - Sidebar Sections', () => {
+  test('Sidebar - Platform section', async ({ page }) => {
+    await page.goto('/dashboard');
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await page.waitForLoadState('networkidle');
+
+    const sidebar = page.locator('aside, nav, [data-testid="sidebar"]').first();
+    if (await sidebar.isVisible()) {
+      await expect(sidebar).toHaveScreenshot('sidebar-platform.png', {
+        maxDiffPixelRatio: 0.05,
+        mask: [page.locator('.user-avatar')],
+      });
+    }
+  });
+
+  test('Sidebar - Regulatory section expanded', async ({ page }) => {
+    await page.goto('/dashboard');
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await page.waitForLoadState('networkidle');
+
+    // Expand regulatory section
+    const regulatoryBtn = page.locator('button:has-text("Regulatory")');
+    if (await regulatoryBtn.isVisible()) {
+      await regulatoryBtn.click();
+      await page.waitForTimeout(300);
+
+      const sidebar = page.locator('aside, nav, [data-testid="sidebar"]').first();
+      await expect(sidebar).toHaveScreenshot('sidebar-regulatory-expanded.png', {
+        maxDiffPixelRatio: 0.05,
+        mask: [page.locator('.user-avatar')],
+      });
+    }
   });
 });

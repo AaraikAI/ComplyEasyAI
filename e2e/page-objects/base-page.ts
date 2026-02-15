@@ -127,4 +127,15 @@ export abstract class BasePage {
   async cancelDialog(): Promise<void> {
     await this.page.locator('button:has-text("Cancel"), button:has-text("No")').click();
   }
+
+  /**
+   * Dismiss any onboarding modals that may appear
+   */
+  async dismissOnboardingModal(): Promise<void> {
+    const skipLink = this.page.getByText('Skip onboarding');
+    if (await skipLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await skipLink.click();
+      await this.page.waitForTimeout(500);
+    }
+  }
 }
