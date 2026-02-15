@@ -2,14 +2,19 @@
 # ---------------------------------------------------------------------------
 # deploy.sh — Build, push, and deploy ComplyEasyAI to AWS
 #
+# Database: Supabase (external managed PostgreSQL)
+# Cache:    ElastiCache Redis (AWS-managed)
+# Compute:  ECS Fargate
+# Frontend: S3 + CloudFront
+#
 # Usage:
 #   ./infrastructure/scripts/deploy.sh [command]
 #
 # Commands:
 #   bootstrap    — One-time CDK bootstrap for the AWS account/region
-#   infra        — Deploy all CDK stacks (Network, Database, Backend, Frontend)
+#   infra        — Deploy all CDK stacks (Network, Cache, Backend, Frontend)
 #   build        — Build and push Docker image to ECR
-#   migrate      — Run Prisma database migrations
+#   migrate      — Run Prisma database migrations against Supabase
 #   frontend     — Build and deploy frontend to S3 + invalidate CloudFront
 #   secrets      — Populate application secrets in AWS Secrets Manager
 #   full         — Full deployment (infra + build + migrate + frontend)
@@ -72,7 +77,8 @@ cmd_bootstrap() {
 # Deploy infrastructure via CDK
 # ---------------------------------------------------------------------------
 cmd_infra() {
-  log "Deploying CDK stacks..."
+  log "Deploying CDK stacks (Network, Cache, Backend, Frontend)..."
+  log "NOTE: Database is on Supabase — no RDS will be provisioned."
   cd "$INFRA_DIR"
 
   # Install CDK dependencies if needed
@@ -127,35 +133,36 @@ cmd_build() {
 }
 
 # ---------------------------------------------------------------------------
-# Run Prisma migrations
+# Run Prisma migrations against Supabase
 # ---------------------------------------------------------------------------
 cmd_migrate() {
-  log "Running database migrations..."
+  log "Running database migrations against Supabase..."
 
   # Get DATABASE_URL from Secrets Manager
-  DB_SECRET_ARN=$(aws secretsmanager list-secrets \
-    --filter Key=name,Values="${PREFIX}/rds-credentials" \
+  APP_SECRET_ARN=$(aws secretsmanager list-secrets \
+    --filter Key=name,Values="${PREFIX}/app-secrets" \
     --query 'SecretList[0].ARN' --output text --region "$AWS_REGION")
 
-  if [ "$DB_SECRET_ARN" = "None" ] || [ -z "$DB_SECRET_ARN" ]; then
-    err "RDS secret not found. Deploy infrastructure first."
+  if [ "$APP_SECRET_ARN" = "None" ] || [ -z "$APP_SECRET_ARN" ]; then
+    err "App secret not found. Deploy infrastructure first."
     exit 1
   fi
 
-  DB_JSON=$(aws secretsmanager get-secret-value --secret-id "$DB_SECRET_ARN" --region "$AWS_REGION" --query SecretString --output text)
-  DB_HOST=$(echo "$DB_JSON" | node -e "const s=require('fs').readFileSync(0,'utf8');const j=JSON.parse(s);console.log(j.host)")
-  DB_PORT=$(echo "$DB_JSON" | node -e "const s=require('fs').readFileSync(0,'utf8');const j=JSON.parse(s);console.log(j.port)")
-  DB_USER=$(echo "$DB_JSON" | node -e "const s=require('fs').readFileSync(0,'utf8');const j=JSON.parse(s);console.log(j.username)")
-  DB_PASS=$(echo "$DB_JSON" | node -e "const s=require('fs').readFileSync(0,'utf8');const j=JSON.parse(s);console.log(j.password)")
-  DB_NAME=$(echo "$DB_JSON" | node -e "const s=require('fs').readFileSync(0,'utf8');const j=JSON.parse(s);console.log(j.dbname)")
+  APP_JSON=$(aws secretsmanager get-secret-value --secret-id "$APP_SECRET_ARN" --region "$AWS_REGION" --query SecretString --output text)
+  DATABASE_URL=$(echo "$APP_JSON" | node -e "const s=require('fs').readFileSync(0,'utf8');const j=JSON.parse(s);console.log(j.DATABASE_URL)")
 
-  export DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public"
+  if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "undefined" ]; then
+    err "DATABASE_URL not found in app secrets. Run './infrastructure/scripts/setup-secrets.sh' first."
+    exit 1
+  fi
+
+  export DATABASE_URL
 
   cd "$PROJECT_ROOT/server"
   npx prisma generate
   npx prisma migrate deploy
 
-  ok "Migrations complete"
+  ok "Migrations complete (Supabase)"
 }
 
 # ---------------------------------------------------------------------------
@@ -230,6 +237,7 @@ cmd_secrets() {
   echo "aws secretsmanager put-secret-value \\"
   echo "  --secret-id '${APP_SECRET_ARN}' \\"
   echo "  --secret-string '{"
+  echo "    \"DATABASE_URL\": \"postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true\","
   echo "    \"JWT_SECRET\": \"<openssl rand -base64 32>\","
   echo "    \"JWT_REFRESH_SECRET\": \"<openssl rand -base64 32>\","
   echo "    \"ENCRYPTION_KEY\": \"<openssl rand -hex 32>\","
@@ -241,7 +249,8 @@ cmd_secrets() {
   echo "  }' \\"
   echo "  --region '${AWS_REGION}'"
   echo ""
-  warn "Replace the placeholder values with your actual API keys."
+  warn "Replace the placeholder values with your actual Supabase URL and API keys."
+  warn "Get your Supabase connection string from: Supabase Dashboard > Settings > Database > Connection string (URI)"
   echo ""
 }
 
@@ -261,14 +270,6 @@ cmd_status() {
     --region "$AWS_REGION" 2>/dev/null || warn "ECS service not found"
 
   echo ""
-  echo "=== RDS Instance ==="
-  aws rds describe-db-instances \
-    --db-instance-identifier "${PREFIX}-postgres" \
-    --query 'DBInstances[0].{Status:DBInstanceStatus,Endpoint:Endpoint.Address,Engine:Engine,Class:DBInstanceClass}' \
-    --output table \
-    --region "$AWS_REGION" 2>/dev/null || warn "RDS instance not found"
-
-  echo ""
   echo "=== ElastiCache Redis ==="
   aws elasticache describe-cache-clusters \
     --cache-cluster-id "${PREFIX}-redis" \
@@ -276,6 +277,9 @@ cmd_status() {
     --output table \
     --region "$AWS_REGION" 2>/dev/null || warn "Redis cluster not found"
 
+  echo ""
+  echo "=== Database ==="
+  echo "  Hosted on Supabase (external). Check status at: https://supabase.com/dashboard"
   echo ""
 }
 
@@ -311,9 +315,9 @@ case "${1:-}" in
     echo ""
     echo "Commands:"
     echo "  bootstrap  — One-time CDK bootstrap"
-    echo "  infra      — Deploy all CDK stacks"
+    echo "  infra      — Deploy all CDK stacks (Network, Cache, Backend, Frontend)"
     echo "  build      — Build + push Docker image to ECR + deploy ECS"
-    echo "  migrate    — Run Prisma migrations against RDS"
+    echo "  migrate    — Run Prisma migrations against Supabase"
     echo "  frontend   — Build + deploy frontend to S3/CloudFront"
     echo "  secrets    — Show instructions to populate app secrets"
     echo "  full       — Full deployment (infra + build + migrate + frontend)"
