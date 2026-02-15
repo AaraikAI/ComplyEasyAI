@@ -92,6 +92,24 @@ model Organization {
   zeroTrustPolicies          ZeroTrustPolicy[]
   onboardingProgress         OnboardingProgress[]
   onboardingChecklist        OnboardingChecklist?
+  bcpPlans                   BCPPlan[]
+  dataMaps                   DataMap[]
+  gapAnalyses                GapAnalysis[]
+  phishingTrainings          PhishingTraining[]
+  rfpResponses               RFPResponse[]
+  jitAccessRequests          JITAccessRequest[]
+  jitSessions                JITSession[]
+  swarmAgents                SwarmAgent[]
+  swarmTasks                 SwarmTask[]
+  swarmTaskMetrics           SwarmTaskMetric[]
+  swarmTaskAlerts            SwarmTaskAlert[]
+  userSessions               UserSession[]
+  webrtcSessions             WebRTCSession[]
+  livenessChallenges         LivenessChallenge[]
+  ldapRoleMappings           LDAPRoleMapping[]
+  gnnModels                  GNNModel[]
+  questionnaireTemplates     QuestionnaireTemplate[]
+  policyTemplates            PolicyTemplate[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -150,6 +168,13 @@ model User {
   contribution             UserContribution?
   webinarRegistrations     WebinarRegistration[]
   onboardingProgress       OnboardingProgress[]
+  jitAccessRequests        JITAccessRequest[]       @relation("JITRequester")
+  jitAccessApprovals       JITAccessRequest[]       @relation("JITApprover")
+  jitSessions              JITSession[]
+  userSessions             UserSession[]
+  vrParticipants           VRParticipant[]
+  vrTrainingProgresses     VRTrainingProgress[]
+  livenessChallenges       LivenessChallenge[]
 
   @@index([email])
   @@index([organizationId])
@@ -170,8 +195,8 @@ model TwoFactorBackupCode {
 }
 
 model Personnel {
-  id                  String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  userId              String         @unique
+  id                  String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId              String           @unique
   organizationId      String
   onboardingStatus    OnboardingStatus @default(Not_Started)
   onboardingDate      DateTime?
@@ -180,15 +205,15 @@ model Personnel {
   systemAccess        Json?
   dataAccess          Json?
   physicalAccess      Json?
-  backgroundCheck     Boolean        @default(false)
+  backgroundCheck     Boolean          @default(false)
   backgroundCheckDate DateTime?
-  securityTraining    Boolean        @default(false)
+  securityTraining    Boolean          @default(false)
   trainingDate        DateTime?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @default(now()) @updatedAt
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @default(now()) @updatedAt
   accessReviews       AccessReview[]
-  organization        Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization        Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([userId])
@@ -340,6 +365,7 @@ model ComplianceFramework {
   organization           Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   complianceTrajectories ComplianceTrajectory[]
   controls               FrameworkControl[]
+  gapAnalyses            GapAnalysis[]
 
   @@index([organizationId])
   @@index([status])
@@ -1254,29 +1280,34 @@ model VRSessionPerformance {
 }
 
 model VRCollaborativeSession {
-  id              String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  sessionId       String       @unique
-  organizationId  String
-  sessionName     String
-  description     String?
-  sessionType     String
-  status          String       @default("pending")
-  hostUserId      String
-  maxParticipants Int?
-  scheduledTime   DateTime?
-  startedAt       DateTime?
-  endedAt         DateTime?
-  expiresAt       DateTime?
-  lastActivityAt  DateTime     @default(now()) @updatedAt
-  environment     Json
-  complianceData  Json
-  participants    Json         @default("[]")
-  permissions     Json?
-  recording       Json?
-  metadata        Json?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                   String               @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sessionId            String               @unique
+  organizationId       String
+  sessionName          String
+  description          String?
+  sessionType          String
+  status               String               @default("pending")
+  hostUserId           String
+  maxParticipants      Int?
+  scheduledTime        DateTime?
+  startedAt            DateTime?
+  endedAt              DateTime?
+  expiresAt            DateTime?
+  lastActivityAt       DateTime             @default(now()) @updatedAt
+  environment          Json
+  complianceData       Json
+  participants         Json                 @default("[]")
+  permissions          Json?
+  recording            Json?
+  metadata             Json?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  organization         Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vrParticipants       VRParticipant[]
+  vrChatMessages       VRChatMessage[]
+  vrAnnotations        VRAnnotation[]
+  vrVoiceChatStates    VRVoiceChatState[]
+  vrTrainingProgresses VRTrainingProgress[]
 
   @@index([organizationId])
   @@index([sessionId])
@@ -3054,15 +3085,15 @@ enum MaintenanceStatus {
 // ============================================================================
 
 model OnboardingProgress {
-  id              String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Flow tracking
-  currentFlow     String   @default("welcome")
-  currentStep     Int      @default(0)
+  currentFlow String @default("welcome")
+  currentStep Int    @default(0)
 
   // Milestone completions
   welcomeCompleted          Boolean @default(false)
@@ -3075,36 +3106,36 @@ model OnboardingProgress {
   aiFeatureTrialCompleted   Boolean @default(false)
 
   // Tier-specific milestones
-  acosDigitalTwinTourCompleted    Boolean @default(false)
-  advancedFeaturesTourCompleted   Boolean @default(false)
+  acosDigitalTwinTourCompleted  Boolean @default(false)
+  advancedFeaturesTourCompleted Boolean @default(false)
 
   // Engagement tracking
-  tooltipsShown       Json     @default("[]")
-  skippedFlows        Json     @default("[]")
-  completedAt         DateTime?
-  lastActiveFlow      String?
-  lastActiveStep      Int?
+  tooltipsShown  Json      @default("[]")
+  skippedFlows   Json      @default("[]")
+  completedAt    DateTime?
+  lastActiveFlow String?
+  lastActiveStep Int?
 
   // Preferences
-  showHints           Boolean  @default(true)
-  reducedMotion       Boolean  @default(false)
+  showHints     Boolean @default(true)
+  reducedMotion Boolean @default(false)
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @default(now()) @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([userId, organizationId])
   @@index([organizationId])
 }
 
 model OnboardingEvent {
-  id              String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  userId          String
-  organizationId  String
-  eventType       String
-  flowName        String?
-  stepIndex       Int?
-  metadata        Json?
-  createdAt       DateTime @default(now())
+  id             String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId         String
+  organizationId String
+  eventType      String
+  flowName       String?
+  stepIndex      Int?
+  metadata       Json?
+  createdAt      DateTime @default(now())
 
   @@index([userId])
   @@index([organizationId])
@@ -3112,27 +3143,638 @@ model OnboardingEvent {
 }
 
 model OnboardingChecklist {
-  id              String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   // Setup checklist items
-  profileCompleted        Boolean @default(false)
-  teamInvited             Boolean @default(false)
-  firstFrameworkAdded     Boolean @default(false)
-  firstEvidenceUploaded   Boolean @default(false)
-  firstControlPassed      Boolean @default(false)
-  integrationConnected    Boolean @default(false)
-  aiFeatureUsed           Boolean @default(false)
-  firstReportGenerated    Boolean @default(false)
+  profileCompleted      Boolean @default(false)
+  teamInvited           Boolean @default(false)
+  firstFrameworkAdded   Boolean @default(false)
+  firstEvidenceUploaded Boolean @default(false)
+  firstControlPassed    Boolean @default(false)
+  integrationConnected  Boolean @default(false)
+  aiFeatureUsed         Boolean @default(false)
+  firstReportGenerated  Boolean @default(false)
 
   // Growth-tier specific
-  acosConfigured          Boolean @default(false)
-  digitalTwinActivated    Boolean @default(false)
+  acosConfigured       Boolean @default(false)
+  digitalTwinActivated Boolean @default(false)
 
-  completedAt             DateTime?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @default(now()) @updatedAt
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
 
   @@unique([organizationId])
+}
+
+// ============================================================================
+// TABLES FROM COMPREHENSIVE_SUPABASE_UPDATES.SQL
+// ============================================================================
+
+model PhishingTraining {
+  id             String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  type           PhishingType       @default(Email)
+  difficulty     PhishingDifficulty @default(Medium)
+  title          String
+  scenario       String
+  emailContent   String?
+  smsContent     String?
+  targetContext  String?
+  questions      Json?
+  createdBy      String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([difficulty])
+}
+
+model GapAnalysis {
+  id                     String               @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId         String
+  frameworkId            String?
+  frameworkName          String
+  currentState           String?
+  gaps                   Json
+  prioritizedGaps        Json?
+  remediationSuggestions Json?
+  status                 String               @default("Draft")
+  createdBy              String?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @default(now()) @updatedAt
+  framework              ComplianceFramework? @relation(fields: [frameworkId], references: [id])
+  organization           Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([frameworkId])
+}
+
+model RFPResponse {
+  id               String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String
+  rfpTitle         String
+  companyContext   Json?
+  questions        Json
+  responses        Json
+  confidenceScores Json?
+  status           String       @default("Draft")
+  createdBy        String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @default(now()) @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model DataMap {
+  id                   String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId       String
+  name                 String
+  description          String?
+  dataFlows            Json
+  piiIdentified        Json?
+  crossBorderTransfers Json?
+  retentionPeriods     Json?
+  visualDiagram        String?
+  createdBy            String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @default(now()) @updatedAt
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model BCPPlan {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  name           String
+  rto            Int?
+  rpo            Int?
+  planContent    String
+  contactTree    Json?
+  procedures     Json?
+  status         String       @default("Draft")
+  createdBy      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// ============================================================================
+// TABLES FROM MISSING_TABLES_SQL.SQL - HIGH PRIORITY
+// ============================================================================
+
+model JITAccessRequest {
+  id                 String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId             String
+  organizationId     String
+  requestedPrivilege String
+  reason             String
+  justification      String?
+  duration           Int          @default(3600)
+  status             String       @default("pending")
+  approvedBy         String?
+  approvedAt         DateTime?
+  deniedBy           String?
+  deniedAt           DateTime?
+  expiresAt          DateTime?
+  revokedAt          DateTime?
+  revokedReason      String?
+  metadata           Json?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @default(now()) @updatedAt
+  user               User         @relation("JITRequester", fields: [userId], references: [id], onDelete: Cascade)
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  approver           User?        @relation("JITApprover", fields: [approvedBy], references: [id])
+  sessions           JITSession[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model JITSession {
+  id                String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  requestId         String
+  userId            String
+  organizationId    String
+  privilege         String
+  startTime         DateTime         @default(now())
+  endTime           DateTime?
+  expiresAt         DateTime
+  extendedCount     Int              @default(0)
+  actionsPerformed  Json?            @default("[]")
+  active            Boolean          @default(true)
+  terminatedBy      String?
+  terminationReason String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @default(now()) @updatedAt
+  request           JITAccessRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([active])
+  @@index([expiresAt])
+}
+
+model SwarmAgent {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  agentId        String
+  name           String
+  agentType      String
+  status         String       @default("idle")
+  capabilities   Json         @default("[]")
+  currentLoad    Float        @default(0)
+  maxLoad        Float        @default(1)
+  performance    Json?        @default("{\"tasksCompleted\": 0, \"avgDuration\": 0, \"successRate\": 1.0}")
+  lastHeartbeat  DateTime?
+  registeredAt   DateTime     @default(now())
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, organizationId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([agentType])
+  @@index([lastHeartbeat])
+}
+
+model SwarmTask {
+  id                String                @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId    String
+  taskType          String
+  priority          Int                   @default(5)
+  status            String                @default("queued")
+  payload           Json
+  constraints       Json?                 @default("{}")
+  assignedAgents    Json?                 @default("[]")
+  dependencies      Json?                 @default("[]")
+  parentTaskId      String?
+  subtasks          Json?                 @default("[]")
+  estimatedDuration Int?
+  actualDuration    Int?
+  deadline          DateTime?
+  timeoutAt         DateTime?
+  retryCount        Int                   @default(0)
+  maxRetries        Int                   @default(3)
+  result            Json?
+  error             String?
+  metrics           Json?                 @default("{}")
+  createdAt         DateTime              @default(now())
+  startedAt         DateTime?
+  completedAt       DateTime?
+  updatedAt         DateTime              @default(now()) @updatedAt
+  organization      Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parentTask        SwarmTask?            @relation("SwarmTaskHierarchy", fields: [parentTaskId], references: [id])
+  childTasks        SwarmTask[]           @relation("SwarmTaskHierarchy")
+  checkpoints       SwarmTaskCheckpoint[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([priority])
+  @@index([taskType])
+  @@index([parentTaskId])
+  @@index([deadline])
+  @@index([createdAt])
+}
+
+model SwarmTaskCheckpoint {
+  id          String    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  taskId      String
+  agentId     String?
+  progress    Float     @default(0)
+  state       Json      @default("{}")
+  description String?
+  timestamp   DateTime  @default(now())
+  task        SwarmTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([timestamp])
+}
+
+model UserSession {
+  id                 String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId             String
+  organizationId     String
+  sessionToken       String       @unique
+  refreshToken       String?
+  ipAddress          String?
+  userAgent          String?
+  deviceInfo         Json?
+  lastActivityAt     DateTime     @default(now())
+  expiresAt          DateTime
+  timeoutWarningSent Boolean      @default(false)
+  terminatedAt       DateTime?
+  terminationReason  String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @default(now()) @updatedAt
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([expiresAt])
+  @@index([lastActivityAt])
+}
+
+// ============================================================================
+// VR COLLABORATIVE SESSION DATA
+// ============================================================================
+
+model VRParticipant {
+  id              String                 @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sessionId       String
+  vrSessionDbId   String
+  userId          String
+  userName        String
+  role            String                 @default("participant")
+  avatarConfig    Json?
+  position        Json?                  @default("{\"x\": 0, \"y\": 0, \"z\": 0}")
+  rotation        Json?                  @default("{\"x\": 0, \"y\": 0, \"z\": 0}")
+  isActive        Boolean                @default(true)
+  isSpeaking      Boolean                @default(false)
+  isFollowing     String?
+  pointerPosition Json?
+  screenSharing   Boolean                @default(false)
+  sharedView      Json?
+  joinedAt        DateTime               @default(now())
+  lastActiveAt    DateTime               @default(now())
+  leftAt          DateTime?
+  vrSession       VRCollaborativeSession @relation(fields: [vrSessionDbId], references: [id], onDelete: Cascade)
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([vrSessionDbId])
+  @@index([userId])
+  @@index([isActive])
+}
+
+model VRChatMessage {
+  id            String                 @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sessionId     String
+  vrSessionDbId String
+  userId        String
+  message       String
+  messageType   String                 @default("text")
+  metadata      Json?
+  timestamp     DateTime               @default(now())
+  vrSession     VRCollaborativeSession @relation(fields: [vrSessionDbId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([vrSessionDbId])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model VRAnnotation {
+  id             String                 @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sessionId      String
+  vrSessionDbId  String
+  userId         String
+  targetType     String
+  targetId       String
+  position       Json
+  content        String
+  annotationType String                 @default("note")
+  color          String?
+  resolved       Boolean                @default(false)
+  resolvedBy     String?
+  resolvedAt     DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @default(now()) @updatedAt
+  vrSession      VRCollaborativeSession @relation(fields: [vrSessionDbId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([vrSessionDbId])
+  @@index([userId])
+  @@index([targetType])
+  @@index([targetId])
+}
+
+model VRVoiceChatState {
+  id                  String                 @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sessionId           String
+  vrSessionDbId       String
+  userId              String
+  isMuted             Boolean                @default(false)
+  volume              Float                  @default(1.0)
+  enabled             Boolean                @default(true)
+  spatialAudioEnabled Boolean                @default(true)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @default(now()) @updatedAt
+  vrSession           VRCollaborativeSession @relation(fields: [vrSessionDbId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([vrSessionDbId])
+}
+
+model VRTrainingProgress {
+  id             String                 @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sessionId      String
+  vrSessionDbId  String
+  userId         String
+  scenarioId     String?
+  completedTasks Json                   @default("[]")
+  score          Int                    @default(0)
+  timeSpent      Int                    @default(0)
+  lastActivityAt DateTime               @default(now())
+  completed      Boolean                @default(false)
+  completedAt    DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @default(now()) @updatedAt
+  vrSession      VRCollaborativeSession @relation(fields: [vrSessionDbId], references: [id], onDelete: Cascade)
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([vrSessionDbId])
+  @@index([userId])
+}
+
+// ============================================================================
+// TABLES FROM MISSING_TABLES_SQL.SQL - MEDIUM PRIORITY
+// ============================================================================
+
+model QuestionnaireTemplate {
+  id               String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String?
+  title            String
+  description      String?
+  templateType     String
+  category         String?
+  questionCount    Int           @default(0)
+  categories       Json?         @default("[]")
+  questions        Json          @default("[]")
+  isSystemTemplate Boolean       @default(false)
+  isActive         Boolean       @default(true)
+  version          Int           @default(1)
+  createdBy        String?
+  usageCount       Int           @default(0)
+  lastUsedAt       DateTime?
+  metadata         Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @default(now()) @updatedAt
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([templateType])
+  @@index([isSystemTemplate])
+  @@index([isActive])
+}
+
+model PolicyTemplate {
+  id               String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String?
+  title            String
+  description      String?
+  category         String
+  framework        String?
+  content          String
+  variables        Json?         @default("[]")
+  version          String        @default("1.0")
+  tags             Json?         @default("[]")
+  isSystemTemplate Boolean       @default(false)
+  isActive         Boolean       @default(true)
+  createdBy        String?
+  usageCount       Int           @default(0)
+  lastUsedAt       DateTime?
+  metadata         Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @default(now()) @updatedAt
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([framework])
+  @@index([isSystemTemplate])
+  @@index([isActive])
+}
+
+model WebRTCSession {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sessionId      String       @unique
+  organizationId String
+  sessionType    String       @default("call")
+  hostUserId     String
+  maxPeers       Int          @default(10)
+  config         Json?        @default("{}")
+  status         String       @default("active")
+  createdAt      DateTime     @default(now())
+  endedAt        DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  peers          WebRTCPeer[]
+
+  @@index([organizationId])
+  @@index([hostUserId])
+  @@index([status])
+}
+
+model WebRTCPeer {
+  id                String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  sessionId         String
+  webrtcSessionId   String
+  userId            String
+  peerId            String
+  socketId          String?
+  status            String        @default("connecting")
+  connectionQuality Json?         @default("{}")
+  joinedAt          DateTime      @default(now())
+  leftAt            DateTime?
+  webrtcSession     WebRTCSession @relation(fields: [webrtcSessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([webrtcSessionId])
+  @@index([userId])
+  @@index([status])
+}
+
+model LivenessChallenge {
+  id             String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId         String
+  organizationId String
+  challengeType  String
+  challengeData  Json
+  status         String          @default("pending")
+  attempts       Int             @default(0)
+  maxAttempts    Int             @default(3)
+  result         Json?
+  confidence     Float?
+  expiresAt      DateTime
+  createdAt      DateTime        @default(now())
+  completedAt    DateTime?
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  frames         LivenessFrame[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model LivenessFrame {
+  id            String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  challengeId   String
+  frameNumber   Int
+  frameData     Json
+  livenessScore Float
+  spoofScore    Float?
+  faceDetected  Boolean           @default(true)
+  timestamp     DateTime          @default(now())
+  challenge     LivenessChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+  @@index([timestamp])
+}
+
+// ============================================================================
+// TABLES FROM MISSING_TABLES_SQL.SQL - LOW PRIORITY
+// ============================================================================
+
+model LDAPRoleMapping {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  ldapGroupDN    String
+  ldapGroupName  String?
+  internalRole   String
+  priority       Int          @default(0)
+  enabled        Boolean      @default(true)
+  createdBy      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, ldapGroupDN])
+  @@index([organizationId])
+  @@index([enabled])
+}
+
+model SwarmTaskMetric {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  metricType     String
+  value          Float
+  taskType       String?
+  agentId        String?
+  metadata       Json?
+  timestamp      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([metricType])
+  @@index([timestamp])
+  @@index([taskType])
+}
+
+model SwarmTaskAlert {
+  id              String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  alertType       String
+  severity        String       @default("warning")
+  message         String
+  context         Json?
+  resolved        Boolean      @default(false)
+  resolvedBy      String?
+  resolvedAt      DateTime?
+  resolutionNotes String?
+  createdAt       DateTime     @default(now())
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([alertType])
+  @@index([severity])
+  @@index([resolved])
+  @@index([createdAt])
+}
+
+model GNNModel {
+  id                 String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId     String
+  modelId            String
+  modelType          String
+  version            Int          @default(1)
+  weights            Json
+  weightsPath        String?
+  architecture       Json?
+  hyperparameters    Json?
+  trainingMetrics    Json?
+  performanceMetrics Json?
+  isActive           Boolean      @default(false)
+  trainedAt          DateTime     @default(now())
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @default(now()) @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, modelId, version])
+  @@index([organizationId])
+  @@index([modelType])
+  @@index([isActive])
+}
+
+// ============================================================================
+// NEW ENUMS
+// ============================================================================
+
+enum PhishingType {
+  Email
+  Spear
+  Smishing
+}
+
+enum PhishingDifficulty {
+  Easy
+  Medium
+  Hard
 }
