@@ -1,0 +1,28 @@
+{
+  "name": "complyeasy-infrastructure",
+  "version": "1.0.0",
+  "description": "AWS CDK infrastructure for ComplyEasyAI",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy --all --require-approval broadening",
+    "deploy:network": "cdk deploy ComplyEasy-Network",
+    "deploy:database": "cdk deploy ComplyEasy-Database",
+    "deploy:backend": "cdk deploy ComplyEasy-Backend",
+    "deploy:frontend": "cdk deploy ComplyEasy-Frontend",
+    "destroy": "cdk destroy --all",
+    "diff": "cdk diff",
+    "bootstrap": "cdk bootstrap"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.175.0",
+    "constructs": "^10.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "typescript": "~5.8.2",
+    "aws-cdk": "^2.175.0"
+  }
+}
