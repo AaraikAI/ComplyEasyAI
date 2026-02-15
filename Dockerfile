@@ -84,6 +84,10 @@ COPY --from=backend-build /app/server/src/data ./dist/data
 # Copy frontend build so Express can serve it (optional — when NOT using Nginx)
 COPY --from=frontend-build /app/dist ./public
 
+# Copy entrypoint wrapper that composes DATABASE_URL from ECS secret fields
+COPY infrastructure/lib/entrypoint-wrapper.sh /app/server/entrypoint.sh
+RUN chmod +x /app/server/entrypoint.sh
+
 USER complyeasy
 
 ENV NODE_ENV=production
@@ -94,7 +98,7 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD wget -qO- http://localhost:3001/health || exit 1
 
-CMD ["node", "dist/index.js"]
+CMD ["/app/server/entrypoint.sh"]
 
 # ---------------------------------------------------------------------------
 # Stage 7: Production frontend via Nginx
