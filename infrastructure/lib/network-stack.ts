@@ -10,16 +10,18 @@ export interface NetworkStackProps extends cdk.StackProps {
 /**
  * NetworkStack — VPC, subnets, and security groups for ComplyEasyAI.
  *
+ * Database is hosted externally on Supabase (managed PostgreSQL),
+ * so no RDS security group is needed.
+ *
  * MVP cost optimisation:
  *  - 2 AZs (minimum for ALB)
  *  - 1 NAT Gateway (saves ~$32/mo vs HA pair)
- *  - Isolated subnets for databases (no internet egress)
+ *  - Isolated subnets for ElastiCache Redis
  */
 export class NetworkStack extends cdk.Stack {
   public readonly vpc: ec2.Vpc;
   public readonly albSecurityGroup: ec2.SecurityGroup;
   public readonly ecsSecurityGroup: ec2.SecurityGroup;
-  public readonly dbSecurityGroup: ec2.SecurityGroup;
   public readonly redisSecurityGroup: ec2.SecurityGroup;
 
   constructor(scope: Construct, id: string, props: NetworkStackProps) {
@@ -87,19 +89,6 @@ export class NetworkStack extends cdk.Stack {
       this.albSecurityGroup,
       ec2.Port.tcp(3001),
       'API from ALB'
-    );
-
-    // RDS — only from ECS tasks
-    this.dbSecurityGroup = new ec2.SecurityGroup(this, 'DbSg', {
-      vpc: this.vpc,
-      securityGroupName: `${prefix}-db-sg`,
-      description: 'RDS PostgreSQL — ECS tasks only',
-      allowAllOutbound: false,
-    });
-    this.dbSecurityGroup.addIngressRule(
-      this.ecsSecurityGroup,
-      ec2.Port.tcp(5432),
-      'PostgreSQL from ECS'
     );
 
     // ElastiCache Redis — only from ECS tasks
