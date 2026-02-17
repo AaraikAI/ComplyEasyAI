@@ -12,6 +12,7 @@ import {
 import { ComplianceChat } from './ComplianceChat';
 import { OnboardingOverlay, OnboardingChecklistWidget } from './Onboarding';
 import { CommandPalette } from './CommandPalette';
+import { ThemeToggleCompact } from './ThemeToggle';
 
 interface LayoutProps {
   currentView: ViewState;
@@ -385,7 +386,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Top Header Bar */}
-        <header className="bg-white border-b border-surface-200 flex items-center justify-between px-6 py-3 sticky top-0 z-10">
+        <header className="bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 flex items-center justify-between px-6 py-3 sticky top-0 z-10 transition-colors duration-300">
           {/* Left: Hamburger + Page Title */}
           <div className="flex items-center">
             <button
@@ -394,7 +395,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
             >
               <Menu size={24} />
             </button>
-            <h1 className="text-xl font-semibold text-surface-800 capitalize" data-onboarding="dashboard-header">
+            <h1 className="text-xl font-semibold text-surface-800 dark:text-surface-100 capitalize" data-onboarding="dashboard-header">
               {pageTitle}
             </h1>
           </div>
@@ -402,11 +403,11 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
           {/* Center: Command Palette Trigger */}
           <button
             onClick={() => setCommandPaletteOpen(true)}
-            className="hidden md:flex items-center space-x-3 bg-surface-100 hover:bg-surface-200 rounded-xl px-4 py-2 transition-colors cursor-pointer group max-w-md w-full mx-8"
+            className="hidden md:flex items-center space-x-3 bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 rounded-xl px-4 py-2 transition-colors cursor-pointer group max-w-md w-full mx-8"
           >
-            <Search size={16} className="text-surface-400 group-hover:text-surface-500 flex-shrink-0" />
-            <span className="text-sm text-surface-400 group-hover:text-surface-500 flex-1 text-left">Search or jump to...</span>
-            <kbd className="hidden lg:flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium text-surface-400 bg-white rounded-md border border-surface-200 shadow-sm">
+            <Search size={16} className="text-surface-400 group-hover:text-surface-500 dark:group-hover:text-surface-300 flex-shrink-0" />
+            <span className="text-sm text-surface-400 group-hover:text-surface-500 dark:group-hover:text-surface-300 flex-1 text-left">Search or jump to...</span>
+            <kbd className="hidden lg:flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium text-surface-400 bg-white dark:bg-surface-700 rounded-md border border-surface-200 dark:border-surface-600 shadow-sm">
               <Command size={10} />K
             </kbd>
           </button>
@@ -435,10 +436,10 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
 
               {/* Notification Dropdown */}
               {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-surface-200 overflow-hidden z-50 animate-fadeInDown">
-                  <div className="p-4 border-b border-surface-100 bg-surface-50">
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-surface-800 rounded-2xl shadow-2xl border border-surface-200 dark:border-surface-700 overflow-hidden z-50 animate-fadeInDown">
+                  <div className="p-4 border-b border-surface-100 dark:border-surface-700 bg-surface-50 dark:bg-surface-900">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-surface-900">Notifications</h3>
+                      <h3 className="font-bold text-surface-900 dark:text-surface-100">Notifications</h3>
                       {notifications.length > 0 && (
                         <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
                           {notifications.length} new
@@ -476,6 +477,9 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
               )}
             </div>
 
+            {/* Theme Toggle */}
+            <ThemeToggleCompact />
+
             {/* User Avatar + Name */}
             <div className="flex items-center space-x-3 border-l border-surface-200 pl-3">
               <div className="text-right hidden sm:block">
@@ -504,7 +508,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6 bg-surface-50 relative">
+        <main className="flex-1 overflow-y-auto p-6 bg-surface-50 dark:bg-surface-900 relative transition-colors duration-300">
           <div className="max-w-7xl mx-auto animate-fadeIn pb-20" data-onboarding="dashboard-content">
             {children}
           </div>

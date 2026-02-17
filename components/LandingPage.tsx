@@ -11,6 +11,7 @@ import { api } from '../services/api';
 import PricingSection from './PricingSection';
 import DemoBookingForm from './DemoBookingForm';
 import { TierName } from '../types';
+import { ThemeToggleCompact } from './ThemeToggle';
 
 // ---------------------------------------------------------------------------
 // Feature data grouped by tab category
@@ -227,24 +228,25 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-surface-900 scroll-smooth">
+    <div className="min-h-screen bg-white dark:bg-surface-950 font-sans text-surface-900 dark:text-surface-100 scroll-smooth transition-colors duration-300">
       {/* ================================================================= */}
       {/* Navbar - Glass-morphism                                           */}
       {/* ================================================================= */}
-      <nav className="fixed w-full z-50 glass border-b border-surface-200/60">
+      <nav className="fixed w-full z-50 glass dark:glass-dark border-b border-surface-200/60 dark:border-surface-700/60 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center space-x-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               <div className="bg-brand-600 p-1.5 rounded-lg shadow-lg shadow-brand-500/20">
                 <Shield className="text-white w-6 h-6" />
               </div>
-              <span className="font-bold text-xl tracking-tight text-surface-900">ComplyEasy AI</span>
+              <span className="font-bold text-xl tracking-tight text-surface-900 dark:text-white">ComplyEasy AI</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="text-sm font-medium text-surface-600 hover:text-brand-600 transition-colors cursor-pointer">Features</a>
-              <a href="#how-it-works" onClick={(e) => scrollToSection(e, 'how-it-works')} className="text-sm font-medium text-surface-600 hover:text-brand-600 transition-colors cursor-pointer">How It Works</a>
-              <a href="#pricing" onClick={(e) => scrollToSection(e, 'pricing')} className="text-sm font-medium text-surface-600 hover:text-brand-600 transition-colors cursor-pointer">Pricing</a>
-              <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="text-sm font-medium text-surface-600 hover:text-brand-600 transition-colors cursor-pointer">About</a>
+              <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="text-sm font-medium text-surface-600 dark:text-surface-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer">Features</a>
+              <a href="#how-it-works" onClick={(e) => scrollToSection(e, 'how-it-works')} className="text-sm font-medium text-surface-600 dark:text-surface-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer">How It Works</a>
+              <a href="#pricing" onClick={(e) => scrollToSection(e, 'pricing')} className="text-sm font-medium text-surface-600 dark:text-surface-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer">Pricing</a>
+              <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="text-sm font-medium text-surface-600 dark:text-surface-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer">About</a>
+              <ThemeToggleCompact />
               <button
                 onClick={() => { setAuthStep('email'); setShowAuthModal(true); }}
                 className="bg-amber-500 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20"
@@ -349,7 +351,7 @@ export const LandingPage: React.FC = () => {
       {/* ================================================================= */}
       {/* Features Section - Tabbed Interface                               */}
       {/* ================================================================= */}
-      <section id="features" className="py-24 bg-white relative">
+      <section id="features" className="py-24 bg-white dark:bg-surface-900 relative transition-colors duration-300">
         <div className="absolute inset-0 dot-pattern opacity-[0.02]"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Heading */}
