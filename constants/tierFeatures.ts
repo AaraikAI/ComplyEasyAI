@@ -132,7 +132,7 @@ export const VIEW_TO_FEATURE: Record<string, string> = {
   reports: 'advancedReporting',
   audit: 'auditLogging',
   analytics: 'continuousMonitoring',
-  integrations: 'complianceFrameworks', // all tiers have some integrations
+  integrations: 'complianceFrameworks',
   security: 'zeroTrustSecurity',
   acos: 'acosGoals',
   'ai-rmf': 'nistAiRmf',
@@ -152,6 +152,43 @@ export const VIEW_TO_FEATURE: Record<string, string> = {
   'ai-data-map': 'aiDataMapper',
   'ai-bcp': 'aiBcpGenerator',
   settings: 'dashboard',
+  // Phase 1: EU Regulations & US Privacy
+  'eu-cra': 'euAiAct',
+  csrd: 'euAiAct',
+  ecodesign: 'euAiAct',
+  nis2: 'euAiAct',
+  'us-privacy': 'complianceFrameworks',
+  // Phase 2-3: Process Mapping & Governance
+  'process-mapper': 'advancedReporting',
+  governance: 'advancedReporting',
+  // Phase 5: Certification & Market Access
+  'ce-marking': 'euAiAct',
+  'digital-product-passport': 'euAiAct',
+  // Phase 6: ESG & Surveillance
+  'esg-reporting': 'advancedReporting',
+  'post-market-surveillance': 'euAiAct',
+  // Phase 7: Breach Management
+  'breach-wizard': 'advancedReporting',
+  // Phase 8: Post-Market Lifecycle
+  'sbom-manager': 'euAiAct',
+  'product-decommissioning': 'euAiAct',
+  'environmental-lifecycle': 'euAiAct',
+  // AI Tier Features
+  'ai-cross-mapper': 'aiGapAnalysis',
+  'ai-auto-remediation': 'acosGoals',
+  'ai-evidence-checker': 'aiGapAnalysis',
+  'ai-agentic-vendor': 'aiVendorScorer',
+  'ai-audit-simulator': 'acosGoals',
+  'ai-nl-query': 'aiGapAnalysis',
+  'compliance-forecasting': 'continuousMonitoring',
+  'product-lifecycle': 'euAiAct',
+  // Related sub-views
+  vendors: 'vendorRiskManagement',
+  policies: 'personnelManagement',
+  monitoring: 'continuousMonitoring',
+  workspaces: 'advancedReporting',
+  questionnaires: 'advancedReporting',
+  issues: 'riskManagement',
 };
 
 export function hasFeature(plan: TierName | string | undefined, featureKey: string): boolean {

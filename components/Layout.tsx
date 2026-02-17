@@ -7,7 +7,10 @@ import {
   LayoutDashboard, FileText, ShieldCheck, Settings, LogOut, Menu, X,
   Activity, Search, Bell, Lock, Sparkles, Briefcase, GitGraph, Mail, ShieldAlert, Database, LifeBuoy, CheckSquare, Layers, Brain,
   Users, FileCheck, Monitor, Building2, ClipboardList, AlertTriangle,
-  ChevronDown, ChevronRight, Command
+  ChevronDown, ChevronRight, Command,
+  Shield, Globe, Leaf, Network, MapPin, Workflow, UserCheck, Award, Package,
+  Recycle, AlertOctagon, FileCode, Trash2, TreePine, TrendingUp, Target,
+  ScanSearch, Bot, MessageSquare, Crosshair
 } from 'lucide-react';
 import { ComplianceChat } from './ComplianceChat';
 import { OnboardingOverlay, OnboardingChecklistWidget } from './Onboarding';
@@ -132,6 +135,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
   }, []);
 
   const navItems: NavItem[] = [
+    // Platform
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'editor', 'viewer'], relatedViews: ['risks'] },
     { id: 'my-tasks', label: 'My Tasks', icon: CheckSquare, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'risks', label: 'Risk Management', icon: ShieldAlert, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
@@ -140,14 +144,39 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     { id: 'policies', label: 'Policy Management', icon: FileCheck, roles: ['admin', 'editor'], relatedViews: [] },
     { id: 'integrations', label: 'Integrations', icon: Layers, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'frameworks', label: 'Frameworks', icon: ShieldCheck, roles: ['admin', 'editor'], relatedViews: ['framework-details'] },
+    // EU Regulations
     { id: 'ai-rmf', label: 'NIST AI RMF', icon: Brain, roles: ['admin', 'editor', 'viewer'], relatedViews: ['ai-rmf-systems', 'ai-rmf-create', 'ai-rmf-details', 'ai-rmf-assessments'] },
     { id: 'eu-ai-act', label: 'EU AI Act', icon: ShieldCheck, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'eu-cra', label: 'EU CRA', icon: Shield, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'csrd', label: 'CSRD / ESG', icon: Leaf, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'ecodesign', label: 'Ecodesign', icon: Recycle, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'nis2', label: 'NIS2', icon: Network, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'dma', label: 'DMA', icon: ShieldCheck, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'dsa', label: 'DSA', icon: ShieldCheck, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'us-privacy', label: 'US Privacy Laws', icon: MapPin, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    // Governance & Process
+    { id: 'governance', label: 'Governance', icon: UserCheck, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'process-mapper', label: 'Process Mapper', icon: Workflow, roles: ['admin', 'editor'], relatedViews: [] },
+    // Certification & Products
+    { id: 'ce-marking', label: 'CE Marking', icon: Award, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'digital-product-passport', label: 'Digital Passport', icon: Package, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'product-lifecycle', label: 'Product Lifecycle', icon: Recycle, roles: ['admin', 'editor'], relatedViews: [] },
+    // Monitoring & Surveillance
+    { id: 'esg-reporting', label: 'ESG Reporting', icon: TreePine, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'post-market-surveillance', label: 'Surveillance', icon: ScanSearch, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'compliance-forecasting', label: 'Score Forecast', icon: TrendingUp, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    // Incident & Breach
+    { id: 'breach-wizard', label: 'Breach Wizard', icon: AlertOctagon, roles: ['admin', 'editor'], relatedViews: [] },
+    // Post-Market Lifecycle
+    { id: 'sbom-manager', label: 'SBOM Manager', icon: FileCode, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'product-decommissioning', label: 'Decommissioning', icon: Trash2, roles: ['admin', 'editor'], relatedViews: [] },
+    { id: 'environmental-lifecycle', label: 'Env. Lifecycle', icon: TreePine, roles: ['admin', 'editor'], relatedViews: [] },
+    // Reports & Audit
     { id: 'reports', label: 'Report Generator', icon: FileText, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'audit', label: 'Audit Trail', icon: Activity, roles: ['admin', 'editor'], relatedViews: [] },
     { id: 'monitoring', label: 'Monitoring', icon: Monitor, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'analytics', label: 'Real-time Analytics', icon: Activity, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    // Enterprise
     { id: 'workspaces', label: 'Workspaces', icon: Building2, roles: ['admin', 'editor'], relatedViews: [] },
     { id: 'questionnaires', label: 'Questionnaires', icon: ClipboardList, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'security', label: 'Security Features', icon: Lock, roles: ['admin', 'editor'], relatedViews: [] },
@@ -163,6 +192,12 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     { id: 'ai-vendor', label: 'Vendor Risk', icon: ShieldAlert },
     { id: 'ai-data-map', label: 'GDPR Mapper', icon: Database },
     { id: 'ai-bcp', label: 'BCP Generator', icon: LifeBuoy },
+    { id: 'ai-cross-mapper', label: 'Control Mapper', icon: GitGraph },
+    { id: 'ai-auto-remediation', label: 'Auto-Remediation', icon: Bot },
+    { id: 'ai-evidence-checker', label: 'Evidence Checker', icon: ScanSearch },
+    { id: 'ai-agentic-vendor', label: 'Agentic VRM', icon: Target },
+    { id: 'ai-audit-simulator', label: 'Audit Simulator', icon: Crosshair },
+    { id: 'ai-nl-query', label: 'Compliance Query', icon: MessageSquare },
   ];
 
   const userPlan = normalizePlan(user?.organization?.plan);
@@ -177,7 +212,10 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
 
   // Build nav sections from filtered items
   const platformIds = ['dashboard', 'my-tasks', 'risks', 'issues', 'vendors', 'policies', 'integrations', 'frameworks'];
-  const regulatoryIds = ['ai-rmf', 'eu-ai-act', 'dma', 'dsa'];
+  const regulatoryIds = ['ai-rmf', 'eu-ai-act', 'eu-cra', 'csrd', 'ecodesign', 'nis2', 'dma', 'dsa', 'us-privacy'];
+  const governanceIds = ['governance', 'process-mapper'];
+  const certProductIds = ['ce-marking', 'digital-product-passport', 'product-lifecycle', 'sbom-manager', 'product-decommissioning', 'environmental-lifecycle'];
+  const monitoringSurveillanceIds = ['esg-reporting', 'post-market-surveillance', 'compliance-forecasting', 'breach-wizard'];
   const reportsAuditIds = ['reports', 'audit', 'monitoring', 'analytics'];
   const workspacesIds = ['workspaces', 'questionnaires', 'security', 'acos'];
 
@@ -197,6 +235,24 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
         items: roleFiltered.filter(item => regulatoryIds.includes(item.id)),
       },
       {
+        key: 'governance',
+        label: 'Governance',
+        collapsible: true,
+        items: roleFiltered.filter(item => governanceIds.includes(item.id)),
+      },
+      {
+        key: 'cert-product',
+        label: 'Products & Lifecycle',
+        collapsible: true,
+        items: roleFiltered.filter(item => certProductIds.includes(item.id)),
+      },
+      {
+        key: 'monitoring-surveillance',
+        label: 'Monitoring & Assurance',
+        collapsible: true,
+        items: roleFiltered.filter(item => monitoringSurveillanceIds.includes(item.id)),
+      },
+      {
         key: 'reports-audit',
         label: 'Reports & Audit',
         collapsible: true,
@@ -204,7 +260,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
       },
       {
         key: 'workspaces',
-        label: 'Workspaces',
+        label: 'Enterprise',
         collapsible: true,
         items: roleFiltered.filter(item => workspacesIds.includes(item.id)),
       },
