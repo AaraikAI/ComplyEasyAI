@@ -16,7 +16,11 @@ export enum FrameworkType {
   NIST = 'NIST 800-53',
   EU_AI_ACT = 'EU AI Act',
   DMA = 'Digital Markets Act (DMA)',
-  DSA = 'Digital Services Act (DSA)'
+  DSA = 'Digital Services Act (DSA)',
+  EU_CRA = 'EU Cyber Resilience Act (CRA)',
+  CSRD = 'CSRD',
+  ECODESIGN = 'Ecodesign for Sustainable Products',
+  NIS2 = 'NIS2 Directive'
 }
 
 export type Role = 'admin' | 'editor' | 'viewer';
@@ -421,11 +425,12 @@ export interface AuditLog {
 export interface Integration {
   id: string;
   name: string;
-  category: 'Cloud' | 'HR' | 'Dev' | 'Security';
+  category: 'Cloud' | 'HR' | 'Dev' | 'Security' | 'Identity' | 'ITSM' | 'MDM' | 'Productivity' | 'Finance' | 'Communication' | 'Database' | 'Monitoring' | 'Compliance' | 'CRM' | 'Storage' | 'Network' | 'CI/CD' | 'Container' | 'Automation' | 'Analytics' | 'EDR' | 'Email' | 'GRC' | 'Training' | 'SIEM' | 'VPN' | 'SSO' | 'Code' | 'Backup' | 'BI' | 'Ticketing';
   connected: boolean;
   lastSync: string;
   icon: string;
   config?: Record<string, any>; // Encrypted config placeholder
+  description?: string;
 }
 
 export interface ChatMessage {
@@ -470,7 +475,37 @@ export type ViewState =
   | 'monitoring'
   | 'workspaces'
   | 'questionnaires'
-  | 'issues';
+  | 'issues'
+  // Phase 1: EU Regulations & US Privacy
+  | 'eu-cra'
+  | 'csrd'
+  | 'ecodesign'
+  | 'nis2'
+  | 'us-privacy'
+  // Phase 2-3: Process Mapping & Governance
+  | 'process-mapper'
+  | 'governance'
+  // Phase 5: Certification & Market Access
+  | 'ce-marking'
+  | 'digital-product-passport'
+  // Phase 6: ESG & Surveillance
+  | 'esg-reporting'
+  | 'post-market-surveillance'
+  // Phase 7: Breach Management
+  | 'breach-wizard'
+  // Phase 8: Post-Market Lifecycle
+  | 'sbom-manager'
+  | 'product-decommissioning'
+  | 'environmental-lifecycle'
+  // AI Tier Features
+  | 'ai-cross-mapper'
+  | 'ai-auto-remediation'
+  | 'ai-evidence-checker'
+  | 'ai-agentic-vendor'
+  | 'ai-audit-simulator'
+  | 'ai-nl-query'
+  | 'compliance-forecasting'
+  | 'product-lifecycle';
 
 // ============================================================================
 // TIER CONFIGURATION (Frontend copy of backend tiers)

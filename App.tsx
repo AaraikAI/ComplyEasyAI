@@ -59,6 +59,40 @@ const PhishingGenerator = lazy(() => import('./components/AIFeatures/PhishingGen
 const VendorScorer = lazy(() => import('./components/AIFeatures/VendorScorer').then(m => ({ default: m.VendorScorer })));
 const DataMapper = lazy(() => import('./components/AIFeatures/DataMapper').then(m => ({ default: m.DataMapper })));
 const BCPGenerator = lazy(() => import('./components/AIFeatures/BCPGenerator').then(m => ({ default: m.BCPGenerator })));
+const CrossFrameworkMapper = lazy(() => import('./components/AIFeatures/CrossFrameworkMapper').then(m => ({ default: m.CrossFrameworkMapper })));
+const RegulatoryAutoRemediation = lazy(() => import('./components/AIFeatures/RegulatoryAutoRemediation').then(m => ({ default: m.RegulatoryAutoRemediation })));
+const EvidenceCompletenessChecker = lazy(() => import('./components/AIFeatures/EvidenceCompletenessChecker').then(m => ({ default: m.EvidenceCompletenessChecker })));
+const AgenticVendorRisk = lazy(() => import('./components/AIFeatures/AgenticVendorRisk').then(m => ({ default: m.AgenticVendorRisk })));
+const AuditSimulator = lazy(() => import('./components/AIFeatures/AuditSimulator').then(m => ({ default: m.AuditSimulator })));
+const NaturalLanguageQuery = lazy(() => import('./components/AIFeatures/NaturalLanguageQuery').then(m => ({ default: m.NaturalLanguageQuery })));
+
+// ── Lazy-loaded Phase 1: EU Regulations & US Privacy ──────────────────
+const EUCRADashboard = lazy(() => import('./components/EUCRADashboard').then(m => ({ default: m.EUCRADashboard })));
+const CSRDDashboard = lazy(() => import('./components/CSRDDashboard').then(m => ({ default: m.CSRDDashboard })));
+const EcodesignDashboard = lazy(() => import('./components/EcodesignDashboard').then(m => ({ default: m.EcodesignDashboard })));
+const NIS2Dashboard = lazy(() => import('./components/NIS2Dashboard').then(m => ({ default: m.NIS2Dashboard })));
+const USPrivacyTracker = lazy(() => import('./components/USPrivacyTracker').then(m => ({ default: m.USPrivacyTracker })));
+
+// ── Lazy-loaded Phase 2-3: Process Mapping & Governance ──────────────
+const ProcessMapper = lazy(() => import('./components/ProcessMapper').then(m => ({ default: m.ProcessMapper })));
+const GovernanceManager = lazy(() => import('./components/GovernanceManager').then(m => ({ default: m.GovernanceManager })));
+
+// ── Lazy-loaded Phase 5-6: Certification & ESG ──────────────────────
+const CEMarkingWorkflow = lazy(() => import('./components/CEMarkingWorkflow').then(m => ({ default: m.CEMarkingWorkflow })));
+const DigitalProductPassport = lazy(() => import('./components/DigitalProductPassport').then(m => ({ default: m.DigitalProductPassport })));
+const ESGReportingModule = lazy(() => import('./components/ESGReportingModule').then(m => ({ default: m.ESGReportingModule })));
+const PostMarketSurveillance = lazy(() => import('./components/PostMarketSurveillance').then(m => ({ default: m.PostMarketSurveillance })));
+
+// ── Lazy-loaded Phase 7-8: Breach & Post-Market Lifecycle ───────────
+const BreachNotificationWizard = lazy(() => import('./components/BreachNotificationWizard').then(m => ({ default: m.BreachNotificationWizard })));
+const SBOMManager = lazy(() => import('./components/SBOMManager').then(m => ({ default: m.SBOMManager })));
+const ProductDecommissioning = lazy(() => import('./components/ProductDecommissioning').then(m => ({ default: m.ProductDecommissioning })));
+const EnvironmentalLifecycle = lazy(() => import('./components/EnvironmentalLifecycle').then(m => ({ default: m.EnvironmentalLifecycle })));
+
+// ── Lazy-loaded Tier features ───────────────────────────────────────
+const AIComplianceCopilot = lazy(() => import('./components/AIComplianceCopilot').then(m => ({ default: m.AIComplianceCopilot })));
+const ComplianceScoreForecasting = lazy(() => import('./components/ComplianceScoreForecasting').then(m => ({ default: m.ComplianceScoreForecasting })));
+const ProductLifecycleTracker = lazy(() => import('./components/ProductLifecycleTracker').then(m => ({ default: m.ProductLifecycleTracker })));
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
@@ -66,6 +100,7 @@ const MainApp: React.FC = () => {
   const [frameworks, setFrameworks] = useState<ComplianceFramework[]>([]);
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [selectedFrameworkId, setSelectedFrameworkId] = useState<string | null>(null);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
   // Navigation helper that accepts string and casts to ViewState
   const handleNavigate = (view: string) => setCurrentView(view as ViewState);
@@ -253,6 +288,59 @@ const MainApp: React.FC = () => {
         return <QuestionnaireManagement />;
       case 'issues':
         return <IssueManagement />;
+      // Phase 1: EU Regulations & US Privacy
+      case 'eu-cra':
+        return <EUCRADashboard />;
+      case 'csrd':
+        return <CSRDDashboard />;
+      case 'ecodesign':
+        return <EcodesignDashboard />;
+      case 'nis2':
+        return <NIS2Dashboard />;
+      case 'us-privacy':
+        return <USPrivacyTracker />;
+      // Phase 2-3: Process Mapping & Governance
+      case 'process-mapper':
+        return <ProcessMapper onBack={() => setCurrentView('dashboard')} />;
+      case 'governance':
+        return <GovernanceManager onBack={() => setCurrentView('dashboard')} />;
+      // Phase 5: Certification & Market Access
+      case 'ce-marking':
+        return <CEMarkingWorkflow onBack={() => setCurrentView('dashboard')} />;
+      case 'digital-product-passport':
+        return <DigitalProductPassport onBack={() => setCurrentView('dashboard')} />;
+      // Phase 6: ESG & Surveillance
+      case 'esg-reporting':
+        return <ESGReportingModule onBack={() => setCurrentView('dashboard')} />;
+      case 'post-market-surveillance':
+        return <PostMarketSurveillance onBack={() => setCurrentView('dashboard')} />;
+      // Phase 7: Breach Management
+      case 'breach-wizard':
+        return <BreachNotificationWizard onBack={() => setCurrentView('dashboard')} />;
+      // Phase 8: Post-Market Lifecycle
+      case 'sbom-manager':
+        return <SBOMManager onBack={() => setCurrentView('dashboard')} />;
+      case 'product-decommissioning':
+        return <ProductDecommissioning onBack={() => setCurrentView('dashboard')} />;
+      case 'environmental-lifecycle':
+        return <EnvironmentalLifecycle onBack={() => setCurrentView('dashboard')} />;
+      // AI Tier Features
+      case 'ai-cross-mapper':
+        return <CrossFrameworkMapper onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-auto-remediation':
+        return <RegulatoryAutoRemediation onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-evidence-checker':
+        return <EvidenceCompletenessChecker onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-agentic-vendor':
+        return <AgenticVendorRisk onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-audit-simulator':
+        return <AuditSimulator onBack={() => setCurrentView('dashboard')} />;
+      case 'ai-nl-query':
+        return <NaturalLanguageQuery onBack={() => setCurrentView('dashboard')} />;
+      case 'compliance-forecasting':
+        return <ComplianceScoreForecasting onBack={() => setCurrentView('dashboard')} />;
+      case 'product-lifecycle':
+        return <ProductLifecycleTracker onBack={() => setCurrentView('dashboard')} />;
       default:
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }
@@ -268,6 +356,8 @@ const MainApp: React.FC = () => {
         }>
           {renderContent()}
         </Suspense>
+        {/* AI Compliance Copilot Sidebar */}
+        <AIComplianceCopilot currentView={currentView} isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
       </Layout>
     </OnboardingProvider>
   );
