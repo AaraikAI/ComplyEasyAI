@@ -5,20 +5,76 @@ import { ChatMessage } from '../types';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { canAccessView, normalizePlan, VIEW_TO_FEATURE } from '../constants/tierFeatures';
 
 interface ComplianceChatProps {
   onNavigate?: (view: string) => void;
   currentView?: string;
 }
 
+// Map feature keys to their required minimum tier
+const FEATURE_REQUIRED_TIER: Record<string, string> = {
+  acosGoals: 'Growth',
+  nistAiRmf: 'Visionary',
+  euAiAct: 'Visionary',
+  dsa: 'Visionary',
+  dma: 'Visionary',
+  zeroTrustSecurity: 'Visionary',
+  advancedReporting: 'Essentials',
+  aiContractAnalyzer: 'Essentials',
+  aiRfpGenerator: 'Essentials',
+  aiPhishingSimulator: 'Essentials',
+  aiVendorScorer: 'Essentials',
+  aiDataMapper: 'Essentials',
+  aiBcpGenerator: 'Essentials',
+};
+
+// Human-readable names for views
+const VIEW_DISPLAY_NAMES: Record<string, string> = {
+  'acos': 'aCOS Dashboard',
+  'acos-overview': 'aCOS Overview',
+  'acos-goals': 'aCOS Goals',
+  'acos-loops': 'aCOS Control Loops',
+  'acos-predictions': 'aCOS Predictions',
+  'acos-simulations': 'aCOS Simulations',
+  'acos-redteam': 'aCOS Red Team',
+  'acos-swarm': 'aCOS Swarm',
+  'acos-iot': 'aCOS IoT Devices',
+  'acos-neuroSymbolic': 'aCOS NeuroSymbolic AI',
+  'acos-vr': 'aCOS VR Collaborations',
+  'acos-jit': 'aCOS JIT Access',
+  'acos-homomorphic': 'aCOS Homomorphic AI',
+  'security': 'Security Features',
+  'security-zero-trust': 'Zero Trust Security',
+  'security-zkp': 'Zero-Knowledge Proofs',
+  'security-byok': 'BYOK Encryption',
+  'security-compliance-as-code': 'Compliance-as-Code',
+  'ai-rmf': 'NIST AI RMF',
+  'ai-rmf-dashboard': 'NIST AI RMF Dashboard',
+  'ai-rmf-systems': 'NIST AI RMF Systems',
+  'ai-rmf-create': 'NIST AI RMF Create',
+  'ai-rmf-assessments': 'NIST AI RMF Assessments',
+  'eu-ai-act': 'EU AI Act',
+  'dma': 'DMA Gatekeeper Management',
+  'dsa': 'DSA Platform Management',
+  'reports': 'Advanced Reports',
+  'ai-contract': 'AI Contract Analyzer',
+  'ai-rfp': 'AI RFP Responder',
+  'ai-phishing': 'AI Phishing Simulator',
+  'ai-vendor': 'AI Vendor Risk Scorer',
+  'ai-data-map': 'AI GDPR Data Mapper',
+  'ai-bcp': 'AI BCP Generator',
+};
+
 export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, currentView }) => {
   const { user } = useAuth();
+  const userPlan = normalizePlan(user?.organization?.plan);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { 
       id: '1', 
       sender: 'ai', 
-      text: 'Hi! I\'m your ComplyEasy AI assistant. I can help you:\n\n🔹 **Navigate** to any section:\n   - Main sections: dashboard, risks, frameworks, aCOS, audit, reports, tasks, integrations, settings\n   - aCOS tabs: overview, goals, control loops, predictions, simulations, red team, swarm, IoT devices, neuroSymbolic AI, VR collaborations, JIT access, homomorphic AI\n   - NIST AI RMF: dashboard, systems, create, assessments\n   - Security Features: zero trust, zero-knowledge proofs, BYOK encryption, compliance-as-code\n   - Real Time Analytics: live metrics, charts, and trends\n   - Settings tabs: profile, security, organization, team, billing\n   - AI Tools: policy generator, contract analyzer, gap analysis, RFP responder, phishing sim, vendor risk, GDPR mapper, BCP generator\n🔹 **Create** items (risks, goals, control loops, etc.)\n🔹 **Run** operations (simulations, scans, etc.)\n🔹 **Edit** items (update status, modify details, etc.)\n\nJust tell me what you need! For example:\n- "Go to dashboard" or "Open policy generator"\n- "Go to aCOS overview" or "Open homomorphic AI"\n- "Go to NIST AI RMF" or "Open AI systems"\n- "Go to security features" or "Open zero trust"\n- "Go to real time analytics"\n- "Create a risk for missing encryption"\n- "Run a compliance scan"\n- "Update risk status to Resolved"\n\n*Note: Delete operations are not available via chat for security.*', 
+      text: 'Hi! I\'m your ComplyEasy AI assistant. I can help you:\n\n🔹 **Navigate** to any section:\n   - Main sections: dashboard, risks, frameworks, aCOS, audit, reports, tasks, integrations, settings\n   - aCOS tabs: overview, goals, control loops, predictions, simulations, red team, swarm, IoT devices, neuroSymbolic AI, VR collaborations, JIT access, homomorphic AI\n   - NIST AI RMF: dashboard, systems, create, assessments\n   - Security Features: zero trust, zero-knowledge proofs, BYOK encryption, compliance-as-code\n   - Real Time Analytics: live metrics, charts, and trends\n   - Settings tabs: profile, security, organization, team, billing\n   - AI Tools: policy generator, contract analyzer, gap analysis, RFP responder, phishing sim, vendor risk, GDPR mapper, BCP generator\n🔹 **Create** items (risks, goals, control loops, etc.)\n🔹 **Run** operations (simulations, scans, etc.)\n🔹 **Edit** items (update status, modify details, etc.)\n\nJust tell me what you need! For example:\n- "Go to dashboard" or "Open policy generator"\n- "Go to aCOS overview" or "Open homomorphic AI"\n- "Go to NIST AI RMF" or "Open AI systems"\n- "Go to security features" or "Open zero trust"\n- "Go to real time analytics"\n- "Create a risk for missing encryption"\n- "Run a compliance scan"\n- "Update risk status to Resolved"\n\n*Note: Delete operations are not available via chat for security. Some features may require a specific subscription tier.*', 
       timestamp: new Date() 
     }
   ]);
@@ -213,6 +269,34 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
   };
 
   /**
+   * Check if user can access a view and return info about required upgrade
+   */
+  const checkViewAccess = (view: string): { canAccess: boolean; requiredTier?: string; viewName: string } => {
+    // Map sub-tabs to their parent view for tier checking
+    let viewToCheck = view;
+    if (view.startsWith('acos-')) {
+      viewToCheck = 'acos';
+    } else if (view.startsWith('security-')) {
+      viewToCheck = 'security';
+    } else if (view.startsWith('ai-rmf-')) {
+      viewToCheck = 'ai-rmf';
+    }
+
+    const viewName = VIEW_DISPLAY_NAMES[view] || view;
+    const canAccess = canAccessView(userPlan, viewToCheck);
+
+    if (canAccess) {
+      return { canAccess: true, viewName };
+    }
+
+    // Get the required tier for this view
+    const featureKey = VIEW_TO_FEATURE[viewToCheck];
+    const requiredTier = featureKey ? FEATURE_REQUIRED_TIER[featureKey] : undefined;
+
+    return { canAccess: false, requiredTier, viewName };
+  };
+
+  /**
    * Execute navigation command
    */
   const executeNavigation = async (view: string): Promise<string> => {
@@ -221,6 +305,14 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
     }
 
     try {
+      // Check tier access before navigation
+      const accessCheck = checkViewAccess(view);
+      if (!accessCheck.canAccess) {
+        const tierMsg = accessCheck.requiredTier
+          ? `requires a **${accessCheck.requiredTier}** plan or higher`
+          : 'is not available on your current plan';
+        return `🔒 **${accessCheck.viewName}** ${tierMsg}.\n\nYour current plan: **${userPlan}**\n\nTo access this feature, please upgrade your subscription in **Settings > Billing**.`;
+      }
       // Handle aCOS sub-tabs
       if (view.startsWith('acos-')) {
         const acosTab = view.replace('acos-', '');
@@ -403,6 +495,14 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
     try {
       setIsExecuting(true);
 
+      // Check tier access for aCOS features (goals, control loops)
+      if (entity === 'goal' || entity === 'control loop' || entity === 'control') {
+        const accessCheck = checkViewAccess('acos');
+        if (!accessCheck.canAccess) {
+          return `🔒 **Creating ${entity}s** requires a **Growth** plan or higher.\n\nYour current plan: **${userPlan}**\n\nTo access aCOS features, please upgrade your subscription in **Settings > Billing**.`;
+        }
+      }
+
       if (entity === 'risk') {
         // Extract risk details from text
         const descriptionMatch = params.description?.match(/(?:risk|for|about)\s+(.+?)(?:\s+(?:with|severity|category|status))|$/i);
@@ -506,6 +606,14 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
     try {
       setIsExecuting(true);
 
+      // Check tier access for aCOS features (simulations, scans, control loops)
+      if (entity === 'simulation' || entity === 'scan' || entity === 'control loop' || entity === 'loop') {
+        const accessCheck = checkViewAccess('acos');
+        if (!accessCheck.canAccess) {
+          return `🔒 **Running ${entity}s** requires a **Growth** plan or higher.\n\nYour current plan: **${userPlan}**\n\nTo access aCOS features, please upgrade your subscription in **Settings > Billing**.`;
+        }
+      }
+
       if (entity === 'simulation') {
         const simulationData: any = {
           scenarioType: 'control_change',
@@ -547,6 +655,14 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
   const executeEdit = async (entity: string, params: any): Promise<string> => {
     try {
       setIsExecuting(true);
+
+      // Check tier access for aCOS features (goals, control loops)
+      if (entity === 'goal' || entity === 'control loop') {
+        const accessCheck = checkViewAccess('acos');
+        if (!accessCheck.canAccess) {
+          return `🔒 **Editing ${entity}s** requires a **Growth** plan or higher.\n\nYour current plan: **${userPlan}**\n\nTo access aCOS features, please upgrade your subscription in **Settings > Billing**.`;
+        }
+      }
 
       if (entity === 'risk' || entity === 'status') {
         // Extract risk ID and new status

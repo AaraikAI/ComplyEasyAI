@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ViewState, ComplianceFramework, RiskItem } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { normalizePlan, canAccessView } from './constants/tierFeatures';
 import { getLimit, isAtLimit, getUpgradeMessage } from './constants/tierLimits';
 import { Layout } from './components/Layout';
@@ -291,8 +292,9 @@ const PublicPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
+      <ThemeProvider>
+        <AuthProvider>
+          <Routes>
           {/* Public Routes - accessible without authentication */}
           <Route path="/signup" element={
             <PublicPageWrapper>
@@ -327,8 +329,9 @@ const App: React.FC = () => {
           
           {/* Main App Route - handles authentication */}
           <Route path="/*" element={<MainApp />} />
-        </Routes>
-      </AuthProvider>
+          </Routes>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };

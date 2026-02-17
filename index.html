@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
@@ -219,9 +220,33 @@
       .ring-chart-label {
         transform: rotate(90deg);
       }
+      /* Dark mode mesh gradient */
+      .dark .mesh-gradient {
+        background:
+          radial-gradient(at 40% 20%, rgba(13, 148, 136, 0.25) 0px, transparent 50%),
+          radial-gradient(at 80% 0%, rgba(6, 182, 212, 0.2) 0px, transparent 50%),
+          radial-gradient(at 0% 50%, rgba(16, 185, 129, 0.15) 0px, transparent 50%),
+          radial-gradient(at 80% 50%, rgba(13, 148, 136, 0.15) 0px, transparent 50%),
+          radial-gradient(at 0% 100%, rgba(6, 182, 212, 0.2) 0px, transparent 50%);
+      }
+      /* Dark mode dot pattern */
+      .dark .dot-pattern {
+        background-image: radial-gradient(circle, rgba(13, 148, 136, 0.2) 1px, transparent 1px);
+      }
+      /* Dark mode scrollbar */
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.4);
+      }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(148, 163, 184, 0.6);
+      }
+      /* Transition for theme changes */
+      html {
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
     </style>
   </head>
-  <body class="bg-surface-50 text-surface-900">
+  <body class="bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 transition-colors duration-300">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

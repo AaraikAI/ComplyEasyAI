@@ -312,7 +312,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* -- Compliance Score Ring Card (spans 2 cols on lg) -- */}
         <div
-          className="md:col-span-2 lg:col-span-1 bg-white rounded-2xl shadow-sm border border-surface-100 hover:shadow-lg transition-all duration-300 p-6 animate-fadeInUp"
+          className="md:col-span-2 lg:col-span-1 bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 hover:shadow-lg transition-all duration-300 p-6 animate-fadeInUp"
           data-onboarding="compliance-score"
         >
           <div className="flex items-center gap-5">
@@ -360,7 +360,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
         {/* -- Critical Risks Card -- */}
         <div
           onClick={() => onNavigate('risks')}
-          className="bg-white rounded-2xl shadow-sm border border-surface-100 hover:shadow-lg hover:border-red-200 transition-all duration-300 p-6 cursor-pointer group animate-fadeInUp"
+          className="bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 hover:shadow-lg hover:border-red-200 transition-all duration-300 p-6 cursor-pointer group animate-fadeInUp"
           style={{ animationDelay: '60ms' }}
         >
           <div className="flex items-center justify-between mb-3">
@@ -385,7 +385,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
         {/* -- Active Frameworks Card -- */}
         <div
           onClick={() => onNavigate('frameworks')}
-          className="bg-white rounded-2xl shadow-sm border border-surface-100 hover:shadow-lg hover:border-brand-200 transition-all duration-300 p-6 cursor-pointer group animate-fadeInUp"
+          className="bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 hover:shadow-lg hover:border-brand-200 transition-all duration-300 p-6 cursor-pointer group animate-fadeInUp"
           style={{ animationDelay: '120ms' }}
         >
           <div className="flex items-center justify-between mb-3">
@@ -423,7 +423,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
               }
             }
           }}
-          className={`bg-white rounded-2xl shadow-sm border border-surface-100 hover:shadow-lg hover:${auditColors.ring} transition-all duration-300 p-6 cursor-pointer group animate-fadeInUp`}
+          className={`bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 hover:shadow-lg hover:${auditColors.ring} transition-all duration-300 p-6 cursor-pointer group animate-fadeInUp`}
           style={{ animationDelay: '180ms' }}
         >
           <div className="flex items-center justify-between mb-3">
@@ -471,7 +471,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
       {/* ================================================================ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* -- Compliance Trend Chart (2/3) -- */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-surface-100 p-6 animate-fadeInUp" style={{ animationDelay: '200ms' }}>
+        <div className="lg:col-span-2 bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 p-6 animate-fadeInUp" style={{ animationDelay: '200ms' }}>
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-bold text-surface-800">Compliance Readiness Trend</h3>
@@ -537,7 +537,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
         </div>
 
         {/* -- Priority Actions Sidebar (1/3) -- */}
-        <div className="bg-white rounded-2xl shadow-sm border border-surface-100 p-6 flex flex-col animate-fadeInUp" style={{ animationDelay: '260ms' }}>
+        <div className="bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 p-6 flex flex-col animate-fadeInUp" style={{ animationDelay: '260ms' }}>
           <div className="flex justify-between items-center mb-5">
             <div>
               <h3 className="text-lg font-bold text-surface-800">Priority Actions</h3>
@@ -604,7 +604,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
         {/* Run Gap Analysis */}
         <button
           onClick={() => onNavigate('ai-gap')}
-          className="group relative bg-white rounded-2xl shadow-sm border border-surface-100 hover:shadow-lg hover:border-brand-200 transition-all duration-300 p-5 text-left overflow-hidden"
+          className="group relative bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 hover:shadow-lg hover:border-brand-200 transition-all duration-300 p-5 text-left overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-brand-50 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
           <div className="relative">
@@ -620,7 +620,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
         {/* Generate Report */}
         <button
           onClick={() => onNavigate('reports')}
-          className="group relative bg-white rounded-2xl shadow-sm border border-surface-100 hover:shadow-lg hover:border-accent-200 transition-all duration-300 p-5 text-left overflow-hidden"
+          className="group relative bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 hover:shadow-lg hover:border-accent-200 transition-all duration-300 p-5 text-left overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-accent-50 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
           <div className="relative">
@@ -636,7 +636,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
         {/* View Frameworks */}
         <button
           onClick={() => onNavigate('frameworks')}
-          className="group relative bg-white rounded-2xl shadow-sm border border-surface-100 hover:shadow-lg hover:border-purple-200 transition-all duration-300 p-5 text-left overflow-hidden"
+          className="group relative bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 hover:shadow-lg hover:border-purple-200 transition-all duration-300 p-5 text-left overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
           <div className="relative">
@@ -652,7 +652,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
         {/* Security Scan */}
         <button
           onClick={() => onNavigate('security')}
-          className="group relative bg-white rounded-2xl shadow-sm border border-surface-100 hover:shadow-lg hover:border-amber-200 transition-all duration-300 p-5 text-left overflow-hidden"
+          className="group relative bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 hover:shadow-lg hover:border-amber-200 transition-all duration-300 p-5 text-left overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-full -translate-y-8 translate-x-8 group-hover:scale-150 transition-transform duration-500" />
           <div className="relative">
