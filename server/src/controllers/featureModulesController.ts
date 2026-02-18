@@ -908,3 +908,91 @@ export const testIntegrationConnection: RequestHandler = async (req, res) => {
     hasRefreshToken: !!integration.refreshToken,
   });
 };
+
+// ============================================================================
+// REGULATION MODULE DATA (NIS2, US Privacy, Ecodesign, EU CRA, CSRD)
+// ============================================================================
+
+export const getRegulationModuleData: RequestHandler = async (req, res) => {
+  const orgId = getOrgId(req);
+  const { module, dataType } = req.params;
+  const record = await prisma.regulationModuleData.findUnique({
+    where: { organizationId_module_dataType: { organizationId: orgId, module, dataType } },
+  });
+  res.json(record?.data ?? null);
+};
+
+export const getAllRegulationModuleData: RequestHandler = async (req, res) => {
+  const orgId = getOrgId(req);
+  const { module } = req.params;
+  const records = await prisma.regulationModuleData.findMany({
+    where: { organizationId: orgId, module },
+    orderBy: { updatedAt: 'desc' },
+  });
+  const result: Record<string, any> = {};
+  for (const r of records) result[r.dataType] = r.data;
+  res.json(result);
+};
+
+export const upsertRegulationModuleData: RequestHandler = async (req, res) => {
+  const orgId = getOrgId(req);
+  const { module, dataType } = req.params;
+  const { data } = req.body;
+  if (!data) throw new AppError('data field is required', 400);
+  const record = await prisma.regulationModuleData.upsert({
+    where: { organizationId_module_dataType: { organizationId: orgId, module, dataType } },
+    create: { organizationId: orgId, module, dataType, data },
+    update: { data, updatedAt: new Date() },
+  });
+  res.json(record.data);
+};
+
+export const deleteRegulationModuleData: RequestHandler = async (req, res) => {
+  const orgId = getOrgId(req);
+  const { module, dataType } = req.params;
+  await prisma.regulationModuleData.deleteMany({
+    where: { organizationId: orgId, module, dataType },
+  });
+  res.json({ success: true });
+};
+
+// ============================================================================
+// METRICS HISTORY (for RealTime Analytics)
+// ============================================================================
+
+export const recordMetric: RequestHandler = async (req, res) => {
+  const orgId = getOrgId(req);
+  const { metricType, value, metadata } = req.body;
+  if (!metricType || value === undefined) throw new AppError('metricType and value are required', 400);
+  const record = await prisma.metricsHistory.create({
+    data: { organizationId: orgId, metricType, value: parseFloat(value), metadata: metadata || undefined },
+  });
+  res.status(201).json(record);
+};
+
+export const getMetricsHistory: RequestHandler = async (req, res) => {
+  const orgId = getOrgId(req);
+  const { metricType } = req.params;
+  const days = parseInt(req.query.days as string) || 30;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const records = await prisma.metricsHistory.findMany({
+    where: { organizationId: orgId, metricType, recordedAt: { gte: since } },
+    orderBy: { recordedAt: 'asc' },
+    take: 1000,
+  });
+  res.json(records);
+};
+
+export const getLatestMetrics: RequestHandler = async (req, res) => {
+  const orgId = getOrgId(req);
+  const metricTypes = ['compliance-score', 'risks-detected', 'controls-passed', 'active-users', 'frameworks-active'];
+  const latest: Record<string, any> = {};
+  for (const mt of metricTypes) {
+    const record = await prisma.metricsHistory.findFirst({
+      where: { organizationId: orgId, metricType: mt },
+      orderBy: { recordedAt: 'desc' },
+    });
+    latest[mt] = record || null;
+  }
+  res.json(latest);
+};

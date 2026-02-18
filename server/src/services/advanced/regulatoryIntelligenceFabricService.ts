@@ -338,29 +338,165 @@ class RegulatoryIntelligenceFabricService {
    */
   private async identifySections(regulationText: string): Promise<RegulationSection[]> {
     const sections: RegulationSection[] = [];
+    const seenTitles = new Set<string>();
 
-    // Simple section detection (in production, would use NLP)
-    const sectionPatterns = [
-      /(?:^|\n)\s*(\d+\.?\s+[A-Z][^\n]+)/g,
-      /(?:^|\n)\s*([A-Z][A-Z\s]+)\s*\n/g,
-      /(?:^|\n)\s*(Article\s+\d+[^\n]+)/gi,
-      /(?:^|\n)\s*(Section\s+\d+[^\n]+)/gi,
+    // --- Keyword-weighted scoring for legal/regulatory domain ---
+
+    // Domain-specific terms with weights for scoring candidate section headers
+    const domainTermWeights: Record<string, number> = {
+      // Legal structure terms (high weight)
+      'article': 3, 'section': 3, 'chapter': 3, 'part': 2, 'title': 2,
+      'annex': 2, 'schedule': 2, 'appendix': 2, 'preamble': 2, 'recital': 2,
+      'clause': 3, 'sub-clause': 2, 'paragraph': 2, 'regulation': 3,
+      'directive': 3, 'provision': 2, 'amendment': 2, 'addendum': 2,
+      // Regulatory action terms (medium weight)
+      'requirement': 2, 'obligation': 2, 'prohibition': 2, 'restriction': 2,
+      'compliance': 2, 'enforcement': 2, 'penalty': 2, 'sanction': 2,
+      'exemption': 2, 'exception': 2, 'authorization': 2, 'certification': 2,
+      'audit': 2, 'assessment': 2, 'review': 2, 'inspection': 2,
+      // Data protection / privacy terms
+      'data protection': 2, 'privacy': 2, 'consent': 2, 'processing': 1,
+      'controller': 1, 'processor': 1, 'transfer': 1, 'breach': 2,
+      // Security / risk terms
+      'security': 2, 'risk': 2, 'control': 2, 'safeguard': 2,
+      'incident': 2, 'vulnerability': 1, 'threat': 1, 'mitigation': 1,
+      // Scope / applicability terms
+      'scope': 2, 'applicability': 2, 'definitions': 2, 'interpretation': 2,
+      'purpose': 1, 'objective': 1, 'general provisions': 2,
+    };
+
+    // Section header patterns with structural scoring
+    const sectionPatterns: Array<{ pattern: RegExp; baseScore: number; extractNumber: boolean }> = [
+      // Numbered articles (e.g., "Article 5 - Data Protection Principles")
+      { pattern: /(?:^|\n)\s*(Article\s+\d+[\w.]*(?:\s*[-–:]\s*[^\n]+)?)/gi, baseScore: 10, extractNumber: true },
+      // Numbered sections (e.g., "Section 12.3 Compliance Requirements")
+      { pattern: /(?:^|\n)\s*(Section\s+\d+[\w.]*(?:\s*[-–:.\s]\s*[^\n]+)?)/gi, baseScore: 10, extractNumber: true },
+      // Chapter headers (e.g., "Chapter III - Supervisory Authority")
+      { pattern: /(?:^|\n)\s*(Chapter\s+(?:\d+|[IVXLC]+)(?:\s*[-–:]\s*[^\n]+)?)/gi, baseScore: 9, extractNumber: true },
+      // Part headers (e.g., "PART 2 - ENFORCEMENT")
+      { pattern: /(?:^|\n)\s*(Part\s+(?:\d+|[IVXLC]+)(?:\s*[-–:]\s*[^\n]+)?)/gi, baseScore: 9, extractNumber: true },
+      // Clause numbers (e.g., "4.1.2 Information Security Policies")
+      { pattern: /(?:^|\n)\s*(\d+(?:\.\d+)+\s+[A-Z][^\n]{3,})/g, baseScore: 8, extractNumber: true },
+      // Numbered top-level (e.g., "1. Purpose and Scope")
+      { pattern: /(?:^|\n)\s*(\d+\.?\s+[A-Z][^\n]{3,})/g, baseScore: 6, extractNumber: true },
+      // ALL-CAPS headers (e.g., "GENERAL PROVISIONS")
+      { pattern: /(?:^|\n)\s*([A-Z][A-Z\s]{4,}[A-Z])\s*\n/g, baseScore: 5, extractNumber: false },
+      // Annex / Schedule / Appendix headers
+      { pattern: /(?:^|\n)\s*((?:Annex|Schedule|Appendix)\s+[A-Z0-9]+(?:\s*[-–:]\s*[^\n]+)?)/gi, baseScore: 9, extractNumber: true },
+      // Regulation / Rule references (e.g., "Regulation (EU) 2016/679")
+      { pattern: /(?:^|\n)\s*(Regulation\s+\([A-Z]+\)\s+(?:No\.?\s+)?\d+\/\d+[^\n]*)/gi, baseScore: 7, extractNumber: true },
     ];
 
-    for (const pattern of sectionPatterns) {
+    // Citation detection patterns (boost score when citations are nearby)
+    const citationPatterns = [
+      /\b(?:pursuant to|in accordance with|as defined in|under|per)\s+(?:Article|Section|Clause|Regulation)\s+\d+/gi,
+      /\b(?:Art\.|Sec\.|§)\s*\d+/g,
+      /\bRegulation\s+\([A-Z]+\)\s+(?:No\.?\s+)?\d+\/\d+/g,
+      /\b\d+\s+(?:U\.?S\.?C\.?|C\.?F\.?R\.?|Stat\.?)\s+§?\s*\d+/g,
+    ];
+
+    // Extract candidate sections with scoring
+    interface ScoredCandidate {
+      title: string;
+      content: string;
+      sectionNumber: string | undefined;
+      score: number;
+      position: number;
+    }
+
+    const candidates: ScoredCandidate[] = [];
+
+    for (const { pattern, baseScore, extractNumber } of sectionPatterns) {
       const matches = regulationText.matchAll(pattern);
       for (const match of matches) {
-        if (match[1]) {
-          sections.push({
-            id: `section_${sections.length + 1}`,
-            title: match[1].trim(),
-            content: match[0].trim(),
-          });
+        if (!match[1] || match[1].trim().length < 3) continue;
+
+        const title = match[1].trim();
+        const titleLower = title.toLowerCase();
+        const normalizedTitle = titleLower.replace(/\s+/g, ' ');
+
+        // Skip if already seen (dedup by normalized title)
+        if (seenTitles.has(normalizedTitle)) continue;
+        seenTitles.add(normalizedTitle);
+
+        let score = baseScore;
+
+        // Apply keyword-weighted scoring
+        for (const [term, weight] of Object.entries(domainTermWeights)) {
+          if (normalizedTitle.includes(term)) {
+            score += weight;
+          }
         }
+
+        // Boost for section number presence
+        let sectionNumber: string | undefined;
+        if (extractNumber) {
+          const numMatch = title.match(/^(?:Article|Section|Chapter|Part|Clause|Annex|Schedule|Appendix)?\s*(\d+(?:\.\d+)*(?:\s*[a-z])?)/i);
+          if (numMatch) {
+            sectionNumber = numMatch[1].trim();
+            score += 2; // Numbered sections are more likely real headers
+          }
+        }
+
+        // Check for nearby citations (within surrounding text context)
+        const matchPos = match.index || 0;
+        const surroundingText = regulationText.substring(
+          Math.max(0, matchPos - 200),
+          Math.min(regulationText.length, matchPos + title.length + 500)
+        );
+        for (const citPattern of citationPatterns) {
+          const citMatches = surroundingText.match(citPattern);
+          if (citMatches && citMatches.length > 0) {
+            score += Math.min(citMatches.length, 3); // Up to +3 for citation proximity
+          }
+        }
+
+        // Penalize very short titles (likely noise)
+        if (title.length < 10) score -= 2;
+        // Penalize very long titles (likely body text)
+        if (title.length > 200) score -= 3;
+
+        // Boost titles that end with a colon (common header pattern)
+        if (title.endsWith(':')) score += 1;
+
+        candidates.push({
+          title,
+          content: match[0].trim(),
+          sectionNumber,
+          score,
+          position: matchPos,
+        });
       }
     }
 
-    return sections.slice(0, 50); // Limit to 50 sections
+    // Sort by position to maintain document order, then filter by minimum score
+    const MIN_SECTION_SCORE = 5;
+    const qualifiedCandidates = candidates
+      .filter(c => c.score >= MIN_SECTION_SCORE)
+      .sort((a, b) => a.position - b.position);
+
+    // Build sections with content extraction (content extends to next section)
+    for (let i = 0; i < qualifiedCandidates.length && sections.length < 50; i++) {
+      const candidate = qualifiedCandidates[i];
+      const nextPosition = i + 1 < qualifiedCandidates.length
+        ? qualifiedCandidates[i + 1].position
+        : regulationText.length;
+
+      // Extract content between this section header and the next
+      const sectionContent = regulationText.substring(
+        candidate.position,
+        Math.min(nextPosition, candidate.position + 5000) // Cap at 5000 chars per section
+      ).trim();
+
+      sections.push({
+        id: `section_${sections.length + 1}`,
+        title: candidate.title,
+        content: sectionContent,
+        sectionNumber: candidate.sectionNumber,
+      });
+    }
+
+    return sections;
   }
 
   /**
@@ -1025,7 +1161,7 @@ Only include controls with confidence > 0.5.`;
           },
         });
 
-        // Notify stakeholders (in production, would send emails/notifications)
+        // Notify stakeholders via notificationService (email + websocket)
         await this.notifyConflictStakeholders(conflicts, organizationId);
 
         logger.warn(`[RIF] ${conflicts.length} jurisdiction conflicts detected for ${jurisdiction}`);
@@ -2004,12 +2140,62 @@ Return only the resolution text, no JSON or formatting.`;
     }
   ): Promise<void> {
     try {
-      // In production, would send emails/notifications
+      // Get organization admins to notify
+      const admins = await prisma.user.findMany({
+        where: {
+          organizationId,
+          role: 'admin',
+        },
+      });
+
+      const totalChanges = summary.controlsCreated + summary.controlsUpdated + summary.controlsDeprecated;
+      const notificationType = totalChanges > 10 ? 'warning' as const : 'info' as const;
+
+      const messageLines = [
+        `Regulation "${summary.regulationName}" triggered automatic control updates:`,
+        '',
+        `  Controls created: ${summary.controlsCreated}`,
+        `  Controls updated: ${summary.controlsUpdated}`,
+        `  Controls deprecated: ${summary.controlsDeprecated}`,
+        `  Frameworks affected: ${summary.frameworksAffected}`,
+        '',
+        'Please review the changes and approve or rollback as needed.',
+      ];
+
+      // Send notifications to all admins
+      for (const admin of admins) {
+        try {
+          await notificationService.sendNotification(
+            admin.id,
+            organizationId,
+            {
+              type: notificationType,
+              category: 'rif_auto_update',
+              title: `Regulatory Auto-Update: ${summary.regulationName} (${totalChanges} control change${totalChanges !== 1 ? 's' : ''})`,
+              message: messageLines.join('\n'),
+              link: `/settings/regulatory?auto-updates=true`,
+              channels: ['email', 'websocket'],
+              metadata: {
+                regulationName: summary.regulationName,
+                controlsCreated: summary.controlsCreated,
+                controlsUpdated: summary.controlsUpdated,
+                controlsDeprecated: summary.controlsDeprecated,
+                frameworksAffected: summary.frameworksAffected,
+              },
+            }
+          );
+        } catch (error: any) {
+          logger.warn(`[RIF] Failed to send auto-update notification to ${admin.id}`, error);
+        }
+      }
+
+      // Log to audit
       await prisma.auditLog.create({
         data: {
           action: 'rif.auto_update_notification',
           details: JSON.stringify({
             ...summary,
+            notifiedAdmins: admins.map(a => a.id),
             timestamp: new Date(),
           }),
           userId: 'system',
@@ -2179,26 +2365,125 @@ Return only the resolution text, no JSON or formatting.`;
         },
       });
 
-      // Simple RSS parsing (in production, would use rss-parser library)
-      const xml = response.data;
+      // RSS/Atom XML parsing using regex-based XML tag extraction
+      const xml: string = typeof response.data === 'string' ? response.data : String(response.data);
       const items: Array<{ title: string; url: string; description: string; published: Date }> = [];
 
-      // Extract items from RSS XML
-      const itemMatches = xml.matchAll(/<item>([\s\S]*?)<\/item>/gi);
-      for (const match of itemMatches) {
-        const itemXml = match[1];
-        const titleMatch = itemXml.match(/<title>(.*?)<\/title>/i);
-        const linkMatch = itemXml.match(/<link>(.*?)<\/link>/i);
-        const descMatch = itemXml.match(/<description>(.*?)<\/description>/i);
-        const pubMatch = itemXml.match(/<pubDate>(.*?)<\/pubDate>/i);
+      /**
+       * Extract text content from an XML tag, handling:
+       * - CDATA sections: <tag><![CDATA[content]]></tag>
+       * - HTML entities: &amp; &lt; &gt; &quot; &apos;
+       * - Nested tags stripped from content
+       * - Self-closing tags (returns empty string)
+       */
+      const extractTagContent = (parentXml: string, tagName: string): string | null => {
+        // Match the tag with optional attributes, supporting multiline content
+        const tagPattern = new RegExp(
+          `<${tagName}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tagName}>`,
+          'i'
+        );
+        const match = parentXml.match(tagPattern);
+        if (!match) return null;
 
-        if (titleMatch && linkMatch) {
-          items.push({
-            title: titleMatch[1].trim(),
-            url: linkMatch[1].trim(),
-            description: descMatch ? descMatch[1].trim() : '',
-            published: pubMatch ? new Date(pubMatch[1]) : new Date(),
-          });
+        let content = match[1].trim();
+
+        // Handle CDATA sections
+        const cdataMatch = content.match(/^<!\[CDATA\[([\s\S]*?)\]\]>$/);
+        if (cdataMatch) {
+          content = cdataMatch[1];
+        }
+
+        // Decode common XML/HTML entities
+        content = content
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&apos;/g, "'")
+          .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
+          .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)));
+
+        // Strip any remaining HTML/XML tags for text content
+        content = content.replace(/<[^>]*>/g, '').trim();
+
+        return content || null;
+      };
+
+      /**
+       * Extract link URL, handling multiple RSS/Atom link formats:
+       * - <link>url</link>
+       * - <link href="url" /> (Atom)
+       * - <guid isPermaLink="true">url</guid>
+       */
+      const extractLink = (itemXml: string): string | null => {
+        // Try standard <link> tag
+        const linkContent = extractTagContent(itemXml, 'link');
+        if (linkContent) return linkContent;
+
+        // Try Atom-style <link href="..." />
+        const atomLinkMatch = itemXml.match(/<link\s[^>]*href=["']([^"']+)["'][^>]*\/?>/i);
+        if (atomLinkMatch) return atomLinkMatch[1].trim();
+
+        // Try <guid isPermaLink="true">
+        const guidPermaMatch = itemXml.match(/<guid\s[^>]*isPermaLink=["']true["'][^>]*>([\s\S]*?)<\/guid>/i);
+        if (guidPermaMatch) return guidPermaMatch[1].trim();
+
+        // Try plain <guid> as fallback
+        const guidContent = extractTagContent(itemXml, 'guid');
+        if (guidContent && /^https?:\/\//.test(guidContent)) return guidContent;
+
+        return null;
+      };
+
+      /**
+       * Parse date from various RSS/Atom date formats
+       */
+      const parseDate = (dateStr: string | null): Date => {
+        if (!dateStr) return new Date();
+        const parsed = new Date(dateStr);
+        return isNaN(parsed.getTime()) ? new Date() : parsed;
+      };
+
+      // Detect feed format and extract items accordingly
+      const isAtomFeed = /<feed\s/i.test(xml) && /<entry[\s>]/i.test(xml);
+
+      if (isAtomFeed) {
+        // Atom feed: extract <entry> elements
+        const entryMatches = xml.matchAll(/<entry[\s>]([\s\S]*?)<\/entry>/gi);
+        for (const match of entryMatches) {
+          const entryXml = match[1];
+          const title = extractTagContent(entryXml, 'title');
+          const link = extractLink(entryXml);
+          const summary = extractTagContent(entryXml, 'summary') || extractTagContent(entryXml, 'content');
+          const updated = extractTagContent(entryXml, 'updated') || extractTagContent(entryXml, 'published');
+
+          if (title && link) {
+            items.push({
+              title,
+              url: link,
+              description: summary || '',
+              published: parseDate(updated),
+            });
+          }
+        }
+      } else {
+        // RSS 2.0 / RSS 1.0: extract <item> elements
+        const itemMatches = xml.matchAll(/<item[\s>]([\s\S]*?)<\/item>/gi);
+        for (const match of itemMatches) {
+          const itemXml = match[1];
+          const title = extractTagContent(itemXml, 'title');
+          const link = extractLink(itemXml);
+          const description = extractTagContent(itemXml, 'description') || extractTagContent(itemXml, 'content:encoded');
+          const pubDate = extractTagContent(itemXml, 'pubDate') || extractTagContent(itemXml, 'dc:date');
+
+          if (title && link) {
+            items.push({
+              title,
+              url: link,
+              description: description || '',
+              published: parseDate(pubDate),
+            });
+          }
         }
       }
 

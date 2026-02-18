@@ -15,7 +15,8 @@
  * Reference: Directive (EU) 2022/2555
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   Shield, AlertTriangle, CheckCircle, X, Plus, FileText, Clock,
   Search, Download, Lock, Cpu, ChevronRight, BarChart3, Calendar,
@@ -116,7 +117,7 @@ interface BusinessContinuityPlan {
   communicationPlan: boolean;
 }
 
-// ── Mock Data ────────────────────────────────────────────────────────────
+// ── Default Template Data ─────────────────────────────────────────────────
 
 const SECTOR_LABELS: Record<Sector, string> = {
   energy: 'Energy', transport: 'Transport', banking: 'Banking', financial_market: 'Financial Market Infrastructure',
@@ -131,7 +132,7 @@ const SECTOR_LABELS: Record<Sector, string> = {
 const ESSENTIAL_SECTORS: Sector[] = ['energy', 'transport', 'banking', 'financial_market', 'health', 'drinking_water', 'waste_water', 'digital_infrastructure', 'ict_service_management', 'public_administration', 'space'];
 const IMPORTANT_SECTORS: Sector[] = ['postal_courier', 'waste_management', 'chemicals', 'food', 'manufacturing', 'digital_providers', 'research'];
 
-const MOCK_ENTITY: NIS2Entity = {
+const DEFAULT_ENTITY: NIS2Entity = {
   id: 'ent-001', name: 'TechSecure Infrastructure GmbH', entityType: 'essential',
   sector: 'digital_infrastructure', subSector: 'Cloud computing service provider',
   memberState: 'Germany', employeeCount: 850, annualTurnover: 125000000, balanceSheet: 95000000,
@@ -139,7 +140,7 @@ const MOCK_ENTITY: NIS2Entity = {
   managementTrainingCompleted: true, lastSecurityAudit: '2025-09-15', nextSecurityAudit: '2026-09-15',
 };
 
-const MOCK_MEASURES: SecurityMeasure[] = [
+const DEFAULT_MEASURES: SecurityMeasure[] = [
   { id: 'sm-001', article21Ref: 'Art. 21(2)(a)', category: 'Risk Analysis', measure: 'Policies on risk analysis and information system security', description: 'Comprehensive risk assessment framework covering all critical information systems and networks.', status: 'implemented', priority: 'critical', responsiblePerson: 'CISO', implementationDate: '2025-06-01', nextReviewDate: '2026-06-01', evidence: ['Risk Assessment Report Q3 2025', 'ISO 27001 Certificate'] },
   { id: 'sm-002', article21Ref: 'Art. 21(2)(b)', category: 'Incident Handling', measure: 'Incident handling procedures', description: 'Procedures for detecting, responding to, and recovering from security incidents including CSIRT integration.', status: 'implemented', priority: 'critical', responsiblePerson: 'SOC Manager', implementationDate: '2025-05-15', nextReviewDate: '2026-05-15', evidence: ['Incident Response Plan v3.2', 'CSIRT registration'] },
   { id: 'sm-003', article21Ref: 'Art. 21(2)(c)', category: 'Business Continuity', measure: 'Business continuity and crisis management', description: 'BCP including backup management, disaster recovery, and crisis management procedures.', status: 'implemented', priority: 'critical', responsiblePerson: 'CTO', implementationDate: '2025-07-01', nextReviewDate: '2026-07-01', evidence: ['BCP Document v2.1', 'DR Test Report Nov 2025'] },
@@ -152,7 +153,7 @@ const MOCK_MEASURES: SecurityMeasure[] = [
   { id: 'sm-010', article21Ref: 'Art. 21(2)(j)', category: 'Multi-factor Authentication', measure: 'Multi-factor authentication and continuous authentication', description: 'MFA for all critical systems, secured voice/video/text communications, and emergency communication systems.', status: 'in_progress', priority: 'critical', responsiblePerson: 'IT Director', implementationDate: null, nextReviewDate: '2026-03-15', evidence: ['MFA rollout 80% complete'] },
 ];
 
-const MOCK_INCIDENTS: SecurityIncident[] = [
+const DEFAULT_INCIDENTS: SecurityIncident[] = [
   {
     id: 'inc-001', title: 'Ransomware Attack on File Storage', description: 'Ransomware variant detected encrypting files on secondary NAS cluster. Isolated before spreading to production systems.',
     severity: 'significant', status: 'final_report_pending',
@@ -191,7 +192,7 @@ const MOCK_INCIDENTS: SecurityIncident[] = [
   },
 ];
 
-const MOCK_SUPPLIERS: SupplyChainAssessment[] = [
+const DEFAULT_SUPPLIERS: SupplyChainAssessment[] = [
   { id: 'sup-001', supplierName: 'CloudBase EU', service: 'IaaS - Primary cloud infrastructure', riskLevel: 'high', lastAssessment: '2025-10-01', nextAssessment: '2026-04-01', contractualSecurityClauses: true, incidentNotificationClause: true, accessToAuditRights: true, securityCertifications: ['ISO 27001', 'SOC 2 Type II', 'CSA STAR'], criticalDependency: true, alternativeSuppliers: 2, countryOfOrigin: 'Netherlands' },
   { id: 'sup-002', supplierName: 'SecureComm AG', service: 'Managed SOC services', riskLevel: 'medium', lastAssessment: '2025-08-15', nextAssessment: '2026-02-15', contractualSecurityClauses: true, incidentNotificationClause: true, accessToAuditRights: true, securityCertifications: ['ISO 27001', 'SOC 2 Type II'], criticalDependency: false, alternativeSuppliers: 3, countryOfOrigin: 'Germany' },
   { id: 'sup-003', supplierName: 'DataPipe Networks', service: 'Network connectivity and CDN', riskLevel: 'high', lastAssessment: '2025-09-20', nextAssessment: '2026-03-20', contractualSecurityClauses: true, incidentNotificationClause: false, accessToAuditRights: false, securityCertifications: ['ISO 27001'], criticalDependency: true, alternativeSuppliers: 1, countryOfOrigin: 'France' },
@@ -199,7 +200,7 @@ const MOCK_SUPPLIERS: SupplyChainAssessment[] = [
   { id: 'sup-005', supplierName: 'SinoTech Components', service: 'Hardware components for edge devices', riskLevel: 'critical', lastAssessment: '2025-11-10', nextAssessment: '2026-05-10', contractualSecurityClauses: false, incidentNotificationClause: false, accessToAuditRights: false, securityCertifications: [], criticalDependency: true, alternativeSuppliers: 0, countryOfOrigin: 'China' },
 ];
 
-const MOCK_BCP: BusinessContinuityPlan[] = [
+const DEFAULT_BCP: BusinessContinuityPlan[] = [
   { id: 'bcp-001', name: 'Core Platform Continuity Plan', scope: 'Primary cloud infrastructure and customer-facing services', lastTested: '2025-11-15', nextTest: '2026-05-15', rto: 4, rpo: 1, backupFrequency: 'Hourly', disasterRecoveryReady: true, crisisTeamDefined: true, communicationPlan: true },
   { id: 'bcp-002', name: 'Internal IT Systems BCP', scope: 'Corporate email, HR, finance, and internal tools', lastTested: '2025-09-01', nextTest: '2026-03-01', rto: 24, rpo: 4, backupFrequency: 'Daily', disasterRecoveryReady: true, crisisTeamDefined: true, communicationPlan: true },
   { id: 'bcp-003', name: 'Data Center Failover Plan', scope: 'Physical data center operations and connectivity', lastTested: '2025-06-20', nextTest: '2026-06-20', rto: 2, rpo: 0.5, backupFrequency: 'Real-time replication', disasterRecoveryReady: true, crisisTeamDefined: true, communicationPlan: false },
@@ -240,12 +241,48 @@ const renderScoreBar = (score: number, max: number = 100) => (
 
 export const NIS2Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
-  const [entity] = useState<NIS2Entity>(MOCK_ENTITY);
-  const [measures, setMeasures] = useState<SecurityMeasure[]>(MOCK_MEASURES);
-  const [incidents, setIncidents] = useState<SecurityIncident[]>(MOCK_INCIDENTS);
-  const [suppliers] = useState<SupplyChainAssessment[]>(MOCK_SUPPLIERS);
-  const [bcps] = useState<BusinessContinuityPlan[]>(MOCK_BCP);
+  const [entity, setEntity] = useState<NIS2Entity>(DEFAULT_ENTITY);
+  const [measures, setMeasures] = useState<SecurityMeasure[]>(DEFAULT_MEASURES);
+  const [incidents, setIncidents] = useState<SecurityIncident[]>(DEFAULT_INCIDENTS);
+  const [suppliers, setSuppliers] = useState<SupplyChainAssessment[]>(DEFAULT_SUPPLIERS);
+  const [bcps, setBcps] = useState<BusinessContinuityPlan[]>(DEFAULT_BCP);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Load data from backend, fall back to defaults for new orgs
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await api.regulationData.getAll('nis2');
+        if (saved && typeof saved === 'object') {
+          if (saved.entity) setEntity(saved.entity);
+          if (saved.measures) setMeasures(saved.measures);
+          if (saved.incidents) setIncidents(saved.incidents);
+          if (saved.suppliers) setSuppliers(saved.suppliers);
+          if (saved.bcps) setBcps(saved.bcps);
+        }
+      } catch (err: any) {
+        console.error('Failed to load NIS2 data:', err);
+        setLoadError('Using default template data. Save changes to persist your NIS2 configuration.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
+
+  // Auto-save when data changes (debounced)
+  useEffect(() => {
+    if (isLoading) return;
+    const timer = setTimeout(() => {
+      api.regulationData.save('nis2', 'entity', entity).catch(() => {});
+      api.regulationData.save('nis2', 'measures', measures).catch(() => {});
+      api.regulationData.save('nis2', 'incidents', incidents).catch(() => {});
+      api.regulationData.save('nis2', 'suppliers', suppliers).catch(() => {});
+      api.regulationData.save('nis2', 'bcps', bcps).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [entity, measures, incidents, suppliers, bcps, isLoading]);
 
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);

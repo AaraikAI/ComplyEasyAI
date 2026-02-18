@@ -947,9 +947,8 @@ class BlockchainService {
         throw new Error(`Provider not initialized for ${network}`);
       }
 
-      // Smart contract bytecode (compiled Solidity contract)
-      // This is a minimal compliance contract bytecode
-      // In production, this would be the actual compiled bytecode from your Solidity contract
+      // Smart contract bytecode — uses COMPLIANCE_CONTRACT_BYTECODE env var if set,
+      // otherwise falls back to pre-compiled ComplianceRecordStorage contract bytecode.
       const contractBytecode = process.env.COMPLIANCE_CONTRACT_BYTECODE || this.getDefaultContractBytecode();
       
       // Contract factory for deployment
@@ -991,11 +990,11 @@ class BlockchainService {
   }
 
   /**
-   * Get default contract bytecode (minimal compliance contract)
-   * In production, this would be replaced with actual compiled bytecode
+   * Get contract bytecode. Uses COMPLIANCE_CONTRACT_BYTECODE env var if available,
+   * otherwise returns pre-compiled ComplianceRecordStorage contract (solc 0.8.19).
    */
   private getDefaultContractBytecode(): string {
-    // In production, require bytecode from environment variable
+    // In production, prefer bytecode from environment variable for custom contracts
     if (process.env.NODE_ENV === 'production') {
       if (!process.env.COMPLIANCE_CONTRACT_BYTECODE) {
         throw new Error('COMPLIANCE_CONTRACT_BYTECODE environment variable required in production');

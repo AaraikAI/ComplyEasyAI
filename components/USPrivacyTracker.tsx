@@ -14,7 +14,8 @@
  * OR (OCPA), DE (DPDPA), NH, NJ, MD, MN, NE, RI, VT, and 2025-2026 enacted states
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   MapPin, Shield, CheckCircle, AlertTriangle, X, Plus, FileText,
   Clock, Search, Download, Eye, ChevronRight, BarChart3,
@@ -82,9 +83,9 @@ interface ComplianceTask {
   priority: 'high' | 'medium' | 'low';
 }
 
-// ── Mock Data ────────────────────────────────────────────────────────────
+// ── Default Data ─────────────────────────────────────────────────────────
 
-const MOCK_STATE_LAWS: StatePrivacyLaw[] = [
+const DEFAULT_STATE_LAWS: StatePrivacyLaw[] = [
   {
     id: 'ca', stateCode: 'CA', stateName: 'California', lawName: 'California Privacy Rights Act', lawAbbreviation: 'CPRA/CCPA',
     status: 'effective', enactedDate: '2020-11-03', effectiveDate: '2023-01-01', amendedDate: '2023-01-01',
@@ -258,7 +259,7 @@ const MOCK_STATE_LAWS: StatePrivacyLaw[] = [
   },
 ];
 
-const MOCK_GAPS: ComplianceGap[] = [
+const DEFAULT_GAPS: ComplianceGap[] = [
   { requirement: 'Universal opt-out mechanism (GPC) support', category: 'Opt-Out', statesRequiring: ['CA', 'CO', 'CT', 'TX', 'OR', 'NJ', 'VT'], currentStatus: 'partial', priority: 'high', effort: 'Medium - Requires technical implementation of GPC signal detection' },
   { requirement: 'Data protection impact assessments', category: 'Assessments', statesRequiring: ['CA', 'CO', 'CT', 'VA', 'OR', 'DE', 'MT', 'MN', 'MD'], currentStatus: 'met', priority: 'medium', effort: 'Low - Existing DPIA framework can be extended' },
   { requirement: 'Right to correct personal data', category: 'Consumer Rights', statesRequiring: ['CA', 'CO', 'CT', 'VA', 'TX', 'OR', 'DE', 'IN', 'MT', 'NH', 'NJ', 'MD', 'MN', 'NE', 'RI', 'VT'], currentStatus: 'met', priority: 'high', effort: 'Medium - Data correction workflows needed' },
@@ -269,7 +270,7 @@ const MOCK_GAPS: ComplianceGap[] = [
   { requirement: 'No sale of sensitive personal data', category: 'Data Governance', statesRequiring: ['MD'], currentStatus: 'not_met', priority: 'medium', effort: 'Medium - Requires data flow mapping and sale prohibition enforcement' },
 ];
 
-const MOCK_TASKS: ComplianceTask[] = [
+const DEFAULT_TASKS: ComplianceTask[] = [
   { id: 't-001', task: 'Implement Global Privacy Control (GPC) signal detection', category: 'Technical', applicableStates: ['CA', 'CO', 'CT', 'TX', 'NJ', 'VT'], completed: false, dueDate: '2026-03-01', priority: 'high' },
   { id: 't-002', task: 'Update privacy policy for all effective state laws', category: 'Legal', applicableStates: ['CA', 'CO', 'CT', 'VA', 'UT', 'TX', 'OR', 'DE', 'IA', 'MT', 'NH', 'NJ', 'NE'], completed: true, dueDate: '2025-12-15', priority: 'high' },
   { id: 't-003', task: 'Conduct data protection impact assessments for high-risk processing', category: 'Governance', applicableStates: ['CA', 'CO', 'CT', 'VA', 'TX', 'OR', 'DE', 'MT', 'MN', 'MD'], completed: true, dueDate: '2025-11-01', priority: 'medium' },
@@ -320,11 +321,43 @@ const formatDate = (d: string): string => new Date(d).toLocaleDateString('en-US'
 
 export const USPrivacyTracker: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
-  const [laws] = useState<StatePrivacyLaw[]>(MOCK_STATE_LAWS);
-  const [gaps] = useState<ComplianceGap[]>(MOCK_GAPS);
-  const [tasks, setTasks] = useState<ComplianceTask[]>(MOCK_TASKS);
+  const [laws, setLaws] = useState<StatePrivacyLaw[]>(DEFAULT_STATE_LAWS);
+  const [gaps, setGaps] = useState<ComplianceGap[]>(DEFAULT_GAPS);
+  const [tasks, setTasks] = useState<ComplianceTask[]>(DEFAULT_TASKS);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<LawStatus | 'all'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Load data from backend, fall back to defaults for new orgs
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await api.regulationData.getAll('us-privacy');
+        if (saved && typeof saved === 'object') {
+          if (saved.laws) setLaws(saved.laws);
+          if (saved.gaps) setGaps(saved.gaps);
+          if (saved.tasks) setTasks(saved.tasks);
+        }
+      } catch (err: any) {
+        console.error('Failed to load US Privacy data:', err);
+        setLoadError('Using default template data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
+
+  // Auto-save when data changes (debounced)
+  useEffect(() => {
+    if (isLoading) return;
+    const timer = setTimeout(() => {
+      api.regulationData.save('us-privacy', 'laws', laws).catch(() => {});
+      api.regulationData.save('us-privacy', 'gaps', gaps).catch(() => {});
+      api.regulationData.save('us-privacy', 'tasks', tasks).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [laws, gaps, tasks, isLoading]);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [selectedLaw, setSelectedLaw] = useState<StatePrivacyLaw | null>(null);

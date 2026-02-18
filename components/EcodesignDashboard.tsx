@@ -13,7 +13,8 @@
  * Reference: Regulation (EU) 2024/1781
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   Recycle, Leaf, Package, FileText, CheckCircle, AlertTriangle,
   X, Plus, Search, Download, Clock, Shield, TrendingUp, Zap,
@@ -114,14 +115,14 @@ interface ComplianceRequirement {
   applicableProducts: string[];
 }
 
-// ── Mock Data ────────────────────────────────────────────────────────────
+// ── Default Data ─────────────────────────────────────────────────────────
 
 const PRODUCT_CATEGORIES = [
   'Electronics', 'Textiles', 'Furniture', 'Construction Products',
   'Iron & Steel', 'Aluminium', 'Batteries', 'Packaging', 'Plastics', 'Chemicals',
 ];
 
-const MOCK_PRODUCTS: EcoProduct[] = [
+const DEFAULT_PRODUCTS: EcoProduct[] = [
   {
     id: 'eco-001', name: 'EcoSmart Washing Machine X500', category: 'Electronics',
     manufacturer: 'GreenTech Appliances', model: 'X500-EU', productionDate: '2025-08-15',
@@ -178,13 +179,13 @@ const MOCK_PRODUCTS: EcoProduct[] = [
   },
 ];
 
-const MOCK_PASSPORTS: DigitalProductPassport[] = [
+const DEFAULT_PASSPORTS: DigitalProductPassport[] = [
   { id: 'dpp-001', productId: 'eco-001', productName: 'EcoSmart Washing Machine X500', qrCodeUrl: '/api/dpp/DPP-2025-X500-001/qr', createdDate: '2025-08-20', lastUpdated: '2026-01-15', status: 'active', dataCategories: { productIdentification: true, sustainability: true, circularEconomy: true, compliance: true, supplyChain: true }, accessLevel: 'public', version: '2.1' },
   { id: 'dpp-002', productId: 'eco-003', productName: 'SustainTex Organic Cotton T-Shirt', qrCodeUrl: '/api/dpp/DPP-2025-OCT-003/qr', createdDate: '2025-11-25', lastUpdated: '2026-02-01', status: 'active', dataCategories: { productIdentification: true, sustainability: true, circularEconomy: true, compliance: true, supplyChain: false }, accessLevel: 'public', version: '1.3' },
   { id: 'dpp-003', productId: 'eco-004', productName: 'ModularDesk Office L-Shape', qrCodeUrl: '/api/dpp/DPP-2025-MDL-004/qr', createdDate: '2025-09-15', lastUpdated: '2025-12-10', status: 'draft', dataCategories: { productIdentification: true, sustainability: false, circularEconomy: true, compliance: false, supplyChain: false }, accessLevel: 'authorized', version: '0.8' },
 ];
 
-const MOCK_LCAS: LifecycleAssessment[] = [
+const DEFAULT_LCAS: LifecycleAssessment[] = [
   {
     id: 'lca-001', productId: 'eco-001', productName: 'EcoSmart Washing Machine X500', assessmentDate: '2025-07-10',
     methodology: 'PEF (Product Environmental Footprint)',
@@ -213,7 +214,7 @@ const MOCK_LCAS: LifecycleAssessment[] = [
   },
 ];
 
-const MOCK_REQUIREMENTS: ComplianceRequirement[] = [
+const DEFAULT_REQUIREMENTS: ComplianceRequirement[] = [
   { id: 'req-001', category: 'Digital Product Passport', requirement: 'Product must have a Digital Product Passport accessible via QR code', description: 'All products within scope must provide a DPP with product identification, sustainability, and circularity information.', mandatory: true, met: false, deadline: '2027-01-01', applicableProducts: ['Electronics', 'Textiles', 'Batteries', 'Furniture'] },
   { id: 'req-002', category: 'Energy Efficiency', requirement: 'Product meets minimum energy performance standards', description: 'Energy-using products must meet the minimum energy efficiency requirements set by delegated acts.', mandatory: true, met: true, deadline: '2026-06-01', applicableProducts: ['Electronics'] },
   { id: 'req-003', category: 'Durability', requirement: 'Minimum product lifespan guarantee', description: 'Products must be designed for a minimum expected lifespan as specified per category.', mandatory: true, met: true, deadline: '2026-06-01', applicableProducts: ['Electronics', 'Textiles', 'Furniture'] },
@@ -285,12 +286,14 @@ const renderScoreBar = (score: number, max: number = 100, color?: string) => (
 
 export const EcodesignDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
-  const [products, setProducts] = useState<EcoProduct[]>(MOCK_PRODUCTS);
-  const [passports, setPassports] = useState<DigitalProductPassport[]>(MOCK_PASSPORTS);
-  const [lcas] = useState<LifecycleAssessment[]>(MOCK_LCAS);
-  const [requirements, setRequirements] = useState<ComplianceRequirement[]>(MOCK_REQUIREMENTS);
+  const [products, setProducts] = useState<EcoProduct[]>(DEFAULT_PRODUCTS);
+  const [passports, setPassports] = useState<DigitalProductPassport[]>(DEFAULT_PASSPORTS);
+  const [lcas, setLcas] = useState<LifecycleAssessment[]>(DEFAULT_LCAS);
+  const [requirements, setRequirements] = useState<ComplianceRequirement[]>(DEFAULT_REQUIREMENTS);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [showProductModal, setShowProductModal] = useState(false);
   const [showPassportModal, setShowPassportModal] = useState(false);
@@ -305,6 +308,38 @@ export const EcodesignDashboard: React.FC = () => {
     recyclabilityRate: 50, recycledContentRate: 20, carbonFootprint: 0,
     expectedLifespan: 5, warrantyYears: 2,
   });
+
+  // ── Load saved data from API ──
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await api.regulationData.getAll('ecodesign');
+        if (saved && typeof saved === 'object') {
+          if (saved.products) setProducts(saved.products);
+          if (saved.passports) setPassports(saved.passports);
+          if (saved.lcas) setLcas(saved.lcas);
+          if (saved.requirements) setRequirements(saved.requirements);
+        }
+      } catch (err: any) {
+        console.error('Failed to load Ecodesign data:', err);
+        setLoadError('Using default template data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
+
+  // ── Debounced auto-save ──
+  useEffect(() => {
+    if (isLoading) return;
+    const timer = setTimeout(() => {
+      api.regulationData.save('ecodesign', 'products', products).catch(console.error);
+      api.regulationData.save('ecodesign', 'passports', passports).catch(console.error);
+      api.regulationData.save('ecodesign', 'lcas', lcas).catch(console.error);
+      api.regulationData.save('ecodesign', 'requirements', requirements).catch(console.error);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [products, passports, lcas, requirements, isLoading]);
 
   // ── Computed ──
 

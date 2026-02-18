@@ -608,12 +608,12 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
     try {
       // Build gaps from current regulatory changes that need remediation
       const gaps = REGULATORY_CHANGES
-        .filter(c => c.status === 'action_required' || c.status === 'in_review')
+        .filter(c => c.status === 'pending' || c.status === 'in-review' || c.status === 'remediation')
         .map(c => ({
           controlId: c.id,
           title: c.title,
           currentStatus: c.status,
-          requirement: `${c.source} - ${c.summary} (Deadline: ${c.deadline})`,
+          requirement: `${c.source} - ${c.summary} (Effective: ${c.effectiveDate})`,
         }));
 
       if (gaps.length === 0) {

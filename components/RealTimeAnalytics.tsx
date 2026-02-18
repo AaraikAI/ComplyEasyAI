@@ -143,35 +143,47 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         console.error('Failed to load monitoring metrics:', err);
       }
 
-      // Calculate historical changes (comparing to stored metrics)
-      // In production, this would query historical data from DB with time range filter
-      // For now, use localStorage to track previous values for demo purposes
-      const previousMetrics = localStorage.getItem('analytics_previous_metrics');
-      if (previousMetrics) {
-        try {
-          const prev = JSON.parse(previousMetrics);
-          const prevCompliance = parseFloat(prev.complianceScore || '0');
+      // Calculate historical changes from backend metrics history
+      try {
+        const [complianceHistory, risksHistory, controlsHistory] = await Promise.all([
+          api.metrics.getHistory('compliance_score').catch(() => []),
+          api.metrics.getHistory('risks_count').catch(() => []),
+          api.metrics.getHistory('controls_passed').catch(() => []),
+        ]);
+
+        if (Array.isArray(complianceHistory) && complianceHistory.length > 0) {
+          const prevCompliance = complianceHistory[0]?.value || 0;
           const currentCompliance = parseFloat(complianceScore);
           complianceChange = prevCompliance > 0 ?
             ((currentCompliance - prevCompliance) / prevCompliance) * 100 : 0;
-
-          risksChange = prev.risksCount > 0 ?
-            ((risks.length - prev.risksCount) / prev.risksCount) * 100 : 0;
-
-          controlsChange = prev.controlsCount > 0 ?
-            ((passedControls - prev.controlsCount) / prev.controlsCount) * 100 : 0;
-        } catch (err) {
-          console.error('Failed to parse previous metrics:', err);
         }
+
+        if (Array.isArray(risksHistory) && risksHistory.length > 0) {
+          const prevRisks = risksHistory[0]?.value || 0;
+          risksChange = prevRisks > 0 ?
+            ((risks.length - prevRisks) / prevRisks) * 100 : 0;
+        }
+
+        if (Array.isArray(controlsHistory) && controlsHistory.length > 0) {
+          const prevControls = controlsHistory[0]?.value || 0;
+          controlsChange = prevControls > 0 ?
+            ((passedControls - prevControls) / prevControls) * 100 : 0;
+        }
+      } catch (err) {
+        console.error('Failed to load historical metrics:', err);
       }
 
-      // Store current metrics for next comparison
-      localStorage.setItem('analytics_previous_metrics', JSON.stringify({
-        complianceScore,
-        risksCount: risks.length,
-        controlsCount: passedControls,
-        timestamp: new Date().toISOString()
-      }));
+      // Record current metrics to backend for historical tracking
+      try {
+        await Promise.all([
+          api.metrics.record('compliance_score', parseFloat(complianceScore)),
+          api.metrics.record('risks_count', risks.length),
+          api.metrics.record('controls_passed', passedControls),
+          api.metrics.record('frameworks_active', frameworks.length),
+        ]);
+      } catch (err) {
+        console.error('Failed to record metrics:', err);
+      }
 
       // Calculate metrics from real data
       const calculatedMetrics: Metric[] = [

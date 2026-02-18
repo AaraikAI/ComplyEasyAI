@@ -13,7 +13,8 @@
  * Reference: Directive (EU) 2022/2464
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   Leaf, BarChart3, Users, Building2, FileText, CheckCircle, AlertTriangle,
   X, Plus, Search, Download, Clock, Shield, TrendingUp, Droplets,
@@ -131,9 +132,9 @@ interface SustainabilityReport {
   completionPercentage: number;
 }
 
-// ── Mock Data ────────────────────────────────────────────────────────────
+// ── Default Data ─────────────────────────────────────────────────────────
 
-const MOCK_MATERIALITY_TOPICS: MaterialityTopic[] = [
+const DEFAULT_MATERIALITY_TOPICS: MaterialityTopic[] = [
   { id: 'mt-1', esrsStandard: 'ESRS E1', topic: 'Climate Change', category: 'environmental', impactMateriality: 'high', financialMateriality: 'high', overallMateriality: 'high', description: 'GHG emissions, energy consumption, and climate change adaptation and mitigation.', stakeholdersAffected: ['Investors', 'Communities', 'Regulators'], dataCollectionStatus: 'partial' },
   { id: 'mt-2', esrsStandard: 'ESRS E2', topic: 'Pollution', category: 'environmental', impactMateriality: 'medium', financialMateriality: 'medium', overallMateriality: 'medium', description: 'Air, water, and soil pollution from operations and products.', stakeholdersAffected: ['Communities', 'Regulators', 'NGOs'], dataCollectionStatus: 'partial' },
   { id: 'mt-3', esrsStandard: 'ESRS E3', topic: 'Water and Marine Resources', category: 'environmental', impactMateriality: 'medium', financialMateriality: 'low', overallMateriality: 'medium', description: 'Water consumption, water stress, and impact on marine ecosystems.', stakeholdersAffected: ['Communities', 'Regulators'], dataCollectionStatus: 'not_started' },
@@ -146,7 +147,7 @@ const MOCK_MATERIALITY_TOPICS: MaterialityTopic[] = [
   { id: 'mt-10', esrsStandard: 'ESRS G1', topic: 'Business Conduct', category: 'governance', impactMateriality: 'high', financialMateriality: 'high', overallMateriality: 'high', description: 'Corporate governance, anti-corruption, lobbying, and business ethics.', stakeholdersAffected: ['Investors', 'Regulators', 'Public'], dataCollectionStatus: 'compliant' },
 ];
 
-const MOCK_ENVIRONMENTAL: EnvironmentalMetrics = {
+const DEFAULT_ENVIRONMENTAL: EnvironmentalMetrics = {
   ghg: {
     scope1: { total: 12450, breakdown: [{ source: 'Natural Gas', value: 5200, unit: 'tCO2e' }, { source: 'Fleet Vehicles', value: 3800, unit: 'tCO2e' }, { source: 'Refrigerants', value: 2150, unit: 'tCO2e' }, { source: 'Process Emissions', value: 1300, unit: 'tCO2e' }] },
     scope2: { locationBased: 8900, marketBased: 6200, unit: 'tCO2e' },
@@ -169,7 +170,7 @@ const MOCK_ENVIRONMENTAL: EnvironmentalMetrics = {
   pollution: { airEmissions: 45, waterDischarges: 12, microplastics: 0.8, unit: 'tonnes' },
 };
 
-const MOCK_SOCIAL: SocialMetrics = {
+const DEFAULT_SOCIAL: SocialMetrics = {
   workforce: { totalEmployees: 4850, fullTime: 4200, partTime: 450, contractors: 200, femalePercentage: 42.3, diversityIndex: 0.68, turnoverRate: 12.5 },
   payGap: { genderPayGap: 8.2, ceoToMedianRatio: 45, livingWageCompliance: 97 },
   healthSafety: { incidentRate: 2.3, fatalityCount: 0, lostTimeInjuryRate: 0.8, trainingHoursPerEmployee: 24, wellbeingProgramCoverage: 85 },
@@ -177,14 +178,14 @@ const MOCK_SOCIAL: SocialMetrics = {
   communityEngagement: { investmentAmount: 1200000, projectsSupported: 15, stakeholderConsultations: 8 },
 };
 
-const MOCK_GOVERNANCE: GovernanceMetrics = {
+const DEFAULT_GOVERNANCE: GovernanceMetrics = {
   board: { totalMembers: 12, independentMembers: 7, femaleMembers: 5, sustainabilityExpertise: 3, meetingsPerYear: 10, avgTenureYears: 4.5 },
   antiCorruption: { policyInPlace: true, trainingCoverage: 92, incidentsReported: 2, whistleblowerProtection: true, politicalContributions: 0 },
   lobbying: { totalSpend: 350000, topicsEngaged: ['Climate policy', 'Digital regulation', 'Trade standards', 'Tax transparency'], tradeAssociations: 8, transparencyRegisterCompliant: true },
   riskManagement: { esgRisksIdentified: 24, mitigationPlansInPlace: 19, climateScenarioAnalysis: true, transitionPlanPublished: false },
 };
 
-const MOCK_REPORTS: SustainabilityReport[] = [
+const DEFAULT_REPORTS: SustainabilityReport[] = [
   { id: 'rpt-1', title: 'Annual Sustainability Report FY2025', reportingYear: 2025, status: 'in_review', createdDate: '2026-01-15', lastModified: '2026-02-10', assuranceProvider: 'Deloitte', assuranceLevel: 'limited', esrsTopicsCovered: ['ESRS E1', 'ESRS E5', 'ESRS S1', 'ESRS S2', 'ESRS G1'], completionPercentage: 78 },
   { id: 'rpt-2', title: 'Climate Transition Plan 2025-2035', reportingYear: 2025, status: 'draft', createdDate: '2026-02-01', lastModified: '2026-02-14', assuranceProvider: '', assuranceLevel: 'none', esrsTopicsCovered: ['ESRS E1'], completionPercentage: 45 },
   { id: 'rpt-3', title: 'Annual Sustainability Report FY2024', reportingYear: 2024, status: 'published', createdDate: '2025-01-20', lastModified: '2025-03-15', assuranceProvider: 'Deloitte', assuranceLevel: 'limited', esrsTopicsCovered: ['ESRS E1', 'ESRS S1', 'ESRS G1'], completionPercentage: 100 },
@@ -227,19 +228,57 @@ const formatDate = (d: string): string => new Date(d).toLocaleDateString('en-GB'
 
 export const CSRDDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
-  const [topics, setTopics] = useState<MaterialityTopic[]>(MOCK_MATERIALITY_TOPICS);
-  const [envMetrics] = useState<EnvironmentalMetrics>(MOCK_ENVIRONMENTAL);
-  const [socialMetrics] = useState<SocialMetrics>(MOCK_SOCIAL);
-  const [govMetrics] = useState<GovernanceMetrics>(MOCK_GOVERNANCE);
-  const [reports, setReports] = useState<SustainabilityReport[]>(MOCK_REPORTS);
+  const [topics, setTopics] = useState<MaterialityTopic[]>(DEFAULT_MATERIALITY_TOPICS);
+  const [envMetrics, setEnvMetrics] = useState<EnvironmentalMetrics>(DEFAULT_ENVIRONMENTAL);
+  const [socialMetrics, setSocialMetrics] = useState<SocialMetrics>(DEFAULT_SOCIAL);
+  const [govMetrics, setGovMetrics] = useState<GovernanceMetrics>(DEFAULT_GOVERNANCE);
+  const [reports, setReports] = useState<SustainabilityReport[]>(DEFAULT_REPORTS);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'environmental' | 'social' | 'governance'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showTopicModal, setShowTopicModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<MaterialityTopic | null>(null);
 
   const [reportForm, setReportForm] = useState({ title: '', reportingYear: 2025, assuranceProvider: '', assuranceLevel: 'limited' as 'limited' | 'reasonable' | 'none' });
+
+  // ── Load saved data from API ──
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await api.regulationData.getAll('csrd');
+        if (saved && typeof saved === 'object') {
+          if (saved.topics) setTopics(saved.topics);
+          if (saved.environmental) setEnvMetrics(saved.environmental);
+          if (saved.social) setSocialMetrics(saved.social);
+          if (saved.governance) setGovMetrics(saved.governance);
+          if (saved.reports) setReports(saved.reports);
+        }
+      } catch (err: any) {
+        console.error('Failed to load CSRD data:', err);
+        setLoadError('Using default template data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
+
+  // ── Debounced auto-save ──
+
+  useEffect(() => {
+    if (isLoading) return;
+    const timer = setTimeout(() => {
+      api.regulationData.save('csrd', 'topics', topics);
+      api.regulationData.save('csrd', 'environmental', envMetrics);
+      api.regulationData.save('csrd', 'social', socialMetrics);
+      api.regulationData.save('csrd', 'governance', govMetrics);
+      api.regulationData.save('csrd', 'reports', reports);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [topics, envMetrics, socialMetrics, govMetrics, reports, isLoading]);
 
   // ── Computed ──
 
