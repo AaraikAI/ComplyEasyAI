@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft, ArrowRight, AlertTriangle, Shield, ShieldAlert, ShieldCheck,
   Clock, Globe, FileText, Send, CheckCircle, XCircle, Mail, Phone,
@@ -369,9 +370,9 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
   const [isGenerating, setIsGenerating] = useState(false);
 
   // History / templates / contacts state
-  const [breachHistory] = useState<BreachRecord[]>(DEMO_BREACH_HISTORY);
-  const [templates] = useState<NotificationTemplate[]>(DEMO_TEMPLATES);
-  const [contacts] = useState<RegulatoryContact[]>(DEMO_CONTACTS);
+  const [breachHistory, setBreachHistory] = useState<BreachRecord[]>(DEMO_BREACH_HISTORY);
+  const [templates, setTemplates] = useState<NotificationTemplate[]>(DEMO_TEMPLATES);
+  const [contacts, setContacts] = useState<RegulatoryContact[]>(DEMO_CONTACTS);
   const [historySearch, setHistorySearch] = useState('');
   const [templateSearch, setTemplateSearch] = useState('');
   const [contactSearch, setContactSearch] = useState('');
@@ -379,6 +380,58 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
   const [selectedContact, setSelectedContact] = useState<RegulatoryContact | null>(null);
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
   const [newSystemInput, setNewSystemInput] = useState('');
+
+  // Loading / error state
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Load breach data from API
+  useEffect(() => {
+    (async () => {
+      try {
+        const [incidents, apiTemplates, apiContacts] = await Promise.all([
+          api.modules.breach.listIncidents(),
+          api.modules.breach.listTemplates(),
+          api.modules.breach.listContacts(),
+        ]);
+        if (incidents && incidents.length > 0) {
+          setBreachHistory(incidents.map((inc: any) => ({
+            id: inc.id,
+            title: inc.title || inc.description || 'Untitled Incident',
+            type: inc.type || 'data_breach',
+            severity: inc.severity || 'Medium',
+            discoveryDate: inc.discoveredAt || inc.createdAt || '',
+            status: inc.status || 'active',
+            recordsAffected: inc.recordsAffected || 0,
+            jurisdictions: inc.jurisdictions || [],
+            notificationsSent: inc.notificationsSent || 0,
+            lessonsLearned: inc.lessonsLearned || '',
+            riskScore: inc.riskScore || 0,
+          })));
+        }
+        if (apiTemplates && apiTemplates.length > 0) {
+          setTemplates(apiTemplates.map((t: any) => ({
+            id: t.id, name: t.name, jurisdiction: t.jurisdiction || '',
+            regulation: t.regulation || '', type: t.type || 'authority',
+            content: t.content || '', lastUpdated: t.updatedAt || t.lastUpdated || '',
+          })));
+        }
+        if (apiContacts && apiContacts.length > 0) {
+          setContacts(apiContacts.map((c: any) => ({
+            id: c.id, name: c.name, type: c.type || 'DPA',
+            jurisdiction: c.jurisdiction || '', email: c.email || '',
+            phone: c.phone || '', website: c.website || '',
+            portalUrl: c.portalUrl || '', notes: c.notes || '',
+          })));
+        }
+        setLoadError(null);
+      } catch (err: any) {
+        setLoadError('Unable to connect to server. Showing local data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
   // Risk score
   const riskResult = useMemo(() => calculateRiskScore(classification, impact), [classification, impact]);
@@ -1356,6 +1409,23 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
           </div>
         </div>
       </div>
+
+      {/* Loading / Error Banner */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-500">Loading breach data...</span>
+        </div>
+      )}
+      {loadError && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-2">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2">
+            <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+            <span className="text-sm text-amber-700">{loadError}</span>
+            <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200">

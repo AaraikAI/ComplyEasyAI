@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
 import {
   ArrowLeft, Plus, Trash2, Edit3, Save, Download, ChevronDown, ChevronRight,
@@ -344,6 +344,65 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load process maps from backend on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.modules.processMaps.list();
+        if (data && data.length > 0) {
+          setProcesses(data.map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            description: m.description || '',
+            category: m.category || 'Business Operations',
+            version: String(m.version || '1.0'),
+            status: m.status === 'draft' ? 'Draft' : m.status === 'approved' ? 'Approved' : m.status === 'archived' ? 'Archived' : 'In Review',
+            owner: '',
+            lastModified: m.updatedAt ? new Date(m.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            nodes: (m.nodes || []) as ProcessNode[],
+            edges: (m.edges || []) as ProcessEdge[],
+          })));
+        }
+        setLoadError(null);
+      } catch {
+        setLoadError('Unable to connect to server. Showing demo data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
+
+  // Save process map to backend
+  const saveToBackend = useCallback(async (proc: ProcessMap) => {
+    setIsSaving(true);
+    try {
+      const payload = {
+        name: proc.name,
+        description: proc.description,
+        category: proc.category.toLowerCase().replace(/\s+/g, '_'),
+        status: proc.status.toLowerCase().replace(/\s+/g, '_'),
+        nodes: proc.nodes,
+        edges: proc.edges,
+        raciMatrix: proc.nodes.filter(n => n.kind !== 'start' && n.kind !== 'end').map(n => ({
+          activity: n.label, responsible: n.raciR, accountable: n.raciA, consulted: n.raciC, informed: n.raciI,
+        })),
+      };
+      // Check if this is a backend-generated ID (UUID) or local ID
+      if (proc.id.startsWith('proc-')) {
+        await api.modules.processMaps.create(payload);
+      } else {
+        await api.modules.processMaps.update(proc.id, payload);
+      }
+    } catch {
+      // Silently fail — data is still in local state
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
 
   const addNewProcess = useCallback(() => {
     if (!newProcess.name.trim()) return;
@@ -425,6 +484,83 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     URL.revokeObjectURL(url);
   }, [selectedProcess]);
 
+  // BPMN 2.0 XML Export
+  const exportBPMN = useCallback(() => {
+    if (!selectedProcess) return;
+    const ns = 'http://www.omg.org/spec/BPMN/20100524/MODEL';
+    const diNs = 'http://www.omg.org/spec/BPMN/20100524/DI';
+    const dcNs = 'http://www.omg.org/spec/DD/20100524/DC';
+    const processId = `Process_${selectedProcess.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+    const bpmnNodeType = (kind: NodeKind) => {
+      switch (kind) {
+        case 'start': return 'startEvent';
+        case 'end': return 'endEvent';
+        case 'decision': return 'exclusiveGateway';
+        case 'subprocess': return 'subProcess';
+        case 'datastore': return 'dataStoreReference';
+        case 'document': return 'dataObjectReference';
+        default: return 'task';
+      }
+    };
+
+    const nodeElements = selectedProcess.nodes.map(n => {
+      const tag = bpmnNodeType(n.kind);
+      const nodeId = `Node_${n.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const docStr = n.description ? `\n        <bpmn:documentation>${n.description.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</bpmn:documentation>` : '';
+      return `      <bpmn:${tag} id="${nodeId}" name="${n.label.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}">${docStr}\n      </bpmn:${tag}>`;
+    }).join('\n');
+
+    const flowElements = selectedProcess.edges.map(e => {
+      const flowId = `Flow_${e.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const sourceId = `Node_${e.from.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const targetId = `Node_${e.to.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const nameAttr = e.label ? ` name="${e.label.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"` : '';
+      return `      <bpmn:sequenceFlow id="${flowId}" sourceRef="${sourceId}" targetRef="${targetId}"${nameAttr} />`;
+    }).join('\n');
+
+    const shapes = selectedProcess.nodes.map(n => {
+      const nodeId = `Node_${n.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const w = n.kind === 'start' || n.kind === 'end' ? 36 : n.kind === 'decision' ? 50 : 100;
+      const h = n.kind === 'start' || n.kind === 'end' ? 36 : n.kind === 'decision' ? 50 : 80;
+      return `        <bpmndi:BPMNShape id="${nodeId}_di" bpmnElement="${nodeId}">\n          <dc:Bounds x="${n.x}" y="${n.y}" width="${w}" height="${h}" />\n        </bpmndi:BPMNShape>`;
+    }).join('\n');
+
+    const edgesDi = selectedProcess.edges.map(e => {
+      const flowId = `Flow_${e.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const src = selectedProcess.nodes.find(n => n.id === e.from);
+      const tgt = selectedProcess.nodes.find(n => n.id === e.to);
+      if (!src || !tgt) return '';
+      return `        <bpmndi:BPMNEdge id="${flowId}_di" bpmnElement="${flowId}">\n          <di:waypoint x="${src.x + 50}" y="${src.y + 40}" />\n          <di:waypoint x="${tgt.x}" y="${tgt.y + 40}" />\n        </bpmndi:BPMNEdge>`;
+    }).filter(Boolean).join('\n');
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="${ns}" xmlns:bpmndi="${diNs}" xmlns:dc="${dcNs}" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://complyeasy.ai/bpmn">
+    <bpmn:process id="${processId}" name="${selectedProcess.name.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" isExecutable="false">
+${nodeElements}
+${flowElements}
+    </bpmn:process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+      <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${processId}">
+${shapes}
+${edgesDi}
+      </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
+
+    const blob = new Blob([xml], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${selectedProcess.name.replace(/\s+/g, '_')}.bpmn`; a.click();
+    URL.revokeObjectURL(url);
+  }, [selectedProcess]);
+
+  // Save current process to backend
+  const handleSaveProcess = useCallback(async () => {
+    if (!selectedProcess) return;
+    await saveToBackend(selectedProcess);
+  }, [selectedProcess, saveToBackend]);
+
   /* ---- status badge ---- */
   const statusBadge = (s: string) => {
     const m: Record<string, string> = { Draft: 'bg-gray-100 text-gray-700', 'In Review': 'bg-blue-100 text-blue-700', Approved: 'bg-green-100 text-green-700', Archived: 'bg-yellow-100 text-yellow-700' };
@@ -450,6 +586,21 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <Plus size={16} /> New Process
           </button>
         </div>
+
+        {/* Loading / Error States */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-500">Loading process maps...</span>
+          </div>
+        )}
+        {loadError && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2">
+            <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+            <span className="text-sm text-amber-700">{loadError}</span>
+            <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 items-center">
@@ -585,7 +736,11 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={exportJSON} className="flex items-center gap-1 px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50"><Download size={14} /> Export</button>
+          <button onClick={handleSaveProcess} disabled={isSaving} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {isSaving ? 'Saving...' : 'Save'}
+          </button>
+          <button onClick={exportJSON} className="flex items-center gap-1 px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50"><Download size={14} /> JSON</button>
+          <button onClick={exportBPMN} className="flex items-center gap-1 px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50"><Download size={14} /> BPMN</button>
         </div>
       </div>
 
