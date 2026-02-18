@@ -2242,6 +2242,157 @@ export const api = {
     },
   },
 
+  // ============================================================================
+  // FEATURE MODULES
+  // ============================================================================
+  modules: {
+    // --- Governance Manager ---
+    governance: {
+      listBodies: async () => fetchAPI<any[]>('/modules/governance/bodies'),
+      createBody: async (data: any) => fetchAPI<any>('/modules/governance/bodies', { method: 'POST', body: JSON.stringify(data) }),
+      updateBody: async (id: string, data: any) => fetchAPI<any>(`/modules/governance/bodies/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteBody: async (id: string) => fetchAPI<any>(`/modules/governance/bodies/${id}`, { method: 'DELETE' }),
+      createMeeting: async (data: any) => fetchAPI<any>('/modules/governance/meetings', { method: 'POST', body: JSON.stringify(data) }),
+      updateMeeting: async (id: string, data: any) => fetchAPI<any>(`/modules/governance/meetings/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteMeeting: async (id: string) => fetchAPI<any>(`/modules/governance/meetings/${id}`, { method: 'DELETE' }),
+      createDecision: async (data: any) => fetchAPI<any>('/modules/governance/decisions', { method: 'POST', body: JSON.stringify(data) }),
+      updateDecision: async (id: string, data: any) => fetchAPI<any>(`/modules/governance/decisions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      createEscalationPath: async (data: any) => fetchAPI<any>('/modules/governance/escalation-paths', { method: 'POST', body: JSON.stringify(data) }),
+      updateEscalationPath: async (id: string, data: any) => fetchAPI<any>(`/modules/governance/escalation-paths/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteEscalationPath: async (id: string) => fetchAPI<any>(`/modules/governance/escalation-paths/${id}`, { method: 'DELETE' }),
+      getDPO: async () => fetchAPI<any>('/modules/governance/dpo'),
+      upsertDPO: async (data: any) => fetchAPI<any>('/modules/governance/dpo', { method: 'PUT', body: JSON.stringify(data) }),
+    },
+
+    // --- Breach Notification ---
+    breach: {
+      listIncidents: async () => fetchAPI<any[]>('/modules/breach/incidents'),
+      createIncident: async (data: any) => fetchAPI<any>('/modules/breach/incidents', { method: 'POST', body: JSON.stringify(data) }),
+      getIncident: async (id: string) => fetchAPI<any>(`/modules/breach/incidents/${id}`),
+      updateIncident: async (id: string, data: any) => fetchAPI<any>(`/modules/breach/incidents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteIncident: async (id: string) => fetchAPI<any>(`/modules/breach/incidents/${id}`, { method: 'DELETE' }),
+      createNotification: async (data: any) => fetchAPI<any>('/modules/breach/notifications', { method: 'POST', body: JSON.stringify(data) }),
+      updateNotification: async (id: string, data: any) => fetchAPI<any>(`/modules/breach/notifications/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      listTemplates: async () => fetchAPI<any[]>('/modules/breach/templates'),
+      createTemplate: async (data: any) => fetchAPI<any>('/modules/breach/templates', { method: 'POST', body: JSON.stringify(data) }),
+      updateTemplate: async (id: string, data: any) => fetchAPI<any>(`/modules/breach/templates/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteTemplate: async (id: string) => fetchAPI<any>(`/modules/breach/templates/${id}`, { method: 'DELETE' }),
+      listContacts: async () => fetchAPI<any[]>('/modules/breach/contacts'),
+      createContact: async (data: any) => fetchAPI<any>('/modules/breach/contacts', { method: 'POST', body: JSON.stringify(data) }),
+      updateContact: async (id: string, data: any) => fetchAPI<any>(`/modules/breach/contacts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteContact: async (id: string) => fetchAPI<any>(`/modules/breach/contacts/${id}`, { method: 'DELETE' }),
+    },
+
+    // --- CE Marking ---
+    ceMarking: {
+      listProducts: async () => fetchAPI<any[]>('/modules/ce-marking/products'),
+      createProduct: async (data: any) => fetchAPI<any>('/modules/ce-marking/products', { method: 'POST', body: JSON.stringify(data) }),
+      getProduct: async (id: string) => fetchAPI<any>(`/modules/ce-marking/products/${id}`),
+      updateProduct: async (id: string, data: any) => fetchAPI<any>(`/modules/ce-marking/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteProduct: async (id: string) => fetchAPI<any>(`/modules/ce-marking/products/${id}`, { method: 'DELETE' }),
+    },
+
+    // --- Digital Product Passport ---
+    dpp: {
+      listPassports: async () => fetchAPI<any[]>('/modules/dpp/passports'),
+      createPassport: async (data: any) => fetchAPI<any>('/modules/dpp/passports', { method: 'POST', body: JSON.stringify(data) }),
+      getPassport: async (id: string) => fetchAPI<any>(`/modules/dpp/passports/${id}`),
+      updatePassport: async (id: string, data: any) => fetchAPI<any>(`/modules/dpp/passports/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deletePassport: async (id: string) => fetchAPI<any>(`/modules/dpp/passports/${id}`, { method: 'DELETE' }),
+    },
+
+    // --- ESG Reporting ---
+    esg: {
+      listMetrics: async (params?: { category?: string; reportingPeriod?: string }) => {
+        const query = params ? '?' + new URLSearchParams(params).toString() : '';
+        return fetchAPI<any[]>(`/modules/esg/metrics${query}`);
+      },
+      createMetric: async (data: any) => fetchAPI<any>('/modules/esg/metrics', { method: 'POST', body: JSON.stringify(data) }),
+      updateMetric: async (id: string, data: any) => fetchAPI<any>(`/modules/esg/metrics/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteMetric: async (id: string) => fetchAPI<any>(`/modules/esg/metrics/${id}`, { method: 'DELETE' }),
+      listMateriality: async () => fetchAPI<any[]>('/modules/esg/materiality'),
+      createMateriality: async (data: any) => fetchAPI<any>('/modules/esg/materiality', { method: 'POST', body: JSON.stringify(data) }),
+      updateMateriality: async (id: string, data: any) => fetchAPI<any>(`/modules/esg/materiality/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    },
+
+    // --- SBOM Manager ---
+    sbom: {
+      listEntries: async (params?: { repositoryName?: string; licenseRisk?: string }) => {
+        const query = params ? '?' + new URLSearchParams(params).toString() : '';
+        return fetchAPI<any[]>(`/modules/sbom/entries${query}`);
+      },
+      createEntry: async (data: any) => fetchAPI<any>('/modules/sbom/entries', { method: 'POST', body: JSON.stringify(data) }),
+      bulkCreateEntries: async (entries: any[]) => fetchAPI<any>('/modules/sbom/entries/bulk', { method: 'POST', body: JSON.stringify({ entries }) }),
+      updateEntry: async (id: string, data: any) => fetchAPI<any>(`/modules/sbom/entries/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteEntry: async (id: string) => fetchAPI<any>(`/modules/sbom/entries/${id}`, { method: 'DELETE' }),
+      listRepositories: async () => fetchAPI<any[]>('/modules/sbom/repositories'),
+      createRepository: async (data: any) => fetchAPI<any>('/modules/sbom/repositories', { method: 'POST', body: JSON.stringify(data) }),
+      updateRepository: async (id: string, data: any) => fetchAPI<any>(`/modules/sbom/repositories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteRepository: async (id: string) => fetchAPI<any>(`/modules/sbom/repositories/${id}`, { method: 'DELETE' }),
+    },
+
+    // --- Post-Market Surveillance ---
+    surveillance: {
+      listPlans: async () => fetchAPI<any[]>('/modules/surveillance/plans'),
+      createPlan: async (data: any) => fetchAPI<any>('/modules/surveillance/plans', { method: 'POST', body: JSON.stringify(data) }),
+      updatePlan: async (id: string, data: any) => fetchAPI<any>(`/modules/surveillance/plans/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deletePlan: async (id: string) => fetchAPI<any>(`/modules/surveillance/plans/${id}`, { method: 'DELETE' }),
+      createIncident: async (data: any) => fetchAPI<any>('/modules/surveillance/incidents', { method: 'POST', body: JSON.stringify(data) }),
+      updateIncident: async (id: string, data: any) => fetchAPI<any>(`/modules/surveillance/incidents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      listRecalls: async () => fetchAPI<any[]>('/modules/surveillance/recalls'),
+      createRecall: async (data: any) => fetchAPI<any>('/modules/surveillance/recalls', { method: 'POST', body: JSON.stringify(data) }),
+      updateRecall: async (id: string, data: any) => fetchAPI<any>(`/modules/surveillance/recalls/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    },
+
+    // --- Product Decommissioning ---
+    decommission: {
+      listProducts: async () => fetchAPI<any[]>('/modules/decommission/products'),
+      createProduct: async (data: any) => fetchAPI<any>('/modules/decommission/products', { method: 'POST', body: JSON.stringify(data) }),
+      updateProduct: async (id: string, data: any) => fetchAPI<any>(`/modules/decommission/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteProduct: async (id: string) => fetchAPI<any>(`/modules/decommission/products/${id}`, { method: 'DELETE' }),
+    },
+
+    // --- Environmental Lifecycle ---
+    lifecycle: {
+      listAssessments: async () => fetchAPI<any[]>('/modules/lifecycle/assessments'),
+      createAssessment: async (data: any) => fetchAPI<any>('/modules/lifecycle/assessments', { method: 'POST', body: JSON.stringify(data) }),
+      getAssessment: async (id: string) => fetchAPI<any>(`/modules/lifecycle/assessments/${id}`),
+      updateAssessment: async (id: string, data: any) => fetchAPI<any>(`/modules/lifecycle/assessments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteAssessment: async (id: string) => fetchAPI<any>(`/modules/lifecycle/assessments/${id}`, { method: 'DELETE' }),
+    },
+
+    // --- Product Lifecycle Tracker ---
+    productLifecycle: {
+      listProducts: async (params?: { currentStage?: string }) => {
+        const query = params ? '?' + new URLSearchParams(params).toString() : '';
+        return fetchAPI<any[]>(`/modules/product-lifecycle/products${query}`);
+      },
+      createProduct: async (data: any) => fetchAPI<any>('/modules/product-lifecycle/products', { method: 'POST', body: JSON.stringify(data) }),
+      getProduct: async (id: string) => fetchAPI<any>(`/modules/product-lifecycle/products/${id}`),
+      updateProduct: async (id: string, data: any) => fetchAPI<any>(`/modules/product-lifecycle/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteProduct: async (id: string) => fetchAPI<any>(`/modules/product-lifecycle/products/${id}`, { method: 'DELETE' }),
+    },
+
+    // --- Process Mapper ---
+    processMaps: {
+      list: async (params?: { category?: string }) => {
+        const query = params ? '?' + new URLSearchParams(params).toString() : '';
+        return fetchAPI<any[]>(`/modules/process-maps${query}`);
+      },
+      create: async (data: any) => fetchAPI<any>('/modules/process-maps', { method: 'POST', body: JSON.stringify(data) }),
+      get: async (id: string) => fetchAPI<any>(`/modules/process-maps/${id}`),
+      update: async (id: string, data: any) => fetchAPI<any>(`/modules/process-maps/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      delete: async (id: string) => fetchAPI<any>(`/modules/process-maps/${id}`, { method: 'DELETE' }),
+    },
+
+    // --- Inter-Module Data Sync ---
+    syncSBOM: async () => fetchAPI<any>('/modules/sync/sbom', { method: 'POST' }),
+    syncBreach: async () => fetchAPI<any>('/modules/sync/breach', { method: 'POST' }),
+
+    // --- Connection Testing ---
+    testConnection: async (provider: string) => fetchAPI<any>(`/modules/integrations/${provider}/test`),
+  },
+
   // --- Onboarding ---
   onboarding: {
     getProgress: async (): Promise<{

@@ -15,7 +15,8 @@
  * Reference: EU CE Marking Regulation (EC) No 765/2008 and Decision No 768/2008/EC
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft,
   Package,
@@ -464,6 +465,43 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
     applicableDirectives: [] as string[],
     assessmentModule: 'A',
   });
+
+  // ---------------------------------------------------------------------------
+  // Loading / error state
+  // ---------------------------------------------------------------------------
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const apiProducts = await api.modules.ceMarking.listProducts();
+        if (apiProducts && apiProducts.length > 0) {
+          setProducts(apiProducts.map((p: any) => ({
+            id: p.id,
+            name: p.name || '',
+            modelNumber: p.modelNumber || '',
+            category: p.category || '',
+            applicableDirectives: p.applicableDirectives || [],
+            assessmentModule: p.assessmentModule || 'A',
+            status: p.status || 'draft',
+            riskLevel: p.riskLevel || 'medium',
+            notifiedBodyId: p.notifiedBodyId,
+            testingStatus: p.testingStatus || 'not_started',
+            docCompleteness: p.docCompleteness || 0,
+            createdAt: p.createdAt || '',
+            updatedAt: p.updatedAt || '',
+            marketDate: p.marketDate,
+          })));
+        }
+        setLoadError(null);
+      } catch (err: any) {
+        setLoadError('Unable to connect to server. Showing local data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Computed values
@@ -1197,6 +1235,20 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
           </button>
         </div>
       </div>
+
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-500">Loading CE marking data...</span>
+        </div>
+      )}
+      {loadError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2">
+          <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+          <span className="text-sm text-amber-700">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">

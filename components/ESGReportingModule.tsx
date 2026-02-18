@@ -17,7 +17,8 @@
  *            European Sustainability Reporting Standards (ESRS)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft,
   BarChart3,
@@ -318,13 +319,62 @@ interface ESGReportingModuleProps {
 export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }) => {
   type TabId = 'overview' | 'environmental' | 'social' | 'governance' | 'materiality' | 'reports';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [metrics] = useState<ESGMetric[]>(DEMO_METRICS);
+  const [metrics, setMetrics] = useState<ESGMetric[]>(DEMO_METRICS);
   const [esrsStandards] = useState<ESRSStandard[]>(DEMO_ESRS);
-  const [materialityTopics] = useState<MaterialityTopic[]>(DEMO_MATERIALITY);
+  const [materialityTopics, setMaterialityTopics] = useState<MaterialityTopic[]>(DEMO_MATERIALITY);
   const [sdgAlignments] = useState<SDGAlignment[]>(DEMO_SDG);
   const [reports] = useState<ESGReport[]>(DEMO_REPORTS);
   const [showReportModal, setShowReportModal] = useState(false);
   const [expandedESRS, setExpandedESRS] = useState<string | null>(null);
+
+  // Loading / error state
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [apiMetrics, apiMateriality] = await Promise.all([
+          api.modules.esg.listMetrics(),
+          api.modules.esg.listMateriality(),
+        ]);
+        if (apiMetrics && apiMetrics.length > 0) {
+          setMetrics(apiMetrics.map((m: any) => ({
+            id: m.id,
+            category: m.category || 'environmental',
+            subcategory: m.subcategory || '',
+            name: m.name || '',
+            value: m.value || 0,
+            unit: m.unit || '',
+            target: m.target,
+            previousYear: m.previousYear,
+            trend: m.trend || 'stable',
+            trendIsPositive: m.trendIsPositive || false,
+            esrsStandard: m.esrsStandard,
+            dataQuality: m.dataQuality || 'reported',
+            lastUpdated: m.updatedAt || m.lastUpdated || '',
+          })));
+        }
+        if (apiMateriality && apiMateriality.length > 0) {
+          setMaterialityTopics(apiMateriality.map((t: any) => ({
+            id: t.id,
+            topic: t.topic || '',
+            esrsStandard: t.esrsStandard || '',
+            financialMateriality: t.financialMateriality || 0,
+            impactMateriality: t.impactMateriality || 0,
+            overallMateriality: t.overallMateriality || 'medium',
+            stakeholderRelevance: t.stakeholderRelevance || 0,
+            status: t.status || 'pending',
+          })));
+        }
+        setLoadError(null);
+      } catch (err: any) {
+        setLoadError('Unable to connect to server. Showing local data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
   // Computed
   const envMetrics = useMemo(() => metrics.filter(m => m.category === 'environmental'), [metrics]);
@@ -965,6 +1015,20 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           </button>
         </div>
       </div>
+
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-500">Loading ESG data...</span>
+        </div>
+      )}
+      {loadError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2">
+          <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+          <span className="text-sm text-amber-700">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
