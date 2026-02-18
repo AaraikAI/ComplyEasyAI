@@ -19,6 +19,7 @@ import { FEDRAMP_CONTROLS } from '../data/frameworks/fedRampControls';
 import { CMMC_CONTROLS } from '../data/frameworks/cmmcControls';
 import { HITRUST_CONTROLS } from '../data/frameworks/hitrustControls';
 import { CIS_CONTROLS } from '../data/frameworks/cisControls';
+import { ISO27017_CONTROLS } from '../data/frameworks/iso27017Controls';
 import { CONTROL_CROSSWALK, findMappedControls, getMappingsBetweenFrameworks } from '../data/frameworks/controlCrosswalk';
 import type { FrameworkControlTemplate } from '../data/frameworks/soc2Controls';
 
@@ -91,6 +92,11 @@ const FRAMEWORK_TEMPLATE_MAP: Record<string, { controls: FrameworkControlTemplat
     displayName: 'CIS Controls v8',
     description: 'Center for Internet Security Controls with 18 critical security controls and implementation groups',
   },
+  'ISO 27017': {
+    controls: ISO27017_CONTROLS,
+    displayName: 'ISO 27017:2015',
+    description: 'Cloud security controls extending ISO 27001 with guidance for cloud service providers and customers',
+  },
 };
 
 // Also support alternate name lookups
@@ -127,6 +133,10 @@ const FRAMEWORK_ALIASES: Record<string, string> = {
   'cis': 'CIS Controls',
   'CIS Controls v8': 'CIS Controls',
   'CIS': 'CIS Controls',
+  'ISO27017': 'ISO 27017',
+  'ISO 27017:2015': 'ISO 27017',
+  'iso27017': 'ISO 27017',
+  'iso-27017': 'ISO 27017',
 };
 
 function resolveFrameworkKey(frameworkType: string): string | null {
@@ -340,21 +350,27 @@ export class FrameworkTemplateService {
     ).length;
     const progress = totalControls > 0 ? Math.round((completedControls / totalControls) * 100) : 0;
 
-    await prisma.complianceFramework.update({
-      where: { id: frameworkId },
-      data: { progress },
-    });
+    // Update framework progress using raw SQL to avoid Prisma ORM issue
+    try {
+      await prisma.$executeRaw`UPDATE "ComplianceFramework" SET progress = ${progress}, "updatedAt" = NOW() WHERE id = ${frameworkId}`;
+    } catch (updateErr: any) {
+      logger.warn('Failed to update framework progress, continuing', updateErr?.message);
+    }
 
-    // Audit log
+    // Audit log (non-blocking)
     if (userId) {
-      await prisma.auditLog.create({
-        data: {
-          action: `Template Applied: ${frameworkType} (${applied} controls added, ${skipped} skipped)`,
-          userId,
-          organizationId,
-          hash: `template-${frameworkId}-${Date.now()}`,
-        },
-      });
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: `Template Applied: ${frameworkType} (${applied} controls added, ${skipped} skipped)`,
+            userId,
+            organizationId,
+            hash: `template-${frameworkId}-${Date.now()}`,
+          },
+        });
+      } catch (auditErr: any) {
+        logger.warn('Failed to create audit log, continuing', auditErr?.message);
+      }
     }
 
     // Auto-generate control mappings with other organization frameworks

@@ -207,13 +207,7 @@ class AuthController {
         return;
       }
 
-      // Update last login
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLogin: new Date() },
-      });
-
-      // Generate JWT tokens
+      // Generate JWT tokens first (critical path)
       const accessToken = generateToken({
         userId: user.id,
         email: user.email,
@@ -223,17 +217,28 @@ class AuthController {
 
       const refreshToken = generateRefreshToken(user.id);
 
-      // Log authentication
-      await prisma.auditLog.create({
-        data: {
-          action: 'User Login',
-          userId: user.id,
-          organizationId: user.organizationId,
-          hash: uuidv4(),
-          ipAddress: req.ip,
-          userAgent: req.headers['user-agent'],
-        },
-      });
+      // Update last login (non-blocking - login succeeds even if this fails)
+      try {
+        await prisma.$executeRaw`UPDATE "User" SET "lastLogin" = NOW() WHERE id = ${user.id}`;
+      } catch (updateErr: any) {
+        logger.warn('Failed to update lastLogin, continuing with login', updateErr?.message);
+      }
+
+      // Log authentication (non-blocking)
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: 'User Login',
+            userId: user.id,
+            organizationId: user.organizationId,
+            hash: uuidv4(),
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent'],
+          },
+        });
+      } catch (auditErr: any) {
+        logger.warn('Failed to create audit log, continuing with login', auditErr?.message);
+      }
 
       res.json({
         twoFactorRequired: false,

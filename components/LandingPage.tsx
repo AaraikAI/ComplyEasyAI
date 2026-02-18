@@ -182,27 +182,37 @@ export const LandingPage: React.FC = () => {
   const simulateMagicClick = async () => {
     setLoading(true);
     try {
-      // Note: Mock tokens won't work with the real backend
-      // In production, users click the link in their email which contains the real token
-      // For development: we need the backend to be configured with a database
-      // and the token must be stored in the database by the backend
-
-      // Try to use mock token (will fail if backend requires real tokens)
       if (mockToken) {
         try {
           await verifyMagicLink(mockToken);
           // If successful, the AuthContext will update the user state
           return;
         } catch (error: any) {
-          // If mock token fails, show helpful message
           const errorMsg = error?.message || 'Token verification failed';
-          if (errorMsg.includes('Invalid') || errorMsg.includes('expired')) {
-            alert('Development Note: Mock tokens don\'t work with the real backend.\n\n' +
-                  'In production, users receive a real token via email.\n\n' +
-                  'To test with the backend, you need:\n' +
-                  '1. Database configured\n' +
-                  '2. Backend to generate and store real tokens\n' +
-                  '3. Use the token from the database or email');
+
+          // Token was already used or expired - request a new one automatically
+          if (errorMsg.includes('Invalid') || errorMsg.includes('expired') || errorMsg.includes('used')) {
+            console.log('Token invalid/expired/used, requesting new magic link...');
+
+            // Request a new magic link and try again
+            try {
+              const response: any = await loginWithMagicLink(email);
+              if (response?.devToken) {
+                setMockToken(response.devToken);
+                // Try verification with the new token
+                await verifyMagicLink(response.devToken);
+                return;
+              } else {
+                // Backend didn't return devToken (likely not in development mode)
+                alert('Token expired. A new magic link has been sent to your email.\n\n' +
+                      'Please check your email inbox for the login link.');
+                return;
+              }
+            } catch (retryError: any) {
+              console.error('Retry failed:', retryError);
+              alert(`Login failed: ${retryError?.message || 'Unknown error'}\n\n` +
+                    'Please try again or contact support.');
+            }
           } else {
             throw error;
           }
@@ -212,7 +222,8 @@ export const LandingPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Magic link verification error:', error);
-      alert(`Failed to verify magic link: ${error?.message || 'Unknown error'}\n\nPlease check:\n1. Backend is running\n2. Database is configured\n3. Try requesting a new magic link`);
+      alert(`Failed to verify magic link: ${error?.message || 'Unknown error'}\n\n` +
+            'Please try requesting a new magic link.');
     }
     setLoading(false);
   };
