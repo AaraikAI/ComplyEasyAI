@@ -24,4 +24,15 @@ router.post('/vendor-score', ...requireAiFeature('aiVendorScorer'), asyncHandler
 router.post('/data-map', ...requireAiFeature('aiDataMapper'), asyncHandler(aiController.generateDataMap.bind(aiController)));
 router.post('/bcp', ...requireAiFeature('aiBcpGenerator'), asyncHandler(aiController.generateBCP.bind(aiController)));
 
+// Tier AI Features (Growth+/Visionary)
+router.post('/cross-framework-mapping', ...requireAiFeature('aiGapAnalysis'), asyncHandler(aiController.crossFrameworkMapping.bind(aiController)));
+router.post('/auto-remediation', ...requireAiFeature('aiGapAnalysis'), asyncHandler(aiController.regulatoryAutoRemediation.bind(aiController)));
+router.post('/evidence-completeness', ...requireAiFeature('aiGapAnalysis'), asyncHandler(aiController.checkEvidenceCompleteness.bind(aiController)));
+router.post('/agentic-vendor-risk', ...requireAiFeature('aiVendorScorer'), asyncHandler(aiController.agenticVendorRisk.bind(aiController)));
+router.post('/audit-simulation', ...requireAiFeature('aiGapAnalysis'), asyncHandler(aiController.simulateAudit.bind(aiController)));
+router.post('/nl-query', enforceLimit('maxAiRequestsPerMonth'), asyncHandler(aiController.naturalLanguageQuery.bind(aiController)));
+router.post('/copilot', enforceLimit('maxAiRequestsPerMonth'), asyncHandler(aiController.complianceCopilot.bind(aiController)));
+router.post('/forecast', ...requireAiFeature('aiGapAnalysis'), asyncHandler(aiController.forecastComplianceScore.bind(aiController)));
+router.post('/analyze-process', ...requireAiFeature('aiGapAnalysis'), asyncHandler(aiController.analyzeProcess.bind(aiController)));
+
 export default router;

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { api } from '../../services/api';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -610,21 +611,50 @@ export const NaturalLanguageQuery: React.FC<{ onBack: () => void }> = ({ onBack 
     setShowSuggestions(false);
     setQueryInput('');
 
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1800 + Math.random() * 1200));
+    try {
+      const aiResult = await api.ai.naturalLanguageQuery(text, {
+        frameworks: ['SOC 2', 'GDPR', 'ISO 27001', 'HIPAA', 'PCI DSS', 'NIST CSF'],
+        complianceScore: 78,
+      });
 
-    const mockResponse = generateMockResponse(text);
-    const newResult: QueryResult = {
-      id: `qr-${Date.now()}`,
-      query: text,
-      timestamp: new Date(),
-      bookmarked: false,
-      ...mockResponse,
-    };
+      const newResult: QueryResult = {
+        id: `qr-${Date.now()}`,
+        query: text,
+        timestamp: new Date(),
+        bookmarked: false,
+        response: aiResult.answer || 'No response generated.',
+        confidence: (aiResult.confidence || 75) / 100,
+        sources: (aiResult.sources || []).map((s: any) => ({
+          title: s.reference || s.type,
+          type: s.type || 'regulation',
+          url: '#',
+          relevance: (s.relevance || 80) / 100,
+        })),
+        relatedQueries: aiResult.relatedQuestions || [],
+        actionItems: aiResult.actionItems || [],
+        category: 'AI Response',
+      };
 
-    setResults(prev => [...prev, newResult]);
-    setExpandedResult(newResult.id);
-    setIsProcessing(false);
+      setResults(prev => [...prev, newResult]);
+      setExpandedResult(newResult.id);
+    } catch (error: any) {
+      console.error('NL query error:', error);
+
+      // Fallback to mock response on API failure
+      const mockResponse = generateMockResponse(text);
+      const newResult: QueryResult = {
+        id: `qr-${Date.now()}`,
+        query: text,
+        timestamp: new Date(),
+        bookmarked: false,
+        ...mockResponse,
+      };
+
+      setResults(prev => [...prev, newResult]);
+      setExpandedResult(newResult.id);
+    } finally {
+      setIsProcessing(false);
+    }
   }, [queryInput, isProcessing]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
