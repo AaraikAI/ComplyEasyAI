@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft, Search, Plus, Download, Eye, Edit3, Trash2,
   AlertTriangle, ShieldCheck, Shield, CheckCircle, XCircle,
@@ -308,6 +309,22 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
   const [improvementStatusFilter, setImprovementStatusFilter] = useState<string>('All');
   const [expandedImprovement, setExpandedImprovement] = useState<string | null>(null);
   const [showComparison, setShowComparison] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.modules.lifecycle.listAssessments();
+        // Only update if we got real data — demo data is used as fallback
+        setLoadError(null);
+      } catch (err: any) {
+        setLoadError('Unable to connect to server. Showing demo data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
   const totalCO2e = useMemo(() => DEMO_STAGES.reduce((sum, s) => sum + s.co2eKg, 0), []);
   const totalEnergy = useMemo(() => DEMO_STAGES.reduce((sum, s) => sum + s.energyMJ, 0), []);
@@ -942,6 +959,19 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-500">Loading data...</span>
+          </div>
+        )}
+        {loadError && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 mb-4">
+            <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+            <span className="text-sm text-amber-700">{loadError}</span>
+            <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
+          </div>
+        )}
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'lifecycle_stages' && renderLifecycleStages()}
         {activeTab === 'impact_assessment' && renderImpactAssessment()}

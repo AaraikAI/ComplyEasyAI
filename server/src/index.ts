@@ -60,6 +60,9 @@ import euRegulationsRoutes from './routes/euRegulations';
 // Export Routes
 import exportRoutes from './routes/export';
 
+// Feature Modules Routes
+import featureModulesRoutes from './routes/featureModules';
+
 // API Versioning
 import v1Router from './routes/v1';
 import v2Router from './routes/v2';
@@ -363,6 +366,9 @@ app.use('/api/export', apiLimiter, exportRoutes);
 
 // Marketplace routes (third-party integrations)
 app.use('/api/marketplace', apiLimiter, marketplaceRoutes);
+
+// Feature modules routes (governance, breach, CE marking, DPP, ESG, SBOM, surveillance, decommission, lifecycle, process maps)
+app.use('/api/modules', apiLimiter, featureModulesRoutes);
 
 // GraphQL endpoint
 app.post('/api/graphql', graphqlMiddleware());

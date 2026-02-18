@@ -110,6 +110,24 @@ model Organization {
   gnnModels                  GNNModel[]
   questionnaireTemplates     QuestionnaireTemplate[]
   policyTemplates            PolicyTemplate[]
+  // Feature module relations
+  governanceBodies           GovernanceBody[]
+  dpoProfile                 DPOProfile?
+  breachIncidents            BreachIncident[]
+  breachTemplates            BreachTemplate[]
+  regulatoryContacts         RegulatoryContact[]
+  ceProducts                 CEProduct[]
+  digitalProductPassports    DigitalProductPassport[]
+  esgMetrics                 ESGMetric[]
+  materialityAssessments     MaterialityAssessment[]
+  sbomEntries                SBOMEntry[]
+  sbomRepositories           SBOMRepository[]
+  surveillancePlans          SurveillancePlan[]
+  productRecalls             ProductRecall[]
+  productDecommissions       ProductDecommission[]
+  lifecycleAssessments       LifecycleAssessment[]
+  productLifecycles          ProductLifecycle[]
+  processMaps                ProcessMap[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -3777,4 +3795,498 @@ enum PhishingDifficulty {
   Easy
   Medium
   Hard
+}
+
+// ============================================================================
+// FEATURE MODULE MODELS
+// ============================================================================
+
+// --- Governance Manager ---
+model GovernanceBody {
+  id               String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String
+  name             String
+  type             String       // committee, board, working_group
+  charter          String?      @db.Text
+  meetingFrequency String?      // monthly, quarterly, etc.
+  status           String       @default("active")
+  members          Json?        // [{userId, role, joinedAt}]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @default(now()) @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  meetings         GovernanceMeeting[]
+  decisions        GovernanceDecision[]
+  escalationPaths  EscalationPath[]
+
+  @@index([organizationId])
+}
+
+model GovernanceMeeting {
+  id               String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  governanceBodyId String
+  title            String
+  date             DateTime
+  duration         Int?            // minutes
+  agenda           Json?           // [{topic, presenter, duration}]
+  minutes          String?         @db.Text
+  attendees        Json?           // [{userId, present}]
+  status           String          @default("scheduled") // scheduled, in_progress, completed, cancelled
+  actionItems      Json?           // [{description, assignee, dueDate, status}]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now()) @updatedAt
+  governanceBody   GovernanceBody  @relation(fields: [governanceBodyId], references: [id], onDelete: Cascade)
+
+  @@index([governanceBodyId])
+  @@index([date])
+}
+
+model GovernanceDecision {
+  id               String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  governanceBodyId String
+  title            String
+  description      String?         @db.Text
+  decisionType     String          // policy, risk_acceptance, budget, strategic
+  status           String          @default("proposed") // proposed, approved, rejected, deferred
+  rationale        String?         @db.Text
+  impact           String?
+  votingRecord     Json?           // [{member, vote, timestamp}]
+  effectiveDate    DateTime?
+  reviewDate       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now()) @updatedAt
+  governanceBody   GovernanceBody  @relation(fields: [governanceBodyId], references: [id], onDelete: Cascade)
+
+  @@index([governanceBodyId])
+  @@index([status])
+}
+
+model EscalationPath {
+  id               String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  governanceBodyId String
+  name             String
+  triggerCriteria  Json            // [{condition, threshold}]
+  levels           Json            // [{level, notifyRole, slaHours, autoEscalate}]
+  status           String          @default("active")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now()) @updatedAt
+  governanceBody   GovernanceBody  @relation(fields: [governanceBodyId], references: [id], onDelete: Cascade)
+
+  @@index([governanceBodyId])
+}
+
+model DPOProfile {
+  id                 String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId     String       @unique
+  name               String
+  email              String
+  phone              String?
+  certifications     Json?        // ["CIPP/E", "CIPM", etc.]
+  appointmentDate    DateTime?
+  registeredWithDPA  Boolean      @default(false)
+  dpaRegistrationRef String?
+  tasks              Json?        // [{task, dueDate, status, priority}]
+  activityLog        Json?        // [{action, timestamp, details}]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @default(now()) @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// --- Breach Notification Wizard ---
+model BreachIncident {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  title                 String
+  breachType            String       // unauthorized_access, data_loss, ransomware, etc.
+  severity              String       // critical, high, medium, low
+  status                String       @default("detected") // detected, investigating, contained, notified, resolved, closed
+  discoveryDate         DateTime
+  discoveryMethod       String?
+  description           String?      @db.Text
+  affectedRecords       Int?
+  affectedDataTypes     Json?        // ["personal", "financial", "health", etc.]
+  affectedJurisdictions Json?        // ["EU", "US-CA", etc.]
+  rootCause             String?      @db.Text
+  containmentActions    Json?        // [{action, timestamp, responsible}]
+  impactAssessment      Json?        // {likelihood, severity, riskScore}
+  notifications         BreachNotification[]
+  timeline              Json?        // [{event, timestamp, details}]
+  lessonsLearned        String?      @db.Text
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @default(now()) @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([severity])
+}
+
+model BreachNotification {
+  id              String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  breachId        String
+  recipientType   String         // dpa, affected_individuals, media, internal
+  jurisdiction    String?
+  authority       String?
+  templateUsed    String?
+  content         String?        @db.Text
+  sentAt          DateTime?
+  dueDate         DateTime?
+  status          String         @default("draft") // draft, pending, sent, acknowledged
+  acknowledgement Json?          // {receivedAt, referenceNumber}
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @default(now()) @updatedAt
+  breach          BreachIncident @relation(fields: [breachId], references: [id], onDelete: Cascade)
+
+  @@index([breachId])
+  @@index([status])
+}
+
+model BreachTemplate {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  name           String
+  jurisdiction   String
+  recipientType  String
+  subject        String?
+  body           String       @db.Text
+  variables      Json?        // [{name, description, required}]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model RegulatoryContact {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  name           String
+  authority      String
+  jurisdiction   String
+  email          String?
+  phone          String?
+  address        String?
+  notificationUrl String?
+  timelineHours  Int?         // 72 for GDPR, 24 for NIS2, etc.
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// --- CE Marking Workflow ---
+model CEProduct {
+  id                  String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId      String
+  name                String
+  productCode         String?
+  category            String       // machinery, medical_device, electrical, ppe, etc.
+  description         String?      @db.Text
+  applicableDirectives Json?       // ["2006/42/EC", "2014/35/EU", etc.]
+  conformityModule    String?      // module_a, module_b, etc.
+  notifiedBody        Json?        // {name, number, status}
+  technicalFile       Json?        // {status, documents: [{name, type, uploaded}]}
+  testResults         Json?        // [{test, standard, result, date}]
+  riskAssessment      Json?        // {overallRisk, hazards: [{id, type, severity, probability, mitigation}]}
+  ceMarkingStatus     String       @default("not_started") // not_started, in_progress, documentation, testing, review, approved, marked
+  docStatus           String       @default("incomplete")
+  ceMarkedDate        DateTime?
+  expiryDate          DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @default(now()) @updatedAt
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([ceMarkingStatus])
+}
+
+// --- Digital Product Passport ---
+model DigitalProductPassport {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  productName           String
+  gtin                  String?
+  batchNumber           String?
+  serialNumber          String?
+  manufacturingDate     DateTime?
+  manufacturingLocation String?
+  materialComposition   Json?        // [{material, percentage, recycled, svhcStatus}]
+  carbonFootprint       Json?        // {total, stages: {rawMaterials, manufacturing, distribution, use, endOfLife}}
+  recyclabilityScore    Float?
+  repairabilityScore    Float?
+  durabilityRating      String?
+  energyClass           String?
+  supplyChain           Json?        // [{supplier, tier, location, certified}]
+  circularityMetrics    Json?        // {recyclability, recycledContent, biodegradable}
+  complianceStatus      String       @default("draft") // draft, pending_review, compliant, non_compliant
+  passportVersion       Int          @default(1)
+  qrCodeData            String?
+  publicUrl             String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @default(now()) @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([gtin])
+}
+
+// --- ESG Reporting ---
+model ESGMetric {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  category       String       // environmental, social, governance
+  subcategory    String       // ghg_emissions, energy, water, waste, etc.
+  name           String
+  value          Float
+  unit           String
+  targetValue    Float?
+  previousValue  Float?
+  reportingPeriod String     // Q1-2025, 2024, etc.
+  esrsStandard   String?     // E1, E2, S1, G1, etc.
+  methodology    String?
+  dataSource     String?
+  verified       Boolean      @default(false)
+  verifiedBy     String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([reportingPeriod])
+}
+
+model MaterialityAssessment {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  topic          String
+  esrsStandard   String?
+  financialImpact Float?     // 0-10
+  impactOnSociety Float?     // 0-10
+  isMaterial     Boolean      @default(false)
+  stakeholders   Json?        // [{group, perspective, rating}]
+  justification  String?      @db.Text
+  reviewDate     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// --- SBOM Manager ---
+model SBOMEntry {
+  id              String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  repositoryName  String?
+  componentName   String
+  componentVersion String
+  packageManager  String?      // npm, pip, maven, nuget, etc.
+  license         String?
+  licenseRisk     String?      // low, medium, high, critical
+  directDependency Boolean     @default(true)
+  depth           Int          @default(0)
+  vulnerabilities  Json?       // [{cveId, severity, description, fixedIn, status}]
+  supplyChainRisk  String?     // low, medium, high
+  lastScanned     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now()) @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([componentName])
+  @@index([licenseRisk])
+}
+
+model SBOMRepository {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  name           String
+  url            String?
+  branch         String?      @default("main")
+  format         String       @default("cyclonedx") // cyclonedx, spdx
+  lastScanned    DateTime?
+  componentCount Int          @default(0)
+  vulnerabilityCount Int      @default(0)
+  status         String       @default("pending") // pending, scanning, completed, failed
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// --- Post-Market Surveillance ---
+model SurveillancePlan {
+  id               String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String
+  productName      String
+  productId        String?
+  planType         String       // routine, risk_based, targeted
+  frequency        String       // continuous, monthly, quarterly, annual
+  scope            Json?        // {markets, channels, dataPoints}
+  kpis             Json?        // [{metric, target, current, trend}]
+  status           String       @default("active")
+  lastReviewDate   DateTime?
+  nextReviewDate   DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @default(now()) @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  incidents        SurveillanceIncident[]
+
+  @@index([organizationId])
+}
+
+model SurveillanceIncident {
+  id                String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  planId            String
+  type              String           // complaint, safety_incident, near_miss, malfunction, misuse, field_failure
+  severity          String           // critical, high, medium, low
+  title             String
+  description       String?          @db.Text
+  reportedBy        String?
+  reportedDate      DateTime
+  investigationStatus String         @default("open") // open, investigating, resolved, closed
+  rootCause         String?          @db.Text
+  correctiveAction  String?          @db.Text
+  regulatoryNotified Boolean         @default(false)
+  notifiedAuthority String?
+  capaId            String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @default(now()) @updatedAt
+  plan              SurveillancePlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId])
+  @@index([type])
+  @@index([severity])
+}
+
+model ProductRecall {
+  id              String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  productName     String
+  productId       String?
+  recallType      String       // voluntary, mandatory, safety_alert
+  recallClass     String?      // class_i, class_ii, class_iii
+  reason          String       @db.Text
+  affectedUnits   Int?
+  affectedMarkets Json?        // ["EU", "US", etc.]
+  status          String       @default("initiated") // initiated, active, monitoring, completed
+  notificationDate DateTime?
+  completionDate  DateTime?
+  recoveryRate    Float?
+  publicNotice    String?      @db.Text
+  timeline        Json?        // [{action, date, status}]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now()) @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// --- Product Decommissioning ---
+model ProductDecommission {
+  id                String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId    String
+  productName       String
+  productVersion    String?
+  lifecycleStage    String       @default("active") // active, end_of_sale, end_of_support, end_of_life, decommissioned
+  endOfSaleDate     DateTime?
+  endOfSupportDate  DateTime?
+  endOfLifeDate     DateTime?
+  decommissionDate  DateTime?
+  successorProduct  String?
+  migrationPlan     Json?        // {steps: [{task, status, assignee, dueDate}]}
+  dataMigration     Json?        // {sourceSystem, targetSystem, status, recordCount}
+  customerNotifications Json?    // [{channel, sentDate, audience, status}]
+  dataRetention     Json?        // {policy, retentionPeriod, deletionDate}
+  securityPatches   Json?        // {lastPatchDate, commitment, status}
+  disposalMethod    String?      // recycle, secure_destroy, archive
+  environmentalImpact Json?
+  status            String       @default("planning") // planning, in_progress, completed
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @default(now()) @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([lifecycleStage])
+}
+
+// --- Environmental Lifecycle Assessment ---
+model LifecycleAssessment {
+  id               String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String
+  productName      String
+  productId        String?
+  functionalUnit   String?
+  systemBoundary   String?      // cradle_to_gate, cradle_to_grave, cradle_to_cradle
+  methodology      String?      // ISO14040, PEF, etc.
+  stages           Json?        // [{name, processes: [{name, co2e, energy, water, waste}]}]
+  impactCategories Json?        // [{category, value, unit, methodology}]
+  totalCarbonFootprint Float?
+  totalEnergy      Float?
+  totalWater       Float?
+  totalWaste       Float?
+  recyclabilityScore Float?
+  durabilityScore  Float?
+  complianceStatus String       @default("draft")
+  improvements     Json?        // [{area, suggestion, potentialReduction, effort}]
+  benchmarkData    Json?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @default(now()) @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// --- Product Lifecycle Tracker ---
+model ProductLifecycle {
+  id                String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId    String
+  productName       String
+  productCode       String?
+  currentStage      String       @default("concept") // concept, design, development, testing, production, market, maintenance, eol, decommission
+  complianceScore   Float?
+  ceMarkingStatus   String?
+  dppId             String?      // link to DigitalProductPassport
+  sbomVersion       String?
+  regulatoryRequirements Json?   // [{framework, requirement, status}]
+  milestones        Json?        // [{name, date, status, approver}]
+  documents         Json?        // [{name, type, version, uploadDate, url}]
+  stageHistory      Json?        // [{stage, enteredAt, exitedAt, approvedBy}]
+  riskClassification String?     // class_i, class_ii, class_iii
+  marketEntry       DateTime?
+  marketExit        DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @default(now()) @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([currentStage])
+}
+
+// --- Process Mapper ---
+model ProcessMap {
+  id              String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  name            String
+  description     String?
+  category        String?      // business_operations, hr, finance, it, legal, compliance
+  status          String       @default("draft") // draft, review, approved, archived
+  nodes           Json         // [{id, type, label, x, y, description, riskLevel, complianceTags}]
+  edges           Json         // [{id, source, target, label, type}]
+  raciMatrix      Json?        // [{activity, responsible, accountable, consulted, informed}]
+  complianceGaps  Json?        // [{framework, gap, severity, recommendation}]
+  bpmnXml         String?      @db.Text
+  version         Int          @default(1)
+  aiGenerated     Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now()) @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([category])
 }
