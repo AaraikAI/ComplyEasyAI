@@ -2464,6 +2464,29 @@ export const api = {
       });
     },
   },
+
+  regulationData: {
+    getAll: async (module: string) => fetchAPI<Record<string, any>>(`/modules/regulation-data/${module}`),
+    get: async (module: string, dataType: string) => fetchAPI<any>(`/modules/regulation-data/${module}/${dataType}`),
+    save: async (module: string, dataType: string, data: any) =>
+      fetchAPI<any>(`/modules/regulation-data/${module}/${dataType}`, {
+        method: 'PUT',
+        body: JSON.stringify({ data }),
+      }),
+    delete: async (module: string, dataType: string) =>
+      fetchAPI<any>(`/modules/regulation-data/${module}/${dataType}`, { method: 'DELETE' }),
+  },
+
+  metrics: {
+    record: async (metricType: string, value: number, metadata?: any) =>
+      fetchAPI<any>('/modules/metrics', {
+        method: 'POST',
+        body: JSON.stringify({ metricType, value, metadata }),
+      }),
+    getHistory: async (metricType: string, days?: number) =>
+      fetchAPI<any[]>(`/modules/metrics/${metricType}${days ? `?days=${days}` : ''}`),
+    getLatest: async () => fetchAPI<Record<string, any>>('/modules/metrics/latest'),
+  },
 };
 
 // Export helper functions

@@ -12,7 +12,8 @@
  * Reference: Regulation (EU) 2024/2847
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   Shield, AlertTriangle, CheckCircle, X, Plus, FileText, Clock,
   Search, Filter, Bug, RefreshCw, Lock, Cpu, ChevronRight,
@@ -98,9 +99,9 @@ interface ComplianceTimelineEvent {
 
 type TabKey = 'overview' | 'products' | 'vulnerabilities' | 'updates' | 'timeline';
 
-// ── Mock Data ────────────────────────────────────────────────────────────
+// ── Default Data ─────────────────────────────────────────────────────────
 
-const MOCK_PRODUCTS: CRAProduct[] = [
+const DEFAULT_PRODUCTS: CRAProduct[] = [
   {
     id: 'prod-001',
     name: 'SmartHome Hub Pro',
@@ -206,7 +207,7 @@ const MOCK_PRODUCTS: CRAProduct[] = [
   },
 ];
 
-const MOCK_VULNERABILITIES: Vulnerability[] = [
+const DEFAULT_VULNERABILITIES: Vulnerability[] = [
   {
     id: 'vuln-001', productId: 'prod-001', productName: 'SmartHome Hub Pro',
     cveId: 'CVE-2026-10234', title: 'Buffer overflow in Zigbee protocol handler',
@@ -254,7 +255,7 @@ const MOCK_VULNERABILITIES: Vulnerability[] = [
   },
 ];
 
-const MOCK_UPDATES: SecurityUpdate[] = [
+const DEFAULT_UPDATES: SecurityUpdate[] = [
   {
     id: 'upd-001', productId: 'prod-001', productName: 'SmartHome Hub Pro',
     version: '3.2.2', status: 'in_development', releaseDate: null, plannedDate: '2026-03-01',
@@ -285,7 +286,7 @@ const MOCK_UPDATES: SecurityUpdate[] = [
   },
 ];
 
-const MOCK_TIMELINE: ComplianceTimelineEvent[] = [
+const DEFAULT_TIMELINE: ComplianceTimelineEvent[] = [
   { id: 'tl-1', date: '2024-12-10', title: 'CRA enters into force', description: 'Regulation (EU) 2024/2847 officially entered into force.', type: 'milestone', status: 'completed' },
   { id: 'tl-2', date: '2025-06-11', title: 'Vulnerability reporting obligations begin', description: 'Manufacturers must report actively exploited vulnerabilities to ENISA within 24 hours (Article 14).', type: 'obligation', status: 'completed' },
   { id: 'tl-3', date: '2025-09-11', title: 'Conformity assessment body notification', description: 'Member States shall notify conformity assessment bodies (Article 38).', type: 'deadline', status: 'completed' },
@@ -366,15 +367,50 @@ const formatDate = (d: string | null): string => {
 
 export const EUCRADashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
-  const [products, setProducts] = useState<CRAProduct[]>(MOCK_PRODUCTS);
-  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(MOCK_VULNERABILITIES);
-  const [updates, setUpdates] = useState<SecurityUpdate[]>(MOCK_UPDATES);
-  const [timeline] = useState<ComplianceTimelineEvent[]>(MOCK_TIMELINE);
+  const [products, setProducts] = useState<CRAProduct[]>(DEFAULT_PRODUCTS);
+  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(DEFAULT_VULNERABILITIES);
+  const [updates, setUpdates] = useState<SecurityUpdate[]>(DEFAULT_UPDATES);
+  const [timeline, setTimeline] = useState<ComplianceTimelineEvent[]>(DEFAULT_TIMELINE);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | 'all'>('all');
   const [severityFilter, setSeverityFilter] = useState<VulnerabilitySeverity | 'all'>('all');
   const [vulnStatusFilter, setVulnStatusFilter] = useState<VulnerabilityStatus | 'all'>('all');
+
+  // ── Load saved data from API ──
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await api.regulationData.getAll('eu-cra');
+        if (saved && typeof saved === 'object') {
+          if (saved.products) setProducts(saved.products);
+          if (saved.vulnerabilities) setVulnerabilities(saved.vulnerabilities);
+          if (saved.updates) setUpdates(saved.updates);
+          if (saved.timeline) setTimeline(saved.timeline);
+        }
+      } catch (err: any) {
+        console.error('Failed to load EU CRA data:', err);
+        setLoadError('Using default template data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
+
+  // ── Debounced auto-save ──
+  useEffect(() => {
+    if (isLoading) return;
+    const timer = setTimeout(() => {
+      api.regulationData.save('eu-cra', 'products', products).catch(console.error);
+      api.regulationData.save('eu-cra', 'vulnerabilities', vulnerabilities).catch(console.error);
+      api.regulationData.save('eu-cra', 'updates', updates).catch(console.error);
+      api.regulationData.save('eu-cra', 'timeline', timeline).catch(console.error);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [products, vulnerabilities, updates, timeline, isLoading]);
 
   const [showProductModal, setShowProductModal] = useState(false);
   const [showVulnModal, setShowVulnModal] = useState(false);

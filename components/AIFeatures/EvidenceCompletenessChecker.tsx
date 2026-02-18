@@ -635,7 +635,7 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
             controlId: g.controlId,
             title: g.controlName,
             requirement: `${fw.name} control requirement for ${g.controlName}`,
-            currentEvidence: g.existingEvidence || [],
+            currentEvidence: g.currentEvidence ? [g.currentEvidence] : [],
           }))
       );
 

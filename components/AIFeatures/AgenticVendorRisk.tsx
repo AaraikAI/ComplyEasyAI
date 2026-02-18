@@ -438,10 +438,12 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
         return;
       }
 
+      const vendorName = 'name' in vendorToAssess ? vendorToAssess.name : vendorToAssess.vendorName;
+      const vendorCategory = 'category' in vendorToAssess ? vendorToAssess.category : vendorToAssess.assessmentType;
       const result = await api.ai.agenticVendorRisk(
         {
-          name: vendorToAssess.name,
-          service: vendorToAssess.category || 'Cloud Services',
+          name: vendorName,
+          service: vendorCategory || 'Cloud Services',
           dataAccess: 'Sensitive data with potential PII access',
           certifications: ['SOC 2 Type II', 'ISO 27001'],
           subProcessors: [],

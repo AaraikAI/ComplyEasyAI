@@ -58,11 +58,14 @@ interface QueryResult {
   timestamp: Date;
   response: string;
   confidence: number;
-  sources: Array<{ title: string; reference: string; type: string }>;
+  sources: Array<{ title: string; reference?: string; type: string; url?: string; relevance?: number }>;
   followUpQuestions: string[];
   dataCards?: DataCard[];
   bookmarked: boolean;
   feedback?: 'up' | 'down';
+  relatedQueries?: string[];
+  actionItems?: string[];
+  category?: string;
 }
 
 interface DataCard {
@@ -630,6 +633,7 @@ export const NaturalLanguageQuery: React.FC<{ onBack: () => void }> = ({ onBack 
           url: '#',
           relevance: (s.relevance || 80) / 100,
         })),
+        followUpQuestions: aiResult.followUpQuestions || aiResult.relatedQuestions || [],
         relatedQueries: aiResult.relatedQuestions || [],
         actionItems: aiResult.actionItems || [],
         category: 'AI Response',
@@ -640,18 +644,19 @@ export const NaturalLanguageQuery: React.FC<{ onBack: () => void }> = ({ onBack 
     } catch (error: any) {
       console.error('NL query error:', error);
 
-      // Fallback to mock response on API failure
-      const mockResponse = generateMockResponse(text);
-      const newResult: QueryResult = {
-        id: `qr-${Date.now()}`,
+      const errorResult: QueryResult = {
+        id: `qr-err-${Date.now()}`,
         query: text,
         timestamp: new Date(),
         bookmarked: false,
-        ...mockResponse,
+        response: `**Unable to process your query.** ${error?.message || 'The AI service is temporarily unavailable.'}\n\nPlease try again in a moment. If the issue persists, check that the backend server is running and the AI service is configured.`,
+        confidence: 0,
+        sources: [],
+        followUpQuestions: ['Try rephrasing your question', 'Check server connectivity'],
       };
 
-      setResults(prev => [...prev, newResult]);
-      setExpandedResult(newResult.id);
+      setResults(prev => [...prev, errorResult]);
+      setExpandedResult(errorResult.id);
     } finally {
       setIsProcessing(false);
     }

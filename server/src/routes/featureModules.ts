@@ -161,4 +161,19 @@ router.post('/sync/breach', authorize('admin', 'editor'), asyncHandler(fm.syncBr
 // ============================================================================
 router.get('/integrations/:provider/test', asyncHandler(fm.testIntegrationConnection));
 
+// ============================================================================
+// REGULATION MODULE DATA (NIS2, US Privacy, Ecodesign, EU CRA, CSRD)
+// ============================================================================
+router.get('/regulation-data/:module', asyncHandler(fm.getAllRegulationModuleData));
+router.get('/regulation-data/:module/:dataType', asyncHandler(fm.getRegulationModuleData));
+router.put('/regulation-data/:module/:dataType', authorize('admin', 'editor'), asyncHandler(fm.upsertRegulationModuleData));
+router.delete('/regulation-data/:module/:dataType', authorize('admin'), asyncHandler(fm.deleteRegulationModuleData));
+
+// ============================================================================
+// METRICS HISTORY
+// ============================================================================
+router.post('/metrics', authorize('admin', 'editor'), asyncHandler(fm.recordMetric));
+router.get('/metrics/latest', asyncHandler(fm.getLatestMetrics));
+router.get('/metrics/:metricType', asyncHandler(fm.getMetricsHistory));
+
 export default router;
