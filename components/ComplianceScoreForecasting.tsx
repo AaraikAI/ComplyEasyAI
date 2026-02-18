@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft, TrendingUp, TrendingDown, Minus, Target, Shield,
   AlertTriangle, CheckCircle, Clock, Calendar, Download, RefreshCw,
@@ -372,6 +373,40 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
 
   const toggleAlertActive = useCallback((id: string) => {
     setAlertThresholds(prev => prev.map(at => at.id === id ? { ...at, isActive: !at.isActive } : at));
+  }, []);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [aiInsights, setAiInsights] = useState<{ keyInsights: string[]; recommendedActions: any[]; summary: string } | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const handleRefreshForecast = useCallback(async () => {
+    setIsRefreshing(true);
+    setAiError(null);
+
+    try {
+      const currentScores = FRAMEWORK_PROJECTIONS.map(fw => ({
+        framework: fw.name,
+        score: fw.currentScore,
+        trend: fw.trend === 'improving' ? 'up' as const : fw.trend === 'declining' ? 'down' as const : 'stable' as const,
+      }));
+
+      const result = await api.ai.forecastComplianceScore(
+        currentScores,
+        ['EU AI Act enforcement deadline approaching', 'NIS2 compliance deadline', 'SOC 2 annual audit cycle'],
+        HISTORICAL_DATA.map(h => ({ date: h.month, framework: 'Overall', score: h.score }))
+      );
+
+      setAiInsights({
+        keyInsights: result.keyInsights || [],
+        recommendedActions: result.recommendedActions || [],
+        summary: result.summary || '',
+      });
+    } catch (error: any) {
+      console.error('Forecast refresh error:', error);
+      setAiError(error?.message || 'Failed to refresh AI forecast.');
+    } finally {
+      setIsRefreshing(false);
+    }
   }, []);
 
   const handleExport = useCallback(() => {

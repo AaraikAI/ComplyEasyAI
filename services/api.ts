@@ -709,6 +709,70 @@ export const api = {
         body: JSON.stringify({ message, fileContext }),
       });
     },
+
+    // Tier AI Features
+    crossFrameworkMapping: async (sourceFramework: string, targetFramework: string, sourceControls: any[], targetControls: any[]) => {
+      return fetchAPI<any>('/ai/cross-framework-mapping', {
+        method: 'POST',
+        body: JSON.stringify({ sourceFramework, targetFramework, sourceControls, targetControls }),
+      }, 120000);
+    },
+
+    autoRemediation: async (framework: string, gaps: any[], organizationContext: string) => {
+      return fetchAPI<any>('/ai/auto-remediation', {
+        method: 'POST',
+        body: JSON.stringify({ framework, gaps, organizationContext }),
+      }, 120000);
+    },
+
+    evidenceCompleteness: async (framework: string, controls: any[]) => {
+      return fetchAPI<any>('/ai/evidence-completeness', {
+        method: 'POST',
+        body: JSON.stringify({ framework, controls }),
+      }, 120000);
+    },
+
+    agenticVendorRisk: async (vendor: any, assessmentScope: string[]) => {
+      return fetchAPI<any>('/ai/agentic-vendor-risk', {
+        method: 'POST',
+        body: JSON.stringify({ vendor, assessmentScope }),
+      }, 120000);
+    },
+
+    auditSimulation: async (framework: string, controlDomain: string, controlsToAudit: any[], previousAnswers?: any[]) => {
+      return fetchAPI<any>('/ai/audit-simulation', {
+        method: 'POST',
+        body: JSON.stringify({ framework, controlDomain, controlsToAudit, previousAnswers }),
+      }, 120000);
+    },
+
+    naturalLanguageQuery: async (query: string, context: any) => {
+      return fetchAPI<any>('/ai/nl-query', {
+        method: 'POST',
+        body: JSON.stringify({ query, context }),
+      }, 60000);
+    },
+
+    complianceCopilot: async (message: string, conversationHistory: any[], context: any) => {
+      return fetchAPI<any>('/ai/copilot', {
+        method: 'POST',
+        body: JSON.stringify({ message, conversationHistory, context }),
+      }, 60000);
+    },
+
+    forecastComplianceScore: async (currentScores: any[], upcomingChanges: string[], historicalData: any[]) => {
+      return fetchAPI<any>('/ai/forecast', {
+        method: 'POST',
+        body: JSON.stringify({ currentScores, upcomingChanges, historicalData }),
+      }, 120000);
+    },
+
+    analyzeProcess: async (processDescription: string, category: string, complianceFrameworks: string[]) => {
+      return fetchAPI<any>('/ai/analyze-process', {
+        method: 'POST',
+        body: JSON.stringify({ processDescription, category, complianceFrameworks }),
+      }, 120000);
+    },
   },
 
   // --- Audit ---

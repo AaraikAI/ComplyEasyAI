@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { api } from '../../services/api';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -421,10 +422,40 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
     return true;
   });
 
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiAssessmentResult, setAiAssessmentResult] = useState<any | null>(null);
+
   const handleRunAgent = useCallback(async () => {
     setIsRunningAgent(true);
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    setIsRunningAgent(false);
+    setAiError(null);
+
+    try {
+      // Pick first vendor from queue for assessment, or use the selected vendor
+      const vendorToAssess = ASSESSMENT_QUEUE[0] || VENDORS[0];
+      if (!vendorToAssess) {
+        setAiError('No vendors in the assessment queue.');
+        setIsRunningAgent(false);
+        return;
+      }
+
+      const result = await api.ai.agenticVendorRisk(
+        {
+          name: vendorToAssess.name,
+          service: vendorToAssess.category || 'Cloud Services',
+          dataAccess: 'Sensitive data with potential PII access',
+          certifications: ['SOC 2 Type II', 'ISO 27001'],
+          subProcessors: [],
+        },
+        ['Security', 'Privacy', 'Business Continuity', 'Regulatory', 'Fourth-Party']
+      );
+
+      setAiAssessmentResult(result);
+    } catch (error: any) {
+      console.error('Agentic vendor risk error:', error);
+      setAiError(error?.message || 'Failed to run AI vendor assessment. Please try again.');
+    } finally {
+      setIsRunningAgent(false);
+    }
   }, []);
 
   const handleExport = useCallback(() => {
