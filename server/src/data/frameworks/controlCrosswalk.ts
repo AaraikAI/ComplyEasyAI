@@ -19,6 +19,7 @@
  * - CMMC: CMMC-AC-L1-001, etc.
  * - HITRUST: HITRUST-01.a, etc.
  * - CIS Controls: CIS-1, CIS-2, etc.
+ * - ISO 27017: ISO27017-CLD.6.3, ISO27017-CLD.9.5, etc.
  */
 
 export interface ControlCrosswalkMapping {
@@ -403,6 +404,87 @@ export const CONTROL_CROSSWALK: ControlCrosswalkMapping[] = [
   { sourceFramework: 'PCI DSS', sourceControlId: 'PCI-4.1', targetFramework: 'NIST 800-53', targetControlId: 'SC-8', mappingType: 'equivalent', confidence: 0.9 },
   { sourceFramework: 'PCI DSS', sourceControlId: 'PCI-6.4', targetFramework: 'NIST 800-53', targetControlId: 'CM-3', mappingType: 'equivalent', confidence: 0.9 },
   { sourceFramework: 'PCI DSS', sourceControlId: 'PCI-9.1', targetFramework: 'NIST 800-53', targetControlId: 'PE-1', mappingType: 'equivalent', confidence: 0.9 },
+
+  // =============================================================================
+  // ISO 27017 <-> ISO 27001 Mappings (ISO 27017 extends ISO 27001 for cloud)
+  // =============================================================================
+
+  // Cloud-specific access control -> ISO 27001 Access Control
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.6.3', targetFramework: 'ISO 27001', targetControlId: 'A.5.15', mappingType: 'equivalent', confidence: 0.95 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.9.5', targetFramework: 'ISO 27001', targetControlId: 'A.5.16', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Asset management
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.8.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.9', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Cryptography
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.10.1', targetFramework: 'ISO 27001', targetControlId: 'A.8.24', mappingType: 'equivalent', confidence: 0.95 },
+
+  // Operations security
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.12.1', targetFramework: 'ISO 27001', targetControlId: 'A.8.32', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.12.4', targetFramework: 'ISO 27001', targetControlId: 'A.8.2', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Incident management
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.16.1', targetFramework: 'ISO 27001', targetControlId: 'A.5.24', mappingType: 'equivalent', confidence: 0.95 },
+
+  // =============================================================================
+  // ISO 27017 <-> SOC 2 Mappings
+  // =============================================================================
+
+  // Access control
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.6.3', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.9.5', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.2', mappingType: 'equivalent', confidence: 0.85 },
+
+  // Cryptography
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.10.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC6.7', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Logging and monitoring
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.12.4', targetFramework: 'SOC 2 Type II', targetControlId: 'CC4.1', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Change management
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.12.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC8.1', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Incident response
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.16.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC7.3', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Business continuity
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.17.1', targetFramework: 'SOC 2 Type II', targetControlId: 'CC9.1', mappingType: 'equivalent', confidence: 0.85 },
+
+  // =============================================================================
+  // ISO 27017 <-> NIST 800-53 Mappings
+  // =============================================================================
+
+  // Access control
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.6.3', targetFramework: 'NIST 800-53', targetControlId: 'AC-1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.9.5', targetFramework: 'NIST 800-53', targetControlId: 'AC-2', mappingType: 'equivalent', confidence: 0.85 },
+
+  // Cryptography
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.10.1', targetFramework: 'NIST 800-53', targetControlId: 'SC-8', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Configuration management
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.12.1', targetFramework: 'NIST 800-53', targetControlId: 'CM-3', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Audit
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.12.4', targetFramework: 'NIST 800-53', targetControlId: 'AU-1', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Incident response
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.16.1', targetFramework: 'NIST 800-53', targetControlId: 'IR-1', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Contingency planning
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.17.1', targetFramework: 'NIST 800-53', targetControlId: 'CP-1', mappingType: 'equivalent', confidence: 0.85 },
+
+  // =============================================================================
+  // ISO 27017 <-> FedRAMP Mappings (cloud-specific)
+  // =============================================================================
+
+  // Access control
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.6.3', targetFramework: 'FedRAMP', targetControlId: 'FR-AC-1', mappingType: 'equivalent', confidence: 0.9 },
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.9.5', targetFramework: 'FedRAMP', targetControlId: 'FR-AC-2', mappingType: 'equivalent', confidence: 0.85 },
+
+  // Cryptography
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.10.1', targetFramework: 'FedRAMP', targetControlId: 'FR-SC-8', mappingType: 'equivalent', confidence: 0.9 },
+
+  // Incident response
+  { sourceFramework: 'ISO 27017', sourceControlId: 'ISO27017-CLD.16.1', targetFramework: 'FedRAMP', targetControlId: 'FR-IR-1', mappingType: 'equivalent', confidence: 0.9 },
 ];
 
 /**
@@ -459,6 +541,9 @@ function normalizeFrameworkName(name: string): string {
     'cis': 'cis controls',
     'cis controls v8': 'cis controls',
     'ccpa/cpra': 'ccpa',
+    'iso27017': 'iso 27017',
+    'iso 27017:2015': 'iso 27017',
+    'iso-27017': 'iso 27017',
   };
 
   return aliases[normalized] || normalized;
