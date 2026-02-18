@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { api } from '../../services/api';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -617,12 +618,44 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
     return true;
   });
 
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+
   const handleScan = useCallback(async () => {
     setIsScanning(true);
     setScanComplete(false);
-    await new Promise(resolve => setTimeout(resolve, 4000));
-    setIsScanning(false);
-    setScanComplete(true);
+    setAiError(null);
+
+    try {
+      // Build controls array from framework readiness data for AI analysis
+      const controls = FRAMEWORK_READINESS.flatMap(fw =>
+        EVIDENCE_GAPS
+          .filter(g => g.framework === fw.name)
+          .map(g => ({
+            controlId: g.controlId,
+            title: g.controlName,
+            requirement: `${fw.name} control requirement for ${g.controlName}`,
+            currentEvidence: g.existingEvidence || [],
+          }))
+      );
+
+      if (controls.length > 0) {
+        const result = await api.ai.evidenceCompleteness(
+          'Multi-Framework',
+          controls.slice(0, 20) // Limit to 20 controls per request
+        );
+
+        setAiSummary(result.summary || null);
+      }
+
+      setScanComplete(true);
+    } catch (error: any) {
+      console.error('Evidence scan error:', error);
+      setAiError(error?.message || 'Failed to run AI evidence scan. Showing cached results.');
+      setScanComplete(true); // Still show cached data
+    } finally {
+      setIsScanning(false);
+    }
   }, []);
 
   const handleExport = useCallback(() => {

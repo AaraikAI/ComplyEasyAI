@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   X,
   Send,
@@ -547,24 +548,49 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
     setShowExamples(false);
     setIsTyping(true);
 
-    // Simulate AI processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+    try {
+      // Build conversation history for context
+      const conversationHistory = messages.slice(-10).map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      }));
 
-    const response = getResponseForQuery(text);
+      const aiResult = await api.ai.complianceCopilot(text, conversationHistory, {
+        currentView: 'copilot',
+        activeFramework: undefined,
+      });
 
-    const assistantMessage: CopilotMessage = {
-      id: `msg-${Date.now()}-resp`,
-      role: 'assistant',
-      content: response.content,
-      timestamp: new Date(),
-      confidence: response.confidence,
-      sources: response.sources,
-      followUpQuestions: response.followUps,
-    };
+      const assistantMessage: CopilotMessage = {
+        id: `msg-${Date.now()}-resp`,
+        role: 'assistant',
+        content: aiResult.response || 'I could not generate a response. Please try again.',
+        timestamp: new Date(),
+        confidence: 0.85,
+        sources: (aiResult.relatedControls || []).map((c: string) => ({ title: c, reference: c })),
+        followUpQuestions: aiResult.suggestions || [],
+      };
 
-    setMessages(prev => [...prev, assistantMessage]);
-    setIsTyping(false);
-  }, [inputValue, getResponseForQuery]);
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error: any) {
+      console.error('Copilot error:', error);
+
+      // Fallback to mock responses on API failure
+      const response = getResponseForQuery(text);
+      const assistantMessage: CopilotMessage = {
+        id: `msg-${Date.now()}-resp`,
+        role: 'assistant',
+        content: response.content,
+        timestamp: new Date(),
+        confidence: response.confidence,
+        sources: response.sources,
+        followUpQuestions: response.followUps,
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  }, [inputValue, messages, getResponseForQuery]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

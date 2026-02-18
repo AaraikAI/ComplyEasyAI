@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft, Plus, Trash2, Edit3, Save, Download, ChevronDown, ChevronRight,
   AlertTriangle, CheckCircle, XCircle, Play, Square, Diamond, Circle,
   FileText, Database, GitBranch, Users, Shield, Link2, Layers,
   ArrowRight, ArrowDown, Search, Filter, BarChart3, ClipboardList,
-  Workflow, Settings, Eye, Copy, Move, Lock, Unlock, Info, X
+  Workflow, Settings, Eye, Copy, Move, Lock, Unlock, Info, X, Brain, Loader2
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -341,6 +342,9 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     updateProcess(p => ({ ...p, edges: p.edges.filter(e => e.id !== edgeId), lastModified: new Date().toISOString().split('T')[0] }));
   }, [updateProcess]);
 
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   const addNewProcess = useCallback(() => {
     if (!newProcess.name.trim()) return;
     const id = uid('proc');
@@ -354,6 +358,62 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setSelectedProcessId(id);
     setShowAddProcess(false);
     setNewProcess({ name: '', description: '', category: 'Business Operations', owner: '' });
+  }, [newProcess]);
+
+  const aiGenerateProcess = useCallback(async () => {
+    if (!newProcess.name.trim() && !newProcess.description.trim()) return;
+    setIsAiGenerating(true);
+    setAiError(null);
+
+    try {
+      const result = await api.ai.analyzeProcess(
+        `${newProcess.name}: ${newProcess.description}`,
+        newProcess.category,
+        ['GDPR', 'SOC 2', 'ISO 27001']
+      );
+
+      const id = uid('proc');
+      const proc: ProcessMap = {
+        id,
+        name: newProcess.name || 'AI Generated Process',
+        description: newProcess.description || result.summary || '',
+        category: newProcess.category,
+        version: '1.0',
+        status: 'Draft',
+        owner: newProcess.owner || 'AI Generated',
+        lastModified: new Date().toISOString().split('T')[0],
+        nodes: (result.nodes || []).map((n: any) => ({
+          id: n.id || uid('node'),
+          kind: n.kind || 'activity',
+          label: n.label || '',
+          description: n.description || '',
+          x: n.x || 100,
+          y: n.y || 200,
+          riskLevel: n.riskLevel || 'none',
+          complianceTags: n.complianceTags || [],
+          controls: n.controls || [],
+          dataFlows: [],
+          owner: n.owner || '',
+        })),
+        edges: (result.edges || []).map((e: any) => ({
+          id: e.id || uid('edge'),
+          from: e.from,
+          to: e.to,
+          label: e.label || '',
+          condition: e.condition,
+        })),
+      };
+
+      setProcesses(prev => [...prev, proc]);
+      setSelectedProcessId(id);
+      setShowAddProcess(false);
+      setNewProcess({ name: '', description: '', category: 'Business Operations', owner: '' });
+    } catch (error: any) {
+      console.error('AI process generation error:', error);
+      setAiError(error?.message || 'Failed to generate process with AI. Try creating manually.');
+    } finally {
+      setIsAiGenerating(false);
+    }
   }, [newProcess]);
 
   const exportJSON = useCallback(() => {
@@ -493,6 +553,11 @@ export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <div className="flex justify-end gap-2 pt-2">
                 <button onClick={() => setShowAddProcess(false)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
                 <button onClick={addNewProcess} disabled={!newProcess.name.trim()} className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 disabled:opacity-50">Create Process</button>
+                <button onClick={aiGenerateProcess} disabled={!newProcess.name.trim() || isAiGenerating} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
+                  {isAiGenerating ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
+                  {isAiGenerating ? 'Generating...' : 'AI Generate'}
+                </button>
+                {aiError && <p className="text-xs text-red-500 mt-1">{aiError}</p>}
               </div>
             </div>
           </div>

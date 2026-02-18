@@ -182,9 +182,6 @@ class AIController {
         throw new AppError('Message is required', 400);
       }
 
-      // Use secure chat service that processes locally with user's account data
-      // No data is sent to external LLMs - all processing happens on-premise
-      // Supports multi-turn conversation context and file context
       const chatResponse = await secureChatService.chatWithUser(
         message,
         authReq.user!.id,
@@ -204,12 +201,230 @@ class AIController {
         userId: (req as AuthRequest).user?.id,
       });
 
-      // Preserve original error message if it's an AppError or has a meaningful message
       if (error instanceof AppError) {
         throw error;
       }
 
       throw new AppError('Failed to get chat response', 500);
+    }
+  };
+
+  /* ================================================================== */
+  /*  TIER AI FEATURES                                                   */
+  /* ================================================================== */
+
+  crossFrameworkMapping: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { sourceFramework, targetFramework, sourceControls, targetControls } = req.body;
+
+      if (!sourceFramework || !targetFramework) {
+        throw new AppError('Source and target frameworks are required', 400);
+      }
+
+      const result = await geminiService.crossFrameworkMapping(
+        sourceFramework,
+        targetFramework,
+        sourceControls || [],
+        targetControls || [],
+        authReq.user!.id
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Cross-framework mapping error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to perform cross-framework mapping', 500);
+    }
+  };
+
+  regulatoryAutoRemediation: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { framework, gaps, organizationContext } = req.body;
+
+      if (!framework || !gaps || !Array.isArray(gaps)) {
+        throw new AppError('Framework and gaps array are required', 400);
+      }
+
+      const result = await geminiService.regulatoryAutoRemediation(
+        framework,
+        gaps,
+        organizationContext || '',
+        authReq.user!.id
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Auto-remediation error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to generate remediation plan', 500);
+    }
+  };
+
+  checkEvidenceCompleteness: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { framework, controls } = req.body;
+
+      if (!framework || !controls || !Array.isArray(controls)) {
+        throw new AppError('Framework and controls array are required', 400);
+      }
+
+      const result = await geminiService.checkEvidenceCompleteness(
+        framework,
+        controls,
+        authReq.user!.id
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Evidence completeness error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to check evidence completeness', 500);
+    }
+  };
+
+  agenticVendorRisk: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { vendor, assessmentScope } = req.body;
+
+      if (!vendor || !vendor.name) {
+        throw new AppError('Vendor details are required', 400);
+      }
+
+      const result = await geminiService.agenticVendorRisk(
+        vendor,
+        assessmentScope || ['Security', 'Privacy', 'Business Continuity', 'Regulatory', 'Fourth-Party'],
+        authReq.user!.id
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Agentic vendor risk error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to assess vendor risk', 500);
+    }
+  };
+
+  simulateAudit: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { framework, controlDomain, controlsToAudit, previousAnswers } = req.body;
+
+      if (!framework || !controlDomain) {
+        throw new AppError('Framework and control domain are required', 400);
+      }
+
+      const result = await geminiService.simulateAudit(
+        framework,
+        controlDomain,
+        controlsToAudit || [],
+        previousAnswers,
+        authReq.user!.id
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Audit simulation error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to simulate audit', 500);
+    }
+  };
+
+  naturalLanguageQuery: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { query, context } = req.body;
+
+      if (!query) {
+        throw new AppError('Query is required', 400);
+      }
+
+      const result = await geminiService.naturalLanguageQuery(
+        query,
+        context || { frameworks: [] },
+        authReq.user!.id
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      logger.error('NL query error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to process query', 500);
+    }
+  };
+
+  complianceCopilot: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { message, conversationHistory, context } = req.body;
+
+      if (!message) {
+        throw new AppError('Message is required', 400);
+      }
+
+      const result = await geminiService.complianceCopilot(
+        message,
+        conversationHistory || [],
+        context || {},
+        authReq.user!.id
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Copilot error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to get copilot response', 500);
+    }
+  };
+
+  forecastComplianceScore: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { currentScores, upcomingChanges, historicalData } = req.body;
+
+      if (!currentScores || !Array.isArray(currentScores)) {
+        throw new AppError('Current scores array is required', 400);
+      }
+
+      const result = await geminiService.forecastComplianceScore(
+        currentScores,
+        upcomingChanges || [],
+        historicalData || [],
+        authReq.user!.id
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Forecasting error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to forecast compliance score', 500);
+    }
+  };
+
+  analyzeProcess: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { processDescription, category, complianceFrameworks } = req.body;
+
+      if (!processDescription) {
+        throw new AppError('Process description is required', 400);
+      }
+
+      const result = await geminiService.analyzeProcess(
+        processDescription,
+        category || 'Business Operations',
+        complianceFrameworks || [],
+        authReq.user!.id
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      logger.error('Process analysis error', { error: error.message, userId: (req as AuthRequest).user?.id });
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message || 'Failed to analyze process', 500);
     }
   };
 }
