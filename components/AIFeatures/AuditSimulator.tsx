@@ -407,7 +407,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
       // Get relevant controls for the audit
       const controlsToAudit = MOCK_INTERVIEW_QUESTIONS.slice(0, 5).map(q => ({
-        controlId: q.controlRef || q.category,
+        controlId: q.id || q.category,
         title: q.category,
         description: q.question,
       }));

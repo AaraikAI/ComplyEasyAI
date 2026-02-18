@@ -455,7 +455,7 @@ class NotificationService {
       link?: string;
     }
   ): Promise<void> {
-    // SMS integration would use Twilio or similar service
+    // SMS delivery via Twilio — requires TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
     const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
     const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
     const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;

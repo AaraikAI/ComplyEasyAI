@@ -13,7 +13,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import crypto from 'crypto';
-import webrtcSignalingService, { WebRTCPeer, WebRTCSessionConfig } from './webrtcSignalingService';
+import webrtcSignalingService from './webrtcSignalingService';
 
 // VR Session Types
 export interface SessionSummary {
@@ -2177,11 +2177,24 @@ class VRCollaborativeReviewService {
         return;
       }
 
-      // Generate WebRTC offer/answer for each participant
-      // In production, this would use a signaling server (WebSocket/WebRTC)
+      // Create a WebRTC signaling session for the VR voice chat
+      const signalingSessionId = `vr_voice_${sessionId}`;
+      const hostParticipant = session.participants[0];
+
+      webrtcSignalingService.createSession({
+        sessionId: signalingSessionId,
+        organizationId: session.organizationId || 'default',
+        hostUserId: hostParticipant?.userId || 'system',
+        maxPeers: session.participants.length,
+        topology: session.participants.length <= 6 ? 'mesh' : 'sfu',
+      });
+
+      // Each participant will join the signaling session via Socket.io events.
+      // Here we pre-register connection metadata for each participant.
       for (const participant of session.participants) {
+
         const connectionId = `webrtc_${sessionId}_${participant.userId}_${Date.now()}`;
-        
+
         // Update voice chat state with connection ID
         const voiceParticipant = voiceChat.participants.find(p => p.userId === participant.userId);
         if (voiceParticipant) {
@@ -2197,6 +2210,7 @@ class VRCollaborativeReviewService {
               sessionId,
               userId: participant.userId,
               connectionId,
+              signalingSessionId: signalingConfig.sessionId,
               webrtcConfig: voiceChat.webrtcConfig,
             }),
             userId: participant.userId,

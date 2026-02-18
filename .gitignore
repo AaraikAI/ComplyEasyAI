@@ -19,6 +19,12 @@ dist-ssr
 server/.env
 server/.env.local
 *.env.tmp
+*.env.backup
+*.env.bak
+.env.backup
+.env.bak
+server/.env.backup
+server/.env.bak
 
 # Editor directories and files
 .vscode/*

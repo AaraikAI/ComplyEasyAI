@@ -574,23 +574,21 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
     } catch (error: any) {
       console.error('Copilot error:', error);
 
-      // Fallback to mock responses on API failure
-      const response = getResponseForQuery(text);
-      const assistantMessage: CopilotMessage = {
-        id: `msg-${Date.now()}-resp`,
+      const errorMessage: CopilotMessage = {
+        id: `msg-${Date.now()}-err`,
         role: 'assistant',
-        content: response.content,
+        content: `I'm sorry, I wasn't able to process your request. ${error?.message || 'The AI service is temporarily unavailable.'}\n\nPlease try again in a moment. If the issue persists, ensure the backend server is running and the Gemini API key is configured.`,
         timestamp: new Date(),
-        confidence: response.confidence,
-        sources: response.sources,
-        followUpQuestions: response.followUps,
+        confidence: 0,
+        sources: [],
+        followUpQuestions: [],
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
     }
-  }, [inputValue, messages, getResponseForQuery]);
+  }, [inputValue, messages]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
