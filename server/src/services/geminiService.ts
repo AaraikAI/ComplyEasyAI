@@ -718,6 +718,705 @@ Provide a helpful, accurate response about compliance, security, or the platform
 
     return this.generateContent({ prompt, temperature: 0.7, maxOutputTokens: 500 }, userId);
   }
+
+  /* ================================================================== */
+  /*  TIER AI FEATURES — Real Gemini-powered compliance intelligence     */
+  /* ================================================================== */
+
+  /**
+   * Cross-Framework Mapper: AI-powered control mapping between frameworks
+   */
+  async crossFrameworkMapping(
+    sourceFramework: string,
+    targetFramework: string,
+    sourceControls: Array<{ controlId: string; title: string; description: string; domain: string }>,
+    targetControls: Array<{ controlId: string; title: string; description: string; domain: string }>,
+    userId: string
+  ): Promise<{
+    mappings: Array<{
+      sourceControlId: string;
+      targetControlId: string;
+      confidence: number;
+      rationale: string;
+      mappingType: 'Full' | 'Partial' | 'Semantic';
+    }>;
+    summary: string;
+    unmappedSource: string[];
+    unmappedTarget: string[];
+  }> {
+    const prompt = `You are an expert compliance framework analyst. Map controls between two regulatory frameworks.
+
+SOURCE FRAMEWORK: ${sourceFramework}
+TARGET FRAMEWORK: ${targetFramework}
+
+SOURCE CONTROLS:
+${sourceControls.map(c => `- ${c.controlId}: ${c.title} — ${c.description} [Domain: ${c.domain}]`).join('\n')}
+
+TARGET CONTROLS:
+${targetControls.map(c => `- ${c.controlId}: ${c.title} — ${c.description} [Domain: ${c.domain}]`).join('\n')}
+
+For each source control, find the best matching target control(s). Determine:
+- confidence (0-100): how closely the controls align
+- mappingType: "Full" (exact match), "Partial" (overlapping scope), or "Semantic" (similar intent, different scope)
+- rationale: 1-2 sentence explanation of why they map
+
+Return ONLY valid JSON:
+{
+  "mappings": [
+    {
+      "sourceControlId": "source control ID",
+      "targetControlId": "target control ID",
+      "confidence": 85,
+      "rationale": "Both controls address access management...",
+      "mappingType": "Full"
+    }
+  ],
+  "summary": "Executive summary of mapping analysis in markdown",
+  "unmappedSource": ["IDs of source controls with no good match"],
+  "unmappedTarget": ["IDs of target controls not matched by any source"]
+}`;
+
+    try {
+      const response = await this.generateContent({ prompt, temperature: 0.3, maxOutputTokens: 8192 }, userId);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          mappings: parsed.mappings || [],
+          summary: parsed.summary || '',
+          unmappedSource: parsed.unmappedSource || [],
+          unmappedTarget: parsed.unmappedTarget || [],
+        };
+      }
+      return { mappings: [], summary: response, unmappedSource: [], unmappedTarget: [] };
+    } catch (error) {
+      logger.error('Cross-framework mapping error', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Regulatory Auto-Remediation: AI generates remediation plans for regulatory gaps
+   */
+  async regulatoryAutoRemediation(
+    framework: string,
+    gaps: Array<{ controlId: string; title: string; currentStatus: string; requirement: string }>,
+    organizationContext: string,
+    userId: string
+  ): Promise<{
+    remediationPlans: Array<{
+      controlId: string;
+      priority: 'Critical' | 'High' | 'Medium' | 'Low';
+      effort: string;
+      timeline: string;
+      steps: string[];
+      resources: string[];
+      automatable: boolean;
+      estimatedCost: string;
+    }>;
+    summary: string;
+    quickWins: string[];
+    totalEstimatedTimeline: string;
+  }> {
+    const prompt = `You are an expert compliance remediation consultant. Generate actionable remediation plans.
+
+FRAMEWORK: ${framework}
+ORGANIZATION CONTEXT: ${organizationContext}
+
+COMPLIANCE GAPS TO REMEDIATE:
+${gaps.map(g => `- ${g.controlId}: ${g.title}
+  Current Status: ${g.currentStatus}
+  Requirement: ${g.requirement}`).join('\n\n')}
+
+For each gap, generate a detailed remediation plan with:
+- priority: Critical/High/Medium/Low based on regulatory risk
+- effort: estimated person-hours
+- timeline: realistic implementation timeline
+- steps: specific actionable steps (5-10 per gap)
+- resources: tools, personnel, budget needed
+- automatable: whether this can be automated
+- estimatedCost: rough cost estimate
+
+Return ONLY valid JSON:
+{
+  "remediationPlans": [...],
+  "summary": "Executive summary in markdown",
+  "quickWins": ["List of items achievable in under 1 week"],
+  "totalEstimatedTimeline": "Overall timeline estimate"
+}`;
+
+    try {
+      const response = await this.generateContent({ prompt, temperature: 0.4, maxOutputTokens: 8192 }, userId);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          remediationPlans: parsed.remediationPlans || [],
+          summary: parsed.summary || '',
+          quickWins: parsed.quickWins || [],
+          totalEstimatedTimeline: parsed.totalEstimatedTimeline || 'Unknown',
+        };
+      }
+      return { remediationPlans: [], summary: response, quickWins: [], totalEstimatedTimeline: 'Unknown' };
+    } catch (error) {
+      logger.error('Regulatory auto-remediation error', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Evidence Completeness Checker: AI analyzes evidence against control requirements
+   */
+  async checkEvidenceCompleteness(
+    framework: string,
+    controls: Array<{ controlId: string; title: string; requirement: string; currentEvidence: string[] }>,
+    userId: string
+  ): Promise<{
+    results: Array<{
+      controlId: string;
+      completeness: number;
+      status: 'Complete' | 'Partial' | 'Missing' | 'Stale';
+      missingEvidence: string[];
+      recommendations: string[];
+      auditRisk: 'High' | 'Medium' | 'Low';
+    }>;
+    overallCompleteness: number;
+    criticalGaps: string[];
+    summary: string;
+  }> {
+    const prompt = `You are a compliance auditor reviewing evidence completeness for regulatory controls.
+
+FRAMEWORK: ${framework}
+
+CONTROLS AND CURRENT EVIDENCE:
+${controls.map(c => `- ${c.controlId}: ${c.title}
+  Requirement: ${c.requirement}
+  Current Evidence: ${c.currentEvidence.length > 0 ? c.currentEvidence.join(', ') : 'NONE'}`).join('\n\n')}
+
+For each control, assess:
+- completeness (0-100): percentage of requirement covered by existing evidence
+- status: Complete (90%+), Partial (40-89%), Missing (0-39%), or Stale (evidence older than policy period)
+- missingEvidence: specific documents/artifacts still needed
+- recommendations: actionable steps to achieve full evidence coverage
+- auditRisk: likelihood of audit finding if evidence remains as-is
+
+Return ONLY valid JSON:
+{
+  "results": [...],
+  "overallCompleteness": 65,
+  "criticalGaps": ["List of controls with High audit risk"],
+  "summary": "Executive summary in markdown"
+}`;
+
+    try {
+      const response = await this.generateContent({ prompt, temperature: 0.3, maxOutputTokens: 8192 }, userId);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          results: parsed.results || [],
+          overallCompleteness: parsed.overallCompleteness || 0,
+          criticalGaps: parsed.criticalGaps || [],
+          summary: parsed.summary || '',
+        };
+      }
+      return { results: [], overallCompleteness: 0, criticalGaps: [], summary: response };
+    } catch (error) {
+      logger.error('Evidence completeness check error', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Agentic Vendor Risk: Multi-agent AI vendor risk assessment
+   */
+  async agenticVendorRisk(
+    vendor: {
+      name: string;
+      service: string;
+      dataAccess: string;
+      contractTerms?: string;
+      certifications?: string[];
+      subProcessors?: string[];
+    },
+    assessmentScope: string[],
+    userId: string
+  ): Promise<{
+    overallScore: number;
+    riskLevel: 'Critical' | 'High' | 'Medium' | 'Low';
+    agentResults: Array<{
+      agentName: string;
+      category: string;
+      score: number;
+      findings: string[];
+      recommendations: string[];
+    }>;
+    dueDiligenceItems: string[];
+    contractRedFlags: string[];
+    summary: string;
+  }> {
+    const prompt = `You are a multi-agent vendor risk assessment system. Simulate 5 specialized risk assessment agents analyzing a vendor.
+
+VENDOR DETAILS:
+- Name: ${vendor.name}
+- Service: ${vendor.service}
+- Data Access Level: ${vendor.dataAccess}
+${vendor.contractTerms ? `- Contract Terms: ${vendor.contractTerms}` : ''}
+${vendor.certifications ? `- Certifications: ${vendor.certifications.join(', ')}` : ''}
+${vendor.subProcessors ? `- Sub-processors: ${vendor.subProcessors.join(', ')}` : ''}
+
+ASSESSMENT SCOPE: ${assessmentScope.join(', ')}
+
+Run these 5 assessment agents:
+1. Security Posture Agent - Assess cybersecurity controls, encryption, access management
+2. Privacy Compliance Agent - Evaluate data handling, GDPR/privacy law compliance, data residency
+3. Business Continuity Agent - Assess resilience, SLAs, disaster recovery, financial stability
+4. Regulatory Compliance Agent - Check certifications, audit reports, regulatory adherence
+5. Fourth-Party Risk Agent - Evaluate sub-processor risks, supply chain dependencies
+
+Return ONLY valid JSON:
+{
+  "overallScore": 0-100,
+  "riskLevel": "Critical|High|Medium|Low",
+  "agentResults": [
+    {
+      "agentName": "Security Posture Agent",
+      "category": "Security",
+      "score": 0-100,
+      "findings": ["specific findings..."],
+      "recommendations": ["specific recommendations..."]
+    }
+  ],
+  "dueDiligenceItems": ["items requiring further investigation"],
+  "contractRedFlags": ["contractual concerns identified"],
+  "summary": "Executive summary in markdown"
+}`;
+
+    try {
+      const response = await this.generateContent({ prompt, temperature: 0.4, maxOutputTokens: 8192 }, userId);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          overallScore: parsed.overallScore || 0,
+          riskLevel: parsed.riskLevel || 'Medium',
+          agentResults: parsed.agentResults || [],
+          dueDiligenceItems: parsed.dueDiligenceItems || [],
+          contractRedFlags: parsed.contractRedFlags || [],
+          summary: parsed.summary || '',
+        };
+      }
+      return { overallScore: 0, riskLevel: 'Medium', agentResults: [], dueDiligenceItems: [], contractRedFlags: [], summary: response };
+    } catch (error) {
+      logger.error('Agentic vendor risk error', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Audit Simulator: AI simulates real audit interviews and scoring
+   */
+  async simulateAudit(
+    framework: string,
+    controlDomain: string,
+    controlsToAudit: Array<{ controlId: string; title: string; description: string }>,
+    previousAnswers?: Array<{ questionId: string; answer: string }>,
+    userId?: string
+  ): Promise<{
+    questions: Array<{
+      id: string;
+      question: string;
+      controlRef: string;
+      difficulty: 'Basic' | 'Intermediate' | 'Advanced';
+      expectedEvidence: string[];
+      scoringCriteria: string;
+    }>;
+    scoring?: {
+      overall: number;
+      byControl: Array<{ controlId: string; score: number; feedback: string }>;
+      strengths: string[];
+      weaknesses: string[];
+      auditorNotes: string;
+    };
+    nextSteps: string[];
+  }> {
+    const isScoring = previousAnswers && previousAnswers.length > 0;
+
+    const prompt = isScoring
+      ? `You are a certified ${framework} auditor reviewing audit responses.
+
+FRAMEWORK: ${framework}
+DOMAIN: ${controlDomain}
+
+CONTROLS AUDITED:
+${controlsToAudit.map(c => `- ${c.controlId}: ${c.title}`).join('\n')}
+
+AUDIT RESPONSES:
+${previousAnswers!.map(a => `Q: ${a.questionId}\nA: ${a.answer}`).join('\n\n')}
+
+Score each response and provide detailed feedback. Score 0-100 per control.
+
+Return ONLY valid JSON:
+{
+  "questions": [],
+  "scoring": {
+    "overall": 0-100,
+    "byControl": [{ "controlId": "...", "score": 0-100, "feedback": "..." }],
+    "strengths": ["..."],
+    "weaknesses": ["..."],
+    "auditorNotes": "Overall assessment in markdown"
+  },
+  "nextSteps": ["recommended follow-up actions"]
+}`
+      : `You are a certified ${framework} auditor conducting a mock audit.
+
+FRAMEWORK: ${framework}
+DOMAIN: ${controlDomain}
+
+CONTROLS TO AUDIT:
+${controlsToAudit.map(c => `- ${c.controlId}: ${c.title} — ${c.description}`).join('\n')}
+
+Generate realistic audit interview questions that a real auditor would ask. Include:
+- Mix of Basic, Intermediate, and Advanced difficulty
+- Specific evidence the auditor would expect to see
+- Clear scoring criteria
+
+Return ONLY valid JSON:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "question": "Can you walk me through your access review process?",
+      "controlRef": "CC6.1",
+      "difficulty": "Intermediate",
+      "expectedEvidence": ["Access review logs", "Quarterly review reports"],
+      "scoringCriteria": "Must demonstrate regular cadence, management approval, and remediation tracking"
+    }
+  ],
+  "nextSteps": ["preparation recommendations"]
+}`;
+
+    try {
+      const response = await this.generateContent({ prompt, temperature: 0.5, maxOutputTokens: 8192 }, userId || 'system');
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          questions: parsed.questions || [],
+          scoring: parsed.scoring,
+          nextSteps: parsed.nextSteps || [],
+        };
+      }
+      return { questions: [], nextSteps: [response] };
+    } catch (error) {
+      logger.error('Audit simulation error', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Natural Language Query: AI answers compliance questions using org context
+   */
+  async naturalLanguageQuery(
+    query: string,
+    context: {
+      frameworks: string[];
+      recentAuditFindings?: string[];
+      riskProfile?: string;
+      complianceScore?: number;
+    },
+    userId: string
+  ): Promise<{
+    answer: string;
+    sources: Array<{ type: string; reference: string; relevance: number }>;
+    relatedQuestions: string[];
+    confidence: number;
+    actionItems?: string[];
+  }> {
+    const prompt = `You are an expert compliance intelligence assistant with deep knowledge of all regulatory frameworks.
+
+USER QUERY: "${query}"
+
+ORGANIZATIONAL CONTEXT:
+- Active Frameworks: ${context.frameworks.join(', ')}
+${context.recentAuditFindings ? `- Recent Audit Findings: ${context.recentAuditFindings.join('; ')}` : ''}
+${context.riskProfile ? `- Risk Profile: ${context.riskProfile}` : ''}
+${context.complianceScore !== undefined ? `- Current Compliance Score: ${context.complianceScore}%` : ''}
+
+Provide a comprehensive, actionable answer. Reference specific regulation articles, control IDs, or industry standards where applicable.
+
+Return ONLY valid JSON:
+{
+  "answer": "Detailed answer in markdown format with specific regulatory references",
+  "sources": [
+    { "type": "regulation", "reference": "GDPR Article 25", "relevance": 95 }
+  ],
+  "relatedQuestions": ["3-5 follow-up questions the user might want to ask"],
+  "confidence": 0-100,
+  "actionItems": ["specific actions the user should take based on this query"]
+}`;
+
+    try {
+      const response = await this.generateContent({ prompt, temperature: 0.5, maxOutputTokens: 4096 }, userId);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          answer: parsed.answer || response,
+          sources: parsed.sources || [],
+          relatedQuestions: parsed.relatedQuestions || [],
+          confidence: parsed.confidence || 75,
+          actionItems: parsed.actionItems,
+        };
+      }
+      return { answer: response, sources: [], relatedQuestions: [], confidence: 75 };
+    } catch (error) {
+      logger.error('Natural language query error', error);
+      throw error;
+    }
+  }
+
+  /**
+   * AI Compliance Copilot: Context-aware compliance assistant
+   */
+  async complianceCopilot(
+    message: string,
+    conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+    context: {
+      currentView?: string;
+      activeFramework?: string;
+      selectedControl?: string;
+      complianceData?: Record<string, any>;
+    },
+    userId: string
+  ): Promise<{
+    response: string;
+    suggestions: string[];
+    actions: Array<{ label: string; action: string; params?: Record<string, any> }>;
+    relatedControls?: string[];
+  }> {
+    const historyText = conversationHistory.slice(-10).map(h => `${h.role === 'user' ? 'User' : 'Copilot'}: ${h.content}`).join('\n');
+
+    const prompt = `You are the ComplyEasy AI Compliance Copilot — a proactive, context-aware compliance assistant embedded in a GRC platform.
+
+CURRENT CONTEXT:
+${context.currentView ? `- Current View: ${context.currentView}` : ''}
+${context.activeFramework ? `- Active Framework: ${context.activeFramework}` : ''}
+${context.selectedControl ? `- Selected Control: ${context.selectedControl}` : ''}
+${context.complianceData ? `- Compliance Data: ${JSON.stringify(context.complianceData).substring(0, 2000)}` : ''}
+
+CONVERSATION HISTORY:
+${historyText}
+
+USER MESSAGE: "${message}"
+
+Be proactive: suggest next steps, flag potential issues, and recommend automation opportunities. Reference specific articles/controls when possible.
+
+Return ONLY valid JSON:
+{
+  "response": "Your response in markdown",
+  "suggestions": ["3-5 proactive suggestions based on context"],
+  "actions": [
+    { "label": "Run Gap Analysis", "action": "navigate", "params": { "view": "ai-gap" } }
+  ],
+  "relatedControls": ["relevant control IDs if applicable"]
+}`;
+
+    try {
+      const response = await this.generateContent({ prompt, temperature: 0.6, maxOutputTokens: 4096 }, userId);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          response: parsed.response || response,
+          suggestions: parsed.suggestions || [],
+          actions: parsed.actions || [],
+          relatedControls: parsed.relatedControls,
+        };
+      }
+      return { response, suggestions: [], actions: [] };
+    } catch (error) {
+      logger.error('Compliance copilot error', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Compliance Score Forecasting: AI predicts future compliance trajectory
+   */
+  async forecastComplianceScore(
+    currentScores: Array<{ framework: string; score: number; trend: 'up' | 'down' | 'stable' }>,
+    upcomingChanges: string[],
+    historicalData: Array<{ date: string; framework: string; score: number }>,
+    userId: string
+  ): Promise<{
+    forecasts: Array<{
+      framework: string;
+      currentScore: number;
+      predictedScore30d: number;
+      predictedScore90d: number;
+      predictedScore180d: number;
+      riskFactors: string[];
+      opportunities: string[];
+      confidence: number;
+    }>;
+    overallTrend: 'Improving' | 'Declining' | 'Stable' | 'At Risk';
+    keyInsights: string[];
+    recommendedActions: Array<{ action: string; impact: string; urgency: 'Immediate' | 'Short-term' | 'Long-term' }>;
+    summary: string;
+  }> {
+    const prompt = `You are a compliance analytics AI that forecasts compliance score trajectories.
+
+CURRENT COMPLIANCE SCORES:
+${currentScores.map(s => `- ${s.framework}: ${s.score}% (Trend: ${s.trend})`).join('\n')}
+
+UPCOMING REGULATORY CHANGES:
+${upcomingChanges.map(c => `- ${c}`).join('\n')}
+
+HISTORICAL DATA (last 12 months):
+${historicalData.slice(-50).map(h => `${h.date}: ${h.framework} = ${h.score}%`).join('\n')}
+
+Analyze trends, predict future scores, and identify risk factors. Consider:
+- Regulatory changes and their impact
+- Historical improvement/decline rates
+- Industry benchmarks
+- Seasonal patterns (audit cycles, regulatory deadlines)
+
+Return ONLY valid JSON:
+{
+  "forecasts": [
+    {
+      "framework": "SOC 2",
+      "currentScore": 82,
+      "predictedScore30d": 84,
+      "predictedScore90d": 88,
+      "predictedScore180d": 91,
+      "riskFactors": ["Upcoming audit in 60 days", "New vendor onboarded"],
+      "opportunities": ["Automating evidence collection could add 5 points"],
+      "confidence": 78
+    }
+  ],
+  "overallTrend": "Improving|Declining|Stable|At Risk",
+  "keyInsights": ["top 5 insights"],
+  "recommendedActions": [
+    { "action": "Complete evidence gap for CC6.1", "impact": "+3 points on SOC 2", "urgency": "Immediate" }
+  ],
+  "summary": "Executive summary in markdown"
+}`;
+
+    try {
+      const response = await this.generateContent({ prompt, temperature: 0.4, maxOutputTokens: 8192 }, userId);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          forecasts: parsed.forecasts || [],
+          overallTrend: parsed.overallTrend || 'Stable',
+          keyInsights: parsed.keyInsights || [],
+          recommendedActions: parsed.recommendedActions || [],
+          summary: parsed.summary || '',
+        };
+      }
+      return { forecasts: [], overallTrend: 'Stable', keyInsights: [], recommendedActions: [], summary: response };
+    } catch (error) {
+      logger.error('Compliance score forecasting error', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process Mapper AI: AI-powered process discovery and analysis
+   */
+  async analyzeProcess(
+    processDescription: string,
+    category: string,
+    complianceFrameworks: string[],
+    userId: string
+  ): Promise<{
+    nodes: Array<{
+      id: string;
+      kind: string;
+      label: string;
+      description: string;
+      riskLevel: string;
+      complianceTags: string[];
+      controls: string[];
+      owner: string;
+      x: number;
+      y: number;
+    }>;
+    edges: Array<{ id: string; from: string; to: string; label: string; condition?: string }>;
+    risks: Array<{ nodeId: string; risk: string; severity: string; mitigation: string }>;
+    complianceGaps: Array<{ framework: string; gap: string; affectedNodes: string[] }>;
+    raciMatrix: Array<{ activity: string; responsible: string; accountable: string; consulted: string; informed: string }>;
+    summary: string;
+  }> {
+    const prompt = `You are a business process analysis AI. Analyze the following process and generate a complete BPMN-compatible process map.
+
+PROCESS: ${processDescription}
+CATEGORY: ${category}
+COMPLIANCE FRAMEWORKS: ${complianceFrameworks.join(', ')}
+
+Generate a complete process map with:
+1. Process nodes (start, activities, decisions, subprocesses, end, data stores, documents)
+2. Edges connecting nodes with conditions for decision branches
+3. Risk assessment per node
+4. Compliance gap analysis against the specified frameworks
+5. RACI matrix for key activities
+
+Position nodes in a logical flow (x: 50-1200, y: 50-600).
+
+Return ONLY valid JSON:
+{
+  "nodes": [
+    {
+      "id": "node-1",
+      "kind": "start|activity|decision|subprocess|end|dataStore|document",
+      "label": "Node label",
+      "description": "What happens at this step",
+      "riskLevel": "critical|high|medium|low|none",
+      "complianceTags": ["GDPR", "SOC2"],
+      "controls": ["CC6.1", "Article 25"],
+      "owner": "Role responsible",
+      "x": 100,
+      "y": 200
+    }
+  ],
+  "edges": [
+    { "id": "edge-1", "from": "node-1", "to": "node-2", "label": "flow label", "condition": "if applicable" }
+  ],
+  "risks": [
+    { "nodeId": "node-3", "risk": "Unauthorized access possible", "severity": "high", "mitigation": "Implement MFA" }
+  ],
+  "complianceGaps": [
+    { "framework": "GDPR", "gap": "No DPO review step", "affectedNodes": ["node-4", "node-5"] }
+  ],
+  "raciMatrix": [
+    { "activity": "Data Collection", "responsible": "Data Team", "accountable": "DPO", "consulted": "Legal", "informed": "CISO" }
+  ],
+  "summary": "Process analysis summary in markdown"
+}`;
+
+    try {
+      const response = await this.generateContent({ prompt, temperature: 0.5, maxOutputTokens: 8192 }, userId);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          nodes: parsed.nodes || [],
+          edges: parsed.edges || [],
+          risks: parsed.risks || [],
+          complianceGaps: parsed.complianceGaps || [],
+          raciMatrix: parsed.raciMatrix || [],
+          summary: parsed.summary || '',
+        };
+      }
+      return { nodes: [], edges: [], risks: [], complianceGaps: [], raciMatrix: [], summary: response };
+    } catch (error) {
+      logger.error('Process analysis error', error);
+      throw error;
+    }
+  }
 }
 
 export default new GeminiService();

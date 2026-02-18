@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { api } from '../../services/api';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -597,10 +598,47 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
     return true;
   });
 
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiInsights, setAiInsights] = useState<{ summary: string; quickWins: string[]; timeline: string } | null>(null);
+
   const handleRunAnalysis = useCallback(async () => {
     setIsAnalyzing(true);
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    setIsAnalyzing(false);
+    setAiError(null);
+
+    try {
+      // Build gaps from current regulatory changes that need remediation
+      const gaps = REGULATORY_CHANGES
+        .filter(c => c.status === 'action_required' || c.status === 'in_review')
+        .map(c => ({
+          controlId: c.id,
+          title: c.title,
+          currentStatus: c.status,
+          requirement: `${c.source} - ${c.summary} (Deadline: ${c.deadline})`,
+        }));
+
+      if (gaps.length === 0) {
+        setAiError('No pending regulatory changes to analyze.');
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const result = await api.ai.autoRemediation(
+        'Multi-Framework',
+        gaps,
+        'Enterprise compliance organization with active SOC 2, GDPR, ISO 27001, and EU regulatory obligations'
+      );
+
+      setAiInsights({
+        summary: result.summary || 'Analysis complete.',
+        quickWins: result.quickWins || [],
+        timeline: result.totalEstimatedTimeline || 'Unknown',
+      });
+    } catch (error: any) {
+      console.error('Auto-remediation analysis error:', error);
+      setAiError(error?.message || 'Failed to run AI analysis. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   }, []);
 
   const handleExport = useCallback(() => {

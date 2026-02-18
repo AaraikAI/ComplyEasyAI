@@ -6,6 +6,7 @@ import {
   FileText, Settings, HelpCircle, ThumbsUp, ThumbsDown, Minus,
   GitCompare, Target, TrendingUp, Loader2, Copy, Hash, Info
 } from 'lucide-react';
+import { api } from '../../services/api';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -375,57 +376,127 @@ export const CrossFrameworkMapper: React.FC<{ onBack: () => void }> = ({ onBack 
   }, [activeSession, sourceControls, targetControls]);
 
   /* callbacks */
+  const [aiError, setAiError] = useState<string | null>(null);
+
   const runMapping = useCallback(async () => {
     if (!sourceFrameworkId || !targetFrameworkId || sourceFrameworkId === targetFrameworkId) return;
     setIsAnalyzing(true);
     setAnalyzeProgress(0);
+    setAiError(null);
 
-    // Simulate AI analysis with progress
-    const progressSteps = [10, 25, 40, 55, 70, 85, 95, 100];
-    for (const step of progressSteps) {
-      await new Promise(r => setTimeout(r, 300 + Math.random() * 200));
-      setAnalyzeProgress(step);
-    }
+    const srcFw = FRAMEWORKS.find(f => f.id === sourceFrameworkId);
+    const tgtFw = FRAMEWORKS.find(f => f.id === targetFrameworkId);
 
-    // Find relevant pre-built mappings
-    const relevantMappings = PREBUILT_MAPPINGS.filter(m => {
-      const src = getControl(m.sourceControlId);
-      const tgt = getControl(m.targetControlId);
-      return (src?.frameworkId === sourceFrameworkId && tgt?.frameworkId === targetFrameworkId) ||
-             (src?.frameworkId === targetFrameworkId && tgt?.frameworkId === sourceFrameworkId);
-    }).map(m => {
-      const src = getControl(m.sourceControlId);
-      const tgt = getControl(m.targetControlId);
-      // Ensure correct direction
-      if (src?.frameworkId === sourceFrameworkId) {
-        return { ...m, id: uid('map') };
-      } else {
+    try {
+      setAnalyzeProgress(10);
+
+      // Call real AI backend for cross-framework mapping
+      const aiResult = await api.ai.crossFrameworkMapping(
+        srcFw?.name || sourceFrameworkId,
+        tgtFw?.name || targetFrameworkId,
+        sourceControls.map(c => ({ controlId: c.controlId, title: c.title, description: c.description, domain: c.domain })),
+        targetControls.map(c => ({ controlId: c.controlId, title: c.title, description: c.description, domain: c.domain }))
+      );
+
+      setAnalyzeProgress(80);
+
+      // Convert AI response into ControlMapping objects
+      const aiMappings: ControlMapping[] = (aiResult.mappings || []).map((m: any) => {
+        // Match AI-returned control IDs to our internal IDs
+        const srcCtl = sourceControls.find(c => c.controlId === m.sourceControlId) || sourceControls[0];
+        const tgtCtl = targetControls.find(c => c.controlId === m.targetControlId) || targetControls[0];
+        return {
+          id: uid('map'),
+          sourceControlId: srcCtl?.id || m.sourceControlId,
+          targetControlId: tgtCtl?.id || m.targetControlId,
+          confidence: m.confidence || 75,
+          status: 'AI Suggested' as const,
+          rationale: m.rationale || '',
+          mappingType: (m.mappingType || 'Semantic') as 'Full' | 'Partial' | 'Semantic',
+        };
+      });
+
+      // Also include any pre-built mappings that the AI may have missed
+      const prebuiltMappings = PREBUILT_MAPPINGS.filter(m => {
+        const src = getControl(m.sourceControlId);
+        const tgt = getControl(m.targetControlId);
+        return (src?.frameworkId === sourceFrameworkId && tgt?.frameworkId === targetFrameworkId) ||
+               (src?.frameworkId === targetFrameworkId && tgt?.frameworkId === sourceFrameworkId);
+      }).map(m => {
+        const src = getControl(m.sourceControlId);
+        if (src?.frameworkId === sourceFrameworkId) {
+          return { ...m, id: uid('map') };
+        }
         return { ...m, id: uid('map'), sourceControlId: m.targetControlId, targetControlId: m.sourceControlId };
+      });
+
+      // Merge: AI mappings take precedence, add prebuilt ones that don't overlap
+      const aiPairKeys = new Set(aiMappings.map(m => `${m.sourceControlId}:${m.targetControlId}`));
+      const mergedMappings = [
+        ...aiMappings,
+        ...prebuiltMappings.filter(m => !aiPairKeys.has(`${m.sourceControlId}:${m.targetControlId}`)),
+      ];
+
+      setAnalyzeProgress(100);
+
+      const totalSource = sourceControls.length;
+      const mappedSourceIds = new Set(mergedMappings.map(m => m.sourceControlId));
+      const coverage = totalSource > 0 ? Math.round((mappedSourceIds.size / totalSource) * 100) : 0;
+      const avgConf = mergedMappings.length > 0 ? Math.round(mergedMappings.reduce((a, m) => a + m.confidence, 0) / mergedMappings.length) : 0;
+
+      const session: MappingSession = {
+        id: uid('session'),
+        sourceFrameworkId, targetFrameworkId,
+        createdDate: new Date().toISOString().split('T')[0],
+        lastUpdated: new Date().toISOString().split('T')[0],
+        status: 'In Progress',
+        mappings: mergedMappings as ControlMapping[],
+        coveragePercent: coverage,
+        avgConfidence: avgConf,
+      };
+
+      setSessions(prev => [...prev, session]);
+      setActiveSessionId(session.id);
+    } catch (error: any) {
+      console.error('Cross-framework mapping error:', error);
+      setAiError(error?.message || 'Failed to perform AI mapping. Please try again.');
+
+      // Fallback to pre-built mappings only
+      const fallbackMappings = PREBUILT_MAPPINGS.filter(m => {
+        const src = getControl(m.sourceControlId);
+        const tgt = getControl(m.targetControlId);
+        return (src?.frameworkId === sourceFrameworkId && tgt?.frameworkId === targetFrameworkId) ||
+               (src?.frameworkId === targetFrameworkId && tgt?.frameworkId === sourceFrameworkId);
+      }).map(m => {
+        const src = getControl(m.sourceControlId);
+        if (src?.frameworkId === sourceFrameworkId) return { ...m, id: uid('map') };
+        return { ...m, id: uid('map'), sourceControlId: m.targetControlId, targetControlId: m.sourceControlId };
+      });
+
+      if (fallbackMappings.length > 0) {
+        const totalSource = sourceControls.length;
+        const mappedSourceIds = new Set(fallbackMappings.map(m => m.sourceControlId));
+        const coverage = totalSource > 0 ? Math.round((mappedSourceIds.size / totalSource) * 100) : 0;
+        const avgConf = fallbackMappings.length > 0 ? Math.round(fallbackMappings.reduce((a, m) => a + m.confidence, 0) / fallbackMappings.length) : 0;
+
+        const session: MappingSession = {
+          id: uid('session'),
+          sourceFrameworkId, targetFrameworkId,
+          createdDate: new Date().toISOString().split('T')[0],
+          lastUpdated: new Date().toISOString().split('T')[0],
+          status: 'In Progress',
+          mappings: fallbackMappings as ControlMapping[],
+          coveragePercent: coverage,
+          avgConfidence: avgConf,
+        };
+        setSessions(prev => [...prev, session]);
+        setActiveSessionId(session.id);
       }
-    });
-
-    const confirmedCount = relevantMappings.filter(m => m.status === 'Confirmed').length;
-    const totalSource = CONTROLS_DB.filter(c => c.frameworkId === sourceFrameworkId).length;
-    const mappedSourceIds = new Set(relevantMappings.map(m => m.sourceControlId));
-    const coverage = totalSource > 0 ? Math.round((mappedSourceIds.size / totalSource) * 100) : 0;
-    const avgConf = relevantMappings.length > 0 ? Math.round(relevantMappings.reduce((a, m) => a + m.confidence, 0) / relevantMappings.length) : 0;
-
-    const session: MappingSession = {
-      id: uid('session'),
-      sourceFrameworkId, targetFrameworkId,
-      createdDate: new Date().toISOString().split('T')[0],
-      lastUpdated: new Date().toISOString().split('T')[0],
-      status: 'In Progress',
-      mappings: relevantMappings as ControlMapping[],
-      coveragePercent: coverage,
-      avgConfidence: avgConf,
-    };
-
-    setSessions(prev => [...prev, session]);
-    setActiveSessionId(session.id);
-    setIsAnalyzing(false);
-    setAnalyzeProgress(0);
-  }, [sourceFrameworkId, targetFrameworkId]);
+    } finally {
+      setIsAnalyzing(false);
+      setAnalyzeProgress(0);
+    }
+  }, [sourceFrameworkId, targetFrameworkId, sourceControls, targetControls]);
 
   const updateMappingStatus = useCallback((mappingId: string, status: ControlMapping['status']) => {
     setSessions(prev => prev.map(s => {

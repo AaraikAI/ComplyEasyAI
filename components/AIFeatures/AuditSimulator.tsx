@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { api } from '../../services/api';
 import {
   ArrowLeft,
   AlertTriangle,
@@ -383,12 +384,52 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
   const findingCategories = [...new Set(AUDIT_FINDINGS.map(f => f.category))];
 
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiQuestions, setAiQuestions] = useState<any[]>([]);
+
   const handleStartSimulation = useCallback(async () => {
     if (!selectedAuditType) return;
     setIsSimulating(true);
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    setIsSimulating(false);
-    setActiveTab('active');
+    setAiError(null);
+
+    try {
+      // Determine framework and controls based on audit type
+      const auditTypeMap: Record<string, { framework: string; domain: string }> = {
+        'soc2-type2': { framework: 'SOC 2 Type II', domain: 'Trust Services Criteria' },
+        'iso27001': { framework: 'ISO/IEC 27001:2022', domain: 'Information Security Management' },
+        'hipaa': { framework: 'HIPAA Security Rule', domain: 'Administrative Safeguards' },
+        'gdpr': { framework: 'GDPR', domain: 'Data Protection' },
+        'pci-dss': { framework: 'PCI DSS v4.0', domain: 'Network Security' },
+        'nist-csf': { framework: 'NIST CSF 2.0', domain: 'Cybersecurity Framework' },
+      };
+
+      const auditConfig = auditTypeMap[selectedAuditType] || { framework: selectedAuditType, domain: 'General Compliance' };
+
+      // Get relevant controls for the audit
+      const controlsToAudit = MOCK_INTERVIEW_QUESTIONS.slice(0, 5).map(q => ({
+        controlId: q.controlRef || q.category,
+        title: q.category,
+        description: q.question,
+      }));
+
+      const result = await api.ai.auditSimulation(
+        auditConfig.framework,
+        auditConfig.domain,
+        controlsToAudit
+      );
+
+      if (result.questions && result.questions.length > 0) {
+        setAiQuestions(result.questions);
+      }
+
+      setActiveTab('active');
+    } catch (error: any) {
+      console.error('Audit simulation error:', error);
+      setAiError(error?.message || 'Failed to start AI audit simulation. Using default questions.');
+      setActiveTab('active'); // Still switch tab with default questions
+    } finally {
+      setIsSimulating(false);
+    }
   }, [selectedAuditType]);
 
   const handleExportReport = useCallback((simId: string) => {
