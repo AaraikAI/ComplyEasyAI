@@ -538,8 +538,9 @@ class JiraService {
     ticket: {
       title: string;
       description: string;
-      severity: 'High' | 'Medium' | 'Low';
+      severity: string;
       framework?: string;
+      controlId?: string;
     }
   ): Promise<any> {
     try {
@@ -623,7 +624,7 @@ class JiraService {
             where: {
               organizationId,
               updatedAt: { gte: since },
-              status: { not: 'closed' },
+              status: { not: 'Closed' },
             },
             take: 100,
           });
@@ -647,8 +648,8 @@ class JiraService {
                     title: issue.title,
                     description: issue.description || '',
                     framework: (issue as any).framework || 'General',
-                    severity: issue.severity || 'medium',
-                    controlId: (issue as any).controlId,
+                    severity: issue.priority || 'Medium',
+                    controlId: (issue as any).category || undefined,
                   }
                 );
 
@@ -679,7 +680,7 @@ class JiraService {
       // PULL: Fetch Jira compliance issues and create/update local records
       if (direction === 'pull' || direction === 'bidirectional') {
         try {
-          const jiraIssues = await this.getComplianceIssues(organizationId, options?.projectKey);
+          const jiraIssues = await this.getComplianceIssues(organizationId);
 
           for (const jiraIssue of jiraIssues) {
             try {
@@ -712,9 +713,11 @@ class JiraService {
                     organizationId,
                     title: jiraIssue.fields?.summary || jiraIssue.key,
                     description: jiraIssue.fields?.description || '',
-                    severity: this.mapJiraPriorityToSeverity(jiraIssue.fields?.priority?.name),
+                    issueType: 'compliance',
+                    priority: this.mapJiraPriorityToSeverity(jiraIssue.fields?.priority?.name) as any,
                     status: this.mapJiraStatusToLocal(jiraIssue.fields?.status?.name),
-                    source: 'jira',
+                    createdById: 'system',
+                    tags: JSON.stringify({ source: 'jira', jiraKey: jiraIssue.key }),
                   },
                 });
 
@@ -853,7 +856,7 @@ class JiraService {
 
       // Count local issues not yet synced
       const totalLocalIssues = await prisma.issue.count({
-        where: { organizationId, status: { not: 'closed' } },
+        where: { organizationId, status: { not: 'Closed' } },
       });
 
       const syncedIssueIds = await prisma.auditLog.findMany({
@@ -881,25 +884,25 @@ class JiraService {
   /**
    * Map Jira status to local issue status
    */
-  private mapJiraStatusToLocal(jiraStatus?: string): string {
-    if (!jiraStatus) return 'open';
+  private mapJiraStatusToLocal(jiraStatus?: string): 'Open' | 'In_Progress' | 'Resolved' | 'Closed' | 'Reopened' {
+    if (!jiraStatus) return 'Open';
     const statusLower = jiraStatus.toLowerCase();
-    if (['done', 'closed', 'resolved'].includes(statusLower)) return 'closed';
-    if (['in progress', 'in review'].includes(statusLower)) return 'in_progress';
-    if (['to do', 'open', 'backlog'].includes(statusLower)) return 'open';
-    return 'open';
+    if (['done', 'closed', 'resolved'].includes(statusLower)) return 'Closed';
+    if (['in progress', 'in review'].includes(statusLower)) return 'In_Progress';
+    if (['to do', 'open', 'backlog'].includes(statusLower)) return 'Open';
+    return 'Open';
   }
 
   /**
    * Map Jira priority to local severity
    */
-  private mapJiraPriorityToSeverity(jiraPriority?: string): string {
-    if (!jiraPriority) return 'medium';
+  private mapJiraPriorityToSeverity(jiraPriority?: string): 'Critical' | 'High' | 'Medium' | 'Low' {
+    if (!jiraPriority) return 'Medium';
     const priorityLower = jiraPriority.toLowerCase();
-    if (['highest', 'blocker'].includes(priorityLower)) return 'critical';
-    if (['high'].includes(priorityLower)) return 'high';
-    if (['medium', 'normal'].includes(priorityLower)) return 'medium';
-    return 'low';
+    if (['highest', 'blocker'].includes(priorityLower)) return 'Critical';
+    if (['high'].includes(priorityLower)) return 'High';
+    if (['medium', 'normal'].includes(priorityLower)) return 'Medium';
+    return 'Low';
   }
 
   /**
@@ -934,7 +937,7 @@ class JiraService {
                 await prisma.issue.update({
                   where: { id: syncDetails.localIssueId },
                   data: {
-                    status: this.mapJiraStatusToLocal(event.issue.fields?.status?.name),
+                    status: this.mapJiraStatusToLocal(event.issue.fields?.status?.name) as any,
                     updatedAt: new Date(),
                   },
                 }).catch(() => {});

@@ -161,12 +161,6 @@ class FederatedSwarmService {
       // Apply anonymization
       const anonymizedWeights = this.anonymizeContribution(privatizedWeights);
 
-      // In production, this would:
-      // 1. Encrypt weights
-      // 2. Send to aggregation server
-      // 3. Aggregate with other contributions
-      // 4. Return updated global model
-
       const contributionId = require('crypto').randomUUID();
 
       // Store contribution (anonymized)

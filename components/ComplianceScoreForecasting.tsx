@@ -393,7 +393,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
       const result = await api.ai.forecastComplianceScore(
         currentScores,
         ['EU AI Act enforcement deadline approaching', 'NIS2 compliance deadline', 'SOC 2 annual audit cycle'],
-        HISTORICAL_DATA.map(h => ({ date: h.month, framework: 'Overall', score: h.score }))
+        HISTORICAL_DATA.map(h => ({ date: h.month, framework: 'Overall', score: h.overall }))
       );
 
       setAiInsights({

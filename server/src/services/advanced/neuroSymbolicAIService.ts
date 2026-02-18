@@ -1808,16 +1808,16 @@ Format as JSON:
 
       // Build from database
       const [frameworks, risks, issues] = await Promise.all([
-        prisma.framework.findMany({ where: { organizationId }, select: { id: true, name: true } }),
-        prisma.risk.findMany({ where: { organizationId }, select: { id: true, title: true, severity: true, status: true } }),
-        prisma.issue.findMany({ where: { organizationId }, select: { id: true, title: true, severity: true, status: true } }),
+        prisma.complianceFramework.findMany({ where: { organizationId }, select: { id: true, name: true } }),
+        prisma.riskItem.findMany({ where: { organizationId }, select: { id: true, title: true, severity: true, status: true } }),
+        prisma.issue.findMany({ where: { organizationId }, select: { id: true, title: true, priority: true, status: true } }),
       ]);
 
       const knowledgeGraph = {
         entities: [
-          ...frameworks.map(f => ({ id: f.id, name: f.name, type: 'framework', knownRisks: [] })),
-          ...risks.map(r => ({ id: r.id, name: r.title, type: 'risk', severity: r.severity, status: r.status, knownRisks: [] })),
-          ...issues.map(i => ({ id: i.id, name: i.title, type: 'issue', severity: i.severity, status: i.status, knownRisks: [] })),
+          ...frameworks.map((f: { id: string; name: string }) => ({ id: f.id, name: f.name, type: 'framework', knownRisks: [] as string[] })),
+          ...risks.map((r: { id: string; title: string; severity: string; status: string }) => ({ id: r.id, name: r.title, type: 'risk', severity: r.severity, status: r.status, knownRisks: [] as string[] })),
+          ...issues.map((i: { id: string; title: string; priority: string; status: string }) => ({ id: i.id, name: i.title, type: 'issue', severity: i.priority, status: i.status, knownRisks: [] as string[] })),
         ],
         relationships: [],
         updatedAt: new Date(),

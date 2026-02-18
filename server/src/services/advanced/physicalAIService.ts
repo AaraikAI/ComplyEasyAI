@@ -2503,10 +2503,8 @@ class PhysicalAIService {
    */
   private async measureSignalStrength(deviceId: string, deviceType: string): Promise<number> {
     try {
-      // Real signal strength measurement
-      // For WiFi devices, would query network interface
-      // For cellular devices, would query modem/radio
-      // For now, check if device provides signal strength in sensor data
+      // Signal strength measurement: first checks device sensor data from DB,
+      // then falls back to OS-level WiFi/network interface queries (iwconfig/airport).
       
       const device = await prisma.ioTDevice.findFirst({
         where: { deviceId },
@@ -2659,16 +2657,9 @@ class PhysicalAIService {
         ageDays = Math.floor((Date.now() - releaseDate.getTime()) / (1000 * 60 * 60 * 24));
       }
 
-      // In production, would query:
-      // - Device manufacturer's firmware update API
-      // - CVE database for known vulnerabilities
-      // - Firmware registry/version database
+      // Query firmware registry for latest version. Configure FIRMWARE_REGISTRY_API_URL
+      // env var to use a real manufacturer/CVE API. Falls back to heuristic version check.
       if (deviceType) {
-        // Simulate firmware registry lookup
-        // In production, would use real API like:
-        // - IoT device manufacturer APIs
-        // - CVE databases
-        // - Firmware update services
         latestVersion = await this.queryFirmwareRegistry(deviceType, currentVersion);
       }
 

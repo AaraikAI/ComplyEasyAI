@@ -14,9 +14,11 @@ import prisma from '../../config/database';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
+import { exec } from 'child_process';
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
+const execAsync = promisify(exec);
 
 export interface TranscriptionOptions {
   language?: string;
@@ -189,7 +191,40 @@ class WhisperService {
   }
 
   /**
-   * Transcribe video (extract audio and transcribe)
+   * Extract audio from video using FFmpeg
+   * Returns path to extracted WAV file
+   */
+  private async extractAudioFromVideo(videoPath: string): Promise<string> {
+    const audioPath = videoPath.replace(/\.[^/.]+$/, '.wav');
+
+    try {
+      // Use FFmpeg to extract audio: mono channel, 16kHz sample rate, PCM 16-bit
+      // This format is optimal for Whisper API
+      await execAsync(
+        `ffmpeg -i "${videoPath}" -vn -acodec pcm_s16le -ar 16000 -ac 1 "${audioPath}" -y`,
+        { timeout: 120000 } // 2 minute timeout for large files
+      );
+
+      if (!fs.existsSync(audioPath)) {
+        throw new Error('FFmpeg audio extraction produced no output');
+      }
+
+      logger.info(`[Whisper] Audio extracted from video: ${audioPath}`);
+      return audioPath;
+    } catch (error: any) {
+      // Check if FFmpeg is installed
+      if (error.message?.includes('not found') || error.message?.includes('ENOENT')) {
+        throw new Error(
+          'FFmpeg is not installed. Install FFmpeg for video audio extraction: ' +
+          'apt-get install ffmpeg (Linux) or brew install ffmpeg (macOS)'
+        );
+      }
+      throw new Error(`FFmpeg audio extraction failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Transcribe video (extract audio via FFmpeg, then transcribe)
    */
   async transcribeVideo(
     videoBuffer: Buffer,
@@ -199,96 +234,92 @@ class WhisperService {
   ): Promise<TranscriptionResult> {
     await this.initialize();
 
+    const tempId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const tempDir = path.join(__dirname, '../../../temp');
+    const videoPath = path.join(tempDir, `video_${tempId}.mp4`);
+    let audioPath: string | null = null;
+
     try {
-      // In production, would use FFmpeg to extract audio from video
-      // For now, attempt to transcribe directly (Whisper can handle some video formats)
+      if (!this.openai || !process.env.OPENAI_API_KEY) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('OPENAI_API_KEY is required for video transcription in production');
+        }
+        return this.fallbackTranscription(videoBuffer, options);
+      }
 
-      const tempFilePath = path.join(
-        __dirname,
-        '../../../temp',
-        `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`
-      );
-
-      const tempDir = path.dirname(tempFilePath);
+      // Ensure temp directory exists
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
 
-      await writeFile(tempFilePath, videoBuffer);
+      await writeFile(videoPath, videoBuffer);
 
-      try {
-        if (this.openai && process.env.OPENAI_API_KEY) {
-          const transcription = await this.openai.audio.transcriptions.create({
-            file: fs.createReadStream(tempFilePath) as any,
-            model: 'whisper-1',
-            language: options.language,
-            prompt: options.prompt,
-            response_format: options.responseFormat || 'verbose_json',
-            temperature: options.temperature || 0,
-          });
+      // Extract audio from video using FFmpeg
+      audioPath = await this.extractAudioFromVideo(videoPath);
 
-          await unlink(tempFilePath);
+      // Transcribe the extracted audio using Whisper API
+      const transcription = await this.openai.audio.transcriptions.create({
+        file: fs.createReadStream(audioPath) as any,
+        model: 'whisper-1',
+        language: options.language,
+        prompt: options.prompt,
+        response_format: options.responseFormat || 'verbose_json',
+        temperature: options.temperature || 0,
+      });
 
-          let result: TranscriptionResult;
+      let result: TranscriptionResult;
 
-          if (typeof transcription === 'string') {
-            result = {
-              text: transcription,
-              language: options.language || 'en',
-            };
-          } else {
-            result = {
-              text: transcription.text,
-              language: (transcription as any).language || options.language || 'en',
-              duration: (transcription as any).duration,
-              segments: (transcription as any).segments?.map((seg: any) => ({
-                id: seg.id,
-                seek: seg.seek,
-                start: seg.start,
-                end: seg.end,
-                text: seg.text,
-                tokens: seg.tokens,
-                temperature: seg.temperature,
-                avgLogprob: seg.avg_logprob,
-                compressionRatio: seg.compression_ratio,
-                noSpeechProb: seg.no_speech_prob,
-              })),
-            };
-          }
-
-          // Store transcription
-          await prisma.transcriptionResult.create({
-            data: {
-              organizationId,
-              evidenceId,
-              text: result.text,
-              confidence: 0.9,
-              language: result.language,
-              duration: result.duration,
-              segments: result.segments as any,
-              sourceType: 'video',
-            },
-          });
-
-          return result;
-        } else {
-          await unlink(tempFilePath);
-          return this.fallbackTranscription(videoBuffer, options);
-        }
-      } catch (error) {
-        if (fs.existsSync(tempFilePath)) {
-          await unlink(tempFilePath).catch(() => {});
-        }
-        throw error;
+      if (typeof transcription === 'string') {
+        result = {
+          text: transcription,
+          language: options.language || 'en',
+        };
+      } else {
+        result = {
+          text: transcription.text,
+          language: (transcription as any).language || options.language || 'en',
+          duration: (transcription as any).duration,
+          segments: (transcription as any).segments?.map((seg: any) => ({
+            id: seg.id,
+            seek: seg.seek,
+            start: seg.start,
+            end: seg.end,
+            text: seg.text,
+            tokens: seg.tokens,
+            temperature: seg.temperature,
+            avgLogprob: seg.avg_logprob,
+            compressionRatio: seg.compression_ratio,
+            noSpeechProb: seg.no_speech_prob,
+          })),
+        };
       }
+
+      // Store transcription in database
+      await prisma.transcriptionResult.create({
+        data: {
+          organizationId,
+          evidenceId,
+          text: result.text,
+          confidence: 0.9,
+          language: result.language,
+          duration: result.duration,
+          segments: result.segments as any,
+          sourceType: 'video',
+        },
+      });
+
+      logger.info(`[Whisper] Video transcription completed: ${result.text.substring(0, 50)}...`);
+      return result;
     } catch (error: any) {
       logger.error('[Whisper] Error transcribing video', error);
-      // In production, throw error instead of falling through to fallback
       if (process.env.NODE_ENV === 'production') {
-        throw new Error(`Video transcription failed: ${error.message}. OPENAI_API_KEY must be configured for video transcription in production.`);
+        throw new Error(`Video transcription failed: ${error.message}`);
       }
-      // Development fallback
       return this.fallbackTranscription(videoBuffer, options);
+    } finally {
+      // Clean up temp files
+      if (fs.existsSync(videoPath)) await unlink(videoPath).catch(() => {});
+      if (audioPath && fs.existsSync(audioPath)) await unlink(audioPath).catch(() => {});
     }
   }
 
