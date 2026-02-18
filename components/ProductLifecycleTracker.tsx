@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft, Package, Shield, CheckCircle, Clock, AlertTriangle,
   ChevronRight, ChevronDown, ChevronUp, FileText, Search, Filter,
@@ -413,6 +414,22 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
   const [showEolModal, setShowEolModal] = useState(false);
   const [selectedEol, setSelectedEol] = useState<EOLPolicy | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.modules.productLifecycle.listProducts();
+        // Only update if we got real data — demo data is used as fallback
+        setLoadError(null);
+      } catch (err: any) {
+        setLoadError('Unable to connect to server. Showing demo data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
   // Computed
   const filteredProducts = useMemo(() => {
@@ -1304,6 +1321,19 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-500">Loading data...</span>
+          </div>
+        )}
+        {loadError && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 mb-4">
+            <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+            <span className="text-sm text-amber-700">{loadError}</span>
+            <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
+          </div>
+        )}
         {activeTab === 'portfolio' && renderPortfolio()}
         {activeTab === 'details' && renderDetails()}
         {activeTab === 'lifecycle' && renderLifecycleMap()}

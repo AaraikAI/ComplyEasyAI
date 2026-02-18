@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft, Plus, Trash2, Edit3, Save, Download, ChevronDown, ChevronRight,
   AlertTriangle, CheckCircle, XCircle, X, Search, Filter, Eye, Copy,
@@ -388,9 +389,64 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const [showAddTrigger, setShowAddTrigger] = useState(false);
   const [newTrigger, setNewTrigger] = useState({ name: '', type: 'Incident Severity' as EscalationTrigger['type'], condition: '', startsAtLevel: 'L1' as EscalationLevel });
 
+  /* ---- loading / error state ---- */
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   /* ---- derived ---- */
   const selectedCommittee = useMemo(() => committees.find(c => c.id === selectedCommitteeId) ?? null, [committees, selectedCommitteeId]);
   const selectedEscalation = useMemo(() => escalationPaths.find(e => e.id === selectedEscalationId) ?? null, [escalationPaths, selectedEscalationId]);
+
+  /* ---- load from API ---- */
+  useEffect(() => {
+    (async () => {
+      try {
+        const [bodies, dpoData] = await Promise.all([
+          api.modules.governance.listBodies(),
+          api.modules.governance.getDPO(),
+        ]);
+        if (bodies && bodies.length > 0) {
+          setCommittees(bodies.map((b: any) => ({
+            id: b.id, type: b.name as CommitteeType, charter: b.charter || '',
+            meetingFrequency: b.meetingFrequency || 'Monthly',
+            members: (b.members || []) as CommitteeMember[],
+            meetings: (b.meetings || []).map((m: any) => ({
+              id: m.id, date: m.date, title: m.title,
+              attendees: (m.attendees || []).map((a: any) => a.name || a),
+              agenda: (m.agenda || []).map((a: any) => a.topic || a),
+              decisions: [], actionItems: m.actionItems || [], nextMeetingDate: '',
+            })),
+            decisions: (b.decisions || []).map((d: any) => ({
+              id: d.id, date: d.createdAt, title: d.title, description: d.description || '',
+              votesFor: 0, votesAgainst: 0, votesAbstain: 0,
+              outcome: d.status === 'approved' ? 'Approved' : 'Deferred',
+              rationale: d.rationale || '',
+            })),
+            status: b.status === 'active' ? 'Active' : 'Inactive',
+            nextMeetingDate: '',
+          })));
+          setEscalationPaths(prev => {
+            const apiPaths = (bodies.flatMap((b: any) => b.escalationPaths || []) as any[]).map((p: any) => ({
+              id: p.id, name: p.name, scenario: 'Custom' as const, description: '',
+              status: p.status === 'active' ? 'Active' as const : 'Draft' as const,
+              steps: (p.levels || []) as EscalationStep[],
+              triggers: (p.triggerCriteria || []) as EscalationTrigger[],
+              lastUpdated: p.updatedAt || new Date().toISOString(),
+            }));
+            return apiPaths.length > 0 ? apiPaths : prev;
+          });
+        }
+        if (dpoData) {
+          setDpo(prev => ({ ...prev, name: dpoData.name, email: dpoData.email, phone: dpoData.phone || prev.phone, tasks: dpoData.tasks || prev.tasks, activityLog: dpoData.activityLog || prev.activityLog }));
+        }
+        setLoadError(null);
+      } catch (err: any) {
+        setLoadError('Unable to connect to server. Showing local data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
   /* ---- DPO callbacks ---- */
   const addDPOTask = useCallback(() => {
@@ -469,6 +525,20 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
           <p className="text-sm text-gray-500">DPO management, committee oversight, and escalation path design</p>
         </div>
       </div>
+
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-500">Loading governance data...</span>
+        </div>
+      )}
+      {loadError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2">
+          <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+          <span className="text-sm text-amber-700">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
+        </div>
+      )}
 
       {/* Main Tabs */}
       <div className="flex gap-1 border-b">

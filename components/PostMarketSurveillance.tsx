@@ -17,7 +17,8 @@
  *            CE Marking framework (Decision 768/2008/EC)
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft,
   Eye,
@@ -371,6 +372,25 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [plansData, recallsData] = await Promise.all([
+          api.modules.surveillance.listPlans(),
+          api.modules.surveillance.listRecalls(),
+        ]);
+        // Only update if we got real data — demo data is used as fallback
+        setLoadError(null);
+      } catch (err: any) {
+        setLoadError('Unable to connect to server. Showing demo data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
   // Computed
   const overviewStats = useMemo(() => {
@@ -1234,6 +1254,21 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
           })}
         </nav>
       </div>
+
+      {/* Loading / Error */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-500">Loading data...</span>
+        </div>
+      )}
+      {loadError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 mb-4">
+          <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+          <span className="text-sm text-amber-700">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
+        </div>
+      )}
 
       {/* Tab Content */}
       {activeTab === 'overview' && renderOverview()}

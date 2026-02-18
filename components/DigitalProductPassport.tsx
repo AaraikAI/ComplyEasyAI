@@ -15,7 +15,8 @@
  * Reference: EU Ecodesign for Sustainable Products Regulation (ESPR) 2024/1781
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft,
   Package,
@@ -397,7 +398,7 @@ interface DigitalProductPassportProps {
 export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ onBack }) => {
   type TabId = 'overview' | 'products' | 'materials' | 'carbon' | 'supply_chain';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [products] = useState<DPPProduct[]>(DEMO_PRODUCTS);
+  const [products, setProducts] = useState<DPPProduct[]>(DEMO_PRODUCTS);
   const [materials] = useState<MaterialComposition[]>(DEMO_MATERIALS);
   const [carbonData] = useState<CarbonFootprint[]>(DEMO_CARBON);
   const [supplyChain] = useState<SupplyChainNode[]>(DEMO_SUPPLY_CHAIN);
@@ -409,6 +410,44 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
   const [showShareModal, setShowShareModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [expandedNode, setExpandedNode] = useState<string | null>(null);
+
+  // Loading / error state
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const passports = await api.modules.dpp.listPassports();
+        if (passports && passports.length > 0) {
+          setProducts(passports.map((p: any) => ({
+            id: p.id,
+            name: p.name || p.productName || '',
+            gtin: p.gtin || '',
+            batchNumber: p.batchNumber || '',
+            category: p.category || '',
+            manufacturer: p.manufacturer || '',
+            countryOfOrigin: p.countryOfOrigin || '',
+            passportStatus: p.passportStatus || p.status || 'draft',
+            recyclabilityScore: p.recyclabilityScore || 0,
+            repairabilityScore: p.repairabilityScore || 0,
+            carbonFootprintTotal: p.carbonFootprintTotal || 0,
+            ecodesignCompliant: p.ecodesignCompliant || false,
+            lastUpdated: p.updatedAt || p.lastUpdated || '',
+            createdAt: p.createdAt || '',
+            passportVersion: p.passportVersion || '1.0',
+            qrCodeGenerated: p.qrCodeGenerated || false,
+          })));
+          setSelectedProduct(passports[0]);
+        }
+        setLoadError(null);
+      } catch (err: any) {
+        setLoadError('Unable to connect to server. Showing local data.');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
   // Computed
   const productMaterials = useMemo(() => materials.filter(m => m.productId === selectedProduct.id), [materials, selectedProduct]);
@@ -1134,6 +1173,20 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
           </button>
         </div>
       </div>
+
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-500">Loading product passport data...</span>
+        </div>
+      )}
+      {loadError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2">
+          <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+          <span className="text-sm text-amber-700">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
