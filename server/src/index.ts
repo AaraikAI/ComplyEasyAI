@@ -63,6 +63,27 @@ import exportRoutes from './routes/export';
 // Feature Modules Routes
 import featureModulesRoutes from './routes/featureModules';
 
+// DORA Routes
+import doraRoutes from './routes/dora';
+
+// Auditor Hub Routes
+import auditorRoutes from './routes/auditor';
+
+// SOX Compliance Routes
+import soxRoutes from './routes/sox';
+
+// SoD Analysis Routes
+import sodRoutes from './routes/sod';
+
+// MDM Routes
+import mdmRoutes from './routes/mdm';
+
+// Workflow Builder Routes
+import workflowRoutes from './routes/workflow';
+
+// Privacy Management Routes
+import privacyRoutes from './routes/privacy';
+
 // API Versioning
 import v1Router from './routes/v1';
 import v2Router from './routes/v2';
@@ -369,6 +390,27 @@ app.use('/api/marketplace', apiLimiter, marketplaceRoutes);
 
 // Feature modules routes (governance, breach, CE marking, DPP, ESG, SBOM, surveillance, decommission, lifecycle, process maps)
 app.use('/api/modules', apiLimiter, featureModulesRoutes);
+
+// DORA (Digital Operational Resilience Act) routes
+app.use('/api/dora', apiLimiter, doraRoutes);
+
+// Auditor Collaboration Hub routes
+app.use('/api/auditor', apiLimiter, auditorRoutes);
+
+// SOX Compliance routes
+app.use('/api/sox', apiLimiter, soxRoutes);
+
+// Separation of Duties routes
+app.use('/api/sod', apiLimiter, sodRoutes);
+
+// Mobile Device Management routes
+app.use('/api/mdm', apiLimiter, mdmRoutes);
+
+// Workflow Builder routes
+app.use('/api/workflows', apiLimiter, workflowRoutes);
+
+// Privacy Management routes
+app.use('/api/privacy', apiLimiter, privacyRoutes);
 
 // GraphQL endpoint
 app.post('/api/graphql', graphqlMiddleware());
