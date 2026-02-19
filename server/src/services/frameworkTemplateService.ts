@@ -20,6 +20,23 @@ import { CMMC_CONTROLS } from '../data/frameworks/cmmcControls';
 import { HITRUST_CONTROLS } from '../data/frameworks/hitrustControls';
 import { CIS_CONTROLS } from '../data/frameworks/cisControls';
 import { ISO27017_CONTROLS } from '../data/frameworks/iso27017Controls';
+import { EU_AI_ACT_CONTROLS } from '../data/frameworks/euAiActControls';
+import { NIS2_CONTROLS } from '../data/frameworks/nis2Controls';
+import { DORA_CONTROLS } from '../data/frameworks/doraControls';
+import { NIST800171_CONTROLS } from '../data/frameworks/nist800171Controls';
+import { ISO27701_CONTROLS } from '../data/frameworks/iso27701Controls';
+import { CSA_CCM_CONTROLS } from '../data/frameworks/csaCcmControls';
+import { ISO27018_CONTROLS } from '../data/frameworks/iso27018Controls';
+import { ISO22301_CONTROLS } from '../data/frameworks/iso22301Controls';
+import { COBIT_CONTROLS } from '../data/frameworks/cobitControls';
+import { GLBA_CONTROLS } from '../data/frameworks/glbaControls';
+import { SOC1_CONTROLS } from '../data/frameworks/soc1Controls';
+import { FISMA_CONTROLS } from '../data/frameworks/fismaControls';
+import { VCDPA_CONTROLS, CPA_CONTROLS, CTDPA_CONTROLS, UCPA_CONTROLS, TDPSA_CONTROLS } from '../data/frameworks/statePrivacyControls';
+import { NIST80063_CONTROLS } from '../data/frameworks/nist80063Controls';
+import { PIPEDA_CONTROLS } from '../data/frameworks/pipedaControls';
+import { LGPD_CONTROLS } from '../data/frameworks/lgpdControls';
+import { PDPA_CONTROLS } from '../data/frameworks/pdpaControls';
 import { CONTROL_CROSSWALK, findMappedControls, getMappingsBetweenFrameworks } from '../data/frameworks/controlCrosswalk';
 import type { FrameworkControlTemplate } from '../data/frameworks/soc2Controls';
 
@@ -97,6 +114,111 @@ const FRAMEWORK_TEMPLATE_MAP: Record<string, { controls: FrameworkControlTemplat
     displayName: 'ISO 27017:2015',
     description: 'Cloud security controls extending ISO 27001 with guidance for cloud service providers and customers',
   },
+  'EU AI Act': {
+    controls: EU_AI_ACT_CONTROLS,
+    displayName: 'EU AI Act (2024/1689)',
+    description: 'European Union Artificial Intelligence Act establishing comprehensive AI regulation with risk-based approach',
+  },
+  'NIS2': {
+    controls: NIS2_CONTROLS,
+    displayName: 'NIS2 Directive (2022/2555)',
+    description: 'EU Network and Information Security Directive 2 for essential and important entities across critical sectors',
+  },
+  'DORA': {
+    controls: DORA_CONTROLS,
+    displayName: 'DORA (2022/2554)',
+    description: 'Digital Operational Resilience Act for financial entities covering ICT risk management and operational resilience',
+  },
+  'NIST 800-171': {
+    controls: NIST800171_CONTROLS,
+    displayName: 'NIST SP 800-171 Rev 2',
+    description: 'Protecting Controlled Unclassified Information (CUI) in nonfederal systems with 110 security requirements',
+  },
+  'ISO 27701': {
+    controls: ISO27701_CONTROLS,
+    displayName: 'ISO 27701:2019',
+    description: 'Privacy Information Management System (PIMS) extending ISO 27001/27002 for privacy compliance',
+  },
+  'CSA CCM': {
+    controls: CSA_CCM_CONTROLS,
+    displayName: 'CSA CCM v4.0',
+    description: 'Cloud Security Alliance Cloud Controls Matrix with 17 domains covering cloud security governance and operations',
+  },
+  'ISO 27018': {
+    controls: ISO27018_CONTROLS,
+    displayName: 'ISO 27018:2019',
+    description: 'Code of practice for protection of personally identifiable information (PII) in public clouds acting as PII processors',
+  },
+  'ISO 22301': {
+    controls: ISO22301_CONTROLS,
+    displayName: 'ISO 22301:2019',
+    description: 'Business Continuity Management Systems requirements for planning, implementing, and maintaining a BCMS',
+  },
+  'COBIT': {
+    controls: COBIT_CONTROLS,
+    displayName: 'COBIT 2019',
+    description: 'Control Objectives for Information and Related Technologies framework for IT governance and management',
+  },
+  'GLBA': {
+    controls: GLBA_CONTROLS,
+    displayName: 'GLBA Safeguards Rule',
+    description: 'Gramm-Leach-Bliley Act requirements for financial institutions to protect customer information',
+  },
+  'SOC 1': {
+    controls: SOC1_CONTROLS,
+    displayName: 'SOC 1 Type II',
+    description: 'Service Organization Control 1 report on controls relevant to user entities internal control over financial reporting',
+  },
+  'FISMA': {
+    controls: FISMA_CONTROLS,
+    displayName: 'FISMA',
+    description: 'Federal Information Security Modernization Act requirements for federal agency information security programs',
+  },
+  'VCDPA': {
+    controls: VCDPA_CONTROLS,
+    displayName: 'VCDPA',
+    description: 'Virginia Consumer Data Protection Act consumer privacy rights and controller obligations',
+  },
+  'CPA': {
+    controls: CPA_CONTROLS,
+    displayName: 'Colorado Privacy Act',
+    description: 'Colorado Privacy Act consumer privacy rights including universal opt-out mechanism requirements',
+  },
+  'CTDPA': {
+    controls: CTDPA_CONTROLS,
+    displayName: 'CTDPA',
+    description: 'Connecticut Data Privacy Act consumer privacy rights and data protection requirements',
+  },
+  'UCPA': {
+    controls: UCPA_CONTROLS,
+    displayName: 'UCPA',
+    description: 'Utah Consumer Privacy Act consumer privacy rights for businesses with specific revenue/data thresholds',
+  },
+  'TDPSA': {
+    controls: TDPSA_CONTROLS,
+    displayName: 'TDPSA',
+    description: 'Texas Data Privacy and Security Act consumer privacy rights with small business accommodations',
+  },
+  'NIST 800-63': {
+    controls: NIST80063_CONTROLS,
+    displayName: 'NIST SP 800-63-3',
+    description: 'Digital Identity Guidelines covering identity proofing, authentication, and federation assurance levels',
+  },
+  'PIPEDA': {
+    controls: PIPEDA_CONTROLS,
+    displayName: 'PIPEDA',
+    description: 'Canada Personal Information Protection and Electronic Documents Act with 10 fair information principles',
+  },
+  'LGPD': {
+    controls: LGPD_CONTROLS,
+    displayName: 'LGPD',
+    description: 'Brazil Lei Geral de Proteção de Dados - comprehensive data protection law modeled after GDPR',
+  },
+  'PDPA': {
+    controls: PDPA_CONTROLS,
+    displayName: 'PDPA Singapore',
+    description: 'Singapore Personal Data Protection Act governing collection, use, and disclosure of personal data',
+  },
 };
 
 // Also support alternate name lookups
@@ -137,6 +259,114 @@ const FRAMEWORK_ALIASES: Record<string, string> = {
   'ISO 27017:2015': 'ISO 27017',
   'iso27017': 'ISO 27017',
   'iso-27017': 'ISO 27017',
+  // EU AI Act aliases
+  'eu-ai-act': 'EU AI Act',
+  'EU AI Act 2024': 'EU AI Act',
+  'ai-act': 'EU AI Act',
+  'AI Act': 'EU AI Act',
+  'Regulation 2024/1689': 'EU AI Act',
+  // NIS2 aliases
+  'nis2': 'NIS2',
+  'NIS 2': 'NIS2',
+  'NIS2 Directive': 'NIS2',
+  'Directive 2022/2555': 'NIS2',
+  // DORA aliases
+  'dora': 'DORA',
+  'Digital Operational Resilience Act': 'DORA',
+  'Regulation 2022/2554': 'DORA',
+  // NIST 800-171 aliases
+  'NIST800-171': 'NIST 800-171',
+  'NIST 800-171 Rev 2': 'NIST 800-171',
+  'nist-800-171': 'NIST 800-171',
+  'NIST SP 800-171': 'NIST 800-171',
+  'CUI Protection': 'NIST 800-171',
+  // ISO 27701 aliases
+  'ISO27701': 'ISO 27701',
+  'ISO 27701:2019': 'ISO 27701',
+  'iso27701': 'ISO 27701',
+  'iso-27701': 'ISO 27701',
+  'PIMS': 'ISO 27701',
+  // CSA CCM aliases
+  'csa-ccm': 'CSA CCM',
+  'CSA CCM v4': 'CSA CCM',
+  'CSA CCM v4.0': 'CSA CCM',
+  'Cloud Controls Matrix': 'CSA CCM',
+  'CCM': 'CSA CCM',
+  'ccm': 'CSA CCM',
+  // ISO 27018 aliases
+  'ISO27018': 'ISO 27018',
+  'ISO 27018:2019': 'ISO 27018',
+  'iso27018': 'ISO 27018',
+  'iso-27018': 'ISO 27018',
+  'Cloud PII': 'ISO 27018',
+  // ISO 22301 aliases
+  'ISO22301': 'ISO 22301',
+  'ISO 22301:2019': 'ISO 22301',
+  'iso22301': 'ISO 22301',
+  'iso-22301': 'ISO 22301',
+  'BCMS': 'ISO 22301',
+  'Business Continuity': 'ISO 22301',
+  // COBIT aliases
+  'cobit': 'COBIT',
+  'COBIT 2019': 'COBIT',
+  'COBIT2019': 'COBIT',
+  'cobit-2019': 'COBIT',
+  // GLBA aliases
+  'glba': 'GLBA',
+  'Gramm-Leach-Bliley': 'GLBA',
+  'GLBA Safeguards': 'GLBA',
+  'Safeguards Rule': 'GLBA',
+  // SOC 1 aliases
+  'SOC1': 'SOC 1',
+  'soc1': 'SOC 1',
+  'soc 1': 'SOC 1',
+  'SOC 1 Type II': 'SOC 1',
+  'SSAE 18': 'SOC 1',
+  'ISAE 3402': 'SOC 1',
+  // FISMA aliases
+  'fisma': 'FISMA',
+  'Federal Information Security': 'FISMA',
+  'FISMA 2014': 'FISMA',
+  // VCDPA aliases
+  'vcdpa': 'VCDPA',
+  'Virginia Consumer Data Protection Act': 'VCDPA',
+  'Virginia Privacy': 'VCDPA',
+  // CPA aliases
+  'cpa': 'CPA',
+  'Colorado Privacy Act': 'CPA',
+  'Colorado Privacy': 'CPA',
+  // CTDPA aliases
+  'ctdpa': 'CTDPA',
+  'Connecticut Data Privacy Act': 'CTDPA',
+  'Connecticut Privacy': 'CTDPA',
+  // UCPA aliases
+  'ucpa': 'UCPA',
+  'Utah Consumer Privacy Act': 'UCPA',
+  'Utah Privacy': 'UCPA',
+  // TDPSA aliases
+  'tdpsa': 'TDPSA',
+  'Texas Data Privacy and Security Act': 'TDPSA',
+  'Texas Privacy': 'TDPSA',
+  // NIST 800-63 aliases
+  'NIST800-63': 'NIST 800-63',
+  'NIST 800-63-3': 'NIST 800-63',
+  'nist-800-63': 'NIST 800-63',
+  'NIST SP 800-63': 'NIST 800-63',
+  'Digital Identity': 'NIST 800-63',
+  // PIPEDA aliases
+  'pipeda': 'PIPEDA',
+  'Personal Information Protection': 'PIPEDA',
+  'Canada Privacy': 'PIPEDA',
+  // LGPD aliases
+  'lgpd': 'LGPD',
+  'Lei Geral de Proteção de Dados': 'LGPD',
+  'Brazil Privacy': 'LGPD',
+  'Brazil LGPD': 'LGPD',
+  // PDPA aliases
+  'pdpa': 'PDPA',
+  'PDPA Singapore': 'PDPA',
+  'Singapore Privacy': 'PDPA',
+  'Singapore PDPA': 'PDPA',
 };
 
 function resolveFrameworkKey(frameworkType: string): string | null {
@@ -576,6 +806,65 @@ export class FrameworkTemplateService {
       'cis': 'cis controls',
       'cis controls v8': 'cis controls',
       'ccpa/cpra': 'ccpa',
+      'eu-ai-act': 'eu ai act',
+      'ai act': 'eu ai act',
+      'regulation 2024/1689': 'eu ai act',
+      'nis 2': 'nis2',
+      'nis2 directive': 'nis2',
+      'directive 2022/2555': 'nis2',
+      'digital operational resilience act': 'dora',
+      'regulation 2022/2554': 'dora',
+      'nist800-171': 'nist 800-171',
+      'nist 800-171 rev 2': 'nist 800-171',
+      'nist sp 800-171': 'nist 800-171',
+      'iso27701': 'iso 27701',
+      'iso 27701:2019': 'iso 27701',
+      'pims': 'iso 27701',
+      'csa-ccm': 'csa ccm',
+      'csa ccm v4': 'csa ccm',
+      'csa ccm v4.0': 'csa ccm',
+      'cloud controls matrix': 'csa ccm',
+      'ccm': 'csa ccm',
+      'iso27018': 'iso 27018',
+      'iso 27018:2019': 'iso 27018',
+      'cloud pii': 'iso 27018',
+      'iso22301': 'iso 22301',
+      'iso 22301:2019': 'iso 22301',
+      'bcms': 'iso 22301',
+      'business continuity': 'iso 22301',
+      'cobit 2019': 'cobit',
+      'cobit2019': 'cobit',
+      'gramm-leach-bliley': 'glba',
+      'glba safeguards': 'glba',
+      'safeguards rule': 'glba',
+      'soc1': 'soc 1',
+      'soc 1 type ii': 'soc 1',
+      'ssae 18': 'soc 1',
+      'isae 3402': 'soc 1',
+      'federal information security': 'fisma',
+      'fisma 2014': 'fisma',
+      'virginia consumer data protection act': 'vcdpa',
+      'virginia privacy': 'vcdpa',
+      'colorado privacy act': 'cpa',
+      'colorado privacy': 'cpa',
+      'connecticut data privacy act': 'ctdpa',
+      'connecticut privacy': 'ctdpa',
+      'utah consumer privacy act': 'ucpa',
+      'utah privacy': 'ucpa',
+      'texas data privacy and security act': 'tdpsa',
+      'texas privacy': 'tdpsa',
+      'nist800-63': 'nist 800-63',
+      'nist 800-63-3': 'nist 800-63',
+      'nist sp 800-63': 'nist 800-63',
+      'digital identity': 'nist 800-63',
+      'personal information protection': 'pipeda',
+      'canada privacy': 'pipeda',
+      'lei geral de proteção de dados': 'lgpd',
+      'brazil privacy': 'lgpd',
+      'brazil lgpd': 'lgpd',
+      'pdpa singapore': 'pdpa',
+      'singapore privacy': 'pdpa',
+      'singapore pdpa': 'pdpa',
     };
 
     return aliases[normalized] || normalized;
