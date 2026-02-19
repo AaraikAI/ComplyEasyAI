@@ -130,6 +130,33 @@ model Organization {
   processMaps                ProcessMap[]
   regulationModuleData       RegulationModuleData[]
   metricsHistory             MetricsHistory[]
+  // New module relations
+  doraICTRiskAssessments    DORAICTRiskAssessment[]
+  doraICTIncidents          DORAICTIncident[]
+  doraThirdPartyProviders   DORAThirdPartyProvider[]
+  doraResilienceTests       DORAResilienceTest[]
+  doraInformationRegisters  DORAInformationRegister[]
+  auditorProfiles           AuditorProfile[]
+  auditEngagements          AuditEngagement[]
+  auditFindings             AuditFinding[]
+  grcWorkflows              GRCWorkflow[]
+  managedDevices            ManagedDevice[]
+  mdmPolicies               MDMPolicy[]
+  soxControls               SOXControl[]
+  soxAssessments            SOXAssessment[]
+  sodRules                  SoDRule[]
+  sodViolations             SoDViolation[]
+  dsarRequests              DSARRequest[]
+  consentRecords            ConsentRecord[]
+  consentPreferences        ConsentPreference[]
+  dataDeletionRequests      DataDeletionRequest[]
+  processingRestrictions    ProcessingRestriction[]
+  retentionPolicies         RetentionPolicy[]
+  sccTemplates              SCCTemplate[]
+  tiaAssessments            TIAAssessment[]
+  bcrPrograms               BCRProgram[]
+  aiTransparencyNotices     AITransparencyNotice[]
+  jitPrivacyNotices         JITPrivacyNotice[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -4322,4 +4349,983 @@ model MetricsHistory {
 
   @@index([organizationId, metricType])
   @@index([recordedAt])
+}
+
+// ============================================================================
+// DORA (Digital Operational Resilience Act) Module
+// ============================================================================
+
+model DORAICTRiskAssessment {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  description           String?
+  assessmentDate        DateTime     @default(now())
+  assessorName          String
+  scope                 String
+  ictAssets             Json         // Array of ICT assets assessed
+  riskClassification    String       @default("Medium") // Low, Medium, High, Critical
+  vulnerabilities       Json?        // Identified vulnerabilities
+  threats               Json?        // Identified threats
+  riskTreatmentPlan     Json?        // Treatment plan details
+  residualRisk          String?
+  status                String       @default("Draft") // Draft, InProgress, Completed, Approved
+  nextReviewDate        DateTime?
+  approvedBy            String?
+  approvedAt            DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([riskClassification])
+}
+
+model DORAICTIncident {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  incidentId            String       @unique
+  title                 String
+  description           String
+  severity              String       // Minor, Major, Critical
+  classification        String       // ICT-related, Cyber, Operational
+  detectedAt            DateTime
+  reportedAt            DateTime?
+  resolvedAt            DateTime?
+  rootCause             String?
+  affectedSystems       Json?        // Systems affected
+  affectedUsers         Int?
+  financialImpact       Float?
+  regulatoryNotified    Boolean      @default(false)
+  notificationDate      DateTime?
+  notificationAuthority String?
+  status                String       @default("Open") // Open, Investigating, Contained, Resolved, Closed
+  timeline              Json?        // Incident timeline events
+  lessonsLearned        String?
+  remediationActions    Json?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([severity])
+  @@index([detectedAt])
+}
+
+model DORAThirdPartyProvider {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  providerType          String       // Cloud, SaaS, Infrastructure, Outsourcing
+  criticality           String       @default("Medium") // Low, Medium, High, Critical
+  contractStartDate     DateTime?
+  contractEndDate       DateTime?
+  serviceDescription    String?
+  dataProcessed         Json?        // Types of data processed
+  locationOfProcessing  String?
+  subcontractors        Json?
+  exitStrategy          String?
+  lastAuditDate         DateTime?
+  nextAuditDate         DateTime?
+  complianceStatus      String       @default("Pending") // Compliant, NonCompliant, Pending, UnderReview
+  riskScore             Int?
+  concentrationRisk     Boolean      @default(false)
+  alternativeProviders  Json?
+  status                String       @default("Active")
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  testResults           DORAResilienceTest[]
+
+  @@index([organizationId])
+  @@index([criticality])
+  @@index([complianceStatus])
+}
+
+model DORAResilienceTest {
+  id                    String                  @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  testType              String       // TLPT, ScenarioBased, Tabletop, RedTeam, VulnerabilityAssessment
+  scope                 String
+  methodology           String?
+  scheduledDate         DateTime
+  executedDate          DateTime?
+  status                String       @default("Planned") // Planned, InProgress, Completed, Failed
+  participants          Json?
+  scenarioDescription   String?
+  findings              Json?
+  criticalFindings      Int          @default(0)
+  highFindings          Int          @default(0)
+  mediumFindings        Int          @default(0)
+  lowFindings           Int          @default(0)
+  remediationPlan       Json?
+  providerId            String?
+  provider              DORAThirdPartyProvider? @relation(fields: [providerId], references: [id])
+  approvedBy            String?
+  reportUrl             String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([testType])
+  @@index([status])
+  @@index([providerId])
+}
+
+model DORAInformationRegister {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  assetName             String
+  assetType             String       // Hardware, Software, Network, Data, Cloud
+  owner                 String
+  classification        String       @default("Internal") // Public, Internal, Confidential, Restricted
+  location              String?
+  dependencies          Json?
+  recoveryTimeObjective Int?         // in minutes
+  recoveryPointObjective Int?        // in minutes
+  businessImpact        String       @default("Medium")
+  lastReviewDate        DateTime?
+  nextReviewDate        DateTime?
+  status                String       @default("Active")
+  metadata              Json?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([assetType])
+  @@index([classification])
+}
+
+// ============================================================================
+// Auditor Collaboration Hub
+// ============================================================================
+
+model AuditorProfile {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  email                 String
+  firm                  String?
+  certification         String[]     // CPA, CISA, ISO27001 Lead Auditor, etc.
+  specializations       String[]     // SOC2, ISO27001, PCI-DSS, etc.
+  yearsExperience       Int?
+  engagementType        String       @default("External") // Internal, External, Bundled
+  status                String       @default("Active")
+  rating                Float?
+  completedAudits       Int          @default(0)
+  hourlyRate            Float?
+  contractUrl           String?
+  ndaSigned             Boolean      @default(false)
+  ndaSignedDate         DateTime?
+  lastEngagement        DateTime?
+  notes                 String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  engagements           AuditEngagement[]
+  findings              AuditFinding[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([engagementType])
+}
+
+model AuditEngagement {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  auditorId             String
+  title                 String
+  engagementType        String       // Annual, Interim, Special, Certification
+  framework             String       // SOC2, ISO27001, etc.
+  scope                 String?
+  startDate             DateTime
+  endDate               DateTime?
+  status                String       @default("Planning") // Planning, Fieldwork, Review, Reporting, Completed
+  objectives            Json?
+  deliverables          Json?
+  timeline              Json?
+  budget                Float?
+  actualCost            Float?
+  riskAssessment        Json?
+  managementResponse    String?
+  finalReportUrl        String?
+  overallOpinion        String?      // Unqualified, Qualified, Adverse, Disclaimer
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  auditor               AuditorProfile @relation(fields: [auditorId], references: [id], onDelete: Cascade)
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  findings              AuditFinding[]
+  workpapers            AuditWorkpaper[]
+  requests              AuditRequest[]
+
+  @@index([organizationId])
+  @@index([auditorId])
+  @@index([status])
+  @@index([framework])
+}
+
+model AuditFinding {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  engagementId          String
+  auditorId             String
+  title                 String
+  description           String
+  findingType           String       // Observation, Finding, Exception, Deficiency
+  severity              String       @default("Medium") // Low, Medium, High, Critical
+  controlRef            String?
+  evidence              Json?
+  recommendation        String?
+  managementResponse    String?
+  responsibleParty      String?
+  targetRemediationDate DateTime?
+  actualRemediationDate DateTime?
+  status                String       @default("Open") // Open, InProgress, Remediated, Accepted, Closed
+  retestResult          String?
+  retestDate            DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  auditor               AuditorProfile @relation(fields: [auditorId], references: [id])
+  engagement            AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([engagementId])
+  @@index([status])
+  @@index([severity])
+}
+
+model AuditWorkpaper {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  engagementId          String
+  title                 String
+  description           String?
+  workpaperType         String       // Evidence, Analysis, Memo, Checklist, Template
+  fileUrl               String?
+  fileName              String?
+  fileSize              Int?
+  uploadedBy            String
+  reviewedBy            String?
+  reviewDate            DateTime?
+  status                String       @default("Draft") // Draft, Submitted, Reviewed, Approved
+  comments              Json?
+  crossReference        String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  engagement            AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+
+  @@index([engagementId])
+  @@index([workpaperType])
+  @@index([status])
+}
+
+model AuditRequest {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  engagementId          String
+  requestedBy           String       // Auditor name
+  assignedTo            String?      // Organization contact
+  title                 String
+  description           String
+  category              String       // Evidence, Documentation, Interview, Walkthrough
+  priority              String       @default("Medium")
+  dueDate               DateTime?
+  status                String       @default("Open") // Open, InProgress, Submitted, Accepted, Rejected
+  response              String?
+  attachments           Json?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  engagement            AuditEngagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+
+  @@index([engagementId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+}
+
+// ============================================================================
+// No-Code Visual Workflow Builder
+// ============================================================================
+
+model GRCWorkflow {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  description           String?
+  workflowType          String       // RiskAssessment, PolicyReview, IncidentResponse, VendorOnboarding, ComplianceCheck, Custom
+  trigger               Json         // { type: 'manual' | 'schedule' | 'event', config: {...} }
+  nodes                 Json         // Array of workflow nodes (steps)
+  edges                 Json         // Array of connections between nodes
+  variables             Json?        // Workflow variables
+  version               Int          @default(1)
+  status                String       @default("Draft") // Draft, Active, Paused, Archived
+  lastRunAt             DateTime?
+  runCount              Int          @default(0)
+  successCount          Int          @default(0)
+  failureCount          Int          @default(0)
+  createdBy             String
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  executions            WorkflowExecution[]
+
+  @@index([organizationId])
+  @@index([workflowType])
+  @@index([status])
+}
+
+model WorkflowExecution {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  workflowId            String
+  triggeredBy           String
+  triggerType           String       // manual, schedule, event
+  status                String       @default("Running") // Running, Completed, Failed, Cancelled
+  currentNodeId         String?
+  completedNodes        Json?        // Array of completed node IDs
+  nodeResults           Json?        // Results from each node
+  variables             Json?        // Runtime variables
+  error                 String?
+  startedAt             DateTime     @default(now())
+  completedAt           DateTime?
+  duration              Int?         // in milliseconds
+  workflow              GRCWorkflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+// ============================================================================
+// MDM (Mobile Device Management)
+// ============================================================================
+
+model ManagedDevice {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  deviceName            String
+  deviceType            String       // Mobile, Tablet, Laptop, Desktop, IoT
+  platform              String       // iOS, Android, Windows, macOS, Linux, ChromeOS
+  osVersion             String?
+  serialNumber          String?
+  imei                  String?
+  macAddress            String?
+  enrolledAt            DateTime     @default(now())
+  lastCheckIn           DateTime?
+  assignedUserId        String?
+  assignedUserName      String?
+  compliance            String       @default("Unknown") // Compliant, NonCompliant, Unknown, Pending
+  encryptionEnabled     Boolean      @default(false)
+  passcodeSet           Boolean      @default(false)
+  jailbroken            Boolean      @default(false)
+  vpnEnabled            Boolean      @default(false)
+  antivirusInstalled    Boolean      @default(false)
+  antivirusUpToDate     Boolean      @default(false)
+  osUpToDate            Boolean      @default(false)
+  firewallEnabled       Boolean      @default(false)
+  autoUpdateEnabled     Boolean      @default(false)
+  screenLockTimeout     Int?         // in seconds
+  installedApps         Json?
+  blockedApps           Json?
+  networkProfiles       Json?
+  location              Json?        // Last known location if tracked
+  batteryLevel          Int?
+  storageUsed           Float?       // GB
+  storageTotal          Float?       // GB
+  status                String       @default("Active") // Active, Lost, Stolen, Wiped, Retired, PendingEnrollment
+  riskScore             Int          @default(0)
+  lastSecurityScan      DateTime?
+  policies              Json?        // Applied MDM policies
+  tags                  String[]     @default([])
+  metadata              Json?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actions               DeviceAction[]
+  complianceChecks      DeviceComplianceCheck[]
+
+  @@index([organizationId])
+  @@index([compliance])
+  @@index([status])
+  @@index([platform])
+  @@index([assignedUserId])
+}
+
+model MDMPolicy {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  description           String?
+  policyType            String       // Security, AppManagement, Network, Restriction, Compliance
+  platform              String[]     // iOS, Android, Windows, macOS, All
+  settings              Json         // Policy settings/configurations
+  priority              Int          @default(0)
+  enforced              Boolean      @default(true)
+  assignedGroups        Json?        // Groups this policy applies to
+  assignedDeviceCount   Int          @default(0)
+  status                String       @default("Active") // Active, Inactive, Draft
+  version               Int          @default(1)
+  createdBy             String
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([policyType])
+  @@index([status])
+}
+
+model DeviceAction {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  deviceId              String
+  actionType            String       // Lock, Wipe, Locate, RestartDevice, UpdateOS, InstallApp, RemoveApp, SendMessage, EnableVPN
+  initiatedBy           String
+  status                String       @default("Pending") // Pending, InProgress, Completed, Failed
+  result                Json?
+  error                 String?
+  scheduledAt           DateTime?
+  executedAt            DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime     @default(now())
+  device                ManagedDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([actionType])
+  @@index([status])
+}
+
+model DeviceComplianceCheck {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  deviceId              String
+  checkType             String       // Encryption, Passcode, OSVersion, Jailbreak, Antivirus, Firewall
+  passed                Boolean
+  details               String?
+  checkedAt             DateTime     @default(now())
+  device                ManagedDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([checkType])
+  @@index([checkedAt])
+}
+
+// ============================================================================
+// SOX Compliance Module
+// ============================================================================
+
+model SOXControl {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  controlNumber         String
+  title                 String
+  description           String
+  category              String       // EntityLevel, TransactionLevel, ITGeneral, ITApplication
+  assertion             String[]     // Existence, Completeness, Valuation, RightsObligations, PresentationDisclosure
+  processArea           String       // RevenueRecognition, Procurement, Payroll, FinancialClose, ITOperations, Treasury
+  controlType           String       // Preventive, Detective, Corrective
+  frequency             String       // Continuous, Daily, Weekly, Monthly, Quarterly, Annual
+  automationType        String       @default("Manual") // Manual, SemiAutomated, FullyAutomated
+  owner                 String
+  reviewer              String?
+  materialityThreshold  Float?
+  keyControl            Boolean      @default(false)
+  status                String       @default("NotTested") // NotTested, Effective, Ineffective, RemediationRequired
+  lastTestDate          DateTime?
+  nextTestDate          DateTime?
+  deficiencyType        String?      // None, Deficiency, SignificantDeficiency, MaterialWeakness
+  evidence              Json?
+  walkthrough           Json?        // Walkthrough documentation
+  riskOfMaterialMisstatement String? // Low, Medium, High
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  testResults           SOXTestResult[]
+
+  @@unique([organizationId, controlNumber])
+  @@index([organizationId])
+  @@index([category])
+  @@index([processArea])
+  @@index([status])
+  @@index([keyControl])
+}
+
+model SOXTestResult {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  controlId             String
+  testDate              DateTime     @default(now())
+  tester                String
+  testType              String       // DesignEffectiveness, OperatingEffectiveness, Walkthrough, SampleTest
+  sampleSize            Int?
+  exceptionsFound       Int          @default(0)
+  testProcedure         String
+  conclusion            String       // Effective, Ineffective, NotConclusive
+  evidence              Json?
+  deficiencyLevel       String?      // None, Deficiency, SignificantDeficiency, MaterialWeakness
+  compensatingControls  Json?
+  managementResponse    String?
+  remediationDeadline   DateTime?
+  status                String       @default("Draft") // Draft, Reviewed, Approved
+  reviewedBy            String?
+  reviewDate            DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  control               SOXControl   @relation(fields: [controlId], references: [id], onDelete: Cascade)
+
+  @@index([controlId])
+  @@index([testDate])
+  @@index([conclusion])
+}
+
+model SOXAssessment {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  assessmentYear        Int
+  assessmentType        String       // Section302, Section404, IntegratedAudit
+  status                String       @default("InProgress") // InProgress, Completed, Filed
+  overallConclusion     String?      // EffectiveICFR, MaterialWeakness, SignificantDeficiency
+  scopedProcesses       Json?
+  materialAccounts      Json?
+  significantLocations  Json?
+  riskAssessment        Json?
+  managementCertification Json?
+  auditorAttestation    Json?
+  filingDeadline        DateTime?
+  filedDate             DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([assessmentYear])
+  @@index([status])
+}
+
+// ============================================================================
+// SoD (Separation of Duties) Analysis
+// ============================================================================
+
+model SoDRule {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  description           String?
+  ruleType              String       // Conflicting, Toxic, HighRisk
+  function1             String       // e.g., "Approve Purchase Orders"
+  function2             String       // e.g., "Process Payments"
+  riskLevel             String       @default("High") // Low, Medium, High, Critical
+  system                String?      // System where this applies (ERP, CRM, etc.)
+  mitigatingControl     String?
+  enabled               Boolean      @default(true)
+  status                String       @default("Active")
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  violations            SoDViolation[]
+
+  @@index([organizationId])
+  @@index([ruleType])
+  @@index([riskLevel])
+}
+
+model SoDViolation {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  ruleId                String
+  userId                String       // User who has the conflict
+  userName              String
+  conflictingRoles      Json         // The roles/permissions causing the conflict
+  detectedAt            DateTime     @default(now())
+  status                String       @default("Open") // Open, Mitigated, Accepted, Remediated
+  riskLevel             String
+  mitigationAction      String?
+  mitigatedBy           String?
+  mitigatedAt           DateTime?
+  acceptedBy            String?
+  acceptanceReason      String?
+  reviewDate            DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  rule                  SoDRule      @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([ruleId])
+  @@index([status])
+  @@index([userId])
+}
+
+// ============================================================================
+// Privacy Management Platform (DSAR, Consent, Data Deletion, Retention)
+// ============================================================================
+
+model DSARRequest {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  requestNumber         String       @unique
+  requestType           String       // Access, Erasure, Rectification, Restriction, Portability, Objection
+  dataSubjectName       String
+  dataSubjectEmail      String
+  dataSubjectPhone      String?
+  identityVerified      Boolean      @default(false)
+  identityVerifiedAt    DateTime?
+  identityVerifiedBy    String?
+  verificationMethod    String?      // ID, Email, Phone, InPerson
+  regulation            String       @default("GDPR") // GDPR, CCPA, LGPD, etc.
+  jurisdiction          String?
+  requestDate           DateTime     @default(now())
+  acknowledgedDate      DateTime?
+  dueDate               DateTime     // Legal deadline
+  completedDate         DateTime?
+  status                String       @default("Received") // Received, Verified, InProgress, PendingReview, Completed, Rejected, Appealed
+  assignedTo            String?
+  priority              String       @default("Normal") // Low, Normal, High, Urgent
+  dataCategories        Json?        // Categories of data involved
+  systemsSearched       Json?        // Systems that were searched
+  dataFound             Json?        // Summary of data found
+  responseMethod        String?      // Email, Mail, Portal
+  responseDetails       String?
+  responseAttachments   Json?
+  extensionApplied      Boolean      @default(false)
+  extensionReason       String?
+  extensionDueDate      DateTime?
+  rejectionReason       String?
+  auditTrail            Json?        // Full audit trail of actions
+  notes                 String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([requestType])
+  @@index([status])
+  @@index([dataSubjectEmail])
+  @@index([dueDate])
+  @@index([requestNumber])
+}
+
+model ConsentRecord {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  dataSubjectId         String       // External ID of the data subject
+  dataSubjectEmail      String?
+  consentType           String       // Marketing, Analytics, ThirdPartySharing, Profiling, Essential, Functional, Targeting
+  purpose               String       // Specific purpose description
+  legalBasis            String       // Consent, LegitimateInterest, Contract, LegalObligation, VitalInterest, PublicTask
+  channel               String       // Web, Mobile, Email, InPerson, Phone, API
+  consentGiven          Boolean
+  consentDate           DateTime     @default(now())
+  consentExpiry         DateTime?
+  withdrawnAt           DateTime?
+  withdrawalMethod      String?
+  version               String       @default("1.0")
+  policyVersion         String?      // Privacy policy version consented to
+  proofOfConsent        Json?        // Evidence of consent (IP, timestamp, form data)
+  granularity           Json?        // Granular consent choices
+  doubleOptIn           Boolean      @default(false)
+  doubleOptInDate       DateTime?
+  source                String?      // Where consent was collected
+  metadata              Json?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([dataSubjectId])
+  @@index([consentType])
+  @@index([consentGiven])
+  @@index([dataSubjectEmail])
+}
+
+model ConsentPreference {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  dataSubjectId         String
+  dataSubjectEmail      String?
+  preferences           Json         // { marketing: true, analytics: false, thirdParty: false, ... }
+  marketingOptOut       Boolean      @default(false)
+  marketingOptOutDate   DateTime?
+  communicationChannels Json?        // { email: true, sms: false, push: true, ... }
+  doNotSell             Boolean      @default(false) // CCPA Do Not Sell
+  doNotShare            Boolean      @default(false) // CCPA Do Not Share
+  limitUse              Boolean      @default(false) // Limit use of sensitive data
+  lastUpdated           DateTime     @default(now())
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, dataSubjectId])
+  @@index([organizationId])
+  @@index([dataSubjectId])
+  @@index([marketingOptOut])
+}
+
+model DataDeletionRequest {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  requestType           String       // AccountDeletion, DataErasure, PartialDeletion, ProcessingRestriction
+  requestedBy           String       // User ID or data subject identifier
+  requestedByEmail      String
+  status                String       @default("Pending") // Pending, Approved, InProgress, Completed, Rejected, OnHold
+  reason                String?
+  dataCategories        Json?        // Specific data categories to delete
+  systemsAffected       Json?        // Systems where data needs to be deleted
+  deletionLog           Json?        // Log of what was deleted where
+  approvedBy            String?
+  approvedAt            DateTime?
+  scheduledDate         DateTime?    // When deletion is scheduled
+  completedDate         DateTime?
+  retentionOverride     Boolean      @default(false) // Override retention for legal hold
+  legalHoldReason       String?
+  verificationRequired  Boolean      @default(true)
+  verifiedAt            DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([requestType])
+  @@index([status])
+  @@index([requestedByEmail])
+}
+
+model ProcessingRestriction {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  dataSubjectId         String
+  dataSubjectEmail      String?
+  restrictionType       String       // Full, Partial, Processing, Storage
+  reason                String       // Accuracy, Unlawful, LegalClaims, Objection
+  affectedSystems       Json?
+  affectedProcesses     Json?
+  startDate             DateTime     @default(now())
+  endDate               DateTime?
+  status                String       @default("Active") // Active, Lifted, Expired
+  liftedBy              String?
+  liftedAt              DateTime?
+  liftReason            String?
+  notifiedParties       Json?        // Third parties notified of restriction
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([dataSubjectId])
+  @@index([status])
+  @@index([restrictionType])
+}
+
+model RetentionPolicy {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  description           String?
+  dataCategory          String       // PersonalData, FinancialRecords, EmployeeRecords, CustomerData, MarketingData, AuditLogs
+  retentionPeriod       Int          // in days
+  legalBasis            String?      // Regulatory requirement justifying retention
+  regulation            String?      // GDPR, SOX, HIPAA, etc.
+  autoDelete            Boolean      @default(false)
+  autoDeleteWarningDays Int          @default(30)
+  reviewFrequency       String       @default("Annual") // Monthly, Quarterly, Annual
+  lastReviewDate        DateTime?
+  nextReviewDate        DateTime?
+  status                String       @default("Active") // Active, Inactive, PendingReview
+  appliedToSystems      Json?        // Systems where this policy is applied
+  exceptions            Json?        // Any exceptions to this policy
+  createdBy             String
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  enforcements          RetentionEnforcement[]
+
+  @@index([organizationId])
+  @@index([dataCategory])
+  @@index([status])
+}
+
+model RetentionEnforcement {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  policyId              String
+  executionDate         DateTime     @default(now())
+  recordsEvaluated      Int          @default(0)
+  recordsDeleted        Int          @default(0)
+  recordsArchived       Int          @default(0)
+  recordsExempted       Int          @default(0)
+  exemptionReasons      Json?
+  status                String       @default("Completed") // InProgress, Completed, Failed, PartialSuccess
+  error                 String?
+  executedBy            String       // System or user
+  auditLog              Json?
+  createdAt             DateTime     @default(now())
+  policy                RetentionPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@index([policyId])
+  @@index([executionDate])
+  @@index([status])
+}
+
+// ============================================================================
+// SCC/TIA Templates & BCR Management
+// ============================================================================
+
+model SCCTemplate {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  templateType          String       // ControllerToController, ControllerToProcessor, ProcessorToProcessor, ProcessorToSubprocessor
+  version               String       @default("2021") // EU SCC version
+  moduleSelected        String[]     // Module1, Module2, Module3, Module4
+  dataExporter          Json         // Exporter details
+  dataImporter          Json         // Importer details
+  transferDescription   Json         // Description of data transfer
+  technicalMeasures     Json?        // Technical safeguards
+  organizationalMeasures Json?       // Organizational safeguards
+  supervisoryAuthority  String?
+  governingLaw          String?
+  annexes               Json?        // Annex I, II, III details
+  status                String       @default("Draft") // Draft, UnderReview, Executed, Expired
+  executedDate          DateTime?
+  expiryDate            DateTime?
+  signedByExporter      String?
+  signedByImporter      String?
+  tiaCompleted          Boolean      @default(false)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tiaAssessment         TIAAssessment?
+
+  @@index([organizationId])
+  @@index([templateType])
+  @@index([status])
+}
+
+model TIAAssessment {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  sccTemplateId         String       @unique
+  destinationCountry    String
+  adequacyDecision      Boolean      @default(false)
+  legalFramework        Json?        // Legal framework analysis of destination
+  governmentAccess      Json?        // Government access assessment
+  dataSurveillance      Json?        // Surveillance practices analysis
+  effectiveRemedies     Json?        // Available remedies for data subjects
+  supplementaryMeasures Json?        // Additional safeguards needed
+  overallRisk           String       @default("Medium") // Low, Medium, High, Unacceptable
+  conclusion            String?      // Transfer can proceed / cannot proceed
+  approvedBy            String?
+  approvedAt            DateTime?
+  reviewDate            DateTime?
+  status                String       @default("Draft") // Draft, InProgress, Completed, Approved
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  sccTemplate           SCCTemplate  @relation(fields: [sccTemplateId], references: [id], onDelete: Cascade)
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([destinationCountry])
+  @@index([overallRisk])
+}
+
+model BCRProgram {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  bcrType               String       // Controller, Processor
+  status                String       @default("Draft") // Draft, InternalReview, SubmittedToDPA, Approved, Active
+  leadDPA               String?      // Lead Data Protection Authority
+  concernedDPAs         Json?        // Other involved DPAs
+  groupEntities         Json         // List of group entities covered
+  dataCategories        Json?        // Types of personal data
+  transferPurposes      Json?        // Purposes of data transfers
+  bindingCommitments    Json?        // BCR binding commitments
+  dataProtectionPrinciples Json?     // How GDPR principles are met
+  rightsOfDataSubjects  Json?        // How data subject rights are ensured
+  securityMeasures      Json?        // Technical & organizational measures
+  complianceAuditPlan   Json?        // Internal audit plan
+  trainingProgram       Json?        // Staff training details
+  complaintMechanism    Json?        // Complaint handling procedure
+  cooperationWithDPAs   Json?        // DPA cooperation procedures
+  approvalDate          DateTime?
+  expiryDate            DateTime?
+  lastAuditDate         DateTime?
+  nextAuditDate         DateTime?
+  documentUrl           String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([bcrType])
+  @@index([status])
+}
+
+// ============================================================================
+// AI Transparency
+// ============================================================================
+
+model AITransparencyNotice {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  aiSystemName          String
+  systemDescription     String
+  purpose               String
+  dataUsed              Json         // Types of data the AI processes
+  decisionTypes         String[]     // Types of decisions the AI makes
+  humanOversight        String       // Level of human oversight
+  logicExplanation      String       // Meaningful info about logic
+  significance          String       // Significance and consequences
+  rightToObjection      Boolean      @default(true)
+  rightToHumanReview    Boolean      @default(true)
+  contactInfo           String?
+  publishedUrl          String?
+  version               String       @default("1.0")
+  status                String       @default("Draft") // Draft, Published, Archived
+  effectiveDate         DateTime?
+  lastReviewDate        DateTime?
+  nextReviewDate        DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ============================================================================
+// Just-in-Time Privacy Notices
+// ============================================================================
+
+model JITPrivacyNotice {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  name                  String
+  triggerContext         String       // FormSubmission, DataCollection, CookieBanner, LocationAccess, CameraAccess, etc.
+  noticeContent         String       // The notice text
+  shortNotice           String?      // Condensed version for mobile/space constraints
+  dataCollected         Json         // What data is being collected
+  purposes              String[]     // Processing purposes
+  legalBasis            String       // Legal basis for processing
+  retentionPeriod       String?
+  thirdPartyRecipients  Json?        // Who data is shared with
+  dataSubjectRights     Json?        // Summary of rights
+  contactInfo           String?
+  displayType           String       @default("Banner") // Banner, Modal, Tooltip, Inline, Overlay
+  position              String       @default("Bottom") // Top, Bottom, Center
+  requiresAction        Boolean      @default(true) // Must user acknowledge
+  version               String       @default("1.0")
+  language              String       @default("en")
+  translations          Json?        // Multi-language translations
+  status                String       @default("Active") // Active, Inactive, Draft
+  impressions           Int          @default(0)
+  acceptances           Int          @default(0)
+  dismissals            Int          @default(0)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([triggerContext])
+  @@index([status])
 }
