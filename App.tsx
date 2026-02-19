@@ -94,6 +94,16 @@ const AIComplianceCopilot = lazy(() => import('./components/AIComplianceCopilot'
 const ComplianceScoreForecasting = lazy(() => import('./components/ComplianceScoreForecasting').then(m => ({ default: m.ComplianceScoreForecasting })));
 const ProductLifecycleTracker = lazy(() => import('./components/ProductLifecycleTracker').then(m => ({ default: m.ProductLifecycleTracker })));
 
+// ── Lazy-loaded New Modules: SOX, SoD, MDM, DORA, Auditor, Workflow, Privacy ──
+const SOXComplianceDashboard = lazy(() => import('./components/SOXComplianceDashboard').then(m => ({ default: m.SOXComplianceDashboard })));
+const SoDAnalysisDashboard = lazy(() => import('./components/SoDAnalysisDashboard').then(m => ({ default: m.SoDAnalysisDashboard })));
+const MDMDashboard = lazy(() => import('./components/MDMDashboard').then(m => ({ default: m.MDMDashboard })));
+const DORADashboard = lazy(() => import('./components/DORADashboard').then(m => ({ default: m.DORADashboard })));
+const AuditorHub = lazy(() => import('./components/AuditorHub').then(m => ({ default: m.AuditorHub })));
+const WorkflowBuilderComponent = lazy(() => import('./components/WorkflowBuilder').then(m => ({ default: m.WorkflowBuilder })));
+const PrivacyManagementPlatform = lazy(() => import('./components/PrivacyManagementPlatform').then(m => ({ default: m.PrivacyManagementPlatform })));
+const AccountDeletionWorkflow = lazy(() => import('./components/AccountDeletionWorkflow').then(m => ({ default: m.AccountDeletionWorkflow })));
+
 const MainApp: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
@@ -341,6 +351,23 @@ const MainApp: React.FC = () => {
         return <ComplianceScoreForecasting onBack={() => setCurrentView('dashboard')} />;
       case 'product-lifecycle':
         return <ProductLifecycleTracker onBack={() => setCurrentView('dashboard')} />;
+      // New Modules: SOX, SoD, MDM, DORA, Auditor, Workflow, Privacy
+      case 'sox':
+        return <SOXComplianceDashboard onBack={() => setCurrentView('dashboard')} />;
+      case 'sod':
+        return <SoDAnalysisDashboard onBack={() => setCurrentView('dashboard')} />;
+      case 'mdm':
+        return <MDMDashboard onBack={() => setCurrentView('dashboard')} />;
+      case 'dora':
+        return <DORADashboard onBack={() => setCurrentView('dashboard')} />;
+      case 'auditor':
+        return <AuditorHub onBack={() => setCurrentView('dashboard')} />;
+      case 'workflow-builder':
+        return <WorkflowBuilderComponent onBack={() => setCurrentView('dashboard')} />;
+      case 'privacy':
+        return <PrivacyManagementPlatform onBack={() => setCurrentView('dashboard')} />;
+      case 'account-deletion':
+        return <AccountDeletionWorkflow onBack={() => setCurrentView('dashboard')} />;
       default:
         return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
     }

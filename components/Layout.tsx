@@ -10,7 +10,8 @@ import {
   ChevronDown, ChevronRight, Command,
   Shield, Globe, Leaf, Network, MapPin, Workflow, UserCheck, Award, Package,
   Recycle, AlertOctagon, FileCode, Trash2, TreePine, TrendingUp, Target,
-  ScanSearch, Bot, MessageSquare, Crosshair
+  ScanSearch, Bot, MessageSquare, Crosshair,
+  Smartphone, Scale, Landmark, BookOpen, Eye, UserX, Fingerprint
 } from 'lucide-react';
 import { ComplianceChat } from './ComplianceChat';
 import { OnboardingOverlay, OnboardingChecklistWidget } from './Onboarding';
@@ -181,6 +182,20 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
     { id: 'questionnaires', label: 'Questionnaires', icon: ClipboardList, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
     { id: 'security', label: 'Security Features', icon: Lock, roles: ['admin', 'editor'], relatedViews: [] },
     { id: 'acos', label: 'aCOS', icon: Brain, roles: ['admin', 'editor'], relatedViews: [] },
+    // SOX & Internal Controls
+    { id: 'sox', label: 'SOX Compliance', icon: Landmark, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'sod', label: 'SoD Analysis', icon: Scale, roles: ['admin', 'editor'], relatedViews: [] },
+    // DORA & Resilience
+    { id: 'dora', label: 'DORA', icon: Shield, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    // MDM
+    { id: 'mdm', label: 'MDM', icon: Smartphone, roles: ['admin', 'editor'], relatedViews: [] },
+    // Auditor Hub
+    { id: 'auditor', label: 'Auditor Hub', icon: BookOpen, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    // Workflow Builder
+    { id: 'workflow-builder', label: 'Workflow Builder', icon: Workflow, roles: ['admin', 'editor'], relatedViews: [] },
+    // Privacy Management
+    { id: 'privacy', label: 'Privacy Platform', icon: Fingerprint, roles: ['admin', 'editor', 'viewer'], relatedViews: [] },
+    { id: 'account-deletion', label: 'Data Deletion', icon: UserX, roles: ['admin', 'editor'], relatedViews: [] },
   ];
 
   const aiTools: AiToolItem[] = [
@@ -212,12 +227,13 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
 
   // Build nav sections from filtered items
   const platformIds = ['dashboard', 'my-tasks', 'risks', 'issues', 'vendors', 'policies', 'integrations', 'frameworks'];
-  const regulatoryIds = ['ai-rmf', 'eu-ai-act', 'eu-cra', 'csrd', 'ecodesign', 'nis2', 'dma', 'dsa', 'us-privacy'];
-  const governanceIds = ['governance', 'process-mapper'];
+  const regulatoryIds = ['ai-rmf', 'eu-ai-act', 'eu-cra', 'csrd', 'ecodesign', 'nis2', 'dma', 'dsa', 'us-privacy', 'dora'];
+  const governanceIds = ['governance', 'process-mapper', 'sox', 'sod', 'workflow-builder'];
   const certProductIds = ['ce-marking', 'digital-product-passport', 'product-lifecycle', 'sbom-manager', 'product-decommissioning', 'environmental-lifecycle'];
   const monitoringSurveillanceIds = ['esg-reporting', 'post-market-surveillance', 'compliance-forecasting', 'breach-wizard'];
-  const reportsAuditIds = ['reports', 'audit', 'monitoring', 'analytics'];
-  const workspacesIds = ['workspaces', 'questionnaires', 'security', 'acos'];
+  const reportsAuditIds = ['reports', 'audit', 'monitoring', 'analytics', 'auditor'];
+  const privacyIds = ['privacy', 'account-deletion'];
+  const workspacesIds = ['workspaces', 'questionnaires', 'security', 'acos', 'mdm'];
 
   const navSections: NavSection[] = useMemo(() => {
     const roleFiltered = navItemsFiltered.filter(item => user && item.roles.includes(user.role));
@@ -257,6 +273,12 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
         label: 'Reports & Audit',
         collapsible: true,
         items: roleFiltered.filter(item => reportsAuditIds.includes(item.id)),
+      },
+      {
+        key: 'privacy',
+        label: 'Privacy & Data',
+        collapsible: true,
+        items: roleFiltered.filter(item => privacyIds.includes(item.id)),
       },
       {
         key: 'workspaces',
