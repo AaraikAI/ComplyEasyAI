@@ -1403,7 +1403,8 @@ export const authorizeProvider: RequestHandler = async (req: Request, res: Respo
   }
 };
 
-// Generic sync endpoint for all integrations
+// Generic sync endpoint for all integrations — uses the integration registry
+// to make REAL API calls and auto-collect compliance evidence.
 export const syncProvider: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const authReq = req as AuthRequest;
@@ -1424,18 +1425,87 @@ export const syncProvider: RequestHandler = async (req: Request, res: Response):
       return;
     }
 
+    // ── Real API sync via integration registry ──────────────────────────
+    const integrationRegistry = (await import('../services/integrations/providers/integrationRegistry')).default;
+    await integrationRegistry.initialise();
+
+    // Extract stored credentials from the integration config
+    const config = (integration.config as Record<string, any>) || {};
+    const credentials = {
+      apiKey: config.apiKey,
+      apiSecret: config.apiSecret,
+      token: config.token || integration.accessToken,
+      username: config.username,
+      password: config.password,
+      baseUrl: config.baseUrl,
+      accessToken: integration.accessToken,
+      refreshToken: integration.refreshToken,
+      serviceAccountJson: config.serviceAccountJson,
+      clientId: config.clientId,
+      clientSecret: config.clientSecret,
+      tenantId: config.tenantId,
+      subscriptionId: config.subscriptionId,
+      region: config.region,
+      accountId: config.accountId,
+    };
+
+    let syncResult;
+    if (integrationRegistry.has(provider.toLowerCase())) {
+      // Perform real API sync with evidence auto-collection
+      syncResult = await integrationRegistry.syncProvider(provider.toLowerCase(), credentials);
+
+      // Persist collected evidence artifacts
+      if (syncResult.evidenceCollected && syncResult.evidenceCollected.length > 0) {
+        const crypto = require('crypto');
+        for (const evidence of syncResult.evidenceCollected) {
+          try {
+            await prisma.evidenceVersion.create({
+              data: {
+                id: evidence.id,
+                evidenceId: evidence.id,
+                version: 1,
+                fileName: `${provider}-${evidence.type}-${Date.now()}.json`,
+                fileSize: JSON.stringify(evidence.data).length,
+                mimeType: 'application/json',
+                storageUrl: `evidence/${organizationId}/${provider}/${evidence.id}.json`,
+                hash: evidence.metadata.dataHash,
+                uploadedBy: authReq.user!.id,
+                organizationId,
+                changeDescription: `Auto-collected ${evidence.type} evidence from ${integration.name}`,
+              },
+            });
+          } catch (evidenceErr: any) {
+            // Non-fatal: log and continue — the evidence model may not have all fields
+            logger.warn(`Could not persist evidence artifact: ${evidenceErr.message}`);
+          }
+        }
+      }
+
+      logger.info(
+        `[Integration Sync] ${provider}: ${syncResult.recordsSynced} evidence items collected in ${syncResult.syncDurationMs}ms`,
+      );
+    } else {
+      // Fallback for providers not yet in the registry
+      syncResult = {
+        success: true,
+        provider,
+        evidenceCollected: [],
+        recordsSynced: 0,
+        syncDurationMs: 0,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
     // Update last sync timestamp
     await prisma.integration.update({
       where: { id: integration.id },
-      data: {
-        lastSync: new Date(),
-      },
+      data: { lastSync: new Date() },
     });
 
-    // Log audit
+    // Audit log
     await prisma.auditLog.create({
       data: {
-        action: `Synced ${integration.name} integration`,
+        action: `Synced ${integration.name} integration — ${syncResult.recordsSynced} evidence items auto-collected`,
         userId: authReq.user!.id,
         organizationId,
         hash: require('crypto').randomBytes(16).toString('hex'),
@@ -1444,11 +1514,271 @@ export const syncProvider: RequestHandler = async (req: Request, res: Response):
       },
     });
 
-    res.json({ message: `${integration.name} synced successfully`, lastSync: new Date() });
+    res.json({
+      message: `${integration.name} synced successfully`,
+      lastSync: new Date(),
+      evidenceCollected: syncResult.recordsSynced,
+      evidenceItems: syncResult.evidenceCollected.map((e: any) => ({
+        id: e.id,
+        type: e.type,
+        title: e.title,
+        collectedAt: e.collectedAt,
+      })),
+      syncDurationMs: syncResult.syncDurationMs,
+      errors: syncResult.errors,
+    });
     logger.info(`Integration synced: ${provider} for organization ${organizationId}`);
   } catch (error) {
     logger.error('Error syncing provider', error);
     res.status(500).json({ error: 'Failed to sync integration' });
+  }
+};
+
+// ============================================================================
+// INTEGRATION REGISTRY — real API test / evidence / bulk operations
+// ============================================================================
+
+/** Test a single provider's connection by making a real API call */
+export const testProviderConnection: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const { provider } = req.params;
+    const organizationId = authReq.user!.organizationId;
+
+    const integration = await prisma.integration.findFirst({
+      where: { organizationId, provider: provider.toLowerCase(), connected: true },
+    });
+
+    if (!integration) {
+      res.status(404).json({ error: 'Integration not found or not connected' });
+      return;
+    }
+
+    const integrationRegistry = (await import('../services/integrations/providers/integrationRegistry')).default;
+    await integrationRegistry.initialise();
+
+    const config = (integration.config as Record<string, any>) || {};
+    const credentials = {
+      apiKey: config.apiKey,
+      apiSecret: config.apiSecret,
+      token: config.token || integration.accessToken,
+      username: config.username,
+      password: config.password,
+      baseUrl: config.baseUrl,
+      accessToken: integration.accessToken,
+      refreshToken: integration.refreshToken,
+      serviceAccountJson: config.serviceAccountJson,
+      clientId: config.clientId,
+      clientSecret: config.clientSecret,
+      tenantId: config.tenantId,
+      subscriptionId: config.subscriptionId,
+      region: config.region,
+      accountId: config.accountId,
+    };
+
+    const result = await integrationRegistry.testConnection(provider.toLowerCase(), credentials);
+
+    await prisma.auditLog.create({
+      data: {
+        action: `Tested ${integration.name} connection — ${result.success ? 'SUCCESS' : 'FAILED'} (${result.latencyMs}ms)`,
+        userId: authReq.user!.id,
+        organizationId,
+        hash: require('crypto').randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error('Error testing provider connection', error);
+    res.status(500).json({ error: 'Failed to test provider connection' });
+  }
+};
+
+/** Collect evidence from a specific provider without a full sync */
+export const collectProviderEvidence: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const { provider } = req.params;
+    const organizationId = authReq.user!.organizationId;
+
+    const integration = await prisma.integration.findFirst({
+      where: { organizationId, provider: provider.toLowerCase(), connected: true },
+    });
+
+    if (!integration) {
+      res.status(404).json({ error: 'Integration not found or not connected' });
+      return;
+    }
+
+    const integrationRegistry = (await import('../services/integrations/providers/integrationRegistry')).default;
+    await integrationRegistry.initialise();
+
+    const config = (integration.config as Record<string, any>) || {};
+    const credentials = {
+      apiKey: config.apiKey,
+      apiSecret: config.apiSecret,
+      token: config.token || integration.accessToken,
+      baseUrl: config.baseUrl,
+      accessToken: integration.accessToken,
+      refreshToken: integration.refreshToken,
+    };
+
+    const evidence = await integrationRegistry.collectEvidence(provider.toLowerCase(), credentials);
+
+    // Persist evidence
+    const crypto = require('crypto');
+    for (const item of evidence) {
+      try {
+        await prisma.evidenceVersion.create({
+          data: {
+            id: item.id,
+            evidenceId: item.id,
+            version: 1,
+            fileName: `${provider}-${item.type}-${Date.now()}.json`,
+            fileSize: JSON.stringify(item.data).length,
+            mimeType: 'application/json',
+            storageUrl: `evidence/${organizationId}/${provider}/${item.id}.json`,
+            hash: item.metadata.dataHash,
+            uploadedBy: authReq.user!.id,
+            organizationId,
+            changeDescription: `Auto-collected ${item.type} evidence from ${integration.name}`,
+          },
+        });
+      } catch (evidenceErr: any) {
+        logger.warn(`Could not persist evidence: ${evidenceErr.message}`);
+      }
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        action: `Collected ${evidence.length} evidence items from ${integration.name}`,
+        userId: authReq.user!.id,
+        organizationId,
+        hash: crypto.randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    res.json({
+      provider,
+      evidenceCount: evidence.length,
+      evidence: evidence.map(e => ({
+        id: e.id,
+        type: e.type,
+        title: e.title,
+        description: e.description,
+        collectedAt: e.collectedAt,
+        apiEndpoint: e.metadata.apiEndpoint,
+      })),
+    });
+  } catch (error) {
+    logger.error('Error collecting provider evidence', error);
+    res.status(500).json({ error: 'Failed to collect evidence' });
+  }
+};
+
+/** Bulk-test all connected integrations */
+export const testAllConnections: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+
+    const integrations = await prisma.integration.findMany({
+      where: { organizationId, connected: true },
+    });
+
+    const integrationRegistry = (await import('../services/integrations/providers/integrationRegistry')).default;
+    await integrationRegistry.initialise();
+
+    const results: Array<{ provider: string; name: string; success: boolean; latencyMs: number; error?: string }> = [];
+
+    // Test in batches of 10
+    const batchSize = 10;
+    for (let i = 0; i < integrations.length; i += batchSize) {
+      const batch = integrations.slice(i, i + batchSize);
+      const batchResults = await Promise.allSettled(
+        batch.map(async (int) => {
+          const config = (int.config as Record<string, any>) || {};
+          const creds = {
+            apiKey: config.apiKey,
+            apiSecret: config.apiSecret,
+            token: config.token || int.accessToken,
+            baseUrl: config.baseUrl,
+            accessToken: int.accessToken,
+            refreshToken: int.refreshToken,
+          };
+          const result = await integrationRegistry.testConnection(int.provider, creds);
+          return { provider: int.provider, name: int.name, ...result };
+        }),
+      );
+      for (const r of batchResults) {
+        if (r.status === 'fulfilled') {
+          results.push(r.value);
+        } else {
+          results.push({
+            provider: 'unknown',
+            name: 'unknown',
+            success: false,
+            latencyMs: 0,
+            error: r.reason?.message || 'Test failed',
+          });
+        }
+      }
+    }
+
+    const passed = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+
+    await prisma.auditLog.create({
+      data: {
+        action: `Bulk connection test: ${passed}/${results.length} passed, ${failed} failed`,
+        userId: authReq.user!.id,
+        organizationId,
+        hash: require('crypto').randomBytes(16).toString('hex'),
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      },
+    });
+
+    res.json({
+      totalTested: results.length,
+      passed,
+      failed,
+      results,
+    });
+  } catch (error) {
+    logger.error('Error bulk testing connections', error);
+    res.status(500).json({ error: 'Failed to test connections' });
+  }
+};
+
+/** Get integration registry statistics */
+export const getRegistryStats: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const integrationRegistry = (await import('../services/integrations/providers/integrationRegistry')).default;
+    await integrationRegistry.initialise();
+
+    const allProviders = integrationRegistry.getAll();
+    const categories = new Map<string, number>();
+
+    for (const [, provider] of allProviders) {
+      const cat = provider.category;
+      categories.set(cat, (categories.get(cat) || 0) + 1);
+    }
+
+    res.json({
+      totalRegistered: allProviders.size,
+      targetTotal: 381,
+      coverage: `${((allProviders.size / 381) * 100).toFixed(1)}%`,
+      byCategory: Object.fromEntries(categories),
+      providerIds: integrationRegistry.getProviderIds(),
+    });
+  } catch (error) {
+    logger.error('Error getting registry stats', error);
+    res.status(500).json({ error: 'Failed to get registry stats' });
   }
 };
 

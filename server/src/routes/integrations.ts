@@ -188,6 +188,41 @@ router.delete(
 );
 
 // ============================================================================
+// INTEGRATION REGISTRY — test, evidence, bulk operations
+// ============================================================================
+
+// Test connection for a specific provider (real API call)
+router.post(
+  '/:provider/test',
+  authenticate,
+  authorize('admin', 'editor'),
+  asyncHandler(integrationsController.testProviderConnection)
+);
+
+// Collect evidence from a specific provider (real API call)
+router.post(
+  '/:provider/evidence',
+  authenticate,
+  authorize('admin', 'editor'),
+  asyncHandler(integrationsController.collectProviderEvidence)
+);
+
+// Bulk test all connected integrations
+router.post(
+  '/bulk/test-all',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(integrationsController.testAllConnections)
+);
+
+// Get registry stats — how many providers are registered
+router.get(
+  '/registry/stats',
+  authenticate,
+  asyncHandler(integrationsController.getRegistryStats)
+);
+
+// ============================================================================
 // GENERAL
 // ============================================================================
 
