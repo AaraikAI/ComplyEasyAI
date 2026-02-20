@@ -120,38 +120,30 @@ const DORA_PILLAR_WEIGHTS = {
  */
 export async function createICTRiskAssessment(data: {
   organizationId: string;
-  title: string;
+  name: string;
   description?: string;
-  assessmentType: ICTRiskAssessmentType;
+  assessmentType?: ICTRiskAssessmentType;
   scope?: string;
   methodology?: string;
-  assessedBy?: string;
+  assessorName?: string;
   ictAssets?: any;
   threats?: any;
   vulnerabilities?: any;
-  controls?: any;
-  riskTolerance?: any;
+  riskTreatmentPlan?: any;
 }) {
   try {
     const assessment = await prisma.dORAICTRiskAssessment.create({
       data: {
         organizationId: data.organizationId,
-        title: data.title,
+        name: data.name,
         description: data.description,
-        assessmentType: data.assessmentType,
         scope: data.scope || 'organization_wide',
-        methodology: data.methodology || 'hybrid',
-        status: 'draft',
-        assessedBy: data.assessedBy,
+        assessorName: data.assessorName || 'unassigned',
+        status: 'Draft',
         ictAssets: data.ictAssets || [],
         threats: data.threats || [],
         vulnerabilities: data.vulnerabilities || [],
-        controls: data.controls || [],
-        riskTolerance: data.riskTolerance || {
-          acceptableRiskLevel: 'medium',
-          riskAppetite: 'moderate',
-          thresholds: { critical: 20, high: 12, medium: 6, low: 1 },
-        },
+        riskTreatmentPlan: data.riskTreatmentPlan || {},
         assessmentDate: new Date(),
       },
     });
@@ -192,7 +184,7 @@ export async function listICTRiskAssessments(
   const where: any = { organizationId };
   if (filters?.status) where.status = filters.status;
   if (filters?.assessmentType) where.assessmentType = filters.assessmentType;
-  if (filters?.riskLevel) where.riskLevel = filters.riskLevel;
+  if (filters?.riskLevel) where.riskClassification = filters.riskLevel;
 
   const [assessments, total] = await Promise.all([
     prisma.dORAICTRiskAssessment.findMany({
@@ -240,21 +232,17 @@ export async function updateICTRiskAssessment(
   organizationId: string,
   assessmentId: string,
   data: {
-    title?: string;
+    name?: string;
     description?: string;
     status?: ICTRiskStatus;
-    riskScore?: number;
-    residualRiskScore?: number;
-    riskLevel?: ICTRiskLevel;
+    riskClassification?: string;
+    residualRisk?: string;
     likelihood?: number;
     impact?: number;
     ictAssets?: any;
     threats?: any;
     vulnerabilities?: any;
-    controls?: any;
-    mitigationPlan?: any;
-    findings?: any;
-    riskTolerance?: any;
+    riskTreatmentPlan?: any;
     approvedBy?: string;
     nextReviewDate?: string | Date;
   }
@@ -267,22 +255,31 @@ export async function updateICTRiskAssessment(
     throw new Error('ICT risk assessment not found');
   }
 
-  // Auto-calculate risk score if likelihood and impact provided
-  let riskScore = data.riskScore;
-  let riskLevel = data.riskLevel;
+  // Auto-calculate risk classification if likelihood and impact provided
+  let riskClassification = data.riskClassification;
   if (data.likelihood && data.impact) {
-    riskScore = data.likelihood * data.impact;
-    riskLevel = calculateICTRiskLevel(riskScore);
+    const riskScore = data.likelihood * data.impact;
+    const riskLevel = calculateICTRiskLevel(riskScore);
+    // Map ICTRiskLevel to schema classification values
+    riskClassification = riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1);
   }
 
-  const updateData: any = { ...data };
-  if (riskScore !== undefined) updateData.riskScore = riskScore;
-  if (riskLevel !== undefined) updateData.riskLevel = riskLevel;
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (riskClassification !== undefined) updateData.riskClassification = riskClassification;
+  if (data.residualRisk !== undefined) updateData.residualRisk = data.residualRisk;
+  if (data.ictAssets !== undefined) updateData.ictAssets = data.ictAssets;
+  if (data.threats !== undefined) updateData.threats = data.threats;
+  if (data.vulnerabilities !== undefined) updateData.vulnerabilities = data.vulnerabilities;
+  if (data.riskTreatmentPlan !== undefined) updateData.riskTreatmentPlan = data.riskTreatmentPlan;
+  if (data.approvedBy !== undefined) updateData.approvedBy = data.approvedBy;
   if (data.nextReviewDate) {
     updateData.nextReviewDate = new Date(data.nextReviewDate);
   }
-  if (data.status === 'completed' && !existing.completedAt) {
-    updateData.completedAt = new Date();
+  if (data.status === 'approved' && !existing.approvedAt) {
+    updateData.approvedAt = new Date();
   }
 
   const assessment = await prisma.dORAICTRiskAssessment.update({
@@ -294,7 +291,7 @@ export async function updateICTRiskAssessment(
     assessmentId,
     organizationId,
     status: assessment.status,
-    riskLevel: assessment.riskLevel,
+    riskClassification: assessment.riskClassification,
   });
 
   return assessment;
@@ -344,7 +341,7 @@ export async function scoreICTRiskAssessment(
 
   const threats = (assessment.threats as any[]) || [];
   const vulnerabilities = (assessment.vulnerabilities as any[]) || [];
-  const controls = (assessment.controls as any[]) || [];
+  const ictAssets = (assessment.ictAssets as any[]) || [];
 
   // Threat score: average of threat likelihoods (1-5 scale)
   const threatScore =
@@ -368,10 +365,11 @@ export async function scoreICTRiskAssessment(
         }, 0) / vulnerabilities.length
       : 2;
 
-  // Control effectiveness: higher = better mitigation
+  // Control effectiveness: derived from treatment plan and asset controls
+  const treatmentPlan = (assessment.riskTreatmentPlan as any) || {};
   const controlEffectiveness =
-    controls.length > 0
-      ? controls.reduce((sum: number, c: any) => {
+    treatmentPlan.controls && treatmentPlan.controls.length > 0
+      ? treatmentPlan.controls.reduce((sum: number, c: any) => {
           const effectivenessMap: Record<string, number> = {
             effective: 0.8,
             partially_effective: 0.5,
@@ -379,35 +377,36 @@ export async function scoreICTRiskAssessment(
             not_tested: 0.1,
           };
           return sum + (effectivenessMap[c.effectiveness] || 0.3);
-        }, 0) / controls.length
+        }, 0) / treatmentPlan.controls.length
       : 0.3;
 
   // Composite risk score: threat * vulnerability * (1 - control effectiveness), scaled 0-25
   const rawScore = threatScore * vulnScore * (1 - controlEffectiveness);
   const normalizedScore = Math.min(Math.round(rawScore * 2), 25);
   const riskLevel = calculateICTRiskLevel(normalizedScore);
+  const riskClassification = riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1);
 
   // Residual risk = raw risk minus control mitigation
-  const residualRiskScore = Math.max(
+  const residualRiskValue = Math.max(
     Math.round(normalizedScore * (1 - controlEffectiveness)),
     0
   );
+  const residualRisk = calculateICTRiskLevel(residualRiskValue);
+  const residualRiskClassification = residualRisk.charAt(0).toUpperCase() + residualRisk.slice(1);
 
   const updated = await prisma.dORAICTRiskAssessment.update({
     where: { id: assessmentId },
     data: {
-      riskScore: normalizedScore,
-      residualRiskScore,
-      riskLevel,
+      riskClassification,
+      residualRisk: residualRiskClassification,
     },
   });
 
   logger.info('DORA ICT risk assessment scored', {
     assessmentId,
     organizationId,
-    riskScore: normalizedScore,
-    residualRiskScore,
-    riskLevel,
+    riskClassification,
+    residualRisk: residualRiskClassification,
   });
 
   return {
@@ -418,8 +417,8 @@ export async function scoreICTRiskAssessment(
       controlEffectiveness: Math.round(controlEffectiveness * 100) / 100,
       rawScore: Math.round(rawScore * 100) / 100,
       normalizedScore,
-      residualRiskScore,
-      riskLevel,
+      riskClassification,
+      residualRisk: residualRiskClassification,
     },
   };
 }
@@ -450,17 +449,13 @@ export async function createICTIncident(data: {
     const incident = await prisma.dORAICTIncident.create({
       data: {
         organizationId: data.organizationId,
+        incidentId: `INC-${Date.now()}`,
         title: data.title,
-        description: data.description,
-        incidentType: data.incidentType,
+        description: data.description || '',
         severity,
         status: 'detected',
         classification,
         affectedSystems: data.affectedSystems || [],
-        affectedServices: data.affectedServices || [],
-        reportedBy: data.reportedBy,
-        assignedTo: data.assignedTo,
-        escalationLevel: severity === 'critical' ? 2 : severity === 'major' ? 1 : 0,
         timeline: [
           {
             event: 'Incident detected',
@@ -605,17 +600,11 @@ export async function updateICTIncident(
     updateData.timeline = currentTimeline;
 
     // Set timestamp fields based on status
-    if (data.status === 'contained' && !existing.containedAt) {
-      updateData.containedAt = new Date();
-    }
     if (
       (data.status === 'recovered' || data.status === 'closed') &&
       !existing.resolvedAt
     ) {
       updateData.resolvedAt = new Date();
-    }
-    if (data.status === 'closed' && !existing.closedAt) {
-      updateData.closedAt = new Date();
     }
   }
 
@@ -624,9 +613,27 @@ export async function updateICTIncident(
     updateData.classification = classifyIncident(data.severity);
   }
 
-  if (data.authorityReportDate) {
-    updateData.authorityReportDate = new Date(data.authorityReportDate);
+  if (data.reportedToAuthority !== undefined) {
+    updateData.regulatoryNotified = data.reportedToAuthority;
+    delete updateData.reportedToAuthority;
   }
+  if (data.authorityReportDate) {
+    updateData.notificationDate = new Date(data.authorityReportDate);
+    delete updateData.authorityReportDate;
+  }
+  if (data.authorityReference !== undefined) {
+    updateData.notificationAuthority = data.authorityReference;
+    delete updateData.authorityReference;
+  }
+  // Remove fields not in schema
+  delete updateData.affectedServices;
+  delete updateData.impactAssessment;
+  delete updateData.rootCauseCategory;
+  delete updateData.containmentActions;
+  delete updateData.initialNotification;
+  delete updateData.intermediateReport;
+  delete updateData.finalReport;
+  delete updateData.assignedTo;
 
   const incident = await prisma.dORAICTIncident.update({
     where: { id: incidentId },
@@ -677,21 +684,14 @@ export async function escalateIncident(
   });
 
   const updateData: any = {
-    escalationLevel: data.escalationLevel,
     timeline: currentTimeline,
   };
 
   // If escalated to regulator level (4), mark as needing authority report
   if (data.escalationLevel >= 4) {
-    updateData.reportedToAuthority = true;
-    updateData.authorityReportDate = new Date();
+    updateData.regulatoryNotified = true;
+    updateData.notificationDate = new Date();
     updateData.status = 'reported';
-    updateData.initialNotification = {
-      notifiedAt: new Date().toISOString(),
-      notifiedBy: data.escalatedBy,
-      channel: 'regulatory_portal',
-      recipients: ['competent_authority'],
-    };
   }
 
   const incident = await prisma.dORAICTIncident.update({
@@ -703,7 +703,7 @@ export async function escalateIncident(
     incidentId,
     organizationId,
     escalationLevel: data.escalationLevel,
-    reportedToAuthority: updateData.reportedToAuthority || false,
+    regulatoryNotified: updateData.regulatoryNotified || false,
   });
 
   return incident;
@@ -734,36 +734,30 @@ export async function createThirdPartyProvider(data: {
     const provider = await prisma.dORAThirdPartyProvider.create({
       data: {
         organizationId: data.organizationId,
-        providerName: data.providerName,
+        name: data.providerName,
         providerType: data.providerType,
         criticality: data.criticality || 'standard',
-        status: 'onboarding',
-        contractDetails: data.contractDetails || {},
-        servicesProvided: data.servicesProvided || [],
-        complianceCertifications: data.complianceCertifications || [],
-        dataLocations: data.dataLocations || [],
-        contactDetails: data.contactDetails || {},
-        jurisdiction: data.jurisdiction,
-        exitStrategy: data.exitStrategy || {
-          plan: '',
-          transitionPeriod: '',
-          dataPortability: false,
-          alternativeProviders: [],
-        },
-        auditRights: data.auditRights || {
-          rightToAudit: false,
-          lastAuditDate: null,
-          nextAuditDate: null,
-          findings: [],
-        },
-        onboardingDate: new Date(),
+        status: 'Active',
+        serviceDescription: JSON.stringify(data.servicesProvided || []),
+        dataProcessed: data.dataLocations || [],
+        locationOfProcessing: data.jurisdiction,
+        exitStrategy: typeof data.exitStrategy === 'string'
+          ? data.exitStrategy
+          : JSON.stringify(data.exitStrategy || {
+              plan: '',
+              transitionPeriod: '',
+              dataPortability: false,
+              alternativeProviders: [],
+            }),
+        subcontractors: [],
+        alternativeProviders: [],
       },
     });
 
     logger.info('DORA third-party provider created', {
       providerId: provider.id,
       organizationId: data.organizationId,
-      providerName: data.providerName,
+      name: data.providerName,
       providerType: data.providerType,
       criticality: provider.criticality,
     });
@@ -874,9 +868,23 @@ export async function updateThirdPartyProvider(
     throw new Error('Third-party provider not found');
   }
 
-  const updateData: any = { ...data };
+  const updateData: any = {};
+  if (data.providerName !== undefined) updateData.name = data.providerName;
+  if (data.providerType !== undefined) updateData.providerType = data.providerType;
+  if (data.criticality !== undefined) updateData.criticality = data.criticality;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.servicesProvided !== undefined) updateData.serviceDescription = JSON.stringify(data.servicesProvided);
+  if (data.subcontractors !== undefined) updateData.subcontractors = data.subcontractors;
+  if (data.dataLocations !== undefined) updateData.dataProcessed = data.dataLocations;
+  if (data.exitStrategy !== undefined) {
+    updateData.exitStrategy = typeof data.exitStrategy === 'string'
+      ? data.exitStrategy
+      : JSON.stringify(data.exitStrategy);
+  }
+  if (data.jurisdiction !== undefined) updateData.locationOfProcessing = data.jurisdiction;
+  if (data.concentrationRisk !== undefined) updateData.concentrationRisk = data.concentrationRisk;
   if (data.nextReviewDate) {
-    updateData.nextReviewDate = new Date(data.nextReviewDate);
+    updateData.nextAuditDate = new Date(data.nextReviewDate);
   }
 
   const provider = await prisma.dORAThirdPartyProvider.update({
@@ -887,7 +895,7 @@ export async function updateThirdPartyProvider(
   logger.info('DORA third-party provider updated', {
     providerId,
     organizationId,
-    providerName: provider.providerName,
+    name: provider.name,
   });
 
   return provider;
@@ -989,7 +997,7 @@ export async function assessConcentrationRisk(organizationId: string) {
   // 3. Analyze jurisdictional concentration
   const jurisdictionDistribution: Record<string, number> = {};
   providers.forEach((p) => {
-    const jurisdiction = p.jurisdiction || 'unknown';
+    const jurisdiction = p.locationOfProcessing || 'unknown';
     jurisdictionDistribution[jurisdiction] =
       (jurisdictionDistribution[jurisdiction] || 0) + 1;
   });
@@ -1141,25 +1149,14 @@ export async function createResilienceTest(data: {
     const test = await prisma.dORAResilienceTest.create({
       data: {
         organizationId: data.organizationId,
-        testName: data.testName,
+        name: data.testName,
         testType: data.testType,
-        scope: data.scope,
+        scope: data.scope || 'organization_wide',
         methodology: data.methodology || (data.testType === 'tlpt' ? 'TIBER_EU' : 'custom'),
         status: 'planned',
-        priority: data.priority || 'medium',
-        targetSystems: data.targetSystems || [],
-        testScenarios: data.testScenarios || [],
-        testPlan: data.testPlan || {
-          objectives: [],
-          prerequisites: [],
-          timeline: [],
-          resources: [],
-          constraints: [],
-        },
-        threatIntelligence: data.threatIntelligence || {},
-        conductedBy: data.conductedBy,
-        externalTesters: data.externalTesters || [],
-        plannedDate: data.plannedDate ? new Date(data.plannedDate) : null,
+        scenarioDescription: data.testScenarios ? JSON.stringify(data.testScenarios) : undefined,
+        participants: data.externalTesters || [],
+        scheduledDate: data.plannedDate ? new Date(data.plannedDate) : new Date(),
       },
     });
 
@@ -1273,15 +1270,22 @@ export async function updateResilienceTest(
     throw new Error('Resilience test not found');
   }
 
-  const updateData: any = { ...data };
-  if (data.nextTestDate) {
-    updateData.nextTestDate = new Date(data.nextTestDate);
+  const updateData: any = {};
+  if (data.testName !== undefined) updateData.name = data.testName;
+  if (data.scope !== undefined) updateData.scope = data.scope;
+  if (data.methodology !== undefined) updateData.methodology = data.methodology;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.findings !== undefined) updateData.findings = data.findings;
+  if (data.remediationPlan !== undefined) updateData.remediationPlan = data.remediationPlan;
+  if (data.externalTesters !== undefined) updateData.participants = data.externalTesters;
+  if (data.testScenarios !== undefined) updateData.scenarioDescription = JSON.stringify(data.testScenarios);
+  if (data.targetSystems !== undefined) updateData.scope = JSON.stringify(data.targetSystems);
+  if (data.reviewedBy !== undefined) updateData.approvedBy = data.reviewedBy;
+  if (data.status === 'in_progress' && !existing.executedDate) {
+    updateData.executedDate = new Date();
   }
-  if (data.status === 'in_progress' && !existing.startedAt) {
-    updateData.startedAt = new Date();
-  }
-  if (data.status === 'completed' && !existing.completedAt) {
-    updateData.completedAt = new Date();
+  if (data.status === 'completed' && !existing.executedDate) {
+    updateData.executedDate = new Date();
   }
 
   const test = await prisma.dORAResilienceTest.update({
@@ -1359,30 +1363,29 @@ export async function executeResilienceTest(
 
   // Validate TLPT-specific requirements
   if (existing.testType === 'tlpt') {
-    const externalTesters = (existing.externalTesters as any[]) || [];
-    if (externalTesters.length === 0) {
+    const participants = (existing.participants as any[]) || [];
+    if (participants.length === 0) {
       throw new Error(
         'TLPT requires qualified external testers per DORA Article 26(8). Add external testers before execution.'
       );
     }
   }
 
-  const scenarios = executionData.testScenarios ||
-    (existing.testScenarios as any[]) || [];
-  const targetSystems = (existing.targetSystems as any[]) || [];
+  const scenarioDesc = existing.scenarioDescription || '';
+  const scenarios = executionData.testScenarios || (scenarioDesc ? [scenarioDesc] : []);
+  const scopeSystems = existing.scope ? [existing.scope] : [];
 
   // Generate preliminary findings structure based on test type
-  const findings = generateTestFindings(existing.testType, scenarios, targetSystems);
+  const findings = generateTestFindings(existing.testType, scenarios, scopeSystems);
 
   const test = await prisma.dORAResilienceTest.update({
     where: { id: testId },
     data: {
       status: 'in_progress',
-      startedAt: new Date(),
-      conductedBy: executionData.executedBy,
-      threatIntelligence:
-        executionData.threatIntelligence || existing.threatIntelligence,
-      testScenarios: scenarios.length > 0 ? scenarios : existing.testScenarios,
+      executedDate: new Date(),
+      scenarioDescription: scenarios.length > 0
+        ? JSON.stringify(scenarios)
+        : existing.scenarioDescription,
       findings,
     },
   });
@@ -1430,23 +1433,24 @@ export async function createInformationRegisterEntry(data: {
         organizationId: data.organizationId,
         assetName: data.assetName,
         assetType: data.assetType,
-        description: data.description,
-        criticality: data.criticality || 'medium',
-        owner: data.owner,
-        department: data.department,
-        classification: data.classification || 'internal',
-        thirdPartyProvider: data.thirdPartyProvider,
-        thirdPartyProviderId: data.thirdPartyProviderId,
-        contractualArrangement: data.contractualArrangement || {},
-        dataProcessed: data.dataProcessed || [],
+        owner: data.owner || 'unassigned',
+        classification: data.classification || 'Internal',
+        businessImpact: data.criticality || 'Medium',
         dependencies: data.dependencies || [],
-        networkConnections: data.networkConnections || [],
-        complianceStatus: 'not_assessed',
         location: data.location,
-        businessFunction: data.businessFunction,
         recoveryTimeObjective: data.recoveryTimeObjective,
         recoveryPointObjective: data.recoveryPointObjective,
-        status: 'active',
+        status: 'Active',
+        metadata: {
+          description: data.description,
+          department: data.department,
+          thirdPartyProvider: data.thirdPartyProvider,
+          thirdPartyProviderId: data.thirdPartyProviderId,
+          contractualArrangement: data.contractualArrangement || {},
+          dataProcessed: data.dataProcessed || [],
+          networkConnections: data.networkConnections || [],
+          businessFunction: data.businessFunction,
+        },
       },
     });
 
@@ -1454,7 +1458,7 @@ export async function createInformationRegisterEntry(data: {
       entryId: entry.id,
       organizationId: data.organizationId,
       assetType: data.assetType,
-      criticality: entry.criticality,
+      businessImpact: entry.businessImpact,
     });
 
     return entry;
@@ -1488,10 +1492,9 @@ export async function listInformationRegister(
 
   const where: any = { organizationId };
   if (filters?.assetType) where.assetType = filters.assetType;
-  if (filters?.criticality) where.criticality = filters.criticality;
+  if (filters?.criticality) where.businessImpact = filters.criticality;
   if (filters?.status) where.status = filters.status;
   if (filters?.classification) where.classification = filters.classification;
-  if (filters?.complianceStatus) where.complianceStatus = filters.complianceStatus;
 
   const [entries, total] = await Promise.all([
     prisma.dORAInformationRegister.findMany({
@@ -1569,9 +1572,33 @@ export async function updateInformationRegisterEntry(
     throw new Error('Information register entry not found');
   }
 
-  const updateData: any = { ...data };
+  const updateData: any = {};
+  if (data.assetName !== undefined) updateData.assetName = data.assetName;
+  if (data.assetType !== undefined) updateData.assetType = data.assetType;
+  if (data.owner !== undefined) updateData.owner = data.owner;
+  if (data.classification !== undefined) updateData.classification = data.classification;
+  if (data.criticality !== undefined) updateData.businessImpact = data.criticality;
+  if (data.dependencies !== undefined) updateData.dependencies = data.dependencies;
+  if (data.location !== undefined) updateData.location = data.location;
+  if (data.recoveryTimeObjective !== undefined) updateData.recoveryTimeObjective = data.recoveryTimeObjective;
+  if (data.recoveryPointObjective !== undefined) updateData.recoveryPointObjective = data.recoveryPointObjective;
+  if (data.status !== undefined) updateData.status = data.status;
+  // Store extra fields in metadata
+  const existingMetadata = (existing.metadata as any) || {};
+  const metadataUpdates: any = { ...existingMetadata };
+  if (data.description !== undefined) metadataUpdates.description = data.description;
+  if (data.department !== undefined) metadataUpdates.department = data.department;
+  if (data.thirdPartyProvider !== undefined) metadataUpdates.thirdPartyProvider = data.thirdPartyProvider;
+  if (data.thirdPartyProviderId !== undefined) metadataUpdates.thirdPartyProviderId = data.thirdPartyProviderId;
+  if (data.contractualArrangement !== undefined) metadataUpdates.contractualArrangement = data.contractualArrangement;
+  if (data.dataProcessed !== undefined) metadataUpdates.dataProcessed = data.dataProcessed;
+  if (data.networkConnections !== undefined) metadataUpdates.networkConnections = data.networkConnections;
+  if (data.businessFunction !== undefined) metadataUpdates.businessFunction = data.businessFunction;
+  if (data.complianceStatus !== undefined) metadataUpdates.complianceStatus = data.complianceStatus;
+  if (data.riskScore !== undefined) metadataUpdates.riskScore = data.riskScore;
+  updateData.metadata = metadataUpdates;
   if (data.complianceStatus && data.complianceStatus !== 'not_assessed') {
-    updateData.lastAssessmentDate = new Date();
+    updateData.lastReviewDate = new Date();
   }
 
   const entry = await prisma.dORAInformationRegister.update({
@@ -1665,10 +1692,10 @@ export async function getDORADashboard(organizationId: string) {
       where: { organizationId, status: 'completed' },
     }),
     prisma.dORAICTRiskAssessment.count({
-      where: { organizationId, riskLevel: 'critical' },
+      where: { organizationId, riskClassification: 'Critical' },
     }),
     prisma.dORAICTRiskAssessment.count({
-      where: { organizationId, riskLevel: 'high' },
+      where: { organizationId, riskClassification: 'High' },
     }),
 
     // Incidents
@@ -1686,7 +1713,7 @@ export async function getDORADashboard(organizationId: string) {
       where: { organizationId, severity: 'major' },
     }),
     prisma.dORAICTIncident.count({
-      where: { organizationId, reportedToAuthority: true },
+      where: { organizationId, regulatoryNotified: true },
     }),
 
     // Third-party providers
@@ -1716,13 +1743,13 @@ export async function getDORADashboard(organizationId: string) {
     // Information register
     prisma.dORAInformationRegister.count({ where: { organizationId } }),
     prisma.dORAInformationRegister.count({
-      where: { organizationId, criticality: 'critical' },
+      where: { organizationId, businessImpact: 'Critical' },
     }),
     prisma.dORAInformationRegister.count({
-      where: { organizationId, complianceStatus: 'compliant' },
+      where: { organizationId, status: 'Active' },
     }),
     prisma.dORAInformationRegister.count({
-      where: { organizationId, complianceStatus: 'non_compliant' },
+      where: { organizationId, status: { not: 'Active' } },
     }),
   ]);
 
@@ -1748,16 +1775,16 @@ export async function getDORADashboard(organizationId: string) {
     where: {
       organizationId,
       status: 'planned',
-      plannedDate: { not: null },
+      scheduledDate: { gte: new Date() },
     },
-    orderBy: { plannedDate: 'asc' },
+    orderBy: { scheduledDate: 'asc' },
     take: 5,
     select: {
       id: true,
-      testName: true,
+      name: true,
       testType: true,
-      plannedDate: true,
-      priority: true,
+      scheduledDate: true,
+      status: true,
     },
   });
 
@@ -1766,8 +1793,8 @@ export async function getDORADashboard(organizationId: string) {
   const overdueProviderReviews = await prisma.dORAThirdPartyProvider.count({
     where: {
       organizationId,
-      status: 'active',
-      nextReviewDate: { lt: now },
+      status: 'Active',
+      nextAuditDate: { lt: now },
     },
   });
 
@@ -1845,12 +1872,11 @@ export async function calculateDORAComplianceScore(organizationId: string) {
       where: { organizationId },
       select: {
         status: true,
-        riskLevel: true,
-        riskScore: true,
-        residualRiskScore: true,
-        mitigationPlan: true,
+        riskClassification: true,
+        residualRisk: true,
+        riskTreatmentPlan: true,
         nextReviewDate: true,
-        controls: true,
+        ictAssets: true,
       },
     }),
     prisma.dORAICTIncident.findMany({
@@ -1859,14 +1885,12 @@ export async function calculateDORAComplianceScore(organizationId: string) {
         status: true,
         severity: true,
         classification: true,
-        reportedToAuthority: true,
-        containmentActions: true,
+        regulatoryNotified: true,
         remediationActions: true,
         lessonsLearned: true,
         rootCause: true,
-        closedAt: true,
+        resolvedAt: true,
         detectedAt: true,
-        containedAt: true,
       },
     }),
     prisma.dORAThirdPartyProvider.findMany({
@@ -1874,10 +1898,10 @@ export async function calculateDORAComplianceScore(organizationId: string) {
       select: {
         criticality: true,
         exitStrategy: true,
-        auditRights: true,
-        riskAssessment: true,
-        complianceCertifications: true,
-        nextReviewDate: true,
+        riskScore: true,
+        complianceStatus: true,
+        lastAuditDate: true,
+        nextAuditDate: true,
         concentrationRisk: true,
       },
     }),
@@ -1887,17 +1911,16 @@ export async function calculateDORAComplianceScore(organizationId: string) {
         testType: true,
         status: true,
         findings: true,
-        results: true,
         remediationPlan: true,
-        completedAt: true,
+        executedDate: true,
       },
     }),
     prisma.dORAInformationRegister.findMany({
-      where: { organizationId, status: 'active' },
+      where: { organizationId, status: 'Active' },
       select: {
-        criticality: true,
-        complianceStatus: true,
-        thirdPartyProvider: true,
+        businessImpact: true,
+        classification: true,
+        metadata: true,
         dependencies: true,
         recoveryTimeObjective: true,
         recoveryPointObjective: true,
@@ -1926,19 +1949,19 @@ export async function calculateDORAComplianceScore(organizationId: string) {
       riskAssessments.length;
     pillarScores.ictRiskManagement.score += Math.round(completedRatio * 30);
 
-    // Assessments with mitigation plans (0-25 pts)
+    // Assessments with risk treatment plans (0-25 pts)
     const withMitigation = riskAssessments.filter((r) => {
-      const plan = r.mitigationPlan as any[];
-      return plan && plan.length > 0;
+      const plan = r.riskTreatmentPlan as any;
+      return plan && (Array.isArray(plan) ? plan.length > 0 : Object.keys(plan).length > 0);
     }).length;
     pillarScores.ictRiskManagement.score += Math.round(
       (withMitigation / riskAssessments.length) * 25
     );
 
-    // Controls documented (0-25 pts)
+    // ICT assets documented (0-25 pts)
     const withControls = riskAssessments.filter((r) => {
-      const ctrls = r.controls as any[];
-      return ctrls && ctrls.length > 0;
+      const assets = r.ictAssets as any[];
+      return assets && assets.length > 0;
     }).length;
     pillarScores.ictRiskManagement.score += Math.round(
       (withControls / riskAssessments.length) * 25
@@ -1982,7 +2005,7 @@ export async function calculateDORAComplianceScore(organizationId: string) {
     );
     if (majorIncidents.length > 0) {
       const reportedMajor = majorIncidents.filter(
-        (i) => i.reportedToAuthority
+        (i) => i.regulatoryNotified
       ).length;
       pillarScores.incidentManagement.score += Math.round(
         (reportedMajor / majorIncidents.length) * 25
@@ -2004,8 +2027,7 @@ export async function calculateDORAComplianceScore(organizationId: string) {
 
     // Lessons learned documented (0-25 pts)
     const withLessons = incidents.filter((i) => {
-      const lessons = i.lessonsLearned as any[];
-      return lessons && lessons.length > 0;
+      return i.lessonsLearned && i.lessonsLearned.length > 0;
     }).length;
     pillarScores.incidentManagement.score += Math.round(
       (withLessons / incidents.length) * 25
@@ -2063,10 +2085,9 @@ export async function calculateDORAComplianceScore(organizationId: string) {
       'No third-party ICT providers registered. All providers must be documented per DORA Article 28(3).'
     );
   } else {
-    // Providers with risk assessment (0-25 pts)
+    // Providers with risk score (0-25 pts)
     const withRiskAssessment = providers.filter((p) => {
-      const ra = p.riskAssessment as any;
-      return ra && ra.riskScore !== undefined;
+      return p.riskScore !== null && p.riskScore !== undefined;
     }).length;
     pillarScores.thirdPartyRisk.score += Math.round(
       (withRiskAssessment / providers.length) * 25
@@ -2074,17 +2095,15 @@ export async function calculateDORAComplianceScore(organizationId: string) {
 
     // Providers with exit strategies (0-25 pts)
     const withExitStrategy = providers.filter((p) => {
-      const exit = p.exitStrategy as any;
-      return exit && exit.plan && exit.plan !== '';
+      return p.exitStrategy && p.exitStrategy !== '';
     }).length;
     pillarScores.thirdPartyRisk.score += Math.round(
       (withExitStrategy / providers.length) * 25
     );
 
-    // Providers with audit rights (0-25 pts)
+    // Providers with audit dates (0-25 pts)
     const withAuditRights = providers.filter((p) => {
-      const audit = p.auditRights as any;
-      return audit && audit.rightToAudit === true;
+      return p.lastAuditDate !== null;
     }).length;
     pillarScores.thirdPartyRisk.score += Math.round(
       (withAuditRights / providers.length) * 25
@@ -2092,7 +2111,7 @@ export async function calculateDORAComplianceScore(organizationId: string) {
 
     // Review dates current (0-25 pts)
     const upToDate = providers.filter(
-      (p) => p.nextReviewDate && p.nextReviewDate >= now
+      (p) => p.nextAuditDate && p.nextAuditDate >= now
     ).length;
     pillarScores.thirdPartyRisk.score += Math.round(
       (upToDate / providers.length) * 25
@@ -2100,10 +2119,9 @@ export async function calculateDORAComplianceScore(organizationId: string) {
 
     // Critical providers without exit strategies
     const criticalWithoutExit = providers.filter((p) => {
-      const exit = p.exitStrategy as any;
       return (
         p.criticality === 'critical' &&
-        (!exit || !exit.plan || exit.plan === '')
+        (!p.exitStrategy || p.exitStrategy === '')
       );
     }).length;
     if (criticalWithoutExit > 0) {
@@ -2119,11 +2137,11 @@ export async function calculateDORAComplianceScore(organizationId: string) {
       'Information register is empty. All ICT assets must be catalogued per DORA Article 28(3).'
     );
   } else {
-    // Compliant assets ratio (0-30 pts)
-    const compliantRatio =
-      assets.filter((a) => a.complianceStatus === 'compliant').length /
+    // Classified assets ratio (0-30 pts)
+    const classifiedRatio =
+      assets.filter((a) => a.classification && a.classification !== 'Internal').length /
       assets.length;
-    pillarScores.informationRegister.score += Math.round(compliantRatio * 30);
+    pillarScores.informationRegister.score += Math.round(classifiedRatio * 30);
 
     // Assets with RTO/RPO defined (0-25 pts)
     const withRecovery = assets.filter(
@@ -2134,12 +2152,13 @@ export async function calculateDORAComplianceScore(organizationId: string) {
       (withRecovery / assets.length) * 25
     );
 
-    // Critical assets with third-party mappings (0-25 pts)
-    const criticalAssets = assets.filter((a) => a.criticality === 'critical');
+    // Critical assets with metadata mappings (0-25 pts)
+    const criticalAssets = assets.filter((a) => a.businessImpact === 'Critical');
     if (criticalAssets.length > 0) {
-      const critWithProvider = criticalAssets.filter(
-        (a) => a.thirdPartyProvider
-      ).length;
+      const critWithProvider = criticalAssets.filter((a) => {
+        const meta = a.metadata as any;
+        return meta && meta.thirdPartyProvider;
+      }).length;
       // Having provider mapping documented = good (even if self-managed)
       pillarScores.informationRegister.score += 25;
     } else {
@@ -2155,12 +2174,10 @@ export async function calculateDORAComplianceScore(organizationId: string) {
       (withDependencies / assets.length) * 20
     );
 
-    const nonCompliant = assets.filter(
-      (a) => a.complianceStatus === 'non_compliant'
-    ).length;
-    if (nonCompliant > 0) {
+    const withoutDeps = assets.length - withDependencies;
+    if (withoutDeps > 0) {
       pillarScores.informationRegister.details.push(
-        `${nonCompliant} asset(s) marked non-compliant. Review and remediate.`
+        `${withoutDeps} asset(s) lack documented dependencies. Review and remediate.`
       );
     }
   }

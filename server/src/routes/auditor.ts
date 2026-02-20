@@ -4,7 +4,7 @@
  * dashboard statistics, and bundled auditor matching.
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import auditorService from '../services/auditorService';
@@ -20,7 +20,7 @@ router.use(authenticate);
 
 router.get(
   '/dashboard',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const stats = await auditorService.getDashboardStats(organizationId);
@@ -34,7 +34,7 @@ router.get(
 
 router.post(
   '/match',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const matches = await auditorService.matchAuditors(organizationId, req.body);
@@ -48,7 +48,7 @@ router.post(
 
 router.get(
   '/profiles',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const profiles = await auditorService.listAuditorProfiles(organizationId, req.query as any);
@@ -59,7 +59,7 @@ router.get(
 router.post(
   '/profiles',
   authorize('admin', 'editor'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const profile = await auditorService.createAuditorProfile(organizationId, req.body);
@@ -69,7 +69,7 @@ router.post(
 
 router.get(
   '/profiles/:id',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const profile = await auditorService.getAuditorProfile(organizationId, req.params.id);
@@ -80,7 +80,7 @@ router.get(
 router.patch(
   '/profiles/:id',
   authorize('admin', 'editor'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const profile = await auditorService.updateAuditorProfile(organizationId, req.params.id, req.body);
@@ -91,7 +91,7 @@ router.patch(
 router.delete(
   '/profiles/:id',
   authorize('admin'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     await auditorService.deleteAuditorProfile(organizationId, req.params.id);
@@ -105,7 +105,7 @@ router.delete(
 
 router.get(
   '/engagements',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const engagements = await auditorService.listEngagements(organizationId, req.query as any);
@@ -116,7 +116,7 @@ router.get(
 router.post(
   '/engagements',
   authorize('admin', 'editor'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const engagement = await auditorService.createEngagement(organizationId, req.body);
@@ -126,7 +126,7 @@ router.post(
 
 router.get(
   '/engagements/:id',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const engagement = await auditorService.getEngagement(organizationId, req.params.id);
@@ -137,7 +137,7 @@ router.get(
 router.patch(
   '/engagements/:id',
   authorize('admin', 'editor'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const engagement = await auditorService.updateEngagement(organizationId, req.params.id, req.body);
@@ -148,7 +148,7 @@ router.patch(
 router.delete(
   '/engagements/:id',
   authorize('admin'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     await auditorService.deleteEngagement(organizationId, req.params.id);
@@ -162,7 +162,7 @@ router.delete(
 
 router.get(
   '/findings',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const findings = await auditorService.listFindings(organizationId, req.query as any);
@@ -173,7 +173,7 @@ router.get(
 router.post(
   '/findings',
   authorize('admin', 'editor'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const finding = await auditorService.createFinding(organizationId, {
@@ -186,7 +186,7 @@ router.post(
 
 router.get(
   '/findings/:id',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const finding = await auditorService.getFinding(organizationId, req.params.id);
@@ -197,7 +197,7 @@ router.get(
 router.patch(
   '/findings/:id',
   authorize('admin', 'editor'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const finding = await auditorService.updateFinding(organizationId, req.params.id, req.body);
@@ -208,7 +208,7 @@ router.patch(
 router.delete(
   '/findings/:id',
   authorize('admin'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     await auditorService.deleteFinding(organizationId, req.params.id);
@@ -222,7 +222,7 @@ router.delete(
 
 router.get(
   '/workpapers',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const workpapers = await auditorService.listWorkpapers(organizationId, req.query as any);
@@ -233,7 +233,7 @@ router.get(
 router.post(
   '/workpapers',
   authorize('admin', 'editor'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const workpaper = await auditorService.createWorkpaper(organizationId, {
@@ -246,7 +246,7 @@ router.post(
 
 router.get(
   '/workpapers/:id',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const workpaper = await auditorService.getWorkpaper(organizationId, req.params.id);
@@ -257,7 +257,7 @@ router.get(
 router.patch(
   '/workpapers/:id',
   authorize('admin', 'editor'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const workpaper = await auditorService.updateWorkpaper(organizationId, req.params.id, req.body);
@@ -268,7 +268,7 @@ router.patch(
 router.delete(
   '/workpapers/:id',
   authorize('admin'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     await auditorService.deleteWorkpaper(organizationId, req.params.id);
@@ -282,7 +282,7 @@ router.delete(
 
 router.get(
   '/requests',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const requests = await auditorService.listRequests(organizationId, req.query as any);
@@ -293,7 +293,7 @@ router.get(
 router.post(
   '/requests',
   authorize('admin', 'editor'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const request = await auditorService.createRequest(organizationId, {
@@ -306,7 +306,7 @@ router.post(
 
 router.get(
   '/requests/:id',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const request = await auditorService.getRequest(organizationId, req.params.id);
@@ -317,7 +317,7 @@ router.get(
 router.patch(
   '/requests/:id',
   authorize('admin', 'editor'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     const request = await auditorService.updateRequest(organizationId, req.params.id, req.body);
@@ -328,7 +328,7 @@ router.patch(
 router.delete(
   '/requests/:id',
   authorize('admin'),
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
     await auditorService.deleteRequest(organizationId, req.params.id);
