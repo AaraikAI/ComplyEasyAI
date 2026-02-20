@@ -1,0 +1,561 @@
+/**
+ * Security Provider Integrations (41 providers)
+ * Real API implementations for all security tooling providers.
+ */
+import { createProviders, ProviderDescriptor } from './providerFactory';
+
+const descriptors: ProviderDescriptor[] = [
+  // ── Endpoint Detection & Response (EDR) / Endpoint Protection ────────────
+  {
+    id: 'crowdstrike', name: 'CrowdStrike Falcon', category: 'Security',
+    apiBaseUrl: 'https://api.crowdstrike.com', apiDocsUrl: 'https://falcon.crowdstrike.com/documentation/',
+    authMethods: ['oauth'], authPrefix: 'Bearer',
+    testEndpoint: '/sensors/queries/sensors/v1?limit=1',
+    evidenceEndpoints: [
+      { type: 'endpoint_status', title: 'Falcon Sensor Hosts', description: 'Enrolled endpoint sensor details', path: '/devices/queries/devices-scroll/v1?limit=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Spotlight Vulnerabilities', description: 'Vulnerability assessment results from Spotlight', path: '/spotlight/queries/vulnerabilities/v1?limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'Falcon Detections', description: 'Endpoint threat detections', path: '/detects/queries/detects/v1?limit=100', method: 'GET' },
+      { type: 'incident_report', title: 'Falcon Incidents', description: 'Security incident reports', path: '/incidents/queries/incidents/v1?limit=100', method: 'GET' },
+      { type: 'configuration', title: 'Prevention Policies', description: 'Endpoint prevention policy configurations', path: '/policy/queries/prevention/v1', method: 'GET' },
+    ],
+  },
+  {
+    id: 'sentinelone', name: 'SentinelOne', category: 'Security',
+    apiBaseUrl: 'https://{instance}.sentinelone.net/web/api/v2.1', apiDocsUrl: 'https://usea1-partners.sentinelone.net/api-doc/',
+    authMethods: ['api-key'], authHeader: 'Authorization', authPrefix: 'APIToken',
+    testEndpoint: '/system/info',
+    evidenceEndpoints: [
+      { type: 'endpoint_status', title: 'S1 Agents', description: 'Enrolled endpoint agent inventory', path: '/agents?limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'S1 Threats', description: 'Detected threats across endpoints', path: '/threats?limit=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'S1 Application Vulnerabilities', description: 'Application vulnerability risk data', path: '/installed-applications?limit=100', method: 'GET' },
+      { type: 'incident_report', title: 'S1 Alerts', description: 'Security alert reports', path: '/cloud-detection/alerts?limit=100', method: 'GET' },
+      { type: 'configuration', title: 'S1 Policies', description: 'Agent protection policy settings', path: '/policies?limit=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'carbon-black', name: 'VMware Carbon Black', category: 'Security',
+    apiBaseUrl: 'https://defense-{instance}.conferdeploy.net', apiDocsUrl: 'https://developer.carbonblack.com/reference/',
+    authMethods: ['api-key'], authHeader: 'X-Auth-Token', authPrefix: '',
+    testEndpoint: '/appservices/v6/orgs/{org}/alerts?rows=1',
+    evidenceEndpoints: [
+      { type: 'endpoint_status', title: 'CB Devices', description: 'Endpoint device inventory and status', path: '/appservices/v6/orgs/{org}/devices/_search', method: 'POST', params: { rows: 100 } },
+      { type: 'security_finding', title: 'CB Alerts', description: 'Threat alerts from Carbon Black Cloud', path: '/appservices/v6/orgs/{org}/alerts/_search', method: 'POST', params: { rows: 100 } },
+      { type: 'vulnerability_scan', title: 'CB Vulnerabilities', description: 'Endpoint vulnerability assessment', path: '/vulnerability/assessment/api/v1/orgs/{org}/devices/vulnerabilities/_search', method: 'POST', params: { rows: 100 } },
+      { type: 'incident_report', title: 'CB Watchlist Hits', description: 'Watchlist match incident reports', path: '/threathunter/watchlistmgr/v3/orgs/{org}/watchlists', method: 'GET' },
+      { type: 'configuration', title: 'CB Policies', description: 'Sensor and prevention policy configurations', path: '/policyservice/v1/orgs/{org}/policies', method: 'GET' },
+    ],
+  },
+  {
+    id: 'palo-alto-networks', name: 'Palo Alto Networks Cortex XDR', category: 'Security',
+    apiBaseUrl: 'https://api-{instance}.xdr.{region}.paloaltonetworks.com/public_api/v1', apiDocsUrl: 'https://docs-cortex.paloaltonetworks.com/r/Cortex-XDR-REST-API',
+    authMethods: ['api-key'], authHeader: 'x-xdr-auth-id', authPrefix: '',
+    testEndpoint: '/endpoints/get_endpoint/',
+    evidenceEndpoints: [
+      { type: 'endpoint_status', title: 'XDR Endpoints', description: 'Endpoint agent status and details', path: '/endpoints/get_endpoint/', method: 'POST', params: { request_data: { filters: [], search_to: 100 } } },
+      { type: 'security_finding', title: 'XDR Alerts', description: 'Correlated security alerts', path: '/alerts/get_alerts/', method: 'POST', params: { request_data: { filters: [], search_to: 100, sort: { field: 'creation_time', keyword: 'desc' } } } },
+      { type: 'incident_report', title: 'XDR Incidents', description: 'Aggregated security incidents', path: '/incidents/get_incidents/', method: 'POST', params: { request_data: { filters: [], search_to: 100, sort: { field: 'creation_time', keyword: 'desc' } } } },
+      { type: 'vulnerability_scan', title: 'XDR Vulnerability Assessment', description: 'Host vulnerability assessment data', path: '/vulnerability/get_endpoints/', method: 'POST', params: { request_data: { filters: [], search_to: 100 } } },
+      { type: 'configuration', title: 'XDR Policy Configuration', description: 'Endpoint security policy settings', path: '/endpoints/get_policy/', method: 'POST', params: { request_data: {} } },
+    ],
+  },
+  {
+    id: 'fortinet', name: 'Fortinet FortiGate', category: 'Security',
+    apiBaseUrl: 'https://{instance}/api/v2', apiDocsUrl: 'https://docs.fortinet.com/document/fortigate/latest/administration-guide/',
+    authMethods: ['api-key'], authHeader: 'Authorization', authPrefix: 'Bearer',
+    testEndpoint: '/cmdb/system/status',
+    evidenceEndpoints: [
+      { type: 'configuration', title: 'FortiGate System Status', description: 'Appliance system status and firmware info', path: '/cmdb/system/status', method: 'GET' },
+      { type: 'security_finding', title: 'FortiGate IPS Logs', description: 'Intrusion prevention system detections', path: '/log/fortianalyzer/ips?rows=100', method: 'GET' },
+      { type: 'configuration', title: 'FortiGate Firewall Policies', description: 'Firewall policy rule configurations', path: '/cmdb/firewall/policy', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'FortiGate Vulnerability Summary', description: 'Vulnerability scan summary from FortiGuard', path: '/monitor/system/fortiguard', method: 'GET' },
+      { type: 'endpoint_status', title: 'FortiGate Managed Endpoints', description: 'FortiClient registered endpoint status', path: '/monitor/endpoint-control/summary', method: 'GET' },
+    ],
+  },
+  {
+    id: 'check-point', name: 'Check Point', category: 'Security',
+    apiBaseUrl: 'https://{instance}/web_api', apiDocsUrl: 'https://sc1.checkpoint.com/documents/latest/APIs/',
+    authMethods: ['api-key', 'username-password'],
+    testEndpoint: '/show-api-versions',
+    evidenceEndpoints: [
+      { type: 'configuration', title: 'CP Security Gateway', description: 'Security gateway configuration', path: '/show-gateways-and-servers', method: 'POST', params: { limit: 50 } },
+      { type: 'security_finding', title: 'CP Threat Logs', description: 'Threat prevention log entries', path: '/show-logs', method: 'POST', params: { 'log-type': 'threat', limit: 100 } },
+      { type: 'configuration', title: 'CP Access Policies', description: 'Access control policy rulebase', path: '/show-access-rulebase', method: 'POST', params: { name: 'Network', limit: 100 } },
+      { type: 'vulnerability_scan', title: 'CP IPS Protections', description: 'Intrusion prevention signature status', path: '/show-ips-status', method: 'POST' },
+      { type: 'incident_report', title: 'CP Security Events', description: 'Security event summaries', path: '/show-logs', method: 'POST', params: { 'log-type': 'security', limit: 100 } },
+    ],
+  },
+  {
+    id: 'sophos', name: 'Sophos Central', category: 'Security',
+    apiBaseUrl: 'https://api-{region}.central.sophos.com', apiDocsUrl: 'https://developer.sophos.com/apis',
+    authMethods: ['oauth'], authPrefix: 'Bearer',
+    testEndpoint: '/whoami/v1',
+    evidenceEndpoints: [
+      { type: 'endpoint_status', title: 'Sophos Endpoints', description: 'Managed endpoint inventory and health', path: '/endpoint/v1/endpoints?pageSize=100', method: 'GET' },
+      { type: 'security_finding', title: 'Sophos Alerts', description: 'Security alerts from Sophos Central', path: '/common/v1/alerts?pageSize=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Sophos Endpoint Vulnerabilities', description: 'Software vulnerabilities detected on endpoints', path: '/endpoint/v1/endpoints?pageSize=100&view=full&healthStatus=bad', method: 'GET' },
+      { type: 'incident_report', title: 'Sophos Incidents', description: 'Threat incident case details', path: '/incident/v1/incidents?pageSize=100', method: 'GET' },
+      { type: 'configuration', title: 'Sophos Policies', description: 'Protection policy configuration', path: '/endpoint/v1/policies?pageSize=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'trend-micro', name: 'Trend Micro Vision One', category: 'Security',
+    apiBaseUrl: 'https://api.xdr.trendmicro.com', apiDocsUrl: 'https://automation.trendmicro.com/xdr/api-v3',
+    authMethods: ['api-key'], authHeader: 'Authorization', authPrefix: 'Bearer',
+    testEndpoint: '/v3.0/healthcheck/connectivity',
+    evidenceEndpoints: [
+      { type: 'endpoint_status', title: 'TM Endpoint Inventory', description: 'Managed endpoint agent inventory', path: '/v3.0/eicar/agents?top=100', method: 'GET' },
+      { type: 'security_finding', title: 'TM Workbench Alerts', description: 'Vision One workbench alerts', path: '/v3.0/workbench/alerts?top=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'TM Vulnerability Findings', description: 'Endpoint vulnerability assessment data', path: '/v3.0/eicar/riskInsights/vulnerabilities?top=100', method: 'GET' },
+      { type: 'incident_report', title: 'TM Observed Attack Techniques', description: 'Detected attack technique reports', path: '/v3.0/oat/detections?top=100', method: 'GET' },
+      { type: 'configuration', title: 'TM Policy Configuration', description: 'Endpoint protection policies', path: '/v3.0/policies?top=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'malwarebytes', name: 'Malwarebytes', category: 'Security',
+    apiBaseUrl: 'https://api.malwarebytes.com', apiDocsUrl: 'https://api.malwarebytes.com/docs/',
+    authMethods: ['oauth'], authPrefix: 'Bearer',
+    testEndpoint: '/api/v2/accounts',
+    evidenceEndpoints: [
+      { type: 'endpoint_status', title: 'MB Endpoints', description: 'Managed endpoint inventory', path: '/api/v2/machines?per_page=100', method: 'GET' },
+      { type: 'security_finding', title: 'MB Detections', description: 'Malware and threat detections', path: '/api/v2/detections?per_page=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'MB Vulnerability Assessment', description: 'Endpoint vulnerability assessment', path: '/api/v2/vulnerabilities?per_page=100', method: 'GET' },
+      { type: 'incident_report', title: 'MB Suspicious Activity', description: 'Suspicious activity event reports', path: '/api/v2/suspicious-activities?per_page=100', method: 'GET' },
+      { type: 'configuration', title: 'MB Policies', description: 'Protection policy configurations', path: '/api/v2/policies?per_page=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'cylance', name: 'BlackBerry Cylance', category: 'Security',
+    apiBaseUrl: 'https://protectapi.cylance.com', apiDocsUrl: 'https://docs.blackberry.com/en/unified-endpoint-security/blackberry-ues/',
+    authMethods: ['api-key'], authPrefix: 'Bearer',
+    testEndpoint: '/devices/v2?page=1&page_size=1',
+    evidenceEndpoints: [
+      { type: 'endpoint_status', title: 'Cylance Devices', description: 'Managed device inventory and status', path: '/devices/v2?page=1&page_size=100', method: 'GET' },
+      { type: 'security_finding', title: 'Cylance Threats', description: 'Detected threat list', path: '/threats/v2?page=1&page_size=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Cylance Unsafe Devices', description: 'Devices with unsafe threat status', path: '/devices/v2?page=1&page_size=100', method: 'GET' },
+      { type: 'incident_report', title: 'Cylance Detection Events', description: 'Threat detection event log', path: '/threats/v2/download', method: 'GET' },
+      { type: 'configuration', title: 'Cylance Policies', description: 'Device policy configurations', path: '/policies/v2?page=1&page_size=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'cisco-secure-endpoint', name: 'Cisco Secure Endpoint', category: 'Security',
+    apiBaseUrl: 'https://api.amp.cisco.com/v1', apiDocsUrl: 'https://developer.cisco.com/docs/secure-endpoint/',
+    authMethods: ['api-key-secret'],
+    testEndpoint: '/version',
+    evidenceEndpoints: [
+      { type: 'endpoint_status', title: 'Cisco AMP Computers', description: 'Enrolled endpoint computer inventory', path: '/computers?limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'Cisco AMP Events', description: 'Security event detections', path: '/events?limit=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Cisco AMP Vulnerabilities', description: 'Vulnerable application inventory', path: '/vulnerabilities?limit=100', method: 'GET' },
+      { type: 'incident_report', title: 'Cisco AMP Threat Indicators', description: 'Indicators of compromise', path: '/indicators?limit=100', method: 'GET' },
+      { type: 'configuration', title: 'Cisco AMP Policies', description: 'Endpoint protection policy configuration', path: '/policies', method: 'GET' },
+    ],
+  },
+  {
+    id: 'microsoft-defender', name: 'Microsoft Defender for Endpoint', category: 'Security',
+    apiBaseUrl: 'https://api.securitycenter.microsoft.com/api', apiDocsUrl: 'https://learn.microsoft.com/en-us/microsoft-365/security/defender-endpoint/api/',
+    authMethods: ['oauth'], authPrefix: 'Bearer',
+    testEndpoint: '/machines?$top=1',
+    evidenceEndpoints: [
+      { type: 'endpoint_status', title: 'Defender Machines', description: 'Onboarded machine inventory', path: '/machines?$top=100', method: 'GET' },
+      { type: 'security_finding', title: 'Defender Alerts', description: 'Security alert findings', path: '/alerts?$top=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Defender Vulnerabilities', description: 'Software vulnerability assessments', path: '/vulnerabilities?$top=100', method: 'GET' },
+      { type: 'incident_report', title: 'Defender Incidents', description: 'Security incident reports', path: '/incidents?$top=100', method: 'GET' },
+      { type: 'configuration', title: 'Defender Security Recommendations', description: 'Security configuration recommendations', path: '/recommendations?$top=100', method: 'GET' },
+    ],
+  },
+
+  // ── Vulnerability Management / Scanning ──────────────────────────────────
+  {
+    id: 'qualys', name: 'Qualys', category: 'Security',
+    apiBaseUrl: 'https://qualysapi.qualys.com/api/2.0', apiDocsUrl: 'https://qualysguard.qualys.com/qwebhelp/fo_portal/api_doc/',
+    authMethods: ['username-password'],
+    testEndpoint: '/fo/session/',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Qualys Host Detections', description: 'Host-based vulnerability detections', path: '/fo/asset/host/vm/detection/?action=list&truncation_limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'Qualys Knowledge Base', description: 'Vulnerability knowledge base entries', path: '/fo/knowledge_base/vuln/?action=list&details=All', method: 'GET' },
+      { type: 'endpoint_status', title: 'Qualys Host Assets', description: 'Host asset inventory', path: '/fo/asset/host/?action=list&truncation_limit=100', method: 'GET' },
+      { type: 'configuration', title: 'Qualys Scan Profiles', description: 'Scan option profile configurations', path: '/fo/subscription/', method: 'GET' },
+      { type: 'incident_report', title: 'Qualys Scan Results', description: 'Completed scan result summaries', path: '/fo/scan/?action=list', method: 'GET' },
+    ],
+  },
+  {
+    id: 'tenable-nessus', name: 'Tenable Nessus / Tenable.io', category: 'Security',
+    apiBaseUrl: 'https://cloud.tenable.com', apiDocsUrl: 'https://developer.tenable.com/reference/',
+    authMethods: ['api-key'], authHeader: 'X-ApiKeys', authPrefix: '',
+    testEndpoint: '/server/status',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Tenable Vulnerabilities', description: 'Vulnerability findings from scans', path: '/vulns?limit=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Tenable Assets', description: 'Discovered asset inventory', path: '/assets?limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'Tenable Scan Results', description: 'Latest scan result findings', path: '/scans', method: 'GET' },
+      { type: 'configuration', title: 'Tenable Scanner Configuration', description: 'Scanner and agent group configuration', path: '/scanners', method: 'GET' },
+      { type: 'incident_report', title: 'Tenable Plugin Families', description: 'Vulnerability plugin family coverage', path: '/plugins/families', method: 'GET' },
+    ],
+  },
+  {
+    id: 'rapid7-insightvm', name: 'Rapid7 InsightVM', category: 'Security',
+    apiBaseUrl: 'https://{instance}.api.insight.rapid7.com/vm', apiDocsUrl: 'https://help.rapid7.com/insightvm/en-us/api/',
+    authMethods: ['api-key'], authPrefix: 'Bearer',
+    testEndpoint: '/v4/integration_status',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Rapid7 Vulnerabilities', description: 'Vulnerability findings across assets', path: '/v4/integration/vulnerabilities?size=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Rapid7 Assets', description: 'Discovered asset inventory', path: '/v4/integration/assets?size=100', method: 'GET' },
+      { type: 'security_finding', title: 'Rapid7 Exploitable Vulns', description: 'Vulnerabilities with known exploits', path: '/v4/integration/vulnerabilities?size=100&exploitable=true', method: 'GET' },
+      { type: 'configuration', title: 'Rapid7 Scan Engine Config', description: 'Scan engine configuration details', path: '/v4/integration/scan_engines', method: 'GET' },
+      { type: 'incident_report', title: 'Rapid7 Scan History', description: 'Vulnerability scan history reports', path: '/v4/integration/scans?size=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'nuclei', name: 'ProjectDiscovery Nuclei (Cloud)', category: 'Security',
+    apiBaseUrl: 'https://cloud.projectdiscovery.io/api/v1', apiDocsUrl: 'https://docs.projectdiscovery.io/cloud/nuclei-cloud-api',
+    authMethods: ['api-key'], authHeader: 'X-Api-Key', authPrefix: '',
+    testEndpoint: '/user',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Nuclei Scan Results', description: 'Vulnerability scan findings from Nuclei templates', path: '/results?limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'Nuclei Issues', description: 'Identified security issues', path: '/issues?limit=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Nuclei Targets', description: 'Scanned target inventory', path: '/targets?limit=100', method: 'GET' },
+      { type: 'configuration', title: 'Nuclei Scan Templates', description: 'Active template configuration', path: '/templates?limit=100', method: 'GET' },
+      { type: 'incident_report', title: 'Nuclei Scan Runs', description: 'Scan execution history and reports', path: '/scans?limit=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'burpsuite', name: 'PortSwigger Burp Suite Enterprise', category: 'Security',
+    apiBaseUrl: 'https://{instance}/api-internal', apiDocsUrl: 'https://portswigger.net/burp/documentation/enterprise/api-documentation',
+    authMethods: ['api-key'], authHeader: 'Authorization', authPrefix: 'Bearer',
+    testEndpoint: '/graphql/v1',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Burp Scan Issues', description: 'Web application vulnerability findings', path: '/graphql/v1', method: 'POST', params: { query: '{ scan_issues(limit: 100) { issue_type severity confidence } }' } },
+      { type: 'security_finding', title: 'Burp Scan Summaries', description: 'Scan result summaries', path: '/graphql/v1', method: 'POST', params: { query: '{ scans(limit: 100) { id status start_time issue_counts { total } } }' } },
+      { type: 'endpoint_status', title: 'Burp Scan Targets', description: 'Configured scan target sites', path: '/graphql/v1', method: 'POST', params: { query: '{ sites(limit: 100) { id name scope { included_urls } } }' } },
+      { type: 'configuration', title: 'Burp Scan Configurations', description: 'Scan configuration profiles', path: '/graphql/v1', method: 'POST', params: { query: '{ scan_configurations { id name } }' } },
+      { type: 'incident_report', title: 'Burp Schedule Report', description: 'Scheduled scan execution reports', path: '/graphql/v1', method: 'POST', params: { query: '{ schedules(limit: 100) { id site { name } schedule { rrule } } }' } },
+    ],
+  },
+  {
+    id: 'owasp-zap', name: 'OWASP ZAP', category: 'Security',
+    apiBaseUrl: 'https://{instance}', apiDocsUrl: 'https://www.zaproxy.org/docs/api/',
+    authMethods: ['api-key'], authHeader: 'X-ZAP-API-Key', authPrefix: '',
+    testEndpoint: '/JSON/core/view/version/',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'ZAP Alerts', description: 'Vulnerability alerts from active/passive scans', path: '/JSON/alert/view/alerts/?start=0&count=100', method: 'GET' },
+      { type: 'security_finding', title: 'ZAP Alert Summary', description: 'Alert severity summary by risk', path: '/JSON/alert/view/alertsSummary/', method: 'GET' },
+      { type: 'endpoint_status', title: 'ZAP Scanned Hosts', description: 'Hosts discovered during scanning', path: '/JSON/core/view/hosts/', method: 'GET' },
+      { type: 'configuration', title: 'ZAP Scan Policies', description: 'Active scan policy configurations', path: '/JSON/ascan/view/scanPolicyNames/', method: 'GET' },
+      { type: 'incident_report', title: 'ZAP Scan Status', description: 'Active scan execution status', path: '/JSON/ascan/view/scans/', method: 'GET' },
+    ],
+  },
+  {
+    id: 'nmap', name: 'Nmap (via Nmap API / XML Import)', category: 'Security',
+    apiBaseUrl: 'https://{instance}/api/v1', apiDocsUrl: 'https://nmap.org/book/man.html',
+    authMethods: ['api-key'],
+    testEndpoint: '/status',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Nmap Vulnerability Scripts', description: 'NSE vulnerability script scan results', path: '/scans?type=vuln&limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'Nmap Open Ports', description: 'Discovered open ports and services', path: '/scans?type=port&limit=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Nmap Host Discovery', description: 'Discovered hosts and their status', path: '/hosts?limit=100', method: 'GET' },
+      { type: 'configuration', title: 'Nmap Scan Profiles', description: 'Scan profile configurations', path: '/profiles', method: 'GET' },
+      { type: 'incident_report', title: 'Nmap Scan Reports', description: 'Completed scan execution reports', path: '/reports?limit=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'metasploit', name: 'Rapid7 Metasploit Pro', category: 'Security',
+    apiBaseUrl: 'https://{instance}/api/v1', apiDocsUrl: 'https://docs.rapid7.com/metasploit/api/',
+    authMethods: ['api-key'], authHeader: 'Authorization', authPrefix: 'Bearer',
+    testEndpoint: '/health',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Metasploit Vulns', description: 'Validated vulnerability findings', path: '/vulns?limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'Metasploit Exploited Hosts', description: 'Hosts with confirmed exploits', path: '/hosts?limit=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Metasploit Workspace Hosts', description: 'Hosts in active workspaces', path: '/workspaces', method: 'GET' },
+      { type: 'configuration', title: 'Metasploit Module Config', description: 'Active exploit and scan module configurations', path: '/modules?limit=100', method: 'GET' },
+      { type: 'incident_report', title: 'Metasploit Campaign Reports', description: 'Penetration test campaign reports', path: '/reports?limit=100', method: 'GET' },
+    ],
+  },
+
+  // ── Threat Intelligence & IR ─────────────────────────────────────────────
+  {
+    id: 'mandiant', name: 'Mandiant Advantage', category: 'Security',
+    apiBaseUrl: 'https://api.intelligence.mandiant.com/v4', apiDocsUrl: 'https://docs.mandiant.com/home/mati-api-v4-overview',
+    authMethods: ['api-key-secret'],
+    testEndpoint: '/token',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'Mandiant Threat Indicators', description: 'Threat intelligence indicators of compromise', path: '/indicator?limit=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Mandiant Vulnerability Intel', description: 'Vulnerability intelligence and exploit data', path: '/vulnerability?limit=100', method: 'GET' },
+      { type: 'incident_report', title: 'Mandiant Threat Reports', description: 'Threat intelligence reports', path: '/report?limit=100', method: 'GET' },
+      { type: 'configuration', title: 'Mandiant Threat Actors', description: 'Tracked threat actor profiles', path: '/actor?limit=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Mandiant Malware Families', description: 'Tracked malware family data', path: '/malware?limit=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'fireeye', name: 'Trellix (FireEye) Helix', category: 'Security',
+    apiBaseUrl: 'https://{instance}.helix.apps.fireeye.com/helix/api/v3', apiDocsUrl: 'https://docs.trellix.com/bundle/helix-api',
+    authMethods: ['api-key'], authHeader: 'x-fireeye-api-key', authPrefix: '',
+    testEndpoint: '/health',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'Helix Alerts', description: 'SIEM alert findings', path: '/alerts?limit=100', method: 'GET' },
+      { type: 'incident_report', title: 'Helix Cases', description: 'Incident response case records', path: '/cases?limit=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Helix Endpoints', description: 'Monitored endpoint inventory', path: '/endpoints?limit=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Helix Threat Intelligence', description: 'Threat intelligence matches on assets', path: '/events?query=class%3D%22threat%22&limit=100', method: 'GET' },
+      { type: 'configuration', title: 'Helix Rules', description: 'Detection rule configurations', path: '/rules?limit=100', method: 'GET' },
+    ],
+  },
+
+  // ── Email Security ───────────────────────────────────────────────────────
+  {
+    id: 'proofpoint', name: 'Proofpoint', category: 'Security',
+    apiBaseUrl: 'https://tap-api-v2.proofpoint.com/v2', apiDocsUrl: 'https://help.proofpoint.com/Threat_Insight_Dashboard/API_Documentation',
+    authMethods: ['username-password'],
+    testEndpoint: '/siem/all?sinceSeconds=300&format=json',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'Proofpoint TAP Threats', description: 'Targeted attack protection threat events', path: '/siem/all?sinceSeconds=3600&format=json', method: 'GET' },
+      { type: 'incident_report', title: 'Proofpoint Blocked Messages', description: 'Blocked malicious messages', path: '/siem/messages/blocked?sinceSeconds=3600&format=json', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Proofpoint URL Analysis', description: 'Malicious URL detection results', path: '/siem/clicks/blocked?sinceSeconds=3600&format=json', method: 'GET' },
+      { type: 'endpoint_status', title: 'Proofpoint Delivered Messages', description: 'Delivered messages requiring review', path: '/siem/messages/delivered?sinceSeconds=3600&format=json', method: 'GET' },
+      { type: 'configuration', title: 'Proofpoint Campaign Data', description: 'Phishing campaign intelligence', path: '/campaign/ids?sinceSeconds=86400&format=json', method: 'GET' },
+    ],
+  },
+  {
+    id: 'mimecast', name: 'Mimecast', category: 'Security',
+    apiBaseUrl: 'https://{region}-api.mimecast.com/api', apiDocsUrl: 'https://developer.services.mimecast.com/api-overview',
+    authMethods: ['api-key-secret'],
+    testEndpoint: '/account/get-account',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'Mimecast Threat Detections', description: 'Targeted threat protection detections', path: '/ttp/url/get-logs', method: 'POST', params: { data: [{ from: '', to: '', route: 'all', scanResult: 'malicious' }] } },
+      { type: 'incident_report', title: 'Mimecast Impersonation Attacks', description: 'Detected impersonation protection events', path: '/ttp/impersonation/get-logs', method: 'POST', params: { data: [{ from: '', to: '', identifiers: ['internal'] }] } },
+      { type: 'endpoint_status', title: 'Mimecast Managed URLs', description: 'URL protection managed URLs', path: '/ttp/url/get-managed-urls', method: 'POST', params: { data: [{}] } },
+      { type: 'vulnerability_scan', title: 'Mimecast Attachment Scans', description: 'Attachment protection scan results', path: '/ttp/attachment/get-logs', method: 'POST', params: { data: [{ from: '', to: '', result: 'malicious' }] } },
+      { type: 'configuration', title: 'Mimecast Policies', description: 'Email security policy settings', path: '/policy/blockedsenders/get-policy', method: 'POST', params: { data: [{}] } },
+    ],
+  },
+  {
+    id: 'barracuda', name: 'Barracuda Email Security', category: 'Security',
+    apiBaseUrl: 'https://api.barracudanetworks.com/v1', apiDocsUrl: 'https://campus.barracuda.com/product/emailsecuritygateway/api/',
+    authMethods: ['api-key', 'oauth'], authPrefix: 'Bearer',
+    testEndpoint: '/accounts',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'Barracuda Threat Logs', description: 'Email threat detection logs', path: '/ess/messages?action=quarantine&per_page=100', method: 'GET' },
+      { type: 'incident_report', title: 'Barracuda ATP Results', description: 'Advanced Threat Protection scan results', path: '/ess/atp?per_page=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Barracuda Protected Domains', description: 'Protected email domain inventory', path: '/ess/domains', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Barracuda Inbound Threats', description: 'Inbound threat summary statistics', path: '/ess/stats/threats?per_page=100', method: 'GET' },
+      { type: 'configuration', title: 'Barracuda Policies', description: 'Email security policy configurations', path: '/ess/policies', method: 'GET' },
+    ],
+  },
+
+  // ── Security Awareness Training ──────────────────────────────────────────
+  {
+    id: 'knowbe4', name: 'KnowBe4', category: 'Security',
+    apiBaseUrl: 'https://api.events.knowbe4.com/v1', apiDocsUrl: 'https://developer.knowbe4.com/',
+    authMethods: ['api-key'], authHeader: 'Authorization', authPrefix: 'Bearer',
+    testEndpoint: '/account',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'KnowBe4 Phishing Results', description: 'Phishing simulation test results', path: '/phishing/security_tests?per_page=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'KnowBe4 Users', description: 'Enrolled user list for awareness training', path: '/users?per_page=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'KnowBe4 Risk Score', description: 'Organization risk score assessment', path: '/account/risk_score_history', method: 'GET' },
+      { type: 'configuration', title: 'KnowBe4 Training Campaigns', description: 'Training campaign configurations', path: '/training/campaigns?per_page=100', method: 'GET' },
+      { type: 'incident_report', title: 'KnowBe4 Phish Failures', description: 'Users who failed phishing simulations', path: '/phishing/security_tests?per_page=100&status=Failed', method: 'GET' },
+    ],
+  },
+  {
+    id: 'cofense', name: 'Cofense Triage', category: 'Security',
+    apiBaseUrl: 'https://{instance}.phishmecloud.com/api/public/v2', apiDocsUrl: 'https://cofense.com/wp-content/uploads/Cofense-Triage-API-Documentation.pdf',
+    authMethods: ['api-key', 'oauth'], authPrefix: 'Bearer',
+    testEndpoint: '/system/status',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'Cofense Reported Threats', description: 'User-reported phishing threats', path: '/reports?per_page=100', method: 'GET' },
+      { type: 'incident_report', title: 'Cofense Triage Indicators', description: 'Phishing indicators of compromise', path: '/indicators?per_page=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Cofense Reporter List', description: 'Active reporter user inventory', path: '/reporters?per_page=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Cofense Threat Analysis', description: 'Automated threat analysis results', path: '/threat_indicators?per_page=100', method: 'GET' },
+      { type: 'configuration', title: 'Cofense Rules', description: 'Triage automation rule configurations', path: '/rules?per_page=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'abnormal-security', name: 'Abnormal Security', category: 'Security',
+    apiBaseUrl: 'https://api.abnormalplatform.com/v1', apiDocsUrl: 'https://app.swaggerhub.com/apis/abnormal-security/abx/',
+    authMethods: ['api-key'], authHeader: 'Authorization', authPrefix: 'Bearer',
+    testEndpoint: '/threats?pageSize=1',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'Abnormal Threats', description: 'Detected email threats', path: '/threats?pageSize=100', method: 'GET' },
+      { type: 'incident_report', title: 'Abnormal Abuse Mailbox', description: 'Abuse mailbox submissions and analysis', path: '/abusemailbox?pageSize=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Abnormal Cases', description: 'Active case investigation list', path: '/cases?pageSize=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Abnormal Account Takeover', description: 'Account takeover detection results', path: '/account-takeover-cases?pageSize=100', method: 'GET' },
+      { type: 'configuration', title: 'Abnormal Vendor Insights', description: 'Vendor risk intelligence data', path: '/vendors?pageSize=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'area-1', name: 'Cloudflare Area 1 (Email Security)', category: 'Security',
+    apiBaseUrl: 'https://api.cloudflare.com/client/v4', apiDocsUrl: 'https://developers.cloudflare.com/email-security/api/',
+    authMethods: ['api-key', 'pat'], testEndpoint: '/user',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'Area 1 Email Detections', description: 'Malicious email detections', path: '/accounts/{account}/email-security/detections?per_page=100', method: 'GET' },
+      { type: 'incident_report', title: 'Area 1 Phishing Reports', description: 'Phishing campaign reports', path: '/accounts/{account}/email-security/investigate?per_page=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Area 1 Protected Domains', description: 'Protected email domain inventory', path: '/accounts/{account}/email-security/overview', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Area 1 BEC Detection', description: 'Business email compromise detection results', path: '/accounts/{account}/email-security/detections?disposition=BEC&per_page=100', method: 'GET' },
+      { type: 'configuration', title: 'Area 1 Policies', description: 'Email security policies and rules', path: '/accounts/{account}/email-security/rules', method: 'GET' },
+    ],
+  },
+
+  // ── Threat Intelligence Platforms ────────────────────────────────────────
+  {
+    id: 'recorded-future', name: 'Recorded Future', category: 'Security',
+    apiBaseUrl: 'https://api.recordedfuture.com/v2', apiDocsUrl: 'https://support.recordedfuture.com/hc/en-us/categories/115000803507-Raw-API',
+    authMethods: ['api-key'], authHeader: 'X-RFToken', authPrefix: '',
+    testEndpoint: '/alert/search?limit=1',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'RF Threat Alerts', description: 'Threat intelligence alerts', path: '/alert/search?limit=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'RF Vulnerability Intel', description: 'Vulnerability intelligence data', path: '/vulnerability/search?limit=100', method: 'GET' },
+      { type: 'incident_report', title: 'RF IP Risk List', description: 'Risky IP intelligence indicators', path: '/ip/search?limit=100&riskScoreRange=[65,100]', method: 'GET' },
+      { type: 'endpoint_status', title: 'RF Domain Monitoring', description: 'Monitored domain threat data', path: '/domain/search?limit=100', method: 'GET' },
+      { type: 'configuration', title: 'RF Alert Rules', description: 'Alerting rule configurations', path: '/alert/rule?limit=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'threatconnect', name: 'ThreatConnect', category: 'Security',
+    apiBaseUrl: 'https://api.threatconnect.com/v3', apiDocsUrl: 'https://docs.threatconnect.com/en/latest/rest_api/',
+    authMethods: ['api-key-secret'],
+    testEndpoint: '/security/owners?resultLimit=1',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'TC Indicators', description: 'Threat intelligence indicators', path: '/indicators?resultLimit=100', method: 'GET' },
+      { type: 'incident_report', title: 'TC Incidents', description: 'Threat intelligence incident reports', path: '/groups?type=Incident&resultLimit=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'TC Vulnerability Groups', description: 'Tracked vulnerabilities', path: '/groups?type=Vulnerability&resultLimit=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'TC Victims', description: 'Victim asset tracking', path: '/victims?resultLimit=100', method: 'GET' },
+      { type: 'configuration', title: 'TC Playbooks', description: 'Automation playbook configurations', path: '/playbooks?resultLimit=100', method: 'GET' },
+    ],
+  },
+
+  // ── Cloud Security Posture Management (CSPM) ────────────────────────────
+  {
+    id: 'wiz', name: 'Wiz', category: 'Security',
+    apiBaseUrl: 'https://api.{region}.app.wiz.io', apiDocsUrl: 'https://docs.wiz.io/wiz-docs/reference/api-overview',
+    authMethods: ['oauth'], authPrefix: 'Bearer',
+    testEndpoint: '/graphql',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Wiz Vulnerabilities', description: 'Cloud vulnerability findings', path: '/graphql', method: 'POST', params: { query: '{ vulnerabilityFindings(first: 100) { nodes { id name severity } } }' } },
+      { type: 'security_finding', title: 'Wiz Security Issues', description: 'Cloud security configuration issues', path: '/graphql', method: 'POST', params: { query: '{ issues(first: 100) { nodes { id sourceRule { name } severity status } } }' } },
+      { type: 'endpoint_status', title: 'Wiz Cloud Resources', description: 'Cloud resource inventory', path: '/graphql', method: 'POST', params: { query: '{ graphSearch(first: 100, query: {type: ["CLOUD_RESOURCE"]}) { nodes { entities { name type } } } }' } },
+      { type: 'configuration', title: 'Wiz Security Frameworks', description: 'Compliance framework pass/fail status', path: '/graphql', method: 'POST', params: { query: '{ securityFrameworks { id name passedRequirements failedRequirements } }' } },
+      { type: 'incident_report', title: 'Wiz Critical Risks', description: 'Critical and high severity risk findings', path: '/graphql', method: 'POST', params: { query: '{ issues(first: 100, filterBy: {severity: [CRITICAL, HIGH]}) { nodes { id sourceRule { name } status } } }' } },
+    ],
+  },
+  {
+    id: 'orca-security', name: 'Orca Security', category: 'Security',
+    apiBaseUrl: 'https://api.orcasecurity.io/api', apiDocsUrl: 'https://docs.orcasecurity.io/reference/',
+    authMethods: ['api-key'], authHeader: 'Authorization', authPrefix: 'Token',
+    testEndpoint: '/user/session',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Orca Vulnerabilities', description: 'Cloud asset vulnerability findings', path: '/alerts?type=vulnerability&limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'Orca Alerts', description: 'Security alerts across cloud assets', path: '/alerts?limit=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Orca Assets', description: 'Discovered cloud asset inventory', path: '/assets?limit=100', method: 'GET' },
+      { type: 'configuration', title: 'Orca Compliance', description: 'Compliance framework status and controls', path: '/compliance/frameworks', method: 'GET' },
+      { type: 'incident_report', title: 'Orca Critical Alerts', description: 'Critical and high-severity alert reports', path: '/alerts?severity=critical&limit=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'lacework', name: 'Lacework', category: 'Security',
+    apiBaseUrl: 'https://{instance}.lacework.net/api/v2', apiDocsUrl: 'https://docs.lacework.net/api/',
+    authMethods: ['api-key-secret'],
+    testEndpoint: '/access/tokens',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Lacework Vulnerabilities', description: 'Host and container vulnerability findings', path: '/Vulnerabilities/Hosts/search', method: 'POST', params: { timeFilter: { startTime: '', endTime: '' }, filters: [], returns: ['vulnId', 'severity', 'status'] } },
+      { type: 'security_finding', title: 'Lacework Alerts', description: 'Security anomaly alerts', path: '/Alerts?timeFilter=last7Days', method: 'GET' },
+      { type: 'endpoint_status', title: 'Lacework Agents', description: 'Deployed agent inventory', path: '/AgentInfo', method: 'GET' },
+      { type: 'configuration', title: 'Lacework Compliance Reports', description: 'Cloud compliance posture reports', path: '/Configs/ComplianceEvaluations/search', method: 'POST', params: { timeFilter: { startTime: '', endTime: '' } } },
+      { type: 'incident_report', title: 'Lacework Alert Channels', description: 'Alert channel configuration and incident routing', path: '/AlertChannels', method: 'GET' },
+    ],
+  },
+  {
+    id: 'snyk-security', name: 'Snyk', category: 'Security',
+    apiBaseUrl: 'https://api.snyk.io/rest', apiDocsUrl: 'https://apidocs.snyk.io/',
+    authMethods: ['api-key'], authHeader: 'Authorization', authPrefix: 'token',
+    testEndpoint: '/self?version=2024-04-29',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Snyk Vulnerabilities', description: 'Open-source and code vulnerability findings', path: '/orgs/{org}/issues?version=2024-04-29&limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'Snyk Project Issues', description: 'Project-level security issue findings', path: '/orgs/{org}/projects?version=2024-04-29&limit=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Snyk Targets', description: 'Monitored repository and target inventory', path: '/orgs/{org}/targets?version=2024-04-29&limit=100', method: 'GET' },
+      { type: 'configuration', title: 'Snyk Organization Settings', description: 'Organization security settings', path: '/orgs/{org}/settings?version=2024-04-29', method: 'GET' },
+      { type: 'incident_report', title: 'Snyk Dependency Graph', description: 'Dependency vulnerability chain analysis', path: '/orgs/{org}/packages?version=2024-04-29&limit=100', method: 'GET' },
+    ],
+  },
+  {
+    id: 'prisma-cloud', name: 'Palo Alto Prisma Cloud', category: 'Security',
+    apiBaseUrl: 'https://api{instance}.prismacloud.io', apiDocsUrl: 'https://pan.dev/prisma-cloud/api/',
+    authMethods: ['username-password'],
+    testEndpoint: '/check',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Prisma Vulnerabilities', description: 'Cloud workload vulnerability findings', path: '/v2/alert?alert.status=open&policy.type=config&limit=100', method: 'GET' },
+      { type: 'security_finding', title: 'Prisma Alerts', description: 'Security posture alert findings', path: '/v2/alert?alert.status=open&limit=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'Prisma Cloud Assets', description: 'Cloud resource asset inventory', path: '/v2/inventory?timeType=to_now&timeUnit=day', method: 'GET' },
+      { type: 'configuration', title: 'Prisma Policies', description: 'Security policy configurations', path: '/v2/policy?policy.enabled=true', method: 'GET' },
+      { type: 'incident_report', title: 'Prisma Compliance Posture', description: 'Compliance standard posture reports', path: '/compliance/posture', method: 'GET' },
+    ],
+  },
+
+  // ── AWS Native Security Services ─────────────────────────────────────────
+  {
+    id: 'aws-guardduty', name: 'AWS GuardDuty', category: 'Security',
+    apiBaseUrl: 'https://guardduty.{region}.amazonaws.com', apiDocsUrl: 'https://docs.aws.amazon.com/guardduty/latest/APIReference/',
+    authMethods: ['iam'],
+    testEndpoint: '/detector',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'GuardDuty Findings', description: 'Threat detection findings', path: '/detector/{account}/findings', method: 'POST', params: { findingCriteria: { criterion: {} }, maxResults: 50, sortCriteria: { attributeName: 'severity', orderBy: 'DESC' } } },
+      { type: 'vulnerability_scan', title: 'GuardDuty Malware Findings', description: 'Malware protection scan findings', path: '/detector/{account}/malware-scans?maxResults=50', method: 'GET' },
+      { type: 'endpoint_status', title: 'GuardDuty Detectors', description: 'Detector configuration and status', path: '/detector', method: 'GET' },
+      { type: 'configuration', title: 'GuardDuty Coverage', description: 'Resource monitoring coverage status', path: '/detector/{account}/coverage/statistics', method: 'POST', params: {} },
+      { type: 'incident_report', title: 'GuardDuty Threat Intel Sets', description: 'Custom threat intelligence sets', path: '/detector/{account}/threatintelset', method: 'GET' },
+    ],
+  },
+  {
+    id: 'aws-inspector', name: 'AWS Inspector', category: 'Security',
+    apiBaseUrl: 'https://inspector2.{region}.amazonaws.com', apiDocsUrl: 'https://docs.aws.amazon.com/inspector/v2/APIReference/',
+    authMethods: ['iam'],
+    testEndpoint: '/status',
+    evidenceEndpoints: [
+      { type: 'vulnerability_scan', title: 'Inspector Findings', description: 'Vulnerability findings from Inspector scans', path: '/findings/list', method: 'POST', params: { maxResults: 100, filterCriteria: {} } },
+      { type: 'security_finding', title: 'Inspector Finding Aggregations', description: 'Aggregated vulnerability finding counts', path: '/findings/aggregation', method: 'POST', params: { aggregationType: 'SEVERITY' } },
+      { type: 'endpoint_status', title: 'Inspector Coverage', description: 'Resource scanning coverage status', path: '/coverage', method: 'POST', params: { maxResults: 100 } },
+      { type: 'configuration', title: 'Inspector Account Status', description: 'Inspector enablement and configuration', path: '/status', method: 'POST' },
+      { type: 'incident_report', title: 'Inspector Scan Reports', description: 'SBOM and scan export reports', path: '/reporting/status', method: 'POST' },
+    ],
+  },
+  {
+    id: 'aws-security-hub', name: 'AWS Security Hub', category: 'Security',
+    apiBaseUrl: 'https://securityhub.{region}.amazonaws.com', apiDocsUrl: 'https://docs.aws.amazon.com/securityhub/latest/APIReference/',
+    authMethods: ['iam'],
+    testEndpoint: '/accounts',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'Security Hub Findings', description: 'Aggregated security findings from AWS services', path: '/findings', method: 'POST', params: { MaxResults: 100, SortCriteria: [{ Field: 'SeverityNormalized', SortOrder: 'desc' }] } },
+      { type: 'vulnerability_scan', title: 'Security Hub Software Vulns', description: 'Software vulnerability findings', path: '/findings', method: 'POST', params: { MaxResults: 100, Filters: { Type: [{ Value: 'Software and Configuration Checks/Vulnerabilities', Comparison: 'PREFIX' }] } } },
+      { type: 'endpoint_status', title: 'Security Hub Enabled Products', description: 'Enabled product integrations', path: '/productSubscriptions', method: 'GET' },
+      { type: 'configuration', title: 'Security Hub Standards', description: 'Enabled security standard subscriptions', path: '/standards/subscription', method: 'GET' },
+      { type: 'incident_report', title: 'Security Hub Insights', description: 'Security insight result summaries', path: '/insights/results', method: 'GET' },
+    ],
+  },
+
+  // ── Azure Native Security Services ───────────────────────────────────────
+  {
+    id: 'azure-security-center', name: 'Microsoft Defender for Cloud', category: 'Security',
+    apiBaseUrl: 'https://management.azure.com', apiDocsUrl: 'https://learn.microsoft.com/en-us/rest/api/defenderforcloud/',
+    authMethods: ['oauth'], authPrefix: 'Bearer',
+    testEndpoint: '/subscriptions?api-version=2022-12-01',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'Defender Alerts', description: 'Security alerts from Defender for Cloud', path: '/subscriptions/{account}/providers/Microsoft.Security/alerts?api-version=2022-01-01', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'Defender Assessments', description: 'Security assessment vulnerability results', path: '/subscriptions/{account}/providers/Microsoft.Security/assessments?api-version=2021-06-01', method: 'GET' },
+      { type: 'endpoint_status', title: 'Defender Secure Score', description: 'Cloud security posture secure score', path: '/subscriptions/{account}/providers/Microsoft.Security/secureScores?api-version=2020-01-01', method: 'GET' },
+      { type: 'configuration', title: 'Defender Security Policies', description: 'Security policy assignments', path: '/subscriptions/{account}/providers/Microsoft.Authorization/policyAssignments?api-version=2022-06-01&$filter=atScope()', method: 'GET' },
+      { type: 'incident_report', title: 'Defender Compliance Results', description: 'Regulatory compliance assessment results', path: '/subscriptions/{account}/providers/Microsoft.Security/regulatoryComplianceStandards?api-version=2019-01-01-preview', method: 'GET' },
+    ],
+  },
+
+  // ── Google Cloud Native Security ─────────────────────────────────────────
+  {
+    id: 'google-security-command', name: 'Google Security Command Center', category: 'Security',
+    apiBaseUrl: 'https://securitycenter.googleapis.com/v1', apiDocsUrl: 'https://cloud.google.com/security-command-center/docs/reference/rest',
+    authMethods: ['service-account', 'oauth'], authPrefix: 'Bearer',
+    testEndpoint: '/organizations/{org}/sources',
+    evidenceEndpoints: [
+      { type: 'security_finding', title: 'SCC Findings', description: 'Security Command Center threat findings', path: '/organizations/{org}/sources/-/findings?pageSize=100', method: 'GET' },
+      { type: 'vulnerability_scan', title: 'SCC Vulnerability Findings', description: 'Vulnerability type findings from SCC', path: '/organizations/{org}/sources/-/findings?filter=category%3D%22VULNERABILITY%22&pageSize=100', method: 'GET' },
+      { type: 'endpoint_status', title: 'SCC Assets', description: 'Cloud asset inventory', path: '/organizations/{org}/assets?pageSize=100', method: 'GET' },
+      { type: 'configuration', title: 'SCC Notification Configs', description: 'Security notification configurations', path: '/organizations/{org}/notificationConfigs', method: 'GET' },
+      { type: 'incident_report', title: 'SCC Active Threats', description: 'Active threat and misconfiguration findings', path: '/organizations/{org}/sources/-/findings?filter=state%3D%22ACTIVE%22&pageSize=100', method: 'GET' },
+    ],
+  },
+];
+
+export default createProviders(descriptors);
