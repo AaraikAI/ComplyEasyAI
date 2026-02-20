@@ -1,0 +1,508 @@
+/**
+ * HITECH Act - Health Information Technology for Economic and Clinical Health
+ *
+ * HITECH strengthens HIPAA privacy and security rules, introduces breach notification
+ * requirements, and extends liability to business associates.
+ */
+
+import type { FrameworkControlTemplate } from './soc2Controls';
+
+export const HITECH_CONTROLS: FrameworkControlTemplate[] = [
+  // Breach Notification
+  {
+    controlId: 'HITECH-BN-1',
+    name: 'Breach Discovery',
+    description: 'Discover breaches of unsecured protected health information and document discovery date.',
+    category: 'Breach Notification',
+    implementationGuidance: 'Implement breach detection. Document discovery date. Assess breach scope. Begin notification process.',
+    evidenceRequirements: [
+      'Breach detection mechanisms',
+      'Discovery documentation',
+      'Scope assessment',
+      'Notification initiation',
+    ],
+    testProcedures: [
+      'Test detection mechanisms',
+      'Verify discovery documentation',
+      'Review assessments',
+      'Check notification process',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-BN-2',
+    name: 'Individual Notification',
+    description: 'Notify affected individuals within 60 days of breach discovery.',
+    category: 'Breach Notification',
+    implementationGuidance: 'Identify affected individuals. Prepare notifications. Send within timeframe. Document notifications.',
+    evidenceRequirements: [
+      'Individual identification',
+      'Notification content',
+      'Sending records',
+      'Notification documentation',
+    ],
+    testProcedures: [
+      'Verify identification',
+      'Review notification content',
+      'Check timing',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-BN-3',
+    name: 'Notification Content',
+    description: 'Include required information in breach notifications: description of breach, types of information involved, steps individuals should take, and contact information.',
+    category: 'Breach Notification',
+    implementationGuidance: 'Develop notification template. Include all required elements. Use plain language. Document content.',
+    evidenceRequirements: [
+      'Notification template',
+      'Required elements checklist',
+      'Language review',
+      'Content documentation',
+    ],
+    testProcedures: [
+      'Review template',
+      'Verify required elements',
+      'Assess language',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-BN-4',
+    name: 'HHS Notification',
+    description: 'Notify the Secretary of HHS of breaches affecting 500 or more individuals without unreasonable delay.',
+    category: 'Breach Notification',
+    implementationGuidance: 'Determine notification threshold. Submit to HHS breach portal. Document submission. Track acknowledgment.',
+    evidenceRequirements: [
+      'Threshold determination',
+      'HHS submission',
+      'Submission documentation',
+      'Acknowledgment records',
+    ],
+    testProcedures: [
+      'Verify threshold',
+      'Review submission',
+      'Check documentation',
+      'Audit acknowledgment',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-BN-5',
+    name: 'Media Notification',
+    description: 'Notify prominent media outlets when breach affects more than 500 residents of a state or jurisdiction.',
+    category: 'Breach Notification',
+    implementationGuidance: 'Determine media notification requirement. Identify outlets. Prepare press release. Document notifications.',
+    evidenceRequirements: [
+      'Requirement determination',
+      'Media outlet identification',
+      'Press release',
+      'Notification documentation',
+    ],
+    testProcedures: [
+      'Verify requirement',
+      'Review outlets',
+      'Check press release',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-BN-6',
+    name: 'Annual Breach Report',
+    description: 'Submit annual report to HHS for breaches affecting fewer than 500 individuals.',
+    category: 'Breach Notification',
+    implementationGuidance: 'Track all breaches. Compile annual report. Submit to HHS. Document submission.',
+    evidenceRequirements: [
+      'Breach tracking',
+      'Annual report',
+      'HHS submission',
+      'Documentation',
+    ],
+    testProcedures: [
+      'Review tracking',
+      'Verify report',
+      'Check submission',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-BN-7',
+    name: 'Substitute Notification',
+    description: 'Provide substitute notice when contact information is insufficient for 10 or more individuals.',
+    category: 'Breach Notification',
+    implementationGuidance: 'Identify insufficient contacts. Determine substitute method. Execute substitute notice. Document efforts.',
+    evidenceRequirements: [
+      'Contact assessment',
+      'Substitute method documentation',
+      'Execution records',
+      'Effort documentation',
+    ],
+    testProcedures: [
+      'Review assessment',
+      'Verify method',
+      'Check execution',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+
+  // Business Associate Requirements
+  {
+    controlId: 'HITECH-BA-1',
+    name: 'Business Associate Agreements',
+    description: 'Establish written agreements with business associates that include required HITECH provisions.',
+    category: 'Business Associate Requirements',
+    implementationGuidance: 'Update BAA templates. Include HITECH requirements. Execute agreements. Track compliance.',
+    evidenceRequirements: [
+      'BAA templates',
+      'HITECH provisions',
+      'Executed agreements',
+      'Compliance tracking',
+    ],
+    testProcedures: [
+      'Review templates',
+      'Verify provisions',
+      'Check agreements',
+      'Audit tracking',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-BA-2',
+    name: 'Business Associate Compliance',
+    description: 'Business associates must comply with HIPAA Security Rule as if they were covered entities.',
+    category: 'Business Associate Requirements',
+    implementationGuidance: 'Assess BA compliance requirements. Implement Security Rule controls. Document compliance. Monitor ongoing.',
+    evidenceRequirements: [
+      'Compliance requirements',
+      'Control implementation',
+      'Compliance documentation',
+      'Monitoring records',
+    ],
+    testProcedures: [
+      'Review requirements',
+      'Verify implementation',
+      'Check documentation',
+      'Audit monitoring',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-BA-3',
+    name: 'Subcontractor Requirements',
+    description: 'Business associates must ensure subcontractors agree to same restrictions and conditions.',
+    category: 'Business Associate Requirements',
+    implementationGuidance: 'Identify subcontractors. Execute subcontractor agreements. Ensure flow-down requirements. Monitor compliance.',
+    evidenceRequirements: [
+      'Subcontractor identification',
+      'Agreements',
+      'Flow-down provisions',
+      'Compliance monitoring',
+    ],
+    testProcedures: [
+      'Review identification',
+      'Verify agreements',
+      'Check provisions',
+      'Audit monitoring',
+    ],
+    status: 'Not Started',
+  },
+
+  // Encryption
+  {
+    controlId: 'HITECH-ENC-1',
+    name: 'Encryption Safe Harbor',
+    description: 'Encrypt PHI to render it unusable, unreadable, or indecipherable to unauthorized individuals, qualifying for breach notification safe harbor.',
+    category: 'Encryption',
+    implementationGuidance: 'Implement encryption meeting NIST standards. Encrypt data at rest. Encrypt data in transit. Document encryption.',
+    evidenceRequirements: [
+      'Encryption implementation',
+      'At-rest encryption',
+      'In-transit encryption',
+      'Encryption documentation',
+    ],
+    testProcedures: [
+      'Test encryption',
+      'Verify at-rest coverage',
+      'Check in-transit protection',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-ENC-2',
+    name: 'NIST Encryption Standards',
+    description: 'Use encryption that meets NIST Special Publication 800-111 for data at rest and NIST Special Publication 800-52 for data in transit.',
+    category: 'Encryption',
+    implementationGuidance: 'Implement NIST-compliant algorithms. Configure proper key lengths. Document compliance. Verify implementation.',
+    evidenceRequirements: [
+      'Algorithm documentation',
+      'Key length configuration',
+      'Compliance documentation',
+      'Implementation verification',
+    ],
+    testProcedures: [
+      'Verify algorithms',
+      'Check key lengths',
+      'Review compliance',
+      'Test implementation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-ENC-3',
+    name: 'Encryption Key Management',
+    description: 'Maintain encryption keys on separate system from encrypted data with appropriate access controls.',
+    category: 'Encryption',
+    implementationGuidance: 'Separate key storage. Implement key access controls. Secure key management. Document procedures.',
+    evidenceRequirements: [
+      'Key storage separation',
+      'Access controls',
+      'Key management procedures',
+      'Documentation',
+    ],
+    testProcedures: [
+      'Verify separation',
+      'Test access controls',
+      'Review procedures',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+
+  // Patient Rights
+  {
+    controlId: 'HITECH-PR-1',
+    name: 'Electronic Access to PHI',
+    description: 'Provide individuals with electronic access to their PHI when maintained electronically.',
+    category: 'Patient Rights',
+    implementationGuidance: 'Implement electronic access. Provide portal or download. Respond within timeframes. Document access.',
+    evidenceRequirements: [
+      'Electronic access mechanism',
+      'Portal/download capability',
+      'Response timing',
+      'Access documentation',
+    ],
+    testProcedures: [
+      'Test access mechanism',
+      'Verify portal',
+      'Check timing',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-PR-2',
+    name: 'Electronic Copy Fee Limitation',
+    description: 'Limit fees for electronic copies of PHI to labor costs of providing copy.',
+    category: 'Patient Rights',
+    implementationGuidance: 'Calculate labor costs. Document fee calculation. Apply appropriate fees. Track fee compliance.',
+    evidenceRequirements: [
+      'Labor cost calculation',
+      'Fee documentation',
+      'Fee application',
+      'Compliance tracking',
+    ],
+    testProcedures: [
+      'Review calculation',
+      'Verify fees',
+      'Check application',
+      'Audit tracking',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-PR-3',
+    name: 'Disclosure Accounting',
+    description: 'Provide accounting of disclosures made through electronic health record for treatment, payment, or healthcare operations.',
+    category: 'Patient Rights',
+    implementationGuidance: 'Track EHR disclosures. Maintain disclosure logs. Provide accounting upon request. Document accounting.',
+    evidenceRequirements: [
+      'Disclosure tracking',
+      'Disclosure logs',
+      'Accounting provision',
+      'Documentation',
+    ],
+    testProcedures: [
+      'Review tracking',
+      'Verify logs',
+      'Test accounting',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+
+  // Penalties and Enforcement
+  {
+    controlId: 'HITECH-PE-1',
+    name: 'Penalty Tier Assessment',
+    description: 'Understand and assess violation penalty tiers based on culpability level.',
+    category: 'Penalties and Enforcement',
+    implementationGuidance: 'Document penalty tiers. Assess risk levels. Implement controls to minimize violations. Track compliance.',
+    evidenceRequirements: [
+      'Penalty tier documentation',
+      'Risk assessments',
+      'Control implementation',
+      'Compliance tracking',
+    ],
+    testProcedures: [
+      'Review tier documentation',
+      'Verify assessments',
+      'Check controls',
+      'Audit tracking',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-PE-2',
+    name: 'Compliance Program',
+    description: 'Implement compliance program to demonstrate reasonable diligence and mitigate penalties.',
+    category: 'Penalties and Enforcement',
+    implementationGuidance: 'Develop compliance program. Implement controls. Monitor compliance. Document efforts.',
+    evidenceRequirements: [
+      'Compliance program',
+      'Control implementation',
+      'Monitoring records',
+      'Effort documentation',
+    ],
+    testProcedures: [
+      'Review program',
+      'Verify controls',
+      'Check monitoring',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+
+  // Auditing and Monitoring
+  {
+    controlId: 'HITECH-AM-1',
+    name: 'Access Monitoring',
+    description: 'Monitor access to electronic PHI and investigate inappropriate access.',
+    category: 'Auditing and Monitoring',
+    implementationGuidance: 'Implement access monitoring. Generate access logs. Review for anomalies. Investigate issues.',
+    evidenceRequirements: [
+      'Monitoring implementation',
+      'Access logs',
+      'Review records',
+      'Investigation documentation',
+    ],
+    testProcedures: [
+      'Test monitoring',
+      'Verify logging',
+      'Check reviews',
+      'Audit investigations',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-AM-2',
+    name: 'Audit Log Retention',
+    description: 'Retain audit logs for appropriate period to support investigations and compliance.',
+    category: 'Auditing and Monitoring',
+    implementationGuidance: 'Define retention period. Implement log retention. Protect log integrity. Document retention.',
+    evidenceRequirements: [
+      'Retention period definition',
+      'Retention implementation',
+      'Integrity protection',
+      'Retention documentation',
+    ],
+    testProcedures: [
+      'Review retention period',
+      'Verify retention',
+      'Check integrity',
+      'Audit documentation',
+    ],
+    status: 'Not Started',
+  },
+
+  // Minimum Necessary
+  {
+    controlId: 'HITECH-MN-1',
+    name: 'Minimum Necessary Standard',
+    description: 'Limit uses, disclosures, and requests for PHI to minimum necessary to accomplish intended purpose.',
+    category: 'Minimum Necessary',
+    implementationGuidance: 'Define minimum necessary policies. Implement access limitations. Train workforce. Monitor compliance.',
+    evidenceRequirements: [
+      'Minimum necessary policies',
+      'Access limitations',
+      'Training records',
+      'Compliance monitoring',
+    ],
+    testProcedures: [
+      'Review policies',
+      'Verify limitations',
+      'Check training',
+      'Audit monitoring',
+    ],
+    status: 'Not Started',
+  },
+
+  // Prohibition on Sale
+  {
+    controlId: 'HITECH-PS-1',
+    name: 'Prohibition on Sale of PHI',
+    description: 'Do not receive direct or indirect remuneration in exchange for PHI without valid authorization.',
+    category: 'Prohibition on Sale',
+    implementationGuidance: 'Implement sale prohibition. Assess remuneration arrangements. Document compliance. Monitor practices.',
+    evidenceRequirements: [
+      'Sale prohibition policy',
+      'Arrangement assessments',
+      'Compliance documentation',
+      'Practice monitoring',
+    ],
+    testProcedures: [
+      'Review policy',
+      'Verify assessments',
+      'Check documentation',
+      'Audit practices',
+    ],
+    status: 'Not Started',
+  },
+
+  // Marketing Restrictions
+  {
+    controlId: 'HITECH-MR-1',
+    name: 'Marketing Authorization',
+    description: 'Obtain valid authorization before using PHI for marketing purposes.',
+    category: 'Marketing Restrictions',
+    implementationGuidance: 'Define marketing activities. Obtain authorizations. Document authorizations. Track marketing uses.',
+    evidenceRequirements: [
+      'Marketing definition',
+      'Authorization records',
+      'Authorization documentation',
+      'Usage tracking',
+    ],
+    testProcedures: [
+      'Review definitions',
+      'Verify authorizations',
+      'Check documentation',
+      'Audit tracking',
+    ],
+    status: 'Not Started',
+  },
+  {
+    controlId: 'HITECH-MR-2',
+    name: 'Financial Remuneration Disclosure',
+    description: 'Disclose in authorization if covered entity receives financial remuneration for marketing.',
+    category: 'Marketing Restrictions',
+    implementationGuidance: 'Identify remuneration arrangements. Include disclosure in authorizations. Document disclosures. Track compliance.',
+    evidenceRequirements: [
+      'Remuneration identification',
+      'Authorization disclosures',
+      'Disclosure documentation',
+      'Compliance tracking',
+    ],
+    testProcedures: [
+      'Review arrangements',
+      'Verify disclosures',
+      'Check documentation',
+      'Audit compliance',
+    ],
+    status: 'Not Started',
+  },
+];
