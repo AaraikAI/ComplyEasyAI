@@ -1,6 +1,7 @@
 /**
  * Visual Workflow Builder Routes
  * Routes for workflow management, templates, execution, and automation rules.
+ * Uses GRCWorkflow and WorkflowExecution Prisma models.
  */
 
 import { Router, Request, Response } from 'express';
@@ -21,17 +22,31 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
     const { status, category, search } = req.query;
-    try {
-      const workflows = await prisma.complianceFramework.findMany({
-        where: { organizationId: user.organizationId },
-        take: 50,
-      });
-      // Return workflow data from generic store
-      res.json({ workflows: [], total: 0 });
-    } catch (error) {
-      logger.error('Error fetching workflows:', error);
-      res.json({ workflows: [], total: 0 });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const where: any = { organizationId: user.organizationId };
+    if (status && status !== 'all') where.status = status;
+    if (category && category !== 'all') where.workflowType = category;
+    if (search) {
+      where.OR = [
+        { name: { contains: search as string, mode: 'insensitive' } },
+        { description: { contains: search as string, mode: 'insensitive' } },
+      ];
     }
+
+    const [workflows, total] = await Promise.all([
+      prisma.gRCWorkflow.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { _count: { select: { executions: true } } },
+      }),
+      prisma.gRCWorkflow.count({ where }),
+    ]);
+
+    res.json({ workflows, total, page, limit });
   })
 );
 
@@ -40,25 +55,24 @@ router.post(
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
-    const { name, description, trigger, nodes, status } = req.body;
-    try {
-      const workflow = {
-        id: `wf-${Date.now()}`,
+    const { name, description, workflowType, trigger, nodes, edges, variables, status } = req.body;
+
+    const workflow = await prisma.gRCWorkflow.create({
+      data: {
         organizationId: user.organizationId,
         name,
-        description,
-        trigger,
+        description: description || '',
+        workflowType: workflowType || 'Custom',
+        trigger: trigger || { type: 'manual', config: {} },
         nodes: nodes || [],
-        status: status || 'draft',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        edges: edges || [],
+        variables: variables || {},
+        status: status || 'Draft',
         createdBy: user.id,
-      };
-      res.status(201).json(workflow);
-    } catch (error) {
-      logger.error('Error creating workflow:', error);
-      res.status(500).json({ error: 'Failed to create workflow' });
-    }
+      },
+    });
+
+    res.status(201).json(workflow);
   })
 );
 
@@ -66,7 +80,23 @@ router.get(
   '/:id',
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
-    res.json({ id: req.params.id, organizationId: user.organizationId, nodes: [], edges: [] });
+
+    const workflow = await prisma.gRCWorkflow.findFirst({
+      where: { id: req.params.id, organizationId: user.organizationId },
+      include: {
+        executions: {
+          orderBy: { startedAt: 'desc' },
+          take: 10,
+        },
+      },
+    });
+
+    if (!workflow) {
+      res.status(404).json({ error: 'Workflow not found' });
+      return;
+    }
+
+    res.json(workflow);
   })
 );
 
@@ -75,7 +105,33 @@ router.patch(
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
-    res.json({ id: req.params.id, ...req.body, updatedAt: new Date().toISOString() });
+    const { name, description, workflowType, trigger, nodes, edges, variables, status } = req.body;
+
+    const existing = await prisma.gRCWorkflow.findFirst({
+      where: { id: req.params.id, organizationId: user.organizationId },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Workflow not found' });
+      return;
+    }
+
+    const data: any = {};
+    if (name !== undefined) data.name = name;
+    if (description !== undefined) data.description = description;
+    if (workflowType !== undefined) data.workflowType = workflowType;
+    if (trigger !== undefined) data.trigger = trigger;
+    if (nodes !== undefined) data.nodes = nodes;
+    if (edges !== undefined) data.edges = edges;
+    if (variables !== undefined) data.variables = variables;
+    if (status !== undefined) data.status = status;
+
+    const workflow = await prisma.gRCWorkflow.update({
+      where: { id: req.params.id },
+      data,
+    });
+
+    res.json(workflow);
   })
 );
 
@@ -83,6 +139,18 @@ router.delete(
   '/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as any).user;
+
+    const existing = await prisma.gRCWorkflow.findFirst({
+      where: { id: req.params.id, organizationId: user.organizationId },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Workflow not found' });
+      return;
+    }
+
+    await prisma.gRCWorkflow.delete({ where: { id: req.params.id } });
     res.status(204).send();
   })
 );
@@ -92,13 +160,32 @@ router.post(
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
-    res.status(201).json({
-      id: `wf-${Date.now()}`,
-      organizationId: user.organizationId,
-      name: `${req.body.name || 'Workflow'} (Copy)`,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
+
+    const source = await prisma.gRCWorkflow.findFirst({
+      where: { id: req.params.id, organizationId: user.organizationId },
     });
+
+    if (!source) {
+      res.status(404).json({ error: 'Workflow not found' });
+      return;
+    }
+
+    const copy = await prisma.gRCWorkflow.create({
+      data: {
+        organizationId: user.organizationId,
+        name: `${source.name} (Copy)`,
+        description: source.description || '',
+        workflowType: source.workflowType,
+        trigger: source.trigger as any,
+        nodes: source.nodes as any,
+        edges: source.edges as any,
+        variables: source.variables as any,
+        status: 'Draft',
+        createdBy: user.id,
+      },
+    });
+
+    res.status(201).json(copy);
   })
 );
 
@@ -107,32 +194,63 @@ router.post(
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
-    res.json({
-      runId: `run-${Date.now()}`,
-      workflowId: req.params.id,
-      status: 'running',
-      startedAt: new Date().toISOString(),
-      triggeredBy: user.id,
+
+    const workflow = await prisma.gRCWorkflow.findFirst({
+      where: { id: req.params.id, organizationId: user.organizationId },
     });
+
+    if (!workflow) {
+      res.status(404).json({ error: 'Workflow not found' });
+      return;
+    }
+
+    if (workflow.status !== 'Active' && workflow.status !== 'Draft') {
+      res.status(400).json({ error: 'Workflow must be Active or Draft to run' });
+      return;
+    }
+
+    const execution = await prisma.workflowExecution.create({
+      data: {
+        workflowId: workflow.id,
+        triggeredBy: user.id,
+        triggerType: 'manual',
+        status: 'Running',
+        completedNodes: [],
+        nodeResults: {},
+        variables: workflow.variables as any || {},
+      },
+    });
+
+    // Update workflow run stats
+    await prisma.gRCWorkflow.update({
+      where: { id: workflow.id },
+      data: {
+        lastRunAt: new Date(),
+        runCount: { increment: 1 },
+      },
+    });
+
+    res.json(execution);
   })
 );
 
 // ============================================================================
-// TEMPLATES
+// TEMPLATES (built-in workflow templates)
 // ============================================================================
 
 router.get(
   '/templates/list',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (_req: Request, res: Response) => {
+    // Built-in GRC workflow templates
     const templates = [
-      { id: 'tpl-1', name: 'New Vendor Risk Assessment', category: 'Risk', steps: 6, popularity: 94 },
-      { id: 'tpl-2', name: 'Quarterly Access Review', category: 'Compliance', steps: 5, popularity: 87 },
-      { id: 'tpl-3', name: 'Incident Response Workflow', category: 'Incident', steps: 8, popularity: 91 },
-      { id: 'tpl-4', name: 'Evidence Collection Reminder', category: 'Audit', steps: 4, popularity: 78 },
-      { id: 'tpl-5', name: 'Policy Review Cycle', category: 'Compliance', steps: 7, popularity: 82 },
-      { id: 'tpl-6', name: 'DSAR Request Processing', category: 'Privacy', steps: 9, popularity: 89 },
-      { id: 'tpl-7', name: 'Audit Finding Remediation', category: 'Audit', steps: 6, popularity: 76 },
-      { id: 'tpl-8', name: 'Employee Offboarding Compliance', category: 'Onboarding', steps: 10, popularity: 85 },
+      { id: 'tpl-vendor-risk', name: 'New Vendor Risk Assessment', category: 'Risk', steps: 6, popularity: 94, description: 'End-to-end vendor risk assessment with automatic scoring and approval gates.' },
+      { id: 'tpl-access-review', name: 'Quarterly Access Review', category: 'Compliance', steps: 5, popularity: 87, description: 'Automated quarterly user access review with manager approval workflow.' },
+      { id: 'tpl-incident', name: 'Incident Response Workflow', category: 'Incident', steps: 8, popularity: 91, description: 'NIST-aligned incident response from detection through post-mortem.' },
+      { id: 'tpl-evidence', name: 'Evidence Collection Reminder', category: 'Audit', steps: 4, popularity: 78, description: 'Automated evidence collection reminders with escalation paths.' },
+      { id: 'tpl-policy', name: 'Policy Review Cycle', category: 'Compliance', steps: 7, popularity: 82, description: 'Annual policy review with stakeholder sign-off and version control.' },
+      { id: 'tpl-dsar', name: 'DSAR Request Processing', category: 'Privacy', steps: 9, popularity: 89, description: 'GDPR/CCPA DSAR processing with identity verification and data collection.' },
+      { id: 'tpl-finding', name: 'Audit Finding Remediation', category: 'Audit', steps: 6, popularity: 76, description: 'Track audit findings from discovery through verification and closure.' },
+      { id: 'tpl-offboarding', name: 'Employee Offboarding Compliance', category: 'HR', steps: 10, popularity: 85, description: 'Ensure compliant offboarding with access revocation and data handling.' },
     ];
     res.json(templates);
   })
@@ -143,13 +261,63 @@ router.post(
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
-    res.status(201).json({
-      id: `wf-${Date.now()}`,
-      organizationId: user.organizationId,
-      templateId: req.params.id,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
+    const templateId = req.params.id;
+
+    // Map template ID to workflow type and default nodes
+    const templateMap: Record<string, { name: string; type: string; nodes: any[]; edges: any[] }> = {
+      'tpl-vendor-risk': {
+        name: 'Vendor Risk Assessment',
+        type: 'VendorOnboarding',
+        nodes: [
+          { id: 'n1', type: 'trigger', label: 'New Vendor Request', position: { x: 0, y: 0 } },
+          { id: 'n2', type: 'action', label: 'Collect Vendor Info', position: { x: 200, y: 0 } },
+          { id: 'n3', type: 'action', label: 'Risk Assessment', position: { x: 400, y: 0 } },
+          { id: 'n4', type: 'condition', label: 'Risk Level Check', position: { x: 600, y: 0 } },
+          { id: 'n5', type: 'approval', label: 'Manager Approval', position: { x: 800, y: -50 } },
+          { id: 'n6', type: 'action', label: 'Auto-Approve (Low Risk)', position: { x: 800, y: 50 } },
+        ],
+        edges: [
+          { source: 'n1', target: 'n2' }, { source: 'n2', target: 'n3' },
+          { source: 'n3', target: 'n4' }, { source: 'n4', target: 'n5', label: 'High' },
+          { source: 'n4', target: 'n6', label: 'Low' },
+        ],
+      },
+      'tpl-dsar': {
+        name: 'DSAR Request Processing',
+        type: 'Custom',
+        nodes: [
+          { id: 'n1', type: 'trigger', label: 'DSAR Received', position: { x: 0, y: 0 } },
+          { id: 'n2', type: 'action', label: 'Verify Identity', position: { x: 200, y: 0 } },
+          { id: 'n3', type: 'action', label: 'Locate Data', position: { x: 400, y: 0 } },
+          { id: 'n4', type: 'action', label: 'Review Data', position: { x: 600, y: 0 } },
+          { id: 'n5', type: 'approval', label: 'DPO Approval', position: { x: 800, y: 0 } },
+          { id: 'n6', type: 'action', label: 'Send Response', position: { x: 1000, y: 0 } },
+        ],
+        edges: [
+          { source: 'n1', target: 'n2' }, { source: 'n2', target: 'n3' },
+          { source: 'n3', target: 'n4' }, { source: 'n4', target: 'n5' },
+          { source: 'n5', target: 'n6' },
+        ],
+      },
+    };
+
+    const template = templateMap[templateId];
+    const workflow = await prisma.gRCWorkflow.create({
+      data: {
+        organizationId: user.organizationId,
+        name: template?.name || `Workflow from ${templateId}`,
+        description: `Created from template ${templateId}`,
+        workflowType: template?.type || 'Custom',
+        trigger: { type: 'manual', config: {} },
+        nodes: template?.nodes || [],
+        edges: template?.edges || [],
+        variables: {},
+        status: 'Draft',
+        createdBy: user.id,
+      },
     });
+
+    res.status(201).json(workflow);
   })
 );
 
@@ -161,14 +329,47 @@ router.get(
   '/runs/list',
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
-    res.json({ runs: [], total: 0 });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    // Get workflow IDs for this org first
+    const orgWorkflows = await prisma.gRCWorkflow.findMany({
+      where: { organizationId: user.organizationId },
+      select: { id: true },
+    });
+    const workflowIds = orgWorkflows.map((w: { id: string }) => w.id);
+
+    const [runs, total] = await Promise.all([
+      prisma.workflowExecution.findMany({
+        where: { workflowId: { in: workflowIds } },
+        orderBy: { startedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { workflow: { select: { id: true, name: true, workflowType: true } } },
+      }),
+      prisma.workflowExecution.count({
+        where: { workflowId: { in: workflowIds } },
+      }),
+    ]);
+
+    res.json({ runs, total, page, limit });
   })
 );
 
 router.get(
   '/runs/:runId',
   asyncHandler(async (req: Request, res: Response) => {
-    res.json({ runId: req.params.runId, steps: [], status: 'completed' });
+    const execution = await prisma.workflowExecution.findUnique({
+      where: { id: req.params.runId },
+      include: { workflow: true },
+    });
+
+    if (!execution) {
+      res.status(404).json({ error: 'Execution run not found' });
+      return;
+    }
+
+    res.json(execution);
   })
 );
 
@@ -176,19 +377,66 @@ router.post(
   '/runs/:runId/retry',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    res.json({ runId: `run-${Date.now()}`, status: 'running', retryOf: req.params.runId });
+    const user = (req as any).user;
+
+    const original = await prisma.workflowExecution.findUnique({
+      where: { id: req.params.runId },
+      include: { workflow: true },
+    });
+
+    if (!original) {
+      res.status(404).json({ error: 'Execution run not found' });
+      return;
+    }
+
+    const retry = await prisma.workflowExecution.create({
+      data: {
+        workflowId: original.workflowId,
+        triggeredBy: user.id,
+        triggerType: 'manual',
+        status: 'Running',
+        completedNodes: [],
+        nodeResults: {},
+        variables: original.variables as any || {},
+      },
+    });
+
+    await prisma.gRCWorkflow.update({
+      where: { id: original.workflowId },
+      data: { runCount: { increment: 1 } },
+    });
+
+    res.json(retry);
   })
 );
 
 // ============================================================================
-// AUTOMATION RULES
+// AUTOMATION RULES (stored as workflows with event triggers)
 // ============================================================================
 
 router.get(
   '/rules/list',
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
-    res.json({ rules: [], total: 0 });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const where = {
+      organizationId: user.organizationId,
+      trigger: { path: ['type'], equals: 'event' },
+    };
+
+    const [rules, total] = await Promise.all([
+      prisma.gRCWorkflow.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.gRCWorkflow.count({ where }),
+    ]);
+
+    res.json({ rules, total, page, limit });
   })
 );
 
@@ -197,12 +445,23 @@ router.post(
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
-    res.status(201).json({
-      id: `rule-${Date.now()}`,
-      organizationId: user.organizationId,
-      ...req.body,
-      createdAt: new Date().toISOString(),
+    const { name, description, trigger, conditions, actions } = req.body;
+
+    const rule = await prisma.gRCWorkflow.create({
+      data: {
+        organizationId: user.organizationId,
+        name,
+        description: description || '',
+        workflowType: 'Custom',
+        trigger: { type: 'event', config: trigger || {} },
+        nodes: (conditions || []).concat(actions || []),
+        edges: [],
+        status: 'Active',
+        createdBy: user.id,
+      },
     });
+
+    res.status(201).json(rule);
   })
 );
 
@@ -210,7 +469,32 @@ router.patch(
   '/rules/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    res.json({ id: req.params.id, ...req.body, updatedAt: new Date().toISOString() });
+    const user = (req as any).user;
+
+    const existing = await prisma.gRCWorkflow.findFirst({
+      where: { id: req.params.id, organizationId: user.organizationId },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Rule not found' });
+      return;
+    }
+
+    const data: any = {};
+    if (req.body.name !== undefined) data.name = req.body.name;
+    if (req.body.description !== undefined) data.description = req.body.description;
+    if (req.body.trigger !== undefined) data.trigger = { type: 'event', config: req.body.trigger };
+    if (req.body.status !== undefined) data.status = req.body.status;
+    if (req.body.conditions || req.body.actions) {
+      data.nodes = (req.body.conditions || []).concat(req.body.actions || []);
+    }
+
+    const rule = await prisma.gRCWorkflow.update({
+      where: { id: req.params.id },
+      data,
+    });
+
+    res.json(rule);
   })
 );
 
@@ -218,6 +502,18 @@ router.delete(
   '/rules/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as any).user;
+
+    const existing = await prisma.gRCWorkflow.findFirst({
+      where: { id: req.params.id, organizationId: user.organizationId },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Rule not found' });
+      return;
+    }
+
+    await prisma.gRCWorkflow.delete({ where: { id: req.params.id } });
     res.status(204).send();
   })
 );

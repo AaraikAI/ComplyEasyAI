@@ -505,7 +505,16 @@ export type ViewState =
   | 'ai-audit-simulator'
   | 'ai-nl-query'
   | 'compliance-forecasting'
-  | 'product-lifecycle';
+  | 'product-lifecycle'
+  // New Modules: SOX, SoD, MDM, DORA, Auditor, Workflow, Privacy
+  | 'sox'
+  | 'sod'
+  | 'mdm'
+  | 'dora'
+  | 'auditor'
+  | 'workflow-builder'
+  | 'privacy'
+  | 'account-deletion';
 
 // ============================================================================
 // TIER CONFIGURATION (Frontend copy of backend tiers)
