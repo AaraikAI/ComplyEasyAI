@@ -3,7 +3,8 @@
  * Sarbanes-Oxley Act Section 404 compliance management
  * Controls, testing, deficiencies, walkthroughs, and ICFR reporting
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft, Shield, CheckCircle, AlertTriangle, XCircle, Search, Plus, X,
   FileText, Clock, BarChart3, ChevronRight, Edit3, Trash2, Eye, Download,
@@ -105,11 +106,42 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
   const [showCreateTest, setShowCreateTest] = useState(false);
   const [selectedControl, setSelectedControl] = useState<SOXControl | null>(null);
   const [selectedDeficiency, setSelectedDeficiency] = useState<Deficiency | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [controls, setControls] = useState<SOXControl[]>(MOCK_CONTROLS);
+  const [tests, setTests] = useState<TestRecord[]>(MOCK_TESTS);
+  const [deficiencies, setDeficiencies] = useState<Deficiency[]>(MOCK_DEFICIENCIES);
+  const [walkthroughs, setWalkthroughs] = useState<Walkthrough[]>(MOCK_WALKTHROUGHS);
 
-  const controls = MOCK_CONTROLS;
-  const tests = MOCK_TESTS;
-  const deficiencies = MOCK_DEFICIENCIES;
-  const walkthroughs = MOCK_WALKTHROUGHS;
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [dashData, controlsData, testsData, assessmentsData] = await Promise.all([
+          api.sox.getDashboard().catch(() => null),
+          api.sox.listControls().catch(() => null),
+          api.sox.listTestResults().catch(() => null),
+          api.sox.listAssessments().catch(() => null),
+        ]);
+        if (controlsData?.controls) setControls(controlsData.controls);
+        else if (controlsData?.items) setControls(controlsData.items);
+        else if (Array.isArray(controlsData)) setControls(controlsData);
+        if (testsData?.testResults) setTests(testsData.testResults);
+        else if (testsData?.items) setTests(testsData.items);
+        else if (Array.isArray(testsData)) setTests(testsData);
+        if (assessmentsData?.deficiencies) setDeficiencies(assessmentsData.deficiencies);
+        else if (assessmentsData?.items) {
+          // assessments may contain deficiency and walkthrough data
+        }
+        if (dashData?.walkthroughs) setWalkthroughs(dashData.walkthroughs);
+        if (dashData?.deficiencies) setDeficiencies(dashData.deficiencies);
+      } catch (err) {
+        console.error('Failed to load SOX data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   // Derived metrics
   const effectiveCount = controls.filter(c => c.effectiveness === 'Effective').length;
