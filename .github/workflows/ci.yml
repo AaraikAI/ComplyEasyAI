@@ -250,8 +250,8 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-      - run: npm audit --audit-level=high || true
-      - run: npm audit --audit-level=high || true
+      - run: npm audit --audit-level=high
+      - run: npm audit --audit-level=high
         working-directory: ./server
       - uses: aquasecurity/trivy-action@master
         with:

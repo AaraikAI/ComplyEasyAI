@@ -515,15 +515,21 @@ class DSAService {
 
     // Calculate statistics
     const allAppeals = platform.contentModeration.filter(m => m.appealStatus && m.appealStatus !== 'none');
+    const appealsApproved = platform.contentModeration.filter(m => m.appealStatus === 'approved').length;
+    const appealsRejected = platform.contentModeration.filter(m => m.appealStatus === 'rejected').length;
     const moderationStats = {
+      totalReviewed: platform.contentModeration.length,
       totalRemovals: platform.contentModeration.filter(m => m.actionType === 'removal').length,
       totalSuspensions: platform.contentModeration.filter(m => m.actionType === 'suspension').length,
       totalRestrictions: platform.contentModeration.filter(m => m.actionType === 'restriction').length,
       automatedRemovals: platform.contentModeration.filter(m => m.actionType === 'removal' && m.automatedDecision).length,
       manualRemovals: platform.contentModeration.filter(m => m.actionType === 'removal' && !m.automatedDecision).length,
       appealsReceived: allAppeals.length, // Total appeals (pending + approved + rejected)
-      appealsApproved: platform.contentModeration.filter(m => m.appealStatus === 'approved').length,
-      appealsRejected: platform.contentModeration.filter(m => m.appealStatus === 'rejected').length,
+      appealsApproved,
+      appealsRejected,
+      averageAppealTime: allAppeals.length > 0
+        ? allAppeals.reduce((sum, a) => sum + (a.updatedAt.getTime() - a.createdAt.getTime()), 0) / allAppeals.length / (1000 * 60 * 60)
+        : null,
     };
 
     const userReports = {

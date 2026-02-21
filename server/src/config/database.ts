@@ -21,6 +21,10 @@ function buildDatabaseUrl(): string {
   if (!url.searchParams.has('pool_timeout')) {
     url.searchParams.set('pool_timeout', process.env.DB_POOL_TIMEOUT || '20');
   }
+  // Enforce SSL in production unless explicitly disabled
+  if (process.env.NODE_ENV === 'production' && !url.searchParams.has('sslmode')) {
+    url.searchParams.set('sslmode', 'require');
+  }
   return url.toString();
 }
 
