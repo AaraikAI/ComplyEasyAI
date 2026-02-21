@@ -8,7 +8,7 @@ import { api } from '../services/api';
 import {
   ArrowLeft, Shield, AlertTriangle, CheckCircle, Search, Plus, X,
   Eye, Filter, BarChart3, Grid3X3, ShieldCheck, ShieldAlert, Users,
-  Calendar, TrendingUp, XCircle, Edit3, Download, Lock, Activity
+  Calendar, TrendingUp, XCircle, Edit3, Download, Lock, Activity, RefreshCw
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -45,39 +45,7 @@ interface MatrixFunction {
   id: string; name: string; system: ERPSystem; category: string;
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────
-const MOCK_RULES: SoDRule[] = [
-  { id: '1', ruleId: 'SOD-001', name: 'PO Approval vs. Goods Receipt', functionA: 'Approve Purchase Order', functionB: 'Receive Goods', system: 'SAP ECC', riskLevel: 'High', status: 'Active', description: 'User who approves POs should not also confirm goods receipt', category: 'Procure-to-Pay' },
-  { id: '2', ruleId: 'SOD-002', name: 'Vendor Master vs. Payment Processing', functionA: 'Maintain Vendor Master', functionB: 'Process Payments', system: 'SAP ECC', riskLevel: 'High', status: 'Active', description: 'Vendor master data maintainer must not process payments', category: 'Procure-to-Pay' },
-  { id: '3', ruleId: 'SOD-003', name: 'Journal Entry vs. Journal Approval', functionA: 'Create Journal Entry', functionB: 'Approve Journal Entry', system: 'SAP S/4HANA', riskLevel: 'High', status: 'Active', description: 'Journal creator must not be the approver', category: 'Financial Close' },
-  { id: '4', ruleId: 'SOD-004', name: 'Customer Master vs. Credit Memo', functionA: 'Maintain Customer Master', functionB: 'Issue Credit Memo', system: 'SAP ECC', riskLevel: 'High', status: 'Active', description: 'Customer master maintainer should not issue credit memos', category: 'Order-to-Cash' },
-  { id: '5', ruleId: 'SOD-005', name: 'Create PO vs. Approve PO', functionA: 'Create Purchase Order', functionB: 'Approve Purchase Order', system: 'SAP S/4HANA', riskLevel: 'Medium', status: 'Active', description: 'PO creator should not also approve the PO', category: 'Procure-to-Pay' },
-  { id: '6', ruleId: 'SOD-006', name: 'Invoice Entry vs. Payment Run', functionA: 'Enter Vendor Invoice', functionB: 'Execute Payment Run', system: 'SAP ECC', riskLevel: 'High', status: 'Active', description: 'Invoice entry clerk must not execute payment runs', category: 'Procure-to-Pay' },
-  { id: '7', ruleId: 'SOD-007', name: 'GL Account Master vs. Posting', functionA: 'Maintain GL Accounts', functionB: 'Post GL Transactions', system: 'SAP S/4HANA', riskLevel: 'Medium', status: 'Active', description: 'GL account master maintainer should not post transactions', category: 'Financial Close' },
-  { id: '8', ruleId: 'SOD-008', name: 'User Admin vs. Role Assignment', functionA: 'Create User Accounts', functionB: 'Assign Authorization Roles', system: 'SAP ECC', riskLevel: 'High', status: 'Active', description: 'User admin should not assign roles to their own created users', category: 'Basis / Security' },
-  { id: '9', ruleId: 'SOD-009', name: 'Sales Order vs. Billing', functionA: 'Create Sales Order', functionB: 'Generate Billing Document', system: 'Oracle EBS', riskLevel: 'Medium', status: 'Active', description: 'Sales order creator should not generate billing', category: 'Order-to-Cash' },
-  { id: '10', ruleId: 'SOD-010', name: 'Payroll Processing vs. Bank Transfers', functionA: 'Process Payroll', functionB: 'Execute Bank Transfers', system: 'Workday', riskLevel: 'High', status: 'Inactive', description: 'Payroll processor must not execute bank transfers', category: 'HR / Payroll' },
-];
-
-const MOCK_VIOLATIONS: SoDViolation[] = [
-  { id: '1', violationId: 'VIO-2026-001', ruleId: 'SOD-001', ruleName: 'PO Approval vs. Goods Receipt', userId: 'U1042', userName: 'Maria Gonzalez', functionA: 'Approve Purchase Order', functionB: 'Receive Goods', riskLevel: 'High', status: 'Open', detectedDate: '2026-01-15', resolvedDate: null, system: 'SAP ECC', department: 'Procurement' },
-  { id: '2', violationId: 'VIO-2026-002', ruleId: 'SOD-002', ruleName: 'Vendor Master vs. Payment Processing', userId: 'U1087', userName: 'James Chen', functionA: 'Maintain Vendor Master', functionB: 'Process Payments', riskLevel: 'High', status: 'Mitigated', detectedDate: '2026-01-10', resolvedDate: '2026-01-20', system: 'SAP ECC', department: 'Accounts Payable' },
-  { id: '3', violationId: 'VIO-2026-003', ruleId: 'SOD-003', ruleName: 'Journal Entry vs. Journal Approval', userId: 'U2015', userName: 'Sarah Mitchell', functionA: 'Create Journal Entry', functionB: 'Approve Journal Entry', riskLevel: 'High', status: 'Remediated', detectedDate: '2026-01-05', resolvedDate: '2026-01-12', system: 'SAP S/4HANA', department: 'General Accounting' },
-  { id: '4', violationId: 'VIO-2026-004', ruleId: 'SOD-004', ruleName: 'Customer Master vs. Credit Memo', userId: 'U1155', userName: 'David Park', functionA: 'Maintain Customer Master', functionB: 'Issue Credit Memo', riskLevel: 'High', status: 'Accepted', detectedDate: '2026-01-22', resolvedDate: '2026-02-01', system: 'SAP ECC', department: 'Order Management' },
-  { id: '5', violationId: 'VIO-2026-005', ruleId: 'SOD-005', ruleName: 'Create PO vs. Approve PO', userId: 'U1098', userName: 'Emily Watson', functionA: 'Create Purchase Order', functionB: 'Approve Purchase Order', riskLevel: 'Medium', status: 'Open', detectedDate: '2026-02-03', resolvedDate: null, system: 'SAP S/4HANA', department: 'Procurement' },
-  { id: '6', violationId: 'VIO-2026-006', ruleId: 'SOD-006', ruleName: 'Invoice Entry vs. Payment Run', userId: 'U1042', userName: 'Maria Gonzalez', functionA: 'Enter Vendor Invoice', functionB: 'Execute Payment Run', riskLevel: 'High', status: 'Open', detectedDate: '2026-02-10', resolvedDate: null, system: 'SAP ECC', department: 'Accounts Payable' },
-  { id: '7', violationId: 'VIO-2026-007', ruleId: 'SOD-008', ruleName: 'User Admin vs. Role Assignment', userId: 'U3001', userName: 'Robert Kim', functionA: 'Create User Accounts', functionB: 'Assign Authorization Roles', riskLevel: 'High', status: 'Mitigated', detectedDate: '2026-01-28', resolvedDate: '2026-02-05', system: 'SAP ECC', department: 'IT Security' },
-  { id: '8', violationId: 'VIO-2026-008', ruleId: 'SOD-009', ruleName: 'Sales Order vs. Billing', userId: 'U2040', userName: 'Lisa Thompson', functionA: 'Create Sales Order', functionB: 'Generate Billing Document', riskLevel: 'Medium', status: 'Open', detectedDate: '2026-02-14', resolvedDate: null, system: 'Oracle EBS', department: 'Sales' },
-];
-
-const MOCK_COMPENSATING_CONTROLS: CompensatingControl[] = [
-  { id: '1', name: 'Monthly AP Transaction Review', violationId: 'VIO-2026-002', violationDesc: 'Vendor Master vs. Payment Processing', controlType: 'Periodic Review', effectiveness: 'Effective', reviewDate: '2026-02-01', owner: 'AP Manager', description: 'Monthly review of all payments processed by users with vendor master access', nextReviewDate: '2026-03-01' },
-  { id: '2', name: 'Dual Approval for Payment Runs', violationId: 'VIO-2026-006', violationDesc: 'Invoice Entry vs. Payment Run', controlType: 'Approval Workflow', effectiveness: 'Effective', reviewDate: '2026-02-10', owner: 'Treasury Manager', description: 'All payment runs require secondary approval from Treasury', nextReviewDate: '2026-03-10' },
-  { id: '3', name: 'Security Role Change Monitoring', violationId: 'VIO-2026-007', violationDesc: 'User Admin vs. Role Assignment', controlType: 'Monitoring', effectiveness: 'Effective', reviewDate: '2026-02-05', owner: 'IT Security Lead', description: 'Automated alerts for role assignments by user administrators', nextReviewDate: '2026-03-05' },
-  { id: '4', name: 'Credit Memo Threshold Alert', violationId: 'VIO-2026-004', violationDesc: 'Customer Master vs. Credit Memo', controlType: 'System Restriction', effectiveness: 'Partially Effective', reviewDate: '2026-01-25', owner: 'Revenue Controller', description: 'System alerts for credit memos > $5K issued by customer master maintainers', nextReviewDate: '2026-02-25' },
-  { id: '5', name: 'Weekly GR-PO Reconciliation', violationId: 'VIO-2026-001', violationDesc: 'PO Approval vs. Goods Receipt', controlType: 'Reconciliation', effectiveness: 'Partially Effective', reviewDate: '2026-02-08', owner: 'Procurement Lead', description: 'Weekly reconciliation of goods receipts against approved purchase orders', nextReviewDate: '2026-02-22' },
-  { id: '6', name: 'PO Value Limit Enforcement', violationId: 'VIO-2026-005', violationDesc: 'Create PO vs. Approve PO', controlType: 'System Restriction', effectiveness: 'Effective', reviewDate: '2026-02-03', owner: 'Procurement Director', description: 'System enforces $2,500 limit on self-approved POs; above requires separate approver', nextReviewDate: '2026-03-03' },
-];
+// Mock data constants removed — component now uses empty initial state with proper error handling.
 
 const MATRIX_FUNCTIONS: MatrixFunction[] = [
   { id: 'f1', name: 'Create Purchase Order', system: 'SAP ECC', category: 'Procure-to-Pay' },
@@ -95,13 +63,6 @@ const MATRIX_FUNCTIONS: MatrixFunction[] = [
   { id: 'f13', name: 'Issue Credit Memo', system: 'SAP ECC', category: 'Order-to-Cash' },
 ];
 
-// Conflict lookup: key = "functionA|functionB" => RiskLevel
-const CONFLICT_MAP: Record<string, RiskLevel> = {};
-MOCK_RULES.filter(r => r.status === 'Active').forEach(r => {
-  CONFLICT_MAP[`${r.functionA}|${r.functionB}`] = r.riskLevel;
-  CONFLICT_MAP[`${r.functionB}|${r.functionA}`] = r.riskLevel;
-});
-
 // ── Component ──────────────────────────────────────────────────────────
 export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -112,10 +73,11 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
   const [showCreateRule, setShowCreateRule] = useState(false);
   const [selectedViolation, setSelectedViolation] = useState<SoDViolation | null>(null);
   const [matrixSystemFilter, setMatrixSystemFilter] = useState<string>('all');
-  const [rules, setRules] = useState<SoDRule[]>(MOCK_RULES);
-  const [violations, setViolations] = useState<SoDViolation[]>(MOCK_VIOLATIONS);
-  const [compensatingControls, setCompensatingControls] = useState<CompensatingControl[]>(MOCK_COMPENSATING_CONTROLS);
+  const [rules, setRules] = useState<SoDRule[]>([]);
+  const [violations, setViolations] = useState<SoDViolation[]>([]);
+  const [compensatingControls, setCompensatingControls] = useState<CompensatingControl[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Rule form state
   const [ruleForm, setRuleForm] = useState({
@@ -125,6 +87,7 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [rulesRes, violationsRes, dashboardRes, matrixRes] = await Promise.allSettled([
         api.sod.listRules(),
@@ -132,23 +95,40 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
         api.sod.getDashboard(),
         api.sod.getMatrix(),
       ]);
+
+      const failures: string[] = [];
+
       if (rulesRes.status === 'fulfilled') {
         const data = rulesRes.value;
         if (Array.isArray(data)) setRules(data);
         else if (data?.data) setRules(data.data);
         else if (data?.rules) setRules(data.rules);
+      } else {
+        failures.push('rules');
       }
       if (violationsRes.status === 'fulfilled') {
         const data = violationsRes.value;
         if (Array.isArray(data)) setViolations(data);
         else if (data?.data) setViolations(data.data);
         else if (data?.violations) setViolations(data.violations);
+      } else {
+        failures.push('violations');
       }
       if (dashboardRes.status === 'fulfilled' && dashboardRes.value?.compensatingControls) {
         setCompensatingControls(dashboardRes.value.compensatingControls);
+      } else if (dashboardRes.status === 'rejected') {
+        failures.push('dashboard');
       }
-    } catch {
-      // Fallback to mock data already in state
+      if (matrixRes.status === 'rejected') {
+        failures.push('matrix');
+      }
+
+      if (failures.length > 0) {
+        setLoadError(`Failed to load ${failures.join(', ')} data. Some information may be incomplete.`);
+      }
+    } catch (err) {
+      setLoadError('Failed to connect to the server. Please check your connection and try again.');
+      console.error('SoDAnalysisDashboard data load error:', err);
     } finally {
       setLoading(false);
     }
@@ -186,6 +166,16 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
     return MATRIX_FUNCTIONS.filter(f => f.system === matrixSystemFilter);
   }, [matrixSystemFilter]);
 
+  // Conflict lookup: key = "functionA|functionB" => RiskLevel
+  const conflictMap = useMemo(() => {
+    const map: Record<string, RiskLevel> = {};
+    rules.filter(r => r.status === 'Active').forEach(r => {
+      map[`${r.functionA}|${r.functionB}`] = r.riskLevel;
+      map[`${r.functionB}|${r.functionA}`] = r.riskLevel;
+    });
+    return map;
+  }, [rules]);
+
   const riskBg = (r: RiskLevel) => r === 'High' ? 'bg-red-500/20 text-red-400' : r === 'Medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400';
   const statusBg = (s: ViolationStatus) => s === 'Open' ? 'bg-red-500/20 text-red-400' : s === 'Mitigated' ? 'bg-blue-500/20 text-blue-400' : s === 'Accepted' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400';
   const ruleStatusBg = (s: RuleStatus) => s === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-500/20 text-slate-400';
@@ -199,6 +189,19 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
     { key: 'matrix', label: 'Matrix', icon: <Grid3X3 size={15} /> },
     { key: 'controls', label: 'Compensating Controls', icon: <ShieldCheck size={15} /> },
   ];
+
+  // ── Error Banner ─────────────────────────────────────────────────────
+  const renderErrorBanner = () => loadError ? (
+    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+        <span className="text-sm text-red-300">{loadError}</span>
+      </div>
+      <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 text-red-300 rounded text-sm hover:bg-red-500/30 transition-colors">
+        <RefreshCw className="w-3.5 h-3.5" /> Retry
+      </button>
+    </div>
+  ) : null;
 
   // ── Overview Tab ──────────────────────────────────────────────────────
   const renderOverview = () => (
@@ -444,7 +447,7 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
               <div className="w-40 flex-shrink-0 text-xs text-slate-300 pr-2 py-1 truncate" title={rowFn.name}>{rowFn.name}</div>
               {filteredMatrixFunctions.map(colFn => {
                 const isSame = rowFn.id === colFn.id;
-                const conflict = isSame ? null : (CONFLICT_MAP[`${rowFn.name}|${colFn.name}`] || null);
+                const conflict = isSame ? null : (conflictMap[`${rowFn.name}|${colFn.name}`] || null);
                 return (
                   <div key={colFn.id} className="flex-1 min-w-[56px] px-1 py-1">
                     <div
@@ -630,6 +633,7 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
           ))}
         </div>
 
+        {renderErrorBanner()}
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'rules' && renderRules()}
         {activeTab === 'violations' && renderViolations()}

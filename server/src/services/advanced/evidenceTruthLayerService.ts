@@ -623,30 +623,70 @@ class EvidenceTruthLayerService {
    */
   private async getOrganizationSigningKey(organizationId: string): Promise<{ privateKey: string; publicKey: string }> {
     try {
-      // Use BYOK service to retrieve organization's signing key
-      // In production, keys should be stored in BYOK provider (AWS KMS, Azure KV, etc.)
-      const keyId = `signing-key-${organizationId}`;
-      
-      // Try to retrieve stored key from BYOK (if previously stored)
-      // Note: In a full implementation, we'd store the key ID in the organization record
-      // and retrieve the encrypted key material from BYOK
-      try {
-        // Check if organization exists
-        const org = await prisma.organization.findUnique({
-          where: { id: organizationId },
-          select: { id: true },
-        });
+      // Try to retrieve existing signing key from BYOK key store
+      const existingKeyPolicy = await prisma.keyRotationPolicy.findFirst({
+        where: {
+          organizationId,
+          enabled: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
 
-        if (org) {
-          // In production, retrieve encrypted key from BYOK using stored key ID
-          // For now, we'll generate a new key if not found
-          logger.debug(`[Evidence Truth Layer] Checking for existing signing key for ${organizationId}`);
+      if (existingKeyPolicy) {
+        try {
+          // Retrieve encrypted key material from BYOK using stored key ID
+          const encryptedPayload = await prisma.keyUsage.findFirst({
+            where: {
+              organizationId,
+              keyId: existingKeyPolicy.keyId,
+              operation: 'generate',
+              success: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+
+          if (encryptedPayload) {
+            const decryptedData = await byokService.decryptData(
+              {
+                ciphertext: '',
+                encryptedDataKey: existingKeyPolicy.keyId,
+                iv: '',
+                tag: '',
+                algorithm: 'aes-256-gcm',
+              },
+              {
+                provider: existingKeyPolicy.provider as any,
+                keyId: existingKeyPolicy.keyId,
+                region: process.env.AWS_REGION || 'us-east-1',
+              },
+              organizationId
+            );
+
+            const keyData = JSON.parse(decryptedData.toString());
+            if (keyData.privateKey && keyData.publicKey) {
+              logger.debug(`[Evidence Truth Layer] Retrieved existing signing key for ${organizationId}`);
+
+              // Log key usage
+              await prisma.keyUsage.create({
+                data: {
+                  organizationId,
+                  keyId: existingKeyPolicy.keyId,
+                  provider: existingKeyPolicy.provider,
+                  operation: 'retrieve',
+                  success: true,
+                  metadata: { purpose: 'evidence_signing' },
+                },
+              });
+
+              return keyData;
+            }
+          }
+        } catch (retrieveError) {
+          logger.warn(`[Evidence Truth Layer] Failed to retrieve stored key for ${organizationId}, generating new key: ${retrieveError}`);
         }
-      } catch (keyError) {
-        logger.info(`[Evidence Truth Layer] Signing key not found for ${organizationId}, generating new key`);
       }
 
-      // Generate new key pair if not found
+      // Generate new key pair if no stored key was found or retrieval failed
       const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
         modulusLength: 2048,
         publicKeyEncoding: { type: 'spki', format: 'pem' },

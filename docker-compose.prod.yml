@@ -19,7 +19,7 @@ services:
     restart: always
     environment:
       NODE_ENV: production
-      PORT: 5000
+      PORT: 3001
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       JWT_SECRET: ${JWT_SECRET}
@@ -28,8 +28,12 @@ services:
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+      CORS_ORIGIN: ${CORS_ORIGIN}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PRICE_ID_STARTER: ${STRIPE_PRICE_ID_STARTER}
+      STRIPE_PRICE_ID_PROFESSIONAL: ${STRIPE_PRICE_ID_PROFESSIONAL}
+      STRIPE_PRICE_ID_ENTERPRISE: ${STRIPE_PRICE_ID_ENTERPRISE}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY}
       SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL}
       CLIENT_URL: ${CLIENT_URL}
@@ -39,9 +43,9 @@ services:
       AWS_REGION: ${AWS_REGION}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
     ports:
-      - "5000:5000"
+      - "3001:3001"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       start_period: 40s

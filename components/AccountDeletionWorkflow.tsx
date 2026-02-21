@@ -89,42 +89,7 @@ const statusColors: Record<RequestStatus, string> = {
   Denied: 'bg-red-500/20 text-red-400 border-red-500/30',
 };
 
-const MOCK_REQUESTS: DeletionRequest[] = [
-  { id: 'DEL-001', accountName: 'John Patterson', email: 'j.patterson@email.com', submittedDate: '2026-02-15', status: 'Completed', reason: 'GDPR Right to Erasure', dataLocations: ['Primary DB', 'Analytics', 'CRM', 'Email'], conflicts: [], assignedTo: 'Alice Chen', priority: 'High', estimatedCompletion: '2026-02-18' },
-  { id: 'DEL-002', accountName: 'Maria Gonzalez', email: 'm.gonzalez@corp.io', submittedDate: '2026-02-16', status: 'Executing', reason: 'Account closure request', dataLocations: ['Primary DB', 'Analytics', 'Backups'], conflicts: [], assignedTo: 'Bob Tanaka', priority: 'Medium', estimatedCompletion: '2026-02-20' },
-  { id: 'DEL-003', accountName: 'Wei Li', email: 'wei.li@tech.co', submittedDate: '2026-02-16', status: 'Review', reason: 'CCPA deletion request', dataLocations: ['Primary DB', 'CRM', 'Third-party'], conflicts: ['Active subscription until 2026-03-01'], assignedTo: 'Carol Reeves', priority: 'High', estimatedCompletion: '2026-02-22' },
-  { id: 'DEL-004', accountName: 'Aisha Okafor', email: 'a.okafor@biz.net', submittedDate: '2026-02-17', status: 'Located', reason: 'GDPR Right to Erasure', dataLocations: ['Primary DB', 'Analytics', 'Email', 'Backups'], conflicts: [], assignedTo: 'Alice Chen', priority: 'Medium', estimatedCompletion: '2026-02-23' },
-  { id: 'DEL-005', accountName: 'Dmitri Volkov', email: 'd.volkov@mail.ru', submittedDate: '2026-02-17', status: 'Verified', reason: 'User-initiated deletion', dataLocations: ['Primary DB', 'CRM'], conflicts: ['Pending invoice #4821'], assignedTo: 'Bob Tanaka', priority: 'Low', estimatedCompletion: '2026-02-24' },
-  { id: 'DEL-006', accountName: 'Sophie Dubois', email: 's.dubois@france.fr', submittedDate: '2026-02-17', status: 'Submitted', reason: 'GDPR Right to Erasure', dataLocations: [], conflicts: [], assignedTo: 'Unassigned', priority: 'Medium', estimatedCompletion: '2026-02-25' },
-  { id: 'DEL-007', accountName: 'Kenji Mori', email: 'k.mori@jpn.co.jp', submittedDate: '2026-02-18', status: 'Denied', reason: 'Account closure request', dataLocations: ['Primary DB', 'Analytics'], conflicts: ['Legal hold - Case #LH-2290'], assignedTo: 'Carol Reeves', priority: 'High', estimatedCompletion: 'N/A' },
-  { id: 'DEL-008', accountName: 'Emma Lindgren', email: 'e.lindgren@nordic.se', submittedDate: '2026-02-18', status: 'Approved', reason: 'GDPR Right to Erasure', dataLocations: ['Primary DB', 'Analytics', 'CRM', 'Email', 'Backups', 'Third-party'], conflicts: [], assignedTo: 'Alice Chen', priority: 'High', estimatedCompletion: '2026-02-21' },
-  { id: 'DEL-009', accountName: 'Raj Patel', email: 'raj.patel@startup.in', submittedDate: '2026-02-18', status: 'Submitted', reason: 'User-initiated deletion', dataLocations: [], conflicts: [], assignedTo: 'Unassigned', priority: 'Low', estimatedCompletion: '2026-02-26' },
-  { id: 'DEL-010', accountName: 'Lena Braun', email: 'l.braun@de.com', submittedDate: '2026-02-19', status: 'Submitted', reason: 'CCPA deletion request', dataLocations: [], conflicts: [], assignedTo: 'Unassigned', priority: 'Medium', estimatedCompletion: '2026-02-27' },
-];
-
-const MOCK_SYSTEMS: SystemDeletion[] = [
-  { system: 'Primary Database', icon: <Database className="w-4 h-4" />, status: 'Completed', records: 1247, deletedAt: '2026-02-18 14:32', verifiedBy: 'System Auto-Check', evidence: 'CERT-DB-20260218-001', rollbackAvailable: false },
-  { system: 'Analytics Platform', icon: <BarChart3 className="w-4 h-4" />, status: 'Completed', records: 8432, deletedAt: '2026-02-18 14:45', verifiedBy: 'Alice Chen', evidence: 'CERT-AN-20260218-001', rollbackAvailable: false },
-  { system: 'CRM System', icon: <User className="w-4 h-4" />, status: 'In Progress', records: 342, rollbackAvailable: true },
-  { system: 'Email Marketing', icon: <Mail className="w-4 h-4" />, status: 'Pending', records: 89, rollbackAvailable: true },
-  { system: 'Backup Archives', icon: <HardDrive className="w-4 h-4" />, status: 'Pending', records: 15200, rollbackAvailable: true },
-  { system: 'Third-party Integrations', icon: <Globe className="w-4 h-4" />, status: 'Failed', records: 56, rollbackAvailable: true },
-];
-
-const MOCK_AUDIT: AuditEntry[] = [
-  { id: 'AUD-001', timestamp: '2026-02-19 09:15:22', action: 'Request DEL-010 submitted', user: 'System', requestId: 'DEL-010', details: 'New deletion request received via CCPA portal', category: 'system' },
-  { id: 'AUD-002', timestamp: '2026-02-18 16:42:11', action: 'Deletion verified for DEL-001', user: 'Alice Chen', requestId: 'DEL-001', details: 'All systems confirmed data erasure. Certificate generated.', category: 'verification' },
-  { id: 'AUD-003', timestamp: '2026-02-18 14:45:00', action: 'Analytics data purged for DEL-002', user: 'System', requestId: 'DEL-002', details: '8,432 records removed from analytics platform', category: 'deletion' },
-  { id: 'AUD-004', timestamp: '2026-02-18 14:32:00', action: 'Primary DB records deleted for DEL-002', user: 'System', requestId: 'DEL-002', details: '1,247 records removed from primary database', category: 'deletion' },
-  { id: 'AUD-005', timestamp: '2026-02-18 11:20:33', action: 'Request DEL-008 approved', user: 'Carol Reeves', requestId: 'DEL-008', details: 'No conflicts detected. Approved for execution.', category: 'status_change' },
-  { id: 'AUD-006', timestamp: '2026-02-18 10:05:17', action: 'Request DEL-007 denied', user: 'Carol Reeves', requestId: 'DEL-007', details: 'Legal hold in effect - Case #LH-2290. Cannot proceed.', category: 'review' },
-  { id: 'AUD-007', timestamp: '2026-02-17 15:30:44', action: 'Data located for DEL-004', user: 'Bob Tanaka', requestId: 'DEL-004', details: 'Found records in Primary DB, Analytics, Email, Backups', category: 'status_change' },
-  { id: 'AUD-008', timestamp: '2026-02-17 14:12:09', action: 'Conflict detected for DEL-005', user: 'System', requestId: 'DEL-005', details: 'Pending invoice #4821 blocks immediate deletion', category: 'system' },
-  { id: 'AUD-009', timestamp: '2026-02-17 09:00:00', action: 'Identity verified for DEL-005', user: 'Bob Tanaka', requestId: 'DEL-005', details: 'Identity verification completed via 2FA confirmation', category: 'verification' },
-  { id: 'AUD-010', timestamp: '2026-02-16 16:55:28', action: 'Request DEL-003 under review', user: 'Carol Reeves', requestId: 'DEL-003', details: 'Active subscription conflict requires manual review', category: 'review' },
-  { id: 'AUD-011', timestamp: '2026-02-16 08:30:00', action: 'Batch verification initiated', user: 'System', requestId: 'N/A', details: 'Automated verification cycle started for 3 requests', category: 'system' },
-  { id: 'AUD-012', timestamp: '2026-02-15 17:10:55', action: 'DEL-001 execution completed', user: 'System', requestId: 'DEL-001', details: 'All personal data erased across 4 systems. Compliance certificate issued.', category: 'deletion' },
-];
+// Mock data constants removed — component now uses empty initial state with proper error handling.
 
 const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
@@ -141,29 +106,40 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<DeletionRequest | null>(null);
   const [loading, setLoading] = useState(true);
-  const [requests, setRequests] = useState<DeletionRequest[]>(MOCK_REQUESTS);
-  const [systemDeletions, setSystemDeletions] = useState<SystemDeletion[]>(MOCK_SYSTEMS);
-  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>(MOCK_AUDIT);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [requests, setRequests] = useState<DeletionRequest[]>([]);
+  const [systemDeletions, setSystemDeletions] = useState<SystemDeletion[]>([]);
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [deletionRes, auditRes] = await Promise.allSettled([
         api.privacy.listDeletions(),
         api.privacy.getDeletionAuditLog(),
       ]);
+      const failures: string[] = [];
       if (deletionRes.status === 'fulfilled') {
         const d = deletionRes.value;
         if (Array.isArray(d)) setRequests(d);
         else if (d?.data) setRequests(d.data);
+      } else {
+        failures.push('deletion requests');
       }
       if (auditRes.status === 'fulfilled') {
         const d = auditRes.value;
         if (Array.isArray(d)) setAuditEntries(d);
         else if (d?.data) setAuditEntries(d.data);
+      } else {
+        failures.push('audit log');
       }
-    } catch {
-      // Fallback to mock data already in state
+      if (failures.length > 0) {
+        setLoadError(`Failed to load ${failures.join(' and ')}. Some data may be incomplete.`);
+      }
+    } catch (err) {
+      setLoadError('Failed to connect to the server. Please check your connection and try again.');
+      console.error('AccountDeletionWorkflow data load error:', err);
     } finally {
       setLoading(false);
     }
@@ -187,7 +163,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
     const denied = requests.filter(r => r.status === 'Denied').length;
     const withConflicts = requests.filter(r => r.conflicts.length > 0).length;
     return { total, pending, inProgress, completed, denied, avgProcessingDays: 3.2, withConflicts };
-  }, []);
+  }, [requests]);
 
   const filteredRequests = useMemo(() => {
     return requests.filter(r => {
@@ -198,12 +174,12 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
       const matchesStatus = statusFilter === 'All' || r.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [searchQuery, statusFilter]);
+  }, [requests, searchQuery, statusFilter]);
 
   const filteredAudit = useMemo(() => {
     if (auditCategoryFilter === 'all') return auditEntries;
     return auditEntries.filter(a => a.category === auditCategoryFilter);
-  }, [auditCategoryFilter]);
+  }, [auditEntries, auditCategoryFilter]);
 
   const systemStatusColor = (status: string) => {
     switch (status) {
@@ -973,6 +949,18 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
     </div>
   );
 
+  const renderErrorBanner = () => loadError ? (
+    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+        <span className="text-sm text-red-300">{loadError}</span>
+      </div>
+      <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 text-red-300 rounded text-sm hover:bg-red-500/30 transition-colors">
+        <RefreshCw className="w-3.5 h-3.5" /> Retry
+      </button>
+    </div>
+  ) : null;
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -1044,6 +1032,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
           ))}
         </div>
 
+        {renderErrorBanner()}
         {renderContent()}
       </div>
     </div>
