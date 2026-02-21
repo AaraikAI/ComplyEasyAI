@@ -24,27 +24,24 @@ export const apiLimiter = rateLimit({
   },
 });
 
-// Framework-specific rate limiter (100 requests in 10 seconds)
+// Framework-specific rate limiter (100 requests in 10 seconds, higher in dev)
 export const frameworkLimiter = rateLimit({
   windowMs: 10 * 1000, // 10 seconds
-  max: 100, // 100 requests per window
+  max: isDev ? 1000 : 100,
   message: 'Too many framework requests. Please slow down.',
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => isDev,
 });
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login requests per windowMs
+  max: isDev ? 100 : 5,
   message: 'Too many login attempts, please try again later.',
   skipSuccessfulRequests: true,
-  skip: () => isDev,
 });
 
 export const aiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10, // Limit AI requests to 10 per minute
+  max: isDev ? 200 : 10,
   message: 'Too many AI requests, please slow down.',
-  skip: () => isDev,
 });

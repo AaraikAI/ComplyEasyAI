@@ -88,7 +88,7 @@ export const LandingPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loginMethod, setLoginMethod] = useState<'magic-link' | 'password'>('magic-link');
   const [loading, setLoading] = useState(false);
-  const [mockToken, setMockToken] = useState<string | null>(null);
+  const [magicLinkEmail, setMagicLinkEmail] = useState<string | null>(null);
 
   // Feature tab state
   const [activeTab, setActiveTab] = useState<FeatureTab>('core');
@@ -116,11 +116,8 @@ export const LandingPage: React.FC = () => {
     try {
       // Request magic link from backend
       // Backend auto-creates users if they don't exist, so this should always succeed for valid emails
-      const response: any = await loginWithMagicLink(email);
-      // In development, backend returns the token directly for testing
-      if (response?.devToken) {
-        setMockToken(response.devToken);
-      }
+      await loginWithMagicLink(email);
+      setMagicLinkEmail(email);
       setAuthStep('magic-link-sent');
     } catch (e: any) {
       console.error('Login error:', e);
@@ -152,10 +149,7 @@ export const LandingPage: React.FC = () => {
       }
 
       // New user registration - backend already sent a magic link
-      // In development, backend returns the token directly for testing
-      if (response?.devToken) {
-        setMockToken(response.devToken);
-      }
+      setMagicLinkEmail(email);
       setAuthStep('magic-link-sent');
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -173,45 +167,13 @@ export const LandingPage: React.FC = () => {
     setLoading(false);
   };
 
-  // Simulate clicking the magic link
+  // Resend magic link
   const simulateMagicClick = async () => {
     setLoading(true);
     try {
-      if (mockToken) {
-        try {
-          await verifyMagicLink(mockToken);
-          // If successful, the AuthContext will update the user state
-          return;
-        } catch (error: any) {
-          const errorMsg = error?.message || 'Token verification failed';
-
-          // Token was already used or expired - request a new one automatically
-          if (errorMsg.includes('Invalid') || errorMsg.includes('expired') || errorMsg.includes('used')) {
-            // Token was already used or expired — request new magic link
-            try {
-              const response: any = await loginWithMagicLink(email);
-              if (response?.token) {
-                setMockToken(response.token);
-                // Try verification with the new token
-                await verifyMagicLink(response.devToken);
-                return;
-              } else {
-                // Backend didn't return devToken (likely not in development mode)
-                alert('Token expired. A new magic link has been sent to your email.\n\n' +
-                      'Please check your email inbox for the login link.');
-                return;
-              }
-            } catch (retryError: any) {
-              console.error('Retry failed:', retryError);
-              alert(`Login failed: ${retryError?.message || 'Unknown error'}\n\n` +
-                    'Please try again or contact support.');
-            }
-          } else {
-            throw error;
-          }
-        }
-      } else {
-        throw new Error('No token available. Please request a magic link first.');
+      if (magicLinkEmail || email) {
+        await loginWithMagicLink(magicLinkEmail || email);
+        alert('A new magic link has been sent to your email.\n\nPlease check your email inbox for the login link.');
       }
     } catch (error: any) {
       console.error('Magic link verification error:', error);

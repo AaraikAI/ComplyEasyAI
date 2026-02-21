@@ -355,10 +355,17 @@ class TwoFactorService {
   /**
    * Encrypt secret for storage
    */
+  private get encryptionKey(): Buffer {
+    if (!process.env.ENCRYPTION_KEY) {
+      throw new Error('ENCRYPTION_KEY environment variable is required for 2FA encryption');
+    }
+    const salt = crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY).digest().slice(0, 16);
+    return crypto.scryptSync(process.env.ENCRYPTION_KEY, salt, 32);
+  }
+
   private encryptSecret(secret: string): string {
-    // In production, use a proper encryption key from environment
     const algorithm = 'aes-256-cbc';
-    const key = crypto.scryptSync(process.env.ENCRYPTION_KEY || 'default-key', 'salt', 32);
+    const key = this.encryptionKey;
     const iv = crypto.randomBytes(16);
 
     const cipher = crypto.createCipheriv(algorithm, key, iv);
@@ -373,7 +380,7 @@ class TwoFactorService {
    */
   private decryptSecret(encryptedSecret: string): string {
     const algorithm = 'aes-256-cbc';
-    const key = crypto.scryptSync(process.env.ENCRYPTION_KEY || 'default-key', 'salt', 32);
+    const key = this.encryptionKey;
 
     const [ivHex, encrypted] = encryptedSecret.split(':');
     const iv = Buffer.from(ivHex, 'hex');

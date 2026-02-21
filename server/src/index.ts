@@ -112,6 +112,9 @@ import mqttService from './services/advanced/mqttService';
 
 const app = express();
 
+// Trust first proxy (required for correct client IP in rate limiting and audit logs)
+app.set('trust proxy', 1);
+
 // Initialize monitoring (Sentry, APM)
 try {
   initializeSentry();

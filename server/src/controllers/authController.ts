@@ -107,7 +107,6 @@ class AuthController {
         }
       }
 
-      // In development, also return the token for testing (remove in production!)
       const response: any = {
         message: 'Magic link sent to your email',
         email,
@@ -528,10 +527,9 @@ class AuthController {
           existingUser: true,
         };
 
-        // Only return token in development mode for testing
+        // Log token in development mode for testing (never expose in HTTP response)
         if (process.env.NODE_ENV === 'development') {
-          response.devToken = token;
-          response.devMessage = 'Development mode: Use this token to verify the magic link';
+          logger.debug(`[Dev] Magic link token for existing user ${email}: ${token}`);
         }
 
         res.status(200).json(response);
@@ -589,7 +587,6 @@ class AuthController {
         }
       }
 
-      // In development, also return the token for testing (remove in production!)
       const response: any = {
         message: 'Registration successful. Check your email for login link.',
         user: {
