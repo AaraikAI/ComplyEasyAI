@@ -15,7 +15,7 @@
  * Reference: EU Ecodesign for Sustainable Products Regulation (ESPR) 2024/1781
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import {
   ArrowLeft,
@@ -399,11 +399,11 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
   type TabId = 'overview' | 'products' | 'materials' | 'carbon' | 'supply_chain';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [products, setProducts] = useState<DPPProduct[]>(DEMO_PRODUCTS);
-  const [materials] = useState<MaterialComposition[]>(DEMO_MATERIALS);
-  const [carbonData] = useState<CarbonFootprint[]>(DEMO_CARBON);
-  const [supplyChain] = useState<SupplyChainNode[]>(DEMO_SUPPLY_CHAIN);
-  const [versions] = useState<PassportVersion[]>(DEMO_VERSIONS);
-  const [sharingRecords] = useState<DataSharingRecord[]>(DEMO_SHARING);
+  const [materials, setMaterials] = useState<MaterialComposition[]>(DEMO_MATERIALS);
+  const [carbonData, setCarbonData] = useState<CarbonFootprint[]>(DEMO_CARBON);
+  const [supplyChain, setSupplyChain] = useState<SupplyChainNode[]>(DEMO_SUPPLY_CHAIN);
+  const [versions, setVersions] = useState<PassportVersion[]>(DEMO_VERSIONS);
+  const [sharingRecords, setSharingRecords] = useState<DataSharingRecord[]>(DEMO_SHARING);
   const [selectedProduct, setSelectedProduct] = useState<DPPProduct>(DEMO_PRODUCTS[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showQRModal, setShowQRModal] = useState(false);
@@ -411,43 +411,153 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [expandedNode, setExpandedNode] = useState<string | null>(null);
 
+  // Create-modal form state
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    gtin: '',
+    category: PRODUCT_CATEGORIES[0],
+    countryOfOrigin: '',
+    manufacturer: '',
+    batchNumber: '',
+  });
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Share-modal form state
+  const [shareForm, setShareForm] = useState({
+    partyName: '',
+    partyType: 'regulator' as DataSharingRecord['partyType'],
+    accessLevel: 'full' as DataSharingRecord['accessLevel'],
+  });
+  const [isSharing, setIsSharing] = useState(false);
+
   // Loading / error state
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const passports = await api.modules.dpp.listPassports();
-        if (passports && passports.length > 0) {
-          setProducts(passports.map((p: any) => ({
-            id: p.id,
-            name: p.name || p.productName || '',
-            gtin: p.gtin || '',
-            batchNumber: p.batchNumber || '',
-            category: p.category || '',
-            manufacturer: p.manufacturer || '',
-            countryOfOrigin: p.countryOfOrigin || '',
-            passportStatus: p.passportStatus || p.status || 'draft',
-            recyclabilityScore: p.recyclabilityScore || 0,
-            repairabilityScore: p.repairabilityScore || 0,
-            carbonFootprintTotal: p.carbonFootprintTotal || 0,
-            ecodesignCompliant: p.ecodesignCompliant || false,
-            lastUpdated: p.updatedAt || p.lastUpdated || '',
-            createdAt: p.createdAt || '',
-            passportVersion: p.passportVersion || '1.0',
-            qrCodeGenerated: p.qrCodeGenerated || false,
-          })));
-          setSelectedProduct(passports[0]);
+  // ----- helpers to normalise API responses into local types -----
+  const normaliseProduct = (p: any): DPPProduct => ({
+    id: p.id,
+    name: p.name || p.productName || '',
+    gtin: p.gtin || '',
+    batchNumber: p.batchNumber || '',
+    category: p.category || '',
+    manufacturer: p.manufacturer || '',
+    countryOfOrigin: p.countryOfOrigin || '',
+    passportStatus: p.passportStatus || p.status || 'draft',
+    recyclabilityScore: p.recyclabilityScore ?? 0,
+    repairabilityScore: p.repairabilityScore ?? 0,
+    carbonFootprintTotal: p.carbonFootprintTotal ?? 0,
+    ecodesignCompliant: p.ecodesignCompliant ?? false,
+    lastUpdated: p.updatedAt || p.lastUpdated || '',
+    createdAt: p.createdAt || '',
+    passportVersion: p.passportVersion || '1.0',
+    qrCodeGenerated: p.qrCodeGenerated ?? false,
+  });
+
+  // ----- loadData: fetch everything from the backend, fall back to DEMO -----
+  const loadData = useCallback(async (showSyncIndicator = false) => {
+    if (showSyncIndicator) setIsSyncing(true);
+    else setIsLoading(true);
+    try {
+      const passports = await api.modules.dpp.listPassports();
+      if (passports && passports.length > 0) {
+        const mapped = passports.map(normaliseProduct);
+        setProducts(mapped);
+        setSelectedProduct(prev => {
+          const match = mapped.find(p => p.id === prev.id);
+          return match || mapped[0];
+        });
+
+        // For each passport fetch detail (materials, carbon, supply chain, versions, sharing)
+        // The detail endpoint is getPassport(id) which may embed sub-resources
+        const firstDetail = await api.modules.dpp.getPassport(mapped[0].id);
+        if (firstDetail) {
+          if (Array.isArray(firstDetail.materials) && firstDetail.materials.length > 0) {
+            setMaterials(firstDetail.materials);
+          }
+          if (Array.isArray(firstDetail.carbonFootprint) && firstDetail.carbonFootprint.length > 0) {
+            setCarbonData(firstDetail.carbonFootprint);
+          }
+          if (Array.isArray(firstDetail.supplyChain) && firstDetail.supplyChain.length > 0) {
+            setSupplyChain(firstDetail.supplyChain);
+          }
+          if (Array.isArray(firstDetail.versions) && firstDetail.versions.length > 0) {
+            setVersions(firstDetail.versions);
+          }
+          if (Array.isArray(firstDetail.sharingRecords) && firstDetail.sharingRecords.length > 0) {
+            setSharingRecords(firstDetail.sharingRecords);
+          }
         }
-        setLoadError(null);
-      } catch (err: any) {
-        setLoadError('Unable to connect to server. Showing local data.');
-      } finally {
-        setIsLoading(false);
       }
-    })();
+      setLoadError(null);
+    } catch (_err: any) {
+      setLoadError('Unable to connect to server. Showing local data.');
+    } finally {
+      setIsLoading(false);
+      setIsSyncing(false);
+    }
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // ----- handleCreatePassport -----
+  const handleCreatePassport = useCallback(async () => {
+    setIsCreating(true);
+    try {
+      const result = await api.modules.dpp.createPassport(createForm);
+      if (result && result.id) {
+        const newProduct = normaliseProduct(result);
+        setProducts(prev => [...prev, newProduct]);
+      } else {
+        // refetch to pick up new data
+        await loadData();
+      }
+      setShowCreateModal(false);
+      setCreateForm({ name: '', gtin: '', category: PRODUCT_CATEGORIES[0], countryOfOrigin: '', manufacturer: '', batchNumber: '' });
+    } catch (_err: any) {
+      // If API fails, still close modal – user sees the error banner on next sync
+      setLoadError('Failed to create passport on server.');
+    } finally {
+      setIsCreating(false);
+    }
+  }, [createForm, loadData]);
+
+  // ----- handleDeletePassport -----
+  const handleDeletePassport = useCallback(async (id: string) => {
+    try {
+      await api.modules.dpp.deletePassport(id);
+      setProducts(prev => prev.filter(p => p.id !== id));
+    } catch (_err: any) {
+      setLoadError('Failed to delete passport on server.');
+    }
+  }, []);
+
+  // ----- handleGrantAccess (share modal) -----
+  const handleGrantAccess = useCallback(async () => {
+    setIsSharing(true);
+    try {
+      await api.modules.dpp.updatePassport(selectedProduct.id, {
+        sharing: shareForm,
+      });
+      // Optimistic local update
+      const newRecord: DataSharingRecord = {
+        id: `share-${Date.now()}`,
+        partyName: shareForm.partyName,
+        partyType: shareForm.partyType,
+        accessLevel: shareForm.accessLevel,
+        grantedDate: new Date().toISOString().slice(0, 10),
+        status: 'active',
+      };
+      setSharingRecords(prev => [...prev, newRecord]);
+      setShowShareModal(false);
+      setShareForm({ partyName: '', partyType: 'regulator', accessLevel: 'full' });
+    } catch (_err: any) {
+      setLoadError('Failed to grant access on server.');
+    } finally {
+      setIsSharing(false);
+    }
+  }, [selectedProduct, shareForm]);
 
   // Computed
   const productMaterials = useMemo(() => materials.filter(m => m.productId === selectedProduct.id), [materials, selectedProduct]);
@@ -1068,11 +1178,11 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Party Name</label>
-            <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Organization name" />
+            <input type="text" value={shareForm.partyName} onChange={e => setShareForm(f => ({ ...f, partyName: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Organization name" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Party Type</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <select value={shareForm.partyType} onChange={e => setShareForm(f => ({ ...f, partyType: e.target.value as DataSharingRecord['partyType'] }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
               <option value="regulator">Regulator</option>
               <option value="consumer">Consumer</option>
               <option value="recycler">Recycler</option>
@@ -1082,7 +1192,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Access Level</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <select value={shareForm.accessLevel} onChange={e => setShareForm(f => ({ ...f, accessLevel: e.target.value as DataSharingRecord['accessLevel'] }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
               <option value="full">Full Access</option>
               <option value="summary">Summary Only</option>
               <option value="restricted">Restricted (specific fields)</option>
@@ -1095,7 +1205,13 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
           <button onClick={() => setShowShareModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-          <button onClick={() => setShowShareModal(false)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Grant Access</button>
+          <button
+            onClick={handleGrantAccess}
+            disabled={isSharing || !shareForm.partyName}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSharing ? 'Granting...' : 'Grant Access'}
+          </button>
         </div>
       </div>
     </div>
@@ -1112,37 +1228,43 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
-              <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Product name" />
+              <input type="text" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Product name" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">GTIN *</label>
-              <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Global Trade Item Number" />
+              <input type="text" value={createForm.gtin} onChange={e => setCreateForm(f => ({ ...f, gtin: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Global Trade Item Number" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+              <select value={createForm.category} onChange={e => setCreateForm(f => ({ ...f, category: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                 {PRODUCT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Country of Origin</label>
-              <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="e.g., Germany" />
+              <input type="text" value={createForm.countryOfOrigin} onChange={e => setCreateForm(f => ({ ...f, countryOfOrigin: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="e.g., Germany" />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
-            <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Manufacturer name" />
+            <input type="text" value={createForm.manufacturer} onChange={e => setCreateForm(f => ({ ...f, manufacturer: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Manufacturer name" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Batch Number</label>
-            <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="e.g., B2026-Q1-0001" />
+            <input type="text" value={createForm.batchNumber} onChange={e => setCreateForm(f => ({ ...f, batchNumber: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="e.g., B2026-Q1-0001" />
           </div>
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
           <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-          <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Create Passport</button>
+          <button
+            onClick={handleCreatePassport}
+            disabled={isCreating || !createForm.name || !createForm.gtin}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isCreating ? 'Creating...' : 'Create Passport'}
+          </button>
         </div>
       </div>
     </div>
@@ -1165,8 +1287,13 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors">
-            <RefreshCw size={16} /> Sync
+          <button
+            onClick={() => loadData(true)}
+            disabled={isSyncing}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+            {isSyncing ? 'Syncing...' : 'Sync'}
           </button>
           <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
             <Plus size={16} /> New Passport

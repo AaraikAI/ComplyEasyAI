@@ -10,7 +10,8 @@
  * - Privacy metrics dashboard
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft,
   Shield,
@@ -224,37 +225,90 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
   const [showCreateDSAR, setShowCreateDSAR] = useState(false);
   const [retentionStatusFilter, setRetentionStatusFilter] = useState<string>('All');
   const [optOutChannelFilter, setOptOutChannelFilter] = useState<string>('All');
+  const [loading, setLoading] = useState(true);
+  const [dsars, setDsars] = useState<DSARRequest[]>(MOCK_DSARS);
+  const [consent, setConsent] = useState<ConsentRecord[]>(MOCK_CONSENT);
+  const [retention, setRetention] = useState<RetentionSchedule[]>(MOCK_RETENTION);
+  const [transfers, setTransfers] = useState<CrossBorderTransfer[]>(MOCK_TRANSFERS);
+  const [suppression, setSuppression] = useState<SuppressionEntry[]>(MOCK_SUPPRESSION);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [dashRes, dsarRes, consentRes, retRes, sccRes, suppressionRes] = await Promise.allSettled([
+        api.privacy.getDashboard(),
+        api.privacy.listDSARs(),
+        api.privacy.getConsentPurposes(),
+        api.privacy.listRetention(),
+        api.privacy.listSCCTIA(),
+        api.privacy.getSuppressionList(),
+      ]);
+      if (dsarRes.status === 'fulfilled') {
+        const d = dsarRes.value;
+        if (Array.isArray(d)) setDsars(d);
+        else if (d?.data) setDsars(d.data);
+      }
+      if (consentRes.status === 'fulfilled') {
+        const d = consentRes.value;
+        if (Array.isArray(d)) setConsent(d);
+        else if (d?.data) setConsent(d.data);
+      }
+      if (retRes.status === 'fulfilled') {
+        const d = retRes.value;
+        if (Array.isArray(d)) setRetention(d);
+        else if (d?.data) setRetention(d.data);
+      }
+      if (sccRes.status === 'fulfilled') {
+        const d = sccRes.value;
+        if (Array.isArray(d)) setTransfers(d);
+        else if (d?.data) setTransfers(d.data);
+      }
+      if (suppressionRes.status === 'fulfilled') {
+        const d = suppressionRes.value;
+        if (Array.isArray(d)) setSuppression(d);
+        else if (d?.data) setSuppression(d.data);
+      }
+    } catch {
+      // Fallback to mock data already in state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   // ── Computed Stats ──────────────────────────────────────────────────────
 
   const dsarStats = useMemo(() => {
-    const total = MOCK_DSARS.length;
-    const active = MOCK_DSARS.filter(d => !['Completed', 'Rejected'].includes(d.status)).length;
-    const completed = MOCK_DSARS.filter(d => d.status === 'Completed').length;
-    const overdue = MOCK_DSARS.filter(d => {
+    const total = dsars.length;
+    const active = dsars.filter(d => !['Completed', 'Rejected'].includes(d.status)).length;
+    const completed = dsars.filter(d => d.status === 'Completed').length;
+    const overdue = dsars.filter(d => {
       if (d.status === 'Completed' || d.status === 'Rejected') return false;
-      return new Date(d.deadline) < new Date('2026-02-19');
+      return new Date(d.deadline) < new Date();
     }).length;
     return { total, active, completed, overdue, avgResponseDays: 12.4 };
-  }, []);
+  }, [dsars]);
 
   const consentStats = useMemo(() => {
-    const avgGranted = MOCK_CONSENT.reduce((sum, c) => sum + c.grantedPct, 0) / MOCK_CONSENT.length;
-    const avgWithdrawn = MOCK_CONSENT.reduce((sum, c) => sum + c.withdrawnPct, 0) / MOCK_CONSENT.length;
-    return { avgGranted: avgGranted.toFixed(1), avgWithdrawn: avgWithdrawn.toFixed(1), totalPurposes: MOCK_CONSENT.length };
-  }, []);
+    if (consent.length === 0) return { avgGranted: '0', avgWithdrawn: '0', totalPurposes: 0 };
+    const avgGranted = consent.reduce((sum, c) => sum + c.grantedPct, 0) / consent.length;
+    const avgWithdrawn = consent.reduce((sum, c) => sum + c.withdrawnPct, 0) / consent.length;
+    return { avgGranted: avgGranted.toFixed(1), avgWithdrawn: avgWithdrawn.toFixed(1), totalPurposes: consent.length };
+  }, [consent]);
 
   const retentionStats = useMemo(() => {
-    const active = MOCK_RETENTION.filter(r => r.status === 'Active').length;
-    const autoDeleteEnabled = MOCK_RETENTION.filter(r => r.autoDeleteEnabled).length;
-    const expired = MOCK_RETENTION.filter(r => r.status === 'Expired').length;
-    const totalRecords = MOCK_RETENTION.reduce((sum, r) => sum + r.recordsAffected, 0);
-    const compliancePct = ((active / MOCK_RETENTION.length) * 100).toFixed(0);
+    if (retention.length === 0) return { active: 0, autoDeleteEnabled: 0, expired: 0, totalRecords: 0, compliancePct: '0' };
+    const active = retention.filter(r => r.status === 'Active').length;
+    const autoDeleteEnabled = retention.filter(r => r.autoDeleteEnabled).length;
+    const expired = retention.filter(r => r.status === 'Expired').length;
+    const totalRecords = retention.reduce((sum, r) => sum + r.recordsAffected, 0);
+    const compliancePct = ((active / retention.length) * 100).toFixed(0);
     return { active, autoDeleteEnabled, expired, totalRecords, compliancePct };
-  }, []);
+  }, [retention]);
 
   const filteredDSARs = useMemo(() => {
-    return MOCK_DSARS.filter(d => {
+    return dsars.filter(d => {
       const matchesSearch = searchQuery === '' ||
         d.subjectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         d.subjectEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -263,15 +317,15 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
       const matchesType = dsarTypeFilter === 'All' || d.type === dsarTypeFilter;
       return matchesSearch && matchesStatus && matchesType;
     });
-  }, [searchQuery, dsarStatusFilter, dsarTypeFilter]);
+  }, [dsars, searchQuery, dsarStatusFilter, dsarTypeFilter]);
 
   const filteredRetention = useMemo(() => {
-    if (retentionStatusFilter === 'All') return MOCK_RETENTION;
-    return MOCK_RETENTION.filter(r => r.status === retentionStatusFilter);
-  }, [retentionStatusFilter]);
+    if (retentionStatusFilter === 'All') return retention;
+    return retention.filter(r => r.status === retentionStatusFilter);
+  }, [retention, retentionStatusFilter]);
 
   const filteredSuppression = useMemo(() => {
-    return MOCK_SUPPRESSION.filter(s => {
+    return suppression.filter(s => {
       const matchesSearch = searchQuery === '' ||
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -311,7 +365,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
             <Database className="w-4 h-4" /> Retention Compliance
           </div>
           <div className="text-3xl font-bold text-emerald-400">{retentionStats.compliancePct}%</div>
-          <div className="text-xs text-slate-500 mt-1">{retentionStats.active} of {MOCK_RETENTION.length} schedules active</div>
+          <div className="text-xs text-slate-500 mt-1">{retentionStats.active} of {retention.length} schedules active</div>
         </div>
       </div>
 
@@ -330,7 +384,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <h3 className="text-sm font-medium text-white mb-3">DSAR Status Distribution</h3>
           <div className="space-y-2">
             {(['Received', 'Identity Verified', 'In Progress', 'Completed', 'Rejected'] as DSARStatus[]).map(status => {
-              const count = MOCK_DSARS.filter(d => d.status === status).length;
+              const count = dsars.filter(d => d.status === status).length;
               const pct = dsarStats.total > 0 ? (count / dsarStats.total) * 100 : 0;
               return (
                 <div key={status} className="flex items-center gap-3">
@@ -357,7 +411,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <h3 className="text-sm font-medium text-white mb-3">Consent Rates by Purpose</h3>
           <div className="space-y-2">
-            {MOCK_CONSENT.map(c => (
+            {consent.map(c => (
               <div key={c.id} className="flex items-center gap-3">
                 <div className="w-36 text-xs text-slate-400 truncate" title={c.purpose}>{c.purpose}</div>
                 <div className="flex-1 bg-slate-700 rounded-full h-2 overflow-hidden">
@@ -373,7 +427,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
         <h3 className="text-sm font-medium text-white mb-3">Upcoming Deadlines</h3>
         <div className="space-y-2">
-          {MOCK_DSARS
+          {dsars
             .filter(d => !['Completed', 'Rejected'].includes(d.status))
             .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
             .map(d => {
@@ -403,18 +457,18 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <div className="flex items-center gap-2 text-purple-400 text-sm mb-2">
             <Globe className="w-4 h-4" /> Cross-Border Transfers
           </div>
-          <div className="text-2xl font-bold text-white">{MOCK_TRANSFERS.length}</div>
+          <div className="text-2xl font-bold text-white">{transfers.length}</div>
           <div className="text-xs text-slate-500 mt-1">
-            {MOCK_TRANSFERS.filter(t => t.status === 'Active').length} active, {MOCK_TRANSFERS.filter(t => t.status === 'Under Review').length} under review
+            {transfers.filter(t => t.status === 'Active').length} active, {transfers.filter(t => t.status === 'Under Review').length} under review
           </div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-orange-400 text-sm mb-2">
             <Ban className="w-4 h-4" /> Suppression List
           </div>
-          <div className="text-2xl font-bold text-white">{MOCK_SUPPRESSION.length}</div>
+          <div className="text-2xl font-bold text-white">{suppression.length}</div>
           <div className="text-xs text-slate-500 mt-1">
-            {MOCK_SUPPRESSION.filter(s => s.status === 'Active').length} active entries
+            {suppression.filter(s => s.status === 'Active').length} active entries
           </div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
@@ -607,7 +661,9 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
                 Cancel
               </button>
               <button
-                onClick={() => setShowCreateDSAR(false)}
+                onClick={async () => {
+                  try { await api.privacy.createDSAR({ type: 'Access', status: 'Received' }); setShowCreateDSAR(false); loadData(); } catch { setShowCreateDSAR(false); }
+                }}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
               >
                 Create DSAR
@@ -650,7 +706,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
         <h3 className="text-sm font-medium text-white mb-4">Consent Rates by Purpose</h3>
         <div className="space-y-4">
-          {MOCK_CONSENT.map(c => (
+          {consent.map(c => (
             <div key={c.id} className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">{c.purpose}</span>
@@ -714,7 +770,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
               </tr>
             </thead>
             <tbody>
-              {MOCK_CONSENT.map(c => (
+              {consent.map(c => (
                 <tr key={c.id} className="border-b border-slate-700/50 hover:bg-slate-750/50">
                   <td className="px-4 py-3 text-slate-200">{c.purpose}</td>
                   <td className="px-4 py-3">
@@ -854,7 +910,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <h3 className="text-sm font-medium text-white mb-3">Transfer Mechanisms</h3>
           <div className="space-y-2">
             {(['SCC', 'BCR', 'Adequacy Decision', 'Derogation'] as const).map(mechanism => {
-              const count = MOCK_TRANSFERS.filter(t => t.legalMechanism === mechanism).length;
+              const count = transfers.filter(t => t.legalMechanism === mechanism).length;
               return (
                 <div key={mechanism} className="flex items-center justify-between">
                   <span className="text-xs text-slate-400">{mechanism}</span>
@@ -868,8 +924,8 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <h3 className="text-sm font-medium text-white mb-3">Risk Distribution</h3>
           <div className="space-y-2">
             {(['Low', 'Medium', 'High'] as const).map(risk => {
-              const count = MOCK_TRANSFERS.filter(t => t.riskLevel === risk).length;
-              const pct = MOCK_TRANSFERS.length > 0 ? (count / MOCK_TRANSFERS.length) * 100 : 0;
+              const count = transfers.filter(t => t.riskLevel === risk).length;
+              const pct = transfers.length > 0 ? (count / transfers.length) * 100 : 0;
               return (
                 <div key={risk} className="flex items-center gap-3">
                   <div className="w-16 text-xs text-slate-400">{risk}</div>
@@ -892,20 +948,20 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">BCR Transfers</span>
-              <span className="text-xs font-medium text-white">{MOCK_TRANSFERS.filter(t => t.legalMechanism === 'BCR').length}</span>
+              <span className="text-xs font-medium text-white">{transfers.filter(t => t.legalMechanism === 'BCR').length}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">TIA Completed</span>
-              <span className="text-xs font-medium text-green-400">{MOCK_TRANSFERS.filter(t => t.tiaCompleted).length} / {MOCK_TRANSFERS.length}</span>
+              <span className="text-xs font-medium text-green-400">{transfers.filter(t => t.tiaCompleted).length} / {transfers.length}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">Pending Review</span>
-              <span className="text-xs font-medium text-yellow-400">{MOCK_TRANSFERS.filter(t => t.status === 'Under Review').length}</span>
+              <span className="text-xs font-medium text-yellow-400">{transfers.filter(t => t.status === 'Under Review').length}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">TIA Missing</span>
-              <span className={`text-xs font-medium ${MOCK_TRANSFERS.filter(t => !t.tiaCompleted).length > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                {MOCK_TRANSFERS.filter(t => !t.tiaCompleted).length}
+              <span className={`text-xs font-medium ${transfers.filter(t => !t.tiaCompleted).length > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                {transfers.filter(t => !t.tiaCompleted).length}
               </span>
             </div>
           </div>
@@ -934,7 +990,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
               </tr>
             </thead>
             <tbody>
-              {MOCK_TRANSFERS.map(t => (
+              {transfers.map(t => (
                 <tr key={t.id} className="border-b border-slate-700/50 hover:bg-slate-750/50">
                   <td className="px-4 py-3 text-slate-200">{t.transferName}</td>
                   <td className="px-4 py-3 text-slate-400 text-xs">{t.sourceCountry}</td>
@@ -969,18 +1025,18 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
 
   const renderOptOut = () => {
     const channelCounts: Record<string, number> = {};
-    MOCK_SUPPRESSION.forEach(s => {
+    suppression.forEach(s => {
       s.channels.forEach(ch => {
         channelCounts[ch] = (channelCounts[ch] || 0) + 1;
       });
     });
-    const activeEntries = MOCK_SUPPRESSION.filter(s => s.status === 'Active').length;
-    const recentOptOuts = MOCK_SUPPRESSION.filter(s => {
+    const activeEntries = suppression.filter(s => s.status === 'Active').length;
+    const recentOptOuts = suppression.filter(s => {
       const daysDiff = Math.ceil((new Date('2026-02-19').getTime() - new Date(s.optOutDate).getTime()) / (1000 * 60 * 60 * 24));
       return daysDiff <= 7;
     }).length;
-    const complianceRate = MOCK_SUPPRESSION.length > 0
-      ? ((activeEntries / MOCK_SUPPRESSION.length) * 100).toFixed(1)
+    const complianceRate = suppression.length > 0
+      ? ((activeEntries / suppression.length) * 100).toFixed(1)
       : '0';
 
     return (
@@ -990,7 +1046,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
             <div className="flex items-center gap-2 text-blue-400 text-sm mb-1">
               <Ban className="w-4 h-4" /> Suppression Entries
             </div>
-            <div className="text-2xl font-bold text-blue-400">{MOCK_SUPPRESSION.length}</div>
+            <div className="text-2xl font-bold text-blue-400">{suppression.length}</div>
             <div className="text-xs text-slate-500 mt-1">{activeEntries} active</div>
           </div>
           <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">

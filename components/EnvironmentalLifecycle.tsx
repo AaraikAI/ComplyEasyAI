@@ -303,43 +303,129 @@ interface EnvironmentalLifecycleProps {
 
 export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
-  const [selectedProduct, setSelectedProduct] = useState<Product>(DEMO_PRODUCTS[0]);
   const [selectedStage, setSelectedStage] = useState<LifecycleStageData | null>(null);
   const [improvementStageFilter, setImprovementStageFilter] = useState<string>('All');
   const [improvementStatusFilter, setImprovementStatusFilter] = useState<string>('All');
   const [expandedImprovement, setExpandedImprovement] = useState<string | null>(null);
   const [showComparison, setShowComparison] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await api.modules.lifecycle.listAssessments();
-        // Only update if we got real data — demo data is used as fallback
-        setLoadError(null);
-      } catch (err: any) {
-        setLoadError('Unable to connect to server. Showing demo data.');
-      } finally {
-        setIsLoading(false);
+  // --- Data state (initialised from DEMO constants as fallback) ---
+  const [products, setProducts] = useState<Product[]>(DEMO_PRODUCTS);
+  const [selectedProduct, setSelectedProduct] = useState<Product>(DEMO_PRODUCTS[0]);
+  const [stages, setStages] = useState<LifecycleStageData[]>(DEMO_STAGES);
+  const [impactCategories, setImpactCategories] = useState<ImpactCategoryData[]>(DEMO_IMPACT_CATEGORIES);
+  const [improvements, setImprovements] = useState<Improvement[]>(DEMO_IMPROVEMENTS);
+  const [reports, setReports] = useState<LCAReport[]>(DEMO_REPORTS);
+  const [circularMetrics, setCircularMetrics] = useState<CircularMetrics>(DEMO_CIRCULAR);
+
+  // --- Load data from backend (falls back to DEMO data on error) ---
+  const loadData = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setIsLoading(true);
+    else setIsRefreshing(true);
+
+    try {
+      const data = await api.modules.lifecycle.listAssessments();
+      if (data && typeof data === 'object') {
+        // The API may return a flat list or a structured object — normalise both.
+        const d: any = Array.isArray(data) ? (data as any)[0] ?? {} : data;
+
+        if (Array.isArray(d.products) && d.products.length > 0) {
+          setProducts(d.products);
+          setSelectedProduct((prev: Product) => d.products.find((p: Product) => p.id === prev.id) || d.products[0]);
+        }
+        if (Array.isArray(d.stages) && d.stages.length > 0) {
+          // Re-attach React icons (API cannot serialise JSX)
+          const iconMap: Record<LifecycleStage, React.ReactNode> = {
+            raw_materials: <Mountain className="w-5 h-5" />,
+            manufacturing: <Factory className="w-5 h-5" />,
+            distribution: <Truck className="w-5 h-5" />,
+            use: <Home className="w-5 h-5" />,
+            end_of_life: <Recycle className="w-5 h-5" />,
+          };
+          setStages(d.stages.map((s: any) => ({ ...s, icon: iconMap[s.stage as LifecycleStage] ?? s.icon })));
+        }
+        if (Array.isArray(d.impactCategories) && d.impactCategories.length > 0) {
+          const catIconMap: Record<ImpactCategory, React.ReactNode> = {
+            climate_change: <Thermometer className="w-5 h-5" />,
+            ozone_depletion: <Sun className="w-5 h-5" />,
+            acidification: <Droplets className="w-5 h-5" />,
+            eutrophication: <Waves className="w-5 h-5" />,
+            resource_depletion: <Gem className="w-5 h-5" />,
+          };
+          setImpactCategories(d.impactCategories.map((c: any) => ({ ...c, icon: catIconMap[c.category as ImpactCategory] ?? c.icon })));
+        }
+        if (Array.isArray(d.improvements) && d.improvements.length > 0) setImprovements(d.improvements);
+        if (Array.isArray(d.reports) && d.reports.length > 0) setReports(d.reports);
+        if (d.circularMetrics && typeof d.circularMetrics === 'object') setCircularMetrics(d.circularMetrics);
       }
-    })();
+      setLoadError(null);
+    } catch (err: any) {
+      setLoadError('Unable to connect to server. Showing demo data.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   }, []);
 
-  const totalCO2e = useMemo(() => DEMO_STAGES.reduce((sum, s) => sum + s.co2eKg, 0), []);
-  const totalEnergy = useMemo(() => DEMO_STAGES.reduce((sum, s) => sum + s.energyMJ, 0), []);
-  const totalWater = useMemo(() => DEMO_STAGES.reduce((sum, s) => sum + s.waterL, 0), []);
-  const totalWaste = useMemo(() => DEMO_STAGES.reduce((sum, s) => sum + s.wasteKg, 0), []);
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const totalCO2e = useMemo(() => stages.reduce((sum, s) => sum + s.co2eKg, 0), [stages]);
+  const totalEnergy = useMemo(() => stages.reduce((sum, s) => sum + s.energyMJ, 0), [stages]);
+  const totalWater = useMemo(() => stages.reduce((sum, s) => sum + s.waterL, 0), [stages]);
+  const totalWaste = useMemo(() => stages.reduce((sum, s) => sum + s.wasteKg, 0), [stages]);
 
   const filteredImprovements = useMemo(() =>
-    DEMO_IMPROVEMENTS.filter(imp =>
+    improvements.filter(imp =>
       (improvementStageFilter === 'All' || imp.stage === improvementStageFilter) &&
       (improvementStatusFilter === 'All' || imp.status === improvementStatusFilter)
-    ), [improvementStageFilter, improvementStatusFilter]);
+    ), [improvements, improvementStageFilter, improvementStatusFilter]);
 
   const potentialReduction = useMemo(() =>
-    DEMO_IMPROVEMENTS.filter(i => i.status !== 'rejected' && i.status !== 'implemented' && i.reductionUnit === 'kg CO2-eq')
-      .reduce((sum, i) => sum + i.estimatedReduction, 0), []);
+    improvements.filter(i => i.status !== 'rejected' && i.status !== 'implemented' && i.reductionUnit === 'kg CO2-eq')
+      .reduce((sum, i) => sum + i.estimatedReduction, 0), [improvements]);
+
+  // --- API action helpers ---
+  const handleUpdateImprovement = useCallback(async (id: string, updates: Partial<Improvement>) => {
+    setIsSaving(true);
+    try {
+      await api.modules.lifecycle.updateAssessment(id, { type: 'improvement', ...updates });
+      // Optimistically update local state
+      setImprovements(prev => prev.map(imp => imp.id === id ? { ...imp, ...updates } : imp));
+    } catch {
+      // Silently fall back — state remains as-is
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
+
+  const handleCreateAssessment = useCallback(async (payload: any) => {
+    setIsSaving(true);
+    try {
+      const created = await api.modules.lifecycle.createAssessment(payload);
+      if (created) await loadData({ silent: true });
+      return created;
+    } catch {
+      return null;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [loadData]);
+
+  const handleDeleteAssessment = useCallback(async (id: string) => {
+    setIsSaving(true);
+    try {
+      await api.modules.lifecycle.deleteAssessment(id);
+      await loadData({ silent: true });
+    } catch {
+      // keep current state on failure
+    } finally {
+      setIsSaving(false);
+    }
+  }, [loadData]);
 
   // ---------------------------------------------------------------------------
   // Tab Renderers
@@ -350,9 +436,9 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <select value={selectedProduct.id} onChange={e => setSelectedProduct(DEMO_PRODUCTS.find(p => p.id === e.target.value) || DEMO_PRODUCTS[0])}
+            <select value={selectedProduct.id} onChange={e => setSelectedProduct(products.find(p => p.id === e.target.value) || products[0])}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500">
-              {DEMO_PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name} v{p.version}</option>)}
+              {products.map(p => <option key={p.id} value={p.id}>{p.name} v{p.version}</option>)}
             </select>
             <span className="text-sm text-gray-500">{selectedProduct.category}</span>
           </div>
@@ -409,7 +495,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
       <div className="bg-white border border-gray-200 rounded-lg p-5">
         <h3 className="font-semibold text-gray-900 mb-4">Carbon Footprint by Lifecycle Stage</h3>
         <div className="flex h-8 rounded-lg overflow-hidden mb-4">
-          {DEMO_STAGES.map(stage => (
+          {stages.map(stage => (
             <div key={stage.id} className={`${stageColors[stage.stage]} relative group cursor-pointer transition-opacity hover:opacity-80`}
               style={{ width: `${stage.percentOfTotal}%` }} onClick={() => { setSelectedStage(stage); setActiveTab('lifecycle_stages'); }}>
               <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium">
@@ -419,7 +505,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
           ))}
         </div>
         <div className="flex flex-wrap gap-4">
-          {DEMO_STAGES.map(stage => (
+          {stages.map(stage => (
             <div key={stage.id} className="flex items-center gap-2 text-sm">
               <div className={`w-3 h-3 rounded-sm ${stageColors[stage.stage]}`} />
               <span className="text-gray-600">{stage.label}</span>
@@ -437,7 +523,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
           <Recycle className="w-5 h-5 text-green-600" />
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {Object.entries(DEMO_CIRCULAR).map(([key, value]) => (
+          {Object.entries(circularMetrics).map(([key, value]) => (
             <div key={key} className="text-center">
               <div className="relative w-16 h-16 mx-auto mb-2">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -502,7 +588,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
     <div className="space-y-6">
       {/* Stage Navigation */}
       <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-4 gap-2 overflow-x-auto">
-        {DEMO_STAGES.map((stage, i) => (
+        {stages.map((stage, i) => (
           <React.Fragment key={stage.id}>
             <button onClick={() => setSelectedStage(selectedStage?.id === stage.id ? null : stage)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm whitespace-nowrap ${selectedStage?.id === stage.id ? `${stageBgColors[stage.stage]} border font-medium` : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}>
@@ -510,13 +596,13 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
               <span>{stage.label}</span>
               <span className="font-bold">{stage.co2eKg} kg</span>
             </button>
-            {i < DEMO_STAGES.length - 1 && <ArrowRight className="w-4 h-4 text-gray-300 flex-shrink-0" />}
+            {i < stages.length - 1 && <ArrowRight className="w-4 h-4 text-gray-300 flex-shrink-0" />}
           </React.Fragment>
         ))}
       </div>
 
       {/* Stage Details */}
-      {DEMO_STAGES.map(stage => (
+      {stages.map(stage => (
         <div key={stage.id} className={`bg-white border border-gray-200 rounded-lg overflow-hidden ${selectedStage?.id === stage.id ? 'ring-2 ring-blue-300' : ''}`}>
           <div className="p-4 cursor-pointer hover:bg-gray-50" onClick={() => setSelectedStage(selectedStage?.id === stage.id ? null : stage)}>
             <div className="flex items-center justify-between">
@@ -601,7 +687,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
         </button>
       </div>
 
-      {DEMO_IMPACT_CATEGORIES.map(cat => {
+      {impactCategories.map(cat => {
         const pctOfBenchmark = Math.round((cat.totalValue / cat.benchmarkValue) * 100);
         const isBetter = pctOfBenchmark < 100;
 
@@ -694,27 +780,28 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
             <option value="implemented">Implemented</option>
           </select>
         </div>
-        <button className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm inline-flex items-center gap-1">
-          <Plus className="w-4 h-4" />Add Improvement
+        <button disabled={isSaving} onClick={() => handleCreateAssessment({ type: 'improvement', title: 'New Improvement', stage: 'manufacturing', category: 'climate_change', status: 'proposed', priority: 'Medium', effort: 'Medium', cost: 'Medium', timeline: 'TBD', estimatedReduction: 0, reductionUnit: 'kg CO2-eq', description: '', regulatoryDriver: '' })}
+          className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm inline-flex items-center gap-1 disabled:opacity-50">
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}Add Improvement
         </button>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-green-700">{DEMO_IMPROVEMENTS.filter(i => i.status === 'implemented').length}</div>
+          <div className="text-xl font-bold text-green-700">{improvements.filter(i => i.status === 'implemented').length}</div>
           <div className="text-xs text-green-600">Implemented</div>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-blue-700">{DEMO_IMPROVEMENTS.filter(i => i.status === 'in_progress').length}</div>
+          <div className="text-xl font-bold text-blue-700">{improvements.filter(i => i.status === 'in_progress').length}</div>
           <div className="text-xs text-blue-600">In Progress</div>
         </div>
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-yellow-700">{DEMO_IMPROVEMENTS.filter(i => i.status === 'approved').length}</div>
+          <div className="text-xl font-bold text-yellow-700">{improvements.filter(i => i.status === 'approved').length}</div>
           <div className="text-xs text-yellow-600">Approved</div>
         </div>
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-          <div className="text-xl font-bold text-gray-700">{DEMO_IMPROVEMENTS.filter(i => i.status === 'proposed').length}</div>
+          <div className="text-xl font-bold text-gray-700">{improvements.filter(i => i.status === 'proposed').length}</div>
           <div className="text-xs text-gray-500">Proposed</div>
         </div>
       </div>
@@ -769,18 +856,32 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
                 <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
                   {imp.status === 'proposed' && (
                     <>
-                      <button className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700">Approve</button>
-                      <button className="px-3 py-1.5 bg-red-600 text-white rounded text-xs hover:bg-red-700">Reject</button>
+                      <button disabled={isSaving} onClick={() => handleUpdateImprovement(imp.id, { status: 'approved' })}
+                        className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50">
+                        {isSaving ? <Loader2 className="w-3 h-3 inline animate-spin mr-1" /> : null}Approve
+                      </button>
+                      <button disabled={isSaving} onClick={() => handleUpdateImprovement(imp.id, { status: 'rejected' })}
+                        className="px-3 py-1.5 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50">Reject</button>
                     </>
                   )}
                   {imp.status === 'approved' && (
-                    <button className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">Start Implementation</button>
+                    <button disabled={isSaving} onClick={() => handleUpdateImprovement(imp.id, { status: 'in_progress' })}
+                      className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50">
+                      {isSaving ? <Loader2 className="w-3 h-3 inline animate-spin mr-1" /> : null}Start Implementation
+                    </button>
                   )}
                   {imp.status === 'in_progress' && (
-                    <button className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700">Mark Implemented</button>
+                    <button disabled={isSaving} onClick={() => handleUpdateImprovement(imp.id, { status: 'implemented' })}
+                      className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50">
+                      {isSaving ? <Loader2 className="w-3 h-3 inline animate-spin mr-1" /> : null}Mark Implemented
+                    </button>
                   )}
-                  <button className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50">
+                  <button disabled={isSaving} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 disabled:opacity-50">
                     <Edit3 className="w-3 h-3 inline mr-1" />Edit
+                  </button>
+                  <button disabled={isSaving} onClick={() => handleDeleteAssessment(imp.id)}
+                    className="px-3 py-1.5 border border-red-300 text-red-700 rounded text-xs hover:bg-red-50 disabled:opacity-50">
+                    <Trash2 className="w-3 h-3 inline mr-1" />Delete
                   </button>
                 </div>
               </div>
@@ -795,14 +896,15 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">LCA Reports</h3>
-        <button className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm inline-flex items-center gap-1">
-          <Plus className="w-4 h-4" />Generate Report
+        <button disabled={isSaving} onClick={() => handleCreateAssessment({ type: 'report', name: 'New LCA Report', productId: selectedProduct.id, methodology: 'ISO 14040/14044', scope: 'Cradle-to-Grave', totalCO2e: totalCO2e, complianceStatus: 'Draft', regulations: [], status: 'draft', generatedDate: new Date().toISOString().split('T')[0] })}
+          className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm inline-flex items-center gap-1 disabled:opacity-50">
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}Generate Report
         </button>
       </div>
 
       <div className="space-y-3">
-        {DEMO_REPORTS.map(rpt => {
-          const product = DEMO_PRODUCTS.find(p => p.id === rpt.productId);
+        {reports.map(rpt => {
+          const product = products.find(p => p.id === rpt.productId);
           return (
             <div key={rpt.id} className="bg-white border border-gray-200 rounded-lg p-5">
               <div className="flex items-center justify-between mb-3">
@@ -935,6 +1037,11 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {isRefreshing && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
+              <button onClick={() => loadData({ silent: true })} disabled={isRefreshing}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50" title="Refresh data">
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
               <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300 inline-flex items-center gap-1">
                 <Leaf className="w-3 h-3" />{totalCO2e.toFixed(1)} kg CO2-eq / unit
               </span>
@@ -961,22 +1068,23 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {isLoading && (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-500">Loading data...</span>
+            <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+            <span className="ml-3 text-gray-500">Loading lifecycle data...</span>
           </div>
         )}
         {loadError && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 mb-4">
             <AlertTriangle size={16} className="text-amber-500 shrink-0" />
             <span className="text-sm text-amber-700">{loadError}</span>
+            <button onClick={() => loadData({ silent: true })} className="ml-2 text-amber-600 hover:text-amber-800 text-sm underline">Retry</button>
             <button onClick={() => setLoadError(null)} className="ml-auto text-amber-500 hover:text-amber-700"><X size={14} /></button>
           </div>
         )}
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'lifecycle_stages' && renderLifecycleStages()}
-        {activeTab === 'impact_assessment' && renderImpactAssessment()}
-        {activeTab === 'improvements' && renderImprovements()}
-        {activeTab === 'reports' && renderReports()}
+        {!isLoading && activeTab === 'overview' && renderOverview()}
+        {!isLoading && activeTab === 'lifecycle_stages' && renderLifecycleStages()}
+        {!isLoading && activeTab === 'impact_assessment' && renderImpactAssessment()}
+        {!isLoading && activeTab === 'improvements' && renderImprovements()}
+        {!isLoading && activeTab === 'reports' && renderReports()}
       </div>
     </div>
   );

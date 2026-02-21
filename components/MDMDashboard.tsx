@@ -12,7 +12,8 @@
  * for both BYOD and corporate-owned device fleets.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft, Smartphone, Shield, CheckCircle, XCircle, AlertTriangle,
   Search, Plus, X, Lock, Trash2, Eye, Download, Settings, Filter,
@@ -147,11 +148,52 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showCreatePolicy, setShowCreatePolicy] = useState(false);
   const [showActionConfirm, setShowActionConfirm] = useState<{ type: ActionType; device: Device } | null>(null);
+  const [devices, setDevices] = useState<Device[]>(MOCK_DEVICES);
+  const [policies, setPolicies] = useState<MDMPolicy[]>(MOCK_POLICIES);
+  const [violations, setViolations] = useState<ComplianceViolation[]>(MOCK_VIOLATIONS);
+  const [actionLog, setActionLog] = useState<ActionLogEntry[]>(MOCK_ACTION_LOG);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const devices = MOCK_DEVICES;
-  const policies = MOCK_POLICIES;
-  const violations = MOCK_VIOLATIONS;
-  const actionLog = MOCK_ACTION_LOG;
+  // Policy form state
+  const [policyForm, setPolicyForm] = useState({
+    name: '', description: '', platforms: [] as Platform[],
+    minPasscodeLength: 8, encryptionRequired: true, vpnRequired: false,
+    cameraAllowed: true, screenCaptureAllowed: true, minOsVersion: '',
+    maxInactivityLock: 5, assignedGroups: ['All Mobile Devices'] as string[],
+  });
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [devicesRes, policiesRes, dashboardRes] = await Promise.allSettled([
+        api.mdm.listDevices(),
+        api.mdm.listPolicies(),
+        api.mdm.getDashboard(),
+      ]);
+      if (devicesRes.status === 'fulfilled' && Array.isArray(devicesRes.value)) {
+        setDevices(devicesRes.value);
+      } else if (devicesRes.status === 'fulfilled' && devicesRes.value?.data) {
+        setDevices(devicesRes.value.data);
+      }
+      if (policiesRes.status === 'fulfilled' && Array.isArray(policiesRes.value)) {
+        setPolicies(policiesRes.value);
+      } else if (policiesRes.status === 'fulfilled' && policiesRes.value?.data) {
+        setPolicies(policiesRes.value.data);
+      }
+      if (dashboardRes.status === 'fulfilled' && dashboardRes.value) {
+        const db = dashboardRes.value;
+        if (db.violations && Array.isArray(db.violations)) setViolations(db.violations);
+        if (db.actionLog && Array.isArray(db.actionLog)) setActionLog(db.actionLog);
+      }
+    } catch {
+      // Fallback to mock data already in state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   // Derived metrics
   const totalDevices = devices.length;
@@ -667,18 +709,18 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <div className="p-5 space-y-4">
             <div>
               <label className="block text-sm text-slate-400 mb-1">Policy Name</label>
-              <input type="text" placeholder="e.g., BYOD Tablet Policy" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+              <input type="text" placeholder="e.g., BYOD Tablet Policy" value={policyForm.name} onChange={e => setPolicyForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Description</label>
-              <textarea placeholder="Describe the purpose and scope of this policy..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+              <textarea placeholder="Describe the purpose and scope of this policy..." value={policyForm.description} onChange={e => setPolicyForm(f => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none" />
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Target Platforms</label>
               <div className="flex gap-2">
                 {(['iOS', 'Android', 'Windows', 'macOS'] as Platform[]).map(p => (
                   <label key={p} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-300 cursor-pointer hover:border-blue-500">
-                    <input type="checkbox" className="rounded border-slate-500" />
+                    <input type="checkbox" checked={policyForm.platforms.includes(p)} onChange={e => setPolicyForm(f => ({ ...f, platforms: e.target.checked ? [...f.platforms, p] : f.platforms.filter(x => x !== p) }))} className="rounded border-slate-500" />
                     {p}
                   </label>
                 ))}
@@ -687,21 +729,21 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Min Passcode Length</label>
-                <input type="number" placeholder="8" min={0} max={32} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+                <input type="number" placeholder="8" min={0} max={32} value={policyForm.minPasscodeLength} onChange={e => setPolicyForm(f => ({ ...f, minPasscodeLength: Number(e.target.value) }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
               </div>
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Auto-Lock (minutes)</label>
-                <input type="number" placeholder="5" min={1} max={60} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+                <input type="number" placeholder="5" min={1} max={60} value={policyForm.maxInactivityLock} onChange={e => setPolicyForm(f => ({ ...f, maxInactivityLock: Number(e.target.value) }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Minimum OS Version</label>
-                <input type="text" placeholder="e.g., 17.0 / 14.0" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+                <input type="text" placeholder="e.g., 17.0 / 14.0" value={policyForm.minOsVersion} onChange={e => setPolicyForm(f => ({ ...f, minOsVersion: e.target.value }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
               </div>
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Assigned Group</label>
-                <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
+                <select value={policyForm.assignedGroups[0]} onChange={e => setPolicyForm(f => ({ ...f, assignedGroups: [e.target.value] }))} className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
                   <option>All Mobile Devices</option>
                   <option>Corporate Owned</option>
                   <option>BYOD Users</option>
@@ -714,13 +756,13 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="space-y-2">
               <label className="block text-sm text-slate-400">Security Settings</label>
               {[
-                { label: 'Require device encryption', id: 'encryption' },
-                { label: 'Require VPN connection', id: 'vpn' },
-                { label: 'Allow camera access', id: 'camera' },
-                { label: 'Allow screen capture', id: 'screenshot' },
+                { label: 'Require device encryption', id: 'encryption', key: 'encryptionRequired' as const },
+                { label: 'Require VPN connection', id: 'vpn', key: 'vpnRequired' as const },
+                { label: 'Allow camera access', id: 'camera', key: 'cameraAllowed' as const },
+                { label: 'Allow screen capture', id: 'screenshot', key: 'screenCaptureAllowed' as const },
               ].map(opt => (
                 <label key={opt.id} className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-                  <input type="checkbox" defaultChecked={opt.id === 'encryption'} className="rounded border-slate-500" />
+                  <input type="checkbox" checked={policyForm[opt.key]} onChange={e => setPolicyForm(f => ({ ...f, [opt.key]: e.target.checked }))} className="rounded border-slate-500" />
                   {opt.label}
                 </label>
               ))}
@@ -728,8 +770,12 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
           <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
             <button onClick={() => setShowCreatePolicy(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
-            <button onClick={() => setShowCreatePolicy(false)} className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm hover:bg-slate-500">Save as Draft</button>
-            <button onClick={() => setShowCreatePolicy(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create & Activate</button>
+            <button onClick={async () => {
+              try { await api.mdm.createPolicy({ ...policyForm, status: 'Draft' }); setShowCreatePolicy(false); loadData(); } catch { setShowCreatePolicy(false); }
+            }} className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm hover:bg-slate-500">Save as Draft</button>
+            <button onClick={async () => {
+              try { await api.mdm.createPolicy({ ...policyForm, status: 'Active' }); setShowCreatePolicy(false); loadData(); } catch { setShowCreatePolicy(false); }
+            }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create & Activate</button>
           </div>
         </div>
       </div>
@@ -770,8 +816,23 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
           <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
             <button onClick={() => setShowActionConfirm(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
-            <button onClick={() => setShowActionConfirm(null)} className={`px-4 py-2 rounded-lg text-sm text-white ${isDestructive ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
-              Confirm {type}
+            <button
+              disabled={actionLoading}
+              onClick={async () => {
+                setActionLoading(true);
+                try {
+                  await api.mdm.executeAction(device.id, { action: type.toLowerCase(), notes: '' });
+                  setShowActionConfirm(null);
+                  loadData();
+                } catch {
+                  setShowActionConfirm(null);
+                } finally {
+                  setActionLoading(false);
+                }
+              }}
+              className={`px-4 py-2 rounded-lg text-sm text-white ${isDestructive ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} disabled:opacity-50`}
+            >
+              {actionLoading ? 'Processing...' : `Confirm ${type}`}
             </button>
           </div>
         </div>
@@ -789,6 +850,9 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <h1 className="text-2xl font-bold">Mobile Device Management</h1>
             <p className="text-sm text-slate-400">Manage, secure, and monitor your corporate device fleet</p>
           </div>
+          <button onClick={loadData} disabled={loading} className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-300 hover:text-white disabled:opacity-50">
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
+          </button>
         </div>
 
         <div className="flex gap-1 mb-6 border-b border-slate-700 overflow-x-auto">

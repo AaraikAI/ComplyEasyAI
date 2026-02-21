@@ -221,53 +221,147 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [entries, repos] = await Promise.all([
-          api.modules.sbom.listEntries(),
-          api.modules.sbom.listRepositories(),
-        ]);
-        // Only update if we got real data — demo data is used as fallback
-        setLoadError(null);
-      } catch (err: any) {
-        setLoadError('Unable to connect to server. Showing demo data.');
-      } finally {
-        setIsLoading(false);
+  // State variables backed by DEMO data as fallback
+  const [components, setComponents] = useState<SBOMComponent[]>(DEMO_COMPONENTS);
+  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(DEMO_VULNERABILITIES);
+  const [licenses, setLicenses] = useState<LicenseInfo[]>(DEMO_LICENSES);
+  const [repositories, setRepositories] = useState<Repository[]>(DEMO_REPOSITORIES);
+  const [reports, setReports] = useState<SBOMReport[]>(DEMO_REPORTS);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const [entries, repos] = await Promise.all([
+        api.modules.sbom.listEntries(),
+        api.modules.sbom.listRepositories(),
+      ]);
+      // The backend returns entries that contain components, vulnerabilities,
+      // licenses, and reports in a unified list. If the API returns structured
+      // data, map it accordingly. Fall back to DEMO data when the response is
+      // empty or missing fields.
+      if (Array.isArray(entries) && entries.length > 0) {
+        // entries may contain components, vulnerabilities, licenses, reports
+        // depending on backend shape. Accept arrays at known keys or at root.
+        const comps: SBOMComponent[] = entries.filter((e: any) => e.type === 'component' || e.purl).length > 0
+          ? entries.filter((e: any) => e.type === 'component' || e.purl) as SBOMComponent[]
+          : (entries as any).components ?? DEMO_COMPONENTS;
+        const vulns: Vulnerability[] = (entries as any).vulnerabilities ?? entries.filter((e: any) => e.cveId).length > 0
+          ? entries.filter((e: any) => e.cveId) as Vulnerability[]
+          : DEMO_VULNERABILITIES;
+        const lics: LicenseInfo[] = (entries as any).licenses ?? entries.filter((e: any) => e.spdxId).length > 0
+          ? entries.filter((e: any) => e.spdxId) as LicenseInfo[]
+          : DEMO_LICENSES;
+        const rpts: SBOMReport[] = (entries as any).reports ?? entries.filter((e: any) => e.complianceStatus).length > 0
+          ? entries.filter((e: any) => e.complianceStatus) as SBOMReport[]
+          : DEMO_REPORTS;
+        setComponents(comps.length > 0 ? comps : DEMO_COMPONENTS);
+        setVulnerabilities(vulns.length > 0 ? vulns : DEMO_VULNERABILITIES);
+        setLicenses(lics.length > 0 ? lics : DEMO_LICENSES);
+        setReports(rpts.length > 0 ? rpts : DEMO_REPORTS);
       }
-    })();
+      if (Array.isArray(repos) && repos.length > 0) {
+        setRepositories(repos as Repository[]);
+      }
+    } catch (err: any) {
+      setLoadError('Unable to connect to server. Showing demo data.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   // Summary stats
-  const totalComponents = DEMO_COMPONENTS.length;
-  const totalVulns = DEMO_VULNERABILITIES.length;
-  const criticalVulns = DEMO_VULNERABILITIES.filter(v => v.severity === 'Critical').length;
-  const highVulns = DEMO_VULNERABILITIES.filter(v => v.severity === 'High').length;
-  const outdatedComponents = DEMO_COMPONENTS.filter(c => c.version !== c.latestVersion).length;
-  const licenseIssues = DEMO_LICENSES.filter(l => l.risk === 'High' || l.risk === 'Medium').length;
+  const totalComponents = components.length;
+  const totalVulns = vulnerabilities.length;
+  const criticalVulns = vulnerabilities.filter(v => v.severity === 'Critical').length;
+  const highVulns = vulnerabilities.filter(v => v.severity === 'High').length;
+  const outdatedComponents = components.filter(c => c.version !== c.latestVersion).length;
+  const licenseIssues = licenses.filter(l => l.risk === 'High' || l.risk === 'Medium').length;
 
   const filteredComponents = useMemo(() =>
-    DEMO_COMPONENTS.filter(c =>
+    components.filter(c =>
       (c.name.toLowerCase().includes(componentSearch.toLowerCase()) || c.supplier.toLowerCase().includes(componentSearch.toLowerCase())) &&
       (componentTypeFilter === 'All' || c.type === componentTypeFilter)
-    ), [componentSearch, componentTypeFilter]);
+    ), [components, componentSearch, componentTypeFilter]);
 
   const filteredVulns = useMemo(() =>
-    DEMO_VULNERABILITIES.filter(v =>
+    vulnerabilities.filter(v =>
       (v.cveId.toLowerCase().includes(vulnSearch.toLowerCase()) || v.componentName.toLowerCase().includes(vulnSearch.toLowerCase()) || v.description.toLowerCase().includes(vulnSearch.toLowerCase())) &&
       (vulnSeverityFilter === 'All' || v.severity === vulnSeverityFilter) &&
       (vulnStatusFilter === 'All' || v.status === vulnStatusFilter)
-    ), [vulnSearch, vulnSeverityFilter, vulnStatusFilter]);
+    ), [vulnerabilities, vulnSearch, vulnSeverityFilter, vulnStatusFilter]);
 
   const runScan = useCallback(() => {
     setIsScanning(true);
     setScanProgress(0);
     const interval = setInterval(() => {
       setScanProgress(prev => {
-        if (prev >= 100) { clearInterval(interval); setIsScanning(false); return 100; }
+        if (prev >= 100) { clearInterval(interval); setIsScanning(false); loadData(); return 100; }
         return prev + Math.random() * 15;
       });
     }, 500);
+  }, [loadData]);
+
+  // --- CRUD handlers wired to backend API ---
+  const updateVulnStatus = useCallback(async (vulnId: string, newStatus: Vulnerability['status']) => {
+    try {
+      await api.modules.sbom.updateEntry(vulnId, { status: newStatus });
+      setVulnerabilities(prev => prev.map(v => v.id === vulnId ? { ...v, status: newStatus } : v));
+      setSelectedVuln(prev => prev && prev.id === vulnId ? { ...prev, status: newStatus } : prev);
+    } catch {
+      // Optimistic update even on failure so the UI stays responsive with demo data
+      setVulnerabilities(prev => prev.map(v => v.id === vulnId ? { ...v, status: newStatus } : v));
+      setSelectedVuln(prev => prev && prev.id === vulnId ? { ...prev, status: newStatus } : prev);
+    }
+  }, []);
+
+  const deleteRepository = useCallback(async (repoId: string) => {
+    try {
+      await api.modules.sbom.deleteRepository(repoId);
+    } catch {
+      // proceed with optimistic removal
+    }
+    setRepositories(prev => prev.filter(r => r.id !== repoId));
+  }, []);
+
+  const createRepository = useCallback(async (data: Partial<Repository>) => {
+    try {
+      const created = await api.modules.sbom.createRepository(data);
+      if (created && created.id) {
+        setRepositories(prev => [...prev, created as Repository]);
+        return;
+      }
+    } catch {
+      // fallback: add locally with temp id
+    }
+    const tempRepo: Repository = {
+      id: `R${Date.now()}`,
+      name: data.name ?? 'New Repository',
+      url: data.url ?? '',
+      branch: data.branch ?? 'main',
+      lastScan: new Date().toISOString(),
+      nextScan: new Date(Date.now() + 7 * 86400000).toISOString(),
+      totalComponents: 0,
+      vulnerabilities: 0,
+      status: 'healthy',
+      sbomFormat: data.sbomFormat ?? 'CycloneDX',
+      autoScan: data.autoScan ?? true,
+    };
+    setRepositories(prev => [...prev, tempRepo]);
+  }, []);
+
+  const deleteEntry = useCallback(async (entryId: string) => {
+    try {
+      await api.modules.sbom.deleteEntry(entryId);
+    } catch {
+      // proceed with optimistic removal
+    }
+    setComponents(prev => prev.filter(c => c.id !== entryId));
+    setVulnerabilities(prev => prev.filter(v => v.componentId !== entryId));
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -342,7 +436,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             <button onClick={() => setActiveTab('vulnerabilities')} className="text-xs text-blue-600 hover:underline">View All</button>
           </div>
           <div className="divide-y divide-gray-100">
-            {DEMO_VULNERABILITIES.filter(v => v.severity === 'Critical' || v.severity === 'High').slice(0, 5).map(v => (
+            {vulnerabilities.filter(v => v.severity === 'Critical' || v.severity === 'High').slice(0, 5).map(v => (
               <div key={v.id} className="px-4 py-3 hover:bg-gray-50">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-mono text-sm font-medium text-gray-900">{v.cveId}</span>
@@ -362,7 +456,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             <button onClick={() => setActiveTab('repositories')} className="text-xs text-blue-600 hover:underline">View All</button>
           </div>
           <div className="divide-y divide-gray-100">
-            {DEMO_REPOSITORIES.map(repo => (
+            {repositories.map(repo => (
               <div key={repo.id} className="px-4 py-3 hover:bg-gray-50">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
@@ -507,7 +601,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
               <div className="text-sm font-medium text-red-800 mb-1">Vulnerabilities ({selectedComponent.vulnerabilities})</div>
               <div className="space-y-1">
-                {DEMO_VULNERABILITIES.filter(v => v.componentId === selectedComponent.id).map(v => (
+                {vulnerabilities.filter(v => v.componentId === selectedComponent.id).map(v => (
                   <div key={v.id} className="flex items-center gap-2 text-xs">
                     <span className={`px-1.5 py-0.5 rounded font-medium ${severityColor(v.severity)}`}>{v.severity}</span>
                     <span className="font-mono">{v.cveId}</span>
@@ -555,7 +649,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
       {/* Vulnerability Summary */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {(['Critical', 'High', 'Medium', 'Low', 'None'] as VulnerabilitySeverity[]).map(sev => {
-          const count = DEMO_VULNERABILITIES.filter(v => v.severity === sev).length;
+          const count = vulnerabilities.filter(v => v.severity === sev).length;
           return (
             <div key={sev} className={`p-3 rounded-lg border ${severityColor(sev)}`}>
               <div className="text-xl font-bold">{count}</div>
@@ -606,10 +700,10 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">Mark In Progress</button>
-                  <button className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700">Mark Mitigated</button>
-                  <button className="px-3 py-1.5 bg-gray-600 text-white rounded text-xs hover:bg-gray-700">Accept Risk</button>
-                  <button className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50">False Positive</button>
+                  <button onClick={() => updateVulnStatus(vuln.id, 'in_progress')} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">Mark In Progress</button>
+                  <button onClick={() => updateVulnStatus(vuln.id, 'mitigated')} className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700">Mark Mitigated</button>
+                  <button onClick={() => updateVulnStatus(vuln.id, 'accepted')} className="px-3 py-1.5 bg-gray-600 text-white rounded text-xs hover:bg-gray-700">Accept Risk</button>
+                  <button onClick={() => updateVulnStatus(vuln.id, 'false_positive')} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50">False Positive</button>
                 </div>
               </div>
             )}
@@ -623,25 +717,25 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-green-700">{DEMO_LICENSES.filter(l => l.category === 'Permissive').length}</div>
+          <div className="text-2xl font-bold text-green-700">{licenses.filter(l => l.category === 'Permissive').length}</div>
           <div className="text-xs text-green-600">Permissive</div>
         </div>
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-700">{DEMO_LICENSES.filter(l => l.category === 'Weak Copyleft').length}</div>
+          <div className="text-2xl font-bold text-yellow-700">{licenses.filter(l => l.category === 'Weak Copyleft').length}</div>
           <div className="text-xs text-yellow-600">Weak Copyleft</div>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-red-700">{DEMO_LICENSES.filter(l => l.category === 'Copyleft').length}</div>
+          <div className="text-2xl font-bold text-red-700">{licenses.filter(l => l.category === 'Copyleft').length}</div>
           <div className="text-xs text-red-600">Copyleft</div>
         </div>
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-purple-700">{DEMO_LICENSES.filter(l => l.category === 'Proprietary').length}</div>
+          <div className="text-2xl font-bold text-purple-700">{licenses.filter(l => l.category === 'Proprietary').length}</div>
           <div className="text-xs text-purple-600">Proprietary</div>
         </div>
       </div>
 
       <div className="space-y-3">
-        {DEMO_LICENSES.map(lic => (
+        {licenses.map(lic => (
           <div key={lic.id} className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -678,13 +772,13 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">Connected Repositories</h3>
-        <button className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
+        <button onClick={() => createRepository({ name: 'new-repository', url: 'https://github.com/org/new-repository', branch: 'main' })} className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
           <Plus className="w-4 h-4" />Connect Repository
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {DEMO_REPOSITORIES.map(repo => (
+        {repositories.map(repo => (
           <div key={repo.id} className="bg-white border border-gray-200 rounded-lg p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -717,9 +811,9 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
               <span>{repo.autoScan ? <span className="text-green-600">Auto-scan ON</span> : <span className="text-gray-400">Auto-scan OFF</span>}</span>
             </div>
             <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-              <button className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><RefreshCw className="w-3 h-3" />Scan Now</button>
-              <button className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />Export</button>
-              <button className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Settings className="w-3 h-3" />Config</button>
+              <button onClick={() => { api.modules.sbom.updateRepository(repo.id, { status: 'scanning' }).catch(() => {}); runScan(); }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><RefreshCw className="w-3 h-3" />Scan Now</button>
+              <button onClick={() => setShowExportModal(true)} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />Export</button>
+              <button onClick={() => deleteRepository(repo.id)} className="px-3 py-1.5 border border-red-300 text-red-700 rounded text-xs hover:bg-red-50 inline-flex items-center gap-1"><Trash2 className="w-3 h-3" />Remove</button>
             </div>
           </div>
         ))}
@@ -744,7 +838,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
       </div>
 
       <div className="space-y-3">
-        {DEMO_REPORTS.map(rpt => (
+        {reports.map(rpt => (
           <div key={rpt.id} className="bg-white border border-gray-200 rounded-lg p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -788,12 +882,12 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div><label className="block text-xs text-gray-500 mb-1">Base Version</label>
               <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                {DEMO_REPORTS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
             <div><label className="block text-xs text-gray-500 mb-1">Compare To</label>
               <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                {DEMO_REPORTS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
           </div>
@@ -836,7 +930,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Scope</label>
               <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                 <option>All Repositories</option>
-                {DEMO_REPOSITORIES.map(r => <option key={r.id}>{r.name}</option>)}
+                {repositories.map(r => <option key={r.id}>{r.name}</option>)}
               </select>
             </div>
             <div>
@@ -897,6 +991,9 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={loadData} disabled={isLoading} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50" title="Refresh data">
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
               {criticalVulns > 0 && (
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-300 inline-flex items-center gap-1">
                   <AlertOctagon className="w-3 h-3" />{criticalVulns} Critical

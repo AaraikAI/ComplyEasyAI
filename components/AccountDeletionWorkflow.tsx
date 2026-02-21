@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft,
   Trash2,
@@ -139,7 +140,36 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   const [statusFilter, setStatusFilter] = useState<RequestStatus | 'All'>('All');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<DeletionRequest | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [requests, setRequests] = useState<DeletionRequest[]>(MOCK_REQUESTS);
+  const [systemDeletions, setSystemDeletions] = useState<SystemDeletion[]>(MOCK_SYSTEMS);
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>(MOCK_AUDIT);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [deletionRes, auditRes] = await Promise.allSettled([
+        api.privacy.listDeletions(),
+        api.privacy.getDeletionAuditLog(),
+      ]);
+      if (deletionRes.status === 'fulfilled') {
+        const d = deletionRes.value;
+        if (Array.isArray(d)) setRequests(d);
+        else if (d?.data) setRequests(d.data);
+      }
+      if (auditRes.status === 'fulfilled') {
+        const d = auditRes.value;
+        if (Array.isArray(d)) setAuditEntries(d);
+        else if (d?.data) setAuditEntries(d.data);
+      }
+    } catch {
+      // Fallback to mock data already in state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
   const [gracePeriodDays, setGracePeriodDays] = useState(7);
   const [deletionMethod, setDeletionMethod] = useState<'deletion' | 'anonymization'>('deletion');
   const [autoVerify, setAutoVerify] = useState(true);
@@ -150,17 +180,17 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   const [selectedExecRequest, setSelectedExecRequest] = useState<string>('DEL-002');
 
   const stats = useMemo(() => {
-    const total = MOCK_REQUESTS.length;
-    const pending = MOCK_REQUESTS.filter(r => r.status === 'Submitted').length;
-    const inProgress = MOCK_REQUESTS.filter(r => !['Submitted', 'Completed', 'Denied'].includes(r.status)).length;
-    const completed = MOCK_REQUESTS.filter(r => r.status === 'Completed').length;
-    const denied = MOCK_REQUESTS.filter(r => r.status === 'Denied').length;
-    const withConflicts = MOCK_REQUESTS.filter(r => r.conflicts.length > 0).length;
+    const total = requests.length;
+    const pending = requests.filter(r => r.status === 'Submitted').length;
+    const inProgress = requests.filter(r => !['Submitted', 'Completed', 'Denied'].includes(r.status)).length;
+    const completed = requests.filter(r => r.status === 'Completed').length;
+    const denied = requests.filter(r => r.status === 'Denied').length;
+    const withConflicts = requests.filter(r => r.conflicts.length > 0).length;
     return { total, pending, inProgress, completed, denied, avgProcessingDays: 3.2, withConflicts };
   }, []);
 
   const filteredRequests = useMemo(() => {
-    return MOCK_REQUESTS.filter(r => {
+    return requests.filter(r => {
       const matchesSearch = searchQuery === '' ||
         r.accountName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -171,8 +201,8 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   }, [searchQuery, statusFilter]);
 
   const filteredAudit = useMemo(() => {
-    if (auditCategoryFilter === 'all') return MOCK_AUDIT;
-    return MOCK_AUDIT.filter(a => a.category === auditCategoryFilter);
+    if (auditCategoryFilter === 'all') return auditEntries;
+    return auditEntries.filter(a => a.category === auditCategoryFilter);
   }, [auditCategoryFilter]);
 
   const systemStatusColor = (status: string) => {
@@ -295,7 +325,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
         <h3 className="text-sm font-medium text-white mb-3">Status Distribution</h3>
         <div className="space-y-2">
           {(['Submitted', 'Verified', 'Located', 'Review', 'Approved', 'Executing', 'Completed', 'Denied'] as RequestStatus[]).map(status => {
-            const count = MOCK_REQUESTS.filter(r => r.status === status).length;
+            const count = requests.filter(r => r.status === status).length;
             const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
             return (
               <div key={status} className="flex items-center gap-3">
@@ -322,7 +352,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
         <h3 className="text-sm font-medium text-white mb-3">Recent Activity</h3>
         <div className="space-y-2">
-          {MOCK_AUDIT.slice(0, 5).map(entry => (
+          {auditEntries.slice(0, 5).map(entry => (
             <div key={entry.id} className="flex items-start gap-3 text-sm">
               <div className="text-xs text-slate-500 whitespace-nowrap mt-0.5">{entry.timestamp}</div>
               <div className="text-slate-300">{entry.action}</div>
@@ -379,7 +409,9 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
             <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
               Cancel
             </button>
-            <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">
+            <button onClick={async () => {
+              try { await api.privacy.createDeletion({ status: 'Submitted' }); setShowCreateModal(false); loadData(); } catch { setShowCreateModal(false); }
+            }} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">
               Submit Request
             </button>
           </div>
@@ -561,9 +593,9 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
   );
 
   const renderExecution = () => {
-    const execRequest = MOCK_REQUESTS.find(r => r.id === selectedExecRequest);
-    const completedSystems = MOCK_SYSTEMS.filter(s => s.status === 'Completed' || s.status === 'Verified').length;
-    const totalSystems = MOCK_SYSTEMS.length;
+    const execRequest = requests.find(r => r.id === selectedExecRequest);
+    const completedSystems = systemDeletions.filter(s => s.status === 'Completed' || s.status === 'Verified').length;
+    const totalSystems = systemDeletions.length;
     const progressPct = totalSystems > 0 ? Math.round((completedSystems / totalSystems) * 100) : 0;
 
     return (
@@ -575,7 +607,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
             onChange={(e) => setSelectedExecRequest(e.target.value)}
             className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
           >
-            {MOCK_REQUESTS.filter(r => ['Executing', 'Approved', 'Completed'].includes(r.status)).map(r => (
+            {requests.filter(r => ['Executing', 'Approved', 'Completed'].includes(r.status)).map(r => (
               <option key={r.id} value={r.id}>{r.id} - {r.accountName}</option>
             ))}
           </select>
@@ -604,7 +636,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
 
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-white">System-by-System Deletion Status</h3>
-          {MOCK_SYSTEMS.map((sys, idx) => (
+          {systemDeletions.map((sys, idx) => (
             <div key={idx} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
