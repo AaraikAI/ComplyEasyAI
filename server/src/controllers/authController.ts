@@ -113,10 +113,9 @@ class AuthController {
         email,
       };
 
-      // Only return token in development mode for testing
+      // Log token to server console only in development (never include in response)
       if (process.env.NODE_ENV === 'development') {
-        response.devToken = token;
-        response.devMessage = 'Development mode: Use this token to verify the magic link';
+        logger.debug(`[DEV] Magic link token for ${response.email || 'user'}: ${token}`);
       }
 
       res.json(response);
@@ -600,10 +599,9 @@ class AuthController {
         },
       };
 
-      // Only return token in development mode for testing
+      // Log token to server console only in development (never include in response)
       if (process.env.NODE_ENV === 'development') {
-        response.devToken = token;
-        response.devMessage = 'Development mode: Use this token to verify the magic link';
+        logger.debug(`[DEV] Magic link token for ${response.email || 'user'}: ${token}`);
       }
 
       res.status(201).json(response);

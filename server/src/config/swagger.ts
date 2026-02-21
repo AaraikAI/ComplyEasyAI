@@ -49,16 +49,8 @@ API requests are rate-limited:
     },
     servers: [
       {
-        url: 'http://localhost:5000/api',
-        description: 'Development server',
-      },
-      {
-        url: 'https://api.complyeasy.ai',
-        description: 'Production server',
-      },
-      {
-        url: 'https://staging-api.complyeasy.ai',
-        description: 'Staging server',
+        url: `${process.env.API_URL || 'http://localhost:3001'}/api`,
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ],
     tags: [

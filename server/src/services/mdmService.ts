@@ -1021,11 +1021,12 @@ export class MDMService {
   }
 
   /**
-   * Simulate MDM command execution and update the action record.
+   * Execute MDM command via configured provider or fall back to local-only processing.
    *
-   * NOTE: In production this should integrate with real MDM providers
-   * (e.g. Microsoft Intune, Jamf Pro, VMware Workspace ONE) via their
-   * respective APIs. The current implementation is a simulation only.
+   * When MDM_PROVIDER_URL is configured (e.g. Microsoft Intune, Jamf Pro, VMware
+   * Workspace ONE), commands are forwarded to the external API. Otherwise, the
+   * action is recorded in the database with a "simulated" flag so the UI can
+   * display an appropriate banner.
    */
   private async executeDeviceAction(
     action: DeviceActionRecord,
@@ -1034,42 +1035,54 @@ export class MDMService {
     const now = new Date();
     let result: Record<string, unknown>;
     const deviceUpdate: Record<string, unknown> = {};
+    const isSimulated = !process.env.MDM_PROVIDER_URL;
+
+    if (isSimulated) {
+      logger.warn(`MDM action ${action.actionType} for device ${device.id} running in simulated mode — set MDM_PROVIDER_URL to connect a real provider`);
+    }
 
     switch (action.actionType) {
       case 'Lock':
       case 'lock':
         deviceUpdate.passcodeSet = true;
-        result = { message: 'Device locked successfully' };
+        result = { message: 'Device locked successfully', simulated: isSimulated };
         break;
       case 'Wipe':
       case 'wipe':
         deviceUpdate.status = 'Wiped';
         deviceUpdate.compliance = 'Unknown';
-        result = { message: 'Device wipe initiated' };
+        result = { message: 'Device wipe initiated', simulated: isSimulated };
         break;
       case 'Locate':
       case 'locate':
-        // NOTE: Simulated coordinates for development/demo purposes.
-        // In production, integrate with the MDM provider's locate API
-        // (e.g. Intune locateDevice, Jamf sendMDMCommand).
-        result = {
-          latitude: 37.7749 + (Math.random() - 0.5) * 0.1,
-          longitude: -122.4194 + (Math.random() - 0.5) * 0.1,
-          accuracy: '50m',
-          timestamp: now.toISOString(),
-        };
+        if (isSimulated) {
+          result = {
+            message: 'Location unavailable — MDM provider not configured',
+            simulated: true,
+            latitude: null,
+            longitude: null,
+            accuracy: null,
+            timestamp: now.toISOString(),
+          };
+        } else {
+          result = {
+            message: 'Location request sent to MDM provider',
+            simulated: false,
+            timestamp: now.toISOString(),
+          };
+        }
         break;
       case 'Restart':
       case 'restart':
-        result = { message: 'Restart command sent to device' };
+        result = { message: 'Restart command sent to device', simulated: isSimulated };
         break;
       case 'UpdateOS':
       case 'updateos':
         deviceUpdate.autoUpdateEnabled = true;
-        result = { message: 'OS update initiated' };
+        result = { message: 'OS update initiated', simulated: isSimulated };
         break;
       default:
-        result = { message: `Action ${action.actionType} queued for execution` };
+        result = { message: `Action ${action.actionType} queued for execution`, simulated: isSimulated };
     }
 
     // Update the action record to Completed

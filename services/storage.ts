@@ -1,6 +1,13 @@
+/**
+ * @deprecated This localStorage-based mock database is for offline development only.
+ * All production data flows through services/api.ts → backend REST API → Prisma/PostgreSQL.
+ * This module is not imported by any production component.
+ */
 
 import { User, RiskItem, ComplianceFramework, AuditLog, Organization, Integration, ComplianceStatus, FrameworkType } from '../types';
 import { MOCK_USERS, MOCK_RISKS, INITIAL_FRAMEWORKS, MOCK_AUDIT_LOGS, MOCK_INTEGRATIONS } from '../constants';
+
+const IS_PRODUCTION = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 
 // --- LocalStorage Database Keys ---
 const DB_KEYS = {
@@ -14,6 +21,9 @@ const DB_KEYS = {
 
 // --- Initialization Logic (Seed Data) ---
 const initDB = () => {
+  if (IS_PRODUCTION) {
+    return; // Never seed mock data in production
+  }
   // Check and seed each table individually to ensure data integrity
   if (!localStorage.getItem(DB_KEYS.USERS)) {
     localStorage.setItem(DB_KEYS.USERS, JSON.stringify(MOCK_USERS));
