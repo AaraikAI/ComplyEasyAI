@@ -367,7 +367,7 @@ const descriptors: ProviderDescriptor[] = [
 
   // ── GitHub Actions (CI/CD via GitHub) ──────────────────────────────────
   {
-    id: 'github-actions', name: 'GitHub Actions', category: 'Code',
+    id: 'github-actions', name: 'GitHub Actions', category: 'CI/CD',
     apiBaseUrl: 'https://api.github.com', apiDocsUrl: 'https://docs.github.com/en/rest/actions',
     authMethods: ['pat', 'oauth'], testEndpoint: '/user',
     evidenceEndpoints: [
