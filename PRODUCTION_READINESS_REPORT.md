@@ -270,7 +270,37 @@ These advanced services exist in `server/src/services/advanced/` and provide fun
 | No ESLint configuration | Medium | No `.eslintrc` or `eslint.config.js` found. Code quality checks are not automated. |
 | `console.log` config leak | Medium | `services/api.ts:9` logs API base URL to browser console on every page load. Server production code is clean (0 console statements; uses Winston exclusively). Frontend `console.error` in catch blocks is intentional but lacks centralized error reporting. |
 | Empty catch blocks | Medium | 113 instances. 39 in server code (19 in `multimodalIntakeService.ts` alone), 13 in components. Most are `.catch(() => {})` for cleanup operations — acceptable for file unlinking but problematic when swallowing business logic errors. |
-| Missing `.env.example` completeness | Low | `server/.env.example` exists but may not cover all env vars used in code. |
+| 8 undocumented env vars | Medium | `DB_POOL_SIZE`, `DB_POOL_TIMEOUT`, `AZURE_CLIENT_ID`, `PRIVATE_KEY`, `COMPLIANCE_CONTRACT_BYTECODE`, `BLOCKCHAIN_AUDIT_ORG_ID`, `WEBRTC_TURN_SECRET`, `MDM_PROVIDER_URL` used in code but missing from `.env.example`. |
+| `docker-compose.prod.yml` missing `CORS_ORIGIN` | High | `CORS_ORIGIN` is a REQUIRED var (startup fails without it) but is not in the compose environment block. |
+| Port mismatch Dockerfile vs compose | Low | Dockerfile sets `PORT=3001`/`EXPOSE 3001`, compose overrides to `5000`. Works via override but confusing. |
+
+### Environment Variable Validation
+
+The server has **strong startup validation** in `server/src/config/index.ts:188-280`:
+- `DATABASE_URL`, `JWT_SECRET` (32+ chars), `JWT_REFRESH_SECRET` (32+ chars), `ENCRYPTION_KEY` (16+ chars), `GEMINI_API_KEY`, `SENDGRID_API_KEY` (must start with `SG.`), `SENDGRID_FROM_EMAIL`, `CORS_ORIGIN` — all REQUIRED, fail fast on missing
+- `STRIPE_SECRET_KEY` (must start with `sk_`), `STRIPE_WEBHOOK_SECRET` (must start with `whsec_`), `AWS_*` — warned if missing
+- ~140 env vars documented in `server/.env.example` across 30+ sections
+
+**8 env vars used in code but NOT in `.env.example`:**
+
+| Var | File | Purpose |
+|-----|------|---------|
+| `DB_POOL_SIZE` | `server/src/config/database.ts:18` | Connection pool size (default: 10) |
+| `DB_POOL_TIMEOUT` | `server/src/config/database.ts:22` | Pool timeout seconds (default: 20) |
+| `PRIVATE_KEY` | `server/src/blockchain/scripts/deploy.ts:370` | Deployer wallet key (naming inconsistency with `BLOCKCHAIN_PRIVATE_KEY`) |
+| `COMPLIANCE_CONTRACT_BYTECODE` | `server/src/services/advanced/blockchainService.ts:952` | Smart contract bytecode for deployment |
+| `BLOCKCHAIN_AUDIT_ORG_ID` | `server/src/services/advanced/blockchainService.ts:1867` | Org ID for blockchain audits |
+| `WEBRTC_TURN_SECRET` | `server/src/services/advanced/webrtcSignalingService.ts:1451` | TURN credential generation |
+| `MDM_PROVIDER_URL` | `server/src/services/mdmService.ts:1038` | MDM provider URL |
+| `AZURE_CLIENT_ID` | `server/src/services/advanced/byokService.ts:271` | Azure BYOK integration |
+
+### Docker Production Configuration
+
+**Dockerfile (154 lines):** Multi-stage build (8 stages), Node 20 Alpine, non-root user (`complyeasy`, UID 1001), production-only deps (`npm ci --omit=dev`), healthcheck on `/health`, entrypoint wrapper for ECS secret injection.
+
+**docker-compose.prod.yml (113 lines):** 2 replicas, rolling update (parallelism 1, start-first, rollback on failure), resource limits (1 CPU / 1G RAM), JSON file logging with 10MB rotation, overlay network for Swarm.
+
+**Issue:** Compose environment block passes only 20 vars but is missing `CORS_ORIGIN` (required — will cause startup failure), `REDIS_URL` (needed for job queue), `SENTRY_DSN`, and all `STRIPE_*_PRICE_ID` tiered pricing vars.
 
 ---
 
@@ -333,7 +363,7 @@ These are core product features (compliance simulation, audit preparation, red t
 | Features partially complete (mock fallback only) | 5 / 28 |
 | Features not started | 0 / 28 |
 | Deployment blockers (hard) | 0 |
-| Deployment concerns (soft) | 4 (no linting, API URL leak in browser console, empty catches, env docs) |
+| Deployment concerns (soft) | 6 (no linting, API URL leak, empty catches, 8 undocumented env vars, compose missing CORS_ORIGIN, port mismatch) |
 | **Overall Production Readiness** | **82%** |
 
 ### Score Breakdown
@@ -367,9 +397,11 @@ Ordered by severity, then by dependency (fix prerequisites first).
 | 14 | **Medium** | `components/AIFeatures/NaturalLanguageQuery.tsx:104` | Dead `generateMockResponse()` function (~500 lines) | Small | — |
 | 15 | **Medium** | `services/api.ts:9` | `console.log('API Base URL:')` leaks config to browser console on every page load | Small | — |
 | 16 | **Medium** | Root project | No ESLint configuration for automated code quality | Medium | — |
-| 17 | **Low** | `server/src/services/advanced/multimodalIntakeService.ts` | 19 empty catch blocks swallowing errors | Small | — |
-| 18 | **Low** | `contexts/OnboardingContext.tsx` | 6 empty catch blocks swallowing errors | Small | — |
-| 19 | **Low** | `server/src/services/advanced/federatedSwarmService.ts:1752` | Model rollback logs intent but never restores weights | Medium | — |
+| 17 | **Medium** | `docker-compose.prod.yml` | Missing `CORS_ORIGIN` (required) + `REDIS_URL` + tiered Stripe pricing vars in environment block | Small | — |
+| 18 | **Medium** | `server/.env.example` | 8 env vars used in code but undocumented | Small | — |
+| 19 | **Low** | `server/src/services/advanced/multimodalIntakeService.ts` | 19 empty catch blocks swallowing errors | Small | — |
+| 20 | **Low** | `contexts/OnboardingContext.tsx` | 6 empty catch blocks swallowing errors | Small | — |
+| 21 | **Low** | `server/src/services/advanced/federatedSwarmService.ts:1752` | Model rollback logs intent but never restores weights | Medium | — |
 
 ### Fix Instructions for #1-5 (Same Pattern)
 
