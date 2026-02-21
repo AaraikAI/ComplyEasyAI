@@ -415,7 +415,7 @@ export class SoDService {
 
     for (const user of users) {
       usersScanned++;
-      const userPermissions = this.expandUserRoles(user.role);
+      const userPermissions = await this.expandUserRolesAsync(user.role, organizationId);
 
       for (const rule of rules) {
         // Check whether the user holds permissions that cover both functions
@@ -853,16 +853,16 @@ export class SoDService {
    * 3. Built-in default mapping (always available as fallback)
    */
   async expandUserRolesAsync(role: string, organizationId?: string): Promise<string[]> {
-    // Try database-stored custom role mappings first
+    // Try database-stored custom role mappings from usageMetrics JSON field
     if (organizationId) {
       try {
-        const customMapping = await prisma.organization.findUnique({
+        const org = await prisma.organization.findUnique({
           where: { id: organizationId },
-          select: { settings: true },
+          select: { usageMetrics: true },
         });
-        const settings = customMapping?.settings as any;
-        if (settings?.sodRoleMappings?.[role]) {
-          return settings.sodRoleMappings[role] as string[];
+        const metrics = org?.usageMetrics as Record<string, any> | null;
+        if (metrics?.sodRoleMappings?.[role]) {
+          return metrics.sodRoleMappings[role] as string[];
         }
       } catch {
         // Fall through to default mapping

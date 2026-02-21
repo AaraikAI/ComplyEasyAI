@@ -13,7 +13,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import crypto from 'crypto';
-import webrtcSignalingService from './webrtcSignalingService';
+import webrtcSignalingService, { WebRTCSessionConfig, WebRTCPeer } from './webrtcSignalingService';
 
 // VR Session Types
 export interface SessionSummary {
@@ -2181,7 +2181,7 @@ class VRCollaborativeReviewService {
       const signalingSessionId = `vr_voice_${sessionId}`;
       const hostParticipant = session.participants[0];
 
-      webrtcSignalingService.createSession({
+      const signalingConfig = webrtcSignalingService.createSession({
         sessionId: signalingSessionId,
         organizationId: session.organizationId || 'default',
         hostUserId: hostParticipant?.userId || 'system',

@@ -91,7 +91,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
         const res = await fetch('/api/frameworks/scores/history?months=6', {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        if (!res.ok) throw new Error('API error');
+        if (!res.ok) throw new Error(`Failed to fetch compliance score history (HTTP ${res.status})`);
         const data = await res.json();
         if (!cancelled && data.scores && Array.isArray(data.scores)) {
           setTrendData(data.scores.map((s: any) => ({ name: s.name, score: s.score })));

@@ -69,7 +69,7 @@ interface Config {
   security: {
     rateLimitWindowMs: number;
     rateLimitMaxRequests: number;
-    corsOrigin: string;
+    corsOrigin: string[];
   };
   logging: {
     level: string;
@@ -159,7 +159,7 @@ const config: Config = {
   security: {
     rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
     rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
-    corsOrigin: process.env.CORS_ORIGIN || '',
+    corsOrigin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()) : [],
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',

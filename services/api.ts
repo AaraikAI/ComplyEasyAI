@@ -2556,20 +2556,20 @@ export const api = {
     getDashboard: async () => fetchAPI<any>('/dora/dashboard'),
     listAssessments: async (params?: Record<string, string>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-      return fetchAPI<any>(`/dora/assessments${qs}`);
+      return fetchAPI<any>(`/dora/risk-assessments${qs}`);
     },
-    createAssessment: async (data: any) => fetchAPI<any>('/dora/assessments', { method: 'POST', body: JSON.stringify(data) }),
-    getAssessment: async (id: string) => fetchAPI<any>(`/dora/assessments/${id}`),
-    updateAssessment: async (id: string, data: any) => fetchAPI<any>(`/dora/assessments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    createAssessment: async (data: any) => fetchAPI<any>('/dora/risk-assessments', { method: 'POST', body: JSON.stringify(data) }),
+    getAssessment: async (id: string) => fetchAPI<any>(`/dora/risk-assessments/${id}`),
+    updateAssessment: async (id: string, data: any) => fetchAPI<any>(`/dora/risk-assessments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     listIncidents: async (params?: Record<string, string>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
       return fetchAPI<any>(`/dora/incidents${qs}`);
     },
     createIncident: async (data: any) => fetchAPI<any>('/dora/incidents', { method: 'POST', body: JSON.stringify(data) }),
     updateIncident: async (id: string, data: any) => fetchAPI<any>(`/dora/incidents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    listProviders: async () => fetchAPI<any>('/dora/providers'),
-    createProvider: async (data: any) => fetchAPI<any>('/dora/providers', { method: 'POST', body: JSON.stringify(data) }),
-    updateProvider: async (id: string, data: any) => fetchAPI<any>(`/dora/providers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    listProviders: async () => fetchAPI<any>('/dora/third-party-providers'),
+    createProvider: async (data: any) => fetchAPI<any>('/dora/third-party-providers', { method: 'POST', body: JSON.stringify(data) }),
+    updateProvider: async (id: string, data: any) => fetchAPI<any>(`/dora/third-party-providers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     listTests: async () => fetchAPI<any>('/dora/resilience-tests'),
     createTest: async (data: any) => fetchAPI<any>('/dora/resilience-tests', { method: 'POST', body: JSON.stringify(data) }),
     updateTest: async (id: string, data: any) => fetchAPI<any>(`/dora/resilience-tests/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

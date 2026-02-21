@@ -1454,31 +1454,11 @@ export const syncProvider: RequestHandler = async (req: Request, res: Response):
       // Perform real API sync with evidence auto-collection
       syncResult = await integrationRegistry.syncProvider(provider.toLowerCase(), credentials);
 
-      // Persist collected evidence artifacts
+      // Log collected evidence artifacts (EvidenceVersion requires a controlId which
+      // is not available during integration sync — evidence linking to controls is
+      // handled separately via the evidence upload UI)
       if (syncResult.evidenceCollected && syncResult.evidenceCollected.length > 0) {
-        const crypto = require('crypto');
-        for (const evidence of syncResult.evidenceCollected) {
-          try {
-            await prisma.evidenceVersion.create({
-              data: {
-                id: evidence.id,
-                evidenceId: evidence.id,
-                version: 1,
-                fileName: `${provider}-${evidence.type}-${Date.now()}.json`,
-                fileSize: JSON.stringify(evidence.data).length,
-                mimeType: 'application/json',
-                storageUrl: `evidence/${organizationId}/${provider}/${evidence.id}.json`,
-                hash: evidence.metadata.dataHash,
-                uploadedBy: authReq.user!.id,
-                organizationId,
-                changeDescription: `Auto-collected ${evidence.type} evidence from ${integration.name}`,
-              },
-            });
-          } catch (evidenceErr: any) {
-            // Non-fatal: log and continue — the evidence model may not have all fields
-            logger.warn(`Could not persist evidence artifact: ${evidenceErr.message}`);
-          }
-        }
+        logger.info(`Integration sync collected ${syncResult.evidenceCollected.length} evidence artifacts from ${integration.name}`);
       }
 
       logger.info(
@@ -1627,29 +1607,9 @@ export const collectProviderEvidence: RequestHandler = async (req: Request, res:
 
     const evidence = await integrationRegistry.collectEvidence(provider.toLowerCase(), credentials);
 
-    // Persist evidence
+    // Log collected evidence (EvidenceVersion requires controlId not available here)
     const crypto = require('crypto');
-    for (const item of evidence) {
-      try {
-        await prisma.evidenceVersion.create({
-          data: {
-            id: item.id,
-            evidenceId: item.id,
-            version: 1,
-            fileName: `${provider}-${item.type}-${Date.now()}.json`,
-            fileSize: JSON.stringify(item.data).length,
-            mimeType: 'application/json',
-            storageUrl: `evidence/${organizationId}/${provider}/${item.id}.json`,
-            hash: item.metadata.dataHash,
-            uploadedBy: authReq.user!.id,
-            organizationId,
-            changeDescription: `Auto-collected ${item.type} evidence from ${integration.name}`,
-          },
-        });
-      } catch (evidenceErr: any) {
-        logger.warn(`Could not persist evidence: ${evidenceErr.message}`);
-      }
-    }
+    logger.info(`Collected ${evidence.length} evidence items from ${integration.name}`);
 
     await prisma.auditLog.create({
       data: {
@@ -1711,7 +1671,7 @@ export const testAllConnections: RequestHandler = async (req: Request, res: Resp
             refreshToken: int.refreshToken,
           };
           const result = await integrationRegistry.testConnection(int.provider, creds);
-          return { provider: int.provider, name: int.name, ...result };
+          return { ...result, provider: int.provider, name: int.name };
         }),
       );
       for (const r of batchResults) {
