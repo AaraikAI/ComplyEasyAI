@@ -92,53 +92,7 @@ interface ActionLogEntry {
   notes: string;
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────
-const MOCK_DEVICES: Device[] = [
-  { id: 'd1', deviceName: 'iPhone 15 Pro', serialNumber: 'DNQX3F8KPH', platform: 'iOS', osVersion: '17.3.1', user: 'Sarah Chen', department: 'Engineering', ownership: 'Corporate', enrollmentDate: '2025-09-15', lastCheckIn: '2026-02-19T08:32:00', complianceStatus: 'Compliant', encryptionEnabled: true, passcodeSet: true, jailbroken: false, model: 'A3101' },
-  { id: 'd2', deviceName: 'Galaxy S24 Ultra', serialNumber: 'R5CTA1BXYZM', platform: 'Android', osVersion: '14.0', user: 'James Rodriguez', department: 'Sales', ownership: 'BYOD', enrollmentDate: '2025-11-02', lastCheckIn: '2026-02-19T09:15:00', complianceStatus: 'Compliant', encryptionEnabled: true, passcodeSet: true, jailbroken: false, model: 'SM-S928B' },
-  { id: 'd3', deviceName: 'MacBook Pro 16"', serialNumber: 'C02ZW1KRLVDL', platform: 'macOS', osVersion: '14.3.1', user: 'Emily Watson', department: 'Design', ownership: 'Corporate', enrollmentDate: '2025-08-20', lastCheckIn: '2026-02-19T07:48:00', complianceStatus: 'Compliant', encryptionEnabled: true, passcodeSet: true, jailbroken: false, model: 'MacBookPro18,2' },
-  { id: 'd4', deviceName: 'Surface Pro 10', serialNumber: 'MS-0192837465', platform: 'Windows', osVersion: '11 23H2', user: 'David Kim', department: 'Finance', ownership: 'Corporate', enrollmentDate: '2025-10-05', lastCheckIn: '2026-02-18T17:22:00', complianceStatus: 'Non-Compliant', encryptionEnabled: false, passcodeSet: true, jailbroken: false, model: 'Surface Pro 10' },
-  { id: 'd5', deviceName: 'iPad Air M2', serialNumber: 'DMPYG7JKQF', platform: 'iOS', osVersion: '17.2', user: 'Lisa Park', department: 'Marketing', ownership: 'Corporate', enrollmentDate: '2025-12-10', lastCheckIn: '2026-02-17T14:05:00', complianceStatus: 'Non-Compliant', encryptionEnabled: true, passcodeSet: false, jailbroken: false, model: 'iPad14,1' },
-  { id: 'd6', deviceName: 'Pixel 8 Pro', serialNumber: 'GP8-29384756', platform: 'Android', osVersion: '13.0', user: 'Michael Torres', department: 'Engineering', ownership: 'BYOD', enrollmentDate: '2025-07-18', lastCheckIn: '2026-02-19T06:30:00', complianceStatus: 'Non-Compliant', encryptionEnabled: true, passcodeSet: true, jailbroken: false, model: 'GP8PRO' },
-  { id: 'd7', deviceName: 'ThinkPad X1 Carbon', serialNumber: 'LNV-PF3RLKN2', platform: 'Windows', osVersion: '11 23H2', user: 'Amanda Foster', department: 'Legal', ownership: 'Corporate', enrollmentDate: '2025-06-22', lastCheckIn: '2026-02-19T09:01:00', complianceStatus: 'Compliant', encryptionEnabled: true, passcodeSet: true, jailbroken: false, model: 'X1C Gen 11' },
-  { id: 'd8', deviceName: 'iPhone 14', serialNumber: 'FFGJ2K9MPQ', platform: 'iOS', osVersion: '17.3.1', user: 'Robert Chang', department: 'HR', ownership: 'Corporate', enrollmentDate: '2025-04-10', lastCheckIn: '2026-02-19T08:55:00', complianceStatus: 'Compliant', encryptionEnabled: true, passcodeSet: true, jailbroken: false, model: 'A2882' },
-  { id: 'd9', deviceName: 'MacBook Air M3', serialNumber: 'C02YH3QNLVFH', platform: 'macOS', osVersion: '14.2', user: 'Nina Petrov', department: 'Engineering', ownership: 'Corporate', enrollmentDate: '2025-11-28', lastCheckIn: '2026-02-15T11:20:00', complianceStatus: 'Pending', encryptionEnabled: true, passcodeSet: true, jailbroken: false, model: 'Mac15,12' },
-  { id: 'd10', deviceName: 'Galaxy Tab S9', serialNumber: 'R5CT-TABX789', platform: 'Android', osVersion: '14.0', user: 'Carlos Mendez', department: 'Operations', ownership: 'Corporate', enrollmentDate: '2026-01-08', lastCheckIn: '2026-02-19T07:10:00', complianceStatus: 'Compliant', encryptionEnabled: true, passcodeSet: true, jailbroken: false, model: 'SM-X810' },
-  { id: 'd11', deviceName: 'iPhone 15', serialNumber: 'HKLM4N7RPT', platform: 'iOS', osVersion: '16.7.2', user: 'Jessica Liu', department: 'Sales', ownership: 'BYOD', enrollmentDate: '2025-10-30', lastCheckIn: '2026-02-13T16:45:00', complianceStatus: 'Non-Compliant', encryptionEnabled: true, passcodeSet: true, jailbroken: true, model: 'A3090' },
-  { id: 'd12', deviceName: 'Dell Latitude 7440', serialNumber: 'DL-7440-XK92', platform: 'Windows', osVersion: '10 22H2', user: 'Tom Bradley', department: 'Support', ownership: 'Corporate', enrollmentDate: '2025-03-14', lastCheckIn: '2026-02-18T13:30:00', complianceStatus: 'Non-Compliant', encryptionEnabled: false, passcodeSet: true, jailbroken: false, model: 'Latitude 7440' },
-];
-
-const MOCK_POLICIES: MDMPolicy[] = [
-  { id: 'p1', name: 'Corporate Mobile Security', description: 'Baseline security policy for all corporate-owned mobile devices including mandatory encryption, passcode requirements, and remote wipe capability.', platforms: ['iOS', 'Android'], minPasscodeLength: 8, encryptionRequired: true, vpnRequired: true, cameraAllowed: true, screenCaptureAllowed: true, minOsVersion: '16.0 / 13.0', maxInactivityLock: 5, assignedGroups: ['All Mobile Devices', 'Corporate Owned'], status: 'Active', createdDate: '2025-03-01', lastModified: '2026-01-15' },
-  { id: 'p2', name: 'BYOD Security Policy', description: 'Policy for personally-owned devices accessing corporate resources. Enforces container isolation, minimum OS version, and data loss prevention.', platforms: ['iOS', 'Android'], minPasscodeLength: 6, encryptionRequired: true, vpnRequired: false, cameraAllowed: true, screenCaptureAllowed: false, minOsVersion: '16.0 / 13.0', maxInactivityLock: 3, assignedGroups: ['BYOD Users'], status: 'Active', createdDate: '2025-04-10', lastModified: '2025-12-20' },
-  { id: 'p3', name: 'Laptop Endpoint Protection', description: 'Comprehensive endpoint policy for Windows and macOS laptops. Requires BitLocker/FileVault, firewall, and automatic OS updates.', platforms: ['Windows', 'macOS'], minPasscodeLength: 10, encryptionRequired: true, vpnRequired: true, cameraAllowed: true, screenCaptureAllowed: true, minOsVersion: '11 22H2 / 14.0', maxInactivityLock: 10, assignedGroups: ['All Laptops', 'Corporate Owned'], status: 'Active', createdDate: '2025-02-15', lastModified: '2026-02-01' },
-  { id: 'p4', name: 'Executive Device Policy', description: 'Enhanced security policy for C-suite and senior leadership devices with stricter passcode and VPN requirements.', platforms: ['iOS', 'Android', 'macOS'], minPasscodeLength: 12, encryptionRequired: true, vpnRequired: true, cameraAllowed: false, screenCaptureAllowed: false, minOsVersion: '17.0 / 14.0 / 14.0', maxInactivityLock: 2, assignedGroups: ['Executive Team'], status: 'Active', createdDate: '2025-06-01', lastModified: '2026-01-30' },
-  { id: 'p5', name: 'Kiosk Mode - Shared Devices', description: 'Restricted single-app or multi-app kiosk mode for shared tablets used in conference rooms and reception areas.', platforms: ['iOS', 'Android'], minPasscodeLength: 0, encryptionRequired: true, vpnRequired: false, cameraAllowed: false, screenCaptureAllowed: false, minOsVersion: '16.0 / 13.0', maxInactivityLock: 1, assignedGroups: ['Shared Devices'], status: 'Draft', createdDate: '2026-02-10', lastModified: '2026-02-10' },
-];
-
-const MOCK_VIOLATIONS: ComplianceViolation[] = [
-  { id: 'v1', type: 'Missing Encryption', description: 'Device storage encryption (BitLocker/FileVault) is not enabled', deviceCount: 2, severity: 'Critical', autoRemediation: false, remediationAction: 'Send notification to user with encryption setup guide', affectedPlatforms: ['Windows'], firstDetected: '2026-01-20' },
-  { id: 'v2', type: 'Outdated OS Version', description: 'Operating system version is below the minimum required version', deviceCount: 3, severity: 'High', autoRemediation: true, remediationAction: 'Push OS update notification and schedule forced update within 7 days', affectedPlatforms: ['iOS', 'Android', 'Windows'], firstDetected: '2026-01-05' },
-  { id: 'v3', type: 'No Passcode Set', description: 'Device does not have a passcode or PIN configured', deviceCount: 1, severity: 'Critical', autoRemediation: true, remediationAction: 'Force passcode creation prompt on next device unlock', affectedPlatforms: ['iOS'], firstDetected: '2026-02-12' },
-  { id: 'v4', type: 'Jailbroken/Rooted Device', description: 'Device has been jailbroken or rooted, compromising security controls', deviceCount: 1, severity: 'Critical', autoRemediation: true, remediationAction: 'Immediately quarantine device and revoke corporate resource access', affectedPlatforms: ['iOS'], firstDetected: '2026-02-08' },
-  { id: 'v5', type: 'VPN Not Configured', description: 'Corporate VPN profile is not installed or not active', deviceCount: 2, severity: 'Medium', autoRemediation: true, remediationAction: 'Push VPN configuration profile to device automatically', affectedPlatforms: ['Android', 'iOS'], firstDetected: '2026-01-28' },
-  { id: 'v6', type: 'Last Check-in Overdue', description: 'Device has not checked in with MDM server for more than 72 hours', deviceCount: 2, severity: 'High', autoRemediation: false, remediationAction: 'Send push notification and email to user requesting manual check-in', affectedPlatforms: ['iOS', 'macOS'], firstDetected: '2026-02-16' },
-  { id: 'v7', type: 'Unauthorized App Installed', description: 'Blacklisted application detected on managed device', deviceCount: 1, severity: 'Medium', autoRemediation: true, remediationAction: 'Send app removal command and block app installation', affectedPlatforms: ['Android'], firstDetected: '2026-02-10' },
-  { id: 'v8', type: 'Screen Lock Timeout Exceeded', description: 'Device auto-lock timeout exceeds policy maximum', deviceCount: 2, severity: 'Low', autoRemediation: true, remediationAction: 'Push updated screen lock configuration profile', affectedPlatforms: ['Windows', 'macOS'], firstDetected: '2026-02-05' },
-];
-
-const MOCK_ACTION_LOG: ActionLogEntry[] = [
-  { id: 'a1', actionType: 'Lock', targetDevice: 'Surface Pro 10', targetUser: 'David Kim', initiatedBy: 'IT Admin - Mark Stevens', timestamp: '2026-02-19T09:30:00', status: 'Completed', notes: 'Device reported lost by user. Remote lock initiated.' },
-  { id: 'a2', actionType: 'Wipe', targetDevice: 'iPhone 14 (Former Employee)', targetUser: 'Alex Turner', initiatedBy: 'IT Admin - Sarah Mills', timestamp: '2026-02-18T14:15:00', status: 'Completed', notes: 'Employee terminated. Full device wipe per offboarding policy.' },
-  { id: 'a3', actionType: 'Message', targetDevice: 'Galaxy S24 Ultra', targetUser: 'James Rodriguez', initiatedBy: 'IT Admin - Mark Stevens', timestamp: '2026-02-18T11:00:00', status: 'Completed', notes: 'Notification sent: BYOD policy update acknowledgment required.' },
-  { id: 'a4', actionType: 'Locate', targetDevice: 'iPad Air M2', targetUser: 'Lisa Park', initiatedBy: 'IT Admin - Sarah Mills', timestamp: '2026-02-17T16:45:00', status: 'Completed', notes: 'Device located at office building B, floor 3.' },
-  { id: 'a5', actionType: 'Lock', targetDevice: 'iPhone 15', targetUser: 'Jessica Liu', initiatedBy: 'System - Auto Remediation', timestamp: '2026-02-17T10:20:00', status: 'Completed', notes: 'Jailbreak detected. Auto-lock and quarantine triggered.' },
-  { id: 'a6', actionType: 'Wipe', targetDevice: 'ThinkPad X1 Carbon', targetUser: 'Former Contractor', initiatedBy: 'IT Admin - Mark Stevens', timestamp: '2026-02-16T09:00:00', status: 'Pending', notes: 'Contractor end-of-engagement. Awaiting device return for wipe.' },
-  { id: 'a7', actionType: 'Message', targetDevice: 'Dell Latitude 7440', targetUser: 'Tom Bradley', initiatedBy: 'System - Auto Remediation', timestamp: '2026-02-15T13:30:00', status: 'Completed', notes: 'Reminder: Enable BitLocker encryption within 48 hours.' },
-  { id: 'a8', actionType: 'Locate', targetDevice: 'MacBook Air M3', targetUser: 'Nina Petrov', initiatedBy: 'IT Admin - Sarah Mills', timestamp: '2026-02-14T08:00:00', status: 'Failed', notes: 'Location services disabled on device. Unable to locate.' },
-  { id: 'a9', actionType: 'Unenroll', targetDevice: 'Pixel 7 (Retired)', targetUser: 'Kevin Nguyen', initiatedBy: 'IT Admin - Mark Stevens', timestamp: '2026-02-13T15:45:00', status: 'Completed', notes: 'Device replaced with Pixel 8 Pro. Old device unenrolled.' },
-  { id: 'a10', actionType: 'Lock', targetDevice: 'MacBook Pro 16"', targetUser: 'Emily Watson', initiatedBy: 'IT Admin - Sarah Mills', timestamp: '2026-02-12T17:00:00', status: 'Completed', notes: 'Precautionary lock during security incident investigation.' },
-];
+// Mock data constants removed — component now uses empty initial state with proper error handling.
 
 // ── Component ──────────────────────────────────────────────────────────
 export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -148,11 +102,12 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showCreatePolicy, setShowCreatePolicy] = useState(false);
   const [showActionConfirm, setShowActionConfirm] = useState<{ type: ActionType; device: Device } | null>(null);
-  const [devices, setDevices] = useState<Device[]>(MOCK_DEVICES);
-  const [policies, setPolicies] = useState<MDMPolicy[]>(MOCK_POLICIES);
-  const [violations, setViolations] = useState<ComplianceViolation[]>(MOCK_VIOLATIONS);
-  const [actionLog, setActionLog] = useState<ActionLogEntry[]>(MOCK_ACTION_LOG);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [policies, setPolicies] = useState<MDMPolicy[]>([]);
+  const [violations, setViolations] = useState<ComplianceViolation[]>([]);
+  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   // Policy form state
@@ -165,29 +120,41 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [devicesRes, policiesRes, dashboardRes] = await Promise.allSettled([
         api.mdm.listDevices(),
         api.mdm.listPolicies(),
         api.mdm.getDashboard(),
       ]);
+      const failedApis: string[] = [];
       if (devicesRes.status === 'fulfilled' && Array.isArray(devicesRes.value)) {
         setDevices(devicesRes.value);
       } else if (devicesRes.status === 'fulfilled' && devicesRes.value?.data) {
         setDevices(devicesRes.value.data);
+      } else {
+        failedApis.push('devices');
       }
       if (policiesRes.status === 'fulfilled' && Array.isArray(policiesRes.value)) {
         setPolicies(policiesRes.value);
       } else if (policiesRes.status === 'fulfilled' && policiesRes.value?.data) {
         setPolicies(policiesRes.value.data);
+      } else {
+        failedApis.push('policies');
       }
       if (dashboardRes.status === 'fulfilled' && dashboardRes.value) {
         const db = dashboardRes.value;
         if (db.violations && Array.isArray(db.violations)) setViolations(db.violations);
         if (db.actionLog && Array.isArray(db.actionLog)) setActionLog(db.actionLog);
+      } else {
+        failedApis.push('dashboard');
       }
-    } catch {
-      // Fallback to mock data already in state
+      if (failedApis.length > 0) {
+        setLoadError(`Failed to load ${failedApis.join(', ')} data. Some information may be missing.`);
+      }
+    } catch (err) {
+      setLoadError('Failed to connect to the server. Please check your connection and try again.');
+      console.error('MDMDashboard data load error:', err);
     } finally {
       setLoading(false);
     }
@@ -257,6 +224,18 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       case 'macOS': return <Cpu size={14} className="text-purple-400" />;
     }
   };
+
+  const renderErrorBanner = () => loadError ? (
+    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+        <span className="text-sm text-red-300">{loadError}</span>
+      </div>
+      <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 text-red-300 rounded text-sm hover:bg-red-500/30 transition-colors">
+        <RefreshCw className="w-3.5 h-3.5" /> Retry
+      </button>
+    </div>
+  ) : null;
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: 'overview', label: 'Overview', icon: <BarChart3 size={15} /> },
@@ -863,6 +842,7 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           ))}
         </div>
 
+        {renderErrorBanner()}
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'devices' && renderDevices()}
         {activeTab === 'policies' && renderPolicies()}

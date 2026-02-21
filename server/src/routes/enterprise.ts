@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import prisma from '../config/database';
 import { authenticate } from '../middleware/auth';
 import { enforceLimit } from '../middleware/tierMiddleware';
 import { validateBody } from '../middleware/validate';
@@ -562,6 +563,17 @@ workspaceRouter.post(
  */
 const reportRouter = Router();
 reportRouter.use(authenticate);
+
+reportRouter.get(
+  '/',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const reports = await prisma.customReport.findMany({
+      where: { organizationId: req.user.organizationId },
+      orderBy: { lastGenerated: 'desc' },
+    });
+    res.json({ data: reports, total: reports.length });
+  })
+);
 
 reportRouter.post(
   '/',
