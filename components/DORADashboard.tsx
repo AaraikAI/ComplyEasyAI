@@ -185,10 +185,10 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ]);
         if (cancelled) return;
         if (dashboard.status === 'fulfilled') setDashboardData(dashboard.value);
-        if (assessments.status === 'fulfilled') setRisks((assessments.value.assessments || assessments.value || []).map(mapApiRisk));
-        if (incidentRes.status === 'fulfilled') setIncidents((incidentRes.value.incidents || incidentRes.value || []).map(mapApiIncident));
-        if (providerRes.status === 'fulfilled') setProviders((providerRes.value.providers || providerRes.value || []).map(mapApiProvider));
-        if (testRes.status === 'fulfilled') setTests((testRes.value.tests || testRes.value || []).map(mapApiTest));
+        if (assessments.status === 'fulfilled') setRisks((assessments.value.data || assessments.value || []).map(mapApiRisk));
+        if (incidentRes.status === 'fulfilled') setIncidents((incidentRes.value.data || incidentRes.value || []).map(mapApiIncident));
+        if (providerRes.status === 'fulfilled') setProviders((providerRes.value.data || providerRes.value || []).map(mapApiProvider));
+        if (testRes.status === 'fulfilled') setTests((testRes.value.data || testRes.value || []).map(mapApiTest));
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load DORA data');
       } finally {

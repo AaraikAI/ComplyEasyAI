@@ -70,7 +70,6 @@
     "chalk": "^4.1.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "csurf": "^1.11.0",
     "docx": "^8.5.0",
     "dotenv": "^16.4.7",
     "elastic-apm-node": "^4.15.0",
@@ -110,6 +109,8 @@
     "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
     "stripe": "^17.5.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "tesseract.js": "^7.0.0",
     "tmp": "^0.2.5",
     "tmp-promise": "^3.0.3",
@@ -151,13 +152,11 @@
     "js-yaml": "^4.1.1",
     "minimatch": "^10.1.1",
     "mocha": "^11.7.5",
-    "nanoid": "^5.1.7",
+    "nanoid": "^5.1.5",
     "prisma": "^5.22.0",
     "qs": "^6.14.1",
     "socket.io-client": "^4.8.3",
     "supertest": "^7.1.4",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
     "tough-cookie": "^6.0.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
@@ -180,19 +179,19 @@
     "circom": {
       "tmp": "^0.2.3",
       "tmp-promise": "^3.0.3",
-      "nanoid": "^5.1.7",
+      "nanoid": "^5.1.5",
       "js-yaml": "^4.1.1",
       "mocha": {
         "minimatch": "^10.1.1",
         "js-yaml": "^4.1.1",
-        "nanoid": "^5.1.7"
+        "nanoid": "^5.1.5"
       },
       "circom_runtime": {
         "ffjavascript": {
           "mocha": {
             "minimatch": "^10.1.1",
             "js-yaml": "^4.1.1",
-            "nanoid": "^5.1.7"
+            "nanoid": "^5.1.5"
           }
         }
       }

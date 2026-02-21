@@ -146,7 +146,7 @@ export const performGapAnalysis = async (current: string[], target: string | str
 export const classifyEvidence = async (filename: string): Promise<string> => {
   try {
     const prompt = `Classify the following compliance evidence file based on its filename. Return ONLY the category name (one of: Policy, Procedure, Audit Report, Risk Assessment, Training Record, Certification, SOC Report, Vendor Agreement, Incident Report, Access Review, Configuration, Screenshot, Log File, Other).\n\nFilename: ${filename}`;
-    const result: any = await api.ai.chat(prompt, 'You are a compliance evidence classifier. Respond with only the classification category name.');
+    const result: any = await api.ai.chat(prompt);
     const classification = (result.response || result.message || '').trim();
     return classification || 'Other';
   } catch {

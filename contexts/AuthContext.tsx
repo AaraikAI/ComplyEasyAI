@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  loginWithMagicLink: (email: string) => Promise<{ devToken?: string; message: string; email: string }>;
+  loginWithMagicLink: (email: string) => Promise<{ message: string; email: string }>;
   verifyMagicLink: (token: string) => Promise<void>;
   logout: () => void;
   register: (name: string, email: string, organizationName?: string, password?: string) => Promise<any>;
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const newToken = await api.auth.refreshToken();
           // Token is automatically stored by the API service
-          console.log('Token refreshed successfully');
+          // Token refreshed successfully
         } catch (error) {
           console.error('Token refresh failed:', error);
           // If refresh fails, user will be logged out on next API call
@@ -85,10 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithMagicLink = async (email: string) => {
     try {
       // Call API to send magic link email
-      // In development, this returns the token for testing
       const response = await api.auth.requestMagicLink(email);
-      console.log(`Magic Link sent to ${email}`);
-      // Return response so we can access devToken in development
       return response;
     } catch (error) {
       console.error('Failed to send magic link:', error);
@@ -118,7 +115,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if user already exists - backend now sends magic link automatically
       if (response?.existingUser) {
         // User already exists, backend sent magic link
-        // Return the response so caller can handle the devToken if in development
         return response;
       }
       

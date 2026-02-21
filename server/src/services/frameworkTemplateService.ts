@@ -75,14 +75,14 @@ import { NYDFS_CONTROLS } from '../data/frameworks/nydfsControls';
 import { FERPA_CONTROLS } from '../data/frameworks/ferpaControls';
 import { COPPA_CONTROLS } from '../data/frameworks/coppaControls';
 import { CJIS_CONTROLS } from '../data/frameworks/cjisControls';
-import { INCDPA_CONTROLS, TIPA_CONTROLS, NH_CONTROLS, MD_CONTROLS, MN_CONTROLS, NE_CONTROLS, RI_CONTROLS, VT_CONTROLS, KCDPA_CONTROLS } from '../data/frameworks/additionalStatePrivacyControls';
+import { INCDPA_CONTROLS, TIPA_CONTROLS, NH_PRIVACY_CONTROLS as NH_CONTROLS, MD_PRIVACY_CONTROLS as MD_CONTROLS, MN_PRIVACY_CONTROLS as MN_CONTROLS, NE_PRIVACY_CONTROLS as NE_CONTROLS, RI_PRIVACY_CONTROLS as RI_CONTROLS, VT_PRIVACY_CONTROLS as VT_CONTROLS, KCDPA_CONTROLS } from '../data/frameworks/additionalStatePrivacyControls';
 
 // Additional International Privacy
 import { PDPA_MALAYSIA_CONTROLS, PIPL_CONTROLS, PDPB_CONTROLS, PRIVACY_SHIELD_CONTROLS, APEC_CBPR_CONTROLS } from '../data/frameworks/internationalPrivacyControls';
 
 // Additional Security Standards
 import { NIST_800_207_CONTROLS, NIST_800_218_CONTROLS, NIST_800_172_CONTROLS, FIPS_140_3_CONTROLS } from '../data/frameworks/nistSecurityControls';
-import { OWASP_TOP10_CONTROLS, OWASP_SAMM_CONTROLS, ASVS_CONTROLS } from '../data/frameworks/owaspControls';
+import { OWASP_TOP_10_CONTROLS as OWASP_TOP10_CONTROLS, OWASP_SAMM_CONTROLS, ASVS_CONTROLS } from '../data/frameworks/owaspControls';
 import { CSA_STAR_CONTROLS, CIS_RAM_CONTROLS, MITRE_ATTACK_CONTROLS, MITRE_D3FEND_CONTROLS, SANS_TOP_20_CONTROLS, BSIMM_CONTROLS, IEEE_P2675_CONTROLS, COMMON_CRITERIA_CONTROLS } from '../data/frameworks/cloudTechControls';
 
 // Financial Controls
@@ -1030,7 +1030,7 @@ const FRAMEWORK_ALIASES: Record<string, string> = {
   'NIST800-82': 'NIST 800-82',
   'nist-800-82': 'NIST 800-82',
   'NIST SP 800-82': 'NIST 800-82',
-  'OT Security': 'NIST 800-82',
+  'NIST OT Security': 'NIST 800-82',
   'ICS Security Guide': 'NIST 800-82',
   // FDA 21 CFR Part 11 aliases
   '21 CFR 11': 'FDA 21 CFR Part 11',
