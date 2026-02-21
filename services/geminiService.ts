@@ -145,11 +145,26 @@ export const performGapAnalysis = async (current: string[], target: string | str
 
 export const classifyEvidence = async (filename: string): Promise<string> => {
   try {
-    // For file classification, we'd need a separate endpoint
-    // For now, use a generic AI call
-    return "Classified";
-  } catch (e) {
-    return "Unknown";
+    const prompt = `Classify the following compliance evidence file based on its filename. Return ONLY the category name (one of: Policy, Procedure, Audit Report, Risk Assessment, Training Record, Certification, SOC Report, Vendor Agreement, Incident Report, Access Review, Configuration, Screenshot, Log File, Other).\n\nFilename: ${filename}`;
+    const result: any = await api.ai.chat(prompt, 'You are a compliance evidence classifier. Respond with only the classification category name.');
+    const classification = (result.response || result.message || '').trim();
+    return classification || 'Other';
+  } catch {
+    // Fallback: classify by file extension pattern matching
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    const name = filename.toLowerCase();
+    if (name.includes('policy') || name.includes('pol-')) return 'Policy';
+    if (name.includes('procedure') || name.includes('proc-')) return 'Procedure';
+    if (name.includes('audit') || name.includes('report')) return 'Audit Report';
+    if (name.includes('risk') || name.includes('assessment')) return 'Risk Assessment';
+    if (name.includes('training') || name.includes('cert')) return 'Training Record';
+    if (name.includes('soc') || name.includes('soc2')) return 'SOC Report';
+    if (name.includes('vendor') || name.includes('agreement') || name.includes('contract')) return 'Vendor Agreement';
+    if (name.includes('incident')) return 'Incident Report';
+    if (ext === 'log' || ext === 'csv') return 'Log File';
+    if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') return 'Screenshot';
+    if (ext === 'pdf') return 'Audit Report';
+    return 'Other';
   }
 };
 

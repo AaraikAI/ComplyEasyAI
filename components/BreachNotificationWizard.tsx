@@ -369,10 +369,45 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // History / templates / contacts state
+  // History / templates / contacts state — initialized with demos, replaced by API data on load
   const [breachHistory, setBreachHistory] = useState<BreachRecord[]>(DEMO_BREACH_HISTORY);
   const [templates, setTemplates] = useState<NotificationTemplate[]>(DEMO_TEMPLATES);
   const [contacts, setContacts] = useState<RegulatoryContact[]>(DEMO_CONTACTS);
+
+  // Load data from backend API (replaces demo data on success)
+  useEffect(() => {
+    const loadBackendData = async () => {
+      const [tplRes, contactRes, incidentRes] = await Promise.allSettled([
+        api.modules.breach.listTemplates(),
+        api.modules.breach.listContacts(),
+        api.modules.breach.listIncidents(),
+      ]);
+      if (tplRes.status === 'fulfilled' && Array.isArray(tplRes.value) && tplRes.value.length > 0) {
+        setTemplates(tplRes.value.map((t: any) => ({
+          id: t.id, name: t.name, jurisdiction: t.jurisdiction || '', regulation: t.regulation || '',
+          type: t.type || 'authority', lastUpdated: t.updatedAt ? new Date(t.updatedAt).toLocaleDateString('sv') : '',
+          content: t.content || '',
+        })));
+      }
+      if (contactRes.status === 'fulfilled' && Array.isArray(contactRes.value) && contactRes.value.length > 0) {
+        setContacts(contactRes.value.map((c: any) => ({
+          id: c.id, name: c.name, jurisdiction: c.jurisdiction || '', authority: c.authority || '',
+          email: c.email || '', phone: c.phone || '', portalUrl: c.portalUrl || '', type: c.type || 'authority',
+        })));
+      }
+      if (incidentRes.status === 'fulfilled' && Array.isArray(incidentRes.value) && incidentRes.value.length > 0) {
+        setBreachHistory(incidentRes.value.map((b: any) => ({
+          id: b.id, title: b.title || '', type: b.type || 'data_breach', severity: b.severity || 'Medium',
+          discoveryDate: b.discoveryDate || '', status: b.status || 'active',
+          recordsAffected: b.recordsAffected ?? 0,
+          jurisdictions: Array.isArray(b.jurisdictions) ? b.jurisdictions : [],
+          notificationsSent: b.notificationsSent ?? 0, lessonsLearned: b.lessonsLearned || '',
+          riskScore: b.riskScore ?? 0,
+        })));
+      }
+    };
+    loadBackendData();
+  }, []);
   const [historySearch, setHistorySearch] = useState('');
   const [templateSearch, setTemplateSearch] = useState('');
   const [contactSearch, setContactSearch] = useState('');

@@ -467,21 +467,27 @@ class EUAIActService {
         organizationId,
         reportingPeriodStart: reportingPeriod.start,
         reportingPeriodEnd: reportingPeriod.end,
-        generativeAISystems: generativeSystems.map(sys => ({
-          systemId: sys.id,
-          systemName: sys.name,
-          contentGenerated: 0, // Would be tracked separately
-          aiLabelingCompliance: 100, // Would be calculated from actual data
-          copyrightCompliance: 100,
-          illegalContentPrevented: 0,
-        })),
-        highRiskSystems: highRiskSystems.map(sys => ({
-          systemId: sys.id,
-          systemName: sys.name,
-          assessmentsCompleted: sys.riskAssessments?.length || 0,
-          incidentsReported: 0, // Would be tracked separately
-          complianceStatus: sys.complianceStatus,
-        })),
+        generativeAISystems: generativeSystems.map(sys => {
+          const metadata = (sys as any).metadata || {};
+          return {
+            systemId: sys.id,
+            systemName: sys.name,
+            contentGenerated: metadata.contentGenerated ?? null,
+            aiLabelingCompliance: metadata.aiLabelingCompliance ?? null,
+            copyrightCompliance: metadata.copyrightCompliance ?? null,
+            illegalContentPrevented: metadata.illegalContentPrevented ?? null,
+          };
+        }),
+        highRiskSystems: highRiskSystems.map(sys => {
+          const metadata = (sys as any).metadata || {};
+          return {
+            systemId: sys.id,
+            systemName: sys.name,
+            assessmentsCompleted: sys.riskAssessments?.length || 0,
+            incidentsReported: metadata.incidentsReported ?? null,
+            complianceStatus: sys.complianceStatus,
+          };
+        }),
         prohibitedPracticesDetected: 0,
         complaintsReceived: 0,
         complaintsResolved: 0,

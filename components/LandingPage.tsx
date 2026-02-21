@@ -145,12 +145,7 @@ export const LandingPage: React.FC = () => {
 
       // Check if user already exists - backend now sends magic link automatically
       if (response?.existingUser) {
-        // User already exists, but backend sent a magic link
-        // In development, backend returns the token directly for testing
-        if (response?.devToken) {
-          setMockToken(response.devToken);
-          if (process.env.NODE_ENV === 'development') console.log('Development token received for existing user');
-        }
+        // Magic link sent — in development, check server console for token
         setAuthStep('magic-link-sent');
         setLoading(false);
         return;
@@ -192,13 +187,11 @@ export const LandingPage: React.FC = () => {
 
           // Token was already used or expired - request a new one automatically
           if (errorMsg.includes('Invalid') || errorMsg.includes('expired') || errorMsg.includes('used')) {
-            console.log('Token invalid/expired/used, requesting new magic link...');
-
-            // Request a new magic link and try again
+            // Token was already used or expired — request new magic link
             try {
               const response: any = await loginWithMagicLink(email);
-              if (response?.devToken) {
-                setMockToken(response.devToken);
+              if (response?.token) {
+                setMockToken(response.token);
                 // Try verification with the new token
                 await verifyMagicLink(response.devToken);
                 return;
