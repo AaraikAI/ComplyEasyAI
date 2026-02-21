@@ -298,8 +298,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
 
       const result = await api.frameworks.uploadEvidence(framework.id, controlId, formData);
 
-      // Show success message
-      console.log('Evidence uploaded successfully:', result);
+      // Evidence uploaded successfully
 
       // Reload controls to show updated evidence
       await loadFrameworkDetails();
@@ -454,14 +453,6 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       if (mappingsArray.length > 0) {
         setShowMappings(true);
       }
-      
-      // Debug logging
-      console.log('Control clicked - Mappings loaded:', {
-        controlId: control.id,
-        mappingsCount: mappingsArray.length,
-        mappings: mappingsArray,
-        rawResponse: mappingsData
-      });
     } catch (error) {
       console.error('Failed to load mappings/versions:', error);
       setControlMappings([]);
@@ -1518,7 +1509,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                                         const mappings = (mappingsData as any)?.mappings || (Array.isArray(mappingsData) ? mappingsData : []);
                                         const mappingsArray = Array.isArray(mappings) ? mappings : [];
                                         setControlMappings(mappingsArray);
-                                        console.log('Mappings reloaded after delete:', mappingsArray.length, mappingsArray);
+                                        // Mappings reloaded after delete
                                       } catch (reloadError: any) {
                                         console.error('Failed to reload mappings after delete:', reloadError);
                                         // Fallback: remove from local state
@@ -1710,7 +1701,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                         const mappingsArray = Array.isArray(mappings) ? mappings : [];
                         setControlMappings(mappingsArray);
                         setShowMappings(true); // Automatically show mappings after creation
-                        console.log('Mappings reloaded:', mappingsArray.length, mappingsArray);
+                        // Mappings reloaded after creation
                       } catch (reloadError: any) {
                         console.error('Failed to reload mappings:', reloadError);
                         // Fallback: reload entire control

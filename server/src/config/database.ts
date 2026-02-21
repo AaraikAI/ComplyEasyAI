@@ -7,6 +7,23 @@ import {
   decryptConfigFields,
 } from '../utils/credentialEncryption';
 
+// Append connection pool parameters to DATABASE_URL if not already present.
+// Prisma uses these URL params to configure the internal connection pool.
+function buildDatabaseUrl(): string {
+  const base = process.env.DATABASE_URL || '';
+  if (!base) return base;
+  const url = new URL(base);
+  // Default pool size: 10 connections (overridable via DB_POOL_SIZE env var)
+  if (!url.searchParams.has('connection_limit')) {
+    url.searchParams.set('connection_limit', process.env.DB_POOL_SIZE || '10');
+  }
+  // Default pool timeout: 20 seconds
+  if (!url.searchParams.has('pool_timeout')) {
+    url.searchParams.set('pool_timeout', process.env.DB_POOL_TIMEOUT || '20');
+  }
+  return url.toString();
+}
+
 const prisma = new PrismaClient({
   log: [
     { level: 'query', emit: 'event' },
@@ -15,7 +32,7 @@ const prisma = new PrismaClient({
   ],
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: buildDatabaseUrl(),
     },
   },
 });

@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, Plus, Search, Filter, X, Play, Pause, Copy, Trash2, Edit3,
   Eye, Clock, CheckCircle, XCircle, AlertTriangle, Zap, GitBranch, Bell,
   Calendar, ChevronDown, ChevronRight, BarChart3, Settings, Workflow,
   ArrowDown, Shield, Users, Star, Download, RefreshCw, Activity,
-  Timer, FileText, Lock, UserCheck, LayoutGrid, List
+  Timer, FileText, Lock, UserCheck, LayoutGrid, List, Loader2
 } from 'lucide-react';
+import { api } from '../services/api';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -69,57 +70,70 @@ interface AutomationRule {
   triggerCount: number;
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────
+// ── API data mapping helpers ─────────────────────────────────────────
 
-const MOCK_WORKFLOWS: WorkflowItem[] = [
-  { id: 'wf-1', name: 'Risk Assessment Review', description: 'Automated quarterly risk assessment collection and review pipeline', triggerType: 'Schedule', status: 'Active', lastRun: '2026-02-18 14:30', nextRun: '2026-03-18 14:30', successRate: 96, nodeCount: 8 },
-  { id: 'wf-2', name: 'Incident Response Triage', description: 'Classify, assign, and escalate incoming security incidents automatically', triggerType: 'Event', status: 'Active', lastRun: '2026-02-19 09:12', nextRun: 'On event', successRate: 92, nodeCount: 6 },
-  { id: 'wf-3', name: 'Vendor Onboarding Due Diligence', description: 'End-to-end vendor risk evaluation including questionnaire dispatch and scoring', triggerType: 'Manual', status: 'Draft', lastRun: 'Never', nextRun: 'N/A', successRate: 0, nodeCount: 5 },
-  { id: 'wf-4', name: 'Policy Approval Pipeline', description: 'Route new and updated policies through stakeholder review and sign-off', triggerType: 'Webhook', status: 'Active', lastRun: '2026-02-17 11:00', nextRun: 'On webhook', successRate: 100, nodeCount: 7 },
-  { id: 'wf-5', name: 'GDPR Data Subject Request', description: 'Handle DSAR intake, verification, data discovery, and response within SLA', triggerType: 'Event', status: 'Paused', lastRun: '2026-02-10 16:45', nextRun: 'Paused', successRate: 88, nodeCount: 9 },
-  { id: 'wf-6', name: 'Compliance Training Reminder', description: 'Send scheduled training reminders and track completion rates', triggerType: 'Schedule', status: 'Error', lastRun: '2026-02-15 08:00', nextRun: '2026-02-22 08:00', successRate: 73, nodeCount: 4 },
-];
+function mapApiWorkflow(w: any): WorkflowItem {
+  const trigger = (w.trigger as any) || {};
+  const triggerMap: Record<string, TriggerType> = { manual: 'Manual', schedule: 'Schedule', event: 'Event', webhook: 'Webhook' };
+  const nodes = Array.isArray(w.nodes) ? w.nodes : [];
+  const execCount = w._count?.executions ?? w.runCount ?? 0;
+  return {
+    id: w.id,
+    name: w.name,
+    description: w.description || '',
+    triggerType: triggerMap[trigger.type] || 'Manual',
+    status: (w.status as WorkflowStatus) || 'Draft',
+    lastRun: w.lastRunAt ? new Date(w.lastRunAt).toLocaleString() : 'Never',
+    nextRun: trigger.type === 'schedule' ? (w.nextRunAt ? new Date(w.nextRunAt).toLocaleString() : 'Scheduled') : trigger.type === 'event' ? 'On event' : trigger.type === 'webhook' ? 'On webhook' : 'N/A',
+    successRate: execCount > 0 ? Math.round((w.successCount ?? execCount) / execCount * 100) : 0,
+    nodeCount: nodes.length,
+  };
+}
 
-const MOCK_TEMPLATES: WorkflowTemplate[] = [
-  { id: 'tpl-1', name: 'Risk Register Auto-Update', category: 'Risk', description: 'Automatically update risk register entries when control assessments change', stepsCount: 5, popularity: 4.8 },
-  { id: 'tpl-2', name: 'SOC 2 Evidence Collection', category: 'Compliance', description: 'Gather, validate, and organize evidence artifacts for SOC 2 audits', stepsCount: 7, popularity: 4.9 },
-  { id: 'tpl-3', name: 'Internal Audit Scheduling', category: 'Audit', description: 'Schedule audits, notify stakeholders, and track preparation tasks', stepsCount: 6, popularity: 4.5 },
-  { id: 'tpl-4', name: 'Security Incident Escalation', category: 'Incident', description: 'Classify severity, notify response team, and trigger containment steps', stepsCount: 8, popularity: 4.7 },
-  { id: 'tpl-5', name: 'DSAR Processing Pipeline', category: 'Privacy', description: 'Intake, verify identity, discover data, and generate response packages', stepsCount: 9, popularity: 4.6 },
-  { id: 'tpl-6', name: 'New Employee Compliance Setup', category: 'Onboarding', description: 'Assign mandatory training, provision access, and verify background checks', stepsCount: 6, popularity: 4.4 },
-  { id: 'tpl-7', name: 'Continuous Control Monitoring', category: 'Compliance', description: 'Monitor control effectiveness and alert on deviations in real time', stepsCount: 4, popularity: 4.3 },
-  { id: 'tpl-8', name: 'Third-Party Risk Re-Assessment', category: 'Risk', description: 'Periodic re-evaluation of vendor risk posture with automated scoring', stepsCount: 7, popularity: 4.5 },
-];
+function mapApiRun(r: any): WorkflowRun {
+  const completed = Array.isArray(r.completedNodes) ? r.completedNodes.length : 0;
+  const total = r.workflow?.nodes ? (Array.isArray(r.workflow.nodes) ? r.workflow.nodes.length : 0) : completed;
+  const durationMs = r.completedAt && r.startedAt ? new Date(r.completedAt).getTime() - new Date(r.startedAt).getTime() : 0;
+  const durationStr = durationMs > 0 ? `${Math.floor(durationMs / 60000)}m ${Math.floor((durationMs % 60000) / 1000)}s` : '—';
+  return {
+    id: r.id.substring(0, 8).toUpperCase(),
+    workflowName: r.workflow?.name || 'Unknown',
+    triggeredBy: r.triggerType === 'manual' ? 'Manual' : r.triggerType || 'System',
+    startedAt: r.startedAt ? new Date(r.startedAt).toLocaleString() : '—',
+    duration: durationStr,
+    status: (r.status as RunStatus) || 'Running',
+    stepsCompleted: completed,
+    stepsTotal: total || completed,
+  };
+}
 
-const MOCK_BUILDER_NODES: WorkflowNode[] = [
-  { id: 'bn-1', step: 1, type: 'Trigger', title: 'New Incident Reported', configSummary: 'Source: SIEM webhook, Filter: severity >= medium' },
-  { id: 'bn-2', step: 2, type: 'Condition', title: 'Check Severity Level', configSummary: 'If severity is Critical or High -> fast path, else -> standard path' },
-  { id: 'bn-3', step: 3, type: 'Notification', title: 'Alert Response Team', configSummary: 'Slack: #incident-response, Email: security-team@company.com' },
-  { id: 'bn-4', step: 4, type: 'Approval', title: 'Manager Approval', configSummary: 'Approver: Incident Manager, Timeout: 30 min, Auto-escalate on timeout' },
-  { id: 'bn-5', step: 5, type: 'Action', title: 'Create JIRA Ticket', configSummary: 'Project: SEC, Type: Incident, Priority: mapped from severity' },
-  { id: 'bn-6', step: 6, type: 'Wait', title: 'Await Resolution', configSummary: 'Wait for ticket status = Resolved, Max wait: 72 hours' },
-];
+function mapApiRule(r: any): AutomationRule {
+  const trigger = (r.trigger as any) || {};
+  const nodes = Array.isArray(r.nodes) ? r.nodes : [];
+  const conditions = nodes.filter((n: any) => n.type === 'condition').map((n: any) => n.label || n.title || '').join(', ');
+  const actions = nodes.filter((n: any) => n.type !== 'condition').map((n: any) => n.label || n.title || '').join(', ');
+  return {
+    id: r.id,
+    name: r.name,
+    triggerEvent: trigger.config?.event || 'Custom event',
+    conditions: conditions || 'No conditions configured',
+    actions: actions || 'No actions configured',
+    status: r.status === 'Active' ? 'Active' : 'Inactive',
+    lastTriggered: r.lastRunAt ? new Date(r.lastRunAt).toLocaleString() : 'Never',
+    triggerCount: r.runCount ?? 0,
+  };
+}
 
-const MOCK_RUNS: WorkflowRun[] = [
-  { id: 'RUN-001', workflowName: 'Risk Assessment Review', triggeredBy: 'Scheduler', startedAt: '2026-02-18 14:30', duration: '4m 12s', status: 'Completed', stepsCompleted: 8, stepsTotal: 8 },
-  { id: 'RUN-002', workflowName: 'Incident Response Triage', triggeredBy: 'SIEM Event', startedAt: '2026-02-19 09:12', duration: '1m 45s', status: 'Completed', stepsCompleted: 6, stepsTotal: 6 },
-  { id: 'RUN-003', workflowName: 'Policy Approval Pipeline', triggeredBy: 'Webhook', startedAt: '2026-02-17 11:00', duration: '23m 08s', status: 'Completed', stepsCompleted: 7, stepsTotal: 7 },
-  { id: 'RUN-004', workflowName: 'GDPR Data Subject Request', triggeredBy: 'Portal Event', startedAt: '2026-02-10 16:45', duration: '15m 32s', status: 'Failed', stepsCompleted: 5, stepsTotal: 9 },
-  { id: 'RUN-005', workflowName: 'Compliance Training Reminder', triggeredBy: 'Scheduler', startedAt: '2026-02-15 08:00', duration: '2m 01s', status: 'Failed', stepsCompleted: 2, stepsTotal: 4 },
-  { id: 'RUN-006', workflowName: 'Incident Response Triage', triggeredBy: 'SIEM Event', startedAt: '2026-02-18 22:05', duration: '1m 33s', status: 'Completed', stepsCompleted: 6, stepsTotal: 6 },
-  { id: 'RUN-007', workflowName: 'Risk Assessment Review', triggeredBy: 'Manual', startedAt: '2026-02-16 10:20', duration: '5m 47s', status: 'Completed', stepsCompleted: 8, stepsTotal: 8 },
-  { id: 'RUN-008', workflowName: 'Policy Approval Pipeline', triggeredBy: 'Webhook', startedAt: '2026-02-19 08:30', duration: '—', status: 'Running', stepsCompleted: 3, stepsTotal: 7 },
-  { id: 'RUN-009', workflowName: 'Vendor Onboarding Due Diligence', triggeredBy: 'Manual', startedAt: '2026-02-14 13:15', duration: '8m 22s', status: 'Cancelled', stepsCompleted: 3, stepsTotal: 5 },
-  { id: 'RUN-010', workflowName: 'Incident Response Triage', triggeredBy: 'SIEM Event', startedAt: '2026-02-13 03:41', duration: '1m 58s', status: 'Completed', stepsCompleted: 6, stepsTotal: 6 },
-];
-
-const MOCK_RULES: AutomationRule[] = [
-  { id: 'rule-1', name: 'Critical Risk Auto-Escalate', triggerEvent: 'Risk score exceeds threshold', conditions: 'Risk score >= 90 AND category = "Operational"', actions: 'Notify CISO, Create escalation ticket, Set risk status to Critical', status: 'Active', lastTriggered: '2026-02-17 15:20', triggerCount: 12 },
-  { id: 'rule-2', name: 'Overdue Control Remediation', triggerEvent: 'Remediation deadline passed', conditions: 'Days overdue > 0 AND status != "Closed"', actions: 'Send reminder to owner, CC manager, Update status to Overdue', status: 'Active', lastTriggered: '2026-02-19 06:00', triggerCount: 34 },
-  { id: 'rule-3', name: 'New Vendor Risk Screening', triggerEvent: 'Vendor created in system', conditions: 'Vendor type = "Third-Party" OR "Fourth-Party"', actions: 'Trigger due diligence workflow, Assign risk analyst, Send questionnaire', status: 'Active', lastTriggered: '2026-02-16 10:30', triggerCount: 8 },
-  { id: 'rule-4', name: 'Compliance Certificate Expiry', triggerEvent: 'Certificate expiry within 30 days', conditions: 'Certificate type IN ("ISO 27001", "SOC 2", "PCI DSS")', actions: 'Notify vendor manager, Create renewal task, Flag vendor profile', status: 'Inactive', lastTriggered: '2026-01-28 09:00', triggerCount: 5 },
-  { id: 'rule-5', name: 'Failed Login Lockout', triggerEvent: 'Consecutive failed login attempts', conditions: 'Failed attempts >= 5 within 10 minutes', actions: 'Lock account, Notify IT Security, Log audit event', status: 'Active', lastTriggered: '2026-02-19 07:45', triggerCount: 21 },
-];
+function mapApiTemplate(t: any): WorkflowTemplate {
+  return {
+    id: t.id,
+    name: t.name,
+    category: (t.category as TemplateCategory) || 'Compliance',
+    description: t.description || '',
+    stepsCount: t.steps ?? t.stepsCount ?? 0,
+    popularity: t.popularity ?? 0,
+  };
+}
 
 // ── Helper Functions ───────────────────────────────────────────────────
 
@@ -217,6 +231,126 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
   const [newDescription, setNewDescription] = useState('');
   const [newTrigger, setNewTrigger] = useState<TriggerType>('Manual');
 
+  // API-loaded data
+  const [workflows, setWorkflows] = useState<WorkflowItem[]>([]);
+  const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
+  const [runs, setRuns] = useState<WorkflowRun[]>([]);
+  const [rules, setRules] = useState<AutomationRule[]>([]);
+  const [builderNodes, setBuilderNodes] = useState<WorkflowNode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const loadWorkflows = useCallback(async () => {
+    try {
+      const res = await api.workflows.list({ status: statusFilter !== 'all' ? statusFilter : undefined });
+      setWorkflows((res.workflows || []).map(mapApiWorkflow));
+    } catch { /* handled by error state */ }
+  }, [statusFilter]);
+
+  const loadTemplates = useCallback(async () => {
+    try {
+      const res = await api.workflows.listTemplates();
+      setTemplates(Array.isArray(res) ? res.map(mapApiTemplate) : []);
+    } catch { /* handled by error state */ }
+  }, []);
+
+  const loadRuns = useCallback(async () => {
+    try {
+      const res = await api.workflows.listRuns();
+      setRuns((res.runs || []).map(mapApiRun));
+    } catch { /* handled by error state */ }
+  }, []);
+
+  const loadRules = useCallback(async () => {
+    try {
+      const res = await api.workflows.listRules();
+      setRules((res.rules || []).map(mapApiRule));
+    } catch { /* handled by error state */ }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        await Promise.all([loadWorkflows(), loadTemplates(), loadRuns(), loadRules()]);
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message || 'Failed to load workflow data');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [loadWorkflows, loadTemplates, loadRuns, loadRules]);
+
+  const handleCreateWorkflow = async () => {
+    if (!newName.trim()) return;
+    setActionLoading('create');
+    try {
+      const triggerMap: Record<TriggerType, string> = { Manual: 'manual', Schedule: 'schedule', Event: 'event', Webhook: 'webhook' };
+      await api.workflows.create({ name: newName, description: newDescription, trigger: { type: triggerMap[newTrigger], config: {} } });
+      setShowCreateModal(false);
+      setNewName(''); setNewDescription(''); setNewTrigger('Manual');
+      await loadWorkflows();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to create workflow');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteWorkflow = async (id: string) => {
+    setActionLoading(id);
+    try {
+      await api.workflows.delete(id);
+      await loadWorkflows();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to delete workflow');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDuplicateWorkflow = async (id: string) => {
+    setActionLoading(id);
+    try {
+      await api.workflows.duplicate(id);
+      await loadWorkflows();
+    } catch (e: any) {
+      setError(e?.message || 'Failed to duplicate workflow');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRunWorkflow = async (id: string) => {
+    setActionLoading(id);
+    try {
+      await api.workflows.run(id);
+      await Promise.all([loadWorkflows(), loadRuns()]);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to run workflow');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUseTemplate = async (id: string) => {
+    setActionLoading(id);
+    try {
+      await api.workflows.useTemplate(id);
+      await loadWorkflows();
+      setActiveTab('workflows');
+    } catch (e: any) {
+      setError(e?.message || 'Failed to use template');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: 'workflows', label: 'My Workflows', icon: <Workflow size={15} /> },
     { key: 'templates', label: 'Templates', icon: <LayoutGrid size={15} /> },
@@ -228,36 +362,36 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
   // ── Filtered data ────────────────────────────────────────────────────
 
   const filteredWorkflows = useMemo(() => {
-    return MOCK_WORKFLOWS.filter(w => {
+    return workflows.filter(w => {
       if (statusFilter !== 'all' && w.status !== statusFilter) return false;
       if (searchQuery && !w.name.toLowerCase().includes(searchQuery.toLowerCase()) && !w.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
-  }, [searchQuery, statusFilter]);
+  }, [workflows, searchQuery, statusFilter]);
 
   const filteredTemplates = useMemo(() => {
-    return MOCK_TEMPLATES.filter(t => {
+    return templates.filter(t => {
       if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
       if (searchQuery && !t.name.toLowerCase().includes(searchQuery.toLowerCase()) && !t.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
-  }, [searchQuery, categoryFilter]);
+  }, [templates, searchQuery, categoryFilter]);
 
   const filteredRuns = useMemo(() => {
-    return MOCK_RUNS.filter(r => {
+    return runs.filter(r => {
       if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (searchQuery && !r.workflowName.toLowerCase().includes(searchQuery.toLowerCase()) && !r.id.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
-  }, [searchQuery, statusFilter]);
+  }, [runs, searchQuery, statusFilter]);
 
   const filteredRules = useMemo(() => {
-    return MOCK_RULES.filter(r => {
+    return rules.filter(r => {
       if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (searchQuery && !r.name.toLowerCase().includes(searchQuery.toLowerCase()) && !r.triggerEvent.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
-  }, [searchQuery, statusFilter]);
+  }, [rules, searchQuery, statusFilter]);
 
   // ── My Workflows Tab ─────────────────────────────────────────────────
 
@@ -321,9 +455,9 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               </div>
               <div className="flex items-center gap-1 border-t border-slate-700 pt-3">
                 <button className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors" title="Edit"><Edit3 size={14} /></button>
-                <button className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors" title="Duplicate"><Copy size={14} /></button>
-                <button className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 rounded transition-colors" title="Run"><Play size={14} /></button>
-                <button className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded transition-colors ml-auto" title="Delete"><Trash2 size={14} /></button>
+                <button onClick={() => handleDuplicateWorkflow(wf.id)} disabled={actionLoading === wf.id} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors" title="Duplicate">{actionLoading === wf.id ? <Loader2 size={14} className="animate-spin" /> : <Copy size={14} />}</button>
+                <button onClick={() => handleRunWorkflow(wf.id)} disabled={actionLoading === wf.id} className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 rounded transition-colors" title="Run"><Play size={14} /></button>
+                <button onClick={() => handleDeleteWorkflow(wf.id)} disabled={actionLoading === wf.id} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded transition-colors ml-auto" title="Delete"><Trash2 size={14} /></button>
               </div>
             </div>
           ))}
@@ -357,9 +491,9 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <button className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded" title="Edit"><Edit3 size={14} /></button>
-                      <button className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded" title="Duplicate"><Copy size={14} /></button>
-                      <button className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 rounded" title="Run"><Play size={14} /></button>
-                      <button className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded" title="Delete"><Trash2 size={14} /></button>
+                      <button onClick={() => handleDuplicateWorkflow(wf.id)} className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded" title="Duplicate"><Copy size={14} /></button>
+                      <button onClick={() => handleRunWorkflow(wf.id)} className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 rounded" title="Run"><Play size={14} /></button>
+                      <button onClick={() => handleDeleteWorkflow(wf.id)} className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded" title="Delete"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>
@@ -419,8 +553,8 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             <p className="text-slate-400 text-xs mb-4 flex-1">{tpl.description}</p>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-500">{tpl.stepsCount} steps</span>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors">
-                <Download size={12} /> Use Template
+              <button onClick={() => handleUseTemplate(tpl.id)} disabled={actionLoading === tpl.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50">
+                {actionLoading === tpl.id ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />} Use Template
               </button>
             </div>
           </div>
@@ -481,7 +615,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
           {/* Vertical Node Flow */}
           <div className="flex flex-col items-center">
-            {MOCK_BUILDER_NODES.map((node, idx) => (
+            {builderNodes.map((node, idx) => (
               <React.Fragment key={node.id}>
                 {/* Node Card */}
                 <div className={`w-full max-w-lg border-l-4 rounded-lg p-4 bg-slate-800 border border-slate-700 ${nodeTypeColor(node.type)} relative`}>
@@ -496,7 +630,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 </div>
 
                 {/* Connector + Add Button */}
-                {idx < MOCK_BUILDER_NODES.length - 1 && (
+                {idx < builderNodes.length - 1 && (
                   <div className="flex flex-col items-center py-1">
                     <div className="w-px h-4 bg-slate-600" />
                     <button className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:text-white hover:border-blue-500 hover:bg-blue-600/20 transition-colors">
@@ -554,19 +688,19 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-slate-400 text-sm mb-1"><Activity size={14} /> Total Runs</div>
-          <div className="text-2xl font-bold text-white">{MOCK_RUNS.length}</div>
+          <div className="text-2xl font-bold text-white">{runs.length}</div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-emerald-400 text-sm mb-1"><CheckCircle size={14} /> Completed</div>
-          <div className="text-2xl font-bold text-emerald-400">{MOCK_RUNS.filter(r => r.status === 'Completed').length}</div>
+          <div className="text-2xl font-bold text-emerald-400">{runs.filter(r => r.status === 'Completed').length}</div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-red-400 text-sm mb-1"><XCircle size={14} /> Failed</div>
-          <div className="text-2xl font-bold text-red-400">{MOCK_RUNS.filter(r => r.status === 'Failed').length}</div>
+          <div className="text-2xl font-bold text-red-400">{runs.filter(r => r.status === 'Failed').length}</div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-blue-400 text-sm mb-1"><RefreshCw size={14} /> Running</div>
-          <div className="text-2xl font-bold text-blue-400">{MOCK_RUNS.filter(r => r.status === 'Running').length}</div>
+          <div className="text-2xl font-bold text-blue-400">{runs.filter(r => r.status === 'Running').length}</div>
         </div>
       </div>
 
@@ -754,10 +888,11 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
             <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancel</button>
             <button
-              onClick={() => { setShowCreateModal(false); setNewName(''); setNewDescription(''); setNewTrigger('Manual'); }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors font-medium"
+              onClick={handleCreateWorkflow}
+              disabled={actionLoading === 'create' || !newName.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
             >
-              Create Workflow
+              {actionLoading === 'create' ? 'Creating...' : 'Create Workflow'}
             </button>
           </div>
         </div>
@@ -769,7 +904,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
   const renderRunDetailModal = () => {
     if (!selectedRun) return null;
-    const steps = MOCK_BUILDER_NODES.slice(0, selectedRun.stepsTotal);
+    const steps = builderNodes.slice(0, selectedRun.stepsTotal);
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedRun(null)}>
         <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -857,7 +992,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">{MOCK_WORKFLOWS.filter(w => w.status === 'Active').length} active workflows</span>
+              <span className="text-xs text-slate-500">{workflows.filter(w => w.status === 'Active').length} active workflows</span>
             </div>
           </div>
         </div>
@@ -881,11 +1016,27 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           ))}
         </div>
 
-        {activeTab === 'workflows' && renderWorkflows()}
-        {activeTab === 'templates' && renderTemplates()}
-        {activeTab === 'builder' && renderBuilder()}
-        {activeTab === 'runs' && renderRuns()}
-        {activeTab === 'rules' && renderRules()}
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-between">
+            <span className="text-red-400 text-sm">{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 size={32} className="animate-spin text-blue-400" />
+            <span className="ml-3 text-slate-400">Loading workflows...</span>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'workflows' && renderWorkflows()}
+            {activeTab === 'templates' && renderTemplates()}
+            {activeTab === 'builder' && renderBuilder()}
+            {activeTab === 'runs' && renderRuns()}
+            {activeTab === 'rules' && renderRules()}
+          </>
+        )}
       </div>
 
       {renderCreateModal()}
