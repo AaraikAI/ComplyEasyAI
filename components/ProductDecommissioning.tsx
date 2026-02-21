@@ -268,52 +268,101 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
   const [dataProductFilter, setDataProductFilter] = useState<string>('All');
   const [notifProductFilter, setNotifProductFilter] = useState<string>('All');
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await api.modules.decommission.listProducts();
-        // Only update if we got real data — demo data is used as fallback
-        setLoadError(null);
-      } catch (err: any) {
-        setLoadError('Unable to connect to server. Showing demo data.');
-      } finally {
-        setIsLoading(false);
+  // State variables backed by DEMO data as initial/fallback values
+  const [products, setProducts] = useState<Product[]>(DEMO_PRODUCTS);
+  const [workflowTasks, setWorkflowTasks] = useState<WorkflowTask[]>(DEMO_WORKFLOW_TASKS);
+  const [dataPlans, setDataPlans] = useState<DataMigrationPlan[]>(DEMO_DATA_PLANS);
+  const [notifications, setNotifications] = useState<CustomerNotification[]>(DEMO_NOTIFICATIONS);
+
+  const loadData = useCallback(async (showRefresh = false) => {
+    if (showRefresh) setIsRefreshing(true); else setIsLoading(true);
+    try {
+      const data = await api.modules.decommission.listProducts();
+      if (data) {
+        // The API returns a combined payload; destructure if available,
+        // otherwise fall back to treating it as the products list.
+        if (Array.isArray(data)) {
+          setProducts(data.length > 0 ? data : DEMO_PRODUCTS);
+        } else {
+          const d = data as any;
+          if (d.products) setProducts(d.products);
+          if (d.workflowTasks) setWorkflowTasks(d.workflowTasks);
+          if (d.dataPlans) setDataPlans(d.dataPlans);
+          if (d.notifications) setNotifications(d.notifications);
+        }
       }
-    })();
+      setLoadError(null);
+    } catch (err: any) {
+      setLoadError('Unable to connect to server. Showing demo data.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   }, []);
 
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleDeleteProduct = useCallback(async (id: string) => {
+    try {
+      await api.modules.decommission.deleteProduct(id);
+      setProducts(prev => prev.filter(p => p.id !== id));
+    } catch {
+      setLoadError('Failed to delete product. Please try again.');
+    }
+  }, []);
+
+  const handleUpdateProduct = useCallback(async (id: string, data: Partial<Product>) => {
+    try {
+      const updated = await api.modules.decommission.updateProduct(id, data);
+      setProducts(prev => prev.map(p => (p.id === id ? { ...p, ...data, ...(updated ?? {}) } : p)));
+    } catch {
+      setLoadError('Failed to update product. Please try again.');
+    }
+  }, []);
+
+  const handleCreateProduct = useCallback(async (data: Omit<Product, 'id'>) => {
+    try {
+      const created = await api.modules.decommission.createProduct(data);
+      if (created) setProducts(prev => [...prev, created]);
+      await loadData(true);
+    } catch {
+      setLoadError('Failed to create product. Please try again.');
+    }
+  }, [loadData]);
+
   const filteredProducts = useMemo(() =>
-    DEMO_PRODUCTS.filter(p =>
+    products.filter(p =>
       (p.name.toLowerCase().includes(productSearch.toLowerCase())) &&
       (productStatusFilter === 'All' || p.status === productStatusFilter)
-    ), [productSearch, productStatusFilter]);
+    ), [products, productSearch, productStatusFilter]);
 
   const filteredTasks = useMemo(() =>
-    DEMO_WORKFLOW_TASKS.filter(t => workflowProductFilter === 'All' || t.productId === workflowProductFilter), [workflowProductFilter]);
+    workflowTasks.filter(t => workflowProductFilter === 'All' || t.productId === workflowProductFilter), [workflowTasks, workflowProductFilter]);
 
   const filteredDataPlans = useMemo(() =>
-    DEMO_DATA_PLANS.filter(d => dataProductFilter === 'All' || d.productId === dataProductFilter), [dataProductFilter]);
+    dataPlans.filter(d => dataProductFilter === 'All' || d.productId === dataProductFilter), [dataPlans, dataProductFilter]);
 
   const filteredNotifications = useMemo(() =>
-    DEMO_NOTIFICATIONS.filter(n => notifProductFilter === 'All' || n.productId === notifProductFilter), [notifProductFilter]);
+    notifications.filter(n => notifProductFilter === 'All' || n.productId === notifProductFilter), [notifications, notifProductFilter]);
 
   // Stats
   const statusCounts = useMemo(() => ({
-    Active: DEMO_PRODUCTS.filter(p => p.status === 'Active').length,
-    'End-of-Sale': DEMO_PRODUCTS.filter(p => p.status === 'End-of-Sale').length,
-    'End-of-Support': DEMO_PRODUCTS.filter(p => p.status === 'End-of-Support').length,
-    'End-of-Life': DEMO_PRODUCTS.filter(p => p.status === 'End-of-Life').length,
-    Decommissioned: DEMO_PRODUCTS.filter(p => p.status === 'Decommissioned').length,
-  }), []);
+    Active: products.filter(p => p.status === 'Active').length,
+    'End-of-Sale': products.filter(p => p.status === 'End-of-Sale').length,
+    'End-of-Support': products.filter(p => p.status === 'End-of-Support').length,
+    'End-of-Life': products.filter(p => p.status === 'End-of-Life').length,
+    Decommissioned: products.filter(p => p.status === 'Decommissioned').length,
+  }), [products]);
 
   const taskStats = useMemo(() => ({
-    total: DEMO_WORKFLOW_TASKS.length,
-    completed: DEMO_WORKFLOW_TASKS.filter(t => t.status === 'completed').length,
-    inProgress: DEMO_WORKFLOW_TASKS.filter(t => t.status === 'in_progress').length,
-    notStarted: DEMO_WORKFLOW_TASKS.filter(t => t.status === 'not_started').length,
-  }), []);
+    total: workflowTasks.length,
+    completed: workflowTasks.filter(t => t.status === 'completed').length,
+    inProgress: workflowTasks.filter(t => t.status === 'in_progress').length,
+    notStarted: workflowTasks.filter(t => t.status === 'not_started').length,
+  }), [workflowTasks]);
 
   // ---------------------------------------------------------------------------
   // Tab Renderers
@@ -356,23 +405,23 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
             <Database className="w-5 h-5 text-purple-600" />
             <span className="text-sm font-medium text-gray-700">Data Plans</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">{DEMO_DATA_PLANS.length}</div>
-          <div className="text-xs text-gray-500 mt-1">{DEMO_DATA_PLANS.filter(d => d.status === 'completed' || d.status === 'verified').length} completed</div>
+          <div className="text-2xl font-bold text-gray-900">{dataPlans.length}</div>
+          <div className="text-xs text-gray-500 mt-1">{dataPlans.filter(d => d.status === 'completed' || d.status === 'verified').length} completed</div>
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex items-center gap-3 mb-2">
             <Bell className="w-5 h-5 text-orange-600" />
             <span className="text-sm font-medium text-gray-700">Notifications</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">{DEMO_NOTIFICATIONS.length}</div>
-          <div className="text-xs text-gray-500 mt-1">{DEMO_NOTIFICATIONS.filter(n => n.status === 'delivered').length} delivered</div>
+          <div className="text-2xl font-bold text-gray-900">{notifications.length}</div>
+          <div className="text-xs text-gray-500 mt-1">{notifications.filter(n => n.status === 'delivered').length} delivered</div>
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-5 h-5 text-green-600" />
             <span className="text-sm font-medium text-gray-700">Affected Users</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">{DEMO_PRODUCTS.filter(p => p.status !== 'Active' && p.status !== 'Decommissioned').reduce((sum, p) => sum + p.activeUsers, 0)}</div>
+          <div className="text-2xl font-bold text-gray-900">{products.filter(p => p.status !== 'Active' && p.status !== 'Decommissioned').reduce((sum, p) => sum + p.activeUsers, 0)}</div>
           <div className="text-xs text-gray-500 mt-1">Across transitioning products</div>
         </div>
       </div>
@@ -383,7 +432,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
           <h3 className="font-semibold text-gray-900 text-sm">Upcoming Milestones</h3>
         </div>
         <div className="divide-y divide-gray-100">
-          {DEMO_PRODUCTS.filter(p => p.endOfLifeDate && p.status !== 'Decommissioned').sort((a, b) => new Date(a.endOfLifeDate!).getTime() - new Date(b.endOfLifeDate!).getTime()).map(product => (
+          {products.filter(p => p.endOfLifeDate && p.status !== 'Decommissioned').sort((a, b) => new Date(a.endOfLifeDate!).getTime() - new Date(b.endOfLifeDate!).getTime()).map(product => (
             <div key={product.id} className="px-4 py-3 hover:bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -411,7 +460,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
             <h3 className="font-semibold text-gray-900 text-sm">Security Patch Commitments</h3>
           </div>
           <div className="divide-y divide-gray-100">
-            {DEMO_PRODUCTS.filter(p => p.status !== 'Active' && p.status !== 'Decommissioned').map(p => (
+            {products.filter(p => p.status !== 'Active' && p.status !== 'Decommissioned').map(p => (
               <div key={p.id} className="px-4 py-3">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-medium text-sm">{p.name}</span>
@@ -430,7 +479,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
             <h3 className="font-semibold text-gray-900 text-sm">Environmental Disposal</h3>
           </div>
           <div className="divide-y divide-gray-100">
-            {DEMO_PRODUCTS.filter(p => p.status !== 'Active').map(p => (
+            {products.filter(p => p.status !== 'Active').map(p => (
               <div key={p.id} className="px-4 py-3">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-medium text-sm">{p.name}</span>
@@ -532,7 +581,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
         <select value={workflowProductFilter} onChange={e => setWorkflowProductFilter(e.target.value)}
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
           <option value="All">All Products</option>
-          {DEMO_PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-gray-500">{filteredTasks.length} tasks</span>
@@ -595,7 +644,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
                     {task.dependencies.length > 0 && (
                       <div className="text-xs text-gray-500 mb-2">
                         Dependencies: {task.dependencies.map(dep => {
-                          const depTask = DEMO_WORKFLOW_TASKS.find(t => t.id === dep);
+                          const depTask = workflowTasks.find(t => t.id === dep);
                           return depTask ? depTask.taskName : dep;
                         }).join(', ')}
                       </div>
@@ -617,7 +666,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
         <select value={dataProductFilter} onChange={e => setDataProductFilter(e.target.value)}
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
           <option value="All">All Products</option>
-          {DEMO_PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">{filteredDataPlans.length} data plans</span>
@@ -646,7 +695,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
                 <div>
                   <div className="font-medium text-gray-900">{plan.dataCategory}</div>
                   <div className="text-xs text-gray-500">
-                    {DEMO_PRODUCTS.find(p => p.id === plan.productId)?.name} | {plan.recordCount.toLocaleString()} records | {plan.sizeGB} GB
+                    {products.find(p => p.id === plan.productId)?.name} | {plan.recordCount.toLocaleString()} records | {plan.sizeGB} GB
                   </div>
                 </div>
               </div>
@@ -698,7 +747,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
         <select value={notifProductFilter} onChange={e => setNotifProductFilter(e.target.value)}
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
           <option value="All">All Products</option>
-          {DEMO_PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <button className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
           <Plus className="w-4 h-4" />Create Notification
@@ -734,7 +783,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
                 <div>
                   <div className="font-medium text-gray-900 text-sm">{notif.subject}</div>
                   <div className="text-xs text-gray-500">
-                    {DEMO_PRODUCTS.find(p => p.id === notif.productId)?.name} | {notif.recipientCount} recipients | {notif.channel}
+                    {products.find(p => p.id === notif.productId)?.name} | {notif.recipientCount} recipients | {notif.channel}
                   </div>
                 </div>
               </div>
@@ -789,8 +838,13 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={() => loadData(true)} disabled={isRefreshing}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                title="Refresh data">
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
               <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-300">
-                {DEMO_PRODUCTS.filter(p => p.status !== 'Active' && p.status !== 'Decommissioned').length} Products Transitioning
+                {products.filter(p => p.status !== 'Active' && p.status !== 'Decommissioned').length} Products Transitioning
               </span>
             </div>
           </div>

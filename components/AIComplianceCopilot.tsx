@@ -496,6 +496,7 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
   const [deadlinesExpanded, setDeadlinesExpanded] = useState(true);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [auditReadinessScore] = useState(74);
+  const [isApiAvailable, setIsApiAvailable] = useState<boolean>(true);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -521,7 +522,7 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
     }
   }, [activeSection]);
 
-  const getResponseForQuery = useCallback((query: string) => {
+  const getMockFallbackResponse = useCallback((query: string): { content: string; confidence: number; sources: Array<{ title: string; reference: string }>; followUps: string[] } => {
     const lowerQuery = query.toLowerCase();
     if (lowerQuery.includes('gdpr') || lowerQuery.includes('france') || lowerQuery.includes('data protection')) {
       return MOCK_RESPONSES['gdpr'];
@@ -556,39 +557,45 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
       }));
 
       const aiResult = await api.ai.complianceCopilot(text, conversationHistory, {
-        currentView: 'copilot',
+        currentView: currentView || 'copilot',
         activeFramework: undefined,
       });
+
+      setIsApiAvailable(true);
 
       const assistantMessage: CopilotMessage = {
         id: `msg-${Date.now()}-resp`,
         role: 'assistant',
         content: aiResult.response || 'I could not generate a response. Please try again.',
         timestamp: new Date(),
-        confidence: 0.85,
+        confidence: aiResult.confidence ?? 0.85,
         sources: (aiResult.relatedControls || []).map((c: string) => ({ title: c, reference: c })),
         followUpQuestions: aiResult.suggestions || [],
       };
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error: any) {
-      console.error('Copilot error:', error);
+      console.error('Copilot API error, falling back to mock responses:', error);
+      setIsApiAvailable(false);
 
-      const errorMessage: CopilotMessage = {
-        id: `msg-${Date.now()}-err`,
+      // Fall back to MOCK_RESPONSES when the API is unavailable
+      const fallback = getMockFallbackResponse(text);
+
+      const fallbackMessage: CopilotMessage = {
+        id: `msg-${Date.now()}-fallback`,
         role: 'assistant',
-        content: `I'm sorry, I wasn't able to process your request. ${error?.message || 'The AI service is temporarily unavailable.'}\n\nPlease try again in a moment. If the issue persists, ensure the backend server is running and the Gemini API key is configured.`,
+        content: fallback.content + '\n\n---\n*Note: This response was generated from cached compliance data because the AI service is temporarily unavailable. Responses will use live AI analysis once the connection is restored.*',
         timestamp: new Date(),
-        confidence: 0,
-        sources: [],
-        followUpQuestions: [],
+        confidence: fallback.confidence,
+        sources: fallback.sources,
+        followUpQuestions: fallback.followUps,
       };
 
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, fallbackMessage]);
     } finally {
       setIsTyping(false);
     }
-  }, [inputValue, messages]);
+  }, [inputValue, messages, currentView, getMockFallbackResponse]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -653,8 +660,16 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-900">AI Compliance Copilot</h3>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 flex items-center gap-1.5">
                 Context: <span className="font-medium text-brand-600">{getViewLabel(currentView)}</span>
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                  isApiAvailable
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isApiAvailable ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                  {isApiAvailable ? 'Live AI' : 'Offline'}
+                </span>
               </p>
             </div>
           </div>
@@ -961,7 +976,11 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
                   <div className="flex items-center gap-2 text-gray-500">
                     <div className="bg-gray-100 rounded-xl px-3 py-2.5 flex items-center gap-2">
                       <Loader2 size={14} className="animate-spin" />
-                      <span className="text-sm">Analyzing your compliance data...</span>
+                      <span className="text-sm">
+                        {isApiAvailable
+                          ? 'Analyzing your compliance data with AI...'
+                          : 'Retrieving cached compliance data...'}
+                      </span>
                     </div>
                   </div>
                 )}

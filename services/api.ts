@@ -2290,6 +2290,11 @@ export const api = {
       getProduct: async (id: string) => fetchAPI<any>(`/modules/ce-marking/products/${id}`),
       updateProduct: async (id: string, data: any) => fetchAPI<any>(`/modules/ce-marking/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
       deleteProduct: async (id: string) => fetchAPI<any>(`/modules/ce-marking/products/${id}`, { method: 'DELETE' }),
+      listNotifiedBodies: async () => fetchAPI<any[]>('/modules/ce-marking/notified-bodies'),
+      listRequirements: async () => fetchAPI<any[]>('/modules/ce-marking/requirements'),
+      listDocuments: async () => fetchAPI<any[]>('/modules/ce-marking/documents'),
+      listRiskItems: async () => fetchAPI<any[]>('/modules/ce-marking/risk-items'),
+      listSurveillanceChecks: async () => fetchAPI<any[]>('/modules/ce-marking/surveillance-checks'),
     },
 
     // --- Digital Product Passport ---

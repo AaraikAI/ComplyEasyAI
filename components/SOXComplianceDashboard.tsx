@@ -3,7 +3,7 @@
  * Sarbanes-Oxley Act Section 404 compliance management
  * Controls, testing, deficiencies, walkthroughs, and ICFR reporting
  */
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import {
   ArrowLeft, Shield, CheckCircle, AlertTriangle, XCircle, Search, Plus, X,
@@ -112,36 +112,32 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
   const [deficiencies, setDeficiencies] = useState<Deficiency[]>(MOCK_DEFICIENCIES);
   const [walkthroughs, setWalkthroughs] = useState<Walkthrough[]>(MOCK_WALKTHROUGHS);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const [dashData, controlsData, testsData, assessmentsData] = await Promise.all([
-          api.sox.getDashboard().catch(() => null),
-          api.sox.listControls().catch(() => null),
-          api.sox.listTestResults().catch(() => null),
-          api.sox.listAssessments().catch(() => null),
-        ]);
-        if (controlsData?.controls) setControls(controlsData.controls);
-        else if (controlsData?.items) setControls(controlsData.items);
-        else if (Array.isArray(controlsData)) setControls(controlsData);
-        if (testsData?.testResults) setTests(testsData.testResults);
-        else if (testsData?.items) setTests(testsData.items);
-        else if (Array.isArray(testsData)) setTests(testsData);
-        if (assessmentsData?.deficiencies) setDeficiencies(assessmentsData.deficiencies);
-        else if (assessmentsData?.items) {
-          // assessments may contain deficiency and walkthrough data
-        }
-        if (dashData?.walkthroughs) setWalkthroughs(dashData.walkthroughs);
-        if (dashData?.deficiencies) setDeficiencies(dashData.deficiencies);
-      } catch (err) {
-        console.error('Failed to load SOX data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [dashData, controlsData, testsData, assessmentsData] = await Promise.all([
+        api.sox.getDashboard().catch(() => null),
+        api.sox.listControls().catch(() => null),
+        api.sox.listTestResults().catch(() => null),
+        api.sox.listAssessments().catch(() => null),
+      ]);
+      if (controlsData?.controls) setControls(controlsData.controls);
+      else if (controlsData?.items) setControls(controlsData.items);
+      else if (Array.isArray(controlsData)) setControls(controlsData);
+      if (testsData?.testResults) setTests(testsData.testResults);
+      else if (testsData?.items) setTests(testsData.items);
+      else if (Array.isArray(testsData)) setTests(testsData);
+      if (assessmentsData?.deficiencies) setDeficiencies(assessmentsData.deficiencies);
+      if (dashData?.walkthroughs) setWalkthroughs(dashData.walkthroughs);
+      if (dashData?.deficiencies) setDeficiencies(dashData.deficiencies);
+    } catch {
+      // Fallback to mock data already in state
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   // Derived metrics
   const effectiveCount = controls.filter(c => c.effectiveness === 'Effective').length;
@@ -506,7 +502,9 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
           <button onClick={() => setShowCreateControl(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
-          <button onClick={() => setShowCreateControl(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create Control</button>
+          <button onClick={async () => {
+            try { await api.sox.createControl({ status: 'Active' }); setShowCreateControl(false); loadData(); } catch { setShowCreateControl(false); }
+          }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create Control</button>
         </div>
       </div>
     </div>
@@ -603,7 +601,9 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
             </div>
             <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
               <button onClick={() => setShowCreateTest(false)} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
-              <button onClick={() => setShowCreateTest(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create Test</button>
+              <button onClick={async () => {
+                try { await api.sox.createTestResult({}); setShowCreateTest(false); loadData(); } catch { setShowCreateTest(false); }
+              }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create Test</button>
             </div>
           </div>
         </div>
