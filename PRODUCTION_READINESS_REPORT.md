@@ -268,7 +268,7 @@ These advanced services exist in `server/src/services/advanced/` and provide fun
 | Issue | Severity | Details |
 |-------|----------|---------|
 | No ESLint configuration | Medium | No `.eslintrc` or `eslint.config.js` found. Code quality checks are not automated. |
-| `console.log` in production code | Medium | 401 instances across 163 server files and 202 frontend files. Server uses Winston logger properly in services, but `console.log` persists in scripts and some components. |
+| `console.log` config leak | Medium | `services/api.ts:9` logs API base URL to browser console on every page load. Server production code is clean (0 console statements; uses Winston exclusively). Frontend `console.error` in catch blocks is intentional but lacks centralized error reporting. |
 | Empty catch blocks | Medium | 113 instances. 39 in server code (19 in `multimodalIntakeService.ts` alone), 13 in components. Most are `.catch(() => {})` for cleanup operations — acceptable for file unlinking but problematic when swallowing business logic errors. |
 | Missing `.env.example` completeness | Low | `server/.env.example` exists but may not cover all env vars used in code. |
 
@@ -276,16 +276,23 @@ These advanced services exist in `server/src/services/advanced/` and provide fun
 
 ## SECTION 5: CODE QUALITY ISSUES
 
-### Console Statements (401 total)
+### Console Statements (401 raw matches — refined to ~10 actionable)
+
+**Server production code: CLEAN.** Zero `console.*` statements in controllers (496 `logger.*` calls), services (1,579 `logger.*` calls), or middleware (39 `logger.*` calls). The server uses Winston with log sanitization, structured JSON, ELK transport, and exception/rejection handlers. The 74 server-side matches are all in CLI scripts, test harnesses, and blockchain deployment tools — appropriate for those contexts.
 
 | Location | Count | Assessment |
 |----------|-------|------------|
-| `server/scripts/` (setupOAuth, validateEnv, etc.) | ~106 | Acceptable — these are CLI scripts |
-| `server/src/services/` | ~57 | Mixed — Most services use `logger.*` correctly; some have `console.error` in catch blocks |
-| `components/` | ~202 | Medium concern — Debug console.log left in components like ACOSDashboard (33), Settings (20), FrameworkDetails (19) |
-| `e2e/` | ~36 | Acceptable — test infrastructure |
+| `server/src/controllers/` + `services/` + `middleware/` | **0** | All use `logger.*` — exemplary |
+| `server/scripts/` + `blockchain/scripts/` | ~38 | CLI tools printing to stdout — acceptable |
+| `server/src/__tests__/` + `zkp/test-*` | ~30 | Test infrastructure — acceptable |
+| `components/` (169 `console.error`, 4 `console.warn`) | 174 | Intentional error logging in catch blocks, NOT debugging leftovers |
+| `components/` (`console.log`) | **1** | In a code example string literal — false positive |
+| `services/api.ts:9` | **1** | `console.log('API Base URL:', API_BASE_URL)` — **SHOULD BE REMOVED** (leaks config to browser console on every page load) |
+| `e2e/` | ~36 | Test infrastructure — acceptable |
 
-**Recommendation:** Run `grep -rn 'console\.log' components/ | grep -v test` and replace with proper error handling or remove debug statements. The backend services correctly use Winston logger.
+**Key finding:** The frontend's 169 `console.error()` calls are all deliberate error logging in catch blocks (e.g., `console.error('Failed to load team members:', error)`), not leftover debugging. However, they represent a missing error reporting infrastructure — these are visible in browser DevTools but invisible to operators in production.
+
+**Immediate action:** Remove `console.log('API Base URL:', API_BASE_URL)` in `services/api.ts:9` — it leaks configuration to the browser console on every page load.
 
 ### Empty Catch Blocks (113 total)
 
@@ -326,7 +333,7 @@ These are core product features (compliance simulation, audit preparation, red t
 | Features partially complete (mock fallback only) | 5 / 28 |
 | Features not started | 0 / 28 |
 | Deployment blockers (hard) | 0 |
-| Deployment concerns (soft) | 4 (no linting, console.log, empty catches, env docs) |
+| Deployment concerns (soft) | 4 (no linting, API URL leak in browser console, empty catches, env docs) |
 | **Overall Production Readiness** | **82%** |
 
 ### Score Breakdown
@@ -358,7 +365,7 @@ Ordered by severity, then by dependency (fix prerequisites first).
 | 12 | **Medium** | `server/src/services/advanced/redTeamService.ts:1300` | Red team schedule stored in audit log; no actual scheduling mechanism | Large | Prisma migration |
 | 13 | **Medium** | `server/src/services/advanced/regulatoryIntelligenceFabricService.ts:1148` | Conflicts stored in AuditLog; needs dedicated Conflict table | Large | Prisma migration |
 | 14 | **Medium** | `components/AIFeatures/NaturalLanguageQuery.tsx:104` | Dead `generateMockResponse()` function (~500 lines) | Small | — |
-| 15 | **Medium** | Multiple components (33+ files) | 401 `console.log` statements in production code | Medium | — |
+| 15 | **Medium** | `services/api.ts:9` | `console.log('API Base URL:')` leaks config to browser console on every page load | Small | — |
 | 16 | **Medium** | Root project | No ESLint configuration for automated code quality | Medium | — |
 | 17 | **Low** | `server/src/services/advanced/multimodalIntakeService.ts` | 19 empty catch blocks swallowing errors | Small | — |
 | 18 | **Low** | `contexts/OnboardingContext.tsx` | 6 empty catch blocks swallowing errors | Small | — |
