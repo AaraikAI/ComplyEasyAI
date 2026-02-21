@@ -755,7 +755,6 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
     setLoading(true);
     try {
       const data = await api.acos.getControlLoops();
-      console.log('Loaded control loops:', data);
       if (data && Array.isArray(data)) {
         setLoops(data);
         // Also update parent state via onRefresh
@@ -805,8 +804,6 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
         controlId: selectedControlId,
         triggerType: triggerType,
       }) as any;
-      console.log('Control loop created:', result);
-
       // If the API returns the created loop, add it to the list immediately
       if (result && result.id) {
         setLoops(((prevLoops: any) => [...prevLoops, result]) as any);
@@ -823,7 +820,6 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
       setTimeout(async () => {
         try {
           const loopsData = await api.acos.getControlLoops();
-          console.log('Refreshed loops after creation:', loopsData);
           if (loopsData && Array.isArray(loopsData)) {
             setLoops(loopsData);
             // Update parent state

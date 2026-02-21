@@ -5,50 +5,21 @@ const isDev = config.server.env === 'development';
 
 export const apiLimiter = rateLimit({
   windowMs: config.security.rateLimitWindowMs,
-  max: config.security.rateLimitMaxRequests,
+  max: isDev ? 1000 : config.security.rateLimitMaxRequests,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip all rate limiting in development
-    if (isDev) return true;
-
-    // Skip rate limiting for health checks, static assets, TGN predictions, control loop operations
+    // In development, use a higher limit but do NOT skip entirely
+    // (to catch rate-limiting bugs during development)
     const path = req.path || '';
-    const method = req.method || '';
-    
-    // Skip for health checks and static assets
+
+    // Only skip for health checks and static assets
     if (path === '/health' || path.startsWith('/static')) {
       return true;
     }
-    
-    // Skip for TGN prediction endpoints
-    if (path.includes('/tgn/predict-risks') || path.includes('/tgn/early-warnings')) {
-      return true;
-    }
-    
-    // Skip for control loop operations
-    if (path.includes('/control-loops/') && (
-      path.includes('/history') ||
-      path.includes('/execute') ||
-      path.includes('/pause') ||
-      path.includes('/resume')
-    )) {
-      return true;
-    }
-    
-    // Skip for GET requests to list endpoints (read-only operations)
-    if (method === 'GET' && (
-      path.includes('/integrations') ||
-      path.includes('/frameworks') ||
-      path.includes('/tasks') ||
-      path.includes('/risks') ||
-      path.includes('/team')
-    )) {
-      return true;
-    }
 
-    // Apply rate limiting to write operations (POST, PUT, PATCH, DELETE)
+    // All other endpoints are rate-limited (GET included)
     return false;
   },
 });

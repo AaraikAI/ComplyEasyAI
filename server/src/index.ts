@@ -194,7 +194,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: config.security.corsOrigin || 'http://localhost:3000',
+  origin: config.security.corsOrigin,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-API-Version', 'X-CSRF-Token', 'X-Webhook-Signature', 'X-Webhook-Timestamp', 'X-Webhook-Event'],

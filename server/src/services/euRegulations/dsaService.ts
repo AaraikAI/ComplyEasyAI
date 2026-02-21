@@ -550,15 +550,17 @@ class DSAService {
           averageResponseTime: userReports.averageResponseTime,
         },
         automatedDetection: {
-          contentScanned: 0, // Would be tracked separately
+          contentScanned: moderationStats.totalReviewed ?? null,
           contentFlagged: moderationStats.automatedRemovals,
-          falsePositiveRate: 0, // Would be calculated from appeals
+          falsePositiveRate: moderationStats.appealsApproved > 0 && moderationStats.automatedRemovals > 0
+            ? Math.round((moderationStats.appealsApproved / moderationStats.automatedRemovals) * 100) / 100
+            : null,
         },
         appealsProcessed: {
           totalAppeals: moderationStats.appealsReceived,
           approved: moderationStats.appealsApproved,
           rejected: moderationStats.appealsRejected,
-          averageProcessingTime: 0, // Would be calculated
+          averageProcessingTime: moderationStats.averageAppealTime ?? null,
         },
         submittedToCommission: false,
       },

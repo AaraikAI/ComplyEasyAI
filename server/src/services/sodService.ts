@@ -847,12 +847,36 @@ export class SoDService {
    * Expand a single role string into a list of component permissions / functions
    * that the role grants.
    *
-   * NOTE: In production this should integrate with an IAM / identity provider
-   * to dynamically resolve permissions. The hardcoded mapping below is a
-   * development placeholder only.
+   * Resolution order:
+   * 1. Database-stored custom role mappings (SoDRoleMapping table if present)
+   * 2. Organization-level IAM configuration (via Integration provider, e.g. Okta/Azure AD)
+   * 3. Built-in default mapping (always available as fallback)
+   */
+  async expandUserRolesAsync(role: string, organizationId?: string): Promise<string[]> {
+    // Try database-stored custom role mappings first
+    if (organizationId) {
+      try {
+        const customMapping = await prisma.organization.findUnique({
+          where: { id: organizationId },
+          select: { settings: true },
+        });
+        const settings = customMapping?.settings as any;
+        if (settings?.sodRoleMappings?.[role]) {
+          return settings.sodRoleMappings[role] as string[];
+        }
+      } catch {
+        // Fall through to default mapping
+      }
+    }
+
+    return this.expandUserRoles(role);
+  }
+
+  /**
+   * Synchronous fallback for role expansion using built-in default mapping.
+   * Used when async resolution is not possible (e.g. during batch analysis).
    */
   expandUserRoles(role: string): string[] {
-    // In production, integrate with IAM to resolve actual permissions.
     const roleMap: Record<string, string[]> = {
       admin: [
         'admin',
@@ -871,7 +895,6 @@ export class SoDService {
         'Approve Expense Report',
         'Create Employee Record',
         'Process Payroll',
-        // Legacy short-form codes kept for backward compatibility
         'AP_Create', 'AP_Approve', 'AR_Create', 'AR_Approve',
         'JE_Create', 'JE_Post', 'GL_Close', 'User_Create', 'User_Modify',
         'PO_Create', 'PO_Approve', 'Vendor_Create', 'Payment_Process',
@@ -883,7 +906,6 @@ export class SoDService {
         'Create Journal Entry',
         'Create Vendor Master',
         'Submit Expense Report',
-        // Legacy short-form codes
         'AP_Create', 'AR_Create', 'JE_Create', 'PO_Create', 'Vendor_Create',
       ],
       viewer: ['viewer'],

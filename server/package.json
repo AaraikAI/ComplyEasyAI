@@ -151,7 +151,7 @@
     "js-yaml": "^4.1.1",
     "minimatch": "^10.1.1",
     "mocha": "^11.7.5",
-    "nanoid": "^5.1.6",
+    "nanoid": "^5.1.7",
     "prisma": "^5.22.0",
     "qs": "^6.14.1",
     "socket.io-client": "^4.8.3",
@@ -180,25 +180,25 @@
     "circom": {
       "tmp": "^0.2.3",
       "tmp-promise": "^3.0.3",
-      "nanoid": "^5.0.7",
+      "nanoid": "^5.1.7",
       "js-yaml": "^4.1.1",
       "mocha": {
-        "minimatch": "^10.0.1",
+        "minimatch": "^10.1.1",
         "js-yaml": "^4.1.1",
-        "nanoid": "^5.0.7"
+        "nanoid": "^5.1.7"
       },
       "circom_runtime": {
         "ffjavascript": {
           "mocha": {
-            "minimatch": "^10.0.1",
+            "minimatch": "^10.1.1",
             "js-yaml": "^4.1.1",
-            "nanoid": "^5.0.7"
+            "nanoid": "^5.1.7"
           }
         }
       }
     },
     "mocha": {
-      "minimatch": "^10.0.1",
+      "minimatch": "^10.1.1",
       "js-yaml": "^4.1.1"
     }
   }

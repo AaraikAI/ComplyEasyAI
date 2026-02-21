@@ -10,13 +10,14 @@
  *
  * Reference: Regulation (EU) 2022/2554
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, Shield, CheckCircle, AlertTriangle, XCircle, Search, Plus, X,
   FileText, Clock, BarChart3, ChevronRight, Edit3, Trash2, Eye, Download,
   AlertCircle, Filter, Calendar, Activity, TrendingUp, Lock, Server,
-  Globe, Wifi, Database, Bug, RefreshCw, Users, Building2, Zap
+  Globe, Wifi, Database, Bug, RefreshCw, Users, Building2, Zap, Loader2
 } from 'lucide-react';
+import { api } from '../services/api';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -96,47 +97,58 @@ interface ResilienceTest {
   testedBy: string;
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────
+// ── API data mapping helpers ─────────────────────────────────────────
 
-const MOCK_ICT_RISKS: ICTRisk[] = [
-  { id: '1', riskId: 'ICT-R-001', title: 'Ransomware Attack on Core Banking', category: 'Cyber', description: 'Risk of ransomware encrypting critical banking infrastructure and customer data', likelihood: 'Medium', impact: 'Severe', riskLevel: 'Critical', mitigationStatus: 'Implemented', owner: 'CISO', reviewDate: '2026-03-15' },
-  { id: '2', riskId: 'ICT-R-002', title: 'Cloud Provider Service Disruption', category: 'Cloud', description: 'Major outage at primary cloud provider affecting trading platform availability', likelihood: 'Low', impact: 'Major', riskLevel: 'High', mitigationStatus: 'Implemented', owner: 'Head of Infrastructure', reviewDate: '2026-04-01' },
-  { id: '3', riskId: 'ICT-R-003', title: 'Legacy Core Banking System Failure', category: 'Infrastructure', description: 'End-of-life mainframe system supporting payment processing at risk of hardware failure', likelihood: 'High', impact: 'Severe', riskLevel: 'Critical', mitigationStatus: 'In Progress', owner: 'CTO', reviewDate: '2026-02-28' },
-  { id: '4', riskId: 'ICT-R-004', title: 'API Gateway Vulnerability Exploitation', category: 'Software', description: 'Unpatched vulnerabilities in API gateway exposing customer account data', likelihood: 'Medium', impact: 'Major', riskLevel: 'High', mitigationStatus: 'In Progress', owner: 'Application Security Lead', reviewDate: '2026-03-10' },
-  { id: '5', riskId: 'ICT-R-005', title: 'Database Corruption in Trade Repository', category: 'Data', description: 'Data integrity risk in regulatory trade reporting database due to concurrent write conflicts', likelihood: 'Low', impact: 'Moderate', riskLevel: 'Medium', mitigationStatus: 'Verified', owner: 'Head of Data Engineering', reviewDate: '2026-05-01' },
-  { id: '6', riskId: 'ICT-R-006', title: 'DDoS Attack on Online Banking Portal', category: 'Cyber', description: 'Distributed denial-of-service attack disrupting customer access to online banking services', likelihood: 'High', impact: 'Moderate', riskLevel: 'High', mitigationStatus: 'Implemented', owner: 'CISO', reviewDate: '2026-03-20' },
-  { id: '7', riskId: 'ICT-R-007', title: 'SaaS Vendor Data Leakage', category: 'Cloud', description: 'Misconfigured SaaS platform allowing unauthorized access to employee and client PII', likelihood: 'Medium', impact: 'Major', riskLevel: 'High', mitigationStatus: 'In Progress', owner: 'Vendor Risk Manager', reviewDate: '2026-04-15' },
-  { id: '8', riskId: 'ICT-R-008', title: 'Network Segmentation Bypass', category: 'Infrastructure', description: 'Insufficient network segmentation between DMZ and internal trading systems', likelihood: 'Low', impact: 'Major', riskLevel: 'Medium', mitigationStatus: 'Not Started', owner: 'Network Security Engineer', reviewDate: '2026-03-30' },
-];
+function mapApiRisk(r: any): ICTRisk {
+  return {
+    id: r.id, riskId: r.riskId || r.id?.substring(0, 8).toUpperCase(),
+    title: r.title || r.name || '', category: (r.category as RiskCategory) || 'Cyber',
+    description: r.description || '', likelihood: (r.likelihood as Likelihood) || 'Medium',
+    impact: (r.impact as Impact) || 'Moderate', riskLevel: (r.riskLevel as RiskLevel) || 'Medium',
+    mitigationStatus: (r.mitigationStatus as MitigationStatus) || 'Not Started',
+    owner: r.owner || 'Unassigned',
+    reviewDate: r.reviewDate ? new Date(r.reviewDate).toLocaleDateString('sv') : 'N/A',
+  };
+}
 
-const MOCK_INCIDENTS: ICTIncident[] = [
-  { id: '1', incidentId: 'INC-2026-001', title: 'Phishing Campaign Targeting Treasury Staff', type: 'Cyber Attack', severity: 'High', affectedServices: ['Email', 'Treasury Management System'], detectionTime: '2026-01-15T08:30:00', resolutionTime: '2026-01-15T14:45:00', status: 'Reported to Authority', notificationStatus: 'Final Sent', description: 'Targeted spear-phishing emails sent to 12 treasury staff with credential harvesting links', rootCause: 'Sophisticated social engineering bypassing email filters' },
-  { id: '2', incidentId: 'INC-2026-002', title: 'Payment Processing System Outage', type: 'System Failure', severity: 'Critical', affectedServices: ['SEPA Payments', 'SWIFT Gateway', 'Instant Payments'], detectionTime: '2026-01-22T06:15:00', resolutionTime: '2026-01-22T11:30:00', status: 'Reported to Authority', notificationStatus: 'Final Sent', description: 'Complete payment processing failure affecting all outbound payment channels for 5 hours', rootCause: 'Database failover mechanism failed during scheduled maintenance window' },
-  { id: '3', incidentId: 'INC-2026-003', title: 'Customer Data Exposure via API', type: 'Data Breach', severity: 'High', affectedServices: ['Mobile Banking API', 'Open Banking Platform'], detectionTime: '2026-02-03T11:20:00', resolutionTime: '2026-02-03T16:00:00', status: 'Resolved', notificationStatus: 'Intermediate Sent', description: 'API endpoint returned customer account details without proper authentication for 2 hours', rootCause: 'Deployment error removed authentication middleware from production endpoint' },
-  { id: '4', incidentId: 'INC-2026-004', title: 'Market Data Provider Outage', type: 'Third-Party Outage', severity: 'Medium', affectedServices: ['Trading Platform', 'Risk Engine'], detectionTime: '2026-02-08T09:00:00', resolutionTime: '2026-02-08T12:30:00', status: 'Resolved', notificationStatus: 'Not Required', description: 'Primary market data feed provider experienced 3.5 hour outage during trading hours', rootCause: 'Provider infrastructure failure in primary data center' },
-  { id: '5', incidentId: 'INC-2026-005', title: 'Credential Stuffing on Client Portal', type: 'Cyber Attack', severity: 'Medium', affectedServices: ['Client Portal', 'Authentication Service'], detectionTime: '2026-02-12T03:45:00', resolutionTime: '2026-02-12T07:00:00', status: 'Resolved', notificationStatus: 'Not Required', description: 'Automated credential stuffing attack detected against client-facing authentication service', rootCause: 'Compromised credentials from third-party breach used in attack' },
-  { id: '6', incidentId: 'INC-2026-006', title: 'KYC System Unavailability', type: 'System Failure', severity: 'Low', affectedServices: ['KYC/AML Platform'], detectionTime: '2026-02-17T14:00:00', resolutionTime: null, status: 'Investigating', notificationStatus: 'Pending', description: 'Intermittent failures in KYC verification service affecting new client onboarding', rootCause: 'Under investigation - suspected memory leak in microservice' },
-];
+function mapApiIncident(i: any): ICTIncident {
+  return {
+    id: i.id, incidentId: i.incidentId || i.id?.substring(0, 8).toUpperCase(),
+    title: i.title || '', type: (i.type as IncidentType) || 'System Failure',
+    severity: (i.severity as IncidentSeverity) || 'Medium',
+    affectedServices: Array.isArray(i.affectedServices) ? i.affectedServices : [],
+    detectionTime: i.detectionTime || i.createdAt || '',
+    resolutionTime: i.resolutionTime || null,
+    status: (i.status as IncidentStatus) || 'Open',
+    notificationStatus: (i.notificationStatus as NotificationStatus) || 'Not Required',
+    description: i.description || '', rootCause: i.rootCause || '',
+  };
+}
 
-const MOCK_PROVIDERS: ThirdPartyProvider[] = [
-  { id: '1', providerName: 'CloudFirst Financial Services', serviceType: 'Core Banking Platform (IaaS)', criticality: 'Critical', contractStatus: 'Active', exitStrategyExists: true, concentrationRisk: 'High', lastAssessmentDate: '2025-11-15', nextReview: '2026-05-15', country: 'Germany', subcontractors: 3 },
-  { id: '2', providerName: 'SecureNet Solutions', serviceType: 'Cybersecurity SOC (MDR)', criticality: 'Critical', contractStatus: 'Active', exitStrategyExists: true, concentrationRisk: 'Medium', lastAssessmentDate: '2025-12-01', nextReview: '2026-06-01', country: 'Ireland', subcontractors: 1 },
-  { id: '3', providerName: 'DataVault Analytics', serviceType: 'Data Warehousing & Analytics', criticality: 'Important', contractStatus: 'Active', exitStrategyExists: true, concentrationRisk: 'Low', lastAssessmentDate: '2025-10-20', nextReview: '2026-04-20', country: 'Netherlands', subcontractors: 2 },
-  { id: '4', providerName: 'SwiftComm Networks', serviceType: 'Network Infrastructure (MPLS/SD-WAN)', criticality: 'Critical', contractStatus: 'Renewal Pending', exitStrategyExists: true, concentrationRisk: 'High', lastAssessmentDate: '2025-09-30', nextReview: '2026-03-30', country: 'France', subcontractors: 4 },
-  { id: '5', providerName: 'RegTech Compliance Hub', serviceType: 'Regulatory Reporting (SaaS)', criticality: 'Important', contractStatus: 'Active', exitStrategyExists: false, concentrationRisk: 'Medium', lastAssessmentDate: '2025-11-01', nextReview: '2026-05-01', country: 'Luxembourg', subcontractors: 0 },
-  { id: '6', providerName: 'PayBridge International', serviceType: 'Payment Processing Gateway', criticality: 'Critical', contractStatus: 'Active', exitStrategyExists: true, concentrationRisk: 'High', lastAssessmentDate: '2026-01-10', nextReview: '2026-07-10', country: 'Belgium', subcontractors: 2 },
-  { id: '7', providerName: 'IdentityFirst Ltd', serviceType: 'KYC/AML Verification Service', criticality: 'Important', contractStatus: 'Under Review', exitStrategyExists: true, concentrationRisk: 'Low', lastAssessmentDate: '2025-12-15', nextReview: '2026-06-15', country: 'United Kingdom', subcontractors: 1 },
-  { id: '8', providerName: 'MarketStream Global', serviceType: 'Market Data Feed Provider', criticality: 'Standard', contractStatus: 'Active', exitStrategyExists: false, concentrationRisk: 'Low', lastAssessmentDate: '2025-08-20', nextReview: '2026-02-20', country: 'United States', subcontractors: 0 },
-];
+function mapApiProvider(p: any): ThirdPartyProvider {
+  return {
+    id: p.id, providerName: p.providerName || p.name || '',
+    serviceType: p.serviceType || '', criticality: (p.criticality as Criticality) || 'Standard',
+    contractStatus: (p.contractStatus as ContractStatus) || 'Active',
+    exitStrategyExists: p.exitStrategyExists ?? false,
+    concentrationRisk: (p.concentrationRisk as ConcentrationRisk) || 'Low',
+    lastAssessmentDate: p.lastAssessmentDate ? new Date(p.lastAssessmentDate).toLocaleDateString('sv') : 'N/A',
+    nextReview: p.nextReview ? new Date(p.nextReview).toLocaleDateString('sv') : 'N/A',
+    country: p.country || '', subcontractors: p.subcontractors ?? 0,
+  };
+}
 
-const MOCK_TESTS: ResilienceTest[] = [
-  { id: '1', testName: 'TLPT Red Team Exercise - Core Banking', type: 'TLPT', scope: 'Core banking infrastructure, payment systems, SWIFT interface', lastExecuted: '2025-11-20', result: 'Partial', nextScheduled: '2026-11-20', findingsCount: 7, description: 'Threat-Led Penetration Test per TIBER-EU framework targeting critical financial infrastructure', testedBy: 'External - CyberForce GmbH' },
-  { id: '2', testName: 'Ransomware Scenario Simulation', type: 'Scenario', scope: 'Enterprise-wide backup and recovery, incident response procedures', lastExecuted: '2026-01-10', result: 'Pass', nextScheduled: '2026-07-10', findingsCount: 2, description: 'Full-scale ransomware simulation testing backup integrity, recovery time, and incident response', testedBy: 'Internal CIRT + External Advisor' },
-  { id: '3', testName: 'Quarterly Vulnerability Assessment', type: 'Vulnerability Scan', scope: 'All internet-facing systems, internal network, cloud workloads', lastExecuted: '2026-01-25', result: 'Partial', nextScheduled: '2026-04-25', findingsCount: 23, description: 'Comprehensive vulnerability scan across all environments with CVSS scoring and remediation tracking', testedBy: 'Internal - Security Operations' },
-  { id: '4', testName: 'External Penetration Test - Trading Platform', type: 'Penetration Test', scope: 'Trading platform frontend, APIs, authentication, session management', lastExecuted: '2025-12-05', result: 'Pass', nextScheduled: '2026-06-05', findingsCount: 4, description: 'Black-box penetration test of client-facing trading platform and associated APIs', testedBy: 'External - PenTest Partners' },
-  { id: '5', testName: 'Cloud Infrastructure Security Test', type: 'Penetration Test', scope: 'AWS/Azure cloud environments, IAM policies, data encryption', lastExecuted: '2026-02-01', result: 'Fail', nextScheduled: '2026-05-01', findingsCount: 11, description: 'Cloud security assessment covering misconfiguration, privilege escalation, and data exposure risks', testedBy: 'External - CloudSec Auditors' },
-  { id: '6', testName: 'Business Continuity Tabletop Exercise', type: 'Scenario', scope: 'Critical business processes, disaster recovery, communication plans', lastExecuted: '2025-10-15', result: 'Pass', nextScheduled: '2026-04-15', findingsCount: 3, description: 'Tabletop exercise simulating major ICT disruption with senior management participation', testedBy: 'Internal - BCP Team' },
-];
+function mapApiTest(t: any): ResilienceTest {
+  return {
+    id: t.id, testName: t.testName || t.name || '',
+    type: (t.type as TestType) || 'Vulnerability Scan', scope: t.scope || '',
+    lastExecuted: t.lastExecuted ? new Date(t.lastExecuted).toLocaleDateString('sv') : 'N/A',
+    result: (t.result as TestResult) || 'Partial',
+    nextScheduled: t.nextScheduled ? new Date(t.nextScheduled).toLocaleDateString('sv') : 'N/A',
+    findingsCount: t.findingsCount ?? 0, description: t.description || '',
+    testedBy: t.testedBy || '',
+  };
+}
 
 // ── Component ──────────────────────────────────────────────────────────
 
@@ -149,13 +161,46 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [selectedRisk, setSelectedRisk] = useState<ICTRisk | null>(null);
   const [selectedIncident, setSelectedIncident] = useState<ICTIncident | null>(null);
 
-  const risks = MOCK_ICT_RISKS;
-  const incidents = MOCK_INCIDENTS;
-  const providers = MOCK_PROVIDERS;
-  const tests = MOCK_TESTS;
+  // API-loaded data
+  const [risks, setRisks] = useState<ICTRisk[]>([]);
+  const [incidents, setIncidents] = useState<ICTIncident[]>([]);
+  const [providers, setProviders] = useState<ThirdPartyProvider[]>([]);
+  const [tests, setTests] = useState<ResilienceTest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [dashboard, assessments, incidentRes, providerRes, testRes] = await Promise.allSettled([
+          api.dora.getDashboard(),
+          api.dora.listAssessments(),
+          api.dora.listIncidents(),
+          api.dora.listProviders(),
+          api.dora.listTests(),
+        ]);
+        if (cancelled) return;
+        if (dashboard.status === 'fulfilled') setDashboardData(dashboard.value);
+        if (assessments.status === 'fulfilled') setRisks((assessments.value.assessments || assessments.value || []).map(mapApiRisk));
+        if (incidentRes.status === 'fulfilled') setIncidents((incidentRes.value.incidents || incidentRes.value || []).map(mapApiIncident));
+        if (providerRes.status === 'fulfilled') setProviders((providerRes.value.providers || providerRes.value || []).map(mapApiProvider));
+        if (testRes.status === 'fulfilled') setTests((testRes.value.tests || testRes.value || []).map(mapApiTest));
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message || 'Failed to load DORA data');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   // ── Derived Metrics ──────────────────────────────────────────────────
-  const complianceScore = 76;
+  const complianceScore = dashboardData?.complianceScore ?? (risks.length > 0 ? Math.round(100 - (risks.filter(r => r.riskLevel === 'Critical').length * 12 + risks.filter(r => r.riskLevel === 'High').length * 6)) : 0);
   const criticalRisks = risks.filter(r => r.riskLevel === 'Critical').length;
   const highRisks = risks.filter(r => r.riskLevel === 'High').length;
   const openIncidents = incidents.filter(i => i.status === 'Open' || i.status === 'Investigating').length;
