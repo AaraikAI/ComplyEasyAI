@@ -193,30 +193,9 @@ async function fetchAPI<T>(
 
 export const api = {
   // --- Auth & User ---
-  user: {
-    uploadAvatar: async (file: File) => {
-      const formData = new FormData();
-      formData.append('avatar', file);
-      return fetchAPI<{ user: User; avatarUrl: string }>('/auth/profile/avatar', {
-        method: 'POST',
-        body: formData,
-        headers: {}, // Let browser set Content-Type with boundary
-      });
-    },
-    updateProfile: async (data: { name: string; email: string }) => {
-      return fetchAPI('/auth/profile', {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
-    },
-
-    changePassword: async (currentPassword: string, newPassword: string) => {
-      return fetchAPI('/auth/password', {
-        method: 'PATCH',
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-    },
-  },
+  // NOTE: user.uploadAvatar, user.updateProfile, user.changePassword were
+  // removed — they duplicated auth.uploadAvatar, auth.updateProfile, and
+  // auth.changePassword (same underlying endpoints). Use api.auth.* instead.
 
   auth: {
     requestMagicLink: async (email: string) => {
@@ -1405,6 +1384,8 @@ export const api = {
       },
     },
     reports: {
+      // AUDIT: list was previously a hardcoded stub returning []. Now wired
+      // to GET /enterprise/reports which queries customReport table.
       list: async () => fetchAPI<any>('/enterprise/reports'),
       getExecutiveSummary: async () => {
         return fetchAPI<any>('/enterprise/reports/executive-summary');
