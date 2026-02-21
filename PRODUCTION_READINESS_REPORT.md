@@ -164,11 +164,31 @@
 
 ---
 
-### Gap #10: "Coming Soon" Integrations Return 400/501 in Production
+### Gap #10: Disconnected Backend Routes — No Frontend API Client
+- **Issue:** Phase 4 full-stack cross-referencing identified 22 backend endpoints with no corresponding frontend API client calls. These routes are implemented and functional on the server but completely unreachable from the UI.
+- **Affected Route Groups:**
+
+| Route Group | Endpoints | Backend Path | Frontend Client |
+|-------------|-----------|-------------|-----------------|
+| Marketplace | 7 | `/api/marketplace/*` (browse, install, uninstall, settings, submit, review, featured) | **None** — no `api.marketplace.*` methods exist |
+| Export | 7 | `/api/export/*` (PDF, Excel, CSV, bulk, schedule, templates) | **None** — no `api.export.*` methods; frontend may use direct `fetch()` or different path |
+| Personnel | 8 | `/api/personnel/*` (list, CRUD, roles, certifications, training, availability) | **None** — no `api.personnel.*` methods exist |
+
+- **Additional Findings:**
+  - `enterprise.reports.list` API method calls an endpoint that returns hardcoded `[]` — a stub response.
+  - Duplicate auth/user methods exist in the API client (e.g., `auth.login` and `user.login` hitting the same endpoint).
+- **Classification:** PRODUCTION_GAP (Marketplace: High — feature is visible in navigation but non-functional; Export/Personnel: Medium — backend exists but users cannot access these features)
+- **Fix Required:** Create API client methods in `services/api.ts` for each route group, and wire the corresponding UI components to call them. For `enterprise.reports.list`, implement the actual query or remove the stub.
+- **Fix Complexity:** Large (requires frontend API methods + UI integration for 22 endpoints)
+- **Severity:** High (Marketplace), Medium (Export, Personnel)
+
+---
+
+### Gap #11: "Coming Soon" Integrations Return 400/501 in Production
 - **File:** `server/src/routes/marketplace/marketplaceRoutes.ts:495`
 - **Code:** `res.status(400).json({ error: 'This integration is not yet available' });`
 - **Frontend handling:** `components/IntegrationModal.tsx:220-276` — Properly catches "coming soon" responses and displays a user-friendly message.
-- **Classification:** INTENTIONAL_FEATURE — This is a deliberate feature gate for marketplace integrations not yet available. The frontend handles it gracefully.
+- **Classification:** INTENTIONAL_FEATURE — This is a deliberate feature gate for marketplace integrations not yet available. The frontend handles it gracefully. (Note: while the integration toggle is handled, the marketplace *browse/install/uninstall* routes have no frontend client — see Gap #10.)
 - **Severity:** N/A (working as designed)
 
 ---
@@ -214,6 +234,17 @@
 | Account Deletion Workflow | 90% | ✅ | ✅ | ✅ | ✅ | Mock fallback data on API failure (Gap #1) |
 
 **Note:** These features have fully implemented backends (API routes, service layer, DB queries). The gap is solely in frontend error handling — they display mock data instead of error states when the API call fails.
+
+### ❌ Features with No Frontend API Client (Gap #10)
+
+| Feature/Route | Backend Endpoints | UI | API Client | Status |
+|--------------|-------------------|-----|------------|--------|
+| Marketplace (browse, install, settings) | 7 at `/api/marketplace/*` | Navigation link exists | ❌ No `api.marketplace.*` methods | Backend-only; unreachable from UI |
+| Export (PDF, Excel, CSV, bulk, schedule) | 7 at `/api/export/*` | Unknown | ❌ No `api.export.*` methods | Backend-only; may use direct `fetch()` |
+| Personnel (CRUD, roles, certifications) | 8 at `/api/personnel/*` | Unknown | ❌ No `api.personnel.*` methods | Backend-only; unreachable from UI |
+| Enterprise Reports | 1 at `/api/enterprise/reports` | Calls `enterprise.reports.list()` | ⚠️ Stub returns `[]` | Endpoint is a stub |
+
+**Note:** These routes represent ~22 backend endpoints that are fully implemented (handlers, service layer, DB queries) but have no frontend API client methods to call them. The marketplace is the most critical — it appears in the app navigation but the browse/install flow has no working frontend path.
 
 ### Advanced/Visionary Features (Backend Services)
 
@@ -357,19 +388,20 @@ These are core product features (compliance simulation, audit preparation, red t
 | Total grep findings reviewed | 3,580 |
 | INTENTIONAL_FEATURE | ~2,700 (simulation engines, framework control data, AI features) |
 | DEV_FALLBACK | ~45 (NODE_ENV guards, feature flags, "in production" comments with working fallbacks) |
-| PRODUCTION_GAP | 14 (5 mock-data components + 4 backend functional gaps + 5 backend service shortcuts) |
+| PRODUCTION_GAP | 17 (5 mock-data components + 4 backend functional gaps + 5 backend service shortcuts + 3 disconnected route groups) |
 | FALSE_POSITIVE | ~825 (password field labels, type definitions, compliance status strings, XML namespaces, etc.) |
-| Features 100% complete | 23+ / 28 |
-| Features partially complete (mock fallback only) | 5 / 28 |
-| Features not started | 0 / 28 |
+| Features 100% complete | 23+ / 32 |
+| Features partially complete (mock fallback only) | 5 / 32 |
+| Features backend-only (no frontend client) | 4 / 32 |
+| Features not started | 0 / 32 |
 | Deployment blockers (hard) | 0 |
 | Deployment concerns (soft) | 6 (no linting, API URL leak, empty catches, 8 undocumented env vars, compose missing CORS_ORIGIN, port mismatch) |
-| **Overall Production Readiness** | **82%** |
+| **Overall Production Readiness** | **78%** |
 
 ### Score Breakdown
 - **Infrastructure:** 95% — All critical infrastructure (health checks, CORS, rate limiting, helmet, graceful shutdown, structured logging, error handling, monitoring) is present and properly configured.
 - **Backend Services:** 90% — All services are functional with real implementations. 5 instances of simplified algorithms noted but working. Signing key management and a few DB table additions needed for full production hardening.
-- **Frontend:** 75% — 5 dashboards use mock data as fallback without user notification. Dead code in NaturalLanguageQuery. Excessive console.log in components.
+- **Frontend:** 70% — 5 dashboards use mock data as fallback without user notification. 3 backend feature groups (marketplace, export, personnel — 22 endpoints) have no frontend API client. Dead code in NaturalLanguageQuery. API URL config leak.
 - **Security:** 90% — No hardcoded secrets found. SSRF protection present. CSRF protection present. URL validation present. BYOK and Whisper services have proper production guards. Missing ESLint means no automated security linting.
 - **DevOps:** 85% — Docker, CI workflow, deployment configs present. Missing ESLint config. Missing automated TypeScript strict-mode checking.
 
@@ -377,7 +409,7 @@ These are core product features (compliance simulation, audit preparation, red t
 
 ## SECTION 7: PRIORITIZED FIX LIST
 
-Ordered by severity, then by dependency (fix prerequisites first).
+Ordered by severity, then by dependency (fix prerequisites first). **26 items total** (5 Critical, 4 High, 13 Medium, 4 Low).
 
 | # | Severity | File(s) | Issue | Fix Complexity | Depends On |
 |---|----------|---------|-------|---------------|------------|
@@ -399,9 +431,14 @@ Ordered by severity, then by dependency (fix prerequisites first).
 | 16 | **Medium** | Root project | No ESLint configuration for automated code quality | Medium | — |
 | 17 | **Medium** | `docker-compose.prod.yml` | Missing `CORS_ORIGIN` (required) + `REDIS_URL` + tiered Stripe pricing vars in environment block | Small | — |
 | 18 | **Medium** | `server/.env.example` | 8 env vars used in code but undocumented | Small | — |
-| 19 | **Low** | `server/src/services/advanced/multimodalIntakeService.ts` | 19 empty catch blocks swallowing errors | Small | — |
-| 20 | **Low** | `contexts/OnboardingContext.tsx` | 6 empty catch blocks swallowing errors | Small | — |
-| 21 | **Low** | `server/src/services/advanced/federatedSwarmService.ts:1752` | Model rollback logs intent but never restores weights | Medium | — |
+| 19 | **Medium** | `services/api.ts` + marketplace UI | Marketplace routes (7 endpoints) have no frontend API client — feature visible in nav but non-functional (Gap #10) | Large | — |
+| 20 | **Medium** | `services/api.ts` + export UI | Export routes (7 endpoints) have no frontend API client methods (Gap #10) | Medium | — |
+| 21 | **Medium** | `services/api.ts` + personnel UI | Personnel routes (8 endpoints) have no frontend API client methods (Gap #10) | Medium | — |
+| 22 | **Low** | `server/src/services/advanced/multimodalIntakeService.ts` | 19 empty catch blocks swallowing errors | Small | — |
+| 23 | **Low** | `contexts/OnboardingContext.tsx` | 6 empty catch blocks swallowing errors | Small | — |
+| 24 | **Low** | `server/src/services/advanced/federatedSwarmService.ts:1752` | Model rollback logs intent but never restores weights | Medium | — |
+| 25 | **Low** | `services/api.ts` | Duplicate auth/user methods (`auth.login` + `user.login`) hitting same endpoint — consolidate | Small | — |
+| 26 | **Low** | Enterprise reports endpoint | `enterprise.reports.list` returns hardcoded `[]` — implement or remove stub | Small | — |
 
 ### Fix Instructions for #1-5 (Same Pattern)
 
