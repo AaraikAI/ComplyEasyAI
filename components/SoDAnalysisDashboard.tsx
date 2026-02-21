@@ -3,7 +3,8 @@
  * Conflict rule management, violation detection, matrix visualization,
  * and compensating controls for ERP/financial system access governance
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { api } from '../services/api';
 import {
   ArrowLeft, Shield, AlertTriangle, CheckCircle, Search, Plus, X,
   Eye, Filter, BarChart3, Grid3X3, ShieldCheck, ShieldAlert, Users,
@@ -111,10 +112,49 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
   const [showCreateRule, setShowCreateRule] = useState(false);
   const [selectedViolation, setSelectedViolation] = useState<SoDViolation | null>(null);
   const [matrixSystemFilter, setMatrixSystemFilter] = useState<string>('all');
+  const [rules, setRules] = useState<SoDRule[]>(MOCK_RULES);
+  const [violations, setViolations] = useState<SoDViolation[]>(MOCK_VIOLATIONS);
+  const [compensatingControls, setCompensatingControls] = useState<CompensatingControl[]>(MOCK_COMPENSATING_CONTROLS);
+  const [loading, setLoading] = useState(true);
 
-  const rules = MOCK_RULES;
-  const violations = MOCK_VIOLATIONS;
-  const compensatingControls = MOCK_COMPENSATING_CONTROLS;
+  // Rule form state
+  const [ruleForm, setRuleForm] = useState({
+    name: '', functionA: '', functionB: '', system: 'SAP ECC' as ERPSystem,
+    riskLevel: 'Medium' as RiskLevel, description: '', category: 'Procure-to-Pay',
+  });
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [rulesRes, violationsRes, dashboardRes, matrixRes] = await Promise.allSettled([
+        api.sod.listRules(),
+        api.sod.listViolations(),
+        api.sod.getDashboard(),
+        api.sod.getMatrix(),
+      ]);
+      if (rulesRes.status === 'fulfilled') {
+        const data = rulesRes.value;
+        if (Array.isArray(data)) setRules(data);
+        else if (data?.data) setRules(data.data);
+        else if (data?.rules) setRules(data.rules);
+      }
+      if (violationsRes.status === 'fulfilled') {
+        const data = violationsRes.value;
+        if (Array.isArray(data)) setViolations(data);
+        else if (data?.data) setViolations(data.data);
+        else if (data?.violations) setViolations(data.violations);
+      }
+      if (dashboardRes.status === 'fulfilled' && dashboardRes.value?.compensatingControls) {
+        setCompensatingControls(dashboardRes.value.compensatingControls);
+      }
+    } catch {
+      // Fallback to mock data already in state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   // Derived metrics
   const activeRules = rules.filter(r => r.status === 'Active').length;
@@ -352,9 +392,9 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
                     <button onClick={() => setSelectedViolation(v)} className="p-1 hover:bg-slate-600 rounded" title="View Details"><Eye size={14} className="text-slate-400" /></button>
                     {v.status === 'Open' && (
                       <>
-                        <button className="p-1 hover:bg-slate-600 rounded" title="Mitigate"><ShieldCheck size={14} className="text-blue-400" /></button>
-                        <button className="p-1 hover:bg-slate-600 rounded" title="Accept Risk"><CheckCircle size={14} className="text-amber-400" /></button>
-                        <button className="p-1 hover:bg-slate-600 rounded" title="Remediate"><Lock size={14} className="text-emerald-400" /></button>
+                        <button onClick={async () => { try { await api.sod.mitigateViolation(v.id, { action: 'mitigate' }); loadData(); } catch {} }} className="p-1 hover:bg-slate-600 rounded" title="Mitigate"><ShieldCheck size={14} className="text-blue-400" /></button>
+                        <button onClick={async () => { try { await api.sod.acceptViolation(v.id, { action: 'accept' }); loadData(); } catch {} }} className="p-1 hover:bg-slate-600 rounded" title="Accept Risk"><CheckCircle size={14} className="text-amber-400" /></button>
+                        <button onClick={async () => { try { await api.sod.mitigateViolation(v.id, { action: 'remediate' }); loadData(); } catch {} }} className="p-1 hover:bg-slate-600 rounded" title="Remediate"><Lock size={14} className="text-emerald-400" /></button>
                       </>
                     )}
                   </div>
@@ -517,7 +557,13 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
           <button onClick={() => setShowCreateRule(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
-          <button onClick={() => setShowCreateRule(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create Rule</button>
+          <button onClick={async () => {
+            try {
+              await api.sod.createRule({ ...ruleForm, status: 'Active' });
+              setShowCreateRule(false);
+              loadData();
+            } catch { setShowCreateRule(false); }
+          }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create Rule</button>
         </div>
       </div>
     </div>
@@ -551,9 +597,15 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
           </div>
           {selectedViolation.status === 'Open' && (
             <div className="flex gap-2 pt-2 border-t border-slate-700">
-              <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><ShieldCheck size={14} /> Mitigate</button>
-              <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700"><CheckCircle size={14} /> Accept Risk</button>
-              <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700"><Lock size={14} /> Remediate</button>
+              <button onClick={async () => {
+                try { await api.sod.mitigateViolation(selectedViolation.id, { action: 'mitigate' }); setSelectedViolation(null); loadData(); } catch { /* keep open */ }
+              }} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><ShieldCheck size={14} /> Mitigate</button>
+              <button onClick={async () => {
+                try { await api.sod.acceptViolation(selectedViolation.id, { action: 'accept' }); setSelectedViolation(null); loadData(); } catch { /* keep open */ }
+              }} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-amber-600 text-white rounded-lg text-sm hover:bg-amber-700"><CheckCircle size={14} /> Accept Risk</button>
+              <button onClick={async () => {
+                try { await api.sod.mitigateViolation(selectedViolation.id, { action: 'remediate' }); setSelectedViolation(null); loadData(); } catch { /* keep open */ }
+              }} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700"><Lock size={14} /> Remediate</button>
             </div>
           )}
         </div>

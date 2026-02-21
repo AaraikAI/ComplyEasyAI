@@ -387,6 +387,122 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiQuestions, setAiQuestions] = useState<any[]>([]);
 
+  // ── Interview Questions: AI-fetched with mock fallback ──
+  const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>(MOCK_INTERVIEW_QUESTIONS);
+  const [interviewLoading, setInterviewLoading] = useState(false);
+  const [interviewError, setInterviewError] = useState<string | null>(null);
+  const [interviewAnswers, setInterviewAnswers] = useState<Record<string, string>>({});
+  const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
+  const [evaluationResults, setEvaluationResults] = useState<Record<string, { score: number; feedback: string; suggestions: string[] }>>({});
+
+  // Fetch AI-generated interview questions on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchInterviewQuestions = async () => {
+      setInterviewLoading(true);
+      setInterviewError(null);
+      try {
+        const result = await api.ai.auditSimulation(
+          'General Compliance',
+          'Interview Preparation',
+          MOCK_INTERVIEW_QUESTIONS.map(q => ({
+            controlId: q.id,
+            title: q.category,
+            description: q.question,
+          }))
+        );
+
+        if (cancelled) return;
+
+        if (result?.questions && Array.isArray(result.questions) && result.questions.length > 0) {
+          // Map API response to InterviewQuestion shape, preserving structure
+          const mapped: InterviewQuestion[] = result.questions.map((q: any, idx: number) => ({
+            id: q.id || `AIQ-${idx + 1}`,
+            question: q.question || q.text || '',
+            category: q.category || q.domain || 'General',
+            role: q.role || q.targetRole || 'Compliance Officer',
+            followUps: Array.isArray(q.followUps) ? q.followUps :
+                       Array.isArray(q.followUpQuestions) ? q.followUpQuestions : [],
+          }));
+          setInterviewQuestions(mapped);
+        }
+        // If no questions returned, keep MOCK_INTERVIEW_QUESTIONS (initial state)
+      } catch (err: any) {
+        if (cancelled) return;
+        console.error('Failed to fetch AI interview questions:', err);
+        setInterviewError(err?.message || 'Failed to load AI interview questions. Showing default questions.');
+        // interviewQuestions remains MOCK_INTERVIEW_QUESTIONS from initial state
+      } finally {
+        if (!cancelled) setInterviewLoading(false);
+      }
+    };
+
+    fetchInterviewQuestions();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Evaluate a user's answer to an interview question via AI
+  const handleEvaluateAnswer = useCallback(async (questionId: string) => {
+    const answer = interviewAnswers[questionId]?.trim();
+    if (!answer) return;
+
+    const question = interviewQuestions.find(q => q.id === questionId);
+    if (!question) return;
+
+    setEvaluatingId(questionId);
+    try {
+      const result = await api.ai.auditSimulation(
+        'Interview Evaluation',
+        question.category,
+        [{
+          controlId: questionId,
+          title: question.category,
+          description: question.question,
+        }],
+        [{
+          questionId,
+          question: question.question,
+          answer,
+        }]
+      );
+
+      if (result?.evaluation || result?.feedback || result?.score !== undefined) {
+        setEvaluationResults(prev => ({
+          ...prev,
+          [questionId]: {
+            score: result.evaluation?.score ?? result.score ?? 0,
+            feedback: result.evaluation?.feedback ?? result.feedback ?? 'Evaluation completed.',
+            suggestions: result.evaluation?.suggestions ?? result.suggestions ?? [],
+          },
+        }));
+      } else if (result?.questions?.[0]) {
+        // Some API shapes return evaluation nested in questions
+        const evalData = result.questions[0];
+        setEvaluationResults(prev => ({
+          ...prev,
+          [questionId]: {
+            score: evalData.score ?? 70,
+            feedback: evalData.feedback ?? evalData.evaluation ?? 'Your answer was reviewed.',
+            suggestions: evalData.suggestions ?? evalData.followUps ?? [],
+          },
+        }));
+      }
+    } catch (err: any) {
+      console.error('Answer evaluation error:', err);
+      setEvaluationResults(prev => ({
+        ...prev,
+        [questionId]: {
+          score: 0,
+          feedback: 'Unable to evaluate answer. Please try again.',
+          suggestions: [],
+        },
+      }));
+    } finally {
+      setEvaluatingId(null);
+    }
+  }, [interviewAnswers, interviewQuestions]);
+
   const handleStartSimulation = useCallback(async () => {
     if (!selectedAuditType) return;
     setIsSimulating(true);
@@ -405,8 +521,8 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
       const auditConfig = auditTypeMap[selectedAuditType] || { framework: selectedAuditType, domain: 'General Compliance' };
 
-      // Get relevant controls for the audit
-      const controlsToAudit = MOCK_INTERVIEW_QUESTIONS.slice(0, 5).map(q => ({
+      // Get relevant controls for the audit (use AI-fetched questions with mock fallback)
+      const controlsToAudit = interviewQuestions.slice(0, 5).map(q => ({
         controlId: q.id || q.category,
         title: q.category,
         description: q.question,
@@ -430,7 +546,7 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     } finally {
       setIsSimulating(false);
     }
-  }, [selectedAuditType]);
+  }, [selectedAuditType, interviewQuestions]);
 
   const handleExportReport = useCallback((simId: string) => {
     const sim = SIMULATION_RUNS.find(s => s.id === simId);
@@ -617,43 +733,115 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
               <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
                 <MessageSquare size={18} className="text-brand-600" />
                 Mock Interview Practice
+                {interviewLoading && <Loader2 size={16} className="animate-spin text-brand-500" />}
               </h3>
-              <p className="text-sm text-gray-500 mb-4">Practice answering common audit interview questions to prepare your team.</p>
-              <div className="space-y-3">
-                {MOCK_INTERVIEW_QUESTIONS.slice(0, 4).map(iq => (
-                  <div key={iq.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">{iq.category}</span>
-                      <span className="text-xs text-gray-400">Role: {iq.role}</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-900 mb-2">"{iq.question}"</p>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder="Type your answer to practice..."
-                        className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                      />
-                      <button className="px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors flex items-center gap-1">
-                        <Send size={12} />
-                        Evaluate
-                      </button>
-                    </div>
-                    {iq.followUps.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-100">
-                        <p className="text-xs text-gray-500 font-medium mb-1">Typical follow-up questions:</p>
-                        <ul className="space-y-0.5">
-                          {iq.followUps.map((fu, idx) => (
-                            <li key={idx} className="text-xs text-gray-500 flex items-center gap-1">
-                              <ChevronRight size={10} className="flex-shrink-0" />
-                              {fu}
-                            </li>
-                          ))}
-                        </ul>
+              <p className="text-sm text-gray-500 mb-4">
+                Practice answering {interviewQuestions === MOCK_INTERVIEW_QUESTIONS ? 'common' : 'AI-generated'} audit interview questions to prepare your team.
+              </p>
+
+              {interviewError && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+                  <AlertTriangle size={14} className="text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-yellow-700">{interviewError}</p>
+                </div>
+              )}
+
+              {interviewLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 size={32} className="animate-spin text-brand-500 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-gray-600">Loading AI-generated interview questions...</p>
+                  <p className="text-xs text-gray-400 mt-1">This may take a moment</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {interviewQuestions.slice(0, 4).map(iq => (
+                    <div key={iq.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">{iq.category}</span>
+                        <span className="text-xs text-gray-400">Role: {iq.role}</span>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                      <p className="text-sm font-medium text-gray-900 mb-2">"{iq.question}"</p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={interviewAnswers[iq.id] || ''}
+                          onChange={e => setInterviewAnswers(prev => ({ ...prev, [iq.id]: e.target.value }))}
+                          placeholder="Type your answer to practice..."
+                          className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                          onKeyDown={e => { if (e.key === 'Enter') handleEvaluateAnswer(iq.id); }}
+                          disabled={evaluatingId === iq.id}
+                        />
+                        <button
+                          onClick={() => handleEvaluateAnswer(iq.id)}
+                          disabled={evaluatingId === iq.id || !interviewAnswers[iq.id]?.trim()}
+                          className="px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors flex items-center gap-1 disabled:opacity-50"
+                        >
+                          {evaluatingId === iq.id ? (
+                            <>
+                              <Loader2 size={12} className="animate-spin" />
+                              Evaluating...
+                            </>
+                          ) : (
+                            <>
+                              <Send size={12} />
+                              Evaluate
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* AI Evaluation Result */}
+                      {evaluationResults[iq.id] && (
+                        <div className="mt-3 p-3 bg-gradient-to-r from-brand-50 to-purple-50 border border-brand-200 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="text-xs font-semibold text-brand-700 flex items-center gap-1">
+                              <Sparkles size={12} />
+                              AI Evaluation
+                            </h5>
+                            {evaluationResults[iq.id].score > 0 && (
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                evaluationResults[iq.id].score >= 80 ? 'bg-green-100 text-green-700' :
+                                evaluationResults[iq.id].score >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                Score: {evaluationResults[iq.id].score}/100
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-700">{evaluationResults[iq.id].feedback}</p>
+                          {evaluationResults[iq.id].suggestions.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-brand-100">
+                              <p className="text-xs text-brand-600 font-medium mb-1">Suggestions for improvement:</p>
+                              <ul className="space-y-0.5">
+                                {evaluationResults[iq.id].suggestions.map((s, idx) => (
+                                  <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
+                                    <Lightbulb size={10} className="flex-shrink-0 mt-0.5 text-yellow-500" />
+                                    {s}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {iq.followUps.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <p className="text-xs text-gray-500 font-medium mb-1">Typical follow-up questions:</p>
+                          <ul className="space-y-0.5">
+                            {iq.followUps.map((fu, idx) => (
+                              <li key={idx} className="text-xs text-gray-500 flex items-center gap-1">
+                                <ChevronRight size={10} className="flex-shrink-0" />
+                                {fu}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

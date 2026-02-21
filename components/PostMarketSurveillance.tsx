@@ -17,7 +17,7 @@
  *            CE Marking framework (Decision 768/2008/EC)
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import {
   ArrowLeft,
@@ -360,12 +360,12 @@ interface PostMarketSurveillanceProps {
 export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ onBack }) => {
   type TabId = 'overview' | 'plans' | 'incidents' | 'capa' | 'recalls' | 'reports';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [plans] = useState<SurveillancePlan[]>(DEMO_PLANS);
-  const [incidents] = useState<Incident[]>(DEMO_INCIDENTS);
-  const [capas] = useState<CAPA[]>(DEMO_CAPAS);
-  const [recalls] = useState<ProductRecall[]>(DEMO_RECALLS);
-  const [nonConformities] = useState<NonConformity[]>(DEMO_NON_CONFORMITIES);
-  const [reports] = useState<SurveillanceReport[]>(DEMO_REPORTS);
+  const [plans, setPlans] = useState<SurveillancePlan[]>(DEMO_PLANS);
+  const [incidents, setIncidents] = useState<Incident[]>(DEMO_INCIDENTS);
+  const [capas, setCapas] = useState<CAPA[]>(DEMO_CAPAS);
+  const [recalls, setRecalls] = useState<ProductRecall[]>(DEMO_RECALLS);
+  const [nonConformities, setNonConformities] = useState<NonConformity[]>(DEMO_NON_CONFORMITIES);
+  const [reports, setReports] = useState<SurveillanceReport[]>(DEMO_REPORTS);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -374,24 +374,65 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isSubmittingIncident, setIsSubmittingIncident] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  // Incident form state
+  const [incidentForm, setIncidentForm] = useState({
+    title: '',
+    productId: '',
+    type: 'complaint' as Incident['type'],
+    severity: 'minor' as Incident['severity'],
+    location: '',
+    description: '',
+    reportedBy: '',
+    affectedUnits: '',
+  });
+
+  // Report form state
+  const [reportForm, setReportForm] = useState({
+    reportType: 'annual' as SurveillanceReport['reportType'],
+    productId: 'all',
+    periodStart: '2025-01-01',
+    periodEnd: '2025-12-31',
+    sections: ['Surveillance Plan Summary', 'Incident & Complaint Analysis', 'CAPA Status Review', 'Non-Conformity Summary', 'Risk Assessment Update', 'Conclusions & Recommendations'] as string[],
+  });
+
+  // ---------------------------------------------------------------------------
+  // Data Loading
+  // ---------------------------------------------------------------------------
+  const loadData = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setIsLoading(true);
+    else setIsSyncing(true);
+
+    try {
+      const [plansData, recallsData] = await Promise.all([
+        api.modules.surveillance.listPlans(),
+        api.modules.surveillance.listRecalls(),
+      ]);
+
+      // Only update state when we got valid arrays back from the API
+      if (Array.isArray(plansData) && plansData.length > 0) {
+        setPlans(plansData);
+      }
+      if (Array.isArray(recallsData) && recallsData.length > 0) {
+        setRecalls(recallsData);
+      }
+
+      setLoadError(null);
+    } catch (err: any) {
+      setLoadError('Unable to connect to server. Showing demo data.');
+    } finally {
+      setIsLoading(false);
+      setIsSyncing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const [plansData, recallsData] = await Promise.all([
-          api.modules.surveillance.listPlans(),
-          api.modules.surveillance.listRecalls(),
-        ]);
-        // Only update if we got real data — demo data is used as fallback
-        setLoadError(null);
-      } catch (err: any) {
-        setLoadError('Unable to connect to server. Showing demo data.');
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, []);
+    loadData();
+  }, [loadData]);
 
   // Computed
   const overviewStats = useMemo(() => {
@@ -1080,6 +1121,59 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
   // ---------------------------------------------------------------------------
   // Modals
   // ---------------------------------------------------------------------------
+  const handleSubmitIncident = useCallback(async () => {
+    if (!incidentForm.title || !incidentForm.description) return;
+    setIsSubmittingIncident(true);
+    try {
+      const matchedPlan = plans.find(p => p.productId === (incidentForm.productId || plans[0]?.productId));
+      const payload = {
+        title: incidentForm.title,
+        productName: matchedPlan?.productName || '',
+        productId: incidentForm.productId || plans[0]?.productId || '',
+        type: incidentForm.type,
+        severity: incidentForm.severity,
+        status: 'open' as const,
+        reportedBy: incidentForm.reportedBy || 'Current User',
+        reportedDate: new Date().toISOString().slice(0, 10),
+        description: incidentForm.description,
+        affectedUnits: incidentForm.affectedUnits ? parseInt(incidentForm.affectedUnits, 10) : undefined,
+        location: incidentForm.location || undefined,
+        regulatoryNotificationRequired: incidentForm.severity === 'critical' || incidentForm.severity === 'serious' || incidentForm.type === 'safety_incident',
+        regulatoryNotificationSent: false,
+      };
+      const created = await api.modules.surveillance.createIncident(payload);
+      // Optimistic update: add the returned incident (or our payload with a temp id) to local state
+      setIncidents(prev => [{ ...payload, id: created?.id || `inc-local-${Date.now()}`, ...created } as Incident, ...prev]);
+      setIncidentForm({ title: '', productId: '', type: 'complaint', severity: 'minor', location: '', description: '', reportedBy: '', affectedUnits: '' });
+      setShowIncidentModal(false);
+    } catch (err: any) {
+      // On error, still add to local state so the user doesn't lose their work
+      const matchedPlan = plans.find(p => p.productId === (incidentForm.productId || plans[0]?.productId));
+      const fallback: Incident = {
+        id: `inc-local-${Date.now()}`,
+        title: incidentForm.title,
+        productName: matchedPlan?.productName || '',
+        productId: incidentForm.productId || plans[0]?.productId || '',
+        type: incidentForm.type,
+        severity: incidentForm.severity,
+        status: 'open',
+        reportedBy: incidentForm.reportedBy || 'Current User',
+        reportedDate: new Date().toISOString().slice(0, 10),
+        description: incidentForm.description,
+        affectedUnits: incidentForm.affectedUnits ? parseInt(incidentForm.affectedUnits, 10) : undefined,
+        location: incidentForm.location || undefined,
+        regulatoryNotificationRequired: incidentForm.severity === 'critical' || incidentForm.severity === 'serious' || incidentForm.type === 'safety_incident',
+        regulatoryNotificationSent: false,
+      };
+      setIncidents(prev => [fallback, ...prev]);
+      setLoadError('Incident saved locally. Unable to reach server.');
+      setIncidentForm({ title: '', productId: '', type: 'complaint', severity: 'minor', location: '', description: '', reportedBy: '', affectedUnits: '' });
+      setShowIncidentModal(false);
+    } finally {
+      setIsSubmittingIncident(false);
+    }
+  }, [incidentForm, plans]);
+
   const renderIncidentModal = () => showIncidentModal && (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -1090,18 +1184,18 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Incident Title *</label>
-            <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Brief description of the incident" />
+            <input type="text" value={incidentForm.title} onChange={e => setIncidentForm(f => ({ ...f, title: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Brief description of the incident" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Product *</label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+              <select value={incidentForm.productId || plans[0]?.productId} onChange={e => setIncidentForm(f => ({ ...f, productId: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                 {plans.map(p => <option key={p.id} value={p.productId}>{p.productName}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Incident Type *</label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+              <select value={incidentForm.type} onChange={e => setIncidentForm(f => ({ ...f, type: e.target.value as Incident['type'] }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                 <option value="complaint">Complaint</option>
                 <option value="safety_incident">Safety Incident</option>
                 <option value="near_miss">Near Miss</option>
@@ -1114,7 +1208,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Severity *</label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+              <select value={incidentForm.severity} onChange={e => setIncidentForm(f => ({ ...f, severity: e.target.value as Incident['severity'] }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                 <option value="minor">Minor</option>
                 <option value="moderate">Moderate</option>
                 <option value="serious">Serious</option>
@@ -1123,21 +1217,21 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-              <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Country or site" />
+              <input type="text" value={incidentForm.location} onChange={e => setIncidentForm(f => ({ ...f, location: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Country or site" />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-            <textarea rows={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Detailed description of the incident..." />
+            <textarea rows={4} value={incidentForm.description} onChange={e => setIncidentForm(f => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Detailed description of the incident..." />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Reported By</label>
-              <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Name or identifier" />
+              <input type="text" value={incidentForm.reportedBy} onChange={e => setIncidentForm(f => ({ ...f, reportedBy: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Name or identifier" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Affected Units</label>
-              <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Number of units" />
+              <input type="number" value={incidentForm.affectedUnits} onChange={e => setIncidentForm(f => ({ ...f, affectedUnits: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" placeholder="Number of units" />
             </div>
           </div>
           <div className="bg-yellow-50 rounded-lg p-3 flex items-start gap-2">
@@ -1147,11 +1241,59 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
           <button onClick={() => setShowIncidentModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-          <button onClick={() => setShowIncidentModal(false)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Submit Incident</button>
+          <button
+            onClick={handleSubmitIncident}
+            disabled={isSubmittingIncident || !incidentForm.title || !incidentForm.description}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+          >
+            {isSubmittingIncident && <Loader2 size={14} className="animate-spin" />}
+            {isSubmittingIncident ? 'Submitting...' : 'Submit Incident'}
+          </button>
         </div>
       </div>
     </div>
   );
+
+  const handleGenerateReport = useCallback(async () => {
+    setIsGeneratingReport(true);
+    try {
+      const matchedPlan = reportForm.productId !== 'all' ? plans.find(p => p.productId === reportForm.productId) : null;
+      const typeLabels: Record<string, string> = { annual: 'Annual PMS Report', periodic: 'Periodic Update Report', incident: 'Incident Report', trend_analysis: 'Trend Analysis Report' };
+      const productLabel = matchedPlan ? matchedPlan.productName : 'All Products';
+      const periodLabel = `${reportForm.periodStart} to ${reportForm.periodEnd}`;
+
+      const newReport: SurveillanceReport = {
+        id: `sr-local-${Date.now()}`,
+        title: `${typeLabels[reportForm.reportType] || 'Report'} - ${productLabel}`,
+        reportType: reportForm.reportType,
+        period: periodLabel,
+        status: 'draft',
+        createdDate: new Date().toISOString().slice(0, 10),
+        author: 'Current User',
+      };
+
+      // Try generating via the AI report endpoint if available
+      try {
+        await api.ai.generateReport(
+          'pms-surveillance',
+          productLabel,
+          JSON.stringify({ reportType: reportForm.reportType, period: periodLabel, sections: reportForm.sections }),
+        );
+      } catch {
+        // AI generation is optional; we still create the report entry
+      }
+
+      setReports(prev => [newReport, ...prev]);
+      setReportForm({ reportType: 'annual', productId: 'all', periodStart: '2025-01-01', periodEnd: '2025-12-31', sections: ['Surveillance Plan Summary', 'Incident & Complaint Analysis', 'CAPA Status Review', 'Non-Conformity Summary', 'Risk Assessment Update', 'Conclusions & Recommendations'] });
+      setShowReportModal(false);
+    } catch (err: any) {
+      setLoadError('Failed to generate report. Please try again.');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  }, [reportForm, plans]);
+
+  const allSections = ['Surveillance Plan Summary', 'Incident & Complaint Analysis', 'CAPA Status Review', 'Non-Conformity Summary', 'Risk Assessment Update', 'Conclusions & Recommendations'];
 
   const renderReportModal = () => showReportModal && (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1163,7 +1305,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <select value={reportForm.reportType} onChange={e => setReportForm(f => ({ ...f, reportType: e.target.value as SurveillanceReport['reportType'] }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
               <option value="annual">Annual PMS Report</option>
               <option value="periodic">Periodic Update Report</option>
               <option value="incident">Incident Report</option>
@@ -1172,7 +1314,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <select value={reportForm.productId} onChange={e => setReportForm(f => ({ ...f, productId: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
               <option value="all">All Products</option>
               {plans.map(p => <option key={p.id} value={p.productId}>{p.productName}</option>)}
             </select>
@@ -1180,16 +1322,26 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Reporting Period</label>
             <div className="grid grid-cols-2 gap-3">
-              <input type="date" className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" defaultValue="2025-01-01" />
-              <input type="date" className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" defaultValue="2025-12-31" />
+              <input type="date" value={reportForm.periodStart} onChange={e => setReportForm(f => ({ ...f, periodStart: e.target.value }))} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+              <input type="date" value={reportForm.periodEnd} onChange={e => setReportForm(f => ({ ...f, periodEnd: e.target.value }))} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Include Sections</label>
             <div className="space-y-2">
-              {['Surveillance Plan Summary', 'Incident & Complaint Analysis', 'CAPA Status Review', 'Non-Conformity Summary', 'Risk Assessment Update', 'Conclusions & Recommendations'].map(section => (
+              {allSections.map(section => (
                 <label key={section} className="flex items-center gap-2 text-sm text-gray-700">
-                  <input type="checkbox" defaultChecked className="rounded text-blue-600 focus:ring-blue-500" />
+                  <input
+                    type="checkbox"
+                    checked={reportForm.sections.includes(section)}
+                    onChange={e => {
+                      setReportForm(f => ({
+                        ...f,
+                        sections: e.target.checked ? [...f.sections, section] : f.sections.filter(s => s !== section),
+                      }));
+                    }}
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                  />
                   {section}
                 </label>
               ))}
@@ -1198,7 +1350,14 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
           <button onClick={() => setShowReportModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-          <button onClick={() => setShowReportModal(false)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Generate Report</button>
+          <button
+            onClick={handleGenerateReport}
+            disabled={isGeneratingReport}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+          >
+            {isGeneratingReport && <Loader2 size={14} className="animate-spin" />}
+            {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+          </button>
         </div>
       </div>
     </div>
@@ -1221,8 +1380,12 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors">
-            <RefreshCw size={16} /> Sync
+          <button
+            onClick={() => loadData({ silent: true })}
+            disabled={isSyncing}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} /> {isSyncing ? 'Syncing...' : 'Sync'}
           </button>
           <button onClick={() => setShowIncidentModal(true)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors">
             <AlertTriangle size={16} /> Report Incident

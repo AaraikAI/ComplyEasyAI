@@ -15,7 +15,7 @@
  * Reference: EU CE Marking Regulation (EC) No 765/2008 and Decision No 768/2008/EC
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import {
   ArrowLeft,
@@ -444,11 +444,11 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
   type TabId = 'overview' | 'products' | 'assessment' | 'documentation' | 'notified_bodies';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [products, setProducts] = useState<CEProduct[]>(DEMO_PRODUCTS);
-  const [notifiedBodies] = useState<NotifiedBody[]>(DEMO_NOTIFIED_BODIES);
-  const [requirements] = useState<EssentialRequirement[]>(DEMO_REQUIREMENTS);
-  const [documents] = useState<TechnicalDocument[]>(DEMO_DOCUMENTS);
-  const [riskItems] = useState<RiskAssessmentItem[]>(DEMO_RISK_ITEMS);
-  const [surveillanceChecks] = useState<SurveillanceCheck[]>(DEMO_SURVEILLANCE_CHECKS);
+  const [notifiedBodies, setNotifiedBodies] = useState<NotifiedBody[]>(DEMO_NOTIFIED_BODIES);
+  const [requirements, setRequirements] = useState<EssentialRequirement[]>(DEMO_REQUIREMENTS);
+  const [documents, setDocuments] = useState<TechnicalDocument[]>(DEMO_DOCUMENTS);
+  const [riskItems, setRiskItems] = useState<RiskAssessmentItem[]>(DEMO_RISK_ITEMS);
+  const [surveillanceChecks, setSurveillanceChecks] = useState<SurveillanceCheck[]>(DEMO_SURVEILLANCE_CHECKS);
   const [selectedProduct, setSelectedProduct] = useState<CEProduct | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddProductModal, setShowAddProductModal] = useState(false);
@@ -472,36 +472,82 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const apiProducts = await api.modules.ceMarking.listProducts();
-        if (apiProducts && apiProducts.length > 0) {
-          setProducts(apiProducts.map((p: any) => ({
-            id: p.id,
-            name: p.name || '',
-            modelNumber: p.modelNumber || '',
-            category: p.category || '',
-            applicableDirectives: p.applicableDirectives || [],
-            assessmentModule: p.assessmentModule || 'A',
-            status: p.status || 'draft',
-            riskLevel: p.riskLevel || 'medium',
-            notifiedBodyId: p.notifiedBodyId,
-            testingStatus: p.testingStatus || 'not_started',
-            docCompleteness: p.docCompleteness || 0,
-            createdAt: p.createdAt || '',
-            updatedAt: p.updatedAt || '',
-            marketDate: p.marketDate,
-          })));
-        }
-        setLoadError(null);
-      } catch (err: any) {
-        setLoadError('Unable to connect to server. Showing local data.');
-      } finally {
-        setIsLoading(false);
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+
+    try {
+      // Fetch all data in parallel; each call is independent and can fail gracefully
+      const [productsRes, notifiedBodiesRes, requirementsRes, documentsRes, riskItemsRes, surveillanceRes] =
+        await Promise.allSettled([
+          api.modules.ceMarking.listProducts(),
+          api.modules.ceMarking.listNotifiedBodies(),
+          api.modules.ceMarking.listRequirements(),
+          api.modules.ceMarking.listDocuments(),
+          api.modules.ceMarking.listRiskItems(),
+          api.modules.ceMarking.listSurveillanceChecks(),
+        ]);
+
+      // --- Products ---
+      if (productsRes.status === 'fulfilled' && Array.isArray(productsRes.value) && productsRes.value.length > 0) {
+        setProducts(productsRes.value.map((p: any) => ({
+          id: p.id,
+          name: p.name || '',
+          modelNumber: p.modelNumber || '',
+          category: p.category || '',
+          applicableDirectives: p.applicableDirectives || [],
+          assessmentModule: p.assessmentModule || 'A',
+          status: p.status || 'draft',
+          riskLevel: p.riskLevel || 'medium',
+          notifiedBodyId: p.notifiedBodyId,
+          testingStatus: p.testingStatus || 'not_started',
+          docCompleteness: p.docCompleteness ?? 0,
+          createdAt: p.createdAt || '',
+          updatedAt: p.updatedAt || '',
+          marketDate: p.marketDate,
+        })));
       }
-    })();
+      // fallback: keep DEMO_PRODUCTS already in state
+
+      // --- Notified Bodies ---
+      if (notifiedBodiesRes.status === 'fulfilled' && Array.isArray(notifiedBodiesRes.value) && notifiedBodiesRes.value.length > 0) {
+        setNotifiedBodies(notifiedBodiesRes.value);
+      }
+
+      // --- Essential Requirements ---
+      if (requirementsRes.status === 'fulfilled' && Array.isArray(requirementsRes.value) && requirementsRes.value.length > 0) {
+        setRequirements(requirementsRes.value);
+      }
+
+      // --- Documents ---
+      if (documentsRes.status === 'fulfilled' && Array.isArray(documentsRes.value) && documentsRes.value.length > 0) {
+        setDocuments(documentsRes.value);
+      }
+
+      // --- Risk Items ---
+      if (riskItemsRes.status === 'fulfilled' && Array.isArray(riskItemsRes.value) && riskItemsRes.value.length > 0) {
+        setRiskItems(riskItemsRes.value);
+      }
+
+      // --- Surveillance Checks ---
+      if (surveillanceRes.status === 'fulfilled' && Array.isArray(surveillanceRes.value) && surveillanceRes.value.length > 0) {
+        setSurveillanceChecks(surveillanceRes.value);
+      }
+
+      // If the primary products call failed, warn the user
+      if (productsRes.status === 'rejected') {
+        setLoadError('Unable to connect to server. Showing local data.');
+      }
+    } catch (err: any) {
+      setLoadError('Unable to connect to server. Showing local data.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // ---------------------------------------------------------------------------
   // Computed values
@@ -530,9 +576,12 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
-  const handleAddProduct = () => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleAddProduct = async () => {
     if (!newProduct.name || !newProduct.modelNumber) return;
-    const product: CEProduct = {
+
+    const optimisticProduct: CEProduct = {
       id: `prod-${Date.now()}`,
       name: newProduct.name,
       modelNumber: newProduct.modelNumber,
@@ -546,9 +595,65 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
       createdAt: new Date().toISOString().split('T')[0],
       updatedAt: new Date().toISOString().split('T')[0],
     };
-    setProducts(prev => [product, ...prev]);
+
+    // Optimistic update
+    setProducts(prev => [optimisticProduct, ...prev]);
     setShowAddProductModal(false);
     setNewProduct({ name: '', modelNumber: '', category: PRODUCT_CATEGORIES[0], applicableDirectives: [], assessmentModule: 'A' });
+
+    // Persist to backend
+    setIsSaving(true);
+    try {
+      const created = await api.modules.ceMarking.createProduct({
+        name: optimisticProduct.name,
+        modelNumber: optimisticProduct.modelNumber,
+        category: optimisticProduct.category,
+        applicableDirectives: optimisticProduct.applicableDirectives,
+        assessmentModule: optimisticProduct.assessmentModule,
+        status: optimisticProduct.status,
+        riskLevel: optimisticProduct.riskLevel,
+        testingStatus: optimisticProduct.testingStatus,
+        docCompleteness: optimisticProduct.docCompleteness,
+      });
+      // Replace optimistic entry with server-returned product (has real id)
+      if (created && created.id) {
+        setProducts(prev => prev.map(p => p.id === optimisticProduct.id ? { ...optimisticProduct, ...created } : p));
+      }
+    } catch (err: any) {
+      // Keep the optimistic product in the list so the user doesn't lose data
+      setLoadError('Product saved locally but failed to sync to server.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    const previousProducts = products;
+    // Optimistic removal
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    if (selectedProduct?.id === productId) {
+      setSelectedProduct(null);
+    }
+
+    try {
+      await api.modules.ceMarking.deleteProduct(productId);
+    } catch (err: any) {
+      // Restore on failure
+      setProducts(previousProducts);
+      setLoadError('Failed to delete product on server. Change reverted.');
+    }
+  };
+
+  const handleUpdateProductStatus = async (productId: string, status: CEProduct['status']) => {
+    const previousProducts = products;
+    setProducts(prev => prev.map(p => p.id === productId ? { ...p, status, updatedAt: new Date().toISOString().split('T')[0] } : p));
+
+    try {
+      await api.modules.ceMarking.updateProduct(productId, { status });
+    } catch (err: any) {
+      setProducts(previousProducts);
+      setLoadError('Failed to update product on server. Change reverted.');
+    }
   };
 
   const toggleDirective = (directiveId: string) => {
@@ -1227,8 +1332,12 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors">
-            <RefreshCw size={16} /> Sync
+          <button
+            onClick={loadData}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> {isLoading ? 'Syncing...' : 'Sync'}
           </button>
           <button onClick={() => setShowAddProductModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
             <Plus size={16} /> New Product
@@ -1240,6 +1349,12 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <span className="ml-3 text-gray-500">Loading CE marking data...</span>
+        </div>
+      )}
+      {isSaving && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
+          <Loader2 size={16} className="text-blue-500 animate-spin shrink-0" />
+          <span className="text-sm text-blue-700">Saving changes to server...</span>
         </div>
       )}
       {loadError && (

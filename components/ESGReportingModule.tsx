@@ -17,7 +17,7 @@
  *            European Sustainability Reporting Standards (ESRS)
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import {
   ArrowLeft,
@@ -320,10 +320,10 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
   type TabId = 'overview' | 'environmental' | 'social' | 'governance' | 'materiality' | 'reports';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [metrics, setMetrics] = useState<ESGMetric[]>(DEMO_METRICS);
-  const [esrsStandards] = useState<ESRSStandard[]>(DEMO_ESRS);
+  const [esrsStandards, setEsrsStandards] = useState<ESRSStandard[]>(DEMO_ESRS);
   const [materialityTopics, setMaterialityTopics] = useState<MaterialityTopic[]>(DEMO_MATERIALITY);
-  const [sdgAlignments] = useState<SDGAlignment[]>(DEMO_SDG);
-  const [reports] = useState<ESGReport[]>(DEMO_REPORTS);
+  const [sdgAlignments, setSdgAlignments] = useState<SDGAlignment[]>(DEMO_SDG);
+  const [reports, setReports] = useState<ESGReport[]>(DEMO_REPORTS);
   const [showReportModal, setShowReportModal] = useState(false);
   const [expandedESRS, setExpandedESRS] = useState<string | null>(null);
 
@@ -331,50 +331,99 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [apiMetrics, apiMateriality] = await Promise.all([
-          api.modules.esg.listMetrics(),
-          api.modules.esg.listMateriality(),
-        ]);
-        if (apiMetrics && apiMetrics.length > 0) {
-          setMetrics(apiMetrics.map((m: any) => ({
-            id: m.id,
-            category: m.category || 'environmental',
-            subcategory: m.subcategory || '',
-            name: m.name || '',
-            value: m.value || 0,
-            unit: m.unit || '',
-            target: m.target,
-            previousYear: m.previousYear,
-            trend: m.trend || 'stable',
-            trendIsPositive: m.trendIsPositive || false,
-            esrsStandard: m.esrsStandard,
-            dataQuality: m.dataQuality || 'reported',
-            lastUpdated: m.updatedAt || m.lastUpdated || '',
-          })));
-        }
-        if (apiMateriality && apiMateriality.length > 0) {
-          setMaterialityTopics(apiMateriality.map((t: any) => ({
-            id: t.id,
-            topic: t.topic || '',
-            esrsStandard: t.esrsStandard || '',
-            financialMateriality: t.financialMateriality || 0,
-            impactMateriality: t.impactMateriality || 0,
-            overallMateriality: t.overallMateriality || 'medium',
-            stakeholderRelevance: t.stakeholderRelevance || 0,
-            status: t.status || 'pending',
-          })));
-        }
-        setLoadError(null);
-      } catch (err: any) {
-        setLoadError('Unable to connect to server. Showing local data.');
-      } finally {
-        setIsLoading(false);
+  // ----- Centralised data loader (reusable for refresh) -----
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const [apiMetrics, apiMateriality] = await Promise.all([
+        api.modules.esg.listMetrics(),
+        api.modules.esg.listMateriality(),
+      ]);
+
+      // --- Metrics ---
+      if (apiMetrics && apiMetrics.length > 0) {
+        setMetrics(apiMetrics.map((m: any) => ({
+          id: m.id,
+          category: m.category || 'environmental',
+          subcategory: m.subcategory || '',
+          name: m.name || '',
+          value: m.value || 0,
+          unit: m.unit || '',
+          target: m.target,
+          previousYear: m.previousYear,
+          trend: m.trend || 'stable',
+          trendIsPositive: m.trendIsPositive ?? false,
+          esrsStandard: m.esrsStandard,
+          dataQuality: m.dataQuality || 'reported',
+          lastUpdated: m.updatedAt || m.lastUpdated || '',
+        })));
       }
-    })();
+
+      // --- Materiality ---
+      if (apiMateriality && apiMateriality.length > 0) {
+        setMaterialityTopics(apiMateriality.map((t: any) => ({
+          id: t.id,
+          topic: t.topic || '',
+          esrsStandard: t.esrsStandard || '',
+          financialMateriality: t.financialMateriality || 0,
+          impactMateriality: t.impactMateriality || 0,
+          overallMateriality: t.overallMateriality || 'medium',
+          stakeholderRelevance: t.stakeholderRelevance || 0,
+          status: t.status || 'pending',
+        })));
+      }
+
+      // --- ESRS Standards (derived from metrics response when available) ---
+      // The API may include esrsStandards alongside metrics; accept if present.
+      if ((apiMetrics as any)?.esrsStandards && (apiMetrics as any).esrsStandards.length > 0) {
+        setEsrsStandards((apiMetrics as any).esrsStandards.map((s: any) => ({
+          id: s.id,
+          code: s.code || '',
+          name: s.name || '',
+          category: s.category || 'cross-cutting',
+          disclosureRequirements: s.disclosureRequirements || 0,
+          completedDisclosures: s.completedDisclosures || 0,
+          status: s.status || 'not_started',
+          materialityResult: s.materialityResult,
+        })));
+      }
+
+      // --- SDG alignments (derived from metrics response when available) ---
+      if ((apiMetrics as any)?.sdgAlignments && (apiMetrics as any).sdgAlignments.length > 0) {
+        setSdgAlignments((apiMetrics as any).sdgAlignments.map((a: any) => ({
+          sdgNumber: a.sdgNumber,
+          sdgName: a.sdgName || '',
+          alignmentScore: a.alignmentScore || 0,
+          contributingMetrics: a.contributingMetrics || [],
+          status: a.status || 'not_aligned',
+        })));
+      }
+
+      // --- Reports (derived from metrics response when available) ---
+      if ((apiMetrics as any)?.reports && (apiMetrics as any).reports.length > 0) {
+        setReports((apiMetrics as any).reports.map((r: any) => ({
+          id: r.id,
+          title: r.title || '',
+          reportingPeriod: r.reportingPeriod || '',
+          type: r.type || 'annual',
+          status: r.status || 'draft',
+          csrdCompliant: r.csrdCompliant ?? false,
+          createdAt: r.createdAt || '',
+          author: r.author || '',
+          pages: r.pages,
+        })));
+      }
+    } catch (err: any) {
+      setLoadError('Unable to connect to server. Showing local data.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Computed
   const envMetrics = useMemo(() => metrics.filter(m => m.category === 'environmental'), [metrics]);
@@ -941,6 +990,95 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
   );
 
   // ---------------------------------------------------------------------------
+  // Report generation handler
+  // ---------------------------------------------------------------------------
+  const [reportFormType, setReportFormType] = useState<'annual' | 'interim' | 'thematic'>('annual');
+  const [reportFormStart, setReportFormStart] = useState('2025-01-01');
+  const [reportFormEnd, setReportFormEnd] = useState('2025-12-31');
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  const handleGenerateReport = useCallback(async () => {
+    setIsGeneratingReport(true);
+    try {
+      const newReport = await api.modules.esg.createMetric({
+        _action: 'generate_report',
+        type: reportFormType,
+        periodStart: reportFormStart,
+        periodEnd: reportFormEnd,
+      });
+      if (newReport && newReport.id) {
+        setReports(prev => [newReport as ESGReport, ...prev]);
+      }
+      setShowReportModal(false);
+      // Refresh all data to pick up the new report
+      await loadData();
+    } catch (err: any) {
+      setLoadError('Failed to generate report. Please try again.');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  }, [reportFormType, reportFormStart, reportFormEnd, loadData]);
+
+  // ---------------------------------------------------------------------------
+  // Metric CRUD handlers
+  // ---------------------------------------------------------------------------
+  const handleCreateMetric = useCallback(async (data: Partial<ESGMetric>) => {
+    try {
+      const created = await api.modules.esg.createMetric(data);
+      if (created && created.id) {
+        setMetrics(prev => [...prev, created as ESGMetric]);
+      }
+    } catch (err: any) {
+      setLoadError('Failed to create metric.');
+    }
+  }, []);
+
+  const handleUpdateMetric = useCallback(async (id: string, data: Partial<ESGMetric>) => {
+    try {
+      const updated = await api.modules.esg.updateMetric(id, data);
+      if (updated) {
+        setMetrics(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+      }
+    } catch (err: any) {
+      setLoadError('Failed to update metric.');
+    }
+  }, []);
+
+  const handleDeleteMetric = useCallback(async (id: string) => {
+    try {
+      await api.modules.esg.deleteMetric(id);
+      setMetrics(prev => prev.filter(m => m.id !== id));
+    } catch (err: any) {
+      setLoadError('Failed to delete metric.');
+    }
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Materiality CRUD handlers
+  // ---------------------------------------------------------------------------
+  const handleCreateMateriality = useCallback(async (data: Partial<MaterialityTopic>) => {
+    try {
+      const created = await api.modules.esg.createMateriality(data);
+      if (created && created.id) {
+        setMaterialityTopics(prev => [...prev, created as MaterialityTopic]);
+      }
+    } catch (err: any) {
+      setLoadError('Failed to create materiality topic.');
+    }
+  }, []);
+
+  const handleUpdateMateriality = useCallback(async (id: string, data: Partial<MaterialityTopic>) => {
+    try {
+      const updated = await api.modules.esg.updateMateriality(id, data);
+      if (updated) {
+        setMaterialityTopics(prev => prev.map(t => t.id === id ? { ...t, ...updated } : t));
+      }
+    } catch (err: any) {
+      setLoadError('Failed to update materiality topic.');
+    }
+  }, []);
+
+  // ---------------------------------------------------------------------------
   // Modals
   // ---------------------------------------------------------------------------
   const renderReportModal = () => showReportModal && (
@@ -953,7 +1091,7 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <select value={reportFormType} onChange={e => setReportFormType(e.target.value as any)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
               <option value="annual">Annual CSRD Report</option>
               <option value="interim">Interim ESG Update</option>
               <option value="thematic">Thematic Report</option>
@@ -962,8 +1100,8 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Reporting Period</label>
             <div className="grid grid-cols-2 gap-3">
-              <input type="date" className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" defaultValue="2025-01-01" />
-              <input type="date" className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" defaultValue="2025-12-31" />
+              <input type="date" value={reportFormStart} onChange={e => setReportFormStart(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
+              <input type="date" value={reportFormEnd} onChange={e => setReportFormEnd(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
           <div>
@@ -984,7 +1122,9 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
           <button onClick={() => setShowReportModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
-          <button onClick={() => setShowReportModal(false)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Generate Report</button>
+          <button onClick={handleGenerateReport} disabled={isGeneratingReport} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            {isGeneratingReport ? 'Generating...' : 'Generate Report'}
+          </button>
         </div>
       </div>
     </div>
@@ -1007,8 +1147,8 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors">
-            <RefreshCw size={16} /> Refresh Data
+          <button onClick={loadData} disabled={isLoading} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors disabled:opacity-50">
+            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} /> Refresh Data
           </button>
           <button onClick={() => setShowReportModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
             <FileText size={16} /> Generate Report
