@@ -455,40 +455,9 @@ describe('api service', () => {
   });
 
   // =========================================================================
-  // api.user
+  // api.user (removed – uploadAvatar, updateProfile, changePassword now
+  // live exclusively under api.auth to eliminate endpoint duplication)
   // =========================================================================
-  describe('api.user', () => {
-    it('uploadAvatar sends POST with FormData via fetchAPI', async () => {
-      mockFetch.mockResolvedValueOnce(ok({ avatarUrl: 'u' }));
-      const file = new File(['x'], 'a.png');
-      await api.user.uploadAvatar(file);
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${API}/auth/profile/avatar`,
-        expect.objectContaining({ method: 'POST' }),
-      );
-    });
-
-    it('updateProfile sends PATCH', async () => {
-      mockFetch.mockResolvedValueOnce(ok({}));
-      await api.user.updateProfile({ name: 'N', email: 'e@e.com' });
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${API}/auth/profile`,
-        expect.objectContaining({ method: 'PATCH' }),
-      );
-    });
-
-    it('changePassword sends PATCH', async () => {
-      mockFetch.mockResolvedValueOnce(ok({}));
-      await api.user.changePassword('old', 'new');
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        `${API}/auth/password`,
-        expect.objectContaining({ method: 'PATCH' }),
-      );
-    });
-  });
 
   // =========================================================================
   // api.risks

@@ -1247,6 +1247,7 @@ class MultimodalIntakeService {
         edgeDensity,
       };
     } catch (error) {
+      logger.warn('[Multimodal] Error analyzing frame features, using defaults', error);
       return {
         brightness: 0.5,
         contrast: 0.5,
@@ -1355,6 +1356,7 @@ class MultimodalIntakeService {
 
       return Math.max(0, Math.min(1, confidence));
     } catch (error) {
+      logger.warn('[Multimodal] Error calculating OCR confidence, using default', error);
       return 0.7; // Default confidence
     }
   }
@@ -1910,7 +1912,8 @@ class MultimodalIntakeService {
           text = pdfData.text || '';
           pages = pdfData.numpages || 0;
           documentMetadata = pdfData.info || {};
-        } catch {
+        } catch (error) {
+          logger.warn('[Multimodal] PDF parsing failed, falling back to basic text extraction', error);
           // Fallback: basic text extraction
           text = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
         }
@@ -1920,7 +1923,8 @@ class MultimodalIntakeService {
           const mammoth = require('mammoth');
           const result = await mammoth.extractRawText({ buffer: fileBuffer });
           text = result.value || '';
-        } catch {
+        } catch (error) {
+          logger.warn('[Multimodal] Word document extraction failed, falling back to basic text extraction', error);
           text = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
         }
       } else if (metadata.mimeType?.includes('spreadsheetml') || metadata.filename?.endsWith('.xlsx')) {
@@ -1943,7 +1947,8 @@ class MultimodalIntakeService {
           }
 
           text = textParts.join('\n\n');
-        } catch {
+        } catch (error) {
+          logger.warn('[Multimodal] Excel extraction failed, falling back to basic text extraction', error);
           text = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
         }
       } else if (metadata.mimeType?.includes('csv') || metadata.filename?.endsWith('.csv')) {

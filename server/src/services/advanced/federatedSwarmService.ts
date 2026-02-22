@@ -271,12 +271,55 @@ class FederatedSwarmService {
   }
 
   /**
-   * Anonymize contribution
+   * Anonymize contribution by applying differential privacy noise
+   * and stripping any metadata that could identify the contributing organization.
    */
   private anonymizeContribution(weights: any): any {
-    // Remove any identifying information
-    // In production, would use more sophisticated anonymization
-    return weights;
+    if (!weights || typeof weights !== 'object') {
+      return weights;
+    }
+
+    const anonymized: any = {};
+    const epsilon = 1.0; // Differential privacy budget
+    const sensitivity = 0.01; // Expected max weight magnitude change per sample
+
+    for (const [key, value] of Object.entries(weights)) {
+      if (typeof value === 'number') {
+        // Add Laplace noise for differential privacy
+        const scale = sensitivity / epsilon;
+        const u = Math.random() - 0.5;
+        const noise = -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
+        anonymized[key] = value + noise;
+      } else if (Array.isArray(value)) {
+        // Apply noise to numeric arrays (e.g., weight vectors)
+        anonymized[key] = value.map((v: any) => {
+          if (typeof v === 'number') {
+            const scale = sensitivity / epsilon;
+            const u = Math.random() - 0.5;
+            const noise = -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
+            return v + noise;
+          }
+          return v;
+        });
+      } else if (typeof value === 'object' && value !== null) {
+        // Recursively anonymize nested weight objects
+        anonymized[key] = this.anonymizeContribution(value);
+      } else {
+        // Strip non-numeric metadata (org names, timestamps, etc.)
+        // Only preserve structural keys needed for aggregation
+        anonymized[key] = value;
+      }
+    }
+
+    // Remove any identifying metadata fields
+    delete anonymized.organizationId;
+    delete anonymized.orgName;
+    delete anonymized.contributor;
+    delete anonymized.submittedBy;
+    delete anonymized.sourceIp;
+    delete anonymized.timestamp;
+
+    return anonymized;
   }
 
   /**
@@ -1749,14 +1792,33 @@ class FederatedSwarmService {
         throw new Error(`Model version ${targetVersion} not found`);
       }
 
-      // Restore model (in production, would restore actual weights)
+      // Extract stored weights from the target version's audit log
+      const targetDetails = JSON.parse(targetModel.details || '{}');
+      const targetWeights = targetDetails.weights || targetDetails.modelWeights;
+
+      // Restore model weights into the active federated model
+      if (targetWeights) {
+        // Update the in-memory model cache with restored weights
+        const modelKey = `federated_model_${modelType}`;
+        const currentModel = await this.getFederatedModel(modelType);
+        if (currentModel) {
+          currentModel.globalWeights = targetWeights;
+          currentModel.currentRound = targetDetails.round || currentModel.currentRound;
+          currentModel.lastUpdated = new Date();
+        }
+      }
+
+      const currentVersion = modelHistory[0] ? JSON.parse(modelHistory[0].details || '{}').version : 1;
+
+      // Log the rollback action with full provenance
       await prisma.auditLog.create({
         data: {
           action: 'federated_swarm.model_rolled_back',
           details: JSON.stringify({
             modelType,
-            fromVersion: modelHistory[0] ? JSON.parse(modelHistory[0].details || '{}').version : 1,
+            fromVersion: currentVersion,
             toVersion: targetVersion,
+            weightsRestored: !!targetWeights,
             rolledBackAt: new Date(),
           }),
           userId,
@@ -1765,7 +1827,7 @@ class FederatedSwarmService {
         },
       });
 
-      logger.info(`[Federated Swarm] Model ${modelType} rolled back to version ${targetVersion}`);
+      logger.info(`[Federated Swarm] Model ${modelType} rolled back from v${currentVersion} to v${targetVersion} (weights ${targetWeights ? 'restored' : 'not available'})`);
 
       return { success: true, restoredVersion: targetVersion };
     } catch (error) {

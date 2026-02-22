@@ -213,7 +213,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
         eventType: 'flow_started',
         flowName,
         stepIndex: 0,
-      }).catch(() => {});
+      }).catch((error) => { console.error('Failed to track flow_started event:', error); });
 
       // Save to backend
       saveProgress({
@@ -242,7 +242,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
       eventType: 'step_completed',
       flowName: currentFlow.id,
       stepIndex: currentStep,
-    }).catch(() => {});
+    }).catch((error) => { console.error('Failed to track step_completed event:', error); });
 
     saveProgress({
       currentStep: nextIdx,
@@ -266,7 +266,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
 
     api.onboarding.skipFlow(flowName).then((res) => {
       setProgress(res.progress);
-    }).catch(() => {});
+    }).catch((error) => { console.error('Failed to skip onboarding flow:', error); });
 
     // Auto-advance: if welcome was skipped, start tier tour
     if (flowName === 'welcome' && progress && !progress.tierTourCompleted) {
@@ -300,12 +300,12 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
       return api.onboarding.getChecklist();
     }).then((checklistRes) => {
       if (checklistRes?.checklist) setChecklist(checklistRes.checklist);
-    }).catch(() => {});
+    }).catch((error) => { console.error('Failed to complete milestone or refresh checklist:', error); });
 
     api.onboarding.trackEvent({
       eventType: 'flow_completed',
       flowName,
-    }).catch(() => {});
+    }).catch((error) => { console.error('Failed to track flow_completed event:', error); });
 
     // Auto-advance logic
     if (flowName === 'welcome') {
@@ -359,7 +359,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
 
   const trackEvent = useCallback(
     (eventType: string, flowName?: string, stepIndex?: number, metadata?: Record<string, any>) => {
-      api.onboarding.trackEvent({ eventType, flowName, stepIndex, metadata }).catch(() => {});
+      api.onboarding.trackEvent({ eventType, flowName, stepIndex, metadata }).catch((error) => { console.error('Failed to track onboarding event:', error); });
     },
     []
   );

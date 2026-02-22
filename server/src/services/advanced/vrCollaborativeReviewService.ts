@@ -12,6 +12,7 @@
 
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import notificationService from '../notificationService';
 import crypto from 'crypto';
 import webrtcSignalingService, { WebRTCSessionConfig, WebRTCPeer } from './webrtcSignalingService';
 
@@ -2928,8 +2929,54 @@ class VRCollaborativeReviewService {
     userIds: string[],
     hostUserId: string
   ): Promise<void> {
-    // In production, would send actual notifications via email, push, etc.
     logger.info(`[VR Review] Sending invitations for session ${sessionId} to ${userIds.length} users`);
+
+    // Look up the host user for the invitation message
+    const hostUser = await prisma.user.findUnique({
+      where: { id: hostUserId },
+      select: { name: true, email: true },
+    });
+    const hostName = hostUser?.name || 'A team member';
+
+    // Look up the session for context
+    const session = await prisma.auditLog.findFirst({
+      where: {
+        action: 'vr_review.session_created',
+        details: { contains: sessionId },
+      },
+      orderBy: { timestamp: 'desc' },
+    });
+    const sessionDetails = session ? JSON.parse(session.details || '{}') : {};
+    const sessionName = sessionDetails.sessionName || 'VR Compliance Review';
+
+    // Retrieve the organization ID from the host user
+    const hostMembership = await prisma.organizationMember.findFirst({
+      where: { userId: hostUserId },
+      select: { organizationId: true },
+    });
+    const organizationId = hostMembership?.organizationId || '';
+
+    // Send notifications to each invited user
+    const results = await Promise.allSettled(
+      userIds.map(userId =>
+        notificationService.sendNotification(userId, organizationId, {
+          type: 'info',
+          category: 'collaboration',
+          title: `VR Review Session Invitation`,
+          message: `${hostName} has invited you to join "${sessionName}". Click to join the session.`,
+          link: `/vr-review/${sessionId}`,
+          channels: ['email', 'websocket'],
+          metadata: { sessionId, hostUserId, sessionName },
+        })
+      )
+    );
+
+    const sent = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    if (failed > 0) {
+      logger.warn(`[VR Review] ${failed}/${userIds.length} invitations failed to send for session ${sessionId}`);
+    }
+    logger.info(`[VR Review] Sent ${sent}/${userIds.length} invitations for session ${sessionId}`);
   }
 
   private async generateSessionSummary(session: VRSession): Promise<SessionSummary> {

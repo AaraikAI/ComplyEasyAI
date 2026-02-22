@@ -503,7 +503,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       }
 
       // Update user profile via API
-      const updatedUser = await api.user.updateProfile({
+      const updatedUser = await api.auth.updateProfile({
         name: profileName.trim(),
         email: profileEmail.trim(),
       });
@@ -1211,7 +1211,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                       setPasswordError(null);
 
                       try {
-                        await api.user.changePassword(currentPassword, newPassword);
+                        await api.auth.changePassword(currentPassword, newPassword);
                         setCurrentPassword('');
                         setNewPassword('');
                         setConfirmPassword('');
