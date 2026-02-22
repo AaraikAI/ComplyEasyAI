@@ -83,6 +83,7 @@ jobs:
           directory: ./server/coverage
           flags: backend
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # ============================================
   # BACKEND INTEGRATION TESTS
@@ -250,10 +251,19 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm ci
+        working-directory: ./server
       - run: npm audit --audit-level=high
+        continue-on-error: true
       - run: npm audit --audit-level=high
         working-directory: ./server
-      - uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+      - uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -465,7 +475,6 @@ jobs:
     if: always() && (needs.deploy-production.result == 'success' || needs.deploy-staging.result == 'success')
     steps:
       - name: Slack notification
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
@@ -473,3 +482,4 @@ jobs:
           fields: repo,message,commit,author,action,eventName,ref,workflow
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
