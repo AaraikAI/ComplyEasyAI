@@ -111,55 +111,8 @@ interface SuppressionEntry {
   status: 'Active' | 'Pending Verification';
 }
 
-// ── Mock Data ───────────────────────────────────────────────────────────────
-
-const MOCK_DSARS: DSARRequest[] = [
-  { id: 'DSAR-001', type: 'Access', subjectName: 'Emma Lindgren', subjectEmail: 'e.lindgren@nordic.se', submissionDate: '2026-01-22', deadline: '2026-02-21', status: 'Completed', assignedTo: 'Alice Chen', priority: 'High', description: 'Full data access request under GDPR Art. 15' },
-  { id: 'DSAR-002', type: 'Deletion', subjectName: 'Carlos Mendez', subjectEmail: 'c.mendez@mail.es', submissionDate: '2026-02-01', deadline: '2026-03-03', status: 'In Progress', assignedTo: 'Bob Tanaka', priority: 'High', description: 'Right to erasure - all personal data and backups' },
-  { id: 'DSAR-003', type: 'Portability', subjectName: 'Wei Zhang', subjectEmail: 'w.zhang@tech.cn', submissionDate: '2026-02-05', deadline: '2026-03-07', status: 'Identity Verified', assignedTo: 'Carol Reeves', priority: 'Medium', description: 'Data export in machine-readable format' },
-  { id: 'DSAR-004', type: 'Rectification', subjectName: 'Priya Sharma', subjectEmail: 'p.sharma@corp.in', submissionDate: '2026-02-10', deadline: '2026-03-12', status: 'In Progress', assignedTo: 'Alice Chen', priority: 'Medium', description: 'Correction of address and employment data' },
-  { id: 'DSAR-005', type: 'Restriction', subjectName: 'Hans Mueller', subjectEmail: 'h.mueller@de.com', submissionDate: '2026-02-12', deadline: '2026-03-14', status: 'Received', assignedTo: 'Unassigned', priority: 'Low', description: 'Restrict processing pending accuracy verification' },
-  { id: 'DSAR-006', type: 'Objection', subjectName: 'Sophie Dubois', subjectEmail: 's.dubois@france.fr', submissionDate: '2026-02-14', deadline: '2026-03-16', status: 'Received', assignedTo: 'Unassigned', priority: 'Medium', description: 'Objection to profiling for direct marketing' },
-  { id: 'DSAR-007', type: 'Access', subjectName: 'Kenji Mori', subjectEmail: 'k.mori@jpn.co.jp', submissionDate: '2026-02-15', deadline: '2026-03-17', status: 'Rejected', assignedTo: 'Bob Tanaka', priority: 'Low', description: 'Duplicate request - already fulfilled under DSAR-001' },
-  { id: 'DSAR-008', type: 'Deletion', subjectName: 'Aisha Okafor', subjectEmail: 'a.okafor@biz.net', submissionDate: '2026-02-18', deadline: '2026-03-20', status: 'Identity Verified', assignedTo: 'Carol Reeves', priority: 'High', description: 'Complete erasure request including third-party systems' },
-];
-
-const MOCK_CONSENT: ConsentRecord[] = [
-  { id: 'CON-001', purpose: 'Marketing Communications', totalRecords: 124500, grantedPct: 68.2, withdrawnPct: 12.4, pendingPct: 19.4, lastUpdated: '2026-02-18', legalBasis: 'Consent' },
-  { id: 'CON-002', purpose: 'Analytics & Performance', totalRecords: 198300, grantedPct: 74.1, withdrawnPct: 8.7, pendingPct: 17.2, lastUpdated: '2026-02-17', legalBasis: 'Legitimate Interest' },
-  { id: 'CON-003', purpose: 'Third-Party Data Sharing', totalRecords: 124500, grantedPct: 42.6, withdrawnPct: 31.2, pendingPct: 26.2, lastUpdated: '2026-02-16', legalBasis: 'Consent' },
-  { id: 'CON-004', purpose: 'Personalization & Recommendations', totalRecords: 156800, grantedPct: 61.8, withdrawnPct: 15.3, pendingPct: 22.9, lastUpdated: '2026-02-18', legalBasis: 'Consent' },
-  { id: 'CON-005', purpose: 'Essential Service Operation', totalRecords: 198300, grantedPct: 97.2, withdrawnPct: 0.8, pendingPct: 2.0, lastUpdated: '2026-02-19', legalBasis: 'Contract Performance' },
-  { id: 'CON-006', purpose: 'Research & Development', totalRecords: 89400, grantedPct: 55.4, withdrawnPct: 18.9, pendingPct: 25.7, lastUpdated: '2026-02-15', legalBasis: 'Legitimate Interest' },
-];
-
-const MOCK_RETENTION: RetentionSchedule[] = [
-  { id: 'RET-001', dataCategory: 'Customer Transaction Records', retentionPeriod: '7 years', legalBasis: 'Tax & Accounting Regulations', autoDeleteEnabled: true, recordsAffected: 2340000, lastPurgeDate: '2026-01-15', nextPurgeDate: '2026-04-15', status: 'Active' },
-  { id: 'RET-002', dataCategory: 'Employee HR Records', retentionPeriod: '6 years post-employment', legalBasis: 'Employment Law', autoDeleteEnabled: true, recordsAffected: 45200, lastPurgeDate: '2026-01-01', nextPurgeDate: '2026-07-01', status: 'Active' },
-  { id: 'RET-003', dataCategory: 'Marketing Contact Lists', retentionPeriod: '2 years', legalBasis: 'Consent-based', autoDeleteEnabled: true, recordsAffected: 890000, lastPurgeDate: '2025-12-01', nextPurgeDate: '2026-03-01', status: 'Active' },
-  { id: 'RET-004', dataCategory: 'Website Access Logs', retentionPeriod: '90 days', legalBasis: 'Security & Fraud Prevention', autoDeleteEnabled: true, recordsAffected: 15600000, lastPurgeDate: '2026-02-15', nextPurgeDate: '2026-02-28', status: 'Active' },
-  { id: 'RET-005', dataCategory: 'CCTV Footage', retentionPeriod: '30 days', legalBasis: 'Legitimate Interest', autoDeleteEnabled: false, recordsAffected: 8400, lastPurgeDate: '2026-02-01', nextPurgeDate: '2026-03-01', status: 'Paused' },
-  { id: 'RET-006', dataCategory: 'Legacy CRM Data', retentionPeriod: '5 years', legalBasis: 'Contractual Obligation', autoDeleteEnabled: false, recordsAffected: 312000, lastPurgeDate: '2025-06-01', nextPurgeDate: '2025-12-01', status: 'Expired' },
-];
-
-const MOCK_TRANSFERS: CrossBorderTransfer[] = [
-  { id: 'CBT-001', transferName: 'EU-US Cloud Infrastructure', sourceCountry: 'Germany', destinationCountry: 'United States', legalMechanism: 'SCC', tiaCompleted: true, riskLevel: 'Medium', status: 'Active', reviewDate: '2026-06-15' },
-  { id: 'CBT-002', transferName: 'EU-UK Customer Support', sourceCountry: 'France', destinationCountry: 'United Kingdom', legalMechanism: 'Adequacy Decision', tiaCompleted: true, riskLevel: 'Low', status: 'Active', reviewDate: '2026-09-01' },
-  { id: 'CBT-003', transferName: 'EU-India Dev Center', sourceCountry: 'Netherlands', destinationCountry: 'India', legalMechanism: 'SCC', tiaCompleted: true, riskLevel: 'High', status: 'Under Review', reviewDate: '2026-03-01' },
-  { id: 'CBT-004', transferName: 'Intra-group HR Data', sourceCountry: 'Ireland', destinationCountry: 'Singapore', legalMechanism: 'BCR', tiaCompleted: false, riskLevel: 'Medium', status: 'Under Review', reviewDate: '2026-04-15' },
-  { id: 'CBT-005', transferName: 'EU-Japan Analytics', sourceCountry: 'Spain', destinationCountry: 'Japan', legalMechanism: 'Adequacy Decision', tiaCompleted: true, riskLevel: 'Low', status: 'Active', reviewDate: '2026-12-01' },
-];
-
-const MOCK_SUPPRESSION: SuppressionEntry[] = [
-  { id: 'SUP-001', name: 'Laura Bennett', email: 'l.bennett@mail.com', channels: ['Email', 'SMS', 'Phone'], optOutDate: '2026-02-18', source: 'Web Form', status: 'Active' },
-  { id: 'SUP-002', name: 'Marco Rossi', email: 'm.rossi@italia.it', channels: ['Email'], optOutDate: '2026-02-17', source: 'Email Unsubscribe', status: 'Active' },
-  { id: 'SUP-003', name: 'Yuki Tanaka', email: 'y.tanaka@jpn.co.jp', channels: ['Email', 'Post'], optOutDate: '2026-02-16', source: 'Customer Service', status: 'Active' },
-  { id: 'SUP-004', name: 'Ahmed Hassan', email: 'a.hassan@corp.eg', channels: ['SMS', 'Phone'], optOutDate: '2026-02-15', source: 'Regulatory Request', status: 'Active' },
-  { id: 'SUP-005', name: 'Katarina Novak', email: 'k.novak@cz.eu', channels: ['Email', 'SMS', 'Phone', 'Post'], optOutDate: '2026-02-14', source: 'DSAR Request', status: 'Active' },
-  { id: 'SUP-006', name: 'James O\'Brien', email: 'j.obrien@ie.com', channels: ['Email'], optOutDate: '2026-02-13', source: 'Email Unsubscribe', status: 'Active' },
-  { id: 'SUP-007', name: 'Lin Wei', email: 'l.wei@tech.cn', channels: ['Email', 'SMS'], optOutDate: '2026-02-12', source: 'Web Form', status: 'Pending Verification' },
-  { id: 'SUP-008', name: 'Elena Petrova', email: 'e.petrova@ru.net', channels: ['Phone', 'Post'], optOutDate: '2026-02-11', source: 'Customer Service', status: 'Pending Verification' },
-];
+// Mock data constants removed — component now initializes with empty state
+// and shows error UI when API calls fail instead of silently displaying fake data.
 
 // ── Status Color Helpers ────────────────────────────────────────────────────
 
@@ -226,14 +179,16 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
   const [retentionStatusFilter, setRetentionStatusFilter] = useState<string>('All');
   const [optOutChannelFilter, setOptOutChannelFilter] = useState<string>('All');
   const [loading, setLoading] = useState(true);
-  const [dsars, setDsars] = useState<DSARRequest[]>(MOCK_DSARS);
-  const [consent, setConsent] = useState<ConsentRecord[]>(MOCK_CONSENT);
-  const [retention, setRetention] = useState<RetentionSchedule[]>(MOCK_RETENTION);
-  const [transfers, setTransfers] = useState<CrossBorderTransfer[]>(MOCK_TRANSFERS);
-  const [suppression, setSuppression] = useState<SuppressionEntry[]>(MOCK_SUPPRESSION);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [dsars, setDsars] = useState<DSARRequest[]>([]);
+  const [consent, setConsent] = useState<ConsentRecord[]>([]);
+  const [retention, setRetention] = useState<RetentionSchedule[]>([]);
+  const [transfers, setTransfers] = useState<CrossBorderTransfer[]>([]);
+  const [suppression, setSuppression] = useState<SuppressionEntry[]>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [dashRes, dsarRes, consentRes, retRes, sccRes, suppressionRes] = await Promise.allSettled([
         api.privacy.getDashboard(),
@@ -243,33 +198,38 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
         api.privacy.listSCCTIA(),
         api.privacy.getSuppressionList(),
       ]);
+      const failedApis: string[] = [];
       if (dsarRes.status === 'fulfilled') {
         const d = dsarRes.value;
         if (Array.isArray(d)) setDsars(d);
         else if (d?.data) setDsars(d.data);
-      }
+      } else { failedApis.push('DSARs'); }
       if (consentRes.status === 'fulfilled') {
         const d = consentRes.value;
         if (Array.isArray(d)) setConsent(d);
         else if (d?.data) setConsent(d.data);
-      }
+      } else { failedApis.push('Consent'); }
       if (retRes.status === 'fulfilled') {
         const d = retRes.value;
         if (Array.isArray(d)) setRetention(d);
         else if (d?.data) setRetention(d.data);
-      }
+      } else { failedApis.push('Retention'); }
       if (sccRes.status === 'fulfilled') {
         const d = sccRes.value;
         if (Array.isArray(d)) setTransfers(d);
         else if (d?.data) setTransfers(d.data);
-      }
+      } else { failedApis.push('Cross-Border Transfers'); }
       if (suppressionRes.status === 'fulfilled') {
         const d = suppressionRes.value;
         if (Array.isArray(d)) setSuppression(d);
         else if (d?.data) setSuppression(d.data);
+      } else { failedApis.push('Suppression List'); }
+      if (failedApis.length > 0) {
+        setLoadError(`Failed to load: ${failedApis.join(', ')}. Showing available data only.`);
       }
-    } catch {
-      // Fallback to mock data already in state
+    } catch (err) {
+      setLoadError('Failed to connect to the server. Please check your connection and try again.');
+      console.error('PrivacyManagementPlatform data load error:', err);
     } finally {
       setLoading(false);
     }
@@ -1168,6 +1128,18 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
 
   // ── Content Router ──────────────────────────────────────────────────────
 
+  const renderErrorBanner = () => loadError ? (
+    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+        <span className="text-sm text-red-300">{loadError}</span>
+      </div>
+      <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 text-red-300 rounded text-sm hover:bg-red-500/30 transition-colors">
+        <RefreshCw className="w-3.5 h-3.5" /> Retry
+      </button>
+    </div>
+  ) : null;
+
   const renderContent = () => {
     switch (activeTab) {
       case 'overview': return renderOverview();
@@ -1229,6 +1201,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           ))}
         </div>
 
+        {renderErrorBanner()}
         {renderContent()}
       </div>
 

@@ -4,11 +4,6 @@ import { User, RiskItem, ComplianceFramework, AuditLog, Integration, TierName, S
 const rawBase = (import.meta as ImportMeta & { env: Record<string, string> }).env.VITE_API_URL || 'http://localhost:3001/api';
 const API_BASE_URL = rawBase.endsWith('/api') ? rawBase : rawBase.replace(/\/?$/, '') + '/api';
 
-// Log API URL in development (Vite uses import.meta.env, not process.env)
-if ((import.meta as ImportMeta & { env: { DEV: boolean } }).env.DEV) {
-  console.log('API Base URL:', API_BASE_URL);
-}
-
 // Get auth token from localStorage
 const getAuthToken = (): string | null => {
   return localStorage.getItem('authToken');
@@ -198,30 +193,9 @@ async function fetchAPI<T>(
 
 export const api = {
   // --- Auth & User ---
-  user: {
-    uploadAvatar: async (file: File) => {
-      const formData = new FormData();
-      formData.append('avatar', file);
-      return fetchAPI<{ user: User; avatarUrl: string }>('/auth/profile/avatar', {
-        method: 'POST',
-        body: formData,
-        headers: {}, // Let browser set Content-Type with boundary
-      });
-    },
-    updateProfile: async (data: { name: string; email: string }) => {
-      return fetchAPI('/auth/profile', {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
-    },
-
-    changePassword: async (currentPassword: string, newPassword: string) => {
-      return fetchAPI('/auth/password', {
-        method: 'PATCH',
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-    },
-  },
+  // NOTE: user.uploadAvatar, user.updateProfile, user.changePassword were
+  // removed — they duplicated auth.uploadAvatar, auth.updateProfile, and
+  // auth.changePassword (same underlying endpoints). Use api.auth.* instead.
 
   auth: {
     requestMagicLink: async (email: string) => {
@@ -1410,9 +1384,9 @@ export const api = {
       },
     },
     reports: {
-      // Custom reports creation is gated by maxCustomReports (POST /enterprise/reports).
-      // No list endpoint in current backend; use for gating when save-report UI is added.
-      list: async (): Promise<any[]> => [],
+      // AUDIT: list was previously a hardcoded stub returning []. Now wired
+      // to GET /enterprise/reports which queries customReport table.
+      list: async () => fetchAPI<any>('/enterprise/reports'),
       getExecutiveSummary: async () => {
         return fetchAPI<any>('/enterprise/reports/executive-summary');
       },
@@ -2720,6 +2694,96 @@ export const api = {
     recordJITImpression: async (id: string) => fetchAPI<any>(`/privacy/jit-notices/${id}/impression`, { method: 'POST' }),
     recordJITAcceptance: async (id: string) => fetchAPI<any>(`/privacy/jit-notices/${id}/accept`, { method: 'POST' }),
     recordJITDismissal: async (id: string) => fetchAPI<any>(`/privacy/jit-notices/${id}/dismiss`, { method: 'POST' }),
+  },
+
+  // --- Marketplace ---
+  marketplace: {
+    list: async (params?: { category?: string; status?: string; search?: string; pricing?: string; tag?: string }) => {
+      const query = params ? '?' + new URLSearchParams(params as any).toString() : '';
+      return fetchAPI<any>(`/marketplace${query}`);
+    },
+    getBySlug: async (slug: string) => {
+      return fetchAPI<any>(`/marketplace/${encodeURIComponent(slug)}`);
+    },
+    install: async (slug: string, config?: Record<string, any>) => {
+      return fetchAPI<any>(`/marketplace/${encodeURIComponent(slug)}/install`, {
+        method: 'POST',
+        body: JSON.stringify({ config }),
+      });
+    },
+    configure: async (slug: string, config: Record<string, any>) => {
+      return fetchAPI<any>(`/marketplace/${encodeURIComponent(slug)}/configure`, {
+        method: 'PUT',
+        body: JSON.stringify({ config }),
+      });
+    },
+    uninstall: async (slug: string) => {
+      return fetchAPI<any>(`/marketplace/${encodeURIComponent(slug)}/uninstall`, {
+        method: 'POST',
+      });
+    },
+    listInstalled: async () => {
+      return fetchAPI<any>('/marketplace/org/installed');
+    },
+    test: async (slug: string) => {
+      return fetchAPI<any>(`/marketplace/${encodeURIComponent(slug)}/test`, {
+        method: 'POST',
+      });
+    },
+  },
+
+  // --- Data Export (CSV) ---
+  dataExport: {
+    vendors: async () => fetchAPI<Blob>('/export/vendors'),
+    policies: async () => fetchAPI<Blob>('/export/policies'),
+    issues: async () => fetchAPI<Blob>('/export/issues'),
+    risks: async () => fetchAPI<Blob>('/export/risks'),
+    frameworks: async () => fetchAPI<Blob>('/export/frameworks'),
+    auditLogs: async () => fetchAPI<Blob>('/export/audit-logs'),
+    monitors: async () => fetchAPI<Blob>('/export/monitors'),
+  },
+
+  // --- Personnel Management ---
+  personnel: {
+    list: async () => {
+      return fetchAPI<any>('/personnel');
+    },
+    create: async (data: Record<string, any>) => {
+      return fetchAPI<any>('/personnel', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    completeOnboarding: async (id: string) => {
+      return fetchAPI<any>(`/personnel/${encodeURIComponent(id)}/complete-onboarding`, {
+        method: 'POST',
+      });
+    },
+    startOffboarding: async (id: string, reason?: string) => {
+      return fetchAPI<any>(`/personnel/${encodeURIComponent(id)}/start-offboarding`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      });
+    },
+    createAccessReview: async (data: Record<string, any>) => {
+      return fetchAPI<any>('/personnel/access-reviews', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    completeAccessReview: async (id: string, data: Record<string, any>) => {
+      return fetchAPI<any>(`/personnel/access-reviews/${encodeURIComponent(id)}/complete`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    getPendingAccessReviews: async (reviewerId?: string) => {
+      const query = reviewerId ? `?reviewerId=${encodeURIComponent(reviewerId)}` : '';
+      return fetchAPI<any>(`/personnel/access-reviews/pending${query}`);
+    },
+    getComplianceSummary: async () => {
+      return fetchAPI<any>('/personnel/compliance-summary');
+    },
   },
 };
 

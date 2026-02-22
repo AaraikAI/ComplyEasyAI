@@ -8,7 +8,7 @@ import { api } from '../services/api';
 import {
   ArrowLeft, Shield, CheckCircle, AlertTriangle, XCircle, Search, Plus, X,
   FileText, Clock, BarChart3, ChevronRight, Edit3, Trash2, Eye, Download,
-  AlertCircle, Filter, Calendar, Target, Activity, TrendingUp, Lock
+  AlertCircle, Filter, Calendar, Target, Activity, TrendingUp, Lock, RefreshCw
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -47,54 +47,7 @@ interface Walkthrough {
   keyControls: number; riskPoints: number; status: string; lastReviewed: string;
 }
 
-// ── Mock Data ──────────────────────────────────────────────────────────
-const MOCK_CONTROLS: SOXControl[] = [
-  { id: '1', controlId: 'ITGC-01', title: 'Logical Access - User Provisioning', description: 'New user access requires manager and IT approval', category: 'ITGC', processArea: 'IT General', controlType: 'Preventive', assertion: 'Existence', frequency: 'Per Occurrence', owner: 'IT Security Manager', status: 'Active', effectiveness: 'Effective', riskLevel: 'High', automationLevel: 'Semi-Automated', lastTestedDate: '2026-01-15', nextTestDate: '2026-04-15', deficiencyCount: 0 },
-  { id: '2', controlId: 'ITGC-02', title: 'Logical Access - Termination', description: 'Access removed within 24 hours of termination', category: 'ITGC', processArea: 'IT General', controlType: 'Preventive', assertion: 'Rights & Obligations', frequency: 'Per Occurrence', owner: 'IT Security Manager', status: 'Active', effectiveness: 'Effective', riskLevel: 'High', automationLevel: 'Automated', lastTestedDate: '2026-01-15', nextTestDate: '2026-04-15', deficiencyCount: 0 },
-  { id: '3', controlId: 'ITGC-03', title: 'Change Management - Approval', description: 'All production changes require CAB approval', category: 'ITGC', processArea: 'IT General', controlType: 'Preventive', assertion: 'Completeness', frequency: 'Per Occurrence', owner: 'Change Manager', status: 'Active', effectiveness: 'Needs Improvement', riskLevel: 'High', automationLevel: 'Semi-Automated', lastTestedDate: '2026-01-20', nextTestDate: '2026-04-20', deficiencyCount: 1 },
-  { id: '4', controlId: 'ITGC-04', title: 'Backup & Recovery', description: 'Daily backups verified monthly', category: 'ITGC', processArea: 'IT General', controlType: 'Detective', assertion: 'Existence', frequency: 'Monthly', owner: 'Infrastructure Lead', status: 'Active', effectiveness: 'Effective', riskLevel: 'Medium', automationLevel: 'Automated', lastTestedDate: '2026-02-01', nextTestDate: '2026-05-01', deficiencyCount: 0 },
-  { id: '5', controlId: 'ITGC-05', title: 'Password Policy Enforcement', description: 'Password complexity and rotation per policy', category: 'ITGC', processArea: 'IT General', controlType: 'Preventive', assertion: 'Rights & Obligations', frequency: 'Continuous', owner: 'IT Security Manager', status: 'Active', effectiveness: 'Effective', riskLevel: 'Medium', automationLevel: 'Automated', lastTestedDate: '2026-01-10', nextTestDate: '2026-04-10', deficiencyCount: 0 },
-  { id: '6', controlId: 'ITGC-06', title: 'Segregation of Duties in IT', description: 'Developers cannot deploy to production', category: 'ITGC', processArea: 'IT General', controlType: 'Preventive', assertion: 'Rights & Obligations', frequency: 'Continuous', owner: 'IT Director', status: 'Active', effectiveness: 'Effective', riskLevel: 'High', automationLevel: 'Automated', lastTestedDate: '2026-01-25', nextTestDate: '2026-04-25', deficiencyCount: 0 },
-  { id: '7', controlId: 'FIN-RC-01', title: 'Revenue Recognition Review', description: 'Monthly review of revenue recognition criteria per ASC 606', category: 'Business Process', processArea: 'Revenue', controlType: 'Detective', assertion: 'Valuation', frequency: 'Monthly', owner: 'Revenue Controller', status: 'Active', effectiveness: 'Effective', riskLevel: 'High', automationLevel: 'Manual', lastTestedDate: '2026-01-30', nextTestDate: '2026-04-30', deficiencyCount: 0 },
-  { id: '8', controlId: 'FIN-RC-02', title: 'Customer Credit Approval', description: 'Credit limits require credit committee approval over $50K', category: 'Business Process', processArea: 'Revenue', controlType: 'Preventive', assertion: 'Rights & Obligations', frequency: 'Per Occurrence', owner: 'Credit Manager', status: 'Active', effectiveness: 'Effective', riskLevel: 'Medium', automationLevel: 'Semi-Automated', lastTestedDate: '2026-01-28', nextTestDate: '2026-04-28', deficiencyCount: 0 },
-  { id: '9', controlId: 'FIN-RC-03', title: 'Billing Accuracy Verification', description: 'System-generated invoices matched to contracts', category: 'Transaction Level', processArea: 'Revenue', controlType: 'Detective', assertion: 'Completeness', frequency: 'Daily', owner: 'Billing Manager', status: 'Active', effectiveness: 'Needs Improvement', riskLevel: 'Medium', automationLevel: 'Automated', lastTestedDate: '2026-02-05', nextTestDate: '2026-05-05', deficiencyCount: 1 },
-  { id: '10', controlId: 'FIN-RC-04', title: 'Bad Debt Reserve Estimation', description: 'Quarterly review of allowance for doubtful accounts', category: 'Business Process', processArea: 'Revenue', controlType: 'Detective', assertion: 'Valuation', frequency: 'Quarterly', owner: 'CFO', status: 'Active', effectiveness: 'Effective', riskLevel: 'High', automationLevel: 'Manual', lastTestedDate: '2026-01-05', nextTestDate: '2026-04-05', deficiencyCount: 0 },
-  { id: '11', controlId: 'BPC-01', title: 'Purchase Order Approval', description: 'POs over $10K require dual approval', category: 'Business Process', processArea: 'Procurement', controlType: 'Preventive', assertion: 'Existence', frequency: 'Per Occurrence', owner: 'Procurement Director', status: 'Active', effectiveness: 'Effective', riskLevel: 'Medium', automationLevel: 'Automated', lastTestedDate: '2026-02-01', nextTestDate: '2026-05-01', deficiencyCount: 0 },
-  { id: '12', controlId: 'BPC-02', title: 'Three-Way Match', description: 'PO, receipt, and invoice matched before payment', category: 'Transaction Level', processArea: 'Procurement', controlType: 'Detective', assertion: 'Existence', frequency: 'Per Occurrence', owner: 'AP Manager', status: 'Active', effectiveness: 'Effective', riskLevel: 'High', automationLevel: 'Automated', lastTestedDate: '2026-01-20', nextTestDate: '2026-04-20', deficiencyCount: 0 },
-  { id: '13', controlId: 'BPC-03', title: 'Vendor Master Data Changes', description: 'Vendor bank account changes require dual authorization', category: 'Business Process', processArea: 'Procurement', controlType: 'Preventive', assertion: 'Rights & Obligations', frequency: 'Per Occurrence', owner: 'AP Manager', status: 'Active', effectiveness: 'Ineffective', riskLevel: 'High', automationLevel: 'Manual', lastTestedDate: '2026-01-18', nextTestDate: '2026-02-18', deficiencyCount: 2 },
-  { id: '14', controlId: 'BPC-04', title: 'Duplicate Payment Detection', description: 'Automated duplicate payment check before batch processing', category: 'IT Application', processArea: 'Procurement', controlType: 'Detective', assertion: 'Existence', frequency: 'Daily', owner: 'AP Manager', status: 'Active', effectiveness: 'Effective', riskLevel: 'Medium', automationLevel: 'Automated', lastTestedDate: '2026-02-10', nextTestDate: '2026-05-10', deficiencyCount: 0 },
-  { id: '15', controlId: 'ELC-01', title: 'Financial Close Checklist', description: 'Standardized close checklist completed each period', category: 'Entity Level', processArea: 'Financial Close', controlType: 'Detective', assertion: 'Completeness', frequency: 'Monthly', owner: 'Corporate Controller', status: 'Active', effectiveness: 'Effective', riskLevel: 'High', automationLevel: 'Semi-Automated', lastTestedDate: '2026-02-01', nextTestDate: '2026-05-01', deficiencyCount: 0 },
-  { id: '16', controlId: 'ELC-02', title: 'Journal Entry Review', description: 'Manual journal entries reviewed and approved by controller', category: 'Entity Level', processArea: 'Financial Close', controlType: 'Detective', assertion: 'Valuation', frequency: 'Monthly', owner: 'Corporate Controller', status: 'Active', effectiveness: 'Effective', riskLevel: 'High', automationLevel: 'Semi-Automated', lastTestedDate: '2026-02-01', nextTestDate: '2026-05-01', deficiencyCount: 0 },
-  { id: '17', controlId: 'ELC-03', title: 'Account Reconciliation', description: 'Balance sheet accounts reconciled monthly', category: 'Entity Level', processArea: 'Financial Close', controlType: 'Detective', assertion: 'Completeness', frequency: 'Monthly', owner: 'Accounting Manager', status: 'Active', effectiveness: 'Effective', riskLevel: 'High', automationLevel: 'Semi-Automated', lastTestedDate: '2026-02-05', nextTestDate: '2026-05-05', deficiencyCount: 0 },
-  { id: '18', controlId: 'ELC-04', title: 'Intercompany Eliminations', description: 'Intercompany balances reconciled and eliminated in consolidation', category: 'Entity Level', processArea: 'Financial Close', controlType: 'Detective', assertion: 'Completeness', frequency: 'Monthly', owner: 'Corporate Controller', status: 'Active', effectiveness: 'Needs Improvement', riskLevel: 'Medium', automationLevel: 'Manual', lastTestedDate: '2026-01-31', nextTestDate: '2026-04-30', deficiencyCount: 1 },
-];
-
-const MOCK_TESTS: TestRecord[] = [
-  { id: 't1', controlId: 'ITGC-01', controlTitle: 'Logical Access - User Provisioning', tester: 'Sarah Chen', methodology: 'Inspection', sampleSize: 25, result: 'Pass', testDate: '2026-01-15', findings: 'All 25 samples had proper approvals documented', status: 'Completed' },
-  { id: 't2', controlId: 'ITGC-03', controlTitle: 'Change Management - Approval', tester: 'Michael Torres', methodology: 'Inspection', sampleSize: 30, result: 'Exception', testDate: '2026-01-20', findings: '2 of 30 changes lacked CAB approval documentation', status: 'Completed' },
-  { id: 't3', controlId: 'FIN-RC-01', controlTitle: 'Revenue Recognition Review', tester: 'Jennifer Walsh', methodology: 'Re-performance', sampleSize: 15, result: 'Pass', testDate: '2026-01-30', findings: 'Revenue recognition criteria properly applied', status: 'Completed' },
-  { id: 't4', controlId: 'BPC-03', controlTitle: 'Vendor Master Data Changes', tester: 'David Kim', methodology: 'Walkthrough', sampleSize: 20, result: 'Fail', testDate: '2026-01-18', findings: '5 vendor bank changes processed without dual authorization', status: 'Completed' },
-  { id: 't5', controlId: 'ELC-02', controlTitle: 'Journal Entry Review', tester: 'Sarah Chen', methodology: 'Inspection', sampleSize: 40, result: 'Pass', testDate: '2026-02-01', findings: 'All journal entries properly reviewed and approved', status: 'Completed' },
-  { id: 't6', controlId: 'ITGC-06', controlTitle: 'Segregation of Duties in IT', tester: 'Michael Torres', methodology: 'Observation', sampleSize: 0, result: 'Pass', testDate: '2026-01-25', findings: 'Technical controls prevent developer production access', status: 'Completed' },
-  { id: 't7', controlId: 'BPC-01', controlTitle: 'Purchase Order Approval', tester: 'Jennifer Walsh', methodology: 'Inspection', sampleSize: 35, result: 'Pass', testDate: '2026-02-01', findings: 'Proper dual approval for all POs over $10K', status: 'Completed' },
-  { id: 't8', controlId: 'FIN-RC-03', controlTitle: 'Billing Accuracy Verification', tester: 'David Kim', methodology: 'Re-performance', sampleSize: 50, result: 'Exception', testDate: '2026-02-05', findings: '3 invoices had minor quantity discrepancies', status: 'Completed' },
-];
-
-const MOCK_DEFICIENCIES: Deficiency[] = [
-  { id: 'd1', title: 'Missing CAB Approval Documentation', controlId: 'ITGC-03', type: 'Control Deficiency', severity: 'Medium', status: 'In Remediation', owner: 'Change Manager', dueDate: '2026-03-15', description: '2 production changes lacked documented CAB approval', remediationPlan: 'Implement automated CAB approval workflow in ServiceNow' },
-  { id: 'd2', title: 'Vendor Bank Account Change Authorization Gap', controlId: 'BPC-03', type: 'Significant Deficiency', severity: 'High', status: 'Open', owner: 'AP Manager', dueDate: '2026-03-01', description: '5 vendor bank account changes processed without required dual authorization', remediationPlan: 'Implement mandatory dual approval in ERP vendor master module' },
-  { id: 'd3', title: 'Billing Quantity Discrepancies', controlId: 'FIN-RC-03', type: 'Control Deficiency', severity: 'Low', status: 'In Remediation', owner: 'Billing Manager', dueDate: '2026-03-30', description: 'Minor quantity discrepancies found in 3 invoices', remediationPlan: 'Enhance automated quantity validation in billing system' },
-  { id: 'd4', title: 'Intercompany Reconciliation Delays', controlId: 'ELC-04', type: 'Control Deficiency', severity: 'Medium', status: 'Open', owner: 'Corporate Controller', dueDate: '2026-04-15', description: 'Intercompany reconciliations completed 5+ days after close', remediationPlan: 'Implement BlackLine intercompany module for real-time reconciliation' },
-];
-
-const MOCK_WALKTHROUGHS: Walkthrough[] = [
-  { id: 'w1', processName: 'Order-to-Cash (Revenue)', cosoComponent: 'Control Activities', steps: 12, keyControls: 4, riskPoints: 3, status: 'Complete', lastReviewed: '2026-01-15' },
-  { id: 'w2', processName: 'Procure-to-Pay', cosoComponent: 'Control Activities', steps: 10, keyControls: 4, riskPoints: 2, status: 'Complete', lastReviewed: '2026-01-20' },
-  { id: 'w3', processName: 'Financial Close & Reporting', cosoComponent: 'Information & Communication', steps: 15, keyControls: 4, riskPoints: 4, status: 'Complete', lastReviewed: '2026-02-01' },
-  { id: 'w4', processName: 'IT General Controls', cosoComponent: 'Control Environment', steps: 8, keyControls: 6, riskPoints: 2, status: 'Complete', lastReviewed: '2026-01-25' },
-  { id: 'w5', processName: 'Payroll Processing', cosoComponent: 'Control Activities', steps: 9, keyControls: 3, riskPoints: 2, status: 'In Progress', lastReviewed: '2025-12-15' },
-  { id: 'w6', processName: 'Treasury & Cash Management', cosoComponent: 'Risk Assessment', steps: 7, keyControls: 3, riskPoints: 3, status: 'Scheduled', lastReviewed: '2025-11-01' },
-];
+// Mock data constants removed — component now uses empty initial state with proper error handling.
 
 // ── Component ──────────────────────────────────────────────────────────
 export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -107,31 +60,50 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
   const [selectedControl, setSelectedControl] = useState<SOXControl | null>(null);
   const [selectedDeficiency, setSelectedDeficiency] = useState<Deficiency | null>(null);
   const [loading, setLoading] = useState(true);
-  const [controls, setControls] = useState<SOXControl[]>(MOCK_CONTROLS);
-  const [tests, setTests] = useState<TestRecord[]>(MOCK_TESTS);
-  const [deficiencies, setDeficiencies] = useState<Deficiency[]>(MOCK_DEFICIENCIES);
-  const [walkthroughs, setWalkthroughs] = useState<Walkthrough[]>(MOCK_WALKTHROUGHS);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [controls, setControls] = useState<SOXControl[]>([]);
+  const [tests, setTests] = useState<TestRecord[]>([]);
+  const [deficiencies, setDeficiencies] = useState<Deficiency[]>([]);
+  const [walkthroughs, setWalkthroughs] = useState<Walkthrough[]>([]);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [dashData, controlsData, testsData, assessmentsData] = await Promise.all([
-        api.sox.getDashboard().catch(() => null),
-        api.sox.listControls().catch(() => null),
-        api.sox.listTestResults().catch(() => null),
-        api.sox.listAssessments().catch(() => null),
+      setLoadError(null);
+      const failedApis: string[] = [];
+      const [dashRes, controlsRes, testsRes, assessmentsRes] = await Promise.allSettled([
+        api.sox.getDashboard(),
+        api.sox.listControls(),
+        api.sox.listTestResults(),
+        api.sox.listAssessments(),
       ]);
-      if (controlsData?.controls) setControls(controlsData.controls);
-      else if (controlsData?.items) setControls(controlsData.items);
-      else if (Array.isArray(controlsData)) setControls(controlsData);
-      if (testsData?.testResults) setTests(testsData.testResults);
-      else if (testsData?.items) setTests(testsData.items);
-      else if (Array.isArray(testsData)) setTests(testsData);
-      if (assessmentsData?.deficiencies) setDeficiencies(assessmentsData.deficiencies);
-      if (dashData?.walkthroughs) setWalkthroughs(dashData.walkthroughs);
-      if (dashData?.deficiencies) setDeficiencies(dashData.deficiencies);
-    } catch {
-      // Fallback to mock data already in state
+      if (dashRes.status === 'fulfilled') {
+        const dashData = dashRes.value;
+        if (dashData?.walkthroughs) setWalkthroughs(dashData.walkthroughs);
+        if (dashData?.deficiencies) setDeficiencies(dashData.deficiencies);
+      } else { failedApis.push('dashboard'); }
+      if (controlsRes.status === 'fulfilled') {
+        const controlsData = controlsRes.value;
+        if (controlsData?.controls) setControls(controlsData.controls);
+        else if (controlsData?.items) setControls(controlsData.items);
+        else if (Array.isArray(controlsData)) setControls(controlsData);
+      } else { failedApis.push('controls'); }
+      if (testsRes.status === 'fulfilled') {
+        const testsData = testsRes.value;
+        if (testsData?.testResults) setTests(testsData.testResults);
+        else if (testsData?.items) setTests(testsData.items);
+        else if (Array.isArray(testsData)) setTests(testsData);
+      } else { failedApis.push('test results'); }
+      if (assessmentsRes.status === 'fulfilled') {
+        const assessmentsData = assessmentsRes.value;
+        if (assessmentsData?.deficiencies) setDeficiencies(assessmentsData.deficiencies);
+      } else { failedApis.push('assessments'); }
+      if (failedApis.length > 0) {
+        setLoadError(`Failed to load ${failedApis.join(', ')}. Some data may be incomplete.`);
+      }
+    } catch (err) {
+      setLoadError('Failed to connect to the server. Please check your connection and try again.');
+      console.error('SOXComplianceDashboard data load error:', err);
     } finally {
       setLoading(false);
     }
@@ -558,6 +530,18 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
     </div>
   );
 
+  const renderErrorBanner = () => loadError ? (
+    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+        <span className="text-sm text-red-300">{loadError}</span>
+      </div>
+      <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 text-red-300 rounded text-sm hover:bg-red-500/30 transition-colors">
+        <RefreshCw className="w-3.5 h-3.5" /> Retry
+      </button>
+    </div>
+  ) : null;
+
   // ── Main Render ───────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -575,6 +559,7 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
           ))}
         </div>
 
+        {renderErrorBanner()}
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'controls' && renderControls()}
         {activeTab === 'testing' && renderTesting()}
