@@ -10,7 +10,7 @@ services:
   # Backend API Server (Production)
   # ============================================
   api:
-    image: ${DOCKER_REGISTRY:-ghcr.io}/complyeasy-api:${IMAGE_TAG:-latest}
+    image: ${DOCKER_REGISTRY:-ghcr.io}/complyeasy-api:${IMAGE_TAG:?IMAGE_TAG must be set - do not deploy with latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -20,28 +20,42 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-      JWT_SECRET: ${JWT_SECRET}
+      # Non-secret configuration
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
       CORS_ORIGIN: ${CORS_ORIGIN}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       STRIPE_PRICE_ID_STARTER: ${STRIPE_PRICE_ID_STARTER}
       STRIPE_PRICE_ID_PROFESSIONAL: ${STRIPE_PRICE_ID_PROFESSIONAL}
       STRIPE_PRICE_ID_ENTERPRISE: ${STRIPE_PRICE_ID_ENTERPRISE}
-      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
       SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL}
       CLIENT_URL: ${CLIENT_URL}
       API_URL: ${API_URL}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      # Secrets are injected via Docker secrets (files), not environment variables
+      DATABASE_URL_FILE: /run/secrets/database_url
+      REDIS_URL_FILE: /run/secrets/redis_url
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+      JWT_REFRESH_SECRET_FILE: /run/secrets/jwt_refresh_secret
+      ENCRYPTION_KEY_FILE: /run/secrets/encryption_key
+      GEMINI_API_KEY_FILE: /run/secrets/gemini_api_key
+      STRIPE_SECRET_KEY_FILE: /run/secrets/stripe_secret_key
+      STRIPE_WEBHOOK_SECRET_FILE: /run/secrets/stripe_webhook_secret
+      SENDGRID_API_KEY_FILE: /run/secrets/sendgrid_api_key
+      AWS_ACCESS_KEY_ID_FILE: /run/secrets/aws_access_key_id
+      AWS_SECRET_ACCESS_KEY_FILE: /run/secrets/aws_secret_access_key
+    secrets:
+      - database_url
+      - redis_url
+      - jwt_secret
+      - jwt_refresh_secret
+      - encryption_key
+      - gemini_api_key
+      - stripe_secret_key
+      - stripe_webhook_secret
+      - sendgrid_api_key
+      - aws_access_key_id
+      - aws_secret_access_key
     ports:
       - "3001:3001"
     healthcheck:
@@ -107,6 +121,35 @@ services:
           memory: 256M
     networks:
       - complyeasy-prod
+
+# ============================================
+# Docker Secrets — read from files on the host
+# In Docker Swarm: use external secrets (e.g. from Vault/AWS Secrets Manager)
+# For docker compose up: create files in ./secrets/ directory
+# ============================================
+secrets:
+  database_url:
+    file: ./secrets/database_url
+  redis_url:
+    file: ./secrets/redis_url
+  jwt_secret:
+    file: ./secrets/jwt_secret
+  jwt_refresh_secret:
+    file: ./secrets/jwt_refresh_secret
+  encryption_key:
+    file: ./secrets/encryption_key
+  gemini_api_key:
+    file: ./secrets/gemini_api_key
+  stripe_secret_key:
+    file: ./secrets/stripe_secret_key
+  stripe_webhook_secret:
+    file: ./secrets/stripe_webhook_secret
+  sendgrid_api_key:
+    file: ./secrets/sendgrid_api_key
+  aws_access_key_id:
+    file: ./secrets/aws_access_key_id
+  aws_secret_access_key:
+    file: ./secrets/aws_secret_access_key
 
 # ============================================
 # Networks

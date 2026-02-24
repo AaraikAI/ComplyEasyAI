@@ -20,25 +20,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   // Initial load - runs only once on mount
+  // Auth tokens are in httpOnly cookies (not accessible from JS).
+  // We restore the cached user profile from localStorage (non-sensitive display data).
   useEffect(() => {
-    // Session Check - look for auth token or session token
-    const authToken = localStorage.getItem('authToken');
-    const storedSession = localStorage.getItem('session_token');
-    
-    if (authToken || storedSession) {
-      try {
-        const userDataStr = localStorage.getItem('user_data');
-        if (userDataStr) {
-          const userData = JSON.parse(userDataStr);
-          if (userData && userData.id) {
-            setUser(userData);
-          }
+    try {
+      const userDataStr = localStorage.getItem('user_data');
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        if (userData && userData.id) {
+          setUser(userData);
         }
-      } catch (error) {
-        console.error('Failed to parse user data:', error);
-        // Clear invalid data
-        localStorage.removeItem('user_data');
       }
+    } catch (error) {
+      console.error('Failed to parse user data:', error);
+      localStorage.removeItem('user_data');
     }
     setIsLoading(false);
   }, []); // Empty dependency array - runs only once on mount
@@ -59,28 +54,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user?.id, user?.organization?.plan]);
 
   // Periodic token refresh - runs when user is set and refreshes every 6 hours
+  // Refresh token is in httpOnly cookie — sent automatically by the browser
   useEffect(() => {
     if (!user) {
-      return; // Don't set up refresh if no user
+      return;
     }
 
-    // Set up periodic token refresh (every 6 hours)
     const refreshInterval = setInterval(async () => {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (refreshToken) {
-        try {
-          const newToken = await api.auth.refreshToken();
-          // Token is automatically stored by the API service
-          // Token refreshed successfully
-        } catch (error) {
-          console.error('Token refresh failed:', error);
-          // If refresh fails, user will be logged out on next API call
-        }
+      try {
+        await api.auth.refreshToken();
+      } catch (error) {
+        console.error('Token refresh failed:', error);
       }
     }, 6 * 60 * 60 * 1000); // 6 hours
 
     return () => clearInterval(refreshInterval);
-  }, [user]); // Only runs when user changes
+  }, [user]);
 
   const loginWithMagicLink = async (email: string) => {
     try {
@@ -141,14 +130,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    // Clear all auth-related storage
-    localStorage.removeItem('session_token');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
+  const logout = async () => {
+    // Call backend to clear httpOnly cookies and blacklist tokens
+    await api.auth.logout();
+    // Clear non-sensitive cached user profile data
     localStorage.removeItem('user_data');
-    // Also call API logout to clear server-side session
-    api.auth.logout();
     setUser(null);
   };
 

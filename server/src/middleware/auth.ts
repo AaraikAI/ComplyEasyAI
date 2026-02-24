@@ -34,12 +34,18 @@ const authenticateMiddleware = async (
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Extract token from Authorization header (legacy/API clients) or httpOnly cookie
+    let token: string | undefined;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else if (req.cookies?.access_token) {
+      token = req.cookies.access_token;
+    }
+
+    if (!token) {
       res.status(401).json({ error: 'No token provided' });
       return;
     }
-
-    const token = authHeader.substring(7);
 
     try {
       const decoded = jwt.verify(token, config.jwt.secret) as {

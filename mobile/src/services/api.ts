@@ -58,27 +58,73 @@ interface PaginationParams {
 }
 
 // ============================================================================
-// TOKEN MANAGEMENT
+// TOKEN MANAGEMENT — uses expo-secure-store for encrypted on-device storage
 // ============================================================================
 
+// Try to import expo-secure-store; falls back to in-memory if unavailable
+let SecureStore: any = null;
+try {
+  SecureStore = require('expo-secure-store');
+} catch (_) {
+  // expo-secure-store not available (e.g. during testing)
+}
+
+const ACCESS_TOKEN_KEY = 'complyeasy_access_token';
+const REFRESH_TOKEN_KEY = 'complyeasy_refresh_token';
+
+// In-memory cache for fast access (also serves as fallback when SecureStore unavailable)
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
-// In production, use expo-secure-store for secure token storage:
-// import * as SecureStore from 'expo-secure-store';
-
-export function setTokens(tokens: AuthTokens): void {
+export async function setTokens(tokens: AuthTokens): Promise<void> {
   accessToken = tokens.accessToken;
   refreshToken = tokens.refreshToken;
+  if (SecureStore) {
+    try {
+      await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokens.accessToken);
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refreshToken);
+    } catch (err) {
+      // Secure store write failed — tokens remain in memory only
+      console.warn('[Auth] SecureStore write failed:', err);
+    }
+  }
 }
 
-export function clearTokens(): void {
+export async function clearTokens(): Promise<void> {
   accessToken = null;
   refreshToken = null;
+  if (SecureStore) {
+    try {
+      await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+    } catch (_) {}
+  }
 }
 
 export function getAccessToken(): string | null {
   return accessToken;
+}
+
+export function getRefreshToken(): string | null {
+  return refreshToken;
+}
+
+/**
+ * Restore tokens from secure storage on app startup.
+ * Call this once during app initialization.
+ */
+export async function restoreTokens(): Promise<boolean> {
+  if (!SecureStore) return false;
+  try {
+    const stored = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+    const storedRefresh = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    if (stored) {
+      accessToken = stored;
+      refreshToken = storedRefresh;
+      return true;
+    }
+  } catch (_) {}
+  return false;
 }
 
 // ============================================================================

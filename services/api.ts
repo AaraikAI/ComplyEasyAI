@@ -4,19 +4,24 @@ import { User, RiskItem, ComplianceFramework, AuditLog, Integration, TierName, S
 const rawBase = (import.meta as ImportMeta & { env: Record<string, string> }).env.VITE_API_URL || 'http://localhost:3001/api';
 const API_BASE_URL = rawBase.endsWith('/api') ? rawBase : rawBase.replace(/\/?$/, '') + '/api';
 
-// Get auth token from localStorage
+// Auth tokens are now stored in httpOnly cookies set by the backend.
+// The frontend no longer reads or writes tokens directly — cookies are
+// sent automatically with every request via credentials: 'include'.
+// We keep a lightweight flag to track authenticated state in the UI.
+let isAuthenticatedFlag = false;
+
 const getAuthToken = (): string | null => {
-  return localStorage.getItem('authToken');
+  // Tokens are in httpOnly cookies; return flag for UI auth checks only
+  return isAuthenticatedFlag ? '__cookie__' : null;
 };
 
-// Set auth token in localStorage
-const setAuthToken = (token: string): void => {
-  localStorage.setItem('authToken', token);
+const setAuthToken = (_token: string): void => {
+  // Token is set via httpOnly cookie by the backend; just flag the UI
+  isAuthenticatedFlag = true;
 };
 
-// Clear auth token
 const clearAuthToken = (): void => {
-  localStorage.removeItem('authToken');
+  isAuthenticatedFlag = false;
   localStorage.removeItem('user_data');
 };
 
@@ -47,16 +52,13 @@ async function fetchAPI<T>(
   options: RequestInit = {},
   timeoutMs: number = 30000 // Default 30 second timeout
 ): Promise<T> {
-  const token = getAuthToken();
-
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  // Auth tokens are now in httpOnly cookies sent automatically via credentials: 'include'.
+  // No Authorization header needed — the backend reads the cookie.
 
   const method = (options.method || 'GET').toUpperCase();
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -83,19 +85,17 @@ async function fetchAPI<T>(
         csrfTokenCache = null;
       }
       if (response.status === 401) {
-        // Try to refresh token before redirecting
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
+        // Try to refresh token via httpOnly cookie (sent automatically)
+        if (isAuthenticatedFlag) {
           try {
-            // Add timeout to refresh token request
             const refreshController = new AbortController();
-            const refreshTimeoutId = setTimeout(() => refreshController.abort(), 10000); // 10s for refresh
+            const refreshTimeoutId = setTimeout(() => refreshController.abort(), 10000);
 
             const refreshCsrf = await getCsrfToken();
             const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', ...(refreshCsrf ? { 'X-CSRF-Token': refreshCsrf } : {}) },
-              body: JSON.stringify({ refreshToken }),
+              body: JSON.stringify({}),
               credentials: 'include',
               signal: refreshController.signal,
             });
@@ -103,17 +103,15 @@ async function fetchAPI<T>(
             clearTimeout(refreshTimeoutId);
 
             if (refreshResponse.ok) {
-              const refreshData = await refreshResponse.json();
-              setAuthToken(refreshData.accessToken);
-              
-              // Retry the original request with new token
+              // Tokens refreshed via httpOnly cookies automatically
+              setAuthToken('__cookie__');
+
+              // Retry the original request — new cookie sent automatically
               const retryHeaders: HeadersInit = {
                 'Content-Type': 'application/json',
                 ...options.headers,
-                'Authorization': `Bearer ${refreshData.accessToken}`,
               };
 
-              // Add timeout to retry request
               const retryController = new AbortController();
               const retryTimeoutId = setTimeout(() => retryController.abort(), timeoutMs);
 
@@ -131,12 +129,11 @@ async function fetchAPI<T>(
               }
             }
           } catch (refreshError) {
-            // Refresh failed, proceed with logout
             console.error('Token refresh failed:', refreshError);
           }
         }
 
-        // If refresh failed or no refresh token, clear auth and redirect
+        // If refresh failed or not authenticated, clear auth state and redirect
         clearAuthToken();
         window.location.href = '/';
         throw new Error('Session expired. Please log in again.');
@@ -213,9 +210,9 @@ export const api = {
       });
 
       if (response.accessToken) {
+        // Tokens are set via httpOnly cookies by the backend; just flag UI
         setAuthToken(response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken);
-        
+
         // Map backend user response to frontend User type
         const user = {
           id: response.user.id,
@@ -226,7 +223,7 @@ export const api = {
           organizationId: response.user.organization?.id || response.user.organizationId,
           organization: response.user.organization ? { id: response.user.organization.id, name: response.user.organization.name, plan: response.user.organization.plan } : undefined,
         };
-        
+
         localStorage.setItem('user_data', JSON.stringify(user));
         return user;
       }
@@ -266,9 +263,9 @@ export const api = {
       });
 
       if (response.accessToken) {
+        // Tokens are set via httpOnly cookies by the backend; just flag UI
         setAuthToken(response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken);
-        
+
         const user = {
           id: response.user.id,
           name: response.user.name,
@@ -278,7 +275,7 @@ export const api = {
           organizationId: response.user.organization?.id || response.user.organizationId,
           organization: response.user.organization ? { id: response.user.organization.id, name: response.user.organization.name, plan: response.user.organization.plan } : undefined,
         };
-        
+
         localStorage.setItem('user_data', JSON.stringify(user));
         return user;
       }
@@ -287,12 +284,10 @@ export const api = {
     },
 
     refreshToken: async () => {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) throw new Error('No refresh token');
-
+      // Refresh token is sent via httpOnly cookie automatically
       const response: any = await fetchAPI('/auth/refresh', {
         method: 'POST',
-        body: JSON.stringify({ refreshToken }),
+        body: JSON.stringify({}),
       });
 
       if (response.accessToken) {
@@ -302,20 +297,24 @@ export const api = {
       return response;
     },
 
-    logout: () => {
+    logout: async () => {
+      // Call backend to clear httpOnly cookies and blacklist tokens
+      try {
+        await fetchAPI('/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+      } catch (_) {
+        // Best-effort server-side logout
+      }
       clearAuthToken();
     },
 
     uploadAvatar: async (file: File) => {
       const formData = new FormData();
       formData.append('avatar', file);
-      
-      const token = getAuthToken();
+
+      // Auth token sent via httpOnly cookie automatically
       const response = await fetch(`${API_BASE_URL}/auth/profile/avatar`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: 'include',
         body: formData,
       });
 
