@@ -158,6 +158,26 @@ cmd_migrate() {
 
   export DATABASE_URL
 
+  # ---- Pre-migration database backup ----
+  log "Creating pre-migration database backup..."
+  BACKUP_TIMESTAMP=$(date -u +%Y%m%d_%H%M%S)
+  BACKUP_KEY="backups/pre-migration/${BACKUP_TIMESTAMP}.sql.gz"
+  BACKUP_BUCKET="${PREFIX}-uploads-${AWS_ACCOUNT}"
+
+  if command -v pg_dump >/dev/null 2>&1; then
+    pg_dump "$DATABASE_URL" --no-owner --no-acl 2>/dev/null | gzip > "/tmp/${BACKUP_TIMESTAMP}.sql.gz"
+    if [ -s "/tmp/${BACKUP_TIMESTAMP}.sql.gz" ]; then
+      aws s3 cp "/tmp/${BACKUP_TIMESTAMP}.sql.gz" "s3://${BACKUP_BUCKET}/${BACKUP_KEY}" --region "$AWS_REGION" 2>/dev/null && \
+        ok "Database backup saved to s3://${BACKUP_BUCKET}/${BACKUP_KEY}" || \
+        warn "Failed to upload backup to S3; backup saved locally at /tmp/${BACKUP_TIMESTAMP}.sql.gz"
+      rm -f "/tmp/${BACKUP_TIMESTAMP}.sql.gz"
+    else
+      warn "pg_dump produced empty output — skipping backup upload"
+    fi
+  else
+    warn "pg_dump not found — skipping pre-migration backup. Install postgresql-client for automatic backups."
+  fi
+
   cd "$PROJECT_ROOT/server"
   npx prisma generate
   npx prisma migrate deploy

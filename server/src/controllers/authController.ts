@@ -8,6 +8,36 @@ import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import tokenBlacklist from '../services/tokenBlacklistService';
 
+// Cookie configuration for httpOnly secure token storage
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
+  path: '/',
+};
+
+const ACCESS_TOKEN_COOKIE = 'access_token';
+const REFRESH_TOKEN_COOKIE = 'refresh_token';
+
+function setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
+  // Access token cookie — shorter max-age aligned with JWT expiry (default 7d)
+  res.cookie(ACCESS_TOKEN_COOKIE, accessToken, {
+    ...COOKIE_OPTIONS,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+  });
+
+  // Refresh token cookie — longer max-age aligned with refresh JWT expiry (default 30d)
+  res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, {
+    ...COOKIE_OPTIONS,
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
+  });
+}
+
+function clearAuthCookies(res: Response): void {
+  res.clearCookie(ACCESS_TOKEN_COOKIE, { ...COOKIE_OPTIONS });
+  res.clearCookie(REFRESH_TOKEN_COOKIE, { ...COOKIE_OPTIONS });
+}
+
 class AuthController {
   async requestMagicLink(req: Request, res: Response): Promise<void> {
     try {
@@ -238,6 +268,9 @@ class AuthController {
         logger.warn('Failed to create audit log, continuing with login', auditErr?.message);
       }
 
+      // Set httpOnly secure cookies for token storage
+      setAuthCookies(res, accessToken, refreshToken);
+
       res.json({
         twoFactorRequired: false,
         accessToken,
@@ -266,7 +299,8 @@ class AuthController {
 
   async refreshToken(req: Request, res: Response): Promise<void> {
     try {
-      const { refreshToken } = req.body;
+      // Accept refresh token from body (legacy) or httpOnly cookie
+      const refreshToken = req.body.refreshToken || req.cookies?.refresh_token;
 
       if (!refreshToken) {
         throw new AppError('Refresh token is required', 400);
@@ -304,6 +338,9 @@ class AuthController {
       });
 
       const newRefreshToken = generateRefreshToken(user.id);
+
+      // Set httpOnly secure cookies for new tokens
+      setAuthCookies(res, accessToken, newRefreshToken);
 
       res.json({ accessToken, refreshToken: newRefreshToken });
     } catch (error) {
@@ -428,6 +465,9 @@ class AuthController {
         logger.warn('[Auth] Failed to write audit log', auditErr?.message);
       }
 
+      // Set httpOnly secure cookies for token storage
+      setAuthCookies(res, accessToken, refreshToken);
+
       res.json({
         accessToken,
         refreshToken,
@@ -551,7 +591,7 @@ class AuthController {
       });
 
       // Hash password if provided
-      const passwordHash = password ? await bcrypt.hash(password, 10) : null;
+      const passwordHash = password ? await bcrypt.hash(password, 12) : null;
 
       // Create user
       const user = await prisma.user.create({
@@ -686,6 +726,9 @@ class AuthController {
           userAgent: req.headers['user-agent'],
         },
       });
+
+      // Set httpOnly secure cookies for token storage
+      setAuthCookies(res, accessToken, refreshToken);
 
       res.json({
         accessToken,
@@ -840,7 +883,7 @@ class AuthController {
       }
 
       // Hash new password
-      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+      const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
       // Update password
       await prisma.user.update({
@@ -971,15 +1014,16 @@ class AuthController {
 
   async logout(req: Request, res: Response): Promise<void> {
     try {
-      const accessToken = req.headers.authorization?.substring(7);
+      // Read access token from header or httpOnly cookie
+      const accessToken = req.headers.authorization?.substring(7) || req.cookies?.access_token;
 
       // Blacklist the access token so it cannot be reused
       if (accessToken) {
         await tokenBlacklist.revoke(accessToken, 'logout');
       }
 
-      // Blacklist the refresh token if provided in the body
-      const { refreshToken } = req.body || {};
+      // Blacklist the refresh token from body or httpOnly cookie
+      const refreshToken = req.body?.refreshToken || req.cookies?.refresh_token;
       if (refreshToken) {
         await tokenBlacklist.revoke(refreshToken, 'logout');
       }
@@ -999,6 +1043,9 @@ class AuthController {
       } catch (error) {
         logger.warn('[Auth] Session termination not available', error);
       }
+
+      // Clear httpOnly auth cookies
+      clearAuthCookies(res);
 
       res.json({ message: 'Logged out successfully' });
     } catch (error) {

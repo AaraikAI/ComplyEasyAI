@@ -11,12 +11,7 @@ export const generateComplianceReport = async (
   context: string
 ): Promise<string> => {
   try {
-    // Check if user is authenticated
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      return "Please log in to generate reports. Click the login button to get started.";
-    }
-
+    // Auth is handled via httpOnly cookies; 401 errors caught below
     const response: any = await api.ai.generateReport(framework, companyName, context);
     return response.report || "Failed to generate report.";
   } catch (error: any) {
@@ -39,13 +34,7 @@ export const generateComplianceReport = async (
 
 export const chatWithComplianceBot = async (message: string): Promise<string> => {
   try {
-    // Check if user is authenticated
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      console.error('No auth token found');
-      return "Please log in to use the AI assistant. Click the login button to get started.";
-    }
-
+    // Auth is handled via httpOnly cookies; 401 errors caught below
     const response: any = await api.ai.chat(message);
     // Response now includes: { response, sources, encrypted }
     return response.response || "Error.";
@@ -58,7 +47,7 @@ export const chatWithComplianceBot = async (message: string): Promise<string> =>
       console.error('Full error details:', {
         message: errorMessage,
         error: e,
-        token: localStorage.getItem('authToken') ? 'Present' : 'Missing',
+        auth: 'httpOnly cookie',
       });
     }
     
@@ -93,12 +82,7 @@ export const generateRemediationPlan = async (risk: string): Promise<string> => 
 
 export const generatePolicy = async (type: string, company: string, tone: string): Promise<string> => {
   try {
-    // Check if user is authenticated
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      return "Please log in to generate policies. Click the login button to get started.";
-    }
-
+    // Auth is handled via httpOnly cookies; 401 errors caught below
     const response: any = await api.ai.generatePolicy(type, company, tone);
     return response.policy || "Error.";
   } catch (e: any) {
