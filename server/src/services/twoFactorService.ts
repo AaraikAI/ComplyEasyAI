@@ -343,7 +343,7 @@ class TwoFactorService {
     const hashedCodes = await Promise.all(
       codes.map(async (code) => ({
         userId,
-        code: await bcrypt.hash(code, 10),
+        code: await bcrypt.hash(code, 12),
       }))
     );
 

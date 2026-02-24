@@ -85,8 +85,8 @@ export class FrontendStack extends cdk.Stack {
 
     // API origin (ALB)
     const apiOrigin = new origins.HttpOrigin(props.apiAlbDnsName, {
-      protocolPolicy: cloudfront.OriginProtocolPolicy.HTTP_ONLY,
-      httpPort: 80,
+      protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+      httpsPort: 443,
     });
 
     // Certificate (must be in us-east-1 for CloudFront)
