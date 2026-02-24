@@ -1,8 +1,34 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+/**
+ * Docker secrets support: if FOO_FILE env var is set, read the secret
+ * from the file at that path and set FOO in process.env.
+ * This avoids exposing secrets via `docker inspect`.
+ */
+function loadDockerSecrets(): void {
+  const secretKeys = [
+    'DATABASE_URL', 'REDIS_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET',
+    'ENCRYPTION_KEY', 'GEMINI_API_KEY', 'STRIPE_SECRET_KEY',
+    'STRIPE_WEBHOOK_SECRET', 'SENDGRID_API_KEY',
+    'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY',
+  ];
+  for (const key of secretKeys) {
+    const filePath = process.env[`${key}_FILE`];
+    if (filePath && !process.env[key]) {
+      try {
+        process.env[key] = fs.readFileSync(filePath, 'utf8').trim();
+      } catch (_) {
+        // File not found — ignore, config validation will catch missing required vars
+      }
+    }
+  }
+}
+loadDockerSecrets();
 
 interface Config {
   server: {

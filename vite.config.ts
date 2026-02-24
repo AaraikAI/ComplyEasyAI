@@ -10,10 +10,9 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
       },
       plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
+      // SECURITY: Gemini API key is NOT exposed to the frontend bundle.
+      // All AI calls are routed through backend API endpoints (/api/ai/*).
+      define: {},
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
