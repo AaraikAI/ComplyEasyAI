@@ -79,12 +79,15 @@ router.delete('/dpp/passports/:id', authorize('admin'), asyncHandler(fm.deleteDP
 // ============================================================================
 router.get('/esg/metrics', asyncHandler(fm.listESGMetrics));
 router.post('/esg/metrics', authorize('admin', 'editor'), asyncHandler(fm.createESGMetric));
+router.get('/esg/metrics/:id', asyncHandler(fm.getESGMetric));
 router.patch('/esg/metrics/:id', authorize('admin', 'editor'), asyncHandler(fm.updateESGMetric));
 router.delete('/esg/metrics/:id', authorize('admin'), asyncHandler(fm.deleteESGMetric));
 
 router.get('/esg/materiality', asyncHandler(fm.listMaterialityAssessments));
 router.post('/esg/materiality', authorize('admin', 'editor'), asyncHandler(fm.createMaterialityAssessment));
+router.get('/esg/materiality/:id', asyncHandler(fm.getMaterialityAssessment));
 router.patch('/esg/materiality/:id', authorize('admin', 'editor'), asyncHandler(fm.updateMaterialityAssessment));
+router.delete('/esg/materiality/:id', authorize('admin'), asyncHandler(fm.deleteMaterialityAssessment));
 
 // ============================================================================
 // SBOM MANAGER

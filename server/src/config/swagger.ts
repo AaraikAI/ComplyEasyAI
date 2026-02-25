@@ -301,6 +301,18 @@ API requests are rate-limited:
   ],
 };
 
-export const swaggerSpec = swaggerJsdoc(options);
+import { swaggerPaths } from './swagger-paths';
+
+// Merge the programmatic paths with the JSDoc-scanned paths
+const spec = swaggerJsdoc(options) as { paths?: Record<string, any>; [key: string]: any };
+
+// Add comprehensive path definitions
+export const swaggerSpec = {
+  ...spec,
+  paths: {
+    ...(spec.paths || {}),
+    ...swaggerPaths,
+  },
+};
 
 export default swaggerSpec;

@@ -125,6 +125,29 @@ router.post(
   })
 );
 
+router.post(
+  '/devices/:id/reassign',
+  authorize('admin', 'editor'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const { newUserId, newUserName, reason } = req.body;
+    if (!newUserId) {
+      res.status(400).json({ error: 'newUserId is required' });
+      return;
+    }
+    const device = await mdmService.reassignDevice(req.params.id, user.id, user.organizationId, {
+      newUserId,
+      newUserName,
+      reason,
+    });
+    if (!device) {
+      res.status(404).json({ error: 'Device not found' });
+      return;
+    }
+    res.json({ success: true, message: 'Device reassigned', device });
+  })
+);
+
 // ============================================================================
 // POLICIES
 // ============================================================================

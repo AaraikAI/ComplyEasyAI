@@ -1362,6 +1362,73 @@ class StripeService {
   }
 
   /**
+   * Process a refund for a payment
+   */
+  async processRefund(data: {
+    organizationId: string;
+    chargeId?: string;
+    paymentIntentId?: string;
+    amount?: number; // Optional: partial refund amount in cents
+    reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer';
+  }): Promise<Stripe.Refund | null> {
+    try {
+      const org = await prisma.organization.findUnique({
+        where: { id: data.organizationId },
+      });
+
+      if (!org?.stripeCustomerId) {
+        throw new Error('No Stripe customer found for organization');
+      }
+
+      const refundParams: Stripe.RefundCreateParams = {
+        reason: data.reason || 'requested_by_customer',
+      };
+
+      // Add charge or payment intent
+      if (data.chargeId) {
+        refundParams.charge = data.chargeId;
+      } else if (data.paymentIntentId) {
+        refundParams.payment_intent = data.paymentIntentId;
+      } else {
+        throw new Error('Either chargeId or paymentIntentId is required');
+      }
+
+      // Add partial refund amount if specified
+      if (data.amount && data.amount > 0) {
+        refundParams.amount = data.amount;
+      }
+
+      const refund = await stripe.refunds.create(refundParams);
+
+      // Record subscription history for the refund
+      await prisma.subscriptionHistory.create({
+        data: {
+          organizationId: data.organizationId,
+          previousPlan: org.plan,
+          newPlan: org.plan,
+          previousStatus: org.subscriptionStatus,
+          newStatus: org.subscriptionStatus,
+          changeType: 'refund',
+          metadata: {
+            refundId: refund.id,
+            amount: refund.amount,
+            currency: refund.currency,
+            status: refund.status,
+            reason: data.reason,
+          },
+          changedBy: 'system',
+        },
+      });
+
+      logger.info(`Refund processed for org ${data.organizationId}: ${refund.id}, amount: ${refund.amount}`);
+      return refund;
+    } catch (error) {
+      logger.error('Failed to process refund', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create a quote for custom pricing (Visionary tier)
    */
   async createQuote(

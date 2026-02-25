@@ -59,6 +59,9 @@ router.post('/cancel', authorize('admin'), asyncHandler(billingController.cancel
 // Reactivate subscription
 router.post('/reactivate', authorize('admin'), asyncHandler(billingController.reactivateSubscription.bind(billingController)));
 
+// Process refund
+router.post('/refund', authorize('admin'), asyncHandler(billingController.processRefund.bind(billingController)));
+
 // ============================================================================
 // ADD-ONS (Admin only)
 // ============================================================================

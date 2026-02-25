@@ -410,6 +410,129 @@ export class PersonnelService {
 
     return summary;
   }
+
+  /**
+   * Get personnel by ID
+   */
+  async getPersonnelById(personnelId: string, organizationId: string) {
+    return await prisma.personnel.findFirst({
+      where: {
+        id: personnelId,
+        organizationId,
+      },
+      include: {
+        user: true,
+        accessReviews: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+      },
+    });
+  }
+
+  /**
+   * Update personnel record
+   */
+  async updatePersonnel(
+    personnelId: string,
+    data: {
+      systemAccess?: any;
+      dataAccess?: any;
+      physicalAccess?: any;
+      backgroundCheck?: boolean;
+      backgroundCheckDate?: Date;
+      securityTraining?: boolean;
+      trainingDate?: Date;
+      onboardingStatus?: string;
+    },
+    userId: string,
+    organizationId: string
+  ) {
+    // Verify personnel exists and belongs to organization
+    const existing = await prisma.personnel.findFirst({
+      where: { id: personnelId, organizationId },
+    });
+
+    if (!existing) {
+      throw new Error('Personnel record not found');
+    }
+
+    const personnel = await prisma.personnel.update({
+      where: { id: personnelId },
+      data: {
+        ...(data.systemAccess !== undefined && { systemAccess: data.systemAccess }),
+        ...(data.dataAccess !== undefined && { dataAccess: data.dataAccess }),
+        ...(data.physicalAccess !== undefined && { physicalAccess: data.physicalAccess }),
+        ...(data.backgroundCheck !== undefined && { backgroundCheck: data.backgroundCheck }),
+        ...(data.backgroundCheckDate && { backgroundCheckDate: data.backgroundCheckDate }),
+        ...(data.securityTraining !== undefined && { securityTraining: data.securityTraining }),
+        ...(data.trainingDate && { trainingDate: data.trainingDate }),
+        ...(data.onboardingStatus && { onboardingStatus: data.onboardingStatus as any }),
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'personnel.updated',
+      resourceType: 'Personnel',
+      resourceId: personnelId,
+      metadata: { changes: Object.keys(data) },
+    });
+
+    return personnel;
+  }
+
+  /**
+   * Delete (soft delete/deactivate) personnel record
+   */
+  async deletePersonnel(
+    personnelId: string,
+    userId: string,
+    organizationId: string
+  ) {
+    // Verify personnel exists and belongs to organization
+    const existing = await prisma.personnel.findFirst({
+      where: { id: personnelId, organizationId },
+      include: { user: true },
+    });
+
+    if (!existing) {
+      throw new Error('Personnel record not found');
+    }
+
+    // Soft delete - update status to Offboarding and deactivate user
+    await prisma.personnel.update({
+      where: { id: personnelId },
+      data: {
+        onboardingStatus: 'Offboarding' as any, // Using enum value
+        offboardingDate: new Date(),
+      },
+    });
+
+    // Deactivate the associated user
+    await prisma.user.update({
+      where: { id: existing.userId },
+      data: {
+        active: false,
+        endDate: new Date(),
+      },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'personnel.deleted',
+      resourceType: 'Personnel',
+      resourceId: personnelId,
+      metadata: { deactivatedAt: new Date() },
+    });
+
+    return { success: true };
+  }
 }
 
 export default new PersonnelService();

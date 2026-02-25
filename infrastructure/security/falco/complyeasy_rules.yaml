@@ -1,0 +1,303 @@
+# ComplyEasyAI Custom Falco Rules
+# Runtime security monitoring for compliance application
+
+# ============================================================================
+# MACROS
+# ============================================================================
+
+- macro: complyeasy_container
+  condition: container.name startswith "complyeasy"
+
+- macro: trusted_image
+  condition: >
+    container.image.repository in (
+      "ghcr.io/aaraikaai/complyeasy-api",
+      "ghcr.io/aaraikaai/complyeasy-web",
+      "postgres",
+      "redis",
+      "nginx",
+      "elasticsearch",
+      "kibana",
+      "logstash"
+    )
+
+- macro: sensitive_files
+  condition: >
+    fd.name startswith "/etc/passwd" or
+    fd.name startswith "/etc/shadow" or
+    fd.name startswith "/etc/sudoers" or
+    fd.name startswith "/root/.ssh" or
+    fd.name startswith "/run/secrets"
+
+- macro: compliance_data_dirs
+  condition: >
+    fd.name startswith "/app/data" or
+    fd.name startswith "/app/uploads" or
+    fd.name startswith "/app/evidence"
+
+# ============================================================================
+# LISTS
+# ============================================================================
+
+- list: allowed_shell_binaries
+  items: [sh, bash, ash]
+
+- list: allowed_network_tools
+  items: [curl, wget]
+
+- list: sensitive_env_vars
+  items: [
+    "DATABASE_URL",
+    "JWT_SECRET",
+    "ENCRYPTION_KEY",
+    "API_KEY",
+    "AWS_SECRET",
+    "STRIPE_SECRET"
+  ]
+
+# ============================================================================
+# CONTAINER SECURITY RULES
+# ============================================================================
+
+- rule: Unauthorized Container Started
+  desc: Detect when a container not from trusted images is started
+  condition: >
+    container.id != host and
+    evt.type = container and
+    not trusted_image
+  output: >
+    Unauthorized container started
+    (container=%container.name image=%container.image.repository)
+  priority: CRITICAL
+  tags: [container, complyeasy, compliance]
+
+- rule: Container Running as Root
+  desc: Detect containers running as root user
+  condition: >
+    spawned_process and
+    container.id != host and
+    complyeasy_container and
+    user.uid = 0 and
+    proc.name != healthcheck
+  output: >
+    Container running as root
+    (container=%container.name user=%user.name proc=%proc.name)
+  priority: WARNING
+  tags: [container, complyeasy, privilege]
+
+- rule: Shell Spawned in Container
+  desc: Detect shell execution in production containers
+  condition: >
+    spawned_process and
+    container.id != host and
+    complyeasy_container and
+    proc.name in (allowed_shell_binaries) and
+    proc.pname != entrypoint.sh
+  output: >
+    Shell spawned in container
+    (container=%container.name shell=%proc.name parent=%proc.pname cmdline=%proc.cmdline)
+  priority: WARNING
+  tags: [container, complyeasy, shell]
+
+# ============================================================================
+# FILE ACCESS RULES
+# ============================================================================
+
+- rule: Sensitive File Read
+  desc: Detect read access to sensitive system files
+  condition: >
+    open_read and
+    container.id != host and
+    complyeasy_container and
+    sensitive_files
+  output: >
+    Sensitive file read
+    (container=%container.name file=%fd.name proc=%proc.name user=%user.name)
+  priority: CRITICAL
+  tags: [file, sensitive, complyeasy]
+
+- rule: Secrets Directory Access
+  desc: Detect access to Docker secrets directory
+  condition: >
+    (open_read or open_write) and
+    container.id != host and
+    fd.name startswith "/run/secrets" and
+    not proc.name in (node, npm, npx)
+  output: >
+    Secrets directory accessed by unexpected process
+    (container=%container.name file=%fd.name proc=%proc.name)
+  priority: WARNING
+  tags: [secrets, complyeasy]
+
+- rule: Compliance Evidence Tampering
+  desc: Detect unexpected modifications to compliance evidence
+  condition: >
+    (open_write or rename or unlink) and
+    container.id != host and
+    compliance_data_dirs and
+    not proc.name in (node, npm)
+  output: >
+    Compliance data modification by unexpected process
+    (container=%container.name file=%fd.name proc=%proc.name user=%user.name)
+  priority: CRITICAL
+  tags: [compliance, evidence, complyeasy]
+
+# ============================================================================
+# NETWORK SECURITY RULES
+# ============================================================================
+
+- rule: Unexpected Outbound Connection
+  desc: Detect outbound connections to unexpected destinations
+  condition: >
+    outbound and
+    container.id != host and
+    complyeasy_container and
+    not fd.rip in (
+      "10.0.0.0/8",
+      "172.16.0.0/12",
+      "192.168.0.0/16",
+      "127.0.0.0/8"
+    ) and
+    not fd.rport in (443, 80, 5432, 6379, 9200)
+  output: >
+    Unexpected outbound connection
+    (container=%container.name proc=%proc.name dest=%fd.rip:%fd.rport)
+  priority: WARNING
+  tags: [network, complyeasy]
+
+- rule: Database Direct Access
+  desc: Detect direct database connections from unexpected processes
+  condition: >
+    outbound and
+    container.id != host and
+    fd.rport = 5432 and
+    not proc.name in (node, npm, npx, prisma)
+  output: >
+    Direct database access from unexpected process
+    (container=%container.name proc=%proc.name dest=%fd.rip:%fd.rport)
+  priority: CRITICAL
+  tags: [database, complyeasy]
+
+# ============================================================================
+# PROCESS SECURITY RULES
+# ============================================================================
+
+- rule: Unexpected Process Execution
+  desc: Detect execution of unexpected binaries
+  condition: >
+    spawned_process and
+    container.id != host and
+    complyeasy_container and
+    not proc.name in (node, npm, npx, sh, bash, healthcheck, curl, wget, ps, grep) and
+    not proc.pname in (node, npm, npx, sh, bash)
+  output: >
+    Unexpected process executed
+    (container=%container.name proc=%proc.name parent=%proc.pname cmdline=%proc.cmdline)
+  priority: WARNING
+  tags: [process, complyeasy]
+
+- rule: Package Manager Execution
+  desc: Detect package manager execution in production
+  condition: >
+    spawned_process and
+    container.id != host and
+    complyeasy_container and
+    proc.name in (apt, apt-get, yum, dnf, apk, pip, pip3)
+  output: >
+    Package manager executed in production container
+    (container=%container.name proc=%proc.name cmdline=%proc.cmdline)
+  priority: CRITICAL
+  tags: [package, complyeasy]
+
+- rule: Crypto Mining Detection
+  desc: Detect potential crypto mining activity
+  condition: >
+    spawned_process and
+    container.id != host and
+    (proc.name in (xmrig, minerd, cgminer, bfgminer, cpuminer) or
+     proc.cmdline contains "stratum+tcp" or
+     proc.cmdline contains "pool.")
+  output: >
+    Potential crypto mining detected
+    (container=%container.name proc=%proc.name cmdline=%proc.cmdline)
+  priority: CRITICAL
+  tags: [mining, malware, complyeasy]
+
+# ============================================================================
+# PRIVILEGE ESCALATION RULES
+# ============================================================================
+
+- rule: Privilege Escalation Attempt
+  desc: Detect attempts to escalate privileges
+  condition: >
+    spawned_process and
+    container.id != host and
+    (proc.name in (sudo, su, doas) or
+     proc.cmdline contains "chmod +s" or
+     proc.cmdline contains "setuid")
+  output: >
+    Privilege escalation attempt
+    (container=%container.name proc=%proc.name cmdline=%proc.cmdline user=%user.name)
+  priority: CRITICAL
+  tags: [privilege, escalation, complyeasy]
+
+- rule: Capabilities Modified
+  desc: Detect modification of container capabilities
+  condition: >
+    spawned_process and
+    container.id != host and
+    proc.cmdline contains "capsh" or
+    proc.cmdline contains "setcap"
+  output: >
+    Container capabilities modified
+    (container=%container.name proc=%proc.name cmdline=%proc.cmdline)
+  priority: CRITICAL
+  tags: [capabilities, privilege, complyeasy]
+
+# ============================================================================
+# COMPLIANCE-SPECIFIC RULES
+# ============================================================================
+
+- rule: Audit Log Tampering Attempt
+  desc: Detect attempts to modify or delete audit logs
+  condition: >
+    (open_write or rename or unlink) and
+    container.id != host and
+    (fd.name startswith "/var/log/audit" or
+     fd.name startswith "/app/logs/audit" or
+     fd.name contains "audit") and
+    not proc.name in (node, logrotate)
+  output: >
+    Audit log tampering attempt
+    (container=%container.name file=%fd.name proc=%proc.name user=%user.name)
+  priority: CRITICAL
+  tags: [audit, compliance, complyeasy]
+
+- rule: Environment Variable Exposure
+  desc: Detect processes reading sensitive environment variables
+  condition: >
+    spawned_process and
+    container.id != host and
+    proc.cmdline contains "env" and
+    proc.cmdline icontains any (sensitive_env_vars)
+  output: >
+    Sensitive environment variable access
+    (container=%container.name proc=%proc.name cmdline=%proc.cmdline)
+  priority: WARNING
+  tags: [secrets, environment, complyeasy]
+
+- rule: PII Data Exfiltration Attempt
+  desc: Detect potential PII data exfiltration
+  condition: >
+    outbound and
+    container.id != host and
+    complyeasy_container and
+    evt.buffer contains "ssn" or
+    evt.buffer contains "social security" or
+    evt.buffer contains "credit card" or
+    evt.buffer icontains "password"
+  output: >
+    Potential PII data exfiltration
+    (container=%container.name proc=%proc.name dest=%fd.rip:%fd.rport)
+  priority: CRITICAL
+  tags: [pii, exfiltration, complyeasy, compliance]

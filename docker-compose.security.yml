@@ -1,0 +1,179 @@
+# ComplyEasyAI Security Stack
+# Falco Runtime Security + Prometheus Metrics
+# Deploy with: docker-compose -f docker-compose.security.yml up -d
+
+services:
+  # ============================================================================
+  # FALCO RUNTIME SECURITY
+  # ============================================================================
+  falco:
+    image: falcosecurity/falco:0.38.0
+    container_name: falco
+    privileged: true
+    volumes:
+      # Falco configuration
+      - ./infrastructure/security/falco/falco.yaml:/etc/falco/falco.yaml:ro
+      - ./infrastructure/security/falco/complyeasy_rules.yaml:/etc/falco/complyeasy_rules.yaml:ro
+      # Required for kernel module / eBPF
+      - /var/run/docker.sock:/host/var/run/docker.sock:ro
+      - /dev:/host/dev:ro
+      - /proc:/host/proc:ro
+      - /boot:/host/boot:ro
+      - /lib/modules:/host/lib/modules:ro
+      - /usr:/host/usr:ro
+      - /etc:/host/etc:ro
+      # Output directory
+      - falco_logs:/var/log/falco
+    environment:
+      - FALCO_BPF_PROBE=""
+      - HOST_ROOT=/host
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+    networks:
+      - security
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================================================
+  # FALCO SIDEKICK (Event Router)
+  # ============================================================================
+  falcosidekick:
+    image: falcosecurity/falcosidekick:2.28.0
+    container_name: falcosidekick
+    environment:
+      # Slack alerts
+      - SLACK_WEBHOOKURL=${SLACK_WEBHOOK_URL:-}
+      - SLACK_MINIMUMPRIORITY=warning
+      - SLACK_OUTPUTFORMAT=all
+      # Elasticsearch output
+      - ELASTICSEARCH_HOSTPORT=http://elasticsearch:9200
+      - ELASTICSEARCH_INDEX=falco
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-changeme}
+      # Prometheus metrics
+      - PROMETHEUS_EXTRALABELS="app:complyeasy"
+      # Alert manager
+      - ALERTMANAGER_HOSTPORT=http://alertmanager:9093
+      # General
+      - CUSTOMFIELDS="environment:${ENVIRONMENT:-production},application:complyeasy"
+    ports:
+      - "2801:2801"
+    depends_on:
+      - falco
+    networks:
+      - security
+      - elk
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:2801/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # PROMETHEUS (Metrics Collection)
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: prometheus
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - security
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # ALERT MANAGER
+  # ============================================================================
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: alertmanager
+    volumes:
+      - ./infrastructure/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    ports:
+      - "9093:9093"
+    networks:
+      - security
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # GRAFANA (Visualization)
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s:%(http_port)s/grafana/
+    volumes:
+      - ./infrastructure/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - security
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  falco_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  security:
+    driver: bridge
+  elk:
+    external: true
+    name: complyeasyai_elk

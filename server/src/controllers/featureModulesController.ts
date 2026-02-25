@@ -372,6 +372,14 @@ export const listESGMetrics: RequestHandler = async (req, res) => {
   res.json(metrics);
 };
 
+export const getESGMetric: RequestHandler = async (req, res) => {
+  const metric = await prisma.eSGMetric.findFirst({
+    where: { id: req.params.id, organizationId: getOrgId(req) },
+  });
+  if (!metric) { res.status(404).json({ error: 'ESG metric not found' }); return; }
+  res.json(metric);
+};
+
 export const createESGMetric: RequestHandler = async (req, res) => {
   const { category, subcategory, name, value, unit } = req.body;
   if (!category || !subcategory || !name || value === undefined || !unit) {
@@ -413,6 +421,19 @@ export const createMaterialityAssessment: RequestHandler = async (req, res) => {
 export const updateMaterialityAssessment: RequestHandler = async (req, res) => {
   const assessment = await prisma.materialityAssessment.update({ where: { id: req.params.id }, data: req.body });
   res.json(assessment);
+};
+
+export const getMaterialityAssessment: RequestHandler = async (req, res) => {
+  const assessment = await prisma.materialityAssessment.findFirst({
+    where: { id: req.params.id, organizationId: getOrgId(req) },
+  });
+  if (!assessment) { res.status(404).json({ error: 'Materiality assessment not found' }); return; }
+  res.json(assessment);
+};
+
+export const deleteMaterialityAssessment: RequestHandler = async (req, res) => {
+  await prisma.materialityAssessment.delete({ where: { id: req.params.id } });
+  res.json({ success: true });
 };
 
 // ============================================================================

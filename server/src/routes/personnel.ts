@@ -110,4 +110,47 @@ router.get(
   })
 );
 
+// Get single personnel record
+router.get(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const personnel = await personnelService.getPersonnelById(
+      req.params.id,
+      req.user.organizationId
+    );
+    if (!personnel) {
+      res.status(404).json({ error: 'Personnel record not found' });
+      return;
+    }
+    res.json(personnel);
+  })
+);
+
+// Update personnel record
+router.patch(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    const personnel = await personnelService.updatePersonnel(
+      req.params.id,
+      req.body,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json(personnel);
+  })
+);
+
+// Delete (soft delete/deactivate) personnel record
+router.delete(
+  '/:id',
+  authAsyncHandler(async (req: AuthenticatedRequest, res) => {
+    await personnelService.deletePersonnel(
+      req.params.id,
+      req.user.id,
+      req.user.organizationId
+    );
+    res.json({ success: true, message: 'Personnel record deactivated' });
+  })
+);
+
 export default router;

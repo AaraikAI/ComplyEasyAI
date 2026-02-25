@@ -10,6 +10,12 @@ router.use(authenticate);
 // List audit logs (admin and editor only)
 router.get('/', authorize('admin', 'editor'), asyncHandler(auditController.list.bind(auditController)));
 
+// Export audit logs (admin and auditor only)
+router.get('/export', authorize('admin', 'editor'), asyncHandler(auditController.exportLogs.bind(auditController)));
+
+// Archive old audit logs (admin only)
+router.post('/archive', authorize('admin'), asyncHandler(auditController.archiveLogs.bind(auditController)));
+
 // Create audit log entry (all authenticated users)
 router.post('/', asyncHandler(auditController.log.bind(auditController)));
 

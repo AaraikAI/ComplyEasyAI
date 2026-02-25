@@ -1,0 +1,142 @@
+# Alertmanager Configuration
+# ComplyEasyAI Alert Routing
+
+global:
+  resolve_timeout: 5m
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+route:
+  group_by: ['alertname', 'severity', 'team']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default'
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical'
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Security alerts - dedicated channel
+    - match:
+        team: security
+      receiver: 'security'
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Compliance alerts - dedicated channel with high priority
+    - match:
+        compliance: 'true'
+      receiver: 'compliance'
+      group_wait: 10s
+      repeat_interval: 30m
+
+    # Infrastructure alerts
+    - match:
+        team: infrastructure
+      receiver: 'infrastructure'
+      repeat_interval: 2h
+
+    # Backend alerts
+    - match:
+        team: backend
+      receiver: 'backend'
+      repeat_interval: 2h
+
+receivers:
+  - name: 'default'
+    slack_configs:
+      - channel: '#alerts'
+        send_resolved: true
+        title: '{{ template "slack.default.title" . }}'
+        text: '{{ template "slack.default.text" . }}'
+
+  - name: 'critical'
+    slack_configs:
+      - channel: '#alerts-critical'
+        send_resolved: true
+        title: ':rotating_light: CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          *Alert:* {{ .GroupLabels.alertname }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+          *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        severity: critical
+
+  - name: 'security'
+    slack_configs:
+      - channel: '#security-alerts'
+        send_resolved: true
+        title: ':shield: Security Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          *Alert:* {{ .GroupLabels.alertname }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+          *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+    email_configs:
+      - to: 'security@complyeasy.ai'
+        send_resolved: true
+        headers:
+          subject: '[Security Alert] {{ .GroupLabels.alertname }}'
+
+  - name: 'compliance'
+    slack_configs:
+      - channel: '#compliance-alerts'
+        send_resolved: true
+        title: ':clipboard: Compliance Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          *Alert:* {{ .GroupLabels.alertname }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+          *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+          *Action Required:* Investigate immediately for compliance implications
+    email_configs:
+      - to: 'compliance@complyeasy.ai'
+        send_resolved: true
+        headers:
+          subject: '[Compliance Alert] {{ .GroupLabels.alertname }}'
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        severity: critical
+
+  - name: 'infrastructure'
+    slack_configs:
+      - channel: '#infrastructure'
+        send_resolved: true
+        title: ':gear: Infrastructure: {{ .GroupLabels.alertname }}'
+        text: |
+          *Alert:* {{ .GroupLabels.alertname }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+
+  - name: 'backend'
+    slack_configs:
+      - channel: '#backend-alerts'
+        send_resolved: true
+        title: ':computer: Backend: {{ .GroupLabels.alertname }}'
+        text: |
+          *Alert:* {{ .GroupLabels.alertname }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+inhibit_rules:
+  # Inhibit warning alerts if critical alert is firing for same alertname
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname']
+
+  # Inhibit all alerts if the service is down
+  - source_match:
+      alertname: 'APIDown'
+    target_match_re:
+      alertname: 'API.*'
+    equal: ['instance']
