@@ -1802,8 +1802,8 @@ class FederatedSwarmService {
         const modelKey = `federated_model_${modelType}`;
         const currentModel = await this.getFederatedModel(modelType);
         if (currentModel) {
-          currentModel.globalWeights = targetWeights;
-          currentModel.currentRound = targetDetails.round || currentModel.currentRound;
+          currentModel.aggregatedWeights = targetWeights;
+          currentModel.version = targetDetails.round || currentModel.version;
           currentModel.lastUpdated = new Date();
         }
       }

@@ -8,7 +8,28 @@ import tokenBlacklist from '../services/tokenBlacklistService';
 import { User, Organization } from '@prisma/client';
 import crypto from 'crypto';
 
-export interface AuthUser extends User {
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  avatar?: string | null;
+  passwordHash?: string | null;
+  emailVerified: boolean;
+  lastLogin?: Date | null;
+  employeeId?: string | null;
+  department?: string | null;
+  jobTitle?: string | null;
+  manager?: string | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  active: boolean;
+  twoFactorEnabled: boolean;
+  twoFactorSecret?: string | null;
+  twoFactorVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  organizationId: string;
   organization?: Organization;
 }
 

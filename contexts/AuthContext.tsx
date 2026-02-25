@@ -31,8 +31,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(userData);
         }
       }
-    } catch (error) {
-      console.error('Failed to parse user data:', error);
+    } catch {
+      // Invalid cached user data, clear it
       localStorage.removeItem('user_data');
     }
     setIsLoading(false);
@@ -48,8 +48,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(updated);
       try {
         localStorage.setItem('user_data', JSON.stringify(updated));
-      } catch (_) {}
-    }).catch(() => {});
+      } catch {
+        // localStorage write failed, continue without caching
+      }
+    }).catch(() => {
+      // Organization fetch failed, user will work without plan info
+    });
     return () => { isMounted = false; };
   }, [user?.id, user?.organization?.plan]);
 
@@ -63,8 +67,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const refreshInterval = setInterval(async () => {
       try {
         await api.auth.refreshToken();
-      } catch (error) {
-        console.error('Token refresh failed:', error);
+      } catch {
+        // Token refresh failed - user will be prompted to re-authenticate on next API call
       }
     }, 6 * 60 * 60 * 1000); // 6 hours
 
@@ -77,7 +81,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await api.auth.requestMagicLink(email);
       return response;
     } catch (error) {
-      console.error('Failed to send magic link:', error);
       throw error;
     }
   };
@@ -91,7 +94,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(user);
       }
     } catch (error) {
-      console.error('Failed to verify magic link:', error);
       throw error;
     }
   };
@@ -125,7 +127,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       return response;
     } catch (error) {
-      console.error('Failed to register:', error);
       throw error;
     }
   };

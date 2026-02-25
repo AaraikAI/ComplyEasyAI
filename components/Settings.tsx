@@ -833,7 +833,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                       if (target.parentElement) {
-                        target.parentElement.innerHTML = profileName.substring(0, 2).toUpperCase();
+                        target.parentElement.textContent = profileName.substring(0, 2).toUpperCase();
                       }
                     }}
                   />
@@ -1407,7 +1407,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
                                 if (target.parentElement) {
-                                  target.parentElement.innerHTML = u.name.substring(0, 2).toUpperCase();
+                                  target.parentElement.textContent = u.name.substring(0, 2).toUpperCase();
                                 }
                               }}
                             />

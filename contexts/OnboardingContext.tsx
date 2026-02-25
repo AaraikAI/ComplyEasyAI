@@ -102,7 +102,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
           }
         }
       } catch (error) {
-        console.error('Failed to load onboarding progress:', error);
+        // Onboarding progress load failed - using defaults
         if (isMounted) {
           setIsLoaded(true);
           // Use default progress so onboarding flow still loads (e.g. when backend/DB not ready)
@@ -175,7 +175,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
         try {
           await api.onboarding.updateProgress(updates);
         } catch (error) {
-          console.error('Failed to save onboarding progress:', error);
+          // Save failed - will retry on next change
         }
       }, 300);
     },
@@ -213,7 +213,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
         eventType: 'flow_started',
         flowName,
         stepIndex: 0,
-      }).catch((error) => { console.error('Failed to track flow_started event:', error); });
+      }).catch(() => { /* Analytics event failed - non-blocking */ });
 
       // Save to backend
       saveProgress({
@@ -242,7 +242,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
       eventType: 'step_completed',
       flowName: currentFlow.id,
       stepIndex: currentStep,
-    }).catch((error) => { console.error('Failed to track step_completed event:', error); });
+    }).catch(() => { /* Analytics event failed - non-blocking */ });
 
     saveProgress({
       currentStep: nextIdx,
@@ -266,7 +266,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
 
     api.onboarding.skipFlow(flowName).then((res) => {
       setProgress(res.progress);
-    }).catch((error) => { console.error('Failed to skip onboarding flow:', error); });
+    }).catch(() => { /* Skip failed - UI already updated */ });
 
     // Auto-advance: if welcome was skipped, start tier tour
     if (flowName === 'welcome' && progress && !progress.tierTourCompleted) {
@@ -300,12 +300,12 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
       return api.onboarding.getChecklist();
     }).then((checklistRes) => {
       if (checklistRes?.checklist) setChecklist(checklistRes.checklist);
-    }).catch((error) => { console.error('Failed to complete milestone or refresh checklist:', error); });
+    }).catch(() => { /* Milestone sync failed - UI already updated */ });
 
     api.onboarding.trackEvent({
       eventType: 'flow_completed',
       flowName,
-    }).catch((error) => { console.error('Failed to track flow_completed event:', error); });
+    }).catch(() => { /* Analytics event failed - non-blocking */ });
 
     // Auto-advance logic
     if (flowName === 'welcome') {
@@ -324,8 +324,8 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
         // Refresh checklist
         const checklistRes = await api.onboarding.getChecklist();
         setChecklist(checklistRes.checklist);
-      } catch (error) {
-        console.error('Failed to complete milestone:', error);
+      } catch {
+        // Milestone completion failed - will retry on next action
       }
     },
     []
@@ -340,8 +340,8 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
 
       const checklistRes = await api.onboarding.getChecklist();
       setChecklist(checklistRes.checklist);
-    } catch (error) {
-      console.error('Failed to reset onboarding:', error);
+    } catch {
+      // Reset failed - user can retry
     }
   }, []);
 
@@ -350,8 +350,8 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
       try {
         const res = await api.onboarding.updatePreferences(prefs);
         setProgress(res.progress);
-      } catch (error) {
-        console.error('Failed to update preferences:', error);
+      } catch {
+        // Preferences update failed - will retry on next change
       }
     },
     []
@@ -359,7 +359,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
 
   const trackEvent = useCallback(
     (eventType: string, flowName?: string, stepIndex?: number, metadata?: Record<string, any>) => {
-      api.onboarding.trackEvent({ eventType, flowName, stepIndex, metadata }).catch((error) => { console.error('Failed to track onboarding event:', error); });
+      api.onboarding.trackEvent({ eventType, flowName, stepIndex, metadata }).catch(() => { /* Analytics event failed - non-blocking */ });
     },
     []
   );
