@@ -210,6 +210,20 @@ router.post(
   })
 );
 
+router.delete(
+  '/incidents/:id',
+  authorize('admin'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const result = await doraService.deleteICTIncident(
+      user.organizationId,
+      req.params.id,
+      user.id
+    );
+    res.json(result);
+  })
+);
+
 // ============================================================================
 // THIRD-PARTY ICT PROVIDERS (Articles 28-44)
 // ============================================================================

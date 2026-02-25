@@ -187,6 +187,63 @@ router.delete(
   asyncHandler(integrationsController.disconnectAzure)
 );
 
+// Azure Full Sync (with persistence)
+router.post(
+  '/azure/sync/full',
+  authenticate,
+  authorize('admin', 'editor'),
+  asyncHandler(integrationsController.runAzureFullSync)
+);
+
+// Azure Sync Status
+router.get(
+  '/azure/sync/status',
+  authenticate,
+  asyncHandler(integrationsController.getAzureSyncStatus)
+);
+
+// Azure Sync History
+router.get(
+  '/azure/sync/history',
+  authenticate,
+  asyncHandler(integrationsController.getAzureSyncHistory)
+);
+
+// Azure Synced Resources
+router.get(
+  '/azure/synced/resources',
+  authenticate,
+  asyncHandler(integrationsController.getAzureSyncedResources)
+);
+
+// Azure Synced Security Findings
+router.get(
+  '/azure/synced/security-findings',
+  authenticate,
+  asyncHandler(integrationsController.getAzureSyncedSecurityFindings)
+);
+
+// Azure Synced Security Alerts
+router.get(
+  '/azure/synced/security-alerts',
+  authenticate,
+  asyncHandler(integrationsController.getAzureSyncedSecurityAlerts)
+);
+
+// Azure Synced Users
+router.get(
+  '/azure/synced/users',
+  authenticate,
+  asyncHandler(integrationsController.getAzureSyncedUsers)
+);
+
+// Azure Synced Policy Compliance
+router.get(
+  '/azure/synced/policies',
+  authenticate,
+  asyncHandler(integrationsController.getAzureSyncedPolicies)
+);
+
 // ============================================================================
 // INTEGRATION REGISTRY — test, evidence, bulk operations
 // ============================================================================

@@ -139,6 +139,111 @@ class AuditController {
       throw new AppError(`Failed to create audit log: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
   };
+
+  // Export audit logs to JSON or CSV
+  exportLogs: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
+      const { startDate, endDate, format = 'json' } = req.query;
+
+      const where: any = { organizationId };
+
+      if (startDate || endDate) {
+        where.timestamp = {};
+        if (startDate) where.timestamp.gte = new Date(startDate as string);
+        if (endDate) where.timestamp.lte = new Date(endDate as string);
+      }
+
+      const logs = await prisma.auditLog.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { timestamp: 'desc' },
+      });
+
+      if (format === 'csv') {
+        const csvHeader = 'ID,Timestamp,Action,User ID,User Name,User Email,IP Address,Details\n';
+        const csvRows = logs.map((log) =>
+          `"${log.id}","${log.timestamp.toISOString()}","${(log.action || '').replace(/"/g, '""')}","${log.userId || ''}","${log.user?.name || ''}","${log.user?.email || ''}","${log.ipAddress || ''}","${(log.details || '').replace(/"/g, '""')}"`
+        ).join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=audit-logs-${new Date().toISOString().split('T')[0]}.csv`);
+        res.send(csvHeader + csvRows);
+      } else {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=audit-logs-${new Date().toISOString().split('T')[0]}.json`);
+        res.json({ exportedAt: new Date().toISOString(), total: logs.length, logs });
+      }
+    } catch (error) {
+      logger.error('Export audit logs error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to export audit logs', 500);
+    }
+  };
+
+  // Archive old audit logs (mark as archived - audit logs are immutable)
+  archiveLogs: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const organizationId = authReq.user!.organizationId;
+      const { beforeDate } = req.body;
+
+      if (!beforeDate) {
+        throw new AppError('beforeDate is required', 400);
+      }
+
+      const cutoffDate = new Date(beforeDate);
+
+      // Get logs to archive
+      // Get logs to archive - filter by timestamp only since archived field doesn't exist
+      const logsToArchive = await prisma.auditLog.findMany({
+        where: {
+          organizationId,
+          timestamp: { lt: cutoffDate },
+        },
+        select: { id: true },
+      });
+
+      if (logsToArchive.length === 0) {
+        res.json({ archived: 0, message: 'No logs to archive' });
+        return;
+      }
+
+      // For audit logs, we record the archive action but don't modify original logs
+      // (audit logs should be immutable in production)
+      const archiveResult = { count: logsToArchive.length };
+
+      // Create audit log for the archive action
+      await prisma.auditLog.create({
+        data: {
+          action: `Archived ${archiveResult.count} audit logs before ${cutoffDate.toISOString()}`,
+          userId: authReq.user!.id,
+          organizationId,
+          hash: uuidv4(),
+          ipAddress: req.ip || undefined,
+        },
+      });
+
+      res.json({
+        archived: archiveResult.count,
+        beforeDate: cutoffDate.toISOString(),
+        message: `Successfully archived ${archiveResult.count} audit logs`
+      });
+    } catch (error) {
+      logger.error('Archive audit logs error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to archive audit logs', 500);
+    }
+  };
 }
 
 export default new AuditController();

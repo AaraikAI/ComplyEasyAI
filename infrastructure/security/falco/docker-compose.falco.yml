@@ -1,0 +1,108 @@
+# ============================================================================
+# Falco Runtime Security Monitoring
+# Docker Compose Configuration
+# ============================================================================
+
+version: '3.9'
+
+services:
+  # ==========================================================================
+  # Falco - Runtime Security Monitoring
+  # ==========================================================================
+  falco:
+    image: falcosecurity/falco:0.37.0
+    container_name: falco
+    privileged: true
+    volumes:
+      # Kernel modules
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /dev:/host/dev:ro
+      - /proc:/host/proc:ro
+      - /boot:/host/boot:ro
+      - /lib/modules:/host/lib/modules:ro
+      - /usr:/host/usr:ro
+      - /etc:/host/etc:ro
+      # Config and rules
+      - ./falco.yaml:/etc/falco/falco.yaml:ro
+      - ./complyeasy_rules.yaml:/etc/falco/complyeasy_rules.yaml:ro
+      # Output logs
+      - falco_logs:/var/log/falco
+    environment:
+      # Use eBPF driver instead of kernel module
+      - FALCO_BPF_PROBE=
+    networks:
+      - complyeasy-security
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "falco", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================================================
+  # Falco Sidekick - Alert Router
+  # ==========================================================================
+  falco-sidekick:
+    image: falcosecurity/falcosidekick:2.28.0
+    container_name: falco-sidekick
+    environment:
+      # Elasticsearch output
+      - ELASTICSEARCH_HOSTPORT=http://elasticsearch:9200
+      - ELASTICSEARCH_INDEX=falco-alerts
+      - ELASTICSEARCH_TYPE=_doc
+      - ELASTICSEARCH_MINIMUMPRIORITY=warning
+      # Slack notifications (optional)
+      - SLACK_WEBHOOKURL=${SLACK_SECURITY_WEBHOOK_URL:-}
+      - SLACK_MINIMUMPRIORITY=warning
+      # Custom webhook to ComplyEasy API
+      - WEBHOOK_ADDRESS=http://api:3001/api/v1/security/falco-alerts
+      - WEBHOOK_MINIMUMPRIORITY=warning
+      # SMTP for email alerts (optional)
+      - SMTP_HOSTPORT=${SMTP_HOST:-}:${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=security@complyeasy.ai
+      - SMTP_TO=${SECURITY_ALERT_EMAIL:-}
+      - SMTP_MINIMUMPRIORITY=critical
+    ports:
+      - "2801:2801"
+    depends_on:
+      - falco
+    networks:
+      - complyeasy-security
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:2801/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================================================
+  # Falco Exporter - Prometheus Metrics
+  # ==========================================================================
+  falco-exporter:
+    image: falcosecurity/falco-exporter:0.8.3
+    container_name: falco-exporter
+    environment:
+      - FALCO_GRPC_ADDR=falco:5060
+    ports:
+      - "9376:9376"
+    depends_on:
+      - falco
+    networks:
+      - complyeasy-security
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9376/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  falco_logs:
+    driver: local
+
+networks:
+  complyeasy-security:
+    driver: bridge
+    external: true

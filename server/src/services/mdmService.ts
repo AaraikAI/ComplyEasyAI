@@ -335,6 +335,55 @@ export class MDMService {
     return true;
   }
 
+  /**
+   * Reassign a device to a different user.
+   */
+  async reassignDevice(
+    id: string,
+    userId: string,
+    organizationId: string,
+    data: {
+      newUserId: string;
+      newUserName?: string;
+      reason?: string;
+    },
+  ): Promise<ManagedDeviceRecord | null> {
+    const existing = await prisma.managedDevice.findFirst({
+      where: { id, organizationId },
+    });
+    if (!existing) return null;
+
+    const previousUserId = existing.assignedUserId;
+    const previousUserName = existing.assignedUserName;
+
+    const updated = await prisma.managedDevice.update({
+      where: { id },
+      data: {
+        assignedUserId: data.newUserId,
+        assignedUserName: data.newUserName ?? null,
+      },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'mdm_device.reassigned',
+      resourceType: 'ManagedDevice',
+      resourceId: id,
+      metadata: {
+        deviceName: existing.deviceName,
+        previousUserId,
+        previousUserName,
+        newUserId: data.newUserId,
+        newUserName: data.newUserName,
+        reason: data.reason,
+      },
+    });
+
+    logger.info(`[MDM] Device ${existing.deviceName} reassigned from ${previousUserName || previousUserId} to ${data.newUserName || data.newUserId}`);
+    return updated as unknown as ManagedDeviceRecord;
+  }
+
   // =========================================================================
   // MDMPolicy CRUD
   // =========================================================================

@@ -167,6 +167,65 @@ router.post(
 );
 
 // ============================================================================
+// COMPENSATING CONTROLS
+// ============================================================================
+
+router.get(
+  '/violations/:violationId/compensation',
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const controls = await sodService.getCompensatingControls(req.params.violationId, user.organizationId);
+    res.json(controls);
+  })
+);
+
+router.post(
+  '/violations/:violationId/compensation',
+  authorize('admin', 'editor'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const control = await sodService.addCompensatingControl(
+      req.params.violationId,
+      user.id,
+      user.organizationId,
+      req.body
+    );
+    res.status(201).json(control);
+  })
+);
+
+router.patch(
+  '/violations/:violationId/compensation/:controlId',
+  authorize('admin', 'editor'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const control = await sodService.updateCompensatingControl(
+      req.params.violationId,
+      req.params.controlId,
+      user.id,
+      user.organizationId,
+      req.body
+    );
+    res.json(control);
+  })
+);
+
+router.delete(
+  '/violations/:violationId/compensation/:controlId',
+  authorize('admin'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    await sodService.deleteCompensatingControl(
+      req.params.violationId,
+      req.params.controlId,
+      user.id,
+      user.organizationId
+    );
+    res.status(204).send();
+  })
+);
+
+// ============================================================================
 // CONFLICT MATRIX
 // ============================================================================
 

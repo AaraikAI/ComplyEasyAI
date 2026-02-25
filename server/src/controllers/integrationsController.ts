@@ -1002,6 +1002,220 @@ export const disconnectAzure: RequestHandler = async (req: Request, res: Respons
 };
 
 // ============================================================================
+// AZURE SYNC ENDPOINTS
+// ============================================================================
+
+import azureSyncService from '../services/integrations/azureSyncService';
+import { azureSyncJob } from '../jobs/azureSyncJob';
+
+export const runAzureFullSync: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+
+    // Check if integration is connected
+    const integration = await prisma.integration.findUnique({
+      where: {
+        organizationId_provider: {
+          organizationId,
+          provider: 'azure',
+        },
+      },
+    });
+
+    if (!integration || !integration.connected) {
+      res.status(404).json({ error: 'Azure integration not connected' });
+      return;
+    }
+
+    const result = await azureSyncService.runFullSync(organizationId, authReq.user!.id);
+
+    res.json({
+      success: result.success,
+      jobId: result.jobId,
+      summary: {
+        resources: result.results.resources.itemsSynced,
+        securityFindings: result.results.securityFindings.itemsSynced,
+        securityAlerts: result.results.securityAlerts.itemsSynced,
+        policyCompliance: result.results.policyCompliance.itemsSynced,
+        users: result.results.users.itemsSynced,
+      },
+      duration: result.totalDuration,
+    });
+  } catch (error: any) {
+    logger.error('Error running Azure full sync', error);
+    res.status(500).json({ error: error.message || 'Failed to run Azure sync' });
+  }
+};
+
+export const getAzureSyncStatus: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+
+    const status = await azureSyncJob.getSyncStatus(organizationId);
+
+    res.json(status);
+  } catch (error: any) {
+    logger.error('Error getting Azure sync status', error);
+    res.status(500).json({ error: error.message || 'Failed to get sync status' });
+  }
+};
+
+export const getAzureSyncHistory: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+    const { limit = '20', offset = '0', syncType } = req.query;
+
+    const history = await azureSyncService.getSyncHistory(organizationId, {
+      limit: parseInt(limit as string, 10),
+      offset: parseInt(offset as string, 10),
+      syncType: syncType as any,
+    });
+
+    res.json(history);
+  } catch (error: any) {
+    logger.error('Error getting Azure sync history', error);
+    res.status(500).json({ error: error.message || 'Failed to get sync history' });
+  }
+};
+
+export const getAzureSyncedResources: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+    const { limit = '100', offset = '0', resourceType, location } = req.query;
+
+    const where: any = { organizationId };
+    if (resourceType) where.resourceType = resourceType;
+    if (location) where.location = location;
+
+    const [resources, total] = await Promise.all([
+      prisma.azureResource.findMany({
+        where,
+        orderBy: { syncedAt: 'desc' },
+        take: parseInt(limit as string, 10),
+        skip: parseInt(offset as string, 10),
+      }),
+      prisma.azureResource.count({ where }),
+    ]);
+
+    res.json({ resources, total });
+  } catch (error: any) {
+    logger.error('Error getting Azure synced resources', error);
+    res.status(500).json({ error: error.message || 'Failed to get synced resources' });
+  }
+};
+
+export const getAzureSyncedSecurityFindings: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+    const { limit = '100', offset = '0', severity, status } = req.query;
+
+    const where: any = { organizationId };
+    if (severity) where.severity = severity;
+    if (status) where.status = status;
+
+    const [findings, total] = await Promise.all([
+      prisma.azureSecurityFinding.findMany({
+        where,
+        orderBy: { syncedAt: 'desc' },
+        take: parseInt(limit as string, 10),
+        skip: parseInt(offset as string, 10),
+      }),
+      prisma.azureSecurityFinding.count({ where }),
+    ]);
+
+    res.json({ findings, total });
+  } catch (error: any) {
+    logger.error('Error getting Azure synced security findings', error);
+    res.status(500).json({ error: error.message || 'Failed to get synced findings' });
+  }
+};
+
+export const getAzureSyncedSecurityAlerts: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+    const { limit = '100', offset = '0', severity, status } = req.query;
+
+    const where: any = { organizationId };
+    if (severity) where.severity = severity;
+    if (status) where.status = status;
+
+    const [alerts, total] = await Promise.all([
+      prisma.azureSecurityAlert.findMany({
+        where,
+        orderBy: { syncedAt: 'desc' },
+        take: parseInt(limit as string, 10),
+        skip: parseInt(offset as string, 10),
+      }),
+      prisma.azureSecurityAlert.count({ where }),
+    ]);
+
+    res.json({ alerts, total });
+  } catch (error: any) {
+    logger.error('Error getting Azure synced security alerts', error);
+    res.status(500).json({ error: error.message || 'Failed to get synced alerts' });
+  }
+};
+
+export const getAzureSyncedUsers: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+    const { limit = '100', offset = '0', accountEnabled, department } = req.query;
+
+    const where: any = { organizationId };
+    if (accountEnabled !== undefined) where.accountEnabled = accountEnabled === 'true';
+    if (department) where.department = department;
+
+    const [users, total] = await Promise.all([
+      prisma.azureUser.findMany({
+        where,
+        orderBy: { syncedAt: 'desc' },
+        take: parseInt(limit as string, 10),
+        skip: parseInt(offset as string, 10),
+      }),
+      prisma.azureUser.count({ where }),
+    ]);
+
+    res.json({ users, total });
+  } catch (error: any) {
+    logger.error('Error getting Azure synced users', error);
+    res.status(500).json({ error: error.message || 'Failed to get synced users' });
+  }
+};
+
+export const getAzureSyncedPolicies: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const organizationId = authReq.user!.organizationId;
+    const { limit = '100', offset = '0', complianceState } = req.query;
+
+    const where: any = { organizationId };
+    if (complianceState) where.complianceState = complianceState;
+
+    const [policies, total] = await Promise.all([
+      prisma.azurePolicyCompliance.findMany({
+        where,
+        orderBy: { syncedAt: 'desc' },
+        take: parseInt(limit as string, 10),
+        skip: parseInt(offset as string, 10),
+      }),
+      prisma.azurePolicyCompliance.count({ where }),
+    ]);
+
+    res.json({ policies, total });
+  } catch (error: any) {
+    logger.error('Error getting Azure synced policies', error);
+    res.status(500).json({ error: error.message || 'Failed to get synced policies' });
+  }
+};
+
+// ============================================================================
 // GENERIC CONNECTION HANDLER
 // ============================================================================
 

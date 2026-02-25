@@ -1,0 +1,135 @@
+# Falco Runtime Security Configuration
+# ComplyEasyAI - Container Runtime Security Monitoring
+
+# ============================================================================
+# BASIC CONFIGURATION
+# ============================================================================
+
+# Where to output alerts
+json_output: true
+json_include_output_property: true
+json_include_tags_property: true
+
+# Enable rule priorities
+priority: WARNING
+
+# Buffered outputs
+buffered_outputs: true
+
+# Output rate limiting
+outputs_rate: 1
+outputs_max_burst: 1000
+
+# Time format
+time_format_iso_8601: true
+
+# ============================================================================
+# FILE OUTPUT
+# ============================================================================
+
+file_output:
+  enabled: true
+  keep_alive: false
+  filename: /var/log/falco/falco_output.json
+
+# ============================================================================
+# STDOUT OUTPUT
+# ============================================================================
+
+stdout_output:
+  enabled: true
+
+# ============================================================================
+# SYSLOG OUTPUT
+# ============================================================================
+
+syslog_output:
+  enabled: true
+
+# ============================================================================
+# HTTP OUTPUT (for alerting systems)
+# ============================================================================
+
+http_output:
+  enabled: true
+  url: "http://alertmanager:9093/api/v2/alerts"
+  user_agent: "falco/0.38.0"
+
+# ============================================================================
+# PROGRAM OUTPUT
+# ============================================================================
+
+program_output:
+  enabled: true
+  keep_alive: false
+  program: |
+    curl -X POST -H "Content-Type: application/json" \
+    -d '{"channel": "#security-alerts", "text": "%evt.time: Falco Alert - %rule.name - %output"}' \
+    $SLACK_WEBHOOK_URL 2>&1 >/dev/null
+
+# ============================================================================
+# GRPC OUTPUT
+# ============================================================================
+
+grpc:
+  enabled: true
+  bind_address: "unix:///run/falco/falco.sock"
+  threadiness: 0
+
+grpc_output:
+  enabled: true
+
+# ============================================================================
+# WEBSERVER
+# ============================================================================
+
+webserver:
+  enabled: true
+  listen_port: 8765
+  k8s_healthz_endpoint: /healthz
+  ssl_enabled: false
+
+# ============================================================================
+# PLUGINS
+# ============================================================================
+
+# Load plugins for additional detection capabilities
+load_plugins: []
+
+# ============================================================================
+# RULE FILES
+# ============================================================================
+
+rules_file:
+  - /etc/falco/falco_rules.yaml
+  - /etc/falco/falco_rules.local.yaml
+  - /etc/falco/complyeasy_rules.yaml
+
+# ============================================================================
+# SYSCALL EVENT DROPS
+# ============================================================================
+
+syscall_event_drops:
+  threshold: 0.1
+  actions:
+    - log
+    - alert
+  rate: 0.03333
+  max_burst: 1
+
+# ============================================================================
+# BASE SYSCALLS
+# ============================================================================
+
+base_syscalls:
+  custom_set: []
+  repair: false
+
+# ============================================================================
+# METADATA
+# ============================================================================
+
+metadata_download:
+  max_mb: 100
+  chunk_wait_us: 1000
+  watch_freq_sec: 1

@@ -995,6 +995,196 @@ export class SoDService {
       },
     ];
   }
+
+  // ---------------------------------------------------------------------------
+  // COMPENSATING CONTROLS
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get compensating controls for a violation
+   */
+  async getCompensatingControls(violationId: string, organizationId: string) {
+    const violation = await prisma.soDViolation.findFirst({
+      where: { id: violationId, organizationId },
+    });
+
+    if (!violation) {
+      throw new Error('Violation not found');
+    }
+
+    // Compensating controls are stored in the mitigationAction JSON field
+    const controls = (violation.mitigationAction as any)?.compensatingControls || [];
+    return controls;
+  }
+
+  /**
+   * Add a compensating control to a violation
+   */
+  async addCompensatingControl(
+    violationId: string,
+    userId: string,
+    organizationId: string,
+    data: {
+      name: string;
+      description?: string;
+      controlType: string;
+      implementedBy?: string;
+      reviewFrequency?: string;
+      effectiveness?: string;
+    }
+  ) {
+    const violation = await prisma.soDViolation.findFirst({
+      where: { id: violationId, organizationId },
+    });
+
+    if (!violation) {
+      throw new Error('Violation not found');
+    }
+
+    const currentMitigation = (violation.mitigationAction as any) || {};
+    const compensatingControls = currentMitigation.compensatingControls || [];
+
+    const newControl = {
+      id: `cc-${Date.now()}`,
+      ...data,
+      createdAt: new Date().toISOString(),
+      createdBy: userId,
+    };
+
+    compensatingControls.push(newControl);
+
+    await prisma.soDViolation.update({
+      where: { id: violationId },
+      data: {
+        mitigationAction: {
+          ...currentMitigation,
+          compensatingControls,
+        },
+      },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'sod.compensating_control.added',
+      resourceType: 'SoDViolation',
+      resourceId: violationId,
+      metadata: { controlId: newControl.id, controlName: data.name },
+    });
+
+    return newControl;
+  }
+
+  /**
+   * Update a compensating control
+   */
+  async updateCompensatingControl(
+    violationId: string,
+    controlId: string,
+    userId: string,
+    organizationId: string,
+    data: {
+      name?: string;
+      description?: string;
+      controlType?: string;
+      implementedBy?: string;
+      reviewFrequency?: string;
+      effectiveness?: string;
+    }
+  ) {
+    const violation = await prisma.soDViolation.findFirst({
+      where: { id: violationId, organizationId },
+    });
+
+    if (!violation) {
+      throw new Error('Violation not found');
+    }
+
+    const currentMitigation = (violation.mitigationAction as any) || {};
+    const compensatingControls = currentMitigation.compensatingControls || [];
+
+    const controlIndex = compensatingControls.findIndex((c: any) => c.id === controlId);
+    if (controlIndex === -1) {
+      throw new Error('Compensating control not found');
+    }
+
+    compensatingControls[controlIndex] = {
+      ...compensatingControls[controlIndex],
+      ...data,
+      updatedAt: new Date().toISOString(),
+      updatedBy: userId,
+    };
+
+    await prisma.soDViolation.update({
+      where: { id: violationId },
+      data: {
+        mitigationAction: {
+          ...currentMitigation,
+          compensatingControls,
+        },
+      },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'sod.compensating_control.updated',
+      resourceType: 'SoDViolation',
+      resourceId: violationId,
+      metadata: { controlId },
+    });
+
+    return compensatingControls[controlIndex];
+  }
+
+  /**
+   * Delete a compensating control
+   */
+  async deleteCompensatingControl(
+    violationId: string,
+    controlId: string,
+    userId: string,
+    organizationId: string
+  ) {
+    const violation = await prisma.soDViolation.findFirst({
+      where: { id: violationId, organizationId },
+    });
+
+    if (!violation) {
+      throw new Error('Violation not found');
+    }
+
+    const currentMitigation = (violation.mitigationAction as any) || {};
+    const compensatingControls = currentMitigation.compensatingControls || [];
+
+    const controlIndex = compensatingControls.findIndex((c: any) => c.id === controlId);
+    if (controlIndex === -1) {
+      throw new Error('Compensating control not found');
+    }
+
+    compensatingControls.splice(controlIndex, 1);
+
+    await prisma.soDViolation.update({
+      where: { id: violationId },
+      data: {
+        mitigationAction: {
+          ...currentMitigation,
+          compensatingControls,
+        },
+      },
+    });
+
+    await AuditLogger.log({
+      userId,
+      organizationId,
+      action: 'sod.compensating_control.deleted',
+      resourceType: 'SoDViolation',
+      resourceId: violationId,
+      metadata: { controlId },
+    });
+
+    return { success: true };
+  }
 }
 
 export const sodService = new SoDService();

@@ -54,6 +54,51 @@ class EvidenceVersioningController {
     }
   };
 
+  // Get single version by ID
+  getVersion: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { controlId, versionId } = req.params;
+      const organizationId = authReq.user!.organizationId;
+
+      // Verify control exists and belongs to organization
+      const control = await prisma.frameworkControl.findFirst({
+        where: { id: controlId },
+        include: { framework: true },
+      });
+
+      if (!control || control.framework.organizationId !== organizationId) {
+        throw new AppError('Control not found', 404);
+      }
+
+      const version = await prisma.evidenceVersion.findFirst({
+        where: {
+          id: versionId,
+          controlId,
+        },
+        include: {
+          uploader: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!version) {
+        throw new AppError('Version not found', 404);
+      }
+
+      res.json(version);
+    } catch (error: any) {
+      logger.error('Get version error', { error: error.message, stack: error.stack });
+      if (error instanceof AppError) throw error;
+      throw new AppError(`Failed to fetch version: ${error.message || 'Unknown error'}`, 500);
+    }
+  };
+
   // Create new version (called when evidence is uploaded)
   createVersion: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {

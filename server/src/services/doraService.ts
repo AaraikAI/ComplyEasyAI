@@ -651,6 +651,50 @@ export async function updateICTIncident(
 }
 
 /**
+ * Delete (archive) an ICT incident
+ * Per DORA compliance requirements, incidents are archived rather than permanently deleted
+ */
+export async function deleteICTIncident(
+  organizationId: string,
+  incidentId: string,
+  deletedBy: string
+) {
+  const existing = await prisma.dORAICTIncident.findFirst({
+    where: { id: incidentId, organizationId },
+  });
+
+  if (!existing) {
+    throw new Error('ICT incident not found');
+  }
+
+  // Add archive event to timeline
+  const currentTimeline = (existing.timeline as any[]) || [];
+  currentTimeline.push({
+    event: 'Incident archived',
+    timestamp: new Date().toISOString(),
+    actor: deletedBy,
+    details: 'Incident marked as archived',
+  });
+
+  // Soft delete - mark as archived
+  const incident = await prisma.dORAICTIncident.update({
+    where: { id: incidentId },
+    data: {
+      status: 'archived',
+      timeline: currentTimeline,
+    },
+  });
+
+  logger.info('DORA ICT incident archived', {
+    incidentId,
+    organizationId,
+    archivedBy: deletedBy,
+  });
+
+  return { success: true, message: 'Incident archived successfully', incident };
+}
+
+/**
  * Escalate an ICT incident per DORA Article 19 reporting obligations
  *
  * Major ICT incidents must be reported to the competent authority:

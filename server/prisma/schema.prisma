@@ -157,6 +157,13 @@ model Organization {
   bcrPrograms               BCRProgram[]
   aiTransparencyNotices     AITransparencyNotice[]
   jitPrivacyNotices         JITPrivacyNotice[]
+  // Azure sync relations
+  azureResources            AzureResource[]
+  azureSecurityFindings     AzureSecurityFinding[]
+  azureSecurityAlerts       AzureSecurityAlert[]
+  azurePolicyCompliance     AzurePolicyCompliance[]
+  azureUsers                AzureUser[]
+  azureSyncJobs             AzureSyncJob[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -3001,6 +3008,7 @@ enum SubscriptionChangeType {
   payment_recovered
   addon_added
   addon_removed
+  refund
 }
 
 enum DemoRequestStatus {
@@ -5328,4 +5336,178 @@ model JITPrivacyNotice {
   @@index([organizationId])
   @@index([triggerContext])
   @@index([status])
+}
+
+// ============================================================================
+// AZURE SYNC MODELS
+// ============================================================================
+
+model AzureResource {
+  id                String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId    String
+  azureResourceId   String       // Azure resource ID from ARM
+  name              String
+  resourceType      String
+  location          String
+  resourceGroup     String?
+  subscriptionId    String
+  tags              Json?
+  provisioningState String?
+  sku               Json?
+  kind              String?
+  managedBy         String?
+  properties        Json?
+  syncedAt          DateTime     @default(now())
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, azureResourceId])
+  @@index([organizationId])
+  @@index([resourceType])
+  @@index([location])
+  @@index([resourceGroup])
+}
+
+model AzureSecurityFinding {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  azureFindingId        String       // Assessment ID from Security Center
+  name                  String
+  severity              String       // High, Medium, Low
+  status                String       // Healthy, Unhealthy, NotApplicable
+  description           String?
+  remediationSteps      String?
+  remediationUrl        String?
+  affectedResourceId    String?
+  affectedResourceType  String?
+  categories            String[]     @default([])
+  complianceStandards   String[]     @default([])
+  policyDefinitionId    String?
+  firstDetectedAt       DateTime?
+  lastUpdatedAt         DateTime?
+  resolvedAt            DateTime?
+  syncedAt              DateTime     @default(now())
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, azureFindingId])
+  @@index([organizationId])
+  @@index([severity])
+  @@index([status])
+  @@index([affectedResourceType])
+}
+
+model AzureSecurityAlert {
+  id                  String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId      String
+  azureAlertId        String       // Alert ID from Security Center
+  name                String
+  severity            String       // High, Medium, Low
+  status              String       // Active, Resolved, Dismissed
+  alertType           String?
+  description         String?
+  compromisedEntity   String?
+  remediationSteps    String[]     @default([])
+  affectedResourceId  String?
+  startTimeUtc        DateTime?
+  endTimeUtc          DateTime?
+  vendorName          String?
+  productName         String?
+  metadata            Json?
+  syncedAt            DateTime     @default(now())
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, azureAlertId])
+  @@index([organizationId])
+  @@index([severity])
+  @@index([status])
+  @@index([alertType])
+  @@index([startTimeUtc])
+}
+
+model AzurePolicyCompliance {
+  id                     String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId         String
+  azurePolicyAssignmentId String
+  policyDefinitionId     String
+  policyDefinitionName   String
+  displayName            String?
+  description            String?
+  scope                  String?
+  complianceState        String       // Compliant, NonCompliant, Unknown
+  enforcementMode        String?
+  parameters             Json?
+  nonCompliantResources  Int          @default(0)
+  compliantResources     Int          @default(0)
+  exemptResources        Int          @default(0)
+  conflictingResources   Int          @default(0)
+  evaluatedAt            DateTime?
+  syncedAt               DateTime     @default(now())
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, azurePolicyAssignmentId])
+  @@index([organizationId])
+  @@index([complianceState])
+  @@index([policyDefinitionId])
+}
+
+model AzureUser {
+  id                  String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId      String
+  azureUserId         String       // Object ID from Azure AD
+  displayName         String
+  userPrincipalName   String
+  email               String?
+  accountEnabled      Boolean      @default(true)
+  jobTitle            String?
+  department          String?
+  officeLocation      String?
+  mobilePhone         String?
+  assignedLicenses    String[]     @default([])
+  assignedRoles       String[]     @default([])
+  memberOf            String[]     @default([])
+  createdDateTime     DateTime?
+  lastSignInDateTime  DateTime?
+  signInActivity      Json?
+  riskLevel           String?
+  riskState           String?
+  syncedAt            DateTime     @default(now())
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, azureUserId])
+  @@index([organizationId])
+  @@index([accountEnabled])
+  @@index([department])
+  @@index([riskLevel])
+}
+
+model AzureSyncJob {
+  id              String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  syncType        String       // full, incremental, resources, security, users, policies
+  status          String       @default("pending") // pending, running, completed, failed
+  startedAt       DateTime?
+  completedAt     DateTime?
+  itemsSynced     Int          @default(0)
+  itemsFailed     Int          @default(0)
+  errorMessage    String?
+  errorDetails    Json?
+  triggeredBy     String?      // user ID or 'system'
+  metadata        Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([syncType])
+  @@index([startedAt])
 }

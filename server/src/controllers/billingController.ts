@@ -537,6 +537,76 @@ class BillingController {
   };
 
   /**
+   * Process a refund for a subscription payment
+   * POST /api/billing/refund
+   */
+  processRefund: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { chargeId, paymentIntentId, amount, reason } = req.body;
+      const organizationId = authReq.user!.organizationId;
+
+      if (!chargeId && !paymentIntentId) {
+        throw new AppError('Either chargeId or paymentIntentId is required', 400);
+      }
+
+      // Create refund via Stripe
+      const refundResult = await stripeService.processRefund({
+        organizationId,
+        chargeId,
+        paymentIntentId,
+        amount, // Optional: partial refund amount in cents
+        reason: reason || 'requested_by_customer',
+      });
+
+      if (!refundResult) {
+        throw new AppError('Failed to process refund', 500);
+      }
+
+      // Log the refund action
+      await prisma.auditLog.create({
+        data: {
+          action: 'billing.refund_processed',
+          userId: authReq.user!.id,
+          organizationId,
+          details: JSON.stringify({
+            refundId: refundResult.id,
+            amount: refundResult.amount,
+            status: refundResult.status,
+            chargeId,
+            paymentIntentId,
+            reason,
+          }),
+          hash: `refund_${refundResult.id}`,
+        },
+      });
+
+      // Dispatch webhook event
+      const webhookService = (await import('../services/webhookService')).default;
+      await webhookService.dispatchEvent(organizationId, 'payment.refunded', {
+        refundId: refundResult.id,
+        amount: refundResult.amount,
+        reason,
+        processedBy: authReq.user!.id,
+      });
+
+      res.json({
+        success: true,
+        refund: {
+          id: refundResult.id,
+          amount: refundResult.amount,
+          currency: refundResult.currency,
+          status: refundResult.status,
+        },
+      });
+    } catch (error) {
+      logger.error('Process refund error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to process refund', 500);
+    }
+  };
+
+  /**
    * Helper to get organization ID from Stripe customer ID
    */
   private async getOrgIdFromCustomer(customerId: string): Promise<string | null> {

@@ -155,6 +155,76 @@ class ControlMappingsController {
     }
   };
 
+  // Update a mapping
+  updateMapping: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const authReq = req as AuthRequest;
+      const { mappingId } = req.params;
+      const { mappingType, confidence, notes, status } = req.body;
+      const organizationId = authReq.user!.organizationId;
+
+      // Validate mapping exists and belongs to organization
+      const existingMapping = await prisma.controlMapping.findUnique({
+        where: { id: mappingId },
+        include: {
+          sourceControl: {
+            include: { framework: true },
+          },
+          targetControl: {
+            include: { framework: true },
+          },
+        },
+      });
+
+      if (!existingMapping) {
+        throw new AppError('Control mapping not found', 404);
+      }
+
+      // Verify organization access
+      if (
+        existingMapping.sourceControl.framework.organizationId !== organizationId ||
+        existingMapping.targetControl.framework.organizationId !== organizationId
+      ) {
+        throw new AppError('Unauthorized', 403);
+      }
+
+      const updatedMapping = await prisma.controlMapping.update({
+        where: { id: mappingId },
+        data: {
+          ...(mappingType && { mappingType }),
+          ...(confidence !== undefined && { confidence }),
+          ...(notes !== undefined && { notes }),
+          ...(status && { status }),
+          updatedAt: new Date(),
+        },
+        include: {
+          sourceControl: {
+            include: { framework: { select: { id: true, name: true } } },
+          },
+          targetControl: {
+            include: { framework: { select: { id: true, name: true } } },
+          },
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'UPDATE_CONTROL_MAPPING',
+          userId: authReq.user!.id,
+          organizationId,
+          hash: uuidv4(),
+          details: JSON.stringify({ mappingId, changes: req.body }),
+        },
+      });
+
+      res.json({ message: 'Mapping updated successfully', mapping: updatedMapping });
+    } catch (error) {
+      logger.error('Update mapping error', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to update mapping', 500);
+    }
+  };
+
   // Delete a mapping
   deleteMapping: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
