@@ -19,7 +19,7 @@
   "dependencies": {
     "@google/genai": "^1.30.0",
     "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.0",
+    "@testing-library/react": "^16.3.2",
     "@types/dompurify": "^3.0.5",
     "dompurify": "^3.3.1",
     "helmet": "^8.1.0",
