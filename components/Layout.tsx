@@ -574,7 +574,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, onNavigate, childre
                       // Fallback to initials if image fails to load
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
-                      target.parentElement!.innerHTML = user.name.substring(0, 2).toUpperCase();
+                      target.parentElement!.textContent = user.name.substring(0, 2).toUpperCase();
                     }}
                   />
                 ) : (

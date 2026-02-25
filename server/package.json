@@ -128,7 +128,8 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.6",
+    "@types/express": "^4.17.21",
+    "@types/express-serve-static-core": "^4.19.5",
     "@types/graphql-depth-limit": "^1.1.6",
     "@types/inquirer": "^8.2.10",
     "@types/ioredis": "^4.28.10",
@@ -166,15 +167,22 @@
   "overrides": {
     "form-data": "^4.0.1",
     "jsrsasign": "^11.0.0",
-    "elliptic": "^6.6.0",
+    "elliptic": "^6.6.1",
+    "nanoid": "^5.1.5",
     "diff": "^8.0.3",
     "qs": "^6.14.1",
     "glob": "^10.4.5",
     "inflight": "npm:@pnpm/npm-lifecycle@0.0.0",
     "rimraf": "^5.0.10",
+    "fast-xml-parser": "^5.3.6",
+    "cookie": "^0.7.0",
+    "bn.js": "^5.2.1",
     "postman-request": {
       "qs": "^6.14.1",
       "tough-cookie": "^4.1.4"
+    },
+    "bfj": {
+      "jsonpath": "npm:jsonpath-plus@^10.0.0"
     },
     "circom": {
       "tmp": "^0.2.3",
@@ -198,7 +206,14 @@
     },
     "mocha": {
       "minimatch": "^10.1.1",
-      "js-yaml": "^4.1.1"
+      "js-yaml": "^4.1.1",
+      "nanoid": "^5.1.5"
+    },
+    "fabric-common": {
+      "elliptic": "^6.6.1"
+    },
+    "aws-sdk": {
+      "elliptic": "^6.6.1"
     }
   }
 }

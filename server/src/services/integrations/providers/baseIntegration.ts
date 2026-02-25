@@ -20,8 +20,8 @@ export interface IntegrationCredentials {
   username?: string;
   password?: string;
   baseUrl?: string;
-  accessToken?: string;
-  refreshToken?: string;
+  accessToken?: string | null;
+  refreshToken?: string | null;
   serviceAccountJson?: string;
   clientId?: string;
   clientSecret?: string;

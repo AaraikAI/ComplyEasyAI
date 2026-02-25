@@ -642,7 +642,7 @@ class EvidenceTruthLayerService {
               operation: 'generate',
               success: true,
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { timestamp: 'desc' },
           });
 
           if (encryptedPayload) {
@@ -651,8 +651,10 @@ class EvidenceTruthLayerService {
                 ciphertext: '',
                 encryptedDataKey: existingKeyPolicy.keyId,
                 iv: '',
-                tag: '',
+                authTag: '',
                 algorithm: 'aes-256-gcm',
+                provider: existingKeyPolicy.provider as any,
+                keyId: existingKeyPolicy.keyId,
               },
               {
                 provider: existingKeyPolicy.provider as any,

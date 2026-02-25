@@ -2931,12 +2931,13 @@ class VRCollaborativeReviewService {
   ): Promise<void> {
     logger.info(`[VR Review] Sending invitations for session ${sessionId} to ${userIds.length} users`);
 
-    // Look up the host user for the invitation message
+    // Look up the host user for the invitation message and organization
     const hostUser = await prisma.user.findUnique({
       where: { id: hostUserId },
-      select: { name: true, email: true },
+      select: { name: true, email: true, organizationId: true },
     });
     const hostName = hostUser?.name || 'A team member';
+    const organizationId = hostUser?.organizationId || '';
 
     // Look up the session for context
     const session = await prisma.auditLog.findFirst({
@@ -2948,13 +2949,6 @@ class VRCollaborativeReviewService {
     });
     const sessionDetails = session ? JSON.parse(session.details || '{}') : {};
     const sessionName = sessionDetails.sessionName || 'VR Compliance Review';
-
-    // Retrieve the organization ID from the host user
-    const hostMembership = await prisma.organizationMember.findFirst({
-      where: { userId: hostUserId },
-      select: { organizationId: true },
-    });
-    const organizationId = hostMembership?.organizationId || '';
 
     // Send notifications to each invited user
     const results = await Promise.allSettled(
