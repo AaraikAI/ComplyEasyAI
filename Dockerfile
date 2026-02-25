@@ -15,7 +15,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Base — shared Node.js layer
 # ---------------------------------------------------------------------------
-FROM node:20-alpine AS base
+FROM node:25-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache libc6-compat openssl
 
