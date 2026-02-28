@@ -44,6 +44,18 @@ const TIER_FEATURES: Record<TierName, Record<string, boolean>> = {
     dsa: false,
     dma: false,
     zeroTrustSecurity: false,
+    // Feature Modules - NOT INCLUDED in Foundation
+    governanceManager: false,
+    breachManagement: false,
+    esgReporting: false,
+    sbomManager: false,
+    processMapper: false,
+    productLifecycle: false,
+    ceMarking: false,
+    digitalProductPassport: false,
+    postMarketSurveillance: false,
+    productDecommissioning: false,
+    environmentalLifecycle: false,
   },
   Essentials: {
     dashboard: true,
@@ -69,6 +81,18 @@ const TIER_FEATURES: Record<TierName, Record<string, boolean>> = {
     dsa: false,
     dma: false,
     zeroTrustSecurity: false,
+    // Feature Modules - Essentials includes Governance & Breach
+    governanceManager: true,
+    breachManagement: true,
+    esgReporting: false,
+    sbomManager: false,
+    processMapper: false,
+    productLifecycle: false,
+    ceMarking: false,
+    digitalProductPassport: false,
+    postMarketSurveillance: false,
+    productDecommissioning: false,
+    environmentalLifecycle: false,
   },
   Growth: {
     dashboard: true,
@@ -94,6 +118,18 @@ const TIER_FEATURES: Record<TierName, Record<string, boolean>> = {
     dsa: false,
     dma: false,
     zeroTrustSecurity: false,
+    // Feature Modules - Growth includes Essentials + ESG, SBOM, Process, Lifecycle
+    governanceManager: true,
+    breachManagement: true,
+    esgReporting: true,
+    sbomManager: true,
+    processMapper: true,
+    productLifecycle: true,
+    ceMarking: false,
+    digitalProductPassport: false,
+    postMarketSurveillance: false,
+    productDecommissioning: false,
+    environmentalLifecycle: false,
   },
   Visionary: {
     dashboard: true,
@@ -119,6 +155,18 @@ const TIER_FEATURES: Record<TierName, Record<string, boolean>> = {
     dsa: true,
     dma: true,
     zeroTrustSecurity: true,
+    // Feature Modules - ALL INCLUDED
+    governanceManager: true,
+    breachManagement: true,
+    esgReporting: true,
+    sbomManager: true,
+    processMapper: true,
+    productLifecycle: true,
+    ceMarking: true,
+    digitalProductPassport: true,
+    postMarketSurveillance: true,
+    productDecommissioning: true,
+    environmentalLifecycle: true,
   },
 };
 
@@ -158,21 +206,22 @@ export const VIEW_TO_FEATURE: Record<string, string> = {
   ecodesign: 'euAiAct',
   nis2: 'euAiAct',
   'us-privacy': 'complianceFrameworks',
-  // Phase 2-3: Process Mapping & Governance
-  'process-mapper': 'advancedReporting',
-  governance: 'advancedReporting',
-  // Phase 5: Certification & Market Access
-  'ce-marking': 'euAiAct',
-  'digital-product-passport': 'euAiAct',
+  // Phase 2-3: Process Mapping & Governance (Growth+)
+  'process-mapper': 'processMapper',
+  governance: 'governanceManager',
+  // Phase 5: Certification & Market Access (Visionary)
+  'ce-marking': 'ceMarking',
+  'digital-product-passport': 'digitalProductPassport',
   // Phase 6: ESG & Surveillance
-  'esg-reporting': 'advancedReporting',
-  'post-market-surveillance': 'euAiAct',
-  // Phase 7: Breach Management
-  'breach-wizard': 'advancedReporting',
+  'esg-reporting': 'esgReporting',
+  'post-market-surveillance': 'postMarketSurveillance',
+  // Phase 7: Breach Management (Essentials+)
+  'breach-wizard': 'breachManagement',
   // Phase 8: Post-Market Lifecycle
-  'sbom-manager': 'euAiAct',
-  'product-decommissioning': 'euAiAct',
-  'environmental-lifecycle': 'euAiAct',
+  'sbom-manager': 'sbomManager',
+  'product-decommissioning': 'productDecommissioning',
+  'environmental-lifecycle': 'environmentalLifecycle',
+  'product-lifecycle': 'productLifecycle',
   // AI Tier Features
   'ai-cross-mapper': 'aiGapAnalysis',
   'ai-auto-remediation': 'acosGoals',
@@ -181,7 +230,6 @@ export const VIEW_TO_FEATURE: Record<string, string> = {
   'ai-audit-simulator': 'acosGoals',
   'ai-nl-query': 'aiGapAnalysis',
   'compliance-forecasting': 'continuousMonitoring',
-  'product-lifecycle': 'euAiAct',
   // Related sub-views
   vendors: 'vendorRiskManagement',
   policies: 'personnelManagement',

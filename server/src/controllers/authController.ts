@@ -142,8 +142,10 @@ class AuthController {
         email,
       };
 
-      // Log token to server console only in development (never include in response)
+      // In development mode, include the token in response for testing
+      // This allows the "Simulate Click" button to work without checking emails
       if (process.env.NODE_ENV === 'development') {
+        response.devToken = token;
         logger.debug(`[DEV] Magic link token for ${response.email || 'user'}: ${token}`);
       }
 
@@ -560,15 +562,16 @@ class AuthController {
           }
         }
 
-        // In development, also return the token for testing
+        // Build response
         const response: any = {
           message: 'An account with this email already exists. A magic link has been sent to your email for login.',
           email,
           existingUser: true,
         };
 
-        // Log token in development mode for testing (never expose in HTTP response)
+        // In development mode, include the token for testing
         if (process.env.NODE_ENV === 'development') {
+          response.devToken = token;
           logger.debug(`[Dev] Magic link token for existing user ${email}: ${token}`);
         }
 
@@ -636,9 +639,10 @@ class AuthController {
         },
       };
 
-      // Log token to server console only in development (never include in response)
+      // In development mode, include the token for testing
       if (process.env.NODE_ENV === 'development') {
-        logger.debug(`[DEV] Magic link token for ${response.email || 'user'}: ${token}`);
+        response.devToken = token;
+        logger.debug(`[DEV] Magic link token for ${email}: ${token}`);
       }
 
       res.status(201).json(response);

@@ -244,6 +244,52 @@
       html {
         transition: background-color 0.3s ease, color 0.3s ease;
       }
+      /* ======================================
+         DARK MODE TEXT COLOR OVERRIDES
+         Ensures readability when dark mode is enabled
+         ====================================== */
+      .dark .text-gray-400 { color: #9ca3af !important; }
+      .dark .text-gray-500 { color: #d1d5db !important; }
+      .dark .text-gray-600 { color: #e5e7eb !important; }
+      .dark .text-gray-700 { color: #f3f4f6 !important; }
+      .dark .text-gray-800 { color: #f9fafb !important; }
+      .dark .text-gray-900 { color: #ffffff !important; }
+      .dark .text-slate-400 { color: #94a3b8 !important; }
+      .dark .text-slate-500 { color: #cbd5e1 !important; }
+      .dark .text-slate-600 { color: #e2e8f0 !important; }
+      .dark .text-slate-700 { color: #f1f5f9 !important; }
+      .dark .text-slate-800 { color: #f8fafc !important; }
+      .dark .text-slate-900 { color: #ffffff !important; }
+      /* Background color fixes for dark mode */
+      .dark .bg-white { background-color: #1e293b !important; }
+      .dark .bg-gray-50 { background-color: #1e293b !important; }
+      .dark .bg-gray-100 { background-color: #334155 !important; }
+      .dark .bg-slate-50 { background-color: #1e293b !important; }
+      .dark .bg-slate-100 { background-color: #334155 !important; }
+      /* Border color fixes for dark mode */
+      .dark .border-gray-100 { border-color: #334155 !important; }
+      .dark .border-gray-200 { border-color: #475569 !important; }
+      .dark .border-gray-300 { border-color: #64748b !important; }
+      .dark .border-slate-100 { border-color: #334155 !important; }
+      .dark .border-slate-200 { border-color: #475569 !important; }
+      .dark .border-slate-300 { border-color: #64748b !important; }
+      /* Hover states for dark mode */
+      .dark .hover\:bg-gray-50:hover { background-color: #334155 !important; }
+      .dark .hover\:bg-gray-100:hover { background-color: #475569 !important; }
+      .dark .hover\:bg-slate-50:hover { background-color: #334155 !important; }
+      .dark .hover\:bg-slate-100:hover { background-color: #475569 !important; }
+      /* Placeholder text for dark mode */
+      .dark .placeholder-gray-400::placeholder { color: #9ca3af !important; }
+      .dark .placeholder-gray-500::placeholder { color: #d1d5db !important; }
+      .dark .placeholder-slate-400::placeholder { color: #94a3b8 !important; }
+      /* Ring colors for dark mode focus states */
+      .dark .ring-gray-200 { --tw-ring-color: #475569 !important; }
+      .dark .ring-slate-200 { --tw-ring-color: #475569 !important; }
+      /* Divide colors for dark mode */
+      .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+      .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #475569 !important; }
+      .dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+      .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #475569 !important; }
     </style>
   </head>
   <body class="bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 transition-colors duration-300">

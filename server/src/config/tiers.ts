@@ -112,6 +112,23 @@ export interface TierFeatures {
   dsa: boolean;
   dma: boolean;
 
+  // Feature Modules - Essentials+
+  governanceManager: boolean;
+  breachManagement: boolean;
+
+  // Feature Modules - Growth+
+  esgReporting: boolean;
+  sbomManager: boolean;
+  processMapper: boolean;
+  productLifecycle: boolean;
+
+  // Feature Modules - Visionary
+  ceMarking: boolean;
+  digitalProductPassport: boolean;
+  postMarketSurveillance: boolean;
+  productDecommissioning: boolean;
+  environmentalLifecycle: boolean;
+
   // Support & SLA
   slaGuarantee: boolean;
   dedicatedSupport: boolean;
@@ -258,6 +275,19 @@ const foundationTier: Tier = {
     dsa: false,
     dma: false,
 
+    // Feature Modules - NOT INCLUDED in Foundation
+    governanceManager: false,
+    breachManagement: false,
+    esgReporting: false,
+    sbomManager: false,
+    processMapper: false,
+    productLifecycle: false,
+    ceMarking: false,
+    digitalProductPassport: false,
+    postMarketSurveillance: false,
+    productDecommissioning: false,
+    environmentalLifecycle: false,
+
     // Support & SLA - BASIC
     slaGuarantee: false,
     dedicatedSupport: false,
@@ -398,6 +428,19 @@ const essentialsTier: Tier = {
     dsa: false,
     dma: false,
 
+    // Feature Modules - Essentials includes Governance & Breach
+    governanceManager: true,
+    breachManagement: true,
+    esgReporting: false,
+    sbomManager: false,
+    processMapper: false,
+    productLifecycle: false,
+    ceMarking: false,
+    digitalProductPassport: false,
+    postMarketSurveillance: false,
+    productDecommissioning: false,
+    environmentalLifecycle: false,
+
     // Support & SLA
     slaGuarantee: false,
     dedicatedSupport: false,
@@ -537,6 +580,19 @@ const growthTier: Tier = {
     euAiAct: false,
     dsa: false,
     dma: false,
+
+    // Feature Modules - Growth includes Essentials + ESG, SBOM, Process, Lifecycle
+    governanceManager: true,
+    breachManagement: true,
+    esgReporting: true,
+    sbomManager: true,
+    processMapper: true,
+    productLifecycle: true,
+    ceMarking: false,
+    digitalProductPassport: false,
+    postMarketSurveillance: false,
+    productDecommissioning: false,
+    environmentalLifecycle: false,
 
     // Support & SLA
     slaGuarantee: true,
@@ -679,6 +735,19 @@ const visionaryTier: Tier = {
     euAiAct: true,
     dsa: true,
     dma: true,
+
+    // Feature Modules - ALL INCLUDED
+    governanceManager: true,
+    breachManagement: true,
+    esgReporting: true,
+    sbomManager: true,
+    processMapper: true,
+    productLifecycle: true,
+    ceMarking: true,
+    digitalProductPassport: true,
+    postMarketSurveillance: true,
+    productDecommissioning: true,
+    environmentalLifecycle: true,
 
     // Support & SLA - ALL INCLUDED
     slaGuarantee: true,
@@ -959,6 +1028,18 @@ export const FEATURE_DISPLAY_NAMES: Record<keyof TierFeatures, string> = {
   euAiAct: 'EU AI Act Compliance',
   dsa: 'Digital Services Act (DSA)',
   dma: 'Digital Markets Act (DMA)',
+  // Feature Modules
+  governanceManager: 'Governance Manager',
+  breachManagement: 'Breach Management',
+  esgReporting: 'ESG Reporting',
+  sbomManager: 'SBOM Manager',
+  processMapper: 'Process Mapper',
+  productLifecycle: 'Product Lifecycle Tracker',
+  ceMarking: 'CE Marking Workflow',
+  digitalProductPassport: 'Digital Product Passport',
+  postMarketSurveillance: 'Post-Market Surveillance',
+  productDecommissioning: 'Product Decommissioning',
+  environmentalLifecycle: 'Environmental Lifecycle',
   slaGuarantee: 'SLA Guarantee',
   dedicatedSupport: 'Dedicated Support',
   onPremDeployment: 'On-Premises Deployment',

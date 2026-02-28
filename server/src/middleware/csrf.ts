@@ -217,8 +217,27 @@ export const csrfProtection = async (req: Request, res: Response, next: NextFunc
     return next();
   }
 
+  // Skip CSRF in development (cross-origin localhost ports prevent cookie delivery)
+  if (process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
   // Skip CSRF for webhook endpoints (use signature verification instead)
   if (req.path.includes('/webhook')) {
+    return next();
+  }
+
+  // Skip CSRF for authentication endpoints (pre-login, no session exists yet)
+  // These endpoints use rate limiting and other protections
+  const authExemptPaths = [
+    '/auth/magic-link',
+    '/auth/verify',
+    '/auth/login',
+    '/auth/register',
+    '/auth/refresh',
+    '/auth/2fa/complete',
+  ];
+  if (authExemptPaths.some(path => req.path.includes(path))) {
     return next();
   }
 

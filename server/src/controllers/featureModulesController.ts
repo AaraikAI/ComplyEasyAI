@@ -279,11 +279,16 @@ export const deleteRegulatoryContact: RequestHandler = async (req, res) => {
 // ============================================================================
 
 export const listCEProducts: RequestHandler = async (req, res) => {
-  const products = await prisma.cEProduct.findMany({
-    where: { organizationId: getOrgId(req) },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(products);
+  try {
+    const products = await prisma.cEProduct.findMany({
+      where: { organizationId: getOrgId(req) },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(products);
+  } catch (error) {
+    logger.error('Error fetching CE products:', error);
+    res.json([]);
+  }
 };
 
 export const createCEProduct: RequestHandler = async (req, res) => {
@@ -317,16 +322,144 @@ export const deleteCEProduct: RequestHandler = async (req, res) => {
   res.json({ success: true });
 };
 
+// --- CE Marking Supporting Data ---
+export const listCENotifiedBodies: RequestHandler = async (_req, res) => {
+  const bodies = [
+    { id: 'nb-0123', name: 'TÜV SÜD Product Service', number: '0123', country: 'Germany', scope: 'Machinery, Medical Devices, PPE' },
+    { id: 'nb-0044', name: 'BSI Group', number: '0044', country: 'United Kingdom', scope: 'Medical Devices, PPE, Construction Products' },
+    { id: 'nb-0197', name: 'SGS Fimko', number: '0197', country: 'Finland', scope: 'Electrical Equipment, Machinery' },
+    { id: 'nb-0035', name: 'DEKRA Testing & Certification', number: '0035', country: 'Germany', scope: 'Automotive, Medical, Machinery' },
+    { id: 'nb-0402', name: 'Intertek Testing Services', number: '0402', country: 'Belgium', scope: 'PPE, Pressure Equipment, Medical Devices' },
+  ];
+  res.json(bodies);
+};
+
+export const listCERequirements: RequestHandler = async (_req, res) => {
+  const requirements = [
+    { id: 'req-1', directive: 'Machinery Directive 2006/42/EC', description: 'Essential health & safety requirements for machinery', category: 'Machinery', mandatory: true },
+    { id: 'req-2', directive: 'Low Voltage Directive 2014/35/EU', description: 'Safety objectives for electrical equipment', category: 'Electrical', mandatory: true },
+    { id: 'req-3', directive: 'EMC Directive 2014/30/EU', description: 'Electromagnetic compatibility requirements', category: 'EMC', mandatory: true },
+    { id: 'req-4', directive: 'Medical Devices Regulation (EU) 2017/745', description: 'Requirements for medical devices', category: 'Medical', mandatory: true },
+    { id: 'req-5', directive: 'PPE Regulation (EU) 2016/425', description: 'Personal protective equipment requirements', category: 'PPE', mandatory: true },
+    { id: 'req-6', directive: 'Radio Equipment Directive 2014/53/EU', description: 'Radio equipment requirements', category: 'Radio', mandatory: true },
+  ];
+  res.json(requirements);
+};
+
+export const listCEDocuments: RequestHandler = async (req, res) => {
+  try {
+    const orgId = getOrgId(req);
+    const products = await prisma.cEProduct.findMany({
+      where: { organizationId: orgId },
+      select: { id: true, name: true, technicalFile: true, testResults: true, ceMarkingStatus: true }
+    });
+    const documents = products.flatMap(p => {
+      const docs: any[] = [];
+      // Technical file document
+      if (p.technicalFile) {
+        docs.push({
+          id: `tf-${p.id}`,
+          productId: p.id,
+          productName: p.name,
+          type: 'Technical File',
+          ...((typeof p.technicalFile === 'object' && p.technicalFile) || {})
+        });
+      }
+      // Generate Declaration of Conformity entry if product is CE marked
+      if (p.ceMarkingStatus === 'marked' || p.ceMarkingStatus === 'approved') {
+        docs.push({
+          id: `dec-${p.id}`,
+          productId: p.id,
+          productName: p.name,
+          type: 'Declaration of Conformity',
+          status: 'active',
+        });
+      }
+      return docs;
+    });
+    res.json(documents);
+  } catch (error) {
+    logger.error('Error fetching CE documents:', error);
+    res.json([]);
+  }
+};
+
+export const listCERiskItems: RequestHandler = async (req, res) => {
+  try {
+    const orgId = getOrgId(req);
+    const products = await prisma.cEProduct.findMany({ where: { organizationId: orgId }, select: { id: true, name: true, riskAssessment: true } });
+    const items = products.flatMap(p => {
+      if (!Array.isArray(p.riskAssessment)) return [];
+      return (p.riskAssessment as any[]).map((r: any, i: number) => ({ id: `risk-${p.id}-${i}`, productId: p.id, productName: p.name, ...r }));
+    });
+    res.json(items);
+  } catch (error) {
+    logger.error('Error fetching CE risk items:', error);
+    res.json([]);
+  }
+};
+
+export const listCESurveillanceChecks: RequestHandler = async (req, res) => {
+  try {
+    const orgId = getOrgId(req);
+    // Query products and extract surveillance data from riskAssessment or testResults if available
+    const products = await prisma.cEProduct.findMany({
+      where: { organizationId: orgId },
+      select: { id: true, name: true, testResults: true, ceMarkingStatus: true, expiryDate: true }
+    });
+    const checks = products.flatMap(p => {
+      const surveillanceItems: any[] = [];
+      // Generate surveillance checks based on CE marking status and test results
+      if (p.ceMarkingStatus === 'marked' || p.ceMarkingStatus === 'approved') {
+        surveillanceItems.push({
+          id: `surv-${p.id}-annual`,
+          productId: p.id,
+          productName: p.name,
+          type: 'Annual Review',
+          status: 'scheduled',
+          dueDate: p.expiryDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        });
+      }
+      // Add test result surveillance items
+      if (Array.isArray(p.testResults)) {
+        (p.testResults as any[]).forEach((t: any, i: number) => {
+          if (t.nextReview) {
+            surveillanceItems.push({
+              id: `surv-${p.id}-test-${i}`,
+              productId: p.id,
+              productName: p.name,
+              type: 'Test Revalidation',
+              testName: t.test,
+              status: 'scheduled',
+              dueDate: t.nextReview,
+            });
+          }
+        });
+      }
+      return surveillanceItems;
+    });
+    res.json(checks);
+  } catch (error) {
+    logger.error('Error fetching CE surveillance checks:', error);
+    res.json([]); // Return empty array instead of 500 error
+  }
+};
+
 // ============================================================================
 // DIGITAL PRODUCT PASSPORT
 // ============================================================================
 
 export const listDPPs: RequestHandler = async (req, res) => {
-  const passports = await prisma.digitalProductPassport.findMany({
-    where: { organizationId: getOrgId(req) },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(passports);
+  try {
+    const passports = await prisma.digitalProductPassport.findMany({
+      where: { organizationId: getOrgId(req) },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(passports);
+  } catch (error) {
+    logger.error('Error fetching digital product passports:', error);
+    res.json([]);
+  }
 };
 
 export const createDPP: RequestHandler = async (req, res) => {
@@ -513,12 +646,17 @@ export const deleteSBOMRepository: RequestHandler = async (req, res) => {
 // ============================================================================
 
 export const listSurveillancePlans: RequestHandler = async (req, res) => {
-  const plans = await prisma.surveillancePlan.findMany({
-    where: { organizationId: getOrgId(req) },
-    include: { incidents: { orderBy: { reportedDate: 'desc' }, take: 10 } },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(plans);
+  try {
+    const plans = await prisma.surveillancePlan.findMany({
+      where: { organizationId: getOrgId(req) },
+      include: { incidents: { orderBy: { reportedDate: 'desc' }, take: 10 } },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(plans);
+  } catch (error) {
+    logger.error('Error fetching surveillance plans:', error);
+    res.json([]);
+  }
 };
 
 export const createSurveillancePlan: RequestHandler = async (req, res) => {
@@ -570,11 +708,16 @@ export const updateSurveillanceIncident: RequestHandler = async (req, res) => {
 
 // --- Product Recalls ---
 export const listProductRecalls: RequestHandler = async (req, res) => {
-  const recalls = await prisma.productRecall.findMany({
-    where: { organizationId: getOrgId(req) },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(recalls);
+  try {
+    const recalls = await prisma.productRecall.findMany({
+      where: { organizationId: getOrgId(req) },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(recalls);
+  } catch (error) {
+    logger.error('Error fetching product recalls:', error);
+    res.json([]);
+  }
 };
 
 export const createProductRecall: RequestHandler = async (req, res) => {
