@@ -200,7 +200,11 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   }, []);
 
   // ── Derived Metrics ──────────────────────────────────────────────────
-  const complianceScore = dashboardData?.complianceScore ?? (risks.length > 0 ? Math.round(100 - (risks.filter(r => r.riskLevel === 'Critical').length * 12 + risks.filter(r => r.riskLevel === 'High').length * 6)) : 0);
+  const rawComplianceScore = dashboardData?.complianceScore;
+  const complianceScore = typeof rawComplianceScore === 'number'
+    ? rawComplianceScore
+    : rawComplianceScore?.overallScore
+      ?? (risks.length > 0 ? Math.round(100 - (risks.filter(r => r.riskLevel === 'Critical').length * 12 + risks.filter(r => r.riskLevel === 'High').length * 6)) : 0);
   const criticalRisks = risks.filter(r => r.riskLevel === 'Critical').length;
   const highRisks = risks.filter(r => r.riskLevel === 'High').length;
   const openIncidents = incidents.filter(i => i.status === 'Open' || i.status === 'Investigating').length;

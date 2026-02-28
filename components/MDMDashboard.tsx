@@ -167,7 +167,7 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const compliantDevices = devices.filter(d => d.complianceStatus === 'Compliant').length;
   const nonCompliantDevices = devices.filter(d => d.complianceStatus === 'Non-Compliant').length;
   const pendingDevices = devices.filter(d => d.complianceStatus === 'Pending').length;
-  const complianceRate = Math.round((compliantDevices / totalDevices) * 100);
+  const complianceRate = totalDevices > 0 ? Math.round((compliantDevices / totalDevices) * 100) : 0;
 
   const platformBreakdown = useMemo(() => {
     const counts: Record<Platform, number> = { iOS: 0, Android: 0, Windows: 0, macOS: 0 };
@@ -289,7 +289,7 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <h3 className="text-lg font-semibold text-white mb-4">Platform Breakdown</h3>
           <div className="space-y-3">
             {(Object.entries(platformBreakdown) as [Platform, number][]).map(([platform, count]) => {
-              const pct = Math.round((count / totalDevices) * 100);
+              const pct = totalDevices > 0 ? Math.round((count / totalDevices) * 100) : 0;
               const barColor = platform === 'iOS' ? 'bg-blue-500' : platform === 'Android' ? 'bg-green-500' : platform === 'Windows' ? 'bg-cyan-500' : 'bg-purple-500';
               return (
                 <div key={platform}>
@@ -313,7 +313,7 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               { label: 'Corporate Owned', count: devices.filter(d => d.ownership === 'Corporate').length, color: 'bg-blue-500' },
               { label: 'BYOD', count: devices.filter(d => d.ownership === 'BYOD').length, color: 'bg-violet-500' },
             ].map(item => {
-              const pct = Math.round((item.count / totalDevices) * 100);
+              const pct = totalDevices > 0 ? Math.round((item.count / totalDevices) * 100) : 0;
               return (
                 <div key={item.label}>
                   <div className="flex justify-between text-sm mb-1">

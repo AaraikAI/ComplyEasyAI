@@ -306,6 +306,52 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
     }, 500);
   }, [loadData]);
 
+  const [previewReport, setPreviewReport] = useState<SBOMReport | null>(null);
+
+  const buildReportData = useCallback((rpt: SBOMReport) => ({
+    bomFormat: rpt.format,
+    specVersion: rpt.version,
+    metadata: { timestamp: rpt.generatedDate, component: { name: rpt.name } },
+    components: components.map(c => ({ type: c.type, name: c.name, version: c.version, purl: c.purl, license: c.license, supplier: c.supplier })),
+    vulnerabilities: vulnerabilities.map(v => ({ id: v.cveId, source: { name: 'NVD' }, ratings: [{ score: v.cvssScore, severity: v.severity }], description: v.description })),
+  }), [components, vulnerabilities]);
+
+  const downloadReport = useCallback((rpt: SBOMReport, format: 'json' | 'xml') => {
+    const data = buildReportData(rpt);
+    let blob: Blob;
+    let ext: string;
+    if (format === 'json') {
+      blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      ext = 'json';
+    } else {
+      const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>\n<bom xmlns="http://cyclonedx.org/schema/bom/1.5" version="1">\n  <metadata><timestamp>${data.metadata.timestamp}</timestamp></metadata>\n  <components>\n${data.components.map(c => `    <component type="${c.type}"><name>${c.name}</name><version>${c.version}</version><purl>${c.purl}</purl></component>`).join('\n')}\n  </components>\n  <vulnerabilities>\n${data.vulnerabilities.map(v => `    <vulnerability ref="${v.id}"><description>${v.description}</description></vulnerability>`).join('\n')}\n  </vulnerabilities>\n</bom>`;
+      blob = new Blob([xmlContent], { type: 'application/xml' });
+      ext = 'xml';
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${rpt.name.replace(/\s+/g, '_')}.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [buildReportData]);
+
+  const generateReport = useCallback(() => {
+    const newReport: SBOMReport = {
+      id: `RPT-${Date.now()}`,
+      name: `${selectedFormat} Report ${new Date().toISOString().split('T')[0]}`,
+      generatedDate: new Date().toISOString().split('T')[0],
+      format: selectedFormat,
+      version: selectedFormat === 'CycloneDX' ? '1.5' : '2.3',
+      componentCount: components.length,
+      vulnerabilityCount: vulnerabilities.length,
+      licenseCount: licenses.length,
+      complianceStatus: criticalVulns === 0 && licenseIssues === 0 ? 'compliant' : licenseIssues > 0 ? 'partial' : 'non_compliant',
+      craCompliant: criticalVulns === 0 && highVulns === 0,
+    };
+    setReports(prev => [newReport, ...prev]);
+  }, [selectedFormat, components, vulnerabilities, licenses, criticalVulns, highVulns, licenseIssues]);
+
   // --- CRUD handlers wired to backend API ---
   const updateVulnStatus = useCallback(async (vulnId: string, newStatus: Vulnerability['status']) => {
     try {
@@ -831,7 +877,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             <option value="CycloneDX">CycloneDX 1.5</option>
             <option value="SPDX">SPDX 2.3</option>
           </select>
-          <button className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
+          <button onClick={generateReport} className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
             <Plus className="w-4 h-4" />Generate Report
           </button>
         </div>
@@ -863,9 +909,9 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
               <div><span className="text-xs text-gray-500">Licenses: </span><span className="text-sm font-medium">{rpt.licenseCount}</span></div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><Download className="w-3 h-3" />Download JSON</button>
-              <button className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />Download XML</button>
-              <button className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Eye className="w-3 h-3" />Preview</button>
+              <button onClick={() => downloadReport(rpt, 'json')} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><Download className="w-3 h-3" />Download JSON</button>
+              <button onClick={() => downloadReport(rpt, 'xml')} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />Download XML</button>
+              <button onClick={() => setPreviewReport(rpt)} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Eye className="w-3 h-3" />Preview</button>
               <button onClick={() => setShowCompareModal(true)} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><GitMerge className="w-3 h-3" />Compare</button>
             </div>
           </div>
@@ -897,6 +943,22 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
               <div><div className="text-lg font-bold text-red-600">-3</div><div className="text-xs text-gray-500">Components Removed</div></div>
               <div><div className="text-lg font-bold text-blue-600">8</div><div className="text-xs text-gray-500">Version Changes</div></div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {previewReport && (
+        <div className="bg-white border border-gray-200 rounded-lg p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-semibold text-gray-900">Report Preview: {previewReport.name}</h4>
+            <button onClick={() => setPreviewReport(null)} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+            <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">{JSON.stringify(buildReportData(previewReport), null, 2)}</pre>
+          </div>
+          <div className="flex items-center gap-2 mt-3">
+            <button onClick={() => downloadReport(previewReport, 'json')} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><Download className="w-3 h-3" />Download JSON</button>
+            <button onClick={() => downloadReport(previewReport, 'xml')} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />Download XML</button>
           </div>
         </div>
       )}

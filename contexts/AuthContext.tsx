@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  loginWithMagicLink: (email: string) => Promise<{ message: string; email: string }>;
+  loginWithMagicLink: (email: string) => Promise<{ message: string; email: string; devToken?: string }>;
   verifyMagicLink: (token: string) => Promise<void>;
   logout: () => void;
   register: (name: string, email: string, organizationName?: string, password?: string) => Promise<any>;

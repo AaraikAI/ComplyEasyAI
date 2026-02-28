@@ -243,30 +243,31 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
   const loadWorkflows = useCallback(async () => {
     try {
-      const res = await api.workflows.list({ status: statusFilter !== 'all' ? statusFilter : undefined });
+      const params = statusFilter !== 'all' ? { status: statusFilter } : undefined;
+      const res = await api.workflows.list(params);
       setWorkflows((res.workflows || []).map(mapApiWorkflow));
-    } catch { /* handled by error state */ }
+    } catch (e: any) { setError(e?.message || 'Failed to load workflows'); }
   }, [statusFilter]);
 
   const loadTemplates = useCallback(async () => {
     try {
       const res = await api.workflows.listTemplates();
       setTemplates(Array.isArray(res) ? res.map(mapApiTemplate) : []);
-    } catch { /* handled by error state */ }
+    } catch (e: any) { setError(e?.message || 'Failed to load templates'); }
   }, []);
 
   const loadRuns = useCallback(async () => {
     try {
       const res = await api.workflows.listRuns();
       setRuns((res.runs || []).map(mapApiRun));
-    } catch { /* handled by error state */ }
+    } catch (e: any) { setError(e?.message || 'Failed to load runs'); }
   }, []);
 
   const loadRules = useCallback(async () => {
     try {
       const res = await api.workflows.listRules();
       setRules((res.rules || []).map(mapApiRule));
-    } catch { /* handled by error state */ }
+    } catch (e: any) { setError(e?.message || 'Failed to load rules'); }
   }, []);
 
   useEffect(() => {
@@ -349,6 +350,45 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const [showNodeModal, setShowNodeModal] = useState(false);
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
+  const [editingWorkflowName, setEditingWorkflowName] = useState('New Workflow');
+
+  const addNode = (type: NodeType, atIndex?: number) => {
+    const defaultTitles: Record<NodeType, string> = {
+      Trigger: 'New Trigger', Action: 'New Action', Condition: 'New Condition',
+      Notification: 'Send Notification', Approval: 'Request Approval', Wait: 'Wait Step',
+    };
+    const defaultConfigs: Record<NodeType, string> = {
+      Trigger: 'Configure trigger event', Action: 'Configure action', Condition: 'Set condition logic',
+      Notification: 'Configure notification channel', Approval: 'Set approvers', Wait: 'Set wait duration',
+    };
+    const newNode: WorkflowNode = {
+      id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      step: 0,
+      type,
+      title: defaultTitles[type],
+      configSummary: defaultConfigs[type],
+    };
+    setBuilderNodes(prev => {
+      const next = [...prev];
+      const idx = atIndex !== undefined && atIndex !== null ? atIndex + 1 : next.length;
+      next.splice(idx, 0, newNode);
+      return next.map((n, i) => ({ ...n, step: i + 1 }));
+    });
+    setShowNodeModal(false);
+    setInsertIndex(null);
+  };
+
+  const removeNode = (nodeId: string) => {
+    setBuilderNodes(prev => prev.filter(n => n.id !== nodeId).map((n, i) => ({ ...n, step: i + 1 })));
+  };
+
+  const openNodePicker = (atIndex?: number) => {
+    setInsertIndex(atIndex ?? null);
+    setShowNodeModal(true);
   };
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
@@ -582,7 +622,8 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             {NODE_PALETTE.map(np => (
               <div
                 key={np.type}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-grab text-sm ${nodeTypeColor(np.type)} hover:opacity-80 transition-opacity`}
+                onClick={() => addNode(np.type)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-sm ${nodeTypeColor(np.type)} hover:opacity-80 transition-opacity`}
               >
                 {nodeTypeIcon(np.type)}
                 <span className="text-white text-xs">{np.label}</span>
@@ -590,7 +631,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             ))}
           </div>
           <div className="mt-4 pt-4 border-t border-slate-700">
-            <p className="text-xs text-slate-500">Drag a node type onto the canvas or click the + buttons between steps to insert.</p>
+            <p className="text-xs text-slate-500">Click a node type to add it to the end, or use the + buttons between steps to insert.</p>
           </div>
         </div>
       </div>
@@ -600,8 +641,13 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-white font-medium">Incident Response Triage</h3>
-              <p className="text-slate-400 text-xs mt-1">Visual workflow editor - 6 nodes</p>
+              <input
+                type="text"
+                value={editingWorkflowName}
+                onChange={e => setEditingWorkflowName(e.target.value)}
+                className="text-white font-medium bg-transparent border-b border-transparent hover:border-slate-600 focus:border-blue-500 focus:outline-none transition-colors"
+              />
+              <p className="text-slate-400 text-xs mt-1">Visual workflow editor — {builderNodes.length} node{builderNodes.length !== 1 ? 's' : ''}</p>
             </div>
             <div className="flex items-center gap-2">
               <button className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs transition-colors">
@@ -624,7 +670,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     {nodeTypeIcon(node.type)}
                     <span className={`px-2 py-0.5 text-xs rounded ${nodeTypeColor(node.type)}`}>{node.type}</span>
                     <span className="text-white text-sm font-medium flex-1">{node.title}</span>
-                    <button className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-700"><Settings size={14} /></button>
+                    <button onClick={() => removeNode(node.id)} title="Remove node" className="p-1 text-slate-400 hover:text-red-400 rounded hover:bg-slate-700"><Trash2 size={14} /></button>
                   </div>
                   <p className="text-slate-400 text-xs ml-10">{node.configSummary}</p>
                 </div>
@@ -633,7 +679,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 {idx < builderNodes.length - 1 && (
                   <div className="flex flex-col items-center py-1">
                     <div className="w-px h-4 bg-slate-600" />
-                    <button className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:text-white hover:border-blue-500 hover:bg-blue-600/20 transition-colors">
+                    <button onClick={() => openNodePicker(idx)} className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:text-white hover:border-blue-500 hover:bg-blue-600/20 transition-colors">
                       <Plus size={12} />
                     </button>
                     <div className="w-px h-4 bg-slate-600" />
@@ -647,7 +693,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           {/* Add node at end */}
           <div className="flex flex-col items-center pt-2">
             <div className="w-px h-4 bg-slate-600" />
-            <button className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg text-slate-400 hover:text-white hover:border-blue-500 transition-colors text-xs">
+            <button onClick={() => openNodePicker()} className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg text-slate-400 hover:text-white hover:border-blue-500 transition-colors text-xs">
               <Plus size={14} /> Add Node
             </button>
           </div>
@@ -900,6 +946,34 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
     );
   };
 
+  // ── Node Picker Modal ────────────────────────────────────────────────
+
+  const renderNodePickerModal = () => {
+    if (!showNodeModal) return null;
+    return (
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => { setShowNodeModal(false); setInsertIndex(null); }}>
+        <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between p-5 border-b border-slate-700">
+            <h3 className="text-lg font-semibold text-white">Add Node</h3>
+            <button onClick={() => { setShowNodeModal(false); setInsertIndex(null); }} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
+          </div>
+          <div className="p-5 grid grid-cols-2 gap-3">
+            {NODE_PALETTE.map(np => (
+              <button
+                key={np.type}
+                onClick={() => addNode(np.type, insertIndex ?? undefined)}
+                className={`flex items-center gap-2 px-3 py-3 rounded-lg border text-sm ${nodeTypeColor(np.type)} hover:opacity-80 transition-opacity`}
+              >
+                {nodeTypeIcon(np.type)}
+                <span className="text-white text-xs font-medium">{np.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ── Run Detail Modal ─────────────────────────────────────────────────
 
   const renderRunDetailModal = () => {
@@ -1040,6 +1114,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       </div>
 
       {renderCreateModal()}
+      {renderNodePickerModal()}
       {renderRunDetailModal()}
     </div>
   );

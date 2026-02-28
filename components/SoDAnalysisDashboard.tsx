@@ -245,12 +245,15 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
               { label: 'Mitigated', count: violations.filter(v => v.status === 'Mitigated').length, color: 'bg-blue-500' },
               { label: 'Accepted', count: violations.filter(v => v.status === 'Accepted').length, color: 'bg-amber-500' },
               { label: 'Remediated', count: violations.filter(v => v.status === 'Remediated').length, color: 'bg-emerald-500' },
-            ].map(item => (
-              <div key={item.label}>
-                <div className="flex justify-between text-sm mb-1"><span className="text-slate-300">{item.label}</span><span className="text-white font-medium">{item.count} ({Math.round((item.count / violations.length) * 100)}%)</span></div>
-                <div className="h-2 bg-slate-700 rounded-full"><div className={`h-2 ${item.color} rounded-full transition-all`} style={{ width: `${Math.round((item.count / violations.length) * 100)}%` }} /></div>
-              </div>
-            ))}
+            ].map(item => {
+              const pct = violations.length > 0 ? Math.round((item.count / violations.length) * 100) : 0;
+              return (
+                <div key={item.label}>
+                  <div className="flex justify-between text-sm mb-1"><span className="text-slate-300">{item.label}</span><span className="text-white font-medium">{item.count} ({pct}%)</span></div>
+                  <div className="h-2 bg-slate-700 rounded-full"><div className={`h-2 ${item.color} rounded-full transition-all`} style={{ width: `${pct}%` }} /></div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

@@ -416,6 +416,8 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
   const [selectedEol, setSelectedEol] = useState<EOLPolicy | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [extraDocs, setExtraDocs] = useState<ProductDocument[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -453,12 +455,35 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
     return { total, avgScore, highRisk, ceMarked };
   }, []);
 
+  const allDocuments = useMemo(() => [...DOCUMENTS, ...extraDocs], [extraDocs]);
+
   const selectedProductDocs = useMemo(() => {
-    if (!selectedProduct) return DOCUMENTS;
-    let docs = DOCUMENTS.filter(d => d.productId === selectedProduct.id);
+    if (!selectedProduct) return allDocuments;
+    let docs = allDocuments.filter(d => d.productId === selectedProduct.id);
     if (docStageFilter !== 'all') docs = docs.filter(d => d.stage === docStageFilter);
     return docs;
-  }, [selectedProduct, docStageFilter]);
+  }, [selectedProduct, docStageFilter, allDocuments]);
+
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const productId = selectedProduct?.id || PRODUCTS[0]?.id || 'unknown';
+    const stage = selectedProduct?.stage || 'concept';
+    const newDoc: ProductDocument = {
+      id: `doc-${Date.now()}`,
+      productId,
+      name: file.name,
+      type: file.name.split('.').pop()?.toUpperCase() || 'FILE',
+      stage: stage as any,
+      version: '1.0',
+      uploadedBy: 'Current User',
+      uploadedAt: new Date().toISOString().split('T')[0],
+      size: file.size < 1024 ? `${file.size} B` : file.size < 1048576 ? `${(file.size / 1024).toFixed(0)} KB` : `${(file.size / 1048576).toFixed(1)} MB`,
+      status: 'draft',
+    };
+    setExtraDocs(prev => [newDoc, ...prev]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [selectedProduct]);
 
   const selectedProductMilestones = useMemo(() => {
     if (!selectedProduct) return MILESTONES;
@@ -648,7 +673,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
     const eolPolicy = EOL_POLICIES.find(e => e.productId === product.id);
     const envMetrics = ENVIRONMENTAL_METRICS.filter(e => e.productId === product.id);
     const milestones = MILESTONES.filter(m => m.productId === product.id);
-    const docs = DOCUMENTS.filter(d => d.productId === product.id);
+    const docs = allDocuments.filter(d => d.productId === product.id);
 
     return (
       <div className="space-y-6">
@@ -1173,7 +1198,8 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
               {STAGE_ORDER.map(s => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
             </select>
           </div>
-          <button className="ml-auto px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5">
+          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileUpload} />
+          <button onClick={() => fileInputRef.current?.click()} className="ml-auto px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5">
             <Upload className="w-4 h-4" /> Upload Document
           </button>
         </div>

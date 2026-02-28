@@ -89,6 +89,7 @@ export const LandingPage: React.FC = () => {
   const [loginMethod, setLoginMethod] = useState<'magic-link' | 'password'>('magic-link');
   const [loading, setLoading] = useState(false);
   const [magicLinkEmail, setMagicLinkEmail] = useState<string | null>(null);
+  const [devToken, setDevToken] = useState<string | null>(null); // For development mode simulation
 
   // Feature tab state
   const [activeTab, setActiveTab] = useState<FeatureTab>('core');
@@ -116,8 +117,12 @@ export const LandingPage: React.FC = () => {
     try {
       // Request magic link from backend
       // Backend auto-creates users if they don't exist, so this should always succeed for valid emails
-      await loginWithMagicLink(email);
+      const response = await loginWithMagicLink(email);
       setMagicLinkEmail(email);
+      // In development mode, backend returns devToken for simulation
+      if (response?.devToken) {
+        setDevToken(response.devToken);
+      }
       setAuthStep('magic-link-sent');
     } catch (e: any) {
       console.error('Login error:', e);
@@ -140,9 +145,14 @@ export const LandingPage: React.FC = () => {
     try {
       const response: any = await api.auth.register(name, email, undefined, password || undefined);
 
+      // Store devToken if returned (development mode)
+      if (response?.devToken) {
+        setDevToken(response.devToken);
+      }
+
       // Check if user already exists - backend now sends magic link automatically
       if (response?.existingUser) {
-        // Magic link sent — in development, check server console for token
+        setMagicLinkEmail(email);
         setAuthStep('magic-link-sent');
         setLoading(false);
         return;
@@ -167,18 +177,43 @@ export const LandingPage: React.FC = () => {
     setLoading(false);
   };
 
-  // Resend magic link
+  // Simulate clicking the magic link (development mode only)
   const simulateMagicClick = async () => {
     setLoading(true);
     try {
-      if (magicLinkEmail || email) {
-        await loginWithMagicLink(magicLinkEmail || email);
-        alert('A new magic link has been sent to your email.\n\nPlease check your email inbox for the login link.');
+      if (devToken) {
+        // Use the devToken to verify and log in
+        await verifyMagicLink(devToken);
+        setShowAuthModal(false);
+        // User is now logged in - the AuthContext will redirect to dashboard
+      } else {
+        // No devToken available (production mode) - inform user to check email
+        alert('Please check your email and click the magic link to sign in.\n\n' +
+              'The simulation feature is only available in development mode.');
       }
     } catch (error: any) {
       console.error('Magic link verification error:', error);
       alert(`Failed to verify magic link: ${error?.message || 'Unknown error'}\n\n` +
             'Please try requesting a new magic link.');
+    }
+    setLoading(false);
+  };
+
+  // Resend magic link
+  const resendMagicLink = async () => {
+    setLoading(true);
+    try {
+      if (magicLinkEmail || email) {
+        const response = await loginWithMagicLink(magicLinkEmail || email);
+        // Update devToken if returned
+        if (response?.devToken) {
+          setDevToken(response.devToken);
+        }
+        alert('A new magic link has been sent to your email.');
+      }
+    } catch (error: any) {
+      console.error('Resend magic link error:', error);
+      alert(`Failed to resend magic link: ${error?.message || 'Unknown error'}`);
     }
     setLoading(false);
   };
@@ -800,14 +835,36 @@ export const LandingPage: React.FC = () => {
 
                {authStep === 'magic-link-sent' && (
                   <div>
-                    <h3 className="text-2xl font-bold text-surface-900 mb-2">Check your email</h3>
-                    <p className="text-surface-500 mb-6">We sent a magic link to <span className="font-bold text-surface-800">{email}</span>.</p>
-                    <button
-                       onClick={simulateMagicClick}
-                       className="text-brand-600 font-bold hover:underline text-sm"
-                    >
-                       (Simulate Clicking Link from Email)
-                    </button>
+                    <h3 className="text-2xl font-bold text-surface-900 dark:text-white mb-2">Check your email</h3>
+                    <p className="text-surface-500 dark:text-surface-400 mb-6">We sent a magic link to <span className="font-bold text-surface-800 dark:text-surface-200">{email}</span>.</p>
+
+                    {/* Development mode: Simulate click button */}
+                    {devToken && (
+                      <button
+                        onClick={simulateMagicClick}
+                        disabled={loading}
+                        className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex justify-center items-center mb-4"
+                      >
+                        {loading ? <Loader2 className="animate-spin" /> : 'Sign In Now (Dev Mode)'}
+                      </button>
+                    )}
+
+                    <div className="flex justify-center space-x-4 text-sm">
+                      <button
+                        onClick={resendMagicLink}
+                        disabled={loading}
+                        className="text-brand-600 hover:underline"
+                      >
+                        Resend link
+                      </button>
+                      <span className="text-surface-300">|</span>
+                      <button
+                        onClick={() => setAuthStep('email')}
+                        className="text-surface-500 hover:underline"
+                      >
+                        Use different email
+                      </button>
+                    </div>
                   </div>
                )}
 

@@ -115,7 +115,7 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
   const effectiveCount = controls.filter(c => c.effectiveness === 'Effective').length;
   const ineffectiveCount = controls.filter(c => c.effectiveness === 'Ineffective').length;
   const needsImprovementCount = controls.filter(c => c.effectiveness === 'Needs Improvement').length;
-  const complianceScore = Math.round((effectiveCount / controls.length) * 100);
+  const complianceScore = controls.length > 0 ? Math.round((effectiveCount / controls.length) * 100) : 0;
   const totalDeficiencies = deficiencies.length;
   const materialWeaknesses = deficiencies.filter(d => d.type === 'Material Weakness').length;
   const significantDeficiencies = deficiencies.filter(d => d.type === 'Significant Deficiency').length;
@@ -182,9 +182,9 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
           <h3 className="text-lg font-semibold text-white mb-4">Control Effectiveness Breakdown</h3>
           <div className="space-y-3">
             {[
-              { label: 'Effective', count: effectiveCount, pct: Math.round((effectiveCount / controls.length) * 100), color: 'bg-emerald-500' },
-              { label: 'Needs Improvement', count: needsImprovementCount, pct: Math.round((needsImprovementCount / controls.length) * 100), color: 'bg-amber-500' },
-              { label: 'Ineffective', count: ineffectiveCount, pct: Math.round((ineffectiveCount / controls.length) * 100), color: 'bg-red-500' },
+              { label: 'Effective', count: effectiveCount, pct: controls.length > 0 ? Math.round((effectiveCount / controls.length) * 100) : 0, color: 'bg-emerald-500' },
+              { label: 'Needs Improvement', count: needsImprovementCount, pct: controls.length > 0 ? Math.round((needsImprovementCount / controls.length) * 100) : 0, color: 'bg-amber-500' },
+              { label: 'Ineffective', count: ineffectiveCount, pct: controls.length > 0 ? Math.round((ineffectiveCount / controls.length) * 100) : 0, color: 'bg-red-500' },
             ].map(item => (
               <div key={item.label}>
                 <div className="flex justify-between text-sm mb-1"><span className="text-slate-300">{item.label}</span><span className="text-white font-medium">{item.count} ({item.pct}%)</span></div>

@@ -109,7 +109,7 @@ router.delete(
 // ============================================================================
 
 router.get(
-  '/tests',
+  '/test-results',
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
     try {
@@ -123,7 +123,7 @@ router.get(
 );
 
 router.post(
-  '/tests',
+  '/test-results',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
@@ -137,7 +137,7 @@ router.post(
 );
 
 router.get(
-  '/tests/:id',
+  '/test-results/:id',
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
     const test = await soxService.getSOXTestResultById(req.params.id, user.organizationId);
@@ -150,7 +150,7 @@ router.get(
 );
 
 router.patch(
-  '/tests/:id',
+  '/test-results/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
@@ -160,7 +160,7 @@ router.patch(
 );
 
 router.delete(
-  '/tests/:id',
+  '/test-results/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as any).user;
