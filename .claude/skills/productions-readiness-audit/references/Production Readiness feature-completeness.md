@@ -1,6 +1,6 @@
-# Feature Completeness Verification
+# Feature Completeness Verification (Visionary Edition)
 
-This reference covers how to systematically verify that every feature in the application is fully implemented across all layers, with correct data flow and no gaps.
+This reference covers how to systematically verify that every feature in the application is fully implemented across all layers, with correct data flow and no gaps — enhanced with VLM-driven flow simulation for autonomous visual verification.
 
 ## Step 1: Discover All Features
 
@@ -36,6 +36,8 @@ grep -rn "href=\|to=\|navigate\|router\.push\|Link " --include="*.tsx" --include
 grep -rn "featureFlag\|feature_flag\|isEnabled\|isActive\|canAccess\|showFeature" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" | grep -v node_modules | grep -v test
 ```
 
+- [ ] **Menu Discovery**: Scan all Navbars, Sidebars, Drawers, and Tab components for feature links — these often reveal features that aren't top-level routes.
+
 ### Backend Endpoint Discovery
 ```bash
 # Express/Fastify/Koa routes
@@ -57,7 +59,7 @@ grep -rn "\.query\|\.mutation\|\.subscription" --include="*.ts" | grep -i "trpc\
 grep -rn "cron\|schedule\|setInterval\|queue\|worker\|job\|bull\|agenda\|celery\|crontab" --include="*.ts" --include="*.js" --include="*.py" | grep -v node_modules | grep -v test
 ```
 
-## Step 2: Build the Feature Inventory
+## Step 2: Build the Feature Inventory & Trace Layers
 
 Create a table of EVERY feature discovered:
 
@@ -68,6 +70,10 @@ Create a table of EVERY feature discovered:
 | 2 | Create Invoice | /invoices/new | POST /api/invoices | invoice.service.ts | invoices, line_items | Yes |
 | ...
 ```
+
+### Vertical Slice Verification
+
+- [ ] **Vertical Slice**: For each feature (e.g., "Create Invoice"), verify the complete stack — Page exists, calls the API, which calls the Service, which writes to the correct DB table. Any missing layer = incomplete feature.
 
 ## Step 3: Trace Each Feature Through All Layers
 
@@ -102,6 +108,15 @@ Open the page/component file and check:
   ```bash
   grep -n "toast\|notification\|alert\|snackbar\|message\.\(success\|error\)" COMPONENT_FILE
   ```
+- [ ] **Error Boundaries** — Is there a React Error Boundary (or framework equivalent) wrapping major UI sections for friendly crash recovery?
+
+### Edge Case Implementation Checklist
+
+For every feature with async operations, verify these three critical states exist:
+
+- [ ] **Loading States**: Every async action needs a spinner, skeleton, or progress indicator — no blank white screens during fetch.
+- [ ] **Empty States**: All lists, tables, and data views show a helpful "No results found" message when empty — not a blank container.
+- [ ] **Error Boundaries**: Friendly UI crash recovery wraps all major sections — users never see a white screen of death.
 
 ### Layer 2: API Endpoint Verification
 
@@ -234,15 +249,46 @@ Check auth redirects:
 - After login → redirect back to intended page
 - Unauthorized user (wrong role) → redirect to appropriate page with message
 
+---
+
+## Step 7: VLM-Driven Flow Simulation (VISIONARY)
+
+Go beyond static code analysis — use Vision Language Models to verify the app looks and behaves correctly at runtime.
+
+### Action Plan
+
+1. **Synthesize Playwright Tests**: Autonomously write E2E scripts for every discovered route from Step 1. Each script should navigate to the route, interact with key elements, and capture state transitions.
+
+2. **Execute & Capture**: Run the app locally. Capture screenshots at every meaningful state change — initial load, loading state, loaded state, empty state, error state, and post-action state.
+
+3. **VLM Evaluation**: Use Vision to analyze captured screenshots and verify:
+   - Does the loading spinner/skeleton actually appear during data fetch?
+   - Is the UI responsive and properly laid out (no overlapping elements, broken layouts)?
+   - Are error messages user-friendly and visible (not hidden, not raw stack traces)?
+   - Do empty states show helpful messaging, not blank containers?
+   - Are interactive elements (buttons, forms) visually accessible and properly styled?
+
+4. **End-to-End Integrity**: After each Playwright script run, verify that the UI success state matches a verified DB mutation — e.g., after "Create Invoice" completes in the UI, query the database to confirm the row was actually written with correct data.
+
+### VLM Evaluation Criteria
+
+For each screenshot captured:
+- **Visual completeness**: All expected elements are rendered
+- **State correctness**: The displayed state matches the expected state at that point in the flow
+- **Accessibility**: Text is readable, contrast is sufficient, interactive elements are identifiable
+- **Error handling**: Error states show actionable messaging, not technical jargon
+
+---
+
 ## Scoring
 
 For each feature, assign completion percentages per layer:
 
 | Score | Meaning |
 |-------|---------|
-| 100% | Fully implemented, all checks pass |
+| 100% | Fully implemented, all checks pass (including VLM verification if run) |
 | 75% | Core functionality works, missing edge case handling or minor validation |
-| 50% | Basic structure exists but missing significant implementation |
+| 50% | Basic structure exists but missing significant implementation (logic is mock/stub) |
 | 25% | Skeleton/stub only — file exists but logic is mock/placeholder |
 | 0% | Not started, file doesn't exist |
 

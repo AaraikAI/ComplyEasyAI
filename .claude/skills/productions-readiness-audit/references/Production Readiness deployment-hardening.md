@@ -1,6 +1,6 @@
-# Deployment Hardening Reference
+# Deployment Hardening Reference (Visionary Edition)
 
-This reference covers everything needed for the application to survive in production: server configuration, monitoring, scaling, CI/CD, and disaster recovery.
+This reference covers everything needed for the application to survive in production: server configuration, monitoring, scaling, CI/CD, and disaster recovery — enhanced with autonomous chaos engineering for proactive resilience validation.
 
 ## 8A: Environment & Configuration
 
@@ -22,7 +22,7 @@ comm -23 /tmp/audit_env_vars_code.txt /tmp/audit_env_vars_doc.txt 2>/dev/null
 ```
 
 ### Checklist
-- [ ] **Every env var used in code is in .env.example** with a description/default
+- [ ] **Completeness**: Match every env var used in code against `.env.example` — each must have a description/default value
 - [ ] **Env var validation at startup** — App crashes immediately with a clear error if required vars are missing
   ```bash
   grep -rn "validateEnv\|envalid\|env\.parse\|assert.*env\|if.*!.*process\.env\|required.*env\|throw.*env\|missing.*env" --include="*.ts" --include="*.js" --include="*.py" | grep -v node_modules | grep -v test
@@ -32,7 +32,7 @@ comm -23 /tmp/audit_env_vars_code.txt /tmp/audit_env_vars_doc.txt 2>/dev/null
   grep -rn "localhost\|127\.0\.0\.1\|0\.0\.0\.0" --include="*.ts" --include="*.js" --include="*.py" | grep -v node_modules | grep -v test | grep -v "\.env\|process\.env\|os\.environ\|fallback\|default\|//"
   ```
 - [ ] **Separate configs per environment** — dev/staging/production don't share secrets
-- [ ] **.env not committed** — Check .gitignore includes `.env`, `.env.local`, `.env.production`
+- [ ] **Secrets**: Ensure `.env` is in `.gitignore` — verify `.env`, `.env.local`, `.env.production` are all excluded
   ```bash
   cat .gitignore | grep -i "\.env"
   git status --porcelain | grep "\.env" 2>/dev/null  # Should return nothing
@@ -53,7 +53,7 @@ grep -rn "health\|/ping\|/ready\|/status\|readiness\|liveness" --include="*.ts" 
 ```
 
 A proper health check should:
-- [ ] Exist at a known path (`/health`, `/api/health`)
+- [ ] **Health Checks**: `/api/health` or `/healthz` endpoint exists
 - [ ] Verify database connectivity (not just return 200 unconditionally)
 - [ ] Return fast (< 1 second)
 - [ ] Return structured response: `{ status: "healthy", db: "connected", timestamp: ... }`
@@ -65,7 +65,7 @@ A proper health check should:
 grep -rn "SIGTERM\|SIGINT\|graceful\|shutdown\|beforeExit\|on_shutdown\|process\.on.*signal\|atexit" --include="*.ts" --include="*.js" --include="*.py" | grep -v node_modules | grep -v test
 ```
 
-- [ ] SIGTERM handler registered
+- [ ] **Graceful Shutdown**: Handle `SIGTERM` in the app — SIGTERM handler registered
 - [ ] On shutdown: stop accepting new requests
 - [ ] On shutdown: finish in-flight requests (with timeout)
 - [ ] On shutdown: close database connections
@@ -155,6 +155,7 @@ grep -rn "\.eq(\|\.match(\|\.filter(\|\.where(\|\.orderBy(\|\.order(\|WHERE\|ORD
 - [ ] No N+1 query patterns in list/dashboard views
 - [ ] Large queries are paginated (not fetching unbounded result sets)
 - [ ] Expensive queries are cached where appropriate
+- [ ] **DB Backups**: Verify backup script/config exists and is automated (see 8I for full checklist)
 
 ---
 
@@ -170,7 +171,7 @@ echo "console.log count: $(grep -rn 'console\.log' --include="*.ts" --include="*
 echo "structured logger count: $(grep -rn 'logger\.\|log\.\(info\|warn\|error\|debug\)' --include="*.ts" --include="*.js" | grep -v node_modules | grep -v test | wc -l)"
 ```
 
-- [ ] Structured logging library configured (not console.log in production)
+- [ ] **Structured Logs**: JSON format for production — structured logging library configured (not console.log)
 - [ ] Log levels used appropriately (error/warn/info/debug)
 - [ ] Logs include context: timestamp, request ID, user ID, operation
 - [ ] Sensitive data not logged (passwords, tokens, PII)
@@ -181,7 +182,7 @@ echo "structured logger count: $(grep -rn 'logger\.\|log\.\(info\|warn\|error\|d
 grep -rn "sentry\|Sentry\|bugsnag\|Bugsnag\|rollbar\|Rollbar\|datadog\|newrelic\|honeybadger\|errorTracking\|captureException\|captureMessage" --include="*.ts" --include="*.js" --include="*.py" | grep -v node_modules | grep -v test
 ```
 
-- [ ] Error tracking service integrated (Sentry, Bugsnag, etc.) — OR documented plan for setup
+- [ ] **Error Tracking**: Sentry/LogRocket/Bugsnag integration verified — service integrated OR documented plan for setup
 - [ ] Source maps uploaded for frontend error context
 - [ ] Error grouping/deduplication configured
 - [ ] Alert rules set for error rate spikes
@@ -340,7 +341,7 @@ cat .dockerignore 2>/dev/null
 
 ### Dockerfile Security Checklist
 
-- [ ] **Non-root user**: Dockerfile includes `USER node` or `USER appuser` (never runs as root in production)
+- [ ] **Docker Hardening — No `root` users**: Dockerfile includes `USER node` or `USER appuser` (never runs as root in production)
 - [ ] **Pinned base image tags**: Uses specific version tags (`node:20.11-alpine`), NOT `:latest`
   - IMAGE_TAG should be pinned in Dockerfile AND in docker-compose/k8s manifests
   - Check: `grep -rn ":latest" Dockerfile* docker-compose* *.yaml *.yml | grep "image:"` — should return nothing
@@ -499,6 +500,80 @@ grep -rn "backup\|pg_dump\|mysqldump\|mongodump\|cron.*backup\|snapshot" --inclu
 - [ ] Steps to recreate the environment from scratch
 - [ ] Secrets rotation procedure (what to do if a key is compromised)
 - [ ] Incident response contact list
+
+---
+
+## 8K: Autonomous Chaos Engineering (VISIONARY)
+
+Go beyond static configuration checks — actively verify the system's resilience by injecting real failures and observing behavior.
+
+### Chaos Protocol
+
+#### 1. Orchestration
+Spin up the full app architecture via Docker Compose (or equivalent local stack). Ensure the test environment mirrors production topology: app server(s), database, cache, message queue, and any external service dependencies (mocked or stubbed).
+
+```bash
+# Verify Docker Compose can bring up the full stack
+docker compose up -d 2>/dev/null || docker-compose up -d 2>/dev/null
+docker compose ps 2>/dev/null || docker-compose ps 2>/dev/null
+
+# Verify all services are healthy before injecting faults
+curl -sf http://localhost:3000/health || echo "❌ App health check failed before chaos testing"
+```
+
+#### 2. Fault Injection Scenarios
+
+Execute each fault while the app is under simulated traffic:
+
+- [ ] **DB Outage**: Kill the database container during active traffic. Observe: Does the app return 503s gracefully or crash entirely? Do connection retries work? Does the app recover automatically when DB comes back?
+  ```bash
+  # Example: Kill DB, observe, then restore
+  docker compose stop db
+  # Hit the app with requests, capture status codes
+  for i in $(seq 1 10); do curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health; echo; done
+  docker compose start db
+  ```
+
+- [ ] **Latency Injection**: Inject 5-second network lag on the DB or external service connection. Observe: Does the app timeout gracefully? Are users shown appropriate messages? Do request timeouts trigger correctly?
+  ```bash
+  # Example using tc (traffic control) or toxiproxy
+  # docker exec app-container tc qdisc add dev eth0 root netem delay 5000ms
+  ```
+
+- [ ] **Resource Pressure**: Spike CPU to 99% or exhaust memory. Observe: Does the app degrade gracefully under load? Are there circuit breakers or backpressure mechanisms? Does the health check start failing appropriately?
+  ```bash
+  # Example: CPU stress inside app container
+  # docker exec app-container stress --cpu 4 --timeout 30s
+  ```
+
+#### 3. Observation Criteria
+
+For each fault injection, verify:
+- Does the app return appropriate HTTP status codes (503 Service Unavailable, 504 Gateway Timeout)?
+- Do retry mechanisms activate correctly (with exponential backoff, not thundering herd)?
+- Are errors logged with sufficient context for debugging?
+- Does the app auto-recover when the fault is removed?
+- Are in-flight requests handled gracefully (not silently dropped)?
+
+#### 4. Auto-Healing Implementation
+
+If chaos testing reveals failures, autonomously implement resilience patterns:
+
+- [ ] **Circuit Breakers**: Implement using libraries like `opossum` (Node.js), `resilience4j` (Java), or `pybreaker` (Python) to prevent cascade failures.
+- [ ] **Retry Logic**: Add retry with exponential backoff for transient failures (DB connections, external API calls).
+- [ ] **Timeout Configuration**: Set appropriate timeouts at every integration point (DB queries, HTTP calls, queue operations).
+- [ ] **Graceful Degradation**: Implement fallback responses when dependencies are unavailable (cached data, default values, feature flags to disable affected features).
+- [ ] **Backpressure**: Add request queuing or load shedding when the system is overwhelmed.
+
+### Chaos Test Results Output
+
+For each fault scenario:
+- Fault type injected
+- Duration of fault
+- App behavior observed (status codes, error messages, logs)
+- Recovery time after fault removed
+- Resilience patterns implemented (with code diffs)
+- Pass/fail per observation criterion
 
 ---
 

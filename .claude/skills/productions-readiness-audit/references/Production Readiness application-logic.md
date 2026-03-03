@@ -1,6 +1,6 @@
-# Application Logic Verification
+# Application Logic Verification (Visionary Edition)
 
-This reference covers how to verify that the application's business logic, state management, data validation, and error handling are correct and production-ready.
+This reference covers how to verify that the application's business logic, state management, data validation, and error handling are correct and production-ready — enhanced with property-based testing and state machine validation for bulletproof verification.
 
 ## 5A: Business Rule Verification
 
@@ -42,7 +42,7 @@ For each business rule found:
    - Division by zero: Any calculations that could divide by zero?
 
 3. **Calculations correct?**
-   - Currency: Is rounding handled? (Use integer cents, not floating point dollars)
+   - [ ] **Calculation Integrity**: Verify rounding logic (especially currency — use integer cents, not floating point dollars). Test edge cases with zero and negative values.
    - Percentages: Is it percentage OF or percentage OFF?
    - Date math: Timezone handling, daylight saving time, leap years?
    - Precision: Are floating-point errors possible in financial calculations?
@@ -51,6 +51,9 @@ For each business rule found:
    - Can you go from any status to any other status? Or are transitions restricted?
    - What happens if you try an invalid transition?
    - Are completed/cancelled/deleted items properly locked from further changes?
+
+5. **Thresholds & Limits**
+   - [ ] **Thresholds**: Check all limits, quotas, and overflow handling. Verify what happens when limits are exceeded — graceful degradation or crash?
 
 ### Common Business Logic Red Flags
 
@@ -69,7 +72,7 @@ grep -rn "status.*=\|\.update.*status\|setState.*status" --include="*.ts" --incl
 
 ---
 
-## 5B: State Management Audit
+## 5B: State Management & Transitions Audit
 
 ### Frontend State
 
@@ -112,9 +115,14 @@ grep -rn "session\|req\.session\|express-session\|cookie-session" --include="*.t
 - Global mutable state → race conditions under concurrent requests
 - Missing cache invalidation → stale data served to users
 
+### Workflow Logic & Consistency
+
+- [ ] **Workflow Logic**: Verify all state machine transitions are valid and restricted (e.g., `draft` → `published` → `archived`; never `archived` → `draft` without explicit reactivation logic).
+- [ ] **UI ↔ Backend Consistency**: Ensure UI state reflects backend state correctly — no optimistic updates without rollback on failure, no stale state after mutations.
+
 ---
 
-## 5C: Data Validation Pipeline
+## 5C: Data Validation & Error Propagation Pipeline
 
 The same data validation should happen at every layer, and they must be consistent. Verification pattern:
 
@@ -162,11 +170,9 @@ For each validated field, verify:
 - Frontend type (number/string/date) = API type = DB column type
 - Enum values in frontend dropdowns = API accepted values = DB CHECK constraint
 
----
+### Error Propagation Verification
 
-## 5D: Error Propagation & User Feedback
-
-### Trace the Error Path
+#### Trace the Error Path
 
 For each major operation, verify errors propagate correctly:
 
@@ -178,7 +184,7 @@ DB error (connection lost, constraint violation, etc.)
         → User sees a helpful message (not "Something went wrong" or a stack trace)
 ```
 
-### Verification Commands
+#### Verification Commands
 
 ```bash
 # Find all error handling in services
@@ -191,8 +197,10 @@ grep -rn "toast\.\(error\|warning\)\|setError\|showError\|notification\.\(error\
 grep -rn "catch.*{}\|catch.*console\|except:.*pass\|except.*pass" --include="*.ts" --include="*.js" --include="*.py" | grep -v node_modules | grep -v test
 ```
 
-### Error Handling Checklist
+#### Error Handling Checklist
 
+- [ ] **Global Handler**: Is there a `try/catch` at the top level (global error boundary in React, unhandled rejection handler in Node)?
+- [ ] **User Feedback**: Are errors user-friendly or do they leak stack traces?
 - [ ] No empty catch blocks in service/controller code
 - [ ] No errors swallowed with only console.log (must re-throw or return error response)
 - [ ] API returns structured error format: `{ error: { code, message } }` (consistent across all endpoints)
@@ -203,7 +211,7 @@ grep -rn "catch.*{}\|catch.*console\|except:.*pass\|except.*pass" --include="*.t
 
 ---
 
-## 5E: Transaction & Data Consistency
+## 5D: Transaction & Data Consistency
 
 ### Find Multi-Step Operations
 
@@ -220,8 +228,8 @@ grep -rn "\.insert\|\.create\|\.update\|\.delete\|\.save\|\.remove" --include="*
 
 For each multi-step operation:
 
-- [ ] **Wrapped in transaction?** If step 2 fails, does step 1 roll back?
-- [ ] **Idempotent?** If the operation runs twice (user double-click, network retry), does it produce correct results?
+- [ ] **Atomic Operations**: Are multi-step DB writes wrapped in transactions? If step 2 fails, does step 1 roll back?
+- [ ] **Idempotency**: Can an operation run twice safely (e.g., on network retry, user double-click)? Does it produce correct results?
 - [ ] **Concurrent safety?** If two users edit the same resource simultaneously:
   - Is there optimistic locking (version/timestamp check)?
   - Or pessimistic locking (SELECT ... FOR UPDATE)?
@@ -234,3 +242,41 @@ For each multi-step operation:
 - Create order + charge payment + update inventory: Any step can fail
 - Delete parent record without cleaning up child records (orphaned data)
 - Updating denormalized data in one place but not the other (counter caches, aggregates)
+
+---
+
+## 5E: Property-Based Logic Synthesis (VISIONARY)
+
+Go beyond manual checklists — use automated, randomized verification to find edge cases humans miss.
+
+### Step 1: Auto-Generate Property Tests
+
+- [ ] **Synthesize property-based tests** (e.g., using `fast-check` for JS/TS, `hypothesis` for Python) for all core business logic functions identified in 5A.
+- [ ] **Inject 1,000+ randomized, extreme inputs** into each function: enormous numbers, negative values, empty strings, unicode edge cases, null/undefined, MAX_SAFE_INTEGER, dates at epoch boundaries.
+- [ ] If any input crashes the function or produces unexpected output, **auto-generate boundary guards** and add them to the codebase.
+
+```bash
+# Example: Discover functions to target for property testing
+grep -rn "export.*function\|export.*const.*=.*=>" --include="*.ts" --include="*.js" | grep -v node_modules | grep -v test | grep -v "\.d\.ts" | grep -iE "calc|price|total|discount|validate|convert|transform|parse"
+```
+
+### Step 2: State Machine Validation
+
+- [ ] **Generate scripts that attempt all illegal state transitions** for every workflow/state machine found in 5A and 5B (e.g., `archived` → `draft`, `cancelled` → `active`, `deleted` → `published`).
+- [ ] Execute each illegal transition against the actual API or service layer.
+- [ ] If any illegal transition succeeds, **write invariant guards** — both at the service layer and as DB constraints — to enforce valid transitions.
+
+```bash
+# Example: Find all status/state enums and their transitions
+grep -rn "enum.*Status\|enum.*State\|type.*Status\|type.*State\|STATUS_\|STATE_" --include="*.ts" --include="*.js" --include="*.py" | grep -v node_modules | grep -v test
+# Map every defined state, then attempt every possible pair as a transition
+```
+
+### Visionary Verification Output
+
+For each function/workflow tested:
+- Total inputs generated
+- Crash/failure count and reproduction steps
+- Guards generated (with code diffs)
+- Illegal transitions attempted vs. blocked
+- Invariant guards written (with code diffs)

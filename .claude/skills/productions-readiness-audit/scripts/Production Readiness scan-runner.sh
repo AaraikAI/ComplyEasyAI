@@ -1,6 +1,8 @@
 #!/bin/bash
-# Production Readiness Audit — Automated Scan Runner
-# This script runs ALL scan patterns and saves results to /tmp/audit_*.txt
+# Production Readiness Audit — Visionary Autonomous Runner
+# This script runs ALL scan patterns (Phase 2) and AST-level checks (Phase 2.5),
+# saves results to /tmp/audit_*.txt, prepares the local environment for Chaos & VLM
+# testing, and hands off to the Auto-Healing Engine for false-positive resolution.
 # It NEVER truncates output. Every finding is captured.
 #
 # Usage: bash scan-runner.sh [project_root]
@@ -12,7 +14,8 @@ PROJECT_ROOT="${1:-.}"
 cd "$PROJECT_ROOT"
 
 echo "============================================"
-echo "  PRODUCTION READINESS AUDIT — SCAN RUNNER"
+echo "  PRODUCTION READINESS AUDIT — VISIONARY"
+echo "  Autonomous Scan + AST + Chaos + Healing"
 echo "============================================"
 echo "Project: $(pwd)"
 echo "Started: $(date)"
@@ -25,7 +28,7 @@ rm -f /tmp/audit_*.txt
 # STEP 1: Detect stack and build file list
 # ─────────────────────────────────────
 
-echo "[1/4] Detecting stack and mapping codebase..."
+echo "[1/8] Detecting stack and mapping codebase..."
 
 # Detect source file extensions present
 EXTENSIONS=""
@@ -85,7 +88,7 @@ done
 # ─────────────────────────────────────
 
 echo ""
-echo "[2/4] Running exhaustive pattern scan..."
+echo "[2/8] Running exhaustive pattern scan..."
 echo "  (NO truncation — capturing ALL results)"
 echo ""
 
@@ -229,7 +232,7 @@ printf "  %-10s %-50s %d vars in code\n" "[K1]" "Env vars used in code" "$(wc -l
 # ─────────────────────────────────────
 
 echo ""
-echo "[3/6] Running security & authorization checks..."
+echo "[3/8] Running security & authorization checks..."
 
 # Category L: Authentication & Authorization
 run_pattern "L1" "Auth middleware/guards" \
@@ -271,7 +274,7 @@ run_pattern "M5" "CSRF protection" \
 # ─────────────────────────────────────
 
 echo ""
-echo "[4/6] Running application logic checks..."
+echo "[4/8] Running application logic checks..."
 
 # Category N: Transactions & Consistency
 run_pattern "N1" "Database transactions" \
@@ -295,7 +298,7 @@ run_pattern "O3" "In-memory server state" \
 # ─────────────────────────────────────
 
 echo ""
-echo "[5/6] Running infrastructure & deployment checks..."
+echo "[5/8] Running infrastructure & deployment checks..."
 
 # Category P: Infrastructure & Deployment
 run_pattern "P1" "Health check endpoints" \
@@ -404,21 +407,146 @@ run_pattern "S8" "Mobile secure storage" \
   "grep -rn $EXTENSIONS 'AsyncStorage\|SecureStore\|Keychain\|EncryptedStorage\|EncryptedSharedPreferences\|flutter_secure_storage' . | grep -v node_modules | grep -v test"
 
 # ─────────────────────────────────────
-# STEP 6: Summary
+# STEP 6: Phase 2.5 — AST Semantic Search (VISIONARY)
+# ─────────────────────────────────────
+
+echo ""
+echo "[6/8] Running Phase 2.5 — AST Semantic Search..."
+echo "  (Structural analysis beyond text-matching)"
+echo ""
+
+# AST-1: Empty Catch Blocks (complements E1-E3)
+# Grep pre-filter: find candidate files, then Claude Code does AST traversal
+echo "  [AST-1] Empty catch blocks (structural)..."
+grep -rln $EXTENSIONS "catch" . 2>/dev/null \
+  | grep -v node_modules | grep -v test | grep -v dist \
+  > /tmp/audit_AST1_candidates.txt || true
+AST1_COUNT=$(wc -l < /tmp/audit_AST1_candidates.txt)
+echo "    → $AST1_COUNT files with catch blocks flagged for AST traversal"
+echo "    [AI ACTION]: Claude Code, traverse CatchClause nodes where body.length === 0"
+
+# AST-2: Unprotected Endpoints (complements L1-L2)
+echo "  [AST-2] Unprotected endpoints (structural)..."
+grep -rln $EXTENSIONS 'app\.\(get\|post\|put\|patch\|delete\)\|router\.\(get\|post\|put\|patch\|delete\)' . 2>/dev/null \
+  | grep -v node_modules | grep -v test | grep -v dist \
+  > /tmp/audit_AST2_candidates.txt || true
+AST2_COUNT=$(wc -l < /tmp/audit_AST2_candidates.txt)
+echo "    → $AST2_COUNT files with route definitions flagged for auth middleware check"
+echo "    [AI ACTION]: Claude Code, verify auth middleware in argument chain for each route"
+
+# AST-3: Missing Awaits on Async ORM Calls
+echo "  [AST-3] Missing awaits on async ORM calls..."
+grep -rln $EXTENSIONS 'prisma\.\|supabase\.\|sequelize\.\|mongoose\.\|typeorm\.\|drizzle\.' . 2>/dev/null \
+  | grep -v node_modules | grep -v test | grep -v dist \
+  > /tmp/audit_AST3_candidates.txt || true
+AST3_COUNT=$(wc -l < /tmp/audit_AST3_candidates.txt)
+echo "    → $AST3_COUNT files with ORM calls flagged for missing await check"
+echo "    [AI ACTION]: Claude Code, find CallExpression[ORM method] where parent is NOT AwaitExpression"
+
+# AST-4: Unreachable Code After Return
+echo "  [AST-4] Unreachable code after return..."
+grep -rln $EXTENSIONS 'return ' . 2>/dev/null \
+  | grep -v node_modules | grep -v test | grep -v dist \
+  > /tmp/audit_AST4_candidates.txt || true
+AST4_COUNT=$(wc -l < /tmp/audit_AST4_candidates.txt)
+echo "    → $AST4_COUNT files flagged for dead code detection"
+echo "    [AI ACTION]: Claude Code, find statements after ReturnStatement in same block"
+
+# AST-5: Unvalidated Request Body Access (complements F4, M4)
+echo "  [AST-5] Unvalidated request body access..."
+grep -rln $EXTENSIONS 'req\.body\|request\.json\|request\.form\|@Body()' . 2>/dev/null \
+  | grep -v node_modules | grep -v test | grep -v dist \
+  > /tmp/audit_AST5_candidates.txt || true
+AST5_COUNT=$(wc -l < /tmp/audit_AST5_candidates.txt)
+echo "    → $AST5_COUNT files flagged for validation middleware check"
+echo "    [AI ACTION]: Claude Code, verify Zod/Joi/class-validator in route middleware chain"
+
+# AST tools hint
+echo ""
+echo "  AST Tool Options:"
+echo "    - Claude Code: inline AST analysis by reading flagged files"
+echo "    - ast-grep: 'ast-grep --pattern \"try { \$\$\$ } catch(\$ERR) { }\" .'"
+echo "    - ts-morph / jscodeshift: custom codemods for structural checks"
+
+# ─────────────────────────────────────
+# STEP 7: Preparing Local Environment for Chaos & VLM
+# ─────────────────────────────────────
+
+echo ""
+echo "[7/8] Preparing Local Environment for Chaos & VLM..."
+echo ""
+
+if [ -f "docker-compose.yml" ] || [ -f "docker-compose.yaml" ] || [ -f "compose.yml" ] || [ -f "compose.yaml" ]; then
+  COMPOSE_FILE=$(ls docker-compose.yml docker-compose.yaml compose.yml compose.yaml 2>/dev/null | head -1)
+  echo "  ✓ Compose file found: $COMPOSE_FILE"
+  echo "  [AI ACTION]: Claude Code, execute 'docker-compose up -d' in your sandbox."
+  echo "  [AI ACTION]: Run health checks against running containers."
+  echo "  [AI ACTION]: Inject chaos (kill containers, simulate network failures) and observe recovery."
+
+  # Extract service names for targeted chaos
+  grep -E "^\s+\w+:" "$COMPOSE_FILE" 2>/dev/null | grep -v "#" | sed 's/://;s/^[ ]*/    - Service: /' || true
+else
+  echo "  ✗ No docker-compose found."
+  echo "  [AI ACTION]: Claude Code, generate a mock environment from detected stack."
+  echo "  [AI ACTION]: Spin up lightweight test containers for integration testing."
+fi
+
+echo ""
+
+# VLM (Vision-Language Model) UI audit prep
+if grep -rql $EXTENSIONS 'react\|vue\|svelte\|angular\|next' . 2>/dev/null | grep -v node_modules | head -1 > /dev/null 2>&1; then
+  echo "  ✓ Frontend framework detected — VLM UI audit applicable."
+  echo "  [AI ACTION]: Claude Code, capture screenshots of key pages."
+  echo "  [AI ACTION]: Run VLM analysis for:"
+  echo "    - Visual hierarchy and accessibility issues"
+  echo "    - Dark pattern detection"
+  echo "    - Loading state completeness"
+  echo "    - Error state UX validation"
+  echo "    - Mobile responsiveness gaps"
+else
+  echo "  ✗ No frontend framework detected — skipping VLM UI audit."
+fi
+
+# ─────────────────────────────────────
+# STEP 8: Handing Over to Auto-Healing Engine
+# ─────────────────────────────────────
+
+echo ""
+echo "[8/8] Handing over to Auto-Healing Engine..."
+echo ""
+echo "  [AI ACTION]: Resolve false positives via AST parsing."
+echo "    - Cross-reference AST findings (Step 6) with grep findings (Steps 2-5)"
+echo "    - Deduplicate: AST-confirmed grep hits → elevate severity"
+echo "    - AST-only findings → classify independently"
+echo "    - Grep-only findings contradicted by AST context → demote to FALSE_POSITIVE"
+echo ""
+echo "  [AI ACTION]: Generate PRODUCTION_READINESS_REPORT.md with:"
+echo "    - Executive summary with overall readiness score"
+echo "    - Blockers (CRITICAL) — must fix before deploy"
+echo "    - High priority — fix within first sprint post-deploy"
+echo "    - Medium — track in backlog"
+echo "    - Low — address opportunistically"
+echo "    - Executable patches (inline diffs or codemod scripts)"
+echo "    - Chaos test results (if environment was available)"
+echo "    - VLM UI audit results (if frontend detected)"
+echo ""
+
+# ─────────────────────────────────────
+# FINAL SUMMARY
 # ─────────────────────────────────────
 
 echo ""
 echo "============================================"
-echo "[6/6] SCAN COMPLETE — Summary"
+echo "  VISIONARY SCAN COMPLETE — Summary"
 echo "============================================"
 echo ""
 echo "Total source files: $TOTAL_FILES"
 echo ""
-echo "Findings by category:"
-echo "─────────────────────"
+echo "Phase 2 — Grep Findings by category:"
+echo "─────────────────────────────────────"
 
 TOTAL_FINDINGS=0
-for f in /tmp/audit_A*.txt /tmp/audit_B*.txt /tmp/audit_C*.txt /tmp/audit_D*.txt /tmp/audit_E*.txt /tmp/audit_F*.txt /tmp/audit_G*.txt /tmp/audit_H*.txt /tmp/audit_I*.txt /tmp/audit_J*.txt /tmp/audit_K*.txt /tmp/audit_L*.txt /tmp/audit_M*.txt /tmp/audit_N*.txt /tmp/audit_O*.txt /tmp/audit_P*.txt /tmp/audit_Q*.txt /tmp/audit_R*.txt /tmp/audit_S*.txt 2>/dev/null; do
+for f in /tmp/audit_A*.txt /tmp/audit_B*.txt /tmp/audit_C*.txt /tmp/audit_D*.txt /tmp/audit_E*.txt /tmp/audit_F*.txt /tmp/audit_G*.txt /tmp/audit_H*.txt /tmp/audit_I*.txt /tmp/audit_J*.txt /tmp/audit_K*.txt /tmp/audit_L*.txt /tmp/audit_M*.txt /tmp/audit_N*.txt /tmp/audit_O*.txt /tmp/audit_P*.txt /tmp/audit_Q*.txt /tmp/audit_R*.txt /tmp/audit_S*.txt; do
   if [ -f "$f" ]; then
     count=$(wc -l < "$f")
     TOTAL_FINDINGS=$((TOTAL_FINDINGS + count))
@@ -427,9 +555,28 @@ for f in /tmp/audit_A*.txt /tmp/audit_B*.txt /tmp/audit_C*.txt /tmp/audit_D*.txt
 done
 
 echo ""
-echo "TOTAL FINDINGS TO REVIEW: $TOTAL_FINDINGS"
+echo "Phase 2.5 — AST Candidate Files:"
+echo "─────────────────────────────────"
+
+AST_TOTAL=0
+for f in /tmp/audit_AST*_candidates.txt; do
+  if [ -f "$f" ]; then
+    count=$(wc -l < "$f")
+    AST_TOTAL=$((AST_TOTAL + count))
+    printf "  %-40s %d files\n" "$(basename $f .txt)" "$count"
+  fi
+done
+
+echo ""
+echo "TOTAL GREP FINDINGS TO REVIEW: $TOTAL_FINDINGS"
+echo "TOTAL AST CANDIDATE FILES:     $AST_TOTAL"
 echo ""
 echo "All results saved to /tmp/audit_*.txt"
-echo "Now classify each finding by reading file context."
+echo ""
+echo "Next steps:"
+echo "  1. Claude Code: Run AST traversal on /tmp/audit_AST*_candidates.txt files"
+echo "  2. Claude Code: Cross-reference AST results with grep findings"
+echo "  3. Claude Code: Execute Chaos/VLM tests if environment available"
+echo "  4. Claude Code: Generate PRODUCTION_READINESS_REPORT.md with executable patches"
 echo ""
 echo "Finished: $(date)"

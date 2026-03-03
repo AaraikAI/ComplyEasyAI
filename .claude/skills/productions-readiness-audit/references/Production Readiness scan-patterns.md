@@ -1,6 +1,6 @@
-# Scan Patterns Reference
+# Scan Patterns & AST Semantic Search (Visionary Edition)
 
-This file contains ALL grep/search patterns to run during Phase 2 of the audit. For every category, run the patterns against ALL source files (from `/tmp/audit_all_source.txt`) and save FULL output to temp files. **Never truncate.**
+This file contains ALL grep/search patterns to run during Phase 2 of the audit, **plus Phase 2.5 AST-level semantic analysis** for structural code issues that text-matching cannot detect. For every category, run the patterns against ALL source files (from `/tmp/audit_all_source.txt`) and save FULL output to temp files. **Never truncate.**
 
 The variable `$SRC` below refers to all source directories relevant to the detected stack. Build this dynamically in Phase 0 — don't hardcode directory names.
 
@@ -484,6 +484,87 @@ grep -rn "AsyncStorage\|SecureStore\|Keychain\|EncryptedStorage\|EncryptedShared
 
 ---
 
+## Phase 2.5: Semantic AST-Grep Search (VISIONARY)
+
+> **Beyond grep**: The patterns in Categories A–S above are text-based and catch the majority of issues. However, certain structural anti-patterns can only be detected reliably through AST (Abstract Syntax Tree) traversal. When using Claude Code or a dedicated AST tool (e.g., `ast-grep`, `jscodeshift`, `ts-morph`), apply the following semantic checks after Phase 2 grep scanning is complete.
+
+### Instructions for Claude Code / AST Tools:
+
+#### AST-1: Empty Catch Blocks (Complements E1–E3)
+Traverse the AST for `CatchClause` nodes where the body's statement count is 0. Unlike grep pattern E1 which relies on regex matching `catch.*{.*}`, AST traversal catches multi-line empty catches and those with only whitespace/comments that grep misses.
+
+```
+Pattern:  CatchClause → body.length === 0
+Severity: CRITICAL
+Action:   Log error, rethrow, or handle explicitly
+Grep complement: E1, E2 (catches cases those patterns miss)
+```
+
+#### AST-2: Unprotected Endpoints (Complements L1–L2)
+Traverse the AST for router/handler definitions (e.g., `app.get()`, `app.post()`, `router.get()`, `@Get()`, `@Post()`). For each, check if an auth middleware function is present in the argument list before the handler callback. This goes beyond the L1/L2 grep cross-reference by programmatically verifying the middleware chain rather than relying on keyword matching.
+
+```
+Pattern:  CallExpression[callee matches app.(get|post|put|delete|patch)]
+          → arguments missing auth/middleware function
+Severity: CRITICAL
+Action:   Add authentication middleware or document as intentionally public
+Grep complement: L2 cross-referenced with L1
+```
+
+#### AST-3: Missing Awaits on Async ORM Calls
+Find async ORM/database calls (e.g., `prisma.findMany()`, `prisma.create()`, `supabase.from().select()`, `sequelize.findAll()`) that are NOT prefixed by an `AwaitExpression` node. Missing awaits cause silent data loss, race conditions, and undefined returns. Grep cannot reliably detect this because the `await` keyword may be on a different line.
+
+```
+Pattern:  CallExpression[callee matches ORM method]
+          → parent is NOT AwaitExpression
+Severity: HIGH
+Action:   Add await keyword or handle the returned Promise explicitly
+Grep complement: E4 (extends async coverage beyond try/catch)
+```
+
+#### AST-4: Unreachable Code After Return
+Traverse function bodies for statements that appear after a `ReturnStatement` at the same block level. These indicate dead code or logic errors that grep-based scanning cannot detect.
+
+```
+Pattern:  ReturnStatement → sibling statements exist after it in same block
+Severity: MEDIUM
+Action:   Remove dead code or fix control flow
+```
+
+#### AST-5: Unvalidated Request Body Access (Complements F4, M4)
+Find direct property access on `req.body` (e.g., `req.body.email`) without prior validation middleware (Zod, Joi, express-validator, class-validator, Pydantic) in the route's middleware chain. This structurally verifies what grep patterns F4 and M4 can only flag as candidates.
+
+```
+Pattern:  MemberExpression[object matches req.body]
+          → no validation middleware in route chain
+Severity: HIGH
+Action:   Add request validation schema (Zod, Joi, class-validator, Pydantic)
+Grep complement: F4, M4 (provides structural confirmation)
+```
+
+### AST Tool Execution:
+
+```bash
+# If ast-grep is available:
+# ast-grep --pattern 'try { $$$ } catch($ERR) { }' $SRC
+# ast-grep --pattern 'app.get($ROUTE, $HANDLER)' $SRC
+
+# If ts-morph / jscodeshift:
+# Run custom codemods that traverse and report (see scripts/ for examples)
+
+# If using Claude Code:
+# Claude Code can perform AST analysis inline by reading files and
+# reasoning about code structure. Apply AST-1 through AST-5 checks
+# by reading each flagged file from Phase 2 grep results.
+```
+
+### Phase 2.5 Triage:
+- AST findings that **confirm** grep findings from Phase 2 → elevate severity
+- AST findings that are **net-new** (not caught by grep) → classify independently
+- Deduplicate across AST and grep results before generating the final report
+
+---
+
 ## Running All Patterns
 
 Use `references/scan-runner.sh` (if available) to execute all patterns in one pass, or run them sequentially. After all patterns have run:
@@ -497,4 +578,6 @@ Use `references/scan-runner.sh` (if available) to execute all patterns in one pa
 
 2. Process EVERY finding (no skipping, no sampling)
 3. Classify each one by reading surrounding context in the actual source file
-4. Record classifications for the final report
+4. Run Phase 2.5 AST Semantic Search on files flagged in Phase 2 (especially E1–E3, L1–L2, F4, M4)
+5. Deduplicate AST findings against grep findings
+6. Record all classifications for the final report
