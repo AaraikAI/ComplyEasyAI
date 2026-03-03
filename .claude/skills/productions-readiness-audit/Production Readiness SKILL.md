@@ -1,38 +1,43 @@
 ---
-name: production-readiness-audit
-description: Perform a deep, exhaustive forensic scan of an entire codebase to produce a complete production-readiness report. Use this skill whenever the user wants to audit a codebase for production readiness, find all issues blocking deployment, scan for mocks/stubs/TODOs/incomplete implementations, verify full-stack feature completeness (UI → API → DB), check deployment configuration, or generate a prioritized fix list. Also trigger when the user says things like "is my app ready for production", "audit my code", "find all issues", "what's left to finish", "deployment blockers", "forensic scan", "production gaps", "codebase health check", or "readiness report". This skill is specifically designed to catch EVERYTHING in a single pass — no truncation, no sampling, no incremental discovery. If the user has been running repeated scans and finding new issues each time, this skill solves that problem.
+name: production-readiness-audit-visionary
+description: Perform a deep, exhaustive forensic scan of an entire codebase to produce a complete production-readiness report. This visionary version integrates AST Semantic Parsing, VLM-driven UI verification, Autonomous Red Teaming, and Chaos Engineering. Use this whenever the user wants to audit a codebase for production readiness, find all issues blocking deployment, scan for mocks/stubs/TODOs/incomplete implementations, verify full-stack feature completeness (UI → API → DB), or generate a prioritized fix list. Also trigger when the user says things like "is my app ready for production", "audit my code", "find all issues", "what's left to finish", "deployment blockers", "forensic scan", "production gaps", "codebase health check", "readiness report", "red team my app", "chaos test", or "visual audit". This skill is specifically designed to catch EVERYTHING in a single pass — no truncation, no sampling, no incremental discovery.
 ---
 
-# Production Readiness Audit — Complete Go-Live Scan
+# Production Readiness Audit — Visionary Autonomous Engine
 
 ## Why This Skill Exists
 
-The #1 problem with codebase audits is **incremental discovery** — you scan, fix, re-scan, and find MORE issues. This happens because of truncated output, hidden dependency chains, shallow pattern matching, and missing layers. This skill eliminates all of that through **exhaustive collection → dependency tracing → contextual verification → structured reporting**.
+The #1 problem with codebase audits is **incremental discovery** — you scan, fix, re-scan, and find MORE issues. This happens because of truncated output, hidden dependency chains, shallow pattern matching, and missing layers. This skill acts as an **Autonomous Principal DevSecOps Engineer**. It eliminates blind spots by combining **AST Semantic Graphing, VLM Flow Simulation, Autonomous Red Teaming, Chaos Engineering, and Auto-Healing Code Generation**.
 
-Going live requires more than clean code. It requires verified feature completeness, validated application logic, hardened security, and production-grade infrastructure. This skill covers all four domains in a single pass.
+Going live requires more than clean code. It requires verified feature completeness, validated application logic, hardened security, and production-grade infrastructure. This skill covers all domains in a single pass.
 
-## Core Principles
+## Core Principles (The Visionary Mandate)
 
-1. **NEVER truncate.** No `head`, `tail`, or `| head -N`. Capture everything to temp files and process the full set.
-2. **Trace dependency chains.** When you find an issue in file A, check every file that imports A.
-3. **Verify context.** For every grep match, read 15+ lines of surrounding code before classifying.
-4. **Detect the stack.** Don't assume any framework — discover what's there and adapt all checks.
-5. **One pass, zero surprises.** The user fixes everything in this report and the app is production-ready.
+1. **No Truncation.** Every scan result must be captured. No `head`, `tail`, or `| head -N`. If there are 1,000 TODOs, list 1,000 TODOs. Capture everything to temp files and process the full set.
+2. **Dependency Tracing.** When you find an issue in file A, check every file that imports A. If a service is a stub, trace every UI component and API endpoint that depends on it.
+3. **AST Semantic Graphing.** Do not rely solely on keyword matching. Construct a semantic map of the codebase using AST parsing to trace dynamic imports, complex scopes, and hidden stubs that lack keywords.
+4. **Adversarial Exploitation.** If a vulnerability is found, synthesize a payload and actively attempt to exploit it locally to verify severity. This is Autonomous Red Teaming.
+5. **Visual Verification (VLM).** Use Vision-Language Models to visually confirm loading, error, and empty states via synthesized Playwright scripts. Screenshot and evaluate actual rendered UI.
+6. **Chaos Engineering.** Verify infrastructure resilience by actively simulating faults (e.g., killing DB connections, injecting latency) in a local containerized environment.
+7. **Auto-Healing Resolution.** The primary output is not just a report — it's a set of executable patches and PRs ready for user approval.
+8. **One pass, zero surprises.** The user fixes everything in this report and the app is production-ready.
+9. **Detect the stack.** Don't assume any framework — discover what's there and adapt all checks.
 
 ## Audit Domains & Phases
 
 | Domain | Phases | What It Covers |
 |--------|--------|---------------|
-| **Foundation** | 0-2 | Stack detection, build verification, exhaustive pattern scan |
-| **Feature Completeness** | 3-4 | Dependency chain tracing, full-stack feature verification, data flow |
+| **Foundation** | 0-2 | Stack detection, build verification, exhaustive pattern scan with AST semantic resolution |
+| **Feature Completeness** | 3-4 | Dependency chain tracing, full-stack feature verification, data flow, property-based testing |
 | **Application Logic** | 5 | Business rules, validation, state management, error propagation |
-| **Security** | 6-7 | Auth flows, OWASP checks, secrets, API security, data protection |
-| **Deployment Hardening** | 8 | Infrastructure, monitoring, scaling, CI/CD, disaster recovery |
-| **Reporting** | 9 | Comprehensive report with actionable fix instructions |
+| **Security & Red Teaming** | 6-7 | Auth flows, OWASP checks, secrets, API security, data protection, autonomous fuzzing |
+| **Infrastructure & Chaos** | 8 | Deployment hardening, monitoring, scaling, CI/CD, disaster recovery, chaos protocols |
+| **Visual Verification** | 9 | VLM-driven UI state verification via Playwright screenshots |
+| **Reporting & Auto-Healing** | 10 | Comprehensive report with actionable fix instructions AND executable patches |
 
 ---
 
-## PHASE 0: STACK DETECTION & CODEBASE MAPPING
+## PHASE 0: STACK DETECTION & CONTEXT MAPPING
 
 Before scanning anything, understand what you're auditing.
 
@@ -77,6 +82,23 @@ Build a **Stack Profile** — document every detected layer:
 
 Adapt ALL subsequent phases to detected stack. Skip irrelevant checks.
 
+#### 0C: AST Semantic Graph Construction (Visionary)
+
+After mapping the source tree, construct an AST-based semantic graph of the codebase. This goes beyond file-level `grep` to understand actual code structure:
+
+```bash
+# For TypeScript/JavaScript projects, use ts-morph or @typescript-eslint/parser
+# For Python projects, use ast module
+# Generate: function call graph, import dependency graph, class hierarchy map
+# Output to /tmp/audit_ast_graph.json
+```
+
+The AST graph enables:
+- **Dynamic import tracing**: Find lazy-loaded modules, conditional requires, and factory patterns that grep misses.
+- **Scope-aware stub detection**: Identify functions that return hardcoded values even without "mock" or "stub" keywords by analyzing return statement complexity.
+- **Dead code identification**: Functions/classes defined but never called from any entry point.
+- **Complexity hotspots**: Cyclomatic complexity per function to prioritize review effort.
+
 ---
 
 ## PHASE 1: BUILD & COMPILATION VERIFICATION
@@ -89,7 +111,7 @@ For TypeScript: `npx tsc --noEmit` for every tsconfig found. For Python: `mypy`/
 
 ---
 
-## PHASE 2: EXHAUSTIVE PATTERN SCAN
+## PHASE 2: EXHAUSTIVE PATTERN SCAN (with AST Semantic Resolution)
 
 → Read **`references/scan-patterns.md`** for the complete pattern library (11 categories, 40+ patterns).
 
@@ -99,6 +121,13 @@ For EVERY pattern result:
 3. Classify as: `INTENTIONAL_FEATURE` | `DEV_FALLBACK` | `PRODUCTION_GAP` | `FALSE_POSITIVE`
 
 → Read **`references/classification-guide.md`** for decision trees on classifying ambiguous matches.
+
+#### Visionary Enhancement: AST-Resolved Pattern Matching
+
+After the initial grep-based scan, pass all matches through the AST semantic graph to:
+- **Eliminate false positives**: A variable named `mockData` that's actually a production dataset gets correctly identified via its usage context.
+- **Find hidden stubs**: Functions that return `[]`, `{}`, `null`, or hardcoded arrays without any keyword markers — identified by analyzing return statement patterns against the AST.
+- **Trace dynamic patterns**: `require(variable)`, `import()` expressions, and factory-constructed service instances that keyword grep cannot follow.
 
 ---
 
@@ -143,6 +172,12 @@ FULL STACK AFFECTED: UI → API → Service → (DB missing)
 
 **4E: Navigation & routing completeness** — Every menu item links to a real page. Every page is reachable. No dead routes. Auth redirects work.
 
+#### Visionary Enhancement: Property-Based Test Synthesis
+
+For critical business rules discovered in 4B-4C, synthesize property-based tests:
+- Generate test cases using fast-check (JS) or Hypothesis (Python) that exercise boundary conditions, type coercion edge cases, and invariant violations.
+- These tests become part of the audit deliverable — the user gets a test suite, not just a report.
+
 ---
 
 ## PHASE 5: APPLICATION LOGIC VERIFICATION
@@ -179,7 +214,7 @@ FULL STACK AFFECTED: UI → API → Service → (DB missing)
 
 ---
 
-## PHASE 6: SECURITY AUDIT
+## PHASE 6: SECURITY AUDIT & AUTONOMOUS RED TEAMING
 
 → Read **`references/security-audit.md`** for the complete security checklist.
 
@@ -236,6 +271,25 @@ FULL STACK AFFECTED: UI → API → Service → (DB missing)
 - Certificate pinning for mobile apps / high-security API clients
 - TLS 1.2+ enforced
 
+#### Visionary Enhancement: Autonomous Red Teaming / Fuzzing
+
+After completing the static security audit, actively attempt exploitation in a local/sandboxed environment:
+
+1. **Auth Bypass Fuzzing**: Synthesize requests with missing/malformed/expired tokens, manipulated JWTs (alg:none, key confusion), and IDOR payloads. Execute against local API endpoints.
+2. **Injection Payload Testing**: For each unparameterized query found in 6D, craft and execute SQL injection, XSS, and command injection payloads locally.
+3. **RBAC Escalation Probes**: Simulate requests from lower-privilege roles attempting higher-privilege actions. Verify every endpoint rejects unauthorized access.
+4. **Rate Limit Validation**: Send burst requests to auth and public endpoints to confirm rate limiting actually triggers.
+5. **Severity Classification**: Only mark a vulnerability as CRITICAL if the exploit actually succeeds locally. Theoretical risks remain HIGH or MEDIUM.
+
+Report format for red team findings:
+```
+EXPLOIT: [endpoint/path]
+VECTOR: [payload used]
+RESULT: EXPLOITABLE | BLOCKED | PARTIAL
+SEVERITY: CRITICAL (if exploitable) | HIGH (if partially blocked) | MEDIUM (theoretical)
+FIX: [exact code patch]
+```
+
 ---
 
 ## PHASE 7: API COMPLETENESS & ROBUSTNESS
@@ -259,7 +313,7 @@ FULL STACK AFFECTED: UI → API → Service → (DB missing)
 
 ---
 
-## PHASE 8: DEPLOYMENT HARDENING
+## PHASE 8: DEPLOYMENT HARDENING & CHAOS ENGINEERING
 
 → Read **`references/deployment-hardening.md`** for the complete infrastructure checklist.
 
@@ -352,25 +406,70 @@ FULL STACK AFFECTED: UI → API → Service → (DB missing)
 - Recovery procedure documented
 - Secrets rotation plan
 
+#### Visionary Enhancement: Chaos Engineering Protocols
+
+After the static infrastructure audit, actively test resilience in a local containerized environment:
+
+1. **Database Connection Kill**: Terminate DB connections mid-request. Verify the app returns graceful errors (not crashes or hung connections). Confirm connection pool recovery.
+2. **Latency Injection**: Add 2-5 second delays to API responses or DB queries. Verify timeouts trigger correctly, loading states render, and no cascading failures occur.
+3. **Disk Full Simulation**: Fill the temp/log directory. Verify the app handles write failures gracefully without data corruption.
+4. **Memory Pressure**: Restrict container memory and generate load. Verify OOM handling, graceful degradation, and no data loss.
+5. **Dependency Outage**: Block outbound calls to third-party services (Stripe, SendGrid, S3). Verify fallback behavior, retry logic, and user-facing error messages.
+6. **DNS Resolution Failure**: Simulate DNS failures for external services. Verify timeout handling and circuit breaker patterns.
+
+Report format for chaos findings:
+```
+CHAOS TEST: [scenario]
+TARGET: [component/service]
+RESULT: RESILIENT | DEGRADED | FAILED
+IMPACT: [what breaks and how]
+FIX: [exact code/config patch]
+```
+
 ---
 
-## PHASE 9: REPORT GENERATION
+## PHASE 9: VISUAL VERIFICATION (VLM-Driven)
+
+Synthesize Playwright scripts to render critical UI flows and capture screenshots for VLM evaluation:
+
+1. **Page Load States**: Navigate to every route. Capture screenshots. Verify via VLM that pages render correctly (no blank screens, no broken layouts, no placeholder text).
+2. **Error States**: Trigger API failures and verify error messages render correctly (not raw JSON, not empty screens).
+3. **Empty States**: Load pages with no data. Verify meaningful empty state messages (not blank tables, not "undefined").
+4. **Loading States**: Intercept API responses to delay them. Verify loading indicators appear (not frozen UI).
+5. **Responsive Breakpoints**: Capture at mobile (375px), tablet (768px), and desktop (1280px). Flag layout breaks.
+6. **Accessibility Snapshot**: Run axe-core via Playwright. Report WCAG violations.
+
+Report format for VLM findings:
+```
+VLM CHECK: [page/route] @ [viewport]
+STATE: [load | error | empty | loading]
+SCREENSHOT: [path]
+VERDICT: PASS | FAIL | DEGRADED
+ISSUE: [description of visual problem]
+FIX: [component and CSS/JSX patch]
+```
+
+---
+
+## PHASE 10: REPORT GENERATION & AUTO-HEALING
 
 Save as `PRODUCTION_READINESS_REPORT.md` in the project root.
 
-→ Read **`references/report-template.md`** for the exact report structure with 10 sections.
+→ Read **`references/report-template.md`** for the exact report structure.
 
 **Report sections:**
 1. **Build Status** — Every compile/lint error listed in full
-2. **Production Gaps** — Every gap with file, line, code, impact chain, complete fix instructions
-3. **Feature Completeness Matrix** — Every feature × every layer with completion %
-4. **Application Logic Issues** — Business rule gaps, validation holes, state management problems
-5. **Security Findings** — Auth, access control, data protection, OWASP violations
-6. **API Completeness** — Missing validation, inconsistent responses, missing endpoints
-7. **Deployment Blockers** — Everything that causes failure in production
-8. **Infrastructure Gaps** — Monitoring, logging, scaling, DR items
-9. **Final Scorecard** — Weighted readiness across all domains
-10. **Prioritized Fix List** — Ordered by severity + dependency, with complexity and full instructions
+2. **AST Semantic Analysis** — Dead code, complexity hotspots, hidden stubs found via AST
+3. **Production Gaps** — Every gap with file, line, code, impact chain, complete fix instructions
+4. **Feature Completeness Matrix** — Every feature × every layer with completion %
+5. **Application Logic Issues** — Business rule gaps, validation holes, state management problems
+6. **Security Findings & Red Team Results** — Static audit + active exploitation results with severity
+7. **API Completeness** — Missing validation, inconsistent responses, missing endpoints
+8. **Deployment Blockers** — Everything that causes failure in production
+9. **Infrastructure & Chaos Results** — Monitoring, logging, scaling, DR items + resilience test outcomes
+10. **Visual Verification (VLM)** — Screenshot-backed UI state verification results
+11. **Final Scorecard** — Weighted readiness across all domains
+12. **Prioritized Fix List with Executable Patches** — Ordered by severity + dependency, with complexity and full instructions
 
 ### Readiness Scoring
 
@@ -385,7 +484,17 @@ Save as `PRODUCTION_READINESS_REPORT.md` in the project root.
 
 ### Fix Instruction Standard
 
-Every fix must be **directly implementable** without guessing. Include actual code, SQL, config — not "implement proper error handling" but the actual handler code with imports and dependencies noted.
+Every fix must be **directly implementable** without guessing. Include actual code, SQL, config — not "implement proper error handling" but the actual handler code with imports and dependencies noted. The AI Agent must offer to apply these patches directly.
+
+### Auto-Healing Deliverables
+
+In addition to the report, generate:
+- **Patch files** (`*.patch` or inline diffs) for every `PRODUCTION_GAP` finding that can be auto-fixed.
+- **Property-based test files** for critical business logic discovered during the audit.
+- **Playwright test scripts** generated during VLM verification (reusable for CI regression).
+- A **`fixes/` directory** containing all patches organized by phase and severity.
+
+The agent should offer to apply all patches with user approval.
 
 ### Self-Verification
 
