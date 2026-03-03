@@ -1,6 +1,6 @@
-# Security Audit Reference
+# Security Audit Reference (Visionary Edition)
 
-This reference provides a comprehensive security checklist for production readiness. Every item should be verified and reported.
+This reference provides a comprehensive security checklist for production readiness. Every item must be verified and, where possible, **dynamically exploited** to confirm severity.
 
 ## 6A: Authentication Flow Verification
 
@@ -54,6 +54,8 @@ grep -rn "localStorage\|sessionStorage\|cookie\|setCookie\|httpOnly\|secure\|sam
 - [ ] Sessions invalidated on logout (server-side, not just client-side token deletion)
 - [ ] Session fixation prevention (new session ID on login)
 - [ ] Session timeout for inactivity
+- [ ] Secure/HttpOnly cookie flags set on session cookies
+- [ ] CSRF protection on state-changing endpoints
 
 ---
 
@@ -75,6 +77,11 @@ grep -rn "auth\|protect\|guard\|requireAuth\|isAuthenticated\|authenticate\|chec
 - [ ] Public endpoints are intentionally public (health check, login, public pages)
 - [ ] File upload/download endpoints are protected
 - [ ] Webhook endpoints have their own verification (signature validation)
+
+**RBAC/ABAC Verification:**
+- [ ] Verify every sensitive endpoint has a middleware check (e.g., `isAdmin`, `requireRole('manager')`)
+- [ ] Role hierarchy is enforced (admin > manager > user), not just checked at individual endpoints
+- [ ] Role assignments cannot be self-elevated (user cannot set their own role to admin)
 
 ### Horizontal Privilege Escalation (CRITICAL)
 
@@ -162,6 +169,7 @@ grep -rn "console\.log\|logger\.\|log\.\|print(" --include="*.ts" --include="*.j
 - [ ] API responses don't include password hashes, tokens, or secrets
 - [ ] Logs don't contain sensitive data (passwords, tokens, PII)
 - [ ] Error responses don't expose internal paths, stack traces, or DB schema
+- [ ] Secrets scanned via `scan-patterns.md` — check for hardcoded keys
 
 ---
 
@@ -229,6 +237,74 @@ Required headers for production:
 - [ ] `Content-Security-Policy` (XSS protection)
 - [ ] `Referrer-Policy: strict-origin-when-cross-origin` or stricter
 - [ ] Server header removed or generic (don't expose Express/Nginx version)
+
+---
+
+## 6D-V: Autonomous Red Teaming & Fuzzing (VISIONARY)
+
+After completing the static OWASP checks above, **actively attempt exploitation** against a locally running instance to verify severity and eliminate false positives.
+
+### Step 1: Endpoint Fuzzing
+
+For every discovered API endpoint, generate and inject adversarial payloads:
+
+```bash
+# Collect all API endpoints for fuzzing
+grep -rn "router\.\(get\|post\|put\|patch\|delete\)\|app\.\(get\|post\|put\|patch\|delete\)" --include="*.ts" --include="*.js" -h | grep -oP "['\"]/[^'\"]+['\"]" | tr -d "'\""  | sort -u > /tmp/audit_fuzz_endpoints.txt
+cat /tmp/audit_fuzz_endpoints.txt
+```
+
+**Payload Categories:**
+- [ ] **SQL Injection:** `' OR 1=1--`, `'; DROP TABLE users;--`, `UNION SELECT` variants
+- [ ] **NoSQL Injection:** `{"$gt": ""}`, `{"$ne": null}`, `{"$regex": ".*"}`
+- [ ] **XSS:** `<script>alert(1)</script>`, `<img onerror=alert(1) src=x>`, event handler payloads
+- [ ] **Command Injection:** `; ls -la`, `| cat /etc/passwd`, `` `whoami` ``
+- [ ] **Path Traversal:** `../../etc/passwd`, `..%2f..%2f`, URL-encoded variants
+
+For each payload:
+1. Inject into query parameters, request body fields, and URL path segments.
+2. If the payload executes or returns unexpected data, flag as **CRITICAL** and generate a patch.
+3. Capture the request/response pair as evidence.
+
+### Step 2: Privilege Escalation Simulation
+
+```bash
+# Identify all user-scoped endpoints
+grep -rn "req\.params\.id\|req\.user\|currentUser\|auth\.uid" --include="*.ts" --include="*.js" | grep -v node_modules | grep -v test
+```
+
+- [ ] Simulate "User A" and "User B" with separate tokens/sessions.
+- [ ] Attempt to fetch User B's data with User A's token by substituting IDs.
+- [ ] If successful: flag as **CRITICAL IDOR**, generate a controller rewrite that enforces ownership checks.
+- [ ] Test both direct ID substitution (`/api/users/USER_B_ID`) and nested resources (`/api/users/USER_A_ID/items/ITEM_OWNED_BY_B`).
+
+### Step 3: Mass Assignment Exploitation
+
+```bash
+# Find endpoints that pass req.body directly to ORM
+grep -rn "\.create(req\.body)\|\.update(req\.body)\|\.insert(req\.body)\|Object\.assign.*req\.body\|spread.*req\.body\|\.save(req\.body)" --include="*.ts" --include="*.js" | grep -v node_modules | grep -v test
+```
+
+- [ ] Inject `{"role": "admin"}` into POST/PATCH requests that map `req.body` directly to ORMs.
+- [ ] Inject `{"verified": true}`, `{"is_active": true}`, `{"balance": 999999}` into user update endpoints.
+- [ ] If any injected field is accepted and persisted: flag as **HIGH**, generate a strict Zod/Joi/Pydantic schema patch.
+
+### Step 4: Authentication Bypass Attempts
+
+- [ ] Send requests to protected endpoints without any auth header — verify 401 returned.
+- [ ] Send expired/malformed JWTs — verify rejection (not silent pass-through).
+- [ ] If using API keys: test with empty string, `null`, `undefined`, and another user's key.
+- [ ] Test JWT `none` algorithm attack: forge a token with `alg: "none"` and no signature.
+
+### Step 5: Fuzzing Edge Cases
+
+- [ ] **Malformed JSON bodies:** Send `{invalid json`, empty body `{}`, deeply nested objects (100+ levels).
+- [ ] **Oversized payloads:** Send 10MB+ request bodies — verify size limits reject them.
+- [ ] **Unicode edge cases:** Null bytes (`\u0000`), RTL override characters, homoglyph attacks.
+- [ ] **Boundary values:** Integer overflow (`2^53+1` in JS), negative IDs, zero-length strings, arrays where strings expected.
+- [ ] **Content-Type mismatch:** Send `text/plain` where `application/json` expected.
+
+**IMPORTANT:** All red teaming runs against **LOCAL instances only**. Never target production or external systems.
 
 ---
 
@@ -346,7 +422,22 @@ grep -rn "http://" --include="*.ts" --include="*.tsx" --include="*.js" --include
 
 | Severity | Criteria | Examples |
 |----------|----------|---------|
-| **Critical** | Exploitable by unauthenticated attacker, data breach risk | SQL injection, missing auth on sensitive endpoints, hardcoded secrets, broken RLS |
-| **High** | Exploitable by authenticated attacker, privilege escalation | Horizontal access (user A sees user B's data), mass assignment, missing role checks |
-| **Medium** | Weakens defense-in-depth, needs specific conditions to exploit | Missing rate limiting, missing security headers, weak password requirements, CORS misconfiguration |
-| **Low** | Best practice violation, minimal direct risk | Missing CSP nonce, verbose error messages, outdated non-vulnerable dependencies |
+| **Critical** | Exploitable by unauthenticated attacker, data breach risk | SQL injection, missing auth on sensitive endpoints, hardcoded secrets, broken RLS, command injection |
+| **High** | Exploitable by authenticated attacker, privilege escalation | Horizontal access (user A sees user B's data), mass assignment, missing role checks, JWT `none` algorithm bypass |
+| **Medium** | Weakens defense-in-depth, needs specific conditions to exploit | Missing rate limiting, missing security headers, weak password requirements, CORS misconfiguration, CSRF without state changes |
+| **Low** | Best practice violation, minimal direct risk | Missing CSP nonce, verbose error messages, outdated non-vulnerable dependencies, missing HSTS preload |
+
+### Red Team Finding Format
+
+Every red team finding must include:
+
+```
+FINDING: [Title]
+SEVERITY: Critical | High | Medium | Low
+VECTOR: [Attack type — SQLi, IDOR, XSS, Mass Assignment, etc.]
+ENDPOINT: [Method] [Path]
+PAYLOAD: [Exact payload used]
+EVIDENCE: [Request/Response showing exploitation]
+IMPACT: [What data/access was gained]
+FIX: [Exact code patch with imports and dependencies]
+```

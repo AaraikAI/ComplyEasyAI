@@ -1,14 +1,14 @@
-# Classification Guide
+# Classification Guide (Visionary Edition)
 
-When reviewing scan findings, every single result must be classified. This guide helps make consistent, accurate classifications by providing decision trees and examples.
+When reviewing scan findings, every single result must be classified. This guide helps make consistent, accurate classifications by providing decision trees, AST-level context resolution, and examples.
 
 ## The Four Classifications
 
 | Classification | Meaning | Action |
 |---|---|---|
-| `INTENTIONAL_FEATURE` | This code IS the product. Simulation engines, red team tools, Monte Carlo, test generators, digital twins, phishing simulators, placeholder UI text that is the actual content. | No action. Note in report as confirmed intentional. |
+| `INTENTIONAL_FEATURE` | Code IS the product (e.g., a mock interview tool, simulation engine, red team tool, Monte Carlo, test generator, digital twin, phishing simulator, placeholder UI text that is the actual content). | No action. Note in report as confirmed intentional. |
 | `DEV_FALLBACK` | Has a production guard — `process.env.NODE_ENV`, feature flag, config switch, or conditional that disables it in prod. | Note in report. Verify the guard works. Low priority. |
-| `PRODUCTION_GAP` | Missing real implementation. Code that needs to change before production. | **Must be in the fix list with full instructions.** |
+| `PRODUCTION_GAP` | Missing real implementation. Code that needs to change before production. | **Must be in the fix list with full instructions and a patch.** |
 | `FALSE_POSITIVE` | Grep matched but context shows it's fine. Keyword appears in a variable name, comment about completed work, documentation, etc. | Exclude from report. |
 
 ## Decision Trees
@@ -41,6 +41,20 @@ Is this the "not found" / "no results" path of a function that also has a succes
 Is this the ONLY return in the function (function always returns empty)? → PRODUCTION_GAP
 Is it a placeholder return at the end of an unfinished function? → PRODUCTION_GAP
 Is it behind a feature flag / env check? → DEV_FALLBACK
+```
+
+#### AST Context Resolution (VISIONARY)
+
+When `return null` or `return []` is found, go beyond the function itself — trace its callers:
+
+1. **AST Check**: Use AST resolution (or grep-based call graph) to trace all callers of the function. Do they expect real data (e.g., mapping over results, rendering lists, computing totals)?
+2. **Caller Expectation Analysis**: If callers iterate, render, or compute from the return value, a stub return is a **silent failure** — the feature appears to work but produces empty/broken output.
+3. **Healer Action**: If callers expect data but the function is a stub, classify as `PRODUCTION_GAP`. The fix instruction MUST synthesize the real implementation — the actual DB query, API call, or computation — not just flag it for later.
+
+```bash
+# Example: Find all callers of a suspected stub function
+grep -rn "functionName(" --include="*.ts" --include="*.tsx" --include="*.js" | grep -v node_modules | grep -v test | grep -v "function functionName\|const functionName"
+# Then read each caller to see what it does with the return value
 ```
 
 ### "placeholder" found
@@ -110,7 +124,7 @@ For every PRODUCTION_GAP, the fix instruction must be **implementable without gu
 
 | Severity | Criteria | Examples |
 |----------|----------|---------|
-| **Critical** | App will crash, data will be lost, security vulnerability, feature completely non-functional | Missing auth on sensitive endpoints, SQL injection, empty service that should return real data, missing DB table |
+| **Critical** | App will crash, data will be lost, security vulnerability, core feature completely non-functional | Missing auth on sensitive endpoints, SQL injection, empty service that should return real data, missing DB table |
 | **High** | Feature significantly broken, poor user experience, missing important validation | Mock data shown to users, missing error handling that causes silent failures, missing input validation |
 | **Medium** | Feature works but has issues, code quality problems, missing best practices | Console.log in production, missing rate limiting, hardcoded URLs with env fallback, missing indexes |
 | **Low** | Nice-to-have improvements, minor code quality | Outdated TODO comments, minor naming inconsistencies, missing optional optimizations |
