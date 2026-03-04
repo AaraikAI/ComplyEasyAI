@@ -136,6 +136,26 @@ try {
   process.exit(1);
 }
 
+// Production deployment guard — prevent NODE_ENV=development from running in cloud environments
+if (config.server.env === 'development') {
+  const deploymentEnv = process.env.DEPLOYMENT_ENV
+    || process.env.RAILWAY_ENVIRONMENT
+    || process.env.FLY_APP_NAME
+    || process.env.ECS_CONTAINER_METADATA_URI
+    || process.env.AWS_EXECUTION_ENV
+    || process.env.RENDER_SERVICE_ID
+    || process.env.HEROKU_APP_NAME
+    || process.env.VERCEL_ENV;
+  if (deploymentEnv) {
+    logger.error(
+      'FATAL: NODE_ENV=development detected in a cloud/production deployment environment. ' +
+      `Detected deployment indicator: ${deploymentEnv}. ` +
+      'Set NODE_ENV=production in your deployment configuration. Exiting to prevent insecure operation.'
+    );
+    process.exit(1);
+  }
+}
+
 // Security middleware with enhanced headers and CSP nonces
 // Generate nonce per request for stricter CSP (replaces 'unsafe-inline')
 app.use((req: Request, res: Response, next: NextFunction) => {

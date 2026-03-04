@@ -39,12 +39,70 @@ function clearAuthCookies(res: Response): void {
 }
 
 class AuthController {
+  /**
+   * Verify CAPTCHA token with the configured provider (hCaptcha or reCAPTCHA).
+   * Skipped in development/test to avoid needing CAPTCHA keys locally.
+   */
+  private async verifyCaptcha(captchaToken: string | undefined, remoteIp: string | undefined): Promise<void> {
+    // Skip CAPTCHA verification in development and test environments
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+      return;
+    }
+
+    const captchaSecret = process.env.HCAPTCHA_SECRET || process.env.RECAPTCHA_SECRET;
+    if (!captchaSecret) {
+      // If no CAPTCHA secret is configured in production, log a warning but allow request
+      // This supports gradual rollout — set the env var to enforce
+      logger.warn('[Auth] No CAPTCHA secret configured (set HCAPTCHA_SECRET or RECAPTCHA_SECRET to enforce)');
+      return;
+    }
+
+    if (!captchaToken) {
+      throw new AppError('CAPTCHA verification is required', 400);
+    }
+
+    const isHCaptcha = !!process.env.HCAPTCHA_SECRET;
+    const verifyUrl = isHCaptcha
+      ? 'https://api.hcaptcha.com/siteverify'
+      : 'https://www.google.com/recaptcha/api/siteverify';
+
+    try {
+      const params = new URLSearchParams({
+        secret: captchaSecret,
+        response: captchaToken,
+        ...(remoteIp ? { remoteip: remoteIp } : {}),
+      });
+
+      const response = await fetch(verifyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        logger.warn('[Auth] CAPTCHA verification failed', { errors: result['error-codes'] });
+        throw new AppError('CAPTCHA verification failed. Please try again.', 400);
+      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      logger.error('[Auth] CAPTCHA verification service error', error);
+      throw new AppError('CAPTCHA verification service unavailable. Please try again later.', 503);
+    }
+  }
+
   async requestMagicLink(req: Request, res: Response): Promise<void> {
     try {
-      const { email } = req.body;
+      const { email, captchaToken } = req.body;
 
       if (!email) {
         throw new AppError('Email is required', 400);
+      }
+
+      // Verify CAPTCHA for new user registrations (auto-registration via magic link)
+      const existingUser = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+      if (!existingUser) {
+        await this.verifyCaptcha(captchaToken, req.ip);
       }
 
       // Check if user exists
@@ -71,39 +129,44 @@ class AuthController {
       });
 
       // If user doesn't exist, create a new one (auto-registration)
+      // Wrapped in a transaction to ensure org + user are created atomically
       if (!user) {
-        // Create organization
-        const organization = await prisma.organization.create({
-          data: {
-            name: `${email.split('@')[0]}'s Organization`,
-            plan: 'Foundation',
-          },
-        });
+        user = await prisma.$transaction(async (tx) => {
+          // Create organization
+          const organization = await tx.organization.create({
+            data: {
+              name: `${email.split('@')[0]}'s Organization`,
+              plan: 'Foundation',
+            },
+          });
 
-        // Create user
-        user = await prisma.user.create({
-          data: {
-            email,
-            name: email.split('@')[0],
-            role: 'admin', // First user is admin
-            organizationId: organization.id,
-          },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            role: true,
-            avatar: true,
-            organizationId: true,
-            twoFactorEnabled: true,
-            organization: {
-              select: {
-                id: true,
-                name: true,
-                plan: true,
+          // Create user
+          const newUser = await tx.user.create({
+            data: {
+              email,
+              name: email.split('@')[0],
+              role: 'admin', // First user is admin
+              organizationId: organization.id,
+            },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              avatar: true,
+              organizationId: true,
+              twoFactorEnabled: true,
+              organization: {
+                select: {
+                  id: true,
+                  name: true,
+                  plan: true,
+                },
               },
             },
-          },
+          });
+
+          return newUser;
         });
 
         logger.info(`New user registered: ${email}`);
@@ -497,20 +560,24 @@ class AuthController {
 
   async register(req: Request, res: Response): Promise<void> {
     try {
-      const { 
-        email, 
-        name, 
-        organizationName, 
+      const {
+        email,
+        name,
+        organizationName,
         password,
         industry,
         companySize,
         primaryComplianceGoal,
-        howDidYouHear
+        howDidYouHear,
+        captchaToken
       } = req.body;
 
       if (!email || !name) {
         throw new AppError('Email and name are required', 400);
       }
+
+      // Verify CAPTCHA before allowing registration
+      await this.verifyCaptcha(captchaToken, req.ip);
 
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
@@ -579,44 +646,49 @@ class AuthController {
         return;
       }
 
-      // Create organization with signup details
-      const organization = await prisma.organization.create({
-        data: {
-          name: organizationName || `${name}'s Organization`,
-          plan: 'Foundation',
-          industry: industry || null,
-          companySize: companySize || null,
-          primaryComplianceGoal: primaryComplianceGoal || null,
-          howDidYouHear: howDidYouHear || null,
-          onboardingCompleted: false,
-          onboardingStep: 0,
-        },
-      });
-
-      // Hash password if provided
+      // Hash password if provided (before transaction to avoid holding DB lock during bcrypt)
       const passwordHash = password ? await bcrypt.hash(password, 12) : null;
 
-      // Create user
-      const user = await prisma.user.create({
-        data: {
-          email,
-          name,
-          role: 'admin',
-          organizationId: organization.id,
-          passwordHash,
-        },
-      });
-
-      // Generate magic link for instant login (create before sending so we can return token even if email fails)
+      // Create organization + user + magic link atomically
       const token = uuidv4();
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      await prisma.magicLink.create({
-        data: {
-          email,
-          token,
-          expiresAt,
-        },
+      const { user } = await prisma.$transaction(async (tx) => {
+        // Create organization with signup details
+        const organization = await tx.organization.create({
+          data: {
+            name: organizationName || `${name}'s Organization`,
+            plan: 'Foundation',
+            industry: industry || null,
+            companySize: companySize || null,
+            primaryComplianceGoal: primaryComplianceGoal || null,
+            howDidYouHear: howDidYouHear || null,
+            onboardingCompleted: false,
+            onboardingStep: 0,
+          },
+        });
+
+        // Create user
+        const newUser = await tx.user.create({
+          data: {
+            email,
+            name,
+            role: 'admin',
+            organizationId: organization.id,
+            passwordHash,
+          },
+        });
+
+        // Generate magic link for instant login
+        await tx.magicLink.create({
+          data: {
+            email,
+            token,
+            expiresAt,
+          },
+        });
+
+        return { user: newUser };
       });
 
       // Send welcome email and magic link; in development allow registration to succeed if email is not configured

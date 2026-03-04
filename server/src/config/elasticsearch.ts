@@ -98,29 +98,27 @@ export function createElasticsearchTransport(): any {
 
     const transport = new ElasticsearchTransport(esTransportOptions);
 
-    // Lightweight health check; do not block startup if it fails
+    // Lightweight health check; do not block startup if it fails.
+    // NOTE: We use process.stdout/stderr here intentionally because the Winston
+    // logger is still being bootstrapped when this code runs. Using logger would
+    // create a circular dependency.
     client
       .ping()
       .then(() => {
-        // eslint-disable-next-line no-console
-        console.log(
-          `Elasticsearch transport configured: ${config.node} (indexPrefix=${indexPrefix})`,
+        process.stdout.write(
+          `[elasticsearch] Transport configured: ${config.node} (indexPrefix=${indexPrefix})\n`,
         );
       })
       .catch((err: any) => {
-        // eslint-disable-next-line no-console
-        console.error(
-          'Elasticsearch ping failed; logs will still be buffered and retried:',
-          err?.message || err,
+        process.stderr.write(
+          `[elasticsearch] Ping failed; logs will still be buffered and retried: ${err?.message || err}\n`,
         );
       });
 
     return transport;
   } catch (error: any) {
-    // eslint-disable-next-line no-console
-    console.error(
-      'Failed to create Elasticsearch transport. Ensure @elastic/elasticsearch and winston-elasticsearch are installed:',
-      error?.message || error,
+    process.stderr.write(
+      `[elasticsearch] Failed to create transport. Ensure @elastic/elasticsearch and winston-elasticsearch are installed: ${error?.message || error}\n`,
     );
     return null;
   }

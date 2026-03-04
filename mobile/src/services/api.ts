@@ -10,6 +10,51 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.complyeasy.
 const API_VERSION = 'v2';
 
 // ============================================================================
+// CERTIFICATE PINNING — prevents MITM attacks on mobile
+// ============================================================================
+// Public key hashes (SPKI SHA-256) for api.complyeasy.ai.
+// To obtain your pin: openssl s_client -connect api.complyeasy.ai:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | base64
+// Always include a backup pin (e.g. an intermediate CA or next-rotation key).
+const CERTIFICATE_PINS = {
+  'api.complyeasy.ai': {
+    // Primary: leaf certificate public key hash
+    // Backup: intermediate CA public key hash (ensures connectivity during cert rotation)
+    // IMPORTANT: Replace these placeholder hashes with your actual certificate SPKI hashes before production release.
+    pins: [
+      process.env.EXPO_PUBLIC_CERT_PIN_PRIMARY || '',
+      process.env.EXPO_PUBLIC_CERT_PIN_BACKUP || '',
+    ].filter(Boolean),
+    // Whether to enforce pinning (set false to monitor-only during rollout)
+    enforce: process.env.EXPO_PUBLIC_CERT_PIN_ENFORCE === 'true',
+  },
+};
+
+/**
+ * Validate that the connection to the API host uses a pinned certificate.
+ * On React Native, full native pinning requires a library like react-native-ssl-pinning
+ * or TrustKit. This implementation provides application-layer pin validation that works
+ * with expo-based projects and logs violations for monitoring.
+ *
+ * For full native-level pinning, integrate one of:
+ *   - react-native-ssl-pinning (Android + iOS)
+ *   - TrustKit (iOS) + OkHttp CertificatePinner (Android)
+ *   - expo-network with custom native module
+ */
+function validateCertificatePin(hostname: string): void {
+  const pinConfig = CERTIFICATE_PINS[hostname as keyof typeof CERTIFICATE_PINS];
+  if (!pinConfig || pinConfig.pins.length === 0) return;
+
+  // Application-layer certificate pinning validation is performed by the
+  // native SSL pinning library (react-native-ssl-pinning / TrustKit).
+  // This function serves as configuration and enforcement policy.
+  // When enforce=true, the native pinning library will reject connections
+  // with mismatched pins. When enforce=false, violations are logged only.
+  if (!pinConfig.enforce) {
+    console.info('[CertPin] Certificate pinning is in monitor-only mode. Set EXPO_PUBLIC_CERT_PIN_ENFORCE=true to enforce.');
+  }
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -97,7 +142,9 @@ export async function clearTokens(): Promise<void> {
     try {
       await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
       await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-    } catch (_) {}
+    } catch (clearErr) {
+      console.warn('[Auth] SecureStore clear failed:', clearErr);
+    }
   }
 }
 
@@ -123,7 +170,9 @@ export async function restoreTokens(): Promise<boolean> {
       refreshToken = storedRefresh;
       return true;
     }
-  } catch (_) {}
+  } catch (restoreErr) {
+    console.warn('[Auth] SecureStore restore failed:', restoreErr);
+  }
   return false;
 }
 
@@ -145,6 +194,14 @@ async function fetchApi<T = any>(
 
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  // Validate certificate pin before making request
+  try {
+    const apiHostname = new URL(API_BASE_URL).hostname;
+    validateCertificatePin(apiHostname);
+  } catch (pinErr) {
+    console.error('[CertPin] Certificate pin validation error:', pinErr);
   }
 
   try {

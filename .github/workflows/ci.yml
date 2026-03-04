@@ -274,6 +274,22 @@ jobs:
           ignore-unfixed: true
 
   # ============================================
+  # SECRET SCANNING (GitLeaks)
+  # ============================================
+  secret-scan:
+    name: Secret Scanning (GitLeaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for comprehensive secret scanning
+
+      - name: Run GitLeaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================
   # CODEQL SAST ANALYSIS
   # ============================================
   codeql:
