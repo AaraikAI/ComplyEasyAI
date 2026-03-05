@@ -32,7 +32,7 @@ export const RFPResponder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     for (const line of lines) {
       const trimmedLine = line.trim();
       // Check if line looks like a question (ends with ? or starts with number/bullet)
-      if (trimmedLine.endsWith('?') || /^(\d+[\.\)]|\-|\*)\s/.test(trimmedLine)) {
+      if (trimmedLine.endsWith('?') || /^(\d+[.)]\s|-|\*)\s/.test(trimmedLine)) {
         if (currentQuestion) {
           questions.push(currentQuestion.trim());
         }

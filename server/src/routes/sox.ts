@@ -4,7 +4,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import soxService from '../services/soxService';
 import logger from '../config/logger';
@@ -19,7 +19,7 @@ router.use(authenticate);
 router.get(
   '/dashboard',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const dashboard = await soxService.getSOXDashboard(user.organizationId);
       res.json(dashboard);
@@ -46,7 +46,7 @@ router.get(
 router.get(
   '/controls',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const controls = await soxService.getSOXControls(user.organizationId);
       res.json(controls);
@@ -61,7 +61,7 @@ router.post(
   '/controls',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const control = await soxService.createSOXControl({
       ...req.body,
       organizationId: user.organizationId,
@@ -74,7 +74,7 @@ router.post(
 router.get(
   '/controls/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const control = await soxService.getSOXControlById(req.params.id, user.organizationId);
     if (!control) {
       res.status(404).json({ error: 'Control not found' });
@@ -88,7 +88,7 @@ router.patch(
   '/controls/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const control = await soxService.updateSOXControl(req.params.id, user.id, user.organizationId, req.body);
     res.json(control);
   })
@@ -98,7 +98,7 @@ router.delete(
   '/controls/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     await soxService.deleteSOXControl(req.params.id, user.id, user.organizationId);
     res.status(204).send();
   })
@@ -111,7 +111,7 @@ router.delete(
 router.get(
   '/test-results',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const tests = await soxService.getSOXTestResults(user.organizationId);
       res.json(tests);
@@ -126,7 +126,7 @@ router.post(
   '/test-results',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const test = await soxService.createSOXTestResult({
       ...req.body,
       organizationId: user.organizationId,
@@ -139,7 +139,7 @@ router.post(
 router.get(
   '/test-results/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const test = await soxService.getSOXTestResultById(req.params.id, user.organizationId);
     if (!test) {
       res.status(404).json({ error: 'Test not found' });
@@ -153,7 +153,7 @@ router.patch(
   '/test-results/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const test = await soxService.updateSOXTestResult(req.params.id, user.id, user.organizationId, req.body);
     res.json(test);
   })
@@ -163,7 +163,7 @@ router.delete(
   '/test-results/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     await soxService.deleteSOXTestResult(req.params.id, user.id, user.organizationId);
     res.status(204).send();
   })
@@ -176,7 +176,7 @@ router.delete(
 router.get(
   '/assessments',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const assessments = await soxService.getSOXAssessments(user.organizationId);
       res.json(assessments);
@@ -191,7 +191,7 @@ router.post(
   '/assessments',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const assessment = await soxService.createSOXAssessment({
       ...req.body,
       organizationId: user.organizationId,
@@ -204,7 +204,7 @@ router.post(
 router.get(
   '/assessments/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const assessment = await soxService.getSOXAssessmentById(req.params.id, user.organizationId);
     if (!assessment) {
       res.status(404).json({ error: 'Assessment not found' });
@@ -218,7 +218,7 @@ router.patch(
   '/assessments/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const assessment = await soxService.updateSOXAssessment(req.params.id, user.id, user.organizationId, req.body);
     res.json(assessment);
   })
@@ -228,7 +228,7 @@ router.delete(
   '/assessments/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     await soxService.deleteSOXAssessment(req.params.id, user.id, user.organizationId);
     res.status(204).send();
   })
@@ -241,7 +241,7 @@ router.delete(
 router.get(
   '/reports/full',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { fiscalYear } = req.query;
     try {
       const report = await soxService.generateSOXReport(user.organizationId, (fiscalYear as string) || '2026');

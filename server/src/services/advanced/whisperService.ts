@@ -9,8 +9,11 @@
  */
 
 import OpenAI from 'openai';
+import type { Uploadable } from 'openai/uploads';
+import type { TranscriptionVerbose, TranscriptionSegment } from 'openai/resources/audio/transcriptions';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { Prisma } from '../../generated/prisma/client';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
@@ -116,7 +119,7 @@ class WhisperService {
       try {
         // Create transcription using Whisper API
         const transcription = await this.openai.audio.transcriptions.create({
-          file: fs.createReadStream(tempFilePath) as any,
+          file: fs.createReadStream(tempFilePath) as unknown as Uploadable,
           model: 'whisper-1',
           language: options.language,
           prompt: options.prompt,
@@ -138,9 +141,9 @@ class WhisperService {
         } else {
           result = {
             text: transcription.text,
-            language: (transcription as any).language || options.language || 'en',
-            duration: (transcription as any).duration,
-            segments: (transcription as any).segments?.map((seg: any) => ({
+            language: (transcription as TranscriptionVerbose).language || options.language || 'en',
+            duration: (transcription as TranscriptionVerbose).duration,
+            segments: (transcription as TranscriptionVerbose).segments?.map((seg: TranscriptionSegment) => ({
               id: seg.id,
               seek: seg.seek,
               start: seg.start,
@@ -164,7 +167,7 @@ class WhisperService {
             confidence: 0.9, // Whisper API provides high confidence
             language: result.language,
             duration: result.duration,
-            segments: result.segments as any,
+            segments: result.segments as unknown as Prisma.InputJsonValue,
             sourceType: 'audio',
           },
         });
@@ -259,7 +262,7 @@ class WhisperService {
 
       // Transcribe the extracted audio using Whisper API
       const transcription = await this.openai.audio.transcriptions.create({
-        file: fs.createReadStream(audioPath) as any,
+        file: fs.createReadStream(audioPath) as unknown as Uploadable,
         model: 'whisper-1',
         language: options.language,
         prompt: options.prompt,
@@ -277,9 +280,9 @@ class WhisperService {
       } else {
         result = {
           text: transcription.text,
-          language: (transcription as any).language || options.language || 'en',
-          duration: (transcription as any).duration,
-          segments: (transcription as any).segments?.map((seg: any) => ({
+          language: (transcription as TranscriptionVerbose).language || options.language || 'en',
+          duration: (transcription as TranscriptionVerbose).duration,
+          segments: (transcription as TranscriptionVerbose).segments?.map((seg: TranscriptionSegment) => ({
             id: seg.id,
             seek: seg.seek,
             start: seg.start,
@@ -303,7 +306,7 @@ class WhisperService {
           confidence: 0.9,
           language: result.language,
           duration: result.duration,
-          segments: result.segments as any,
+          segments: result.segments as unknown as Prisma.InputJsonValue,
           sourceType: 'video',
         },
       });
@@ -368,7 +371,7 @@ class WhisperService {
         text: transcription.text,
         language: transcription.language,
         duration: transcription.duration || undefined,
-        segments: transcription.segments as any,
+        segments: transcription.segments as unknown as TranscriptionResult['segments'],
       };
     } catch (error) {
       logger.error('[Whisper] Error getting transcription', error);
@@ -446,7 +449,7 @@ class WhisperService {
 
       try {
         const transcription = await this.openai.audio.transcriptions.create({
-          file: fs.createReadStream(tempFilePath) as any,
+          file: fs.createReadStream(tempFilePath) as unknown as Uploadable,
           model: 'whisper-1',
           response_format: 'verbose_json',
           temperature: 0,
@@ -454,7 +457,7 @@ class WhisperService {
 
         await unlink(tempFilePath);
 
-        const detectedLanguage = (transcription as any).language || 'en';
+        const detectedLanguage = (transcription as TranscriptionVerbose).language || 'en';
         // Whisper provides high confidence language detection
         const confidence = 0.95;
 
@@ -636,9 +639,9 @@ class WhisperService {
             where: { organizationId, evidenceId },
             data: {
               segments: {
-                ...((baseResult.segments as any) || []),
+                ...((baseResult.segments as unknown as Record<string, unknown>) || {}),
                 diarization: speakers,
-              } as any,
+              } as unknown as Prisma.InputJsonValue,
             },
           });
         } catch {
@@ -772,7 +775,7 @@ class WhisperService {
         throw new Error('Transcription not found');
       }
 
-      const segments = (transcription.segments as any[]) || [];
+      const segments = (transcription.segments as unknown as TranscriptionResult['segments']) || [];
 
       if (format === 'srt') {
         return segments.map((seg, index) => {

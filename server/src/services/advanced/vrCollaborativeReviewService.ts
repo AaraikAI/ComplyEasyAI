@@ -15,6 +15,7 @@ import logger from '../../config/logger';
 import notificationService from '../notificationService';
 import crypto from 'crypto';
 import webrtcSignalingService, { WebRTCSessionConfig, WebRTCPeer } from './webrtcSignalingService';
+import { Prisma } from '../../generated/prisma/client';
 
 // VR Session Types
 export interface SessionSummary {
@@ -413,20 +414,20 @@ class VRCollaborativeReviewService {
             organizationId: dbSession.organizationId,
             sessionName: dbSession.sessionName,
             description: dbSession.description || undefined,
-            sessionType: dbSession.sessionType as any,
-            status: dbSession.status as any,
+            sessionType: dbSession.sessionType as VRSession['sessionType'],
+            status: dbSession.status as VRSession['status'],
             hostUserId: dbSession.hostUserId,
-            participants: (dbSession.participants as any) || [],
+            participants: (dbSession.participants as unknown as VRParticipant[]) || [],
             maxParticipants: dbSession.maxParticipants || undefined,
             scheduledTime: dbSession.scheduledTime || undefined,
-            environment: dbSession.environment as any,
-            complianceData: dbSession.complianceData as any,
+            environment: dbSession.environment as unknown as VREnvironment,
+            complianceData: dbSession.complianceData as unknown as VRComplianceData,
             startedAt: dbSession.startedAt || undefined,
             endedAt: dbSession.endedAt || undefined,
             createdAt: dbSession.createdAt,
             updatedAt: dbSession.updatedAt,
-            permissions: dbSession.permissions as any,
-            recording: dbSession.recording as any,
+            permissions: dbSession.permissions as unknown as VRSession['permissions'],
+            recording: dbSession.recording as unknown as VRRecording,
           };
 
           this.activeSessions.set(dbSession.sessionId, session);
@@ -601,20 +602,20 @@ class VRCollaborativeReviewService {
       organizationId: dbSession.organizationId,
       sessionName: dbSession.sessionName,
       description: dbSession.description || undefined,
-      sessionType: dbSession.sessionType as any,
-      status: dbSession.status as any,
+      sessionType: dbSession.sessionType as VRSession['sessionType'],
+      status: dbSession.status as VRSession['status'],
       hostUserId: dbSession.hostUserId,
-      participants: (dbSession.participants as any) || [],
+      participants: (dbSession.participants as unknown as VRParticipant[]) || [],
       maxParticipants: dbSession.maxParticipants || undefined,
       scheduledTime: dbSession.scheduledTime || undefined,
-      environment: dbSession.environment as any,
-      complianceData: dbSession.complianceData as any,
+      environment: dbSession.environment as unknown as VREnvironment,
+      complianceData: dbSession.complianceData as unknown as VRComplianceData,
       startedAt: dbSession.startedAt || undefined,
       endedAt: dbSession.endedAt || undefined,
       createdAt: dbSession.createdAt,
       updatedAt: dbSession.updatedAt,
-      permissions: dbSession.permissions as any,
-      recording: dbSession.recording as any,
+      permissions: dbSession.permissions as unknown as VRSession['permissions'],
+      recording: dbSession.recording as unknown as VRRecording,
     };
 
     this.activeSessions.set(sessionId, session);
@@ -742,10 +743,10 @@ class VRCollaborativeReviewService {
           maxParticipants: config.maxParticipants,
           scheduledTime: config.scheduledTime,
           expiresAt,
-          environment: environment as any,
-          complianceData: complianceData as any,
-          participants: [hostParticipant] as any,
-          permissions: session.permissions as any,
+          environment: environment as unknown as Prisma.InputJsonValue,
+          complianceData: complianceData as unknown as Prisma.InputJsonValue,
+          participants: [hostParticipant] as unknown as Prisma.InputJsonValue,
+          permissions: session.permissions as unknown as Prisma.InputJsonValue,
           lastActivityAt: new Date(),
         },
       });
@@ -852,7 +853,7 @@ class VRCollaborativeReviewService {
       await prisma.vRCollaborativeSession.update({
         where: { sessionId },
         data: {
-          participants: session.participants as any,
+          participants: session.participants as unknown as Prisma.InputJsonValue,
           lastActivityAt: new Date(),
         },
       });
@@ -919,7 +920,7 @@ class VRCollaborativeReviewService {
       await prisma.vRCollaborativeSession.update({
         where: { sessionId },
         data: {
-          participants: session.participants as any,
+          participants: session.participants as unknown as Prisma.InputJsonValue,
           lastActivityAt: new Date(),
         },
       });
@@ -1026,9 +1027,9 @@ class VRCollaborativeReviewService {
           endedAt: session.endedAt,
           lastActivityAt: new Date(),
           metadata: {
-            ...((session as any).metadata || {}),
+            ...((session as unknown as Record<string, unknown>).metadata as Record<string, unknown> || {}),
             summary,
-          } as any,
+          } as unknown as Prisma.InputJsonValue,
         },
       });
 
@@ -1218,7 +1219,7 @@ class VRCollaborativeReviewService {
             difficulty: config.difficulty,
           estimatedDuration: scenario.estimatedDuration,
           objectives: config.objectives,
-          scenarioData: scenario as any,
+          scenarioData: scenario as unknown as Prisma.InputJsonValue,
           createdBy: userId,
         },
       });
@@ -1258,7 +1259,7 @@ class VRCollaborativeReviewService {
       }
 
       // Load full scenario data
-      const scenario: VRTrainingScenario = dbScenario.scenarioData as any;
+      const scenario: VRTrainingScenario = dbScenario.scenarioData as unknown as VRTrainingScenario;
       const sessionId = `training_session_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 
       // Create training session in database

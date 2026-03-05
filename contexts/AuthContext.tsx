@@ -76,25 +76,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   const loginWithMagicLink = async (email: string) => {
-    try {
-      // Call API to send magic link email
-      const response = await api.auth.requestMagicLink(email);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    // Call API to send magic link email
+    const response = await api.auth.requestMagicLink(email);
+    return response;
   };
 
   const verifyMagicLink = async (token: string) => {
-    try {
-      // Call API to verify magic link token
-      const user = await api.auth.verifyMagicLink(token);
-      if (user) {
-        // The API service already handles storing the token and user data
-        setUser(user);
-      }
-    } catch (error) {
-      throw error;
+    // Call API to verify magic link token
+    const user = await api.auth.verifyMagicLink(token);
+    if (user) {
+      // The API service already handles storing the token and user data
+      setUser(user);
     }
   };
 
@@ -126,8 +118,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       return response;
-    } catch (error) {
-      throw error;
+    } catch (error: unknown) {
+      // Re-throw with additional context for error boundary handling
+      const message = error instanceof Error ? error.message : 'Registration failed';
+      throw new Error(message);
     }
   };
 

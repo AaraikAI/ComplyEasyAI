@@ -711,7 +711,7 @@ export default function QuestionnaireManagement() {
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-xl font-bold text-gray-900">{q.title}</h2>
                 <span className={`text-xs px-2.5 py-1 rounded-full ${STATUS_COLORS[q.status]}`}>{STATUS_LABELS[q.status]}</span>
-                {q.aiAssisted && q.aiConfidence != null && <ConfidenceBadge confidence={q.aiConfidence} />}
+                {q.aiAssisted && q.aiConfidence !== null && <ConfidenceBadge confidence={q.aiConfidence} />}
               </div>
               {q.description && <p className="text-sm text-gray-600 mt-1">{q.description}</p>}
               <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
@@ -773,7 +773,7 @@ export default function QuestionnaireManagement() {
                             {response.aiGenerated && (
                               <>
                                 <span className="text-xs text-purple-600">AI Generated</span>
-                                {response.aiConfidence != null && <ConfidenceBadge confidence={response.aiConfidence} />}
+                                {response.aiConfidence !== null && <ConfidenceBadge confidence={response.aiConfidence} />}
                               </>
                             )}
                             <label className="flex items-center gap-1 text-xs cursor-pointer ml-auto">

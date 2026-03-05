@@ -4,11 +4,25 @@
  * Uses GRCWorkflow and WorkflowExecution Prisma models.
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
-import { asyncHandler } from '../types/express';
+import { asyncHandler, AuthenticatedRequest } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { Prisma } from '../generated/prisma/client';
+
+interface WorkflowNode {
+  id: string;
+  type: string;
+  label: string;
+  position: { x: number; y: number };
+}
+
+interface WorkflowEdge {
+  source: string;
+  target: string;
+  label?: string;
+}
 
 const router = Router();
 router.use(authenticate);
@@ -19,19 +33,19 @@ router.use(authenticate);
 
 router.get(
   '/',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const { status, category, search } = req.query;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
 
-    const where: any = { organizationId: user.organizationId };
+    const where: Prisma.GRCWorkflowWhereInput = { organizationId: user.organizationId };
     if (status && status !== 'all') where.status = status;
     if (category && category !== 'all') where.workflowType = category;
     if (search) {
       where.OR = [
-        { name: { contains: search as string, mode: 'insensitive' } },
-        { description: { contains: search as string, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -53,8 +67,8 @@ router.get(
 router.post(
   '/',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const { name, description, workflowType, trigger, nodes, edges, variables, status } = req.body;
 
     const workflow = await prisma.gRCWorkflow.create({
@@ -78,8 +92,8 @@ router.post(
 
 router.get(
   '/:id',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
 
     const workflow = await prisma.gRCWorkflow.findFirst({
       where: { id: req.params.id, organizationId: user.organizationId },
@@ -103,8 +117,8 @@ router.get(
 router.patch(
   '/:id',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const { name, description, workflowType, trigger, nodes, edges, variables, status } = req.body;
 
     const existing = await prisma.gRCWorkflow.findFirst({
@@ -116,7 +130,7 @@ router.patch(
       return;
     }
 
-    const data: any = {};
+    const data: Prisma.GRCWorkflowUpdateInput = {};
     if (name !== undefined) data.name = name;
     if (description !== undefined) data.description = description;
     if (workflowType !== undefined) data.workflowType = workflowType;
@@ -138,8 +152,8 @@ router.patch(
 router.delete(
   '/:id',
   authorize('admin'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
 
     const existing = await prisma.gRCWorkflow.findFirst({
       where: { id: req.params.id, organizationId: user.organizationId },
@@ -158,8 +172,8 @@ router.delete(
 router.post(
   '/:id/duplicate',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
 
     const source = await prisma.gRCWorkflow.findFirst({
       where: { id: req.params.id, organizationId: user.organizationId },
@@ -176,10 +190,10 @@ router.post(
         name: `${source.name} (Copy)`,
         description: source.description || '',
         workflowType: source.workflowType,
-        trigger: source.trigger as any,
-        nodes: source.nodes as any,
-        edges: source.edges as any,
-        variables: source.variables as any,
+        trigger: source.trigger as Prisma.InputJsonValue,
+        nodes: source.nodes as Prisma.InputJsonValue,
+        edges: source.edges as Prisma.InputJsonValue,
+        variables: source.variables as Prisma.InputJsonValue,
         status: 'Draft',
         createdBy: user.id,
       },
@@ -192,8 +206,8 @@ router.post(
 router.post(
   '/:id/run',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
 
     const workflow = await prisma.gRCWorkflow.findFirst({
       where: { id: req.params.id, organizationId: user.organizationId },
@@ -217,7 +231,7 @@ router.post(
         status: 'Running',
         completedNodes: [],
         nodeResults: {},
-        variables: workflow.variables as any || {},
+        variables: (workflow.variables as Prisma.InputJsonValue) || {},
       },
     });
 
@@ -240,7 +254,7 @@ router.post(
 
 router.get(
   '/templates/list',
-  asyncHandler(async (_req: Request, res: Response) => {
+  asyncHandler(async (_req: AuthenticatedRequest, res: Response) => {
     // Built-in GRC workflow templates
     const templates = [
       { id: 'tpl-vendor-risk', name: 'New Vendor Risk Assessment', category: 'Risk', steps: 6, popularity: 94, description: 'End-to-end vendor risk assessment with automatic scoring and approval gates.' },
@@ -259,12 +273,12 @@ router.get(
 router.post(
   '/templates/:id/use',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const templateId = req.params.id;
 
     // Map template ID to workflow type and default nodes
-    const templateMap: Record<string, { name: string; type: string; nodes: any[]; edges: any[] }> = {
+    const templateMap: Record<string, { name: string; type: string; nodes: WorkflowNode[]; edges: WorkflowEdge[] }> = {
       'tpl-vendor-risk': {
         name: 'Vendor Risk Assessment',
         type: 'VendorOnboarding',
@@ -327,8 +341,8 @@ router.post(
 
 router.get(
   '/runs/list',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
 
@@ -358,7 +372,7 @@ router.get(
 
 router.get(
   '/runs/:runId',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const execution = await prisma.workflowExecution.findUnique({
       where: { id: req.params.runId },
       include: { workflow: true },
@@ -376,8 +390,8 @@ router.get(
 router.post(
   '/runs/:runId/retry',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
 
     const original = await prisma.workflowExecution.findUnique({
       where: { id: req.params.runId },
@@ -397,7 +411,7 @@ router.post(
         status: 'Running',
         completedNodes: [],
         nodeResults: {},
-        variables: original.variables as any || {},
+        variables: (original.variables as Prisma.InputJsonValue) || {},
       },
     });
 
@@ -416,8 +430,8 @@ router.post(
 
 router.get(
   '/rules/list',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
 
@@ -443,8 +457,8 @@ router.get(
 router.post(
   '/rules',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const { name, description, trigger, conditions, actions } = req.body;
 
     const rule = await prisma.gRCWorkflow.create({
@@ -468,8 +482,8 @@ router.post(
 router.patch(
   '/rules/:id',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
 
     const existing = await prisma.gRCWorkflow.findFirst({
       where: { id: req.params.id, organizationId: user.organizationId },
@@ -480,7 +494,7 @@ router.patch(
       return;
     }
 
-    const data: any = {};
+    const data: Prisma.GRCWorkflowUpdateInput = {};
     if (req.body.name !== undefined) data.name = req.body.name;
     if (req.body.description !== undefined) data.description = req.body.description;
     if (req.body.trigger !== undefined) data.trigger = { type: 'event', config: req.body.trigger };
@@ -501,8 +515,8 @@ router.patch(
 router.delete(
   '/rules/:id',
   authorize('admin'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
 
     const existing = await prisma.gRCWorkflow.findFirst({
       where: { id: req.params.id, organizationId: user.organizationId },

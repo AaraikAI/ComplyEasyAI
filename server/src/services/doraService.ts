@@ -16,6 +16,84 @@
 
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { Prisma } from '../generated/prisma/client';
+
+/** JSON-stored threat entry in ICT Risk Assessment */
+interface ThreatJson {
+  likelihood?: number;
+  [key: string]: unknown;
+}
+
+/** JSON-stored vulnerability entry in ICT Risk Assessment */
+interface VulnerabilityJson {
+  severity?: string;
+  [key: string]: unknown;
+}
+
+/** JSON-stored ICT asset entry */
+interface ICTAssetJson {
+  [key: string]: unknown;
+}
+
+/** JSON-stored risk treatment plan */
+interface RiskTreatmentPlanJson {
+  controls?: Array<{ effectiveness?: string; [key: string]: unknown }>;
+  [key: string]: unknown;
+}
+
+/** JSON-stored timeline event */
+interface TimelineEventJson {
+  event: string;
+  timestamp: string;
+  user?: string;
+  [key: string]: unknown;
+}
+
+/** JSON-stored exit strategy */
+interface ExitStrategyJson {
+  plan?: string;
+  [key: string]: unknown;
+}
+
+/** JSON-stored subcontractor entry */
+interface SubcontractorJson {
+  [key: string]: unknown;
+}
+
+/** JSON-stored findings entry */
+interface FindingJson {
+  [key: string]: unknown;
+}
+
+/** JSON-stored remediation plan entry */
+interface RemediationPlanJson {
+  [key: string]: unknown;
+}
+
+/** JSON-stored participant entry */
+interface ParticipantJson {
+  [key: string]: unknown;
+}
+
+/** JSON-stored asset metadata */
+interface AssetMetadataJson {
+  thirdPartyProvider?: string;
+  description?: string;
+  department?: string;
+  thirdPartyProviderId?: string;
+  contractualArrangement?: string;
+  dataProcessed?: string;
+  networkConnections?: string;
+  businessFunction?: string;
+  complianceStatus?: string;
+  riskScore?: number;
+  [key: string]: unknown;
+}
+
+/** JSON-stored dependencies array */
+interface DependencyJson {
+  [key: string]: unknown;
+}
 
 // =============================================================================
 // Type Definitions
@@ -339,9 +417,9 @@ export async function scoreICTRiskAssessment(
     throw new Error('ICT risk assessment not found');
   }
 
-  const threats = (assessment.threats as any[]) || [];
-  const vulnerabilities = (assessment.vulnerabilities as any[]) || [];
-  const ictAssets = (assessment.ictAssets as any[]) || [];
+  const threats = (assessment.threats as unknown as ThreatJson[]) || [];
+  const vulnerabilities = (assessment.vulnerabilities as unknown as VulnerabilityJson[]) || [];
+  const ictAssets = (assessment.ictAssets as unknown as ICTAssetJson[]) || [];
 
   // Threat score: average of threat likelihoods (1-5 scale)
   const threatScore =
@@ -366,7 +444,7 @@ export async function scoreICTRiskAssessment(
       : 2;
 
   // Control effectiveness: derived from treatment plan and asset controls
-  const treatmentPlan = (assessment.riskTreatmentPlan as any) || {};
+  const treatmentPlan = (assessment.riskTreatmentPlan as unknown as RiskTreatmentPlanJson) || {};
   const controlEffectiveness =
     treatmentPlan.controls && treatmentPlan.controls.length > 0
       ? treatmentPlan.controls.reduce((sum: number, c: any) => {
@@ -590,7 +668,7 @@ export async function updateICTIncident(
 
   // Track status transitions in timeline
   if (data.status && data.status !== existing.status) {
-    const currentTimeline = (existing.timeline as any[]) || [];
+    const currentTimeline = (existing.timeline as unknown as TimelineEventJson[]) || [];
     currentTimeline.push({
       event: `Status changed to ${data.status}`,
       timestamp: new Date().toISOString(),
@@ -668,7 +746,7 @@ export async function deleteICTIncident(
   }
 
   // Add archive event to timeline
-  const currentTimeline = (existing.timeline as any[]) || [];
+  const currentTimeline = (existing.timeline as unknown as TimelineEventJson[]) || [];
   currentTimeline.push({
     event: 'Incident archived',
     timestamp: new Date().toISOString(),
@@ -719,7 +797,7 @@ export async function escalateIncident(
     throw new Error('ICT incident not found');
   }
 
-  const currentTimeline = (existing.timeline as any[]) || [];
+  const currentTimeline = (existing.timeline as unknown as TimelineEventJson[]) || [];
   currentTimeline.push({
     event: `Escalated to level ${data.escalationLevel}`,
     timestamp: new Date().toISOString(),
@@ -1065,7 +1143,7 @@ export async function assessConcentrationRisk(organizationId: string) {
 
   // 4. Check for exit strategy completeness
   const providersWithoutExitStrategy = providers.filter((p) => {
-    const exit = p.exitStrategy as any;
+    const exit = p.exitStrategy as unknown as ExitStrategyJson;
     return (
       !exit ||
       !exit.plan ||
@@ -1088,13 +1166,13 @@ export async function assessConcentrationRisk(organizationId: string) {
 
   // 5. Check subcontractor chains
   const providersWithSubcontractors = providers.filter((p) => {
-    const subs = p.subcontractors as any[];
+    const subs = p.subcontractors as unknown as SubcontractorJson[];
     return subs && subs.length > 0;
   });
 
   if (providersWithSubcontractors.length > 0) {
     const totalSubs = providersWithSubcontractors.reduce((sum, p) => {
-      const subs = p.subcontractors as any[];
+      const subs = p.subcontractors as unknown as SubcontractorJson[];
       return sum + (subs ? subs.length : 0);
     }, 0);
 
@@ -1407,7 +1485,7 @@ export async function executeResilienceTest(
 
   // Validate TLPT-specific requirements
   if (existing.testType === 'tlpt') {
-    const participants = (existing.participants as any[]) || [];
+    const participants = (existing.participants as unknown as ParticipantJson[]) || [];
     if (participants.length === 0) {
       throw new Error(
         'TLPT requires qualified external testers per DORA Article 26(8). Add external testers before execution.'
@@ -1628,8 +1706,8 @@ export async function updateInformationRegisterEntry(
   if (data.recoveryPointObjective !== undefined) updateData.recoveryPointObjective = data.recoveryPointObjective;
   if (data.status !== undefined) updateData.status = data.status;
   // Store extra fields in metadata
-  const existingMetadata = (existing.metadata as any) || {};
-  const metadataUpdates: any = { ...existingMetadata };
+  const existingMetadata = (existing.metadata as unknown as AssetMetadataJson) || {};
+  const metadataUpdates: AssetMetadataJson = { ...existingMetadata };
   if (data.description !== undefined) metadataUpdates.description = data.description;
   if (data.department !== undefined) metadataUpdates.department = data.department;
   if (data.thirdPartyProvider !== undefined) metadataUpdates.thirdPartyProvider = data.thirdPartyProvider;
@@ -1995,7 +2073,7 @@ export async function calculateDORAComplianceScore(organizationId: string) {
 
     // Assessments with risk treatment plans (0-25 pts)
     const withMitigation = riskAssessments.filter((r) => {
-      const plan = r.riskTreatmentPlan as any;
+      const plan = r.riskTreatmentPlan as unknown as RiskTreatmentPlanJson;
       return plan && (Array.isArray(plan) ? plan.length > 0 : Object.keys(plan).length > 0);
     }).length;
     pillarScores.ictRiskManagement.score += Math.round(
@@ -2004,7 +2082,7 @@ export async function calculateDORAComplianceScore(organizationId: string) {
 
     // ICT assets documented (0-25 pts)
     const withControls = riskAssessments.filter((r) => {
-      const assets = r.ictAssets as any[];
+      const assets = r.ictAssets as unknown as ICTAssetJson[];
       return assets && assets.length > 0;
     }).length;
     pillarScores.ictRiskManagement.score += Math.round(
@@ -2106,7 +2184,7 @@ export async function calculateDORAComplianceScore(organizationId: string) {
 
     // Tests with documented findings (0-25 pts)
     const withFindings = tests.filter((t) => {
-      const findings = t.findings as any[];
+      const findings = t.findings as unknown as FindingJson[];
       return findings && findings.length > 0;
     }).length;
     pillarScores.resilienceTesting.score += Math.round(
@@ -2115,7 +2193,7 @@ export async function calculateDORAComplianceScore(organizationId: string) {
 
     // Remediation follow-up (0-20 pts)
     const withRemediation = tests.filter((t) => {
-      const plan = t.remediationPlan as any[];
+      const plan = t.remediationPlan as unknown as RemediationPlanJson[];
       return plan && plan.length > 0;
     }).length;
     pillarScores.resilienceTesting.score += Math.round(
@@ -2200,7 +2278,7 @@ export async function calculateDORAComplianceScore(organizationId: string) {
     const criticalAssets = assets.filter((a) => a.businessImpact === 'Critical');
     if (criticalAssets.length > 0) {
       const critWithProvider = criticalAssets.filter((a) => {
-        const meta = a.metadata as any;
+        const meta = a.metadata as unknown as AssetMetadataJson;
         return meta && meta.thirdPartyProvider;
       }).length;
       // Having provider mapping documented = good (even if self-managed)
@@ -2211,7 +2289,7 @@ export async function calculateDORAComplianceScore(organizationId: string) {
 
     // Dependencies documented (0-20 pts)
     const withDependencies = assets.filter((a) => {
-      const deps = a.dependencies as any[];
+      const deps = a.dependencies as unknown as DependencyJson[];
       return deps && deps.length > 0;
     }).length;
     pillarScores.informationRegister.score += Math.round(

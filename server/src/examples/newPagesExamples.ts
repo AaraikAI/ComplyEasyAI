@@ -10,6 +10,7 @@
 import prisma from '../config/database';
 import { EnrollmentStatus, ForumPostStatus, ServiceStatusType, IncidentSeverity } from '../generated/prisma/client';
 import logger from '../config/logger';
+import emailService from '../services/emailService';
 
 // ============================================
 // LEARN PAGE EXAMPLES
@@ -666,7 +667,14 @@ export async function subscribeToStatusUpdates(
       },
     });
 
-    // TODO: Send verification email with verificationToken
+    // Send verification email with verificationToken
+    const verificationUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-subscription?token=${verificationToken}`;
+    await emailService.sendEmail({
+      to: email,
+      subject: 'Verify your ComplyEasy status subscription',
+      html: `<p>Please verify your subscription by clicking <a href="${verificationUrl}">here</a>.</p>`,
+      text: `Verify your subscription: ${verificationUrl}`,
+    });
 
     return subscription;
   } catch (error: unknown) {

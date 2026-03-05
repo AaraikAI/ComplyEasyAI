@@ -465,7 +465,7 @@ ${policy.content.substring(0, 3000)}`;
       ? sortDir === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
       : <ChevronDown size={14} className="opacity-30" />;
 
-  const useTemplate = (t: PolicyTemplate) => {
+  const applyTemplate = (t: PolicyTemplate) => {
     setPolicyForm(prev => ({
       ...prev,
       title: t.title,
@@ -909,7 +909,7 @@ ${policy.content.substring(0, 3000)}`;
                     <Badge text={t.category} className="bg-blue-50 text-blue-700 border-blue-200" />
                   </div>
                   <p className="text-sm text-gray-500 mb-4 line-clamp-3">{t.content.substring(0, 200)}...</p>
-                  <button onClick={() => useTemplate(t)}
+                  <button onClick={() => applyTemplate(t)}
                     disabled={policyLimitReached}
                     className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
                     <FileText size={14} /> Use Template
@@ -1037,7 +1037,7 @@ ${policy.content.substring(0, 3000)}`;
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="font-medium text-gray-700">{aiNLResult.policy?.title || 'Generated Policy'}</h3>
-                    {aiNLResult.confidence != null && (
+                    {aiNLResult.confidence !== null && (
                       <p className="text-xs text-gray-500 mt-1">Confidence: {Math.round(aiNLResult.confidence * 100)}%</p>
                     )}
                   </div>

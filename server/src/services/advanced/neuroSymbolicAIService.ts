@@ -21,6 +21,43 @@ import config from '../../config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import crypto from 'crypto';
 import { Engine } from 'json-rules-engine';
+import { Prisma } from '../../generated/prisma/client';
+
+interface KnowledgeGraphEntity {
+  id: string;
+  name: string;
+  type: string;
+  severity?: string;
+  status?: string;
+  knownRisks: string[];
+}
+
+interface KnowledgeGraph {
+  entities: KnowledgeGraphEntity[];
+  relationships: unknown[];
+  updatedAt?: Date;
+}
+
+interface NeuralPredictionJson {
+  result?: unknown;
+  confidence?: number;
+  model?: string;
+  [key: string]: unknown;
+}
+
+interface FinalDecisionJson {
+  result?: unknown;
+  conclusion?: string;
+  neuralWeight?: number;
+  symbolicWeight?: number;
+  [key: string]: unknown;
+}
+
+interface InputJson {
+  query?: string;
+  logicalSteps?: string[];
+  [key: string]: unknown;
+}
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey || process.env.GEMINI_API_KEY || '');
 
@@ -78,6 +115,8 @@ export interface RuleInference {
 }
 
 class NeuroSymbolicAIService {
+  private _knowledgeGraphCache: Map<string, KnowledgeGraph> | null = null;
+
   /**
    * Perform hybrid neural-symbolic reasoning
    * Combines neural network predictions with symbolic rule-based reasoning
@@ -1336,14 +1375,14 @@ Format as JSON:
         data: {
           id: reasoning.id,
           organizationId: reasoning.organizationId,
-          input: { query: reasoning.query } as any, // Store query as input
-          neuralPrediction: reasoning.neuralPrediction as any,
-          symbolicRules: { 
+          input: { query: reasoning.query } as unknown as Prisma.InputJsonValue, // Store query as input
+          neuralPrediction: reasoning.neuralPrediction as unknown as Prisma.InputJsonValue,
+          symbolicRules: {
             applicableRules: reasoning.symbolicReasoning.applicableRules,
             logicalSteps: reasoning.symbolicReasoning.logicalSteps,
             conclusion: reasoning.symbolicReasoning.conclusion,
-          } as any, // Store symbolic reasoning as rules
-          finalDecision: reasoning.hybridResult.finalDecision as any,
+          } as unknown as Prisma.InputJsonValue, // Store symbolic reasoning as rules
+          finalDecision: reasoning.hybridResult.finalDecision as unknown as Prisma.InputJsonValue,
           confidence: reasoning.hybridResult.confidence,
           explanation: reasoning.hybridResult.explanation || '',
         },
@@ -1365,8 +1404,8 @@ Format as JSON:
             id: inference.id,
             reasoningId: inference.reasoningId,
             organizationId: inference.organizationId,
-            inferredRule: inference.inferredRule as any,
-            supportingEvidence: inference.supportingEvidence as any,
+            inferredRule: inference.inferredRule as unknown as Prisma.InputJsonValue,
+            supportingEvidence: inference.supportingEvidence as unknown as Prisma.InputJsonValue,
             validationStatus: inference.validationStatus || 'pending',
             validatedBy: inference.validatedBy,
             validatedAt: inference.validatedAt,
@@ -1397,14 +1436,14 @@ Format as JSON:
       });
 
       return dbReasonings.map(r => {
-        const neuralPred = r.neuralPrediction as any;
-        const symbolicRules = r.symbolicRules as any;
-        const finalDecision = r.finalDecision as any;
-        
+        const neuralPred = r.neuralPrediction as unknown as NeuralPredictionJson | null;
+        const symbolicRules = r.symbolicRules as unknown as SymbolicRule[] | Record<string, unknown> | null;
+        const finalDecision = r.finalDecision as unknown as FinalDecisionJson | null;
+
         return {
           id: r.id,
           organizationId: r.organizationId,
-          query: (r.input as any)?.query || '',
+          query: (r.input as unknown as InputJson)?.query || '',
           neuralPrediction: {
             result: neuralPred?.result || neuralPred,
             confidence: neuralPred?.confidence || r.confidence,
@@ -1412,7 +1451,7 @@ Format as JSON:
           },
           symbolicReasoning: {
             applicableRules: Array.isArray(symbolicRules) ? symbolicRules : [],
-            logicalSteps: (r.input as any)?.logicalSteps || [],
+            logicalSteps: (r.input as unknown as InputJson)?.logicalSteps || [],
             conclusion: finalDecision?.conclusion || '',
             confidence: r.confidence,
           },
@@ -1428,9 +1467,9 @@ Format as JSON:
           id: i.id,
           reasoningId: i.reasoningId,
           organizationId: i.organizationId,
-          inferredRule: i.inferredRule as any,
-          supportingEvidence: i.supportingEvidence as any,
-          validationStatus: i.validationStatus as any,
+          inferredRule: i.inferredRule as unknown as SymbolicRule,
+          supportingEvidence: i.supportingEvidence as unknown as RuleInference['supportingEvidence'],
+          validationStatus: i.validationStatus as RuleInference['validationStatus'],
           validatedBy: i.validatedBy || undefined,
           validatedAt: i.validatedAt || undefined,
         })),
@@ -1469,9 +1508,9 @@ Format as JSON:
         id: updated.id,
         reasoningId: updated.reasoningId,
         organizationId: updated.organizationId,
-        inferredRule: updated.inferredRule as any,
-        supportingEvidence: updated.supportingEvidence as any,
-        validationStatus: updated.validationStatus as any,
+        inferredRule: updated.inferredRule as unknown as SymbolicRule,
+        supportingEvidence: updated.supportingEvidence as unknown as RuleInference['supportingEvidence'],
+        validationStatus: updated.validationStatus as RuleInference['validationStatus'],
         validatedBy: updated.validatedBy || undefined,
         validatedAt: updated.validatedAt || undefined,
       };
@@ -1798,12 +1837,12 @@ Format as JSON:
   /**
    * Get or build the knowledge graph for an organization
    */
-  private async getOrBuildKnowledgeGraph(organizationId: string): Promise<any> {
+  private async getOrBuildKnowledgeGraph(organizationId: string): Promise<KnowledgeGraph> {
     try {
       // Check cache first
       const cacheKey = `knowledge_graph_${organizationId}`;
-      if ((this as any)._knowledgeGraphCache?.has(cacheKey)) {
-        return (this as any)._knowledgeGraphCache.get(cacheKey);
+      if (this._knowledgeGraphCache?.has(cacheKey)) {
+        return this._knowledgeGraphCache.get(cacheKey)!;
       }
 
       // Build from database
@@ -1824,14 +1863,14 @@ Format as JSON:
       };
 
       // Cache the graph
-      if (!(this as any)._knowledgeGraphCache) {
-        (this as any)._knowledgeGraphCache = new Map();
+      if (!this._knowledgeGraphCache) {
+        this._knowledgeGraphCache = new Map();
       }
-      (this as any)._knowledgeGraphCache.set(cacheKey, knowledgeGraph);
+      this._knowledgeGraphCache.set(cacheKey, knowledgeGraph);
 
       // Auto-expire cache after 5 minutes
       setTimeout(() => {
-        (this as any)._knowledgeGraphCache?.delete(cacheKey);
+        this._knowledgeGraphCache?.delete(cacheKey);
       }, 5 * 60 * 1000);
 
       return knowledgeGraph;
