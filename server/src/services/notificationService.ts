@@ -15,6 +15,25 @@ import sgMail from '@sendgrid/mail';
 import websocketService from './websocketService';
 import slackService from './integrations/slackService';
 import crypto from 'crypto';
+import { Prisma } from '../generated/prisma/client';
+
+/** JSON structure for Slack integration config */
+interface SlackIntegrationConfig {
+  users?: Record<string, { slackUserId?: string }>;
+  [key: string]: unknown;
+}
+
+/** JSON structure for notification preference categories with phone */
+interface PreferenceCategoriesJson {
+  phoneNumber?: string;
+  [category: string]: unknown;
+}
+
+/** User with optional Slack ID */
+interface UserWithSlackId {
+  slackUserId?: string;
+  [key: string]: unknown;
+}
 
 export interface NotificationTemplate {
   id: string;
@@ -183,7 +202,7 @@ class NotificationService {
           category: notification.category,
           title,
           message,
-          channels: channels as any,
+          channels: channels as unknown as Prisma.InputJsonValue,
           templateId: notification.templateId,
           metadata: notification.metadata || {},
           link: notification.link,
@@ -223,18 +242,18 @@ class NotificationService {
         id: dbNotification.id,
         userId: dbNotification.userId,
         organizationId: dbNotification.organizationId,
-        type: dbNotification.type as any,
+        type: dbNotification.type as Notification['type'],
         category: dbNotification.category,
         title: dbNotification.title,
         message: dbNotification.message,
-        channels: dbNotification.channels as any,
+        channels: dbNotification.channels as unknown as Notification['channels'],
         templateId: dbNotification.templateId || undefined,
-        metadata: dbNotification.metadata as any,
+        metadata: dbNotification.metadata as unknown as Notification['metadata'],
         link: dbNotification.link || undefined,
         sentAt: dbNotification.sentAt || undefined,
         deliveredAt: dbNotification.deliveredAt || undefined,
         readAt: dbNotification.readAt || undefined,
-        status: dbNotification.status as any,
+        status: dbNotification.status as Notification['status'],
         retryCount: dbNotification.retryCount,
         createdAt: dbNotification.createdAt,
       };
@@ -382,7 +401,7 @@ class NotificationService {
       });
 
       if (slackIntegration?.config) {
-        const metadata = slackIntegration.config as any;
+        const metadata = slackIntegration.config as unknown as SlackIntegrationConfig;
         // Look for user's Slack ID in metadata (could be stored as userId -> slackUserId mapping)
         if (metadata.users && metadata.users[userId]) {
           slackUserId = metadata.users[userId].slackUserId || null;
@@ -392,7 +411,7 @@ class NotificationService {
       // If no Slack user ID found, try to get from user's notification preferences
       if (!slackUserId && user?.notificationPreference?.slack) {
         // Check if Slack user ID is stored in user metadata or preferences
-        const userMetadata = user as any;
+        const userMetadata = user as unknown as UserWithSlackId;
         if (userMetadata.slackUserId) {
           slackUserId = userMetadata.slackUserId;
         }
@@ -483,7 +502,7 @@ class NotificationService {
 
     // Get phone number from user's notification preferences metadata
     // In production, phone numbers should be stored securely in user metadata or a separate table
-    const prefCategories = user.notificationPreference?.categories as any;
+    const prefCategories = user.notificationPreference?.categories as unknown as PreferenceCategoriesJson;
     const phoneNumber = prefCategories?.phoneNumber || null;
 
     if (!phoneNumber) {
@@ -559,7 +578,7 @@ class NotificationService {
           slack: dbPreferences.slack,
           websocket: dbPreferences.websocket,
           sms: dbPreferences.sms,
-          categories: (dbPreferences.categories as any) || {},
+          categories: (dbPreferences.categories as unknown as NotificationPreferences['categories']) || {},
         }
       : {
           userId,
@@ -718,18 +737,18 @@ class NotificationService {
       id: n.id,
       userId: n.userId,
       organizationId: n.organizationId,
-      type: n.type as any,
+      type: n.type as Notification['type'],
       category: n.category,
       title: n.title,
       message: n.message,
-      channels: n.channels as any,
+      channels: n.channels as unknown as Notification['channels'],
       templateId: n.templateId || undefined,
-      metadata: n.metadata as any,
+      metadata: n.metadata as unknown as Notification['metadata'],
       link: n.link || undefined,
       sentAt: n.sentAt || undefined,
       deliveredAt: n.deliveredAt || undefined,
       readAt: n.readAt || undefined,
-      status: n.status as any,
+      status: n.status as Notification['status'],
       retryCount: n.retryCount,
       createdAt: n.createdAt,
     }));

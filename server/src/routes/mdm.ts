@@ -3,9 +3,9 @@
  * Routes for device management, policies, compliance, apps, and certificates.
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
-import { asyncHandler } from '../types/express';
+import { asyncHandler, AuthenticatedRequest } from '../types/express';
 import mdmService from '../services/mdmService';
 import logger from '../config/logger';
 
@@ -18,8 +18,8 @@ router.use(authenticate);
 
 router.get(
   '/dashboard',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     try {
       const dashboard = await mdmService.getMDMDashboard(user.organizationId);
       res.json(dashboard);
@@ -36,8 +36,8 @@ router.get(
 
 router.get(
   '/devices',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     try {
       const devices = await mdmService.getDevices(user.organizationId);
       res.json(devices);
@@ -51,8 +51,8 @@ router.get(
 router.post(
   '/devices',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const device = await mdmService.enrollDevice({
       ...req.body,
       organizationId: user.organizationId,
@@ -64,8 +64,8 @@ router.post(
 
 router.get(
   '/devices/:id',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const device = await mdmService.getDeviceById(req.params.id, user.organizationId);
     if (!device) {
       res.status(404).json({ error: 'Device not found' });
@@ -78,8 +78,8 @@ router.get(
 router.patch(
   '/devices/:id',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const device = await mdmService.updateDevice(req.params.id, user.id, user.organizationId, req.body);
     res.json(device);
   })
@@ -88,8 +88,8 @@ router.patch(
 router.post(
   '/devices/:id/lock',
   authorize('admin'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     await mdmService.createDeviceAction({
       deviceId: req.params.id,
       action: 'lock',
@@ -103,8 +103,8 @@ router.post(
 router.post(
   '/devices/:id/wipe',
   authorize('admin'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     await mdmService.createDeviceAction({
       deviceId: req.params.id,
       action: 'wipe',
@@ -118,8 +118,8 @@ router.post(
 router.post(
   '/devices/:id/unenroll',
   authorize('admin'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     await mdmService.unenrollDevice(req.params.id, user.id, user.organizationId);
     res.json({ success: true, message: 'Device unenrolled' });
   })
@@ -128,8 +128,8 @@ router.post(
 router.post(
   '/devices/:id/reassign',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const { newUserId, newUserName, reason } = req.body;
     if (!newUserId) {
       res.status(400).json({ error: 'newUserId is required' });
@@ -154,8 +154,8 @@ router.post(
 
 router.get(
   '/policies',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     try {
       const policies = await mdmService.getPolicies(user.organizationId);
       res.json(policies);
@@ -169,8 +169,8 @@ router.get(
 router.post(
   '/policies',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const policy = await mdmService.createPolicy({
       ...req.body,
       organizationId: user.organizationId,
@@ -182,8 +182,8 @@ router.post(
 
 router.get(
   '/policies/:id',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const policy = await mdmService.getPolicyById(req.params.id, user.organizationId);
     if (!policy) {
       res.status(404).json({ error: 'Policy not found' });
@@ -196,8 +196,8 @@ router.get(
 router.patch(
   '/policies/:id',
   authorize('admin', 'editor'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const policy = await mdmService.updatePolicy(req.params.id, user.id, user.organizationId, req.body);
     res.json(policy);
   })
@@ -206,8 +206,8 @@ router.patch(
 router.delete(
   '/policies/:id',
   authorize('admin'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     await mdmService.deletePolicy(req.params.id, user.id, user.organizationId);
     res.status(204).send();
   })
@@ -219,8 +219,8 @@ router.delete(
 
 router.get(
   '/compliance',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     try {
       const compliance = await mdmService.checkDeviceCompliance(user.organizationId);
       res.json(compliance);
@@ -237,8 +237,8 @@ router.get(
 
 router.get(
   '/actions',
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     try {
       const actions = await mdmService.getDeviceActions(user.organizationId);
       res.json(actions);
@@ -256,8 +256,8 @@ router.get(
 router.post(
   '/bulk-action',
   authorize('admin'),
-  asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const user = req.user;
     const result = await mdmService.bulkDeviceAction({
       ...req.body,
       organizationId: user.organizationId,

@@ -5,7 +5,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
@@ -53,7 +53,7 @@ function calculateDueDate(regulation: string, requestDate: Date): Date {
 router.get(
   '/dashboard',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const orgId = user.organizationId;
     try {
       const now = new Date();
@@ -165,7 +165,7 @@ router.get(
 router.get(
   '/dsar',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { type, status, search } = req.query;
     const { skip, take, page, limit } = paginate(req.query);
     try {
@@ -202,7 +202,7 @@ router.post(
   '/dsar',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const requestDate = new Date();
       const regulation = req.body.regulation || 'GDPR';
@@ -249,7 +249,7 @@ router.post(
 router.get(
   '/dsar/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const dsar = await prisma.dSARRequest.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -274,7 +274,7 @@ router.patch(
   '/dsar/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.dSARRequest.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -294,7 +294,7 @@ router.patch(
         details: `Fields updated: ${Object.keys(req.body).join(', ')}`,
       };
       const currentTrail = Array.isArray(existing.auditTrail) ? existing.auditTrail : [];
-      const updatedTrail = [...(currentTrail as any[]), auditEntry];
+      const updatedTrail = [...(currentTrail as Prisma.JsonArray), auditEntry];
 
       // Remove fields that shouldn't be set directly
       const { id, organizationId, auditTrail, createdAt, ...updateData } = req.body;
@@ -319,7 +319,7 @@ router.post(
   '/dsar/:id/verify-identity',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.dSARRequest.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -348,7 +348,7 @@ router.post(
           identityVerifiedBy: user.id,
           verificationMethod: req.body.verificationMethod,
           status: 'Verified',
-          auditTrail: [...(currentTrail as any[]), auditEntry],
+          auditTrail: [...(currentTrail as Prisma.JsonArray), auditEntry],
         },
       });
 
@@ -364,7 +364,7 @@ router.post(
   '/dsar/:id/complete',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.dSARRequest.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -393,7 +393,7 @@ router.post(
           responseMethod: req.body.responseMethod,
           responseDetails: req.body.responseDetails,
           responseAttachments: req.body.responseAttachments,
-          auditTrail: [...(currentTrail as any[]), auditEntry],
+          auditTrail: [...(currentTrail as Prisma.JsonArray), auditEntry],
         },
       });
 
@@ -412,7 +412,7 @@ router.post(
 router.get(
   '/consent',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { consentType, consentGiven, search } = req.query;
     const { skip, take, page, limit } = paginate(req.query);
     try {
@@ -449,7 +449,7 @@ router.post(
   '/consent',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const record = await prisma.consentRecord.create({
         data: {
@@ -486,7 +486,7 @@ router.patch(
   '/consent/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.consentRecord.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -521,7 +521,7 @@ router.patch(
 router.get(
   '/consent/purposes',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const records = await prisma.consentRecord.groupBy({
         by: ['consentType'],
@@ -561,7 +561,7 @@ router.get(
 router.get(
   '/consent/stats',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const orgId = user.organizationId;
 
@@ -622,7 +622,7 @@ router.get(
 router.get(
   '/consent/preferences',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { search } = req.query;
     const { skip, take, page, limit } = paginate(req.query);
     try {
@@ -656,7 +656,7 @@ router.put(
   '/consent/preferences/:dataSubjectId',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { dataSubjectId } = req.params;
     try {
       const now = new Date();
@@ -708,7 +708,7 @@ router.put(
 router.get(
   '/retention',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { status, dataCategory } = req.query;
     const { skip, take, page, limit } = paginate(req.query);
     try {
@@ -739,7 +739,7 @@ router.post(
   '/retention',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const policy = await prisma.retentionPolicy.create({
         data: {
@@ -773,7 +773,7 @@ router.patch(
   '/retention/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.retentionPolicy.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -807,7 +807,7 @@ router.delete(
   '/retention/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.retentionPolicy.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -830,7 +830,7 @@ router.delete(
 router.get(
   '/retention/jobs',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { skip, take, page, limit } = paginate(req.query);
     try {
       // Get enforcement runs for policies belonging to this org
@@ -864,7 +864,7 @@ router.post(
   '/retention/jobs/:id/run',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       // Verify the policy belongs to this org
       const policy = await prisma.retentionPolicy.findFirst({
@@ -919,7 +919,7 @@ router.post(
 router.get(
   '/scc-tia',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { status, templateType } = req.query;
     const { skip, take, page, limit } = paginate(req.query);
     try {
@@ -954,7 +954,7 @@ router.post(
   '/scc-tia',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const template = await prisma.sCCTemplate.create({
         data: {
@@ -991,7 +991,7 @@ router.patch(
   '/scc-tia/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.sCCTemplate.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -1022,7 +1022,7 @@ router.patch(
 router.get(
   '/scc-tia/:id/tia',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       // Verify the SCC template belongs to this org
       const scc = await prisma.sCCTemplate.findFirst({
@@ -1055,7 +1055,7 @@ router.post(
   '/scc-tia/:id/tia',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       // Verify the SCC template belongs to this org
       const scc = await prisma.sCCTemplate.findFirst({
@@ -1123,7 +1123,7 @@ router.post(
 router.get(
   '/bcr',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { status, bcrType } = req.query;
     const { skip, take, page, limit } = paginate(req.query);
     try {
@@ -1153,7 +1153,7 @@ router.post(
   '/bcr',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const program = await prisma.bCRProgram.create({
         data: {
@@ -1192,7 +1192,7 @@ router.patch(
   '/bcr/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.bCRProgram.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -1229,7 +1229,7 @@ router.patch(
 router.get(
   '/marketing',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { skip, take, page, limit } = paginate(req.query);
     try {
       const where = {
@@ -1258,7 +1258,7 @@ router.get(
 router.post(
   '/marketing/opt-out',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const now = new Date();
       const preference = await prisma.consentPreference.upsert({
@@ -1296,7 +1296,7 @@ router.post(
 router.get(
   '/marketing/suppression-list',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { skip, take, page, limit } = paginate(req.query);
     try {
       const where = {
@@ -1337,7 +1337,7 @@ router.post(
   '/marketing/suppression-list',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const now = new Date();
       const entry = await prisma.consentPreference.upsert({
@@ -1384,7 +1384,7 @@ router.post(
 router.get(
   '/deletion/audit-log',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { skip, take, page, limit } = paginate(req.query);
     try {
       const requests = await prisma.dataDeletionRequest.findMany({
@@ -1410,7 +1410,7 @@ router.get(
       const allEntries: any[] = [];
       for (const delReq of requests) {
         const log = Array.isArray(delReq.deletionLog) ? delReq.deletionLog : [];
-        for (const entry of log as any[]) {
+        for (const entry of log as Prisma.JsonArray) {
           allEntries.push({
             ...entry,
             deletionRequestId: delReq.id,
@@ -1442,7 +1442,7 @@ router.get(
 router.get(
   '/deletion',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { status, requestType } = req.query;
     const { skip, take, page, limit } = paginate(req.query);
     try {
@@ -1472,7 +1472,7 @@ router.post(
   '/deletion',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const request = await prisma.dataDeletionRequest.create({
         data: {
@@ -1510,7 +1510,7 @@ router.post(
 router.get(
   '/deletion/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const request = await prisma.dataDeletionRequest.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -1533,7 +1533,7 @@ router.patch(
   '/deletion/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.dataDeletionRequest.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -1562,7 +1562,7 @@ router.patch(
         where: { id: req.params.id },
         data: {
           ...updateData,
-          deletionLog: [...(currentLog as any[]), logEntry],
+          deletionLog: [...(currentLog as Prisma.JsonArray), logEntry],
         },
       });
 
@@ -1578,7 +1578,7 @@ router.post(
   '/deletion/:id/verify',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.dataDeletionRequest.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -1605,7 +1605,7 @@ router.post(
           status: 'Approved',
           approvedBy: user.id,
           approvedAt: now,
-          deletionLog: [...(currentLog as any[]), logEntry],
+          deletionLog: [...(currentLog as Prisma.JsonArray), logEntry],
         },
       });
 
@@ -1621,7 +1621,7 @@ router.post(
   '/deletion/:id/execute',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.dataDeletionRequest.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -1645,7 +1645,7 @@ router.post(
         where: { id: req.params.id },
         data: {
           status: 'InProgress',
-          deletionLog: [...(currentLog as any[]), logEntry],
+          deletionLog: [...(currentLog as Prisma.JsonArray), logEntry],
         },
       });
 
@@ -1664,7 +1664,7 @@ router.post(
 router.get(
   '/restrictions',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { status, restrictionType } = req.query;
     const { skip, take, page, limit } = paginate(req.query);
     try {
@@ -1694,7 +1694,7 @@ router.post(
   '/restrictions',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const restriction = await prisma.processingRestriction.create({
         data: {
@@ -1724,7 +1724,7 @@ router.patch(
   '/restrictions/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.processingRestriction.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -1756,7 +1756,7 @@ router.post(
   '/restrictions/:id/lift',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.processingRestriction.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -1794,7 +1794,7 @@ router.post(
 router.get(
   '/ai-transparency',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { status } = req.query;
     const { skip, take, page, limit } = paginate(req.query);
     try {
@@ -1823,7 +1823,7 @@ router.post(
   '/ai-transparency',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const notice = await prisma.aITransparencyNotice.create({
         data: {
@@ -1860,7 +1860,7 @@ router.patch(
   '/ai-transparency/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.aITransparencyNotice.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -1893,7 +1893,7 @@ router.post(
   '/ai-transparency/:id/publish',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.aITransparencyNotice.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -1928,7 +1928,7 @@ router.post(
 router.get(
   '/jit-notices',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { status, triggerContext } = req.query;
     const { skip, take, page, limit } = paginate(req.query);
     try {
@@ -1958,7 +1958,7 @@ router.post(
   '/jit-notices',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const notice = await prisma.jITPrivacyNotice.create({
         data: {
@@ -1999,7 +1999,7 @@ router.patch(
   '/jit-notices/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.jITPrivacyNotice.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -2028,7 +2028,7 @@ router.patch(
 router.post(
   '/jit-notices/:id/impression',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.jITPrivacyNotice.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -2055,7 +2055,7 @@ router.post(
 router.post(
   '/jit-notices/:id/accept',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.jITPrivacyNotice.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
@@ -2082,7 +2082,7 @@ router.post(
 router.post(
   '/jit-notices/:id/dismiss',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const existing = await prisma.jITPrivacyNotice.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },

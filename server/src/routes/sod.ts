@@ -4,7 +4,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import sodService from '../services/sodService';
 import logger from '../config/logger';
@@ -19,7 +19,7 @@ router.use(authenticate);
 router.get(
   '/dashboard',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const dashboard = await sodService.getSoDDashboard(user.organizationId);
       res.json(dashboard);
@@ -37,7 +37,7 @@ router.get(
 router.get(
   '/rules',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const rules = await sodService.getSoDRules(user.organizationId);
       res.json(rules);
@@ -52,7 +52,7 @@ router.post(
   '/rules',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const rule = await sodService.createSoDRule({
       ...req.body,
       organizationId: user.organizationId,
@@ -65,7 +65,7 @@ router.post(
 router.get(
   '/rules/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const rule = await sodService.getSoDRuleById(req.params.id, user.organizationId);
     if (!rule) {
       res.status(404).json({ error: 'Rule not found' });
@@ -79,7 +79,7 @@ router.patch(
   '/rules/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const rule = await sodService.updateSoDRule(req.params.id, user.id, user.organizationId, req.body);
     res.json(rule);
   })
@@ -89,7 +89,7 @@ router.delete(
   '/rules/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     await sodService.deleteSoDRule(req.params.id, user.id, user.organizationId);
     res.status(204).send();
   })
@@ -99,7 +99,7 @@ router.post(
   '/rules/import',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await sodService.importSoDRules(user.organizationId, user.id, req.body.rules);
     res.json(result);
   })
@@ -112,7 +112,7 @@ router.post(
 router.get(
   '/violations',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     try {
       const violations = await sodService.getSoDViolations(user.organizationId);
       res.json(violations);
@@ -126,7 +126,7 @@ router.get(
 router.get(
   '/violations/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const violation = await sodService.getSoDViolationById(req.params.id, user.organizationId);
     if (!violation) {
       res.status(404).json({ error: 'Violation not found' });
@@ -140,7 +140,7 @@ router.post(
   '/violations/:id/mitigate',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await sodService.mitigateViolation(req.params.id, user.id, user.organizationId, req.body);
     res.json(result);
   })
@@ -150,7 +150,7 @@ router.post(
   '/violations/:id/accept',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await sodService.acceptViolation(req.params.id, user.id, user.organizationId, req.body);
     res.json(result);
   })
@@ -160,7 +160,7 @@ router.post(
   '/violations/:id/remediate',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await sodService.remediateViolation(req.params.id, user.id, user.organizationId, req.body);
     res.json(result);
   })
@@ -173,7 +173,7 @@ router.post(
 router.get(
   '/violations/:violationId/compensation',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const controls = await sodService.getCompensatingControls(req.params.violationId, user.organizationId);
     res.json(controls);
   })
@@ -183,7 +183,7 @@ router.post(
   '/violations/:violationId/compensation',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const control = await sodService.addCompensatingControl(
       req.params.violationId,
       user.id,
@@ -198,7 +198,7 @@ router.patch(
   '/violations/:violationId/compensation/:controlId',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const control = await sodService.updateCompensatingControl(
       req.params.violationId,
       req.params.controlId,
@@ -214,7 +214,7 @@ router.delete(
   '/violations/:violationId/compensation/:controlId',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     await sodService.deleteCompensatingControl(
       req.params.violationId,
       req.params.controlId,
@@ -232,7 +232,7 @@ router.delete(
 router.get(
   '/matrix',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const { system } = req.query;
     try {
       const matrix = await sodService.getSoDMatrix(user.organizationId, system as string);
@@ -252,7 +252,7 @@ router.post(
   '/analyze',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await sodService.runSoDAnalysis(user.organizationId, user.id);
     res.json(result);
   })

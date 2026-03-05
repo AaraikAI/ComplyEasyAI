@@ -771,7 +771,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
             <div className="space-y-2 text-sm">
               {v.contractStart && <div className="flex items-center gap-2 text-gray-600"><Calendar size={14} />Start: {new Date(v.contractStart).toLocaleDateString()}</div>}
               {v.contractEnd && <div className="flex items-center gap-2 text-gray-600"><Calendar size={14} />End: {new Date(v.contractEnd).toLocaleDateString()}</div>}
-              {v.annualSpend != null && <div className="flex items-center gap-2 text-gray-600"><DollarSign size={14} />Annual Spend: ${v.annualSpend.toLocaleString()}</div>}
+              {v.annualSpend !== null && <div className="flex items-center gap-2 text-gray-600"><DollarSign size={14} />Annual Spend: ${v.annualSpend.toLocaleString()}</div>}
               {!v.contractStart && !v.contractEnd && !v.annualSpend && <p className="text-gray-400">No contract details</p>}
             </div>
           </div>
@@ -808,7 +808,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
                     <Badge text={a.status} className={a.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} />
                   </div>
                   <div className="text-gray-500">
-                    {a.score != null && <span className="mr-3">Score: {a.score}</span>}
+                    {a.score !== null && <span className="mr-3">Score: {a.score}</span>}
                     {a.assessedDate && new Date(a.assessedDate).toLocaleDateString()}
                   </div>
                 </div>

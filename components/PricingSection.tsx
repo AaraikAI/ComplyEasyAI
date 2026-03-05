@@ -574,7 +574,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                   </div>
                   <p className="text-gray-600 mb-4">{addon.description}</p>
                   <p className="text-sm font-medium text-gray-900 mb-1">
-                    {addon.priceOneTime != null && addon.priceOneTime > 0
+                    {addon.priceOneTime !== null && addon.priceOneTime > 0
                       ? `${formatPrice(addon.priceOneTime)} one-time + ${formatPrice(addon.priceAnnual)}/yr`
                       : addon.priceAnnual === 0
                         ? 'Variable (contact sales)'

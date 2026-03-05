@@ -299,7 +299,7 @@ class ACOSController {
     try {
       const authReq = req as AuthRequest;
       const { evidenceId } = req.params;
-      const file = (req as any).file;
+      const file = req.file;
       
       const analysis = await evidenceTruthLayerService.analyzeEvidence(
         evidenceId,
@@ -341,7 +341,7 @@ class ACOSController {
     try {
       const authReq = req as AuthRequest;
       const { evidenceId } = req.params;
-      const file = (req as any).file;
+      const file = req.file;
       
       const analysis = await evidenceTruthLayerService.reanalyzeEvidence(
         evidenceId,
@@ -418,7 +418,7 @@ class ACOSController {
     try {
       const authReq = req as AuthRequest;
       const { storedHash } = req.body;
-      const file = (req as any).file;
+      const file = req.file;
       
       if (!file?.buffer || !storedHash) {
         throw new AppError('File and stored hash are required', 400);
@@ -439,7 +439,7 @@ class ACOSController {
   signEvidence: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const file = (req as any).file;
+      const file = req.file;
       
       if (!file?.buffer) {
         throw new AppError('File is required', 400);
@@ -460,7 +460,7 @@ class ACOSController {
   verifyEvidenceSignature: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const { signature, publicKey } = req.body;
-      const file = (req as any).file;
+      const file = req.file;
       
       if (!file?.buffer || !signature || !publicKey) {
         throw new AppError('File, signature, and public key are required', 400);
@@ -482,7 +482,7 @@ class ACOSController {
   timestampEvidence: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const file = (req as any).file;
+      const file = req.file;
       
       if (!file?.buffer) {
         throw new AppError('File is required', 400);
@@ -528,7 +528,7 @@ class ACOSController {
     try {
       const authReq = req as AuthRequest;
       const { parties } = req.body;
-      const file = (req as any).file;
+      const file = req.file;
       
       if (!file?.buffer || !Array.isArray(parties)) {
         throw new AppError('File and parties array are required', 400);
@@ -551,9 +551,9 @@ class ACOSController {
   ingestRegulation: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const file = (req as any).file;
+      const file = req.file;
       
-      const input: any = {};
+      const input: { url?: string; pdfBuffer?: Buffer; text?: string } = {};
       if (req.body.url) {
         input.url = req.body.url;
       } else if (file && file.mimetype === 'application/pdf') {
@@ -1210,7 +1210,7 @@ class ACOSController {
       const { modelType } = req.query;
       const model = await federatedSwarmService.receiveFederatedModel(
         authReq.user!.organizationId,
-        (modelType as any) || 'compliance_scoring'
+        (modelType as 'risk_prediction' | 'control_effectiveness' | 'compliance_scoring') || 'compliance_scoring'
       );
       res.json(model);
     } catch (error) {
@@ -1383,7 +1383,7 @@ class ACOSController {
     try {
       const { modelType, limit } = req.query;
       const trail = await federatedSwarmService.getModelAuditTrail(
-        modelType as any,
+        modelType as 'risk_prediction' | 'control_effectiveness' | 'compliance_scoring',
         limit ? parseInt(limit as string) : 50
       );
       res.json(trail);
@@ -1397,7 +1397,7 @@ class ACOSController {
   transcribeAudio: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const file = (req as any).file;
+      const file = req.file;
       if (!file) {
         throw new AppError('No audio file provided', 400);
       }
@@ -1417,7 +1417,7 @@ class ACOSController {
   analyzeVideo: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const file = (req as any).file;
+      const file = req.file;
       if (!file) {
         throw new AppError('No video file provided', 400);
       }
@@ -1833,7 +1833,7 @@ class ACOSController {
       const { format, filters } = req.query;
       const exportData = await vrCollaborativeReviewService.exportAnnotations(
         sessionId,
-        (format as any) || 'json',
+        (format as 'json' | 'csv') || 'json',
         filters ? JSON.parse(filters as string) : undefined
       );
       res.json(exportData);
@@ -2347,7 +2347,7 @@ class ACOSController {
       const { format, startDate, endDate } = req.query;
       const exportData = await swarmTaskAllocationService.exportMetrics(
         authReq.user!.organizationId,
-        (format as any) || 'json',
+        (format as 'json' | 'csv') || 'json',
         startDate ? new Date(startDate as string) : undefined,
         endDate ? new Date(endDate as string) : undefined
       );

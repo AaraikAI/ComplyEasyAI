@@ -785,7 +785,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
           break;
 
         case 'query':
-        default:
+        default: {
           // Use AI for general queries with file context
           const fileContext = uploadedFiles.length > 0
             ? uploadedFiles.map(f => ({
@@ -804,6 +804,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
             responseText = await chatWithComplianceBot(userInput);
           }
           break;
+        }
       }
 
       const aiMsg: ChatMessage = {

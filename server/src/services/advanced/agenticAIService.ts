@@ -13,15 +13,38 @@ import prisma from '../../config/database';
 import { Prisma } from '../../generated/prisma/client';
 import logger from '../../config/logger';
 
+/** Rollback checkpoint data stored as JSON */
+interface RollbackCheckpoint {
+  timestamp?: string;
+  expiresAt?: string;
+  controlId?: string;
+  previousStatus?: string;
+  previousDescription?: string | null;
+  previousEvidence?: string | null;
+  riskId?: string;
+  previousMitigationPlan?: string | null;
+  [key: string]: unknown;
+}
+
+/** Stored action parameters (extends the user-provided parameters) */
+interface ActionParameters {
+  lockKey?: string;
+  lockedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  dependencies?: string[];
+  [key: string]: unknown;
+}
+
 export interface AgenticAction {
   id: string;
   actionType: 'control_update' | 'policy_create' | 'risk_mitigation' | 'evidence_upload';
   targetId: string;
-  parameters: Record<string, any>;
+  parameters: ActionParameters;
   blastRadius: BlastRadiusEstimate;
   requiresApproval: boolean;
   status: 'pending' | 'approved' | 'executing' | 'completed' | 'rolled_back' | 'failed';
-  rollbackData?: any;
+  rollbackData?: RollbackCheckpoint;
   executedAt?: Date;
   rolledBackAt?: Date;
 }
@@ -46,7 +69,7 @@ class AgenticAIService {
     action: {
       actionType: string;
       targetId: string;
-      parameters: Record<string, any>;
+      parameters: ActionParameters;
     }
   ): Promise<BlastRadiusEstimate & { riskScore: number; directImpacts: string[]; indirectImpacts: string[]; hasCircularReferences: boolean }> {
     try {
@@ -223,7 +246,7 @@ class AgenticAIService {
     // Find indirect impacts (downstream dependencies)
     for (const ctrl of allControls) {
       if (ctrl.mappedControls) {
-        const mapped = ctrl.mappedControls as any;
+        const mapped = ctrl.mappedControls as unknown as string[];
         if (Array.isArray(mapped) && mapped.includes(controlId)) {
           if (!visited.has(ctrl.id)) {
             indirectImpacts.push(`control:${ctrl.id}`);
@@ -448,7 +471,7 @@ class AgenticAIService {
           actionType: action.actionType,
           targetId: action.targetId,
           parameters: action.parameters || {},
-          blastRadius: blastRadius as any,
+          blastRadius: blastRadius as unknown as Prisma.InputJsonValue,
           requiresApproval,
           status: requiresApproval ? 'pending' : 'approved',
           createdBy: userId,
@@ -457,12 +480,12 @@ class AgenticAIService {
 
       const agenticAction: AgenticAction = {
         id: dbAction.id,
-        actionType: action.actionType as any,
+        actionType: action.actionType as AgenticAction['actionType'],
         targetId: action.targetId,
         parameters: action.parameters,
         blastRadius,
         requiresApproval,
-        status: dbAction.status as any,
+        status: dbAction.status as AgenticAction['status'],
       };
 
       // Lock action using database-based locking
@@ -652,7 +675,7 @@ class AgenticAIService {
   private async createCheckpoint(
     agenticAction: AgenticAction,
     organizationId: string
-  ): Promise<any> {
+  ): Promise<RollbackCheckpoint> {
     const checkpoint = await this.captureRollbackData(agenticAction, organizationId);
     
     // Store checkpoint with timestamp (retain for 30 days)
@@ -666,7 +689,7 @@ class AgenticAIService {
     await prisma.agenticAction.update({
       where: { id: agenticAction.id },
       data: {
-        rollbackData: checkpointData as any,
+        rollbackData: checkpointData as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -679,7 +702,7 @@ class AgenticAIService {
   private async captureRollbackData(
     agenticAction: AgenticAction,
     organizationId: string
-  ): Promise<any> {
+  ): Promise<RollbackCheckpoint> {
     if (agenticAction.actionType === 'control_update') {
       const control = await prisma.frameworkControl.findUnique({
         where: { id: agenticAction.targetId },
@@ -817,13 +840,13 @@ class AgenticAIService {
 
         action = {
           id: dbAction.id,
-          actionType: dbAction.actionType as any,
+          actionType: dbAction.actionType as AgenticAction['actionType'],
           targetId: dbAction.targetId,
-          parameters: dbAction.parameters as any,
-          blastRadius: dbAction.blastRadius as any,
+          parameters: (dbAction.parameters as unknown as ActionParameters) || {},
+          blastRadius: dbAction.blastRadius as unknown as BlastRadiusEstimate,
           requiresApproval: dbAction.requiresApproval,
-          status: dbAction.status as any,
-          rollbackData: dbAction.rollbackData as any,
+          status: dbAction.status as AgenticAction['status'],
+          rollbackData: dbAction.rollbackData as unknown as RollbackCheckpoint,
           executedAt: dbAction.executedAt || undefined,
           rolledBackAt: dbAction.rolledBackAt || undefined,
         };
@@ -837,7 +860,7 @@ class AgenticAIService {
       }
 
       // Check if checkpoint is expired (30 days)
-      const checkpoint = action.rollbackData as any;
+      const checkpoint = action.rollbackData as RollbackCheckpoint;
       if (checkpoint.expiresAt) {
         const expiresAt = new Date(checkpoint.expiresAt);
         if (expiresAt < new Date()) {
@@ -969,7 +992,7 @@ class AgenticAIService {
     organizationId: string
   ): Promise<boolean> {
     try {
-      const rollback = action.rollbackData as any;
+      const rollback = action.rollbackData as RollbackCheckpoint;
 
       // Restore previous state based on action type
       if (action.actionType === 'control_update') {
@@ -1025,7 +1048,7 @@ class AgenticAIService {
       });
 
       for (const action of allActions) {
-        const params = action.parameters as any;
+        const params = action.parameters as unknown as ActionParameters;
         if (params.dependencies && Array.isArray(params.dependencies)) {
           if (params.dependencies.includes(actionId)) {
             dependentActions.push(action.id);
@@ -1058,7 +1081,7 @@ class AgenticAIService {
 
       let cleaned = 0;
       for (const action of actions) {
-        const rollbackData = action.rollbackData as any;
+        const rollbackData = action.rollbackData as unknown as RollbackCheckpoint;
         if (rollbackData?.expiresAt) {
           const expiresAt = new Date(rollbackData.expiresAt);
           if (expiresAt < new Date()) {
@@ -1121,12 +1144,12 @@ class AgenticAIService {
     });
 
     // Reconstruct the full action from stored database record
-    const storedBlastRadius = (dbAction.blastRadius as any) || {};
+    const storedBlastRadius = (dbAction.blastRadius as unknown as BlastRadiusEstimate) || {} as BlastRadiusEstimate;
     const action: AgenticAction = {
       id: dbAction.id,
-      actionType: dbAction.actionType as any,
+      actionType: dbAction.actionType as AgenticAction['actionType'],
       targetId: dbAction.targetId,
-      parameters: (dbAction.parameters as Record<string, any>) || {},
+      parameters: (dbAction.parameters as unknown as ActionParameters) || {},
       blastRadius: {
         affectedControls: storedBlastRadius.affectedControls ?? 0,
         affectedFrameworks: storedBlastRadius.affectedFrameworks ?? 0,
@@ -1208,7 +1231,7 @@ class AgenticAIService {
         where: { id: actionId },
         data: {
           parameters: {
-            ...(await prisma.agenticAction.findUnique({ where: { id: actionId } }))?.parameters as any,
+            ...((await prisma.agenticAction.findUnique({ where: { id: actionId } }))?.parameters as unknown as ActionParameters),
             lockKey,
             lockedAt: new Date().toISOString(),
           },
@@ -1234,7 +1257,7 @@ class AgenticAIService {
       });
 
       for (const action of lockedActions) {
-        const params = action.parameters as any;
+        const params = action.parameters as unknown as ActionParameters;
         if (params?.lockKey === lockKey) {
           await prisma.agenticAction.update({
             where: { id: action.id },
@@ -1365,12 +1388,12 @@ class AgenticAIService {
   /**
    * Get entity data
    */
-  private async getEntityData(targetId: string, organizationId: string): Promise<Record<string, any>> {
+  private async getEntityData(targetId: string, organizationId: string): Promise<Record<string, unknown>> {
     const control = await prisma.frameworkControl.findUnique({ where: { id: targetId } });
-    if (control) return control as any;
+    if (control) return control as unknown as Record<string, unknown>;
 
     const risk = await prisma.riskItem.findUnique({ where: { id: targetId } });
-    if (risk) return risk as any;
+    if (risk) return risk as unknown as Record<string, unknown>;
 
     return {};
   }

@@ -1,4 +1,7 @@
-import { Organization } from '../generated/prisma/client';
+// Note: Organization type is imported conditionally to avoid breaking the
+// augmentation when the Prisma client has not been generated yet.
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+type OrganizationType = import('../generated/prisma/client').Organization;
 
 // Express 5 types ParamsDictionary as { [key: string]: string | string[] }.
 // Our routes only use simple :param patterns (never wildcard *param), so params
@@ -41,7 +44,7 @@ declare global {
       createdAt: Date;
       updatedAt: Date;
       organizationId: string;
-      organization?: Organization;
+      organization?: OrganizationType;
     }
   }
 }

@@ -144,8 +144,8 @@ export class SOXService {
         status: 'NotTested',
         deficiencyType: null,
         riskOfMaterialMisstatement: data.riskOfMaterialMisstatement || data.riskLevel || null,
-        evidence: (data.evidence ?? data.metadata ?? null) as any,
-        walkthrough: (data.walkthrough ?? null) as any,
+        evidence: (data.evidence ?? data.metadata ?? null) as Prisma.InputJsonValue,
+        walkthrough: (data.walkthrough ?? null) as Prisma.InputJsonValue,
       },
     });
 
@@ -186,7 +186,7 @@ export class SOXService {
     if (filters?.riskLevel) where.riskOfMaterialMisstatement = filters.riskLevel;
 
     const controls = await prisma.sOXControl.findMany({
-      where: where as any,
+      where: where as Prisma.SOXControlWhereInput,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -230,13 +230,13 @@ export class SOXService {
     if (data.lastTestDate !== undefined) updateData.lastTestDate = data.lastTestDate;
     if (data.nextTestDate !== undefined) updateData.nextTestDate = data.nextTestDate;
     if (data.deficiencyType !== undefined) updateData.deficiencyType = data.deficiencyType;
-    if (data.evidence !== undefined) updateData.evidence = data.evidence as any;
-    if (data.walkthrough !== undefined) updateData.walkthrough = data.walkthrough as any;
+    if (data.evidence !== undefined) updateData.evidence = data.evidence as Prisma.InputJsonValue;
+    if (data.walkthrough !== undefined) updateData.walkthrough = data.walkthrough as Prisma.InputJsonValue;
     if (data.riskOfMaterialMisstatement !== undefined) updateData.riskOfMaterialMisstatement = data.riskOfMaterialMisstatement;
 
     const updated = await prisma.sOXControl.update({
       where: { id },
-      data: updateData as any,
+      data: updateData as Prisma.SOXControlUpdateInput,
     });
 
     await AuditLogger.log({
@@ -333,9 +333,9 @@ export class SOXService {
         exceptionsFound,
         testProcedure: data.testProcedure,
         conclusion: data.conclusion,
-        evidence: Object.keys(evidence).length > 0 ? (evidence as any) : null,
+        evidence: Object.keys(evidence).length > 0 ? (evidence as Prisma.InputJsonValue) : null,
         deficiencyLevel,
-        compensatingControls: (data.compensatingControls ?? null) as any,
+        compensatingControls: (data.compensatingControls ?? null) as Prisma.InputJsonValue,
         managementResponse: data.managementResponse ?? null,
         remediationDeadline,
         status: 'Draft',
@@ -359,7 +359,7 @@ export class SOXService {
         }
         await prisma.sOXControl.update({
           where: { id: data.controlId },
-          data: updatePayload as any,
+          data: updatePayload as Prisma.SOXControlUpdateInput,
         });
       }
     } catch (err) {
@@ -414,7 +414,7 @@ export class SOXService {
     if (filters?.reviewStatus) where.status = filters.reviewStatus;
 
     const results = await prisma.sOXTestResult.findMany({
-      where: where as any,
+      where: where as Prisma.SOXTestResultWhereInput,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -449,9 +449,9 @@ export class SOXService {
     if (data.exceptionsFound !== undefined) updateData.exceptionsFound = data.exceptionsFound;
     if (data.testProcedure !== undefined) updateData.testProcedure = data.testProcedure;
     if (data.conclusion !== undefined) updateData.conclusion = data.conclusion;
-    if (data.evidence !== undefined) updateData.evidence = data.evidence as any;
+    if (data.evidence !== undefined) updateData.evidence = data.evidence as Prisma.InputJsonValue;
     if (data.deficiencyLevel !== undefined) updateData.deficiencyLevel = data.deficiencyLevel;
-    if (data.compensatingControls !== undefined) updateData.compensatingControls = data.compensatingControls as any;
+    if (data.compensatingControls !== undefined) updateData.compensatingControls = data.compensatingControls as Prisma.InputJsonValue;
     if (data.managementResponse !== undefined) updateData.managementResponse = data.managementResponse;
     if (data.remediationDeadline !== undefined) updateData.remediationDeadline = data.remediationDeadline;
     if (data.status !== undefined) updateData.status = data.status;
@@ -460,7 +460,7 @@ export class SOXService {
 
     const updated = await prisma.sOXTestResult.update({
       where: { id },
-      data: updateData as any,
+      data: updateData as Prisma.SOXTestResultUpdateInput,
     });
 
     await AuditLogger.log({
@@ -541,11 +541,11 @@ export class SOXService {
         assessmentType: data.assessmentType,
         status: 'InProgress',
         overallConclusion: null,
-        scopedProcesses: Object.keys(scopedProcesses).length > 0 ? (scopedProcesses as any) : null,
-        materialAccounts: (data.materialAccounts ?? null) as any,
-        significantLocations: (data.significantLocations ?? null) as any,
-        riskAssessment: (data.riskAssessment ?? null) as any,
-        managementCertification: (data.managementAssertions ?? null) as any,
+        scopedProcesses: Object.keys(scopedProcesses).length > 0 ? (scopedProcesses as Prisma.InputJsonValue) : null,
+        materialAccounts: (data.materialAccounts ?? null) as Prisma.InputJsonValue,
+        significantLocations: (data.significantLocations ?? null) as Prisma.InputJsonValue,
+        riskAssessment: (data.riskAssessment ?? null) as Prisma.InputJsonValue,
+        managementCertification: (data.managementAssertions ?? null) as Prisma.InputJsonValue,
         auditorAttestation: Prisma.JsonNull,
         filingDeadline,
         filedDate: null,
@@ -583,7 +583,7 @@ export class SOXService {
     if (filters?.fiscalYear) where.assessmentYear = parseInt(filters.fiscalYear, 10);
 
     const assessments = await prisma.sOXAssessment.findMany({
-      where: where as any,
+      where: where as Prisma.SOXAssessmentWhereInput,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -613,18 +613,18 @@ export class SOXService {
     if (data.assessmentType !== undefined) updateData.assessmentType = data.assessmentType;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.overallConclusion !== undefined) updateData.overallConclusion = data.overallConclusion;
-    if (data.scopedProcesses !== undefined) updateData.scopedProcesses = data.scopedProcesses as any;
-    if (data.materialAccounts !== undefined) updateData.materialAccounts = data.materialAccounts as any;
-    if (data.significantLocations !== undefined) updateData.significantLocations = data.significantLocations as any;
-    if (data.riskAssessment !== undefined) updateData.riskAssessment = data.riskAssessment as any;
-    if (data.managementCertification !== undefined) updateData.managementCertification = data.managementCertification as any;
-    if (data.auditorAttestation !== undefined) updateData.auditorAttestation = data.auditorAttestation as any;
+    if (data.scopedProcesses !== undefined) updateData.scopedProcesses = data.scopedProcesses as Prisma.InputJsonValue;
+    if (data.materialAccounts !== undefined) updateData.materialAccounts = data.materialAccounts as Prisma.InputJsonValue;
+    if (data.significantLocations !== undefined) updateData.significantLocations = data.significantLocations as Prisma.InputJsonValue;
+    if (data.riskAssessment !== undefined) updateData.riskAssessment = data.riskAssessment as Prisma.InputJsonValue;
+    if (data.managementCertification !== undefined) updateData.managementCertification = data.managementCertification as Prisma.InputJsonValue;
+    if (data.auditorAttestation !== undefined) updateData.auditorAttestation = data.auditorAttestation as Prisma.InputJsonValue;
     if (data.filingDeadline !== undefined) updateData.filingDeadline = data.filingDeadline;
     if (data.filedDate !== undefined) updateData.filedDate = data.filedDate;
 
     const updated = await prisma.sOXAssessment.update({
       where: { id },
-      data: updateData as any,
+      data: updateData as Prisma.SOXAssessmentUpdateInput,
     });
 
     await AuditLogger.log({
@@ -1019,7 +1019,7 @@ export class SOXService {
     await prisma.sOXControl.update({
       where: { id: controlId },
       data: {
-        walkthrough: walkthroughRecord as any,
+        walkthrough: walkthroughRecord as Prisma.InputJsonValue,
       },
     });
 

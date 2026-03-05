@@ -723,7 +723,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
           </div>
         );
 
-      case 'api-key':
+      case 'api-key': {
         const apiKeyProvider = getProviderId();
         const apiKeyLabels: Record<string, { keyLabel: string; keyPlaceholder: string; urlLabel: string; urlPlaceholder: string; urlRequired: boolean; instructions: string }> = {
           'okta': {
@@ -850,8 +850,9 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
             </button>
           </form>
         );
+      }
 
-      case 'api-key-secret':
+      case 'api-key-secret': {
         const secretProvider = getProviderId();
         const secretLabels: Record<string, { keyLabel: string; keyPlaceholder: string; secretLabel: string; secretPlaceholder: string; urlLabel?: string; urlPlaceholder?: string; instructions: string }> = {
           'trello': {
@@ -1036,6 +1037,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
             </button>
           </form>
         );
+      }
 
       case 'username-password':
         return (
@@ -1113,7 +1115,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
           </form>
         );
 
-      case 'iam':
+      case 'iam': {
         const provider = getProviderId();
         if (provider === 'aws') {
           return (
@@ -1252,6 +1254,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
           );
         }
         return null;
+      }
 
       case 'service-account':
         return (
@@ -1292,7 +1295,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
           </form>
         );
 
-      case 'pat':
+      case 'pat': {
         const patProvider = getProviderId();
         const patLabels: Record<string, { urlLabel: string; urlPlaceholder: string; tokenLabel: string; tokenPlaceholder: string; instructions: string }> = {
           'confluence': {
@@ -1432,6 +1435,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
             </button>
           </form>
         );
+      }
 
       case 'api-key-url':
         return (

@@ -11,7 +11,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import * as doraService from '../services/doraService';
 
@@ -27,7 +27,7 @@ router.use(authenticate);
 router.get(
   '/dashboard',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const dashboard = await doraService.getDORADashboard(user.organizationId);
     res.json(dashboard);
   })
@@ -36,7 +36,7 @@ router.get(
 router.get(
   '/compliance-score',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const score = await doraService.calculateDORAComplianceScore(
       user.organizationId
     );
@@ -51,13 +51,13 @@ router.get(
 router.get(
   '/risk-assessments',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.listICTRiskAssessments(
       user.organizationId,
       {
-        status: req.query.status as any,
-        assessmentType: req.query.assessmentType as any,
-        riskLevel: req.query.riskLevel as any,
+        status: req.query.status as doraService.ICTRiskStatus | undefined,
+        assessmentType: req.query.assessmentType as doraService.ICTRiskAssessmentType | undefined,
+        riskLevel: req.query.riskLevel as doraService.ICTRiskLevel | undefined,
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
       }
@@ -69,7 +69,7 @@ router.get(
 router.get(
   '/risk-assessments/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const assessment = await doraService.getICTRiskAssessment(
       user.organizationId,
       req.params.id
@@ -82,7 +82,7 @@ router.post(
   '/risk-assessments',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const assessment = await doraService.createICTRiskAssessment({
       organizationId: user.organizationId,
       ...req.body,
@@ -96,7 +96,7 @@ router.patch(
   '/risk-assessments/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const assessment = await doraService.updateICTRiskAssessment(
       user.organizationId,
       req.params.id,
@@ -110,7 +110,7 @@ router.delete(
   '/risk-assessments/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.deleteICTRiskAssessment(
       user.organizationId,
       req.params.id
@@ -123,7 +123,7 @@ router.post(
   '/risk-assessments/:id/score',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.scoreICTRiskAssessment(
       user.organizationId,
       req.params.id
@@ -139,12 +139,12 @@ router.post(
 router.get(
   '/incidents',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.listICTIncidents(user.organizationId, {
-      status: req.query.status as any,
-      severity: req.query.severity as any,
-      classification: req.query.classification as any,
-      incidentType: req.query.incidentType as any,
+      status: req.query.status as doraService.ICTIncidentStatus | undefined,
+      severity: req.query.severity as doraService.ICTIncidentSeverity | undefined,
+      classification: req.query.classification as doraService.ICTIncidentClassification | undefined,
+      incidentType: req.query.incidentType as doraService.ICTIncidentType | undefined,
       page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
       limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
     });
@@ -155,7 +155,7 @@ router.get(
 router.get(
   '/incidents/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const incident = await doraService.getICTIncident(
       user.organizationId,
       req.params.id
@@ -168,7 +168,7 @@ router.post(
   '/incidents',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const incident = await doraService.createICTIncident({
       organizationId: user.organizationId,
       ...req.body,
@@ -182,7 +182,7 @@ router.patch(
   '/incidents/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const incident = await doraService.updateICTIncident(
       user.organizationId,
       req.params.id,
@@ -196,7 +196,7 @@ router.post(
   '/incidents/:id/escalate',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const incident = await doraService.escalateIncident(
       user.organizationId,
       req.params.id,
@@ -214,7 +214,7 @@ router.delete(
   '/incidents/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.deleteICTIncident(
       user.organizationId,
       req.params.id,
@@ -231,12 +231,12 @@ router.delete(
 router.get(
   '/third-party-providers',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.listThirdPartyProviders(
       user.organizationId,
       {
-        criticality: req.query.criticality as any,
-        providerType: req.query.providerType as any,
+        criticality: req.query.criticality as doraService.ThirdPartyCriticality | undefined,
+        providerType: req.query.providerType as doraService.ThirdPartyProviderType | undefined,
         status: req.query.status as string,
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
@@ -249,7 +249,7 @@ router.get(
 router.get(
   '/third-party-providers/concentration-risk',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.assessConcentrationRisk(
       user.organizationId
     );
@@ -260,7 +260,7 @@ router.get(
 router.get(
   '/third-party-providers/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const provider = await doraService.getThirdPartyProvider(
       user.organizationId,
       req.params.id
@@ -273,7 +273,7 @@ router.post(
   '/third-party-providers',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const provider = await doraService.createThirdPartyProvider({
       organizationId: user.organizationId,
       ...req.body,
@@ -286,7 +286,7 @@ router.patch(
   '/third-party-providers/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const provider = await doraService.updateThirdPartyProvider(
       user.organizationId,
       req.params.id,
@@ -300,7 +300,7 @@ router.delete(
   '/third-party-providers/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.deleteThirdPartyProvider(
       user.organizationId,
       req.params.id
@@ -316,12 +316,12 @@ router.delete(
 router.get(
   '/resilience-tests',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.listResilienceTests(
       user.organizationId,
       {
-        testType: req.query.testType as any,
-        status: req.query.status as any,
+        testType: req.query.testType as doraService.ResilienceTestType | undefined,
+        status: req.query.status as doraService.ResilienceTestStatus | undefined,
         priority: req.query.priority as string,
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
@@ -334,7 +334,7 @@ router.get(
 router.get(
   '/resilience-tests/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const test = await doraService.getResilienceTest(
       user.organizationId,
       req.params.id
@@ -347,7 +347,7 @@ router.post(
   '/resilience-tests',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const test = await doraService.createResilienceTest({
       organizationId: user.organizationId,
       ...req.body,
@@ -361,7 +361,7 @@ router.patch(
   '/resilience-tests/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const test = await doraService.updateResilienceTest(
       user.organizationId,
       req.params.id,
@@ -375,7 +375,7 @@ router.delete(
   '/resilience-tests/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.deleteResilienceTest(
       user.organizationId,
       req.params.id
@@ -388,7 +388,7 @@ router.post(
   '/resilience-tests/:id/execute',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const test = await doraService.executeResilienceTest(
       user.organizationId,
       req.params.id,
@@ -409,11 +409,11 @@ router.post(
 router.get(
   '/information-register',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.listInformationRegister(
       user.organizationId,
       {
-        assetType: req.query.assetType as any,
+        assetType: req.query.assetType as doraService.AssetType | undefined,
         criticality: req.query.criticality as string,
         status: req.query.status as string,
         classification: req.query.classification as string,
@@ -429,7 +429,7 @@ router.get(
 router.get(
   '/information-register/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const entry = await doraService.getInformationRegisterEntry(
       user.organizationId,
       req.params.id
@@ -442,7 +442,7 @@ router.post(
   '/information-register',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const entry = await doraService.createInformationRegisterEntry({
       organizationId: user.organizationId,
       ...req.body,
@@ -455,7 +455,7 @@ router.patch(
   '/information-register/:id',
   authorize('admin', 'editor'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const entry = await doraService.updateInformationRegisterEntry(
       user.organizationId,
       req.params.id,
@@ -469,7 +469,7 @@ router.delete(
   '/information-register/:id',
   authorize('admin'),
   asyncHandler(async (req: Request, res: Response) => {
-    const user = (req as any).user;
+    const user = (req as AuthRequest).user!;
     const result = await doraService.deleteInformationRegisterEntry(
       user.organizationId,
       req.params.id

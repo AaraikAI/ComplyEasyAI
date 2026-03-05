@@ -11,8 +11,28 @@
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
-import { DeviceTrust as PrismaDeviceTrust, ZeroTrustPolicy as PrismaZeroTrustPolicy, NetworkSegment as PrismaNetworkSegment } from '../../generated/prisma/client';
+import { DeviceTrust as PrismaDeviceTrust, ZeroTrustPolicy as PrismaZeroTrustPolicy, NetworkSegment as PrismaNetworkSegment, Prisma } from '../../generated/prisma/client';
 import ldapPermissionService, { ADUser, PermissionEvaluationResult, RoleMapping } from './ldapPermissionService';
+
+/** Shape of the JSON rules stored in ZeroTrustPolicy.rules */
+interface PolicyRulesJson {
+  blockedLocations?: string[];
+  allowedLocations?: string[];
+  networkSegments?: Array<{ cidr?: string; trustLevel?: string; name?: string }>;
+  [key: string]: unknown;
+}
+
+/** Shape of the device metadata stored as JSON in the DeviceTrust table */
+interface DeviceMetadataJson {
+  userAgent?: string;
+  ipAddress?: string;
+  location?: string;
+  os?: string;
+  browser?: string;
+  deviceType?: string;
+  macAddress?: string;
+  [key: string]: unknown;
+}
 
 // Type aliases for Prisma models
 type DeviceTrust = PrismaDeviceTrust & {
@@ -184,7 +204,7 @@ class ZeroTrustService {
       // Detect device type from metadata (including deviceType field if present)
       let detectedDeviceType: DeviceTrust['deviceType'];
       try {
-        const metadataObj = metadata && typeof metadata === 'object' ? metadata as any : {};
+        const metadataObj = metadata && typeof metadata === 'object' ? metadata : {} as DeviceTrust['metadata'];
         detectedDeviceType = this.detectDeviceType({ 
           ...metadataObj, 
           deviceType: metadataObj.deviceType || undefined 
@@ -203,7 +223,7 @@ class ZeroTrustService {
         trustScore,
         lastVerified: new Date(),
         isTrusted,
-        metadata: metadata as any,
+        metadata,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as DeviceTrust;
@@ -355,7 +375,7 @@ class ZeroTrustService {
       });
 
       if (locationPolicy && locationPolicy.rules) {
-        const rules = locationPolicy.rules as any;
+        const rules = locationPolicy.rules as unknown as PolicyRulesJson;
         
         // Check if location is explicitly blocked (stored in rules JSON)
         if (rules.blockedLocations && Array.isArray(rules.blockedLocations)) {
@@ -388,7 +408,7 @@ class ZeroTrustService {
 
       const knownLocations = new Set<string>();
       deviceTrusts.forEach(device => {
-        const metadata = device.metadata as any;
+        const metadata = device.metadata as unknown as DeviceMetadataJson;
         if (metadata.location) {
           knownLocations.add(metadata.location.toLowerCase());
         }
@@ -576,7 +596,7 @@ class ZeroTrustService {
       let matches = 0;
       let total = 0;
 
-      const prevMetadata = previous.metadata as any;
+      const prevMetadata = previous.metadata as unknown as DeviceMetadataJson;
 
       if (metadata.os && prevMetadata?.os) {
         total++;
@@ -589,8 +609,8 @@ class ZeroTrustService {
       }
 
       // Check MAC address if available
-      const metadataObj = metadata as any;
-      const prevMetadataObj = prevMetadata as any;
+      const metadataObj = metadata as DeviceMetadataJson;
+      const prevMetadataObj = prevMetadata as DeviceMetadataJson;
       if (metadataObj.macAddress && prevMetadataObj?.macAddress) {
         total++;
         if (metadataObj.macAddress === prevMetadataObj.macAddress) matches++;
@@ -936,7 +956,7 @@ class ZeroTrustService {
       });
 
       for (const policy of policies) {
-        const rules = policy.rules as any;
+        const rules = policy.rules as unknown as PolicyRulesJson;
         if (rules?.networkSegments && Array.isArray(rules.networkSegments)) {
           for (const segment of rules.networkSegments) {
             if (segment.cidr && this.ipInCIDR(ipAddress, segment.cidr)) {
@@ -1063,7 +1083,7 @@ class ZeroTrustService {
           name: segment.name,
           cidr: segment.cidr || undefined,
           resources: JSON.parse(segment.resources as string),
-          trustLevel: segment.trustLevel as any,
+          trustLevel: segment.trustLevel as NetworkSegment['trustLevel'],
           policies: JSON.parse(segment.policies as string),
         });
       }
@@ -1102,7 +1122,7 @@ class ZeroTrustService {
           trustScore: deviceTrust.trustScore,
           isTrusted: deviceTrust.isTrusted,
           lastVerified: deviceTrust.lastVerified,
-          metadata: deviceTrust.metadata as any, // Prisma handles JSON automatically
+          metadata: deviceTrust.metadata as unknown as Prisma.InputJsonValue,
         },
         create: {
           deviceId,
@@ -1112,7 +1132,7 @@ class ZeroTrustService {
           trustScore: deviceTrust.trustScore,
           isTrusted: deviceTrust.isTrusted,
           lastVerified: deviceTrust.lastVerified,
-          metadata: deviceTrust.metadata as any, // Prisma handles JSON automatically
+          metadata: deviceTrust.metadata as unknown as Prisma.InputJsonValue,
         },
       });
     } catch (error: any) {
@@ -1164,15 +1184,15 @@ class ZeroTrustService {
         id: stored.id,
         organizationId: stored.organizationId,
         deviceId: stored.deviceId,
-        deviceType: stored.deviceType as any,
+        deviceType: stored.deviceType as DeviceTrust['deviceType'],
         fingerprint: stored.fingerprint,
         trustScore: stored.trustScore,
         lastVerified: stored.lastVerified,
         isTrusted: stored.isTrusted,
-        metadata: stored.metadata as any,
+        metadata: stored.metadata as unknown as DeviceTrust['metadata'],
         createdAt: stored.createdAt,
         updatedAt: stored.updatedAt,
-      } as any;
+      } as DeviceTrust;
     }
 
     return null;
@@ -1192,15 +1212,15 @@ class ZeroTrustService {
         id: stored.id,
         organizationId: stored.organizationId,
         deviceId: stored.deviceId,
-        deviceType: stored.deviceType as any,
+        deviceType: stored.deviceType as DeviceTrust['deviceType'],
         fingerprint: stored.fingerprint,
         trustScore: stored.trustScore,
         lastVerified: stored.lastVerified,
         isTrusted: stored.isTrusted,
-        metadata: (stored.metadata as any) || {},
+        metadata: (stored.metadata as unknown as DeviceTrust['metadata']) || {},
         createdAt: stored.createdAt,
         updatedAt: stored.updatedAt,
-      })) as any;
+      })) as DeviceTrust[];
     } catch (error) {
       logger.error('Error getting all device trusts', error);
       return [];
