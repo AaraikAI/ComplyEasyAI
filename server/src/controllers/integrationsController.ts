@@ -7,7 +7,7 @@ import { Request, Response, RequestHandler } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import logger from '../config/logger';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client';
 
 // Import integration services
 import googleService from '../services/integrations/googleService';

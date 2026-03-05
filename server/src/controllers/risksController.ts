@@ -5,7 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import geminiService from '../services/geminiService';
 import { v4 as uuidv4 } from 'uuid';
-import { ComplianceStatus } from '@prisma/client';
+import { ComplianceStatus } from '../generated/prisma/client';
 
 class RisksController {
   list: RequestHandler = async (req: Request, res: Response): Promise<void> => {

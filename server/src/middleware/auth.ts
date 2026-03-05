@@ -5,7 +5,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import monitoring from '../config/monitoring';
 import tokenBlacklist from '../services/tokenBlacklistService';
-import { User, Organization } from '@prisma/client';
+import { User, Organization } from '../generated/prisma/client';
 import crypto from 'crypto';
 
 export interface AuthUser {
@@ -14,7 +14,6 @@ export interface AuthUser {
   name: string;
   role: string;
   avatar?: string | null;
-  passwordHash?: string | null;
   emailVerified: boolean;
   lastLogin?: Date | null;
   employeeId?: string | null;

@@ -915,7 +915,7 @@ class MLModelsService {
         batchSize: 32,
         validationSplit: 0.2,
         callbacks: {
-          onEpochEnd: (epoch, logs) => {
+          onEpochEnd: (epoch: number, logs: tf.Logs | undefined) => {
             logger.info(`[ML Models] TGN Training epoch ${epoch}: loss=${logs?.loss}, accuracy=${logs?.acc}`);
           },
         },

@@ -14,7 +14,7 @@
 
 import prisma from '../../config/database';
 import logger from '../../config/logger';
-import { ComplianceStatus } from '@prisma/client';
+import { ComplianceStatus } from '../../generated/prisma/client';
 
 export interface ComplianceGoal {
   id: string;

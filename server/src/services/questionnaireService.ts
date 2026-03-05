@@ -1,4 +1,4 @@
-import { QuestionnaireStatus, QuestionnaireQuestion, QuestionnaireResponse, Prisma } from '@prisma/client';
+import { QuestionnaireStatus, QuestionnaireQuestion, QuestionnaireResponse, Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 import { GoogleGenerativeAI } from '@google/generative-ai';

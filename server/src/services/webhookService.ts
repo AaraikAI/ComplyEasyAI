@@ -12,7 +12,7 @@
 import crypto from 'crypto';
 import prisma from '../config/database';
 import logger from '../config/logger';
-import { WebhookEventStatus } from '@prisma/client';
+import { WebhookEventStatus } from '../generated/prisma/client';
 
 // ============================================================================
 // TYPES

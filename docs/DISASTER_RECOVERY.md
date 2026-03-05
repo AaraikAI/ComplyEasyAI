@@ -46,8 +46,17 @@ Users → CloudFront (CDN) → S3 (Frontend Static Assets)
 | Type | Frequency | Retention | Location |
 |------|-----------|-----------|----------|
 | Supabase Point-in-Time Recovery | Continuous (WAL) | 7 days (Pro), 28 days (Enterprise) | Supabase managed |
+| Scheduled daily backups | Daily at 03:00 UTC | 30 days (configurable) | S3 `backups/scheduled/` |
 | Pre-migration snapshots | Every CI/CD deployment | 30 days | S3 `backups/pre-migration/` |
 | Manual snapshots | Before major releases | 90 days | S3 `backups/manual/` |
+
+**Scheduled Daily Backup (automated via GitHub Actions):**
+A dedicated workflow runs daily at 03:00 UTC to create full database backups:
+```bash
+# Trigger manually with custom retention:
+gh workflow run scheduled-backup.yml -f retention_days=60
+```
+See `.github/workflows/scheduled-backup.yml` for full configuration. Old backups are automatically pruned after the retention period (default: 30 days).
 
 **Pre-Migration Backup (automated in CI):**
 The CI/CD pipeline automatically creates a database backup before every production migration:

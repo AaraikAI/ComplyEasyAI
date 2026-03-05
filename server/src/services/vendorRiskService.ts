@@ -1,4 +1,4 @@
-import { VendorRiskLevel, VendorStatus, Vendor, Prisma, MonitorStatus } from '@prisma/client';
+import { VendorRiskLevel, VendorStatus, Vendor, Prisma, MonitorStatus } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 

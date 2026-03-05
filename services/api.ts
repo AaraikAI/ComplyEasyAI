@@ -893,7 +893,7 @@ export const api = {
 
     update: async (id: string, updates: Partial<Webhook>) => {
       return fetchAPI<{ webhook: Webhook }>(`/webhooks/${id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify(updates),
       });
     },
@@ -917,7 +917,7 @@ export const api = {
     },
 
     getEvents: async (webhookId?: string) => {
-      const url = webhookId ? `/webhooks/${webhookId}/events` : '/webhooks/events';
+      const url = webhookId ? `/webhooks/${webhookId}/events` : '/webhooks/events/history';
       return fetchAPI<{ events: WebhookEvent[] }>(url);
     },
   },
@@ -925,18 +925,18 @@ export const api = {
   // --- API Keys ---
   apiKeys: {
     list: async () => {
-      return fetchAPI<{ apiKeys: ApiKey[] }>('/webhooks/api-keys');
+      return fetchAPI<{ apiKeys: ApiKey[] }>('/webhooks/keys/list');
     },
 
     create: async (name: string, scopes: string[]) => {
-      return fetchAPI<{ apiKey: ApiKey; key: string }>('/webhooks/api-keys', {
+      return fetchAPI<{ apiKey: ApiKey; key: string }>('/webhooks/keys', {
         method: 'POST',
         body: JSON.stringify({ name, scopes }),
       });
     },
 
     revoke: async (id: string) => {
-      return fetchAPI<{ success: boolean }>(`/webhooks/api-keys/${id}`, {
+      return fetchAPI<{ success: boolean }>(`/webhooks/keys/${id}`, {
         method: 'DELETE',
       });
     },

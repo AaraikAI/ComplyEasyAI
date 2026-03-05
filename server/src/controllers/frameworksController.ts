@@ -4,7 +4,7 @@ import prisma from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import { v4 as uuidv4 } from 'uuid';
-import { ComplianceStatus } from '@prisma/client';
+import { ComplianceStatus } from '../generated/prisma/client';
 import controlTemplatesService from '../services/euRegulations/controlTemplatesService';
 
 // FrameworkType enum values - matching frontend types.ts

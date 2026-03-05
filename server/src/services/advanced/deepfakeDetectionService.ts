@@ -314,7 +314,7 @@ class DeepfakeDetectionService {
     const history = await this.classifierModel.fit(xs, ys, {
       epochs, batchSize, validationSplit, shuffle: true,
       callbacks: {
-        onEpochEnd: (epoch, logs) => {
+        onEpochEnd: (epoch: number, logs: tf.Logs | undefined) => {
           if (logs && epoch % 10 === 0) {
             logger.info(`[DeepfakeDetection] Training epoch ${epoch + 1}/${epochs}: loss=${logs.loss?.toFixed(4)}, acc=${logs.acc?.toFixed(4)}`);
           }

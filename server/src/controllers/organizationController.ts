@@ -53,7 +53,7 @@ class OrganizationController {
       }
 
       if (plan !== undefined) {
-        const validPlans = ['Basic', 'Pro', 'Enterprise'];
+        const validPlans = ['Foundation', 'Essentials', 'Growth', 'Visionary'];
         if (!validPlans.includes(plan)) {
           throw new AppError(`Invalid plan. Must be one of: ${validPlans.join(', ')}`, 400);
         }

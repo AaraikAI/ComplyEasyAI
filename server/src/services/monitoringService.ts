@@ -1,4 +1,4 @@
-import { MonitorStatus } from '@prisma/client';
+import { MonitorStatus } from '../generated/prisma/client';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AuditLogger } from '../utils/auditLogger';

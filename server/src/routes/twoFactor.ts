@@ -4,6 +4,7 @@
 
 import express from 'express';
 import { authenticate } from '../middleware/auth';
+import { authLimiter } from '../middleware/rateLimiter';
 import * as twoFactorController from '../controllers/twoFactorController';
 import { asyncHandler } from '../types/express';
 
@@ -15,11 +16,11 @@ router.post('/setup', authenticate, asyncHandler(twoFactorController.setupTwoFac
 // Verify and enable 2FA
 router.post('/verify-enable', authenticate, asyncHandler(twoFactorController.verifyAndEnable));
 
-// Verify 2FA token during login (public - no auth required)
-router.post('/verify', asyncHandler(twoFactorController.verifyToken));
+// Verify 2FA token during login (public - rate limited to prevent brute-force)
+router.post('/verify', authLimiter, asyncHandler(twoFactorController.verifyToken));
 
-// Verify backup code during login (public - no auth required)
-router.post('/verify-backup', asyncHandler(twoFactorController.verifyBackupCode));
+// Verify backup code during login (public - rate limited to prevent brute-force)
+router.post('/verify-backup', authLimiter, asyncHandler(twoFactorController.verifyBackupCode));
 
 // Disable 2FA (requires authentication)
 router.post('/disable', authenticate, asyncHandler(twoFactorController.disableTwoFactor));

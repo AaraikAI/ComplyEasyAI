@@ -824,7 +824,7 @@ export class ContractInteraction {
       throw new Error(`Unknown event: ${eventName}`);
     }
     const events = await this.contract.queryFilter(filter, fromBlock, toBlock);
-    return events.filter((e): e is ethers.EventLog => e instanceof ethers.EventLog);
+    return events.filter((e: any): e is ethers.EventLog => e instanceof ethers.EventLog);
   }
 
   /**
@@ -837,7 +837,7 @@ export class ContractInteraction {
   ): Promise<ethers.EventLog[]> {
     const filter = this.contract.filters.CertificateIssued(null, orgId);
     const events = await this.contract.queryFilter(filter, fromBlock, toBlock);
-    return events.filter((e): e is ethers.EventLog => e instanceof ethers.EventLog);
+    return events.filter((e: any): e is ethers.EventLog => e instanceof ethers.EventLog);
   }
 
   // -----------------------------------------------------------------------

@@ -3,7 +3,7 @@
  * Profiles and analyzes database query performance
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../generated/prisma/client';
 import logger from '../../config/logger';
 
 interface QueryProfile {

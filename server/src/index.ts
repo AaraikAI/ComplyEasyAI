@@ -10,6 +10,7 @@ import logger from './config/logger';
 import prisma, { testConnection } from './config/database';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
+import { authenticate } from './middleware/auth';
 import websocketService from './services/websocketService';
 import swaggerSpec from './config/swagger';
 import monitoring, { initializeSentry, initializeAPM } from './config/monitoring';
@@ -435,10 +436,12 @@ app.use('/api/workflows', apiLimiter, workflowRoutes);
 // Privacy Management routes
 app.use('/api/privacy', apiLimiter, privacyRoutes);
 
-// GraphQL endpoint
-app.post('/api/graphql', graphqlMiddleware());
-app.get('/api/graphql', graphqlMiddleware());
-app.get('/api/graphql/playground', graphqlPlayground());
+// GraphQL endpoint (authenticated + rate limited)
+app.post('/api/graphql', authenticate, apiLimiter, graphqlMiddleware());
+app.get('/api/graphql', authenticate, apiLimiter, graphqlMiddleware());
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/graphql/playground', graphqlPlayground());
+}
 
 // API Versioned routes (v1, v2)
 app.use('/api/v1', apiVersioningMiddleware(), v1Router);
@@ -541,6 +544,12 @@ if (config.mqtt.brokerUrl && config.mqtt.brokerUrl !== 'mqtt://localhost:1883') 
 } else {
   logger.info('ℹ️  MQTT not configured (set MQTT_BROKER_URL to enable)');
 }
+
+// Set HTTP server timeouts for production hardening
+httpServer.keepAliveTimeout = 65 * 1000; // 65s (> typical ALB 60s idle timeout)
+httpServer.headersTimeout = 66 * 1000; // slightly above keepAliveTimeout
+httpServer.requestTimeout = 30 * 1000; // 30s max for receiving the full request
+httpServer.timeout = 120 * 1000; // 120s overall socket timeout
 
 // Start server - bind to all interfaces (IPv4 and IPv6)
 httpServer.listen(config.server.port, '0.0.0.0', () => {
