@@ -2,6 +2,8 @@ import { Router } from 'express';
 import risksController from '../controllers/risksController';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import { createRiskSchema, updateRiskSchema } from '../validators/riskSchemas';
 
 const router = Router();
 
@@ -153,7 +155,7 @@ router.get('/:id', asyncHandler(risksController.getById.bind(risksController)));
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
-router.post('/', authorize('admin', 'editor'), asyncHandler(risksController.create.bind(risksController)));
+router.post('/', authorize('admin', 'editor'), validateBody(createRiskSchema), asyncHandler(risksController.create.bind(risksController)));
 
 /**
  * @swagger
@@ -225,7 +227,7 @@ router.post('/', authorize('admin', 'editor'), asyncHandler(risksController.crea
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
-router.patch('/:id', authorize('admin', 'editor'), asyncHandler(risksController.update.bind(risksController)));
+router.patch('/:id', authorize('admin', 'editor'), validateBody(updateRiskSchema), asyncHandler(risksController.update.bind(risksController)));
 
 /**
  * @swagger

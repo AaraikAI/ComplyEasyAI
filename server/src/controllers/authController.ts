@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
+import config from '../config';
 import { generateToken, generateRefreshToken, verifyRefreshToken } from '../middleware/auth';
 import emailService from '../services/emailService';
 import logger from '../config/logger';
@@ -20,10 +22,10 @@ const ACCESS_TOKEN_COOKIE = 'access_token';
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 
 function setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
-  // Access token cookie — shorter max-age aligned with JWT expiry (default 7d)
+  // Access token cookie — max-age aligned with JWT expiry (default 15m)
   res.cookie(ACCESS_TOKEN_COOKIE, accessToken, {
     ...COOKIE_OPTIONS,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+    maxAge: 15 * 60 * 1000, // 15 minutes in ms
   });
 
   // Refresh token cookie — longer max-age aligned with refresh JWT expiry (default 30d)
@@ -51,9 +53,10 @@ class AuthController {
 
     const captchaSecret = process.env.HCAPTCHA_SECRET || process.env.RECAPTCHA_SECRET;
     if (!captchaSecret) {
-      // If no CAPTCHA secret is configured in production, log a warning but allow request
-      // This supports gradual rollout — set the env var to enforce
-      logger.warn('[Auth] No CAPTCHA secret configured (set HCAPTCHA_SECRET or RECAPTCHA_SECRET to enforce)');
+      if (process.env.NODE_ENV === 'production') {
+        throw new AppError('CAPTCHA verification unavailable', 503);
+      }
+      logger.warn('[Auth] No CAPTCHA secret configured (dev mode)');
       return;
     }
 
@@ -79,7 +82,7 @@ class AuthController {
         body: params.toString(),
       });
 
-      const result = await response.json();
+      const result = await response.json() as { success: boolean; 'error-codes'?: string[] };
       if (!result.success) {
         logger.warn('[Auth] CAPTCHA verification failed', { errors: result['error-codes'] });
         throw new AppError('CAPTCHA verification failed. Please try again.', 400);
@@ -291,10 +294,15 @@ class AuthController {
 
       // Check if 2FA is enabled
       if (user.twoFactorEnabled) {
-        // Return pending 2FA response
+        // Issue a short-lived signed JWT encoding the userId for the 2FA step
+        const twoFactorToken = jwt.sign(
+          { userId: user.id, purpose: '2fa_pending' },
+          config.jwt.secret,
+          { expiresIn: '5m' }
+        );
         res.json({
           twoFactorRequired: true,
-          userId: user.id,
+          twoFactorToken,
           message: 'Two-factor authentication required',
         });
         return;
@@ -729,10 +737,26 @@ class AuthController {
 
   async completeTwoFactorLogin(req: Request, res: Response): Promise<void> {
     try {
-      const { userId, token } = req.body;
+      const { twoFactorToken, token } = req.body;
 
-      if (!userId || !token) {
-        throw new AppError('User ID and 2FA token are required', 400);
+      if (!twoFactorToken || !token) {
+        throw new AppError('Two-factor token and verification code are required', 400);
+      }
+
+      // Verify the short-lived 2FA pending JWT to extract userId securely
+      let userId: string;
+      try {
+        const decoded = jwt.verify(twoFactorToken, config.jwt.secret) as {
+          userId: string;
+          purpose: string;
+        };
+        if (decoded.purpose !== '2fa_pending') {
+          throw new AppError('Invalid two-factor token', 401);
+        }
+        userId = decoded.userId;
+      } catch (err) {
+        if (err instanceof AppError) throw err;
+        throw new AppError('Two-factor token expired or invalid', 401);
       }
 
       // Get user

@@ -1,0 +1,93 @@
+name: Scheduled Database Backup
+
+on:
+  schedule:
+    # Daily at 03:00 UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: 'Override backup retention (days)'
+        required: false
+        default: '30'
+
+env:
+  AWS_REGION: us-east-1
+  BACKUP_BUCKET: ${{ secrets.S3_FRONTEND_BUCKET }}
+  RETENTION_DAYS: ${{ github.event.inputs.retention_days || '30' }}
+
+jobs:
+  backup:
+    name: Database Backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+
+      - name: Create database backup
+        run: |
+          BACKUP_TS=$(date -u +%Y%m%d_%H%M%S)
+          DAY_OF_WEEK=$(date -u +%A)
+          BACKUP_KEY="backups/scheduled/${BACKUP_TS}.sql.gz"
+          echo "BACKUP_KEY=${BACKUP_KEY}" >> "$GITHUB_ENV"
+          echo "BACKUP_TS=${BACKUP_TS}" >> "$GITHUB_ENV"
+          echo "Creating scheduled backup: ${BACKUP_KEY}"
+          pg_dump "$DATABASE_URL" --no-owner --no-acl | gzip > /tmp/backup.sql.gz
+          BACKUP_SIZE=$(stat -c%s /tmp/backup.sql.gz)
+          echo "BACKUP_SIZE=${BACKUP_SIZE}" >> "$GITHUB_ENV"
+          if [ "$BACKUP_SIZE" -lt 100 ]; then
+            echo "::error::Backup too small (${BACKUP_SIZE} bytes), likely empty or failed"
+            exit 1
+          fi
+          echo "Backup size: ${BACKUP_SIZE} bytes"
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload backup to S3
+        run: |
+          aws s3 cp /tmp/backup.sql.gz "s3://${BACKUP_BUCKET}/${BACKUP_KEY}" \
+            --storage-class STANDARD_IA \
+            --metadata "timestamp=${BACKUP_TS},size=${BACKUP_SIZE},type=scheduled"
+          echo "Backup uploaded to s3://${BACKUP_BUCKET}/${BACKUP_KEY}"
+
+      - name: Verify backup in S3
+        run: |
+          S3_SIZE=$(aws s3api head-object \
+            --bucket "$BACKUP_BUCKET" \
+            --key "$BACKUP_KEY" \
+            --query 'ContentLength' --output text)
+          if [ "$S3_SIZE" -lt 100 ]; then
+            echo "::error::S3 object too small (${S3_SIZE} bytes)"
+            exit 1
+          fi
+          echo "Verified S3 object: ${S3_SIZE} bytes"
+
+      - name: Prune old backups
+        run: |
+          CUTOFF=$(date -u -d "${RETENTION_DAYS} days ago" +%Y%m%d 2>/dev/null \
+                   || date -u -v-${RETENTION_DAYS}d +%Y%m%d)
+          echo "Pruning scheduled backups older than ${CUTOFF} (${RETENTION_DAYS} days)"
+          aws s3api list-objects-v2 \
+            --bucket "$BACKUP_BUCKET" \
+            --prefix "backups/scheduled/" \
+            --query "Contents[?LastModified<='${CUTOFF}'].Key" \
+            --output text | tr '\t' '\n' | while read -r key; do
+              if [ -n "$key" ] && [ "$key" != "None" ]; then
+                echo "Deleting old backup: ${key}"
+                aws s3 rm "s3://${BACKUP_BUCKET}/${key}"
+              fi
+            done
+
+      - name: Cleanup
+        if: always()
+        run: rm -f /tmp/backup.sql.gz

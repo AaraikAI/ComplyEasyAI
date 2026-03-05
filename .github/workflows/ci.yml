@@ -261,10 +261,8 @@ jobs:
       - run: npm ci
         working-directory: ./server
       - run: npm audit --audit-level=high
-        continue-on-error: true
       - run: npm audit --audit-level=high
         working-directory: ./server
-        continue-on-error: true
       - uses: aquasecurity/trivy-action@0.34.1
         with:
           scan-type: 'fs'
@@ -534,12 +532,13 @@ jobs:
           BACKUP_TS=$(date -u +%Y%m%d_%H%M%S)
           BACKUP_KEY="backups/pre-migration/${BACKUP_TS}_${GITHUB_SHA:0:7}.sql.gz"
           echo "Creating pre-migration backup: ${BACKUP_KEY}"
-          pg_dump "$DATABASE_URL" --no-owner --no-acl 2>/dev/null | gzip > "/tmp/backup.sql.gz" || true
-          if [ -s /tmp/backup.sql.gz ]; then
-            aws s3 cp /tmp/backup.sql.gz "s3://${{ secrets.S3_FRONTEND_BUCKET }}/${BACKUP_KEY}" || echo "Backup upload failed (non-blocking)"
-          else
-            echo "::warning::pg_dump produced empty output — backup skipped"
+          pg_dump "$DATABASE_URL" --no-owner --no-acl | gzip > "/tmp/backup.sql.gz"
+          BACKUP_SIZE=$(stat -f%z "/tmp/backup.sql.gz" 2>/dev/null || stat -c%s "/tmp/backup.sql.gz")
+          if [ "$BACKUP_SIZE" -lt 100 ]; then
+            echo "::error::Pre-migration backup too small (${BACKUP_SIZE} bytes), aborting deployment"
+            exit 1
           fi
+          aws s3 cp /tmp/backup.sql.gz "s3://${{ secrets.S3_FRONTEND_BUCKET }}/${BACKUP_KEY}"
           rm -f /tmp/backup.sql.gz
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}

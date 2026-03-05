@@ -12,7 +12,7 @@ import { AppError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import webhookService from '../services/webhookService';
 import emailService from '../services/emailService';
-import { DemoRequestStatus } from '@prisma/client';
+import { DemoRequestStatus } from '../generated/prisma/client';
 
 // ============================================================================
 // TYPES

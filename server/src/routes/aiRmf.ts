@@ -3,6 +3,8 @@ import aiRmfController from '../controllers/aiRmfController';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { requireVisionaryFeature } from '../middleware/tierMiddleware';
+import { validateBody } from '../middleware/validate';
+import { createAISystemSchema, updateAISystemSchema } from '../validators/aiRmfSchemas';
 
 const router = Router();
 
@@ -14,10 +16,10 @@ router.use(...requireVisionaryFeature('nistAiRmf'));
 // AI System Management
 // ============================================================================
 
-router.post('/systems', authorize('admin', 'editor'), asyncHandler(aiRmfController.createAISystem.bind(aiRmfController)));
+router.post('/systems', authorize('admin', 'editor'), validateBody(createAISystemSchema), asyncHandler(aiRmfController.createAISystem.bind(aiRmfController)));
 router.get('/systems', asyncHandler(aiRmfController.getAISystems.bind(aiRmfController)));
 router.get('/systems/:id', asyncHandler(aiRmfController.getAISystemById.bind(aiRmfController)));
-router.patch('/systems/:id', authorize('admin', 'editor'), asyncHandler(aiRmfController.updateAISystem.bind(aiRmfController)));
+router.patch('/systems/:id', authorize('admin', 'editor'), validateBody(updateAISystemSchema), asyncHandler(aiRmfController.updateAISystem.bind(aiRmfController)));
 router.delete('/systems/:id', authorize('admin'), asyncHandler(aiRmfController.deleteAISystem.bind(aiRmfController)));
 
 // ============================================================================

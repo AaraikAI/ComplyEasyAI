@@ -37,7 +37,9 @@ class PerformanceTester {
 
     // Setup query profiling
     this.queryProfiler.enable();
-    prisma.$use(createQueryProfilingMiddleware(this.queryProfiler));
+    // Note: prisma.$use() was removed in Prisma 7. Query profiling middleware
+    // should be integrated via $extends if needed. Skipping for performance tests.
+    // prisma.$use(createQueryProfilingMiddleware(this.queryProfiler));
 
     // Run load tests
     logger.info('Running load tests...');

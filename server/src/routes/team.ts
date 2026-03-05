@@ -5,6 +5,8 @@ import { enforceLimit } from '../middleware/tierMiddleware';
 import prisma from '../config/database';
 import { asyncHandler } from '../types/express';
 import logger from '../config/logger';
+import { validateBody } from '../middleware/validate';
+import { inviteSchema, bulkInviteSchema, updateMemberSchema } from '../validators/teamSchemas';
 
 const router = Router();
 
@@ -47,6 +49,7 @@ router.post(
   '/invite',
   authorize('admin', 'editor'),
   enforceLimit('maxUsers'),
+  validateBody(inviteSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const { email, name, role } = authReq.body;
@@ -147,6 +150,7 @@ router.post(
 router.post(
   '/bulk-invite',
   authorize('admin', 'editor'),
+  validateBody(bulkInviteSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const { invites } = req.body; // Array of { email, name, role }
@@ -327,6 +331,7 @@ router.post(
 router.patch(
   '/:id',
   authorize('admin'),
+  validateBody(updateMemberSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const { id } = authReq.params;

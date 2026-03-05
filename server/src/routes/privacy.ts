@@ -7,7 +7,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import logger from '../config/logger';
 

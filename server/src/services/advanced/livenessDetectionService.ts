@@ -1111,7 +1111,7 @@ class LivenessDetectionService {
             frames.push({ buffer: fs.readFileSync(framePath), timestamp: t });
             await unlinkFile(framePath).catch(() => {});
           }
-        } catch { /* skip frame */ }
+        } catch (err) { logger.warn('Failed to extract video frame for liveness detection', err); }
       }
     } finally {
       await unlinkFile(videoPath).catch(() => {});

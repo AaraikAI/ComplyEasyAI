@@ -7,6 +7,7 @@ import { asyncHandler } from '../types/express';
 import { frameworkLimiter } from '../middleware/rateLimiter';
 import frameworkTemplateService from '../services/frameworkTemplateService';
 import prisma from '../config/database';
+import logger from '../config/logger';
 
 interface AuthRequest extends Request {
   user?: { id: string; organizationId: string; role: string; email: string; name: string };
@@ -50,7 +51,7 @@ router.get('/scores/history', asyncHandler(async (req: Request, res: Response) =
         let details: any = {};
         try {
           details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
-        } catch { /* empty */ }
+        } catch (err) { logger.warn('Failed to parse framework log details', err); }
         const date = new Date(log.timestamp);
         return {
           name: monthNames[date.getMonth()],

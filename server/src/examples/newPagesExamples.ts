@@ -8,7 +8,7 @@
  */
 
 import prisma from '../config/database';
-import { EnrollmentStatus, ForumPostStatus, ServiceStatusType, IncidentSeverity } from '@prisma/client';
+import { EnrollmentStatus, ForumPostStatus, ServiceStatusType, IncidentSeverity } from '../generated/prisma/client';
 import logger from '../config/logger';
 
 // ============================================

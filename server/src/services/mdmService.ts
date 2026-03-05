@@ -1,5 +1,5 @@
 import prisma from '../config/database';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client';
 import logger from '../config/logger';
 import { AuditLogger } from '../utils/auditLogger';
 

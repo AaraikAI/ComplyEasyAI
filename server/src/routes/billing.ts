@@ -8,6 +8,8 @@ import { Router } from 'express';
 import billingController from '../controllers/billingController';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import { checkoutSchema, changeTierSchema, cancelSubscriptionSchema, addAddonSchema, requestQuoteSchema } from '../validators/billingSchemas';
 
 const router = Router();
 
@@ -38,7 +40,7 @@ router.get('/history', asyncHandler(billingController.getSubscriptionHistory.bin
 // ============================================================================
 
 // Create checkout session for new subscription or upgrade
-router.post('/checkout', authorize('admin'), asyncHandler(billingController.createCheckout.bind(billingController)));
+router.post('/checkout', authorize('admin'), validateBody(checkoutSchema), asyncHandler(billingController.createCheckout.bind(billingController)));
 
 // Create Stripe billing portal session
 router.post('/portal', authorize('admin'), asyncHandler(billingController.createPortalSession.bind(billingController)));
@@ -51,10 +53,10 @@ router.post('/portal', authorize('admin'), asyncHandler(billingController.create
 router.post('/preview-change', authorize('admin'), asyncHandler(billingController.previewTierChange.bind(billingController)));
 
 // Change tier (upgrade/downgrade)
-router.post('/change-tier', authorize('admin'), asyncHandler(billingController.changeTier.bind(billingController)));
+router.post('/change-tier', authorize('admin'), validateBody(changeTierSchema), asyncHandler(billingController.changeTier.bind(billingController)));
 
 // Cancel subscription
-router.post('/cancel', authorize('admin'), asyncHandler(billingController.cancelSubscription.bind(billingController)));
+router.post('/cancel', authorize('admin'), validateBody(cancelSubscriptionSchema), asyncHandler(billingController.cancelSubscription.bind(billingController)));
 
 // Reactivate subscription
 router.post('/reactivate', authorize('admin'), asyncHandler(billingController.reactivateSubscription.bind(billingController)));
@@ -67,7 +69,7 @@ router.post('/refund', authorize('admin'), asyncHandler(billingController.proces
 // ============================================================================
 
 // Add an add-on
-router.post('/addons', authorize('admin'), asyncHandler(billingController.addAddOn.bind(billingController)));
+router.post('/addons', authorize('admin'), validateBody(addAddonSchema), asyncHandler(billingController.addAddOn.bind(billingController)));
 
 // Remove an add-on
 router.delete('/addons/:addOnId', authorize('admin'), asyncHandler(billingController.removeAddOn.bind(billingController)));
@@ -77,7 +79,7 @@ router.delete('/addons/:addOnId', authorize('admin'), asyncHandler(billingContro
 // ============================================================================
 
 // Request custom quote
-router.post('/quote', authorize('admin'), asyncHandler(billingController.requestQuote.bind(billingController)));
+router.post('/quote', authorize('admin'), validateBody(requestQuoteSchema), asyncHandler(billingController.requestQuote.bind(billingController)));
 
 // ============================================================================
 // FEATURE SUBSCRIPTIONS (A-La-Carte)

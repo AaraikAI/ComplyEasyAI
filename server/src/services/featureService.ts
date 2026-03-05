@@ -28,7 +28,7 @@ import Stripe from 'stripe';
 import config from '../config';
 
 const stripe = new Stripe(config.stripe.secretKey, {
-  apiVersion: '2025-02-24.acacia',
+  apiVersion: '2026-02-25.clover',
 });
 
 // ============================================================================
@@ -253,37 +253,40 @@ class FeatureService {
       throw new Error('Failed to create Stripe subscription item');
     }
 
-    // Create feature subscription record
-    const featureSubscription = await prisma.featureSubscription.create({
-      data: {
-        organizationId,
-        featureId,
-        status: 'active',
-        billingCycle,
-        price,
-        stripeSubscriptionItemId,
-        stripePriceId,
-        startsAt: new Date(),
-        cancelAtPeriodEnd: false,
-      },
-    });
-
-    // Log subscription history
-    await prisma.subscriptionHistory.create({
-      data: {
-        organizationId,
-        newPlan: org.plan,
-        newStatus: 'active',
-        changeType: 'addon_added',
-        reason: `Feature subscription: ${feature.name}`,
-        changedBy: 'system',
-        metadata: {
+    // Wrap DB writes in a transaction for atomicity
+    const featureSubscription = await prisma.$transaction(async (tx) => {
+      const sub = await tx.featureSubscription.create({
+        data: {
+          organizationId,
           featureId,
-          featureName: feature.name,
-          price,
+          status: 'active',
           billingCycle,
+          price,
+          stripeSubscriptionItemId,
+          stripePriceId,
+          startsAt: new Date(),
+          cancelAtPeriodEnd: false,
         },
-      },
+      });
+
+      await tx.subscriptionHistory.create({
+        data: {
+          organizationId,
+          newPlan: org.plan,
+          newStatus: 'active',
+          changeType: 'addon_added',
+          reason: `Feature subscription: ${feature.name}`,
+          changedBy: 'system',
+          metadata: {
+            featureId,
+            featureName: feature.name,
+            price,
+            billingCycle,
+          },
+        },
+      });
+
+      return sub;
     });
 
     logger.info(`Feature subscription created: ${featureId} for org ${organizationId}`);

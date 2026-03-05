@@ -2935,7 +2935,7 @@ class PhysicalAIService {
           if (details.version && this.compareVersions(details.version, firmware.version) > 0) {
             latestVersion = details.version;
           }
-        } catch { /* skip */ }
+        } catch (err) { logger.warn('Failed to parse firmware record details', err); }
       }
 
       const updateAvailable = latestVersion !== null && this.compareVersions(latestVersion, firmware.version) > 0;
@@ -3074,7 +3074,7 @@ class PhysicalAIService {
           if (deviceId && !deviceMap.has(deviceId)) {
             deviceMap.set(deviceId, { ...details, lastSeen: log.timestamp });
           }
-        } catch { /* skip */ }
+        } catch (err) { logger.warn('Failed to parse device log details', err); }
       }
 
       const devices: Array<{

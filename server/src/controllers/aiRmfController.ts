@@ -15,9 +15,12 @@ class AIRMFController {
       const organizationId = authReq.user!.organizationId;
       const userId = authReq.user!.id;
 
+      const { name, description, systemType, useCase, deploymentContext,
+        lifecycleStage, autonomyLevel, metadata } = req.body;
       const aiSystem = await aiRmfService.createAISystem(
         organizationId,
-        req.body,
+        { name, description, systemType, useCase, deploymentContext,
+          lifecycleStage, autonomyLevel, metadata },
         userId,
         req.ip,
         req.headers['user-agent']

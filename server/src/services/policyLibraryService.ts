@@ -1,4 +1,4 @@
-import { Policy, Prisma } from '@prisma/client';
+import { Policy, Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 

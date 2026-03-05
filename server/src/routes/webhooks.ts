@@ -68,7 +68,7 @@ const authenticateApiKey = async (req: Request, res: Response, next: NextFunctio
       id: key.createdBy,
       email: 'api@' + org.name.toLowerCase().replace(/\s+/g, '-'),
       organizationId: key.organizationId,
-      role: 'admin', // API keys have admin privileges for their scopes
+      role: 'api_key', // API keys use scoped permissions, not admin privileges
       name: 'API Key',
     };
 

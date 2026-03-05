@@ -87,9 +87,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
 
     const fetchHistoricalScores = async () => {
       try {
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         const res = await fetch('/api/frameworks/scores/history?months=6', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: 'include',
         });
         if (!res.ok) throw new Error(`Failed to fetch compliance score history (HTTP ${res.status})`);
         const data = await res.json();

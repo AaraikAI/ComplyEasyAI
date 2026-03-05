@@ -1,4 +1,4 @@
-import { RiskSeverity, RiskItem, RiskAssessment } from '@prisma/client';
+import { RiskSeverity, RiskItem, RiskAssessment } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 

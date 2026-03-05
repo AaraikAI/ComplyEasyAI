@@ -795,7 +795,7 @@ class LDAPConnectionPool {
 
   async destroy(): Promise<void> {
     for (const conn of this.pool) {
-      try { await conn.unbind(); } catch {}
+      try { await conn.unbind(); } catch (err) { logger.debug('[LDAP Pool] Error unbinding connection during destroy', err); }
       conn.destroy();
     }
     this.pool = [];

@@ -1,4 +1,4 @@
-import { IssueStatus, IssuePriority } from '@prisma/client';
+import { IssueStatus, IssuePriority } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 

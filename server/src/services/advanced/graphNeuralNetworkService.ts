@@ -647,7 +647,7 @@ class GraphNeuralNetworkService {
           let neighbors: string[] = [];
           try {
             neighbors = graph.neighbors(nid).filter(n => nodeIds.includes(n));
-          } catch { /* node missing */ }
+          } catch (err) { logger.warn(`Failed to get neighbors for node ${nid}`, err); }
 
           // Include self-attention
           const attendees = [nid, ...neighbors];
@@ -1186,7 +1186,7 @@ class GraphNeuralNetworkService {
               });
             }
           }
-        } catch { /* node missing */ }
+        } catch (err) { logger.warn(`Failed to retrieve neighbors for node during prediction`, err); }
         neighbors.sort((a, b) => b.similarity - a.similarity);
 
         // Explanation: feature importance via gradient approximation
@@ -2112,7 +2112,7 @@ class GraphNeuralNetworkService {
         for (const edge of graph.edges(nid)) {
           edgeWeightSum += graph.getEdgeAttribute(edge, 'weight') ?? 0;
         }
-      } catch { /* pass */ }
+      } catch (err) { logger.warn(`Failed to compute edge weight sum for node ${nid}`, err); }
 
       // Place in feature vector at indices 4-9 (reserved)
       feat[4] = deg;
@@ -2465,7 +2465,7 @@ class GraphNeuralNetworkService {
       const old = this.checkpoints.shift()!;
       try {
         await fs.promises.unlink(old.weightsPath);
-      } catch { /* file may not exist */ }
+      } catch (err) { logger.debug('Failed to remove old checkpoint file', err); }
     }
 
     await this.saveModel(`${modelId}_cp_${epoch}`);
@@ -2785,7 +2785,7 @@ class GraphNeuralNetworkService {
     for (const t of list) {
       try {
         t.dispose();
-      } catch { /* already disposed */ }
+      } catch (err) { logger.debug('Tensor already disposed or dispose failed', err); }
     }
   }
 

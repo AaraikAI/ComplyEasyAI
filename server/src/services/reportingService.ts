@@ -1,4 +1,4 @@
-import { AuditLog, RiskItem, Vendor, FrameworkControl, ComplianceFramework, Prisma } from '@prisma/client';
+import { AuditLog, RiskItem, Vendor, FrameworkControl, ComplianceFramework, Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 

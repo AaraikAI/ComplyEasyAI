@@ -11,7 +11,7 @@
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
-import { DeviceTrust as PrismaDeviceTrust, ZeroTrustPolicy as PrismaZeroTrustPolicy, NetworkSegment as PrismaNetworkSegment } from '@prisma/client';
+import { DeviceTrust as PrismaDeviceTrust, ZeroTrustPolicy as PrismaZeroTrustPolicy, NetworkSegment as PrismaNetworkSegment } from '../../generated/prisma/client';
 import ldapPermissionService, { ADUser, PermissionEvaluationResult, RoleMapping } from './ldapPermissionService';
 
 // Type aliases for Prisma models
