@@ -10,6 +10,7 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import logger from '../config/logger';
+import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
 
 // CSRF token configuration
 const CSRF_TOKEN_LENGTH = 32;
@@ -249,7 +250,15 @@ export const csrfProtection = async (req: Request, res: Response, next: NextFunc
 
   // Validate tokens exist
   if (!headerToken || !cookieToken) {
-    logger.warn(`CSRF validation failed: Missing token - Path: ${req.path}, IP: ${req.ip}`);
+    logSecurityEvent({
+      type: SecurityEventType.CSRF_VALIDATION_FAILURE,
+      severity: 'medium',
+      message: `CSRF token missing (header: ${!headerToken ? 'absent' : 'present'}, cookie: ${!cookieToken ? 'absent' : 'present'})`,
+      ip: req.ip,
+      method: req.method,
+      path: req.path,
+      userId: (req as any).user?.id,
+    });
     res.status(403).json({
       error: 'CSRF token missing',
       message: 'CSRF token is required for this request. Please refresh the page and try again.',
@@ -259,7 +268,15 @@ export const csrfProtection = async (req: Request, res: Response, next: NextFunc
 
   // Validate tokens match (double-submit cookie pattern)
   if (headerToken !== cookieToken) {
-    logger.warn(`CSRF validation failed: Token mismatch - Path: ${req.path}, IP: ${req.ip}`);
+    logSecurityEvent({
+      type: SecurityEventType.CSRF_VALIDATION_FAILURE,
+      severity: 'high',
+      message: 'CSRF token mismatch between header and cookie',
+      ip: req.ip,
+      method: req.method,
+      path: req.path,
+      userId: (req as any).user?.id,
+    });
     res.status(403).json({
       error: 'CSRF token invalid',
       message: 'CSRF token validation failed. Please refresh the page and try again.',
@@ -270,7 +287,15 @@ export const csrfProtection = async (req: Request, res: Response, next: NextFunc
   // Check if token exists in store and hasn't expired
   const tokenData = await tokenStore.get(headerToken);
   if (!tokenData) {
-    logger.warn(`CSRF validation failed: Token not found in store - Path: ${req.path}, IP: ${req.ip}`);
+    logSecurityEvent({
+      type: SecurityEventType.CSRF_VALIDATION_FAILURE,
+      severity: 'high',
+      message: 'CSRF token not found in store (possible replay or forgery)',
+      ip: req.ip,
+      method: req.method,
+      path: req.path,
+      userId: (req as any).user?.id,
+    });
     res.status(403).json({
       error: 'CSRF token invalid',
       message: 'CSRF token has expired or is invalid. Please refresh the page and try again.',
@@ -281,7 +306,15 @@ export const csrfProtection = async (req: Request, res: Response, next: NextFunc
   // Check token expiry
   if (tokenData.expires < Date.now()) {
     await tokenStore.delete(headerToken);
-    logger.warn(`CSRF validation failed: Token expired - Path: ${req.path}, IP: ${req.ip}`);
+    logSecurityEvent({
+      type: SecurityEventType.CSRF_VALIDATION_FAILURE,
+      severity: 'medium',
+      message: 'CSRF token expired',
+      ip: req.ip,
+      method: req.method,
+      path: req.path,
+      userId: (req as any).user?.id,
+    });
     res.status(403).json({
       error: 'CSRF token expired',
       message: 'CSRF token has expired. Please refresh the page and try again.',
@@ -292,7 +325,16 @@ export const csrfProtection = async (req: Request, res: Response, next: NextFunc
   // Optional: Validate token belongs to current user (if authenticated)
   const userId = (req as any).user?.id;
   if (userId && tokenData.userId && tokenData.userId !== userId) {
-    logger.warn(`CSRF validation failed: User mismatch - Path: ${req.path}, IP: ${req.ip}`);
+    logSecurityEvent({
+      type: SecurityEventType.CSRF_VALIDATION_FAILURE,
+      severity: 'critical',
+      message: 'CSRF token user mismatch (token belongs to a different user)',
+      ip: req.ip,
+      method: req.method,
+      path: req.path,
+      userId,
+      details: { tokenUserId: tokenData.userId },
+    });
     res.status(403).json({
       error: 'CSRF token invalid',
       message: 'CSRF token validation failed. Please refresh the page and try again.',

@@ -7,6 +7,7 @@ import monitoring from '../config/monitoring';
 import tokenBlacklist from '../services/tokenBlacklistService';
 import { User, Organization } from '../generated/prisma/client';
 import crypto from 'crypto';
+import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
 
 export interface AuthUser {
   id: string;
@@ -63,6 +64,14 @@ const authenticateMiddleware = async (
     }
 
     if (!token) {
+      logSecurityEvent({
+        type: SecurityEventType.AUTHENTICATION_FAILURE,
+        severity: 'low',
+        message: 'Request without authentication token',
+        ip: req.ip,
+        method: req.method,
+        path: req.originalUrl,
+      });
       res.status(401).json({ error: 'No token provided' });
       return;
     }
@@ -81,6 +90,15 @@ const authenticateMiddleware = async (
         tokenBlacklist.isRevokedByUserReset(token, decoded.userId),
       ]);
       if (revoked || revokedByReset) {
+        logSecurityEvent({
+          type: SecurityEventType.TOKEN_REVOKED,
+          severity: 'high',
+          message: `Attempt to use revoked token (${revokedByReset ? 'user-wide reset' : 'individual revocation'})`,
+          ip: req.ip,
+          method: req.method,
+          path: req.originalUrl,
+          userId: decoded.userId,
+        });
         res.status(401).json({ error: 'Token has been revoked' });
         return;
       }
@@ -92,6 +110,15 @@ const authenticateMiddleware = async (
       });
 
       if (!user) {
+        logSecurityEvent({
+          type: SecurityEventType.AUTHENTICATION_FAILURE,
+          severity: 'high',
+          message: 'Token references non-existent user (possible deleted account or forged token)',
+          ip: req.ip,
+          method: req.method,
+          path: req.originalUrl,
+          userId: decoded.userId,
+        });
         res.status(401).json({ error: 'User not found' });
         return;
       }
@@ -117,6 +144,14 @@ const authenticateMiddleware = async (
       next();
     } catch (error) {
       logger.error('Token verification failed', error);
+      logSecurityEvent({
+        type: SecurityEventType.AUTHENTICATION_FAILURE,
+        severity: 'high',
+        message: 'JWT verification failed (invalid signature, expired, or malformed)',
+        ip: req.ip,
+        method: req.method,
+        path: req.originalUrl,
+      });
       res.status(401).json({ error: 'Invalid token' });
     }
   } catch (error) {
@@ -140,6 +175,18 @@ export const authorize = (...allowedRoles: string[]): RequestHandler => {
     }
 
     if (!allowedRoles.includes(authReq.user.role)) {
+      logSecurityEvent({
+        type: SecurityEventType.AUTHORIZATION_FAILURE,
+        severity: 'high',
+        message: `Role "${authReq.user.role}" denied access (required: ${allowedRoles.join(', ')})`,
+        ip: req.ip,
+        method: req.method,
+        path: req.originalUrl,
+        userId: authReq.user.id,
+        userEmail: authReq.user.email,
+        organizationId: authReq.user.organizationId,
+        details: { userRole: authReq.user.role, allowedRoles },
+      });
       res.status(403).json({ error: 'Insufficient permissions' });
       return;
     }
