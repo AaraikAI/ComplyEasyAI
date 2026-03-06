@@ -202,7 +202,7 @@ class NotificationService {
           category: notification.category,
           title,
           message,
-          channels: channels as unknown as Prisma.InputJsonValue,
+          channels: (Array.isArray(channels) ? channels : [channels]) as string[],
           templateId: notification.templateId,
           metadata: notification.metadata || {},
           link: notification.link,

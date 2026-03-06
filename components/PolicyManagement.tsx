@@ -14,6 +14,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   Tooltip, Legend,
 } from 'recharts';
+import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -236,7 +237,7 @@ const PolicyManagement: React.FC<PolicyManagementProps> = ({ onBack }) => {
   const handleCreatePolicy = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isAtLimit(plan, 'maxPolicies', policies.length)) {
-      alert(getUpgradeMessage(plan, 'maxPolicies', policies.length) || 'Policy limit reached.');
+      toast.warning(getUpgradeMessage(plan, 'maxPolicies', policies.length) || 'Policy limit reached.');
       return;
     }
     setIsSaving(true);
@@ -310,7 +311,7 @@ const PolicyManagement: React.FC<PolicyManagementProps> = ({ onBack }) => {
 
   const handleDuplicate = async (policy: Policy) => {
     if (isAtLimit(plan, 'maxPolicies', policies.length)) {
-      alert(getUpgradeMessage(plan, 'maxPolicies', policies.length) || 'Policy limit reached.');
+      toast.warning(getUpgradeMessage(plan, 'maxPolicies', policies.length) || 'Policy limit reached.');
       return;
     }
     try {

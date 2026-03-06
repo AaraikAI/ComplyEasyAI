@@ -300,7 +300,7 @@ router.patch(
       const { id, organizationId, auditTrail, createdAt, ...updateData } = req.body;
 
       const dsar = await prisma.dSARRequest.update({
-        where: { id: req.params.id },
+        where: { id: existing.id },
         data: {
           ...updateData,
           auditTrail: updatedTrail,
@@ -1411,8 +1411,9 @@ router.get(
       for (const delReq of requests) {
         const log = Array.isArray(delReq.deletionLog) ? delReq.deletionLog : [];
         for (const entry of log as Prisma.JsonArray) {
+          const entryObj = (typeof entry === 'object' && entry !== null && !Array.isArray(entry)) ? entry : {};
           allEntries.push({
-            ...entry,
+            ...entryObj,
             deletionRequestId: delReq.id,
             requestType: delReq.requestType,
             requestedBy: delReq.requestedBy,

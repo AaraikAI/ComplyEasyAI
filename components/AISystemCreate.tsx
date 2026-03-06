@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import { ArrowLeft, Brain, Save, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AISystemCreateProps {
   onBack: () => void;
@@ -43,7 +44,7 @@ export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSucces
       onSuccess((system as any).id);
     } catch (error: any) {
       console.error('Failed to create AI system:', error);
-      alert(`Failed to create AI system: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to create AI system: ${error.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }

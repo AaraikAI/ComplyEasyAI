@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
 const SecurityFeatures: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { user } = useAuth();
@@ -186,9 +187,9 @@ const ZeroTrustTab: React.FC = () => {
       setShowPolicyModal(false);
       setPolicyForm({ name: '', description: '', enabled: true, priority: 0, rules: [] });
       loadData();
-      alert('Zero Trust policy created successfully!');
+      toast.success('Zero Trust policy created successfully!');
     } catch (error: any) {
-      alert(error.message || 'Failed to create policy');
+      toast.error(error.message || 'Failed to create policy');
     } finally {
       setLoading(false);
     }
@@ -212,9 +213,9 @@ const ZeroTrustTab: React.FC = () => {
       }
       // Reload data to ensure consistency
       await loadData();
-      alert(`Device verified successfully! Trust Score: ${result.trustScore}%`);
+      toast.success(`Device verified successfully! Trust Score: ${result.trustScore}%`);
     } catch (error: any) {
-      alert(error.message || 'Failed to verify device');
+      toast.error(error.message || 'Failed to verify device');
     } finally {
       setLoading(false);
     }
@@ -518,9 +519,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
       };
       setComplianceProof(proofWithId);
       loadProofs();
-      alert('Compliance proof generated successfully!');
+      toast.success('Compliance proof generated successfully!');
     } catch (error: any) {
-      alert(error.message || 'Failed to generate proof');
+      toast.error(error.message || 'Failed to generate proof');
     } finally {
       setLoading(false);
     }
@@ -652,9 +653,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
               };
               setCredentialProof(proofWithId);
               loadProofs();
-              alert('Credential proof generated successfully!');
+              toast.success('Credential proof generated successfully!');
             } catch (error: any) {
-              alert(error.message || 'Failed to generate proof');
+              toast.error(error.message || 'Failed to generate proof');
             } finally {
               setLoading(false);
             }
@@ -766,9 +767,9 @@ const ZeroKnowledgeProofsTab: React.FC = () => {
               };
               setOwnershipProof(proofWithId);
               loadProofs();
-              alert('Ownership proof generated successfully!');
+              toast.success('Ownership proof generated successfully!');
             } catch (error: any) {
-              alert(error.message || 'Failed to generate proof');
+              toast.error(error.message || 'Failed to generate proof');
             } finally {
               setLoading(false);
             }
@@ -922,9 +923,9 @@ const BYOKTab: React.FC = () => {
       }
       // Reload keys from server
       await loadKeys();
-      alert('Key generated successfully!');
+      toast.success('Key generated successfully!');
     } catch (error: any) {
-      alert(error.message || 'Failed to generate key');
+      toast.error(error.message || 'Failed to generate key');
     } finally {
       setLoading(false);
     }
@@ -1200,9 +1201,9 @@ const ComplianceAsCodeTab: React.FC = () => {
       }
       // Reload data to ensure consistency
       await loadData();
-      alert('Policy created successfully!');
+      toast.success('Policy created successfully!');
     } catch (error: any) {
-      alert(error.message || 'Failed to create policy');
+      toast.error(error.message || 'Failed to create policy');
     } finally {
       setLoading(false);
     }

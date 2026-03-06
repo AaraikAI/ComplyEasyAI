@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { canAccessView, normalizePlan, VIEW_TO_FEATURE } from '../constants/tierFeatures';
+import { toast } from 'sonner';
 
 interface ComplianceChatProps {
   onNavigate?: (view: string) => void;
@@ -108,7 +109,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
       try {
         // Read file content (limit to 50KB for text files)
         if (file.size > 50 * 1024) {
-          alert(`File ${file.name} is too large. Maximum size is 50KB.`);
+          toast.warning(`File ${file.name} is too large. Maximum size is 50KB.`);
           continue;
         }
 
@@ -122,7 +123,7 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
         newFiles.push({ file, content });
       } catch (error) {
         console.error(`Error reading file ${file.name}:`, error);
-        alert(`Error reading file ${file.name}. Please try again.`);
+        toast.error(`Error reading file ${file.name}. Please try again.`);
       }
     }
 

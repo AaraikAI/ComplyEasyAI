@@ -10,6 +10,7 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import ReactMarkdown from 'react-markdown';
+import { toast } from 'sonner';
 
 interface TemplateInfo {
   frameworkType: string;
@@ -318,7 +319,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({
       }
     } catch (err: unknown) {
       console.error('Failed to apply template:', err);
-      alert(`Failed to apply template: ${err instanceof Error ? err.message : String(err)}`);
+      toast.error(`Failed to apply template: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setApplyingTemplate(null);
     }
@@ -392,7 +393,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({
   // AI Evidence Classification
   const handleAIEvidenceClassify = async () => {
     if (!evidenceDescription && !evidenceFile) {
-      alert('Please provide evidence description or upload a file');
+      toast.warning('Please provide evidence description or upload a file');
       return;
     }
 
@@ -441,7 +442,7 @@ Return as JSON with: suggestedControl, suggestedControlId, confidenceScore, reas
       }
     } catch (err: unknown) {
       console.error('AI Evidence Classification failed:', err);
-      alert('Failed to classify evidence: ' + (err instanceof Error ? err.message : String(err)));
+      toast.error('Failed to classify evidence: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setEvidenceClassifyLoading(false);
     }
@@ -609,7 +610,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
       }
     } catch (error: unknown) {
       console.error('Failed to delete framework:', error);
-      alert(`Failed to delete framework: ${error instanceof Error ? error.message : String(error)}`);
+      toast.error(`Failed to delete framework: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setDeletingFramework(null);
     }
@@ -672,7 +673,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
       URL.revokeObjectURL(url);
     } catch (error: unknown) {
       console.error('Failed to export control report:', error);
-      alert(`Failed to export control report: ${error instanceof Error ? error.message : String(error)}`);
+      toast.error(`Failed to export control report: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

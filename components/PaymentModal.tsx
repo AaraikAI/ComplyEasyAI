@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Lock, CheckCircle, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
+import { toast } from 'sonner';
 
 interface PaymentModalProps {
   plan: string;
@@ -36,7 +37,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billing
       const hint = msg.includes('not configured') || msg.includes('Stripe is not configured')
         ? ' Add Stripe price IDs to server .env (see API_KEYS_SETUP.md) or contact support.'
         : '';
-      alert(msg + hint);
+      toast.error(msg + hint);
       setLoading(false);
       setStep('form');
     }

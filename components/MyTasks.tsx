@@ -8,6 +8,7 @@ import {
   CheckSquare, Filter, Loader2, SortAsc, SortDesc, CheckCircle, X
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { toast } from 'sonner';
 
 type SortField = 'severity' | 'detectedAt' | 'aiScore';
 type SortOrder = 'asc' | 'desc';
@@ -146,7 +147,7 @@ export const MyTasks: React.FC = () => {
         setSelectedTask(null);
       } catch (error: any) {
         console.error('Failed to update task:', error);
-        alert(`Failed to update task: ${error.message || 'Unknown error'}`);
+        toast.error(`Failed to update task: ${error.message || 'Unknown error'}`);
       }
     }
   };

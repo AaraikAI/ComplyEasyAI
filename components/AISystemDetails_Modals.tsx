@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { X } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, onClose }) => {
   const { user } = useAuth();
@@ -22,7 +23,7 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.description.trim()) {
-      alert('Please provide a description');
+      toast.warning('Please provide a description');
       return;
     }
 
@@ -40,7 +41,7 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
       onClose();
     } catch (error: any) {
       console.error('Failed to create risk activity:', error);
-      alert(`Failed to create risk activity: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to create risk activity: ${error.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }
@@ -198,7 +199,7 @@ export const EditRiskActivityModal: React.FC<any> = ({ activity, teamMembers, on
       onClose();
     } catch (error: any) {
       console.error('Failed to update risk activity:', error);
-      alert(`Failed to update risk activity: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to update risk activity: ${error.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }
@@ -335,7 +336,7 @@ export const CreateActorModal: React.FC<any> = ({ systemId, teamMembers, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.role.trim()) {
-      alert('Please provide name and role');
+      toast.warning('Please provide name and role');
       return;
     }
 
@@ -350,7 +351,7 @@ export const CreateActorModal: React.FC<any> = ({ systemId, teamMembers, onClose
       onClose();
     } catch (error: any) {
       console.error('Failed to create actor:', error);
-      alert(`Failed to create actor: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to create actor: ${error.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }

@@ -15,6 +15,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   Tooltip, Legend, LineChart, Line, CartesianGrid,
 } from 'recharts';
+import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -219,7 +220,7 @@ export default function MonitoringDashboard() {
   const handleCreateMonitor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isAtLimit(plan, 'maxMonitors', monitors.length)) {
-      alert(getUpgradeMessage(plan, 'maxMonitors', monitors.length));
+      toast.warning(getUpgradeMessage(plan, 'maxMonitors', monitors.length));
       return;
     }
     setIsSaving(true);
@@ -401,7 +402,7 @@ export default function MonitoringDashboard() {
 
   const handleAddSuggestedMonitor = async (suggestion: AISuggestion) => {
     if (isAtLimit(plan, 'maxMonitors', monitors.length)) {
-      alert(getUpgradeMessage(plan, 'maxMonitors', monitors.length));
+      toast.warning(getUpgradeMessage(plan, 'maxMonitors', monitors.length));
       return;
     }
     try {

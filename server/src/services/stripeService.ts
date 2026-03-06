@@ -25,7 +25,7 @@ import type { Plan, SubscriptionStatus, SubscriptionChangeType } from '../genera
 import notificationService from './notificationService';
 
 const stripe = new Stripe(config.stripe.secretKey, {
-  apiVersion: '2026-02-25.clover',
+  apiVersion: '2025-02-24.acacia',
 });
 
 // ============================================================================
@@ -444,7 +444,7 @@ class StripeService {
         proratedAmount: preview.amount_due / 100,
         newMonthlyAmount: monthlyAmount,
         immediateCharge: preview.amount_due / 100,
-        nextBillingDate: new Date(subscription.items.data[0].current_period_end * 1000),
+        nextBillingDate: new Date(subscription.current_period_end * 1000),
       };
     } catch (error) {
       logger.error('Failed to preview tier change', error);
@@ -874,7 +874,7 @@ class StripeService {
 
     if (subscriptionId) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      subscriptionEnd = new Date(subscription.items.data[0].current_period_end * 1000);
+      subscriptionEnd = new Date(subscription.current_period_end * 1000);
       if (subscription.trial_end) {
         trialEnd = new Date(subscription.trial_end * 1000);
       }
@@ -947,7 +947,7 @@ class StripeService {
         stripeSubscriptionId: subscription.id,
         subscriptionStatus: subscription.status as SubscriptionStatus,
         subscriptionStartedAt: new Date(subscription.start_date * 1000),
-        subscriptionEndsAt: new Date(subscription.items.data[0].current_period_end * 1000),
+        subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
         trialEndsAt: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
       },
     });
@@ -991,7 +991,7 @@ class StripeService {
       data: {
         plan: tierName as Plan,
         subscriptionStatus: subscription.status as SubscriptionStatus,
-        subscriptionEndsAt: new Date(subscription.items.data[0].current_period_end * 1000),
+        subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
       },
     });

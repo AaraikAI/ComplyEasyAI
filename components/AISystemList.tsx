@@ -5,6 +5,7 @@ import {
   Brain, Plus, Search, Filter, ArrowRight, Shield, 
   AlertTriangle, CheckCircle, Clock, Trash2 
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AISystemListProps {
   onSelectSystem: (systemId: string) => void;
@@ -61,7 +62,7 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
       loadSystems();
     } catch (error: any) {
       console.error('Failed to delete system:', error);
-      alert(`Failed to delete system: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to delete system: ${error.message || 'Unknown error'}`);
     } finally {
       setDeletingSystem(null);
     }

@@ -34,10 +34,12 @@ export type AuthenticatedAsyncHandler = (
 
 /**
  * Wraps async route handlers to catch errors automatically
- * Supports both controller methods (RequestHandler) and custom async functions
+ * Supports both controller methods (RequestHandler), plain async functions,
+ * and AuthenticatedRequest handlers (Express 5 compatible).
  */
 export const asyncHandler = (
-  fn: RequestHandler | ((req: Request, res: Response, next?: NextFunction) => Promise<unknown>)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fn: RequestHandler | ((req: any, res: Response, next?: NextFunction) => Promise<unknown>)
 ): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);

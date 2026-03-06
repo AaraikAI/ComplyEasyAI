@@ -40,12 +40,12 @@ router.get(
     const limit = parseInt(req.query.limit as string) || 20;
 
     const where: Prisma.GRCWorkflowWhereInput = { organizationId: user.organizationId };
-    if (status && status !== 'all') where.status = status;
-    if (category && category !== 'all') where.workflowType = category;
+    if (status && status !== 'all') where.status = status as string;
+    if (category && category !== 'all') where.workflowType = category as string;
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search as string, mode: 'insensitive' } },
+        { description: { contains: search as string, mode: 'insensitive' } },
       ];
     }
 
@@ -323,8 +323,8 @@ router.post(
         description: `Created from template ${templateId}`,
         workflowType: template?.type || 'Custom',
         trigger: { type: 'manual', config: {} },
-        nodes: template?.nodes || [],
-        edges: template?.edges || [],
+        nodes: (template?.nodes || []) as unknown as Prisma.InputJsonValue,
+        edges: (template?.edges || []) as unknown as Prisma.InputJsonValue,
         variables: {},
         status: 'Draft',
         createdBy: user.id,

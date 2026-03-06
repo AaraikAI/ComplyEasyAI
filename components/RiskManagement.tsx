@@ -10,6 +10,7 @@ import {
   ArrowLeft, Filter, CheckSquare, Loader2, Play, CheckCircle, X, SortAsc, SortDesc, BrainCircuit, ListFilter, Plus, Grid3x3, Table
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { toast } from 'sonner';
 
 interface RiskManagementProps {
   onBack: () => void;
@@ -164,9 +165,9 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
             setIsScanning(false);
             loadRisks();
             if (result.newRisks && result.newRisks.length > 0) {
-              alert(`AI Risk Scan completed! Found ${result.newRisks.length} new risk(s).`);
+              toast.success(`AI Risk Scan completed! Found ${result.newRisks.length} new risk(s).`);
             } else {
-              alert('AI Risk Scan completed! No new risks detected.');
+              toast.info('AI Risk Scan completed! No new risks detected.');
             }
           }, 1000);
         }
@@ -174,7 +175,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
     } catch (error: any) {
       console.error('Risk scan failed:', error);
       setIsScanning(false);
-      alert(`Risk scan failed: ${error.message || 'Unknown error'}`);
+      toast.error(`Risk scan failed: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -259,7 +260,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         setSelectedRisk(null);
       } catch (error: any) {
         console.error('Failed to update risk:', error);
-        alert(`Failed to update risk: ${error.message || 'Unknown error'}`);
+        toast.error(`Failed to update risk: ${error.message || 'Unknown error'}`);
       }
     }
   };
@@ -267,7 +268,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
   const handleCreateRisk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRisk.description || !newRisk.category) {
-      alert('Description and category are required');
+      toast.warning('Description and category are required');
       return;
     }
 
@@ -294,7 +295,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       }
 
       if (isAtLimit(user?.organization?.plan, 'maxIssues', risks.length)) {
-        alert(getUpgradeMessage(user?.organization?.plan, 'maxIssues', risks.length) || 'Issue limit reached. Upgrade in Settings → Billing.');
+        toast.warning(getUpgradeMessage(user?.organization?.plan, 'maxIssues', risks.length) || 'Issue limit reached. Upgrade in Settings → Billing.');
         return;
       }
       const createdRisk = await api.risks.create(riskData);
@@ -315,7 +316,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       await loadRisks();
     } catch (error: any) {
       console.error('Failed to create risk:', error);
-      alert(`Failed to create risk: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to create risk: ${error.message || 'Unknown error'}`);
     }
   };
 

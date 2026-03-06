@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { ComplianceFramework, ViewState, RiskItem } from '../types';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
+import { toast } from 'sonner';
 
 interface DashboardProps {
   frameworks: ComplianceFramework[];
@@ -416,9 +417,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
                   }
                 }).join('\n');
 
-                alert(`Upcoming Audits:\n\n${auditList}`);
+                toast.info(`Upcoming Audits: ${auditList}`);
               } else {
-                alert('No audits scheduled for any frameworks.');
+                toast.info('No audits scheduled for any frameworks.');
               }
             }
           }}

@@ -291,6 +291,11 @@ export const validateConfig = (): void => {
     errors.push('CORS_ORIGIN is required for security');
   }
 
+  // Redis (required for multi-instance production: CSRF tokens, rate limiting, sessions)
+  if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) {
+    errors.push('REDIS_URL is required in production for CSRF tokens, rate limiting, and session management across multiple instances');
+  }
+
   // Log warnings in non-production (config loads before logger to avoid circular dependency)
   if (warnings.length > 0 && process.env.NODE_ENV !== 'production') {
     process.stdout.write(`⚠️  Configuration Warnings:\n${warnings.map((w: string) => `   - ${w}\n`).join('')}`);

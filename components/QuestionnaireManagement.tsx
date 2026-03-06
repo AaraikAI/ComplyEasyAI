@@ -15,6 +15,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   Tooltip, Legend,
 } from 'recharts';
+import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -214,7 +215,7 @@ export default function QuestionnaireManagement() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isAtLimit(plan, 'maxQuestionnairesPerMonth', questionnaires.length)) {
-      alert(getUpgradeMessage(plan, 'maxQuestionnairesPerMonth', questionnaires.length));
+      toast.warning(getUpgradeMessage(plan, 'maxQuestionnairesPerMonth', questionnaires.length));
       return;
     }
     setIsSaving(true);
@@ -236,7 +237,7 @@ export default function QuestionnaireManagement() {
 
   const handleCreateFromTemplate = async (template: QTemplate) => {
     if (isAtLimit(plan, 'maxQuestionnairesPerMonth', questionnaires.length)) {
-      alert(getUpgradeMessage(plan, 'maxQuestionnairesPerMonth', questionnaires.length));
+      toast.warning(getUpgradeMessage(plan, 'maxQuestionnairesPerMonth', questionnaires.length));
       return;
     }
     setIsSaving(true);

@@ -136,6 +136,13 @@ class TwoFactorService {
       });
 
       if (!user || !user.twoFactorSecret || !user.twoFactorEnabled) {
+        // Constant-time: perform a dummy TOTP verify to prevent timing-based user enumeration
+        speakeasy.totp.verify({
+          secret: 'JBSWY3DPEHPK3PXP',
+          encoding: 'base32',
+          token,
+          window: 2,
+        });
         return false;
       }
 
@@ -151,7 +158,7 @@ class TwoFactorService {
       if (verified) {
         logger.info(`Successful 2FA verification for user ${userId}`);
       } else {
-        logger.warn(`Failed 2FA verification for user ${userId}`);
+        logger.warn(`Failed 2FA verification attempt`);
       }
 
       return verified;

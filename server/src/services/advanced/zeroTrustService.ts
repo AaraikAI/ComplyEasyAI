@@ -204,10 +204,10 @@ class ZeroTrustService {
       // Detect device type from metadata (including deviceType field if present)
       let detectedDeviceType: DeviceTrust['deviceType'];
       try {
-        const metadataObj = metadata && typeof metadata === 'object' ? metadata : {} as DeviceTrust['metadata'];
-        detectedDeviceType = this.detectDeviceType({ 
-          ...metadataObj, 
-          deviceType: metadataObj.deviceType || undefined 
+        const metadataObj = (metadata && typeof metadata === 'object' ? metadata : {}) as Record<string, any>;
+        detectedDeviceType = this.detectDeviceType({
+          ...metadataObj,
+          deviceType: metadataObj.deviceType || undefined
         });
       } catch (error: any) {
         logger.error('Error detecting device type', error);
@@ -959,15 +959,16 @@ class ZeroTrustService {
         const rules = policy.rules as unknown as PolicyRulesJson;
         if (rules?.networkSegments && Array.isArray(rules.networkSegments)) {
           for (const segment of rules.networkSegments) {
-            if (segment.cidr && this.ipInCIDR(ipAddress, segment.cidr)) {
+            const seg = segment as Record<string, any>;
+            if (seg.cidr && this.ipInCIDR(ipAddress, seg.cidr)) {
               // Cache and return the segment
               const networkSegment: NetworkSegment = {
-                id: segment.id || `segment_${segment.cidr}`,
-                name: segment.name || segment.cidr,
-                cidr: segment.cidr,
-                trustLevel: this.mapTrustLevelToEnum(segment.trustLevel),
-                resources: segment.resources || [],
-                policies: segment.policies || [],
+                id: seg.id || `segment_${seg.cidr}`,
+                name: seg.name || seg.cidr,
+                cidr: seg.cidr,
+                trustLevel: this.mapTrustLevelToEnum(seg.trustLevel),
+                resources: seg.resources || [],
+                policies: seg.policies || [],
               };
               this.networkSegments.set(networkSegment.id, networkSegment);
               return networkSegment;

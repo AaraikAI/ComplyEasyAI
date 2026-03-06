@@ -229,6 +229,16 @@ export class MultiWorkspaceService {
     targetOrganizationId: string,
     adminUserId: string
   ) {
+    // Verify the admin user exists and fetch their org
+    const admin = await prisma.user.findUnique({
+      where: { id: adminUserId },
+      select: { id: true, organizationId: true, role: true },
+    });
+
+    if (!admin) {
+      throw new Error('Admin user not found');
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { organization: true },
@@ -236,6 +246,21 @@ export class MultiWorkspaceService {
 
     if (!user) {
       throw new Error('User not found');
+    }
+
+    // Verify admin belongs to the same organization as the user being moved
+    if (admin.organizationId !== user.organizationId) {
+      throw new Error('Cannot move users from other organizations');
+    }
+
+    // Verify the target organization is accessible (same org or a child org)
+    if (targetOrganizationId !== admin.organizationId) {
+      const targetOrg = await prisma.organization.findFirst({
+        where: { id: targetOrganizationId, parentOrganizationId: admin.organizationId },
+      });
+      if (!targetOrg) {
+        throw new Error('Target organization not accessible');
+      }
     }
 
     const sourceOrgId = user.organizationId;

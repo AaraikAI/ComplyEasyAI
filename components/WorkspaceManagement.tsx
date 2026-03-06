@@ -14,6 +14,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   Tooltip, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
+import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -149,7 +150,7 @@ export default function WorkspaceManagement() {
   const handleCreateChild = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isAtLimit(plan, 'maxWorkspaces', childCount)) {
-      alert(getUpgradeMessage(plan, 'maxWorkspaces', childCount));
+      toast.warning(getUpgradeMessage(plan, 'maxWorkspaces', childCount));
       return;
     }
     setIsSaving(true);
