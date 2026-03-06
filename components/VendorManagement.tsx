@@ -14,6 +14,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   Tooltip, Legend,
 } from 'recharts';
+import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -242,7 +243,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
   const handleCreateVendor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isAtLimit(plan, 'maxVendors', vendors.length)) {
-      alert(getUpgradeMessage(plan, 'maxVendors', vendors.length) || 'Vendor limit reached. Upgrade in Settings → Billing.');
+      toast.warning(getUpgradeMessage(plan, 'maxVendors', vendors.length) || 'Vendor limit reached. Upgrade in Settings → Billing.');
       return;
     }
     setIsSaving(true);

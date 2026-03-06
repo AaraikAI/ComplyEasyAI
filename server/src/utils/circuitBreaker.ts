@@ -8,6 +8,7 @@
  */
 
 import logger from '../config/logger';
+import cacheService from '../services/cache/redisCacheService';
 
 // ============================================================================
 // TYPES
@@ -91,6 +92,9 @@ export class CircuitBreaker {
    * Execute a function through the circuit breaker
    */
   async execute<T>(fn: () => Promise<T>): Promise<T> {
+    // Sync state from Redis before checking circuit state (cross-instance consistency)
+    await this.syncStateFromRedis();
+
     this.totalRequests++;
 
     // Check circuit state
@@ -194,6 +198,7 @@ export class CircuitBreaker {
     });
 
     this.onOpen?.(this.name, error);
+    this.syncStateToRedis();
   }
 
   /**
@@ -207,6 +212,7 @@ export class CircuitBreaker {
     logger.info(`[CircuitBreaker:${this.name}] Circuit HALF-OPEN, testing recovery`);
 
     this.onHalfOpen?.(this.name);
+    this.syncStateToRedis();
   }
 
   /**
@@ -220,6 +226,60 @@ export class CircuitBreaker {
     logger.info(`[CircuitBreaker:${this.name}] Circuit CLOSED, service recovered`);
 
     this.onClose?.(this.name);
+    this.syncStateToRedis();
+  }
+
+  // ==========================================================================
+  // REDIS STATE SYNCHRONIZATION
+  // ==========================================================================
+
+  /** Persist circuit state to Redis for cross-instance consistency */
+  async syncStateToRedis(): Promise<void> {
+    try {
+      await cacheService.set(`circuit-breaker:${this.name}:state`, {
+        state: this.state,
+        failures: this.failures,
+        successes: this.successes,
+        lastFailureTime: this.lastFailureTime,
+        lastSuccessTime: this.lastSuccessTime,
+        totalRequests: this.totalRequests,
+        totalFailures: this.totalFailures,
+        totalSuccesses: this.totalSuccesses,
+      }, { ttl: 300 }); // 5 minute TTL
+    } catch {
+      // Redis sync is best-effort; local state is always authoritative
+    }
+  }
+
+  /** Load circuit state from Redis (cross-instance shared state) */
+  async syncStateFromRedis(): Promise<void> {
+    try {
+      const shared = await cacheService.get<{
+        state: CircuitState;
+        failures: number;
+        successes: number;
+        lastFailureTime?: number;
+        lastSuccessTime?: number;
+        totalRequests: number;
+        totalFailures: number;
+        totalSuccesses: number;
+      }>(`circuit-breaker:${this.name}:state`);
+
+      if (shared) {
+        // Merge: take the more restrictive state (if any instance has OPEN, stay OPEN)
+        if (shared.state === CircuitState.OPEN && this.state === CircuitState.CLOSED) {
+          this.state = CircuitState.OPEN;
+          this.failures = Math.max(this.failures, shared.failures);
+          this.lastFailureTime = shared.lastFailureTime;
+        }
+        // Aggregate totals from shared state
+        this.totalRequests = Math.max(this.totalRequests, shared.totalRequests);
+        this.totalFailures = Math.max(this.totalFailures, shared.totalFailures);
+        this.totalSuccesses = Math.max(this.totalSuccesses, shared.totalSuccesses);
+      }
+    } catch {
+      // Redis sync is best-effort
+    }
   }
 
   /**
@@ -333,9 +393,13 @@ class CircuitBreakerRegistry {
   }
 
   /**
-   * Get all circuit breaker stats
+   * Get all circuit breaker stats (syncs from Redis first for cross-instance consistency)
    */
-  getAllStats(): CircuitBreakerStats[] {
+  async getAllStats(): Promise<CircuitBreakerStats[]> {
+    // Sync each breaker from Redis before collecting stats
+    await Promise.all(
+      Array.from(this.breakers.values()).map(b => b.syncStateFromRedis())
+    );
     return Array.from(this.breakers.values()).map(b => b.getStats());
   }
 

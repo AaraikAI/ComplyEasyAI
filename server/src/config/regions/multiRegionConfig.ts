@@ -9,6 +9,7 @@
 import https from 'https';
 import http from 'http';
 import logger from '../logger';
+import cacheService from '../../services/cache/redisCacheService';
 
 // ============================================================================
 // TYPES
@@ -60,12 +61,23 @@ export interface RegionConfig {
   };
 }
 
+export interface RegionHealthData {
+  healthy: boolean;
+  latencyMs: number;
+  checkedAt: string; // ISO string for Redis serialization
+  consecutiveFailures: number;
+}
+
 export interface MultiRegionState {
   currentRegion: RegionCode;
   activeRegions: RegionCode[];
   primaryRegion: RegionCode;
   lastHealthCheck: Record<RegionCode, { healthy: boolean; latencyMs: number; checkedAt: Date }>;
 }
+
+/** Redis key prefix for multi-region health state. TTL = 2x health check interval. */
+const HEALTH_REDIS_KEY_PREFIX = 'multiregion:health';
+const HEALTH_REDIS_TTL = 120; // seconds (2x the 60s health check interval)
 
 // ============================================================================
 // REGION DEFINITIONS
@@ -305,12 +317,23 @@ class MultiRegionService {
     // Initialize health state for all active regions
     for (const [code, config] of Object.entries(REGIONS)) {
       if (config.isActive) {
-        this.healthState.set(code as RegionCode, {
+        const healthData = {
           healthy: code === this.currentRegion,
           latencyMs: 0,
           checkedAt: new Date(),
           consecutiveFailures: 0,
-        });
+        };
+        this.healthState.set(code as RegionCode, healthData);
+
+        // Persist initial health state to Redis for cross-instance consistency
+        try {
+          await cacheService.set(`${HEALTH_REDIS_KEY_PREFIX}:${code}`, {
+            ...healthData,
+            checkedAt: healthData.checkedAt.toISOString(),
+          } as RegionHealthData, { ttl: HEALTH_REDIS_TTL });
+        } catch (redisErr) {
+          logger.debug('[MultiRegion] Failed to sync initial health state to Redis, using local state');
+        }
       }
     }
 
@@ -401,16 +424,38 @@ class MultiRegionService {
 
   /**
    * Get health status of all regions.
+   * Reads from Redis first for cross-instance consistency, falls back to local Map.
    */
-  getHealthStatus(): Record<string, any> {
+  async getHealthStatus(): Promise<Record<string, any>> {
     const status: Record<string, any> = {};
-    for (const [code, health] of this.healthState.entries()) {
-      status[code] = {
-        ...health,
-        region: REGIONS[code]?.name,
-        isPrimary: REGIONS[code]?.isPrimary,
-        isActive: REGIONS[code]?.isActive,
-      };
+    for (const [code] of this.healthState.entries()) {
+      // Try Redis first for cross-instance consistency
+      let health: RegionHealthData | null = null;
+      try {
+        health = await cacheService.get<RegionHealthData>(`${HEALTH_REDIS_KEY_PREFIX}:${code}`);
+      } catch {
+        // Redis unavailable, fall through to local state
+      }
+
+      // Fall back to local Map if Redis didn't have the data
+      if (!health) {
+        const localHealth = this.healthState.get(code as RegionCode);
+        if (localHealth) {
+          health = {
+            ...localHealth,
+            checkedAt: localHealth.checkedAt.toISOString(),
+          };
+        }
+      }
+
+      if (health) {
+        status[code] = {
+          ...health,
+          region: REGIONS[code as RegionCode]?.name,
+          isPrimary: REGIONS[code as RegionCode]?.isPrimary,
+          isActive: REGIONS[code as RegionCode]?.isActive,
+        };
+      }
     }
     return status;
   }
@@ -448,6 +493,7 @@ class MultiRegionService {
 
   /**
    * Check health of a specific region.
+   * Writes results to both the local Map and Redis for cross-instance consistency.
    */
   private async checkRegionHealth(regionCode: RegionCode): Promise<void> {
     const config = REGIONS[regionCode];
@@ -455,26 +501,28 @@ class MultiRegionService {
 
     const healthUrl = `${config.endpoints.api}/health`;
     const startTime = Date.now();
+    let healthData: { healthy: boolean; latencyMs: number; checkedAt: Date; consecutiveFailures: number };
+
     try {
       await this.httpHealthCheck(healthUrl, 5000);
       const latencyMs = Date.now() - startTime;
 
-      this.healthState.set(regionCode, {
+      healthData = {
         healthy: true,
         latencyMs,
         checkedAt: new Date(),
         consecutiveFailures: 0,
-      });
+      };
     } catch (error) {
       const current = this.healthState.get(regionCode);
       const consecutiveFailures = (current?.consecutiveFailures || 0) + 1;
 
-      this.healthState.set(regionCode, {
+      healthData = {
         healthy: consecutiveFailures < config.failover.failureThreshold,
         latencyMs: -1,
         checkedAt: new Date(),
         consecutiveFailures,
-      });
+      };
 
       if (consecutiveFailures >= config.failover.failureThreshold) {
         logger.error(`[MultiRegion] Region ${regionCode} is unhealthy (${consecutiveFailures} consecutive failures)`);
@@ -482,6 +530,19 @@ class MultiRegionService {
           logger.warn(`[MultiRegion] Auto-failover triggered for ${regionCode} -> ${config.failover.target}`);
         }
       }
+    }
+
+    // Write to local Map
+    this.healthState.set(regionCode, healthData);
+
+    // Sync to Redis for cross-instance consistency
+    try {
+      await cacheService.set(`${HEALTH_REDIS_KEY_PREFIX}:${regionCode}`, {
+        ...healthData,
+        checkedAt: healthData.checkedAt.toISOString(),
+      } as RegionHealthData, { ttl: HEALTH_REDIS_TTL });
+    } catch (redisErr) {
+      logger.debug('[MultiRegion] Failed to sync health state to Redis, using local state');
     }
   }
 

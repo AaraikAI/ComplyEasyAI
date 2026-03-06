@@ -14,6 +14,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Globe, CheckCircle, AlertTriangle, X, Plus, FileText, Shield, Users, Eye, Megaphone, Ban } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface DSAPlatform {
   id: string;
@@ -1079,7 +1080,7 @@ export const DSAPlatformManagement: React.FC = () => {
                 await api.euRegulations.dsa.updatePlatform(selectedPlatform.id, { complianceStatus });
                 setShowEditPlatformModal(false);
                 await loadPlatforms();
-                alert('Platform updated successfully');
+                toast.success('Platform updated successfully');
               } catch (err: unknown) {
                 setError(err instanceof Error ? err.message : 'Failed to update platform');
               }
@@ -1540,7 +1541,7 @@ export const DSAPlatformManagement: React.FC = () => {
                               try {
                                 await api.euRegulations.dsa.updateRiskAssessment(assessment.id, { status: 'approved' });
                                 await loadRiskAssessments(selectedPlatform!.id);
-                                alert('Risk assessment approved successfully');
+                                toast.success('Risk assessment approved successfully');
                               } catch (err: unknown) {
                                 setError(err instanceof Error ? err.message : 'Failed to approve assessment');
                               }
@@ -1764,7 +1765,7 @@ export const DSAPlatformManagement: React.FC = () => {
                 setShowEditAssessmentModal(false);
                 setSelectedAssessment(null);
                 await loadRiskAssessments(selectedPlatform.id);
-                alert('Risk assessment updated successfully');
+                toast.success('Risk assessment updated successfully');
               } catch (err: unknown) {
                 setError(err instanceof Error ? err.message : 'Failed to update risk assessment');
               }

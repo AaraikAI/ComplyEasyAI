@@ -1,5 +1,4 @@
 import { PrismaClient } from '../generated/prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
 import logger from './logger';
 import {
   encryptField,
@@ -67,7 +66,11 @@ function decryptRecord(record: any): any {
 // encryption/decryption of Integration credential fields.
 // ============================================================================
 
-const adapter = new PrismaPg({ connectionString: buildDatabaseUrl() });
+// Set DATABASE_URL with pool params for Prisma v5
+const databaseUrl = buildDatabaseUrl();
+if (databaseUrl) {
+  process.env.DATABASE_URL = databaseUrl;
+}
 
 const basePrisma = new PrismaClient({
   log: [
@@ -75,7 +78,6 @@ const basePrisma = new PrismaClient({
     { level: 'error', emit: 'stdout' },
     { level: 'warn', emit: 'stdout' },
   ],
-  adapter,
 });
 
 const prisma = basePrisma.$extends({

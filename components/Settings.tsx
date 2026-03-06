@@ -9,6 +9,7 @@ import PricingSection from './PricingSection';
 import FeatureMarketplace from './FeatureMarketplace';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
+import { toast } from 'sonner';
 
 interface SettingsProps {
   onNavigateToIntegrations?: () => void;
@@ -297,13 +298,13 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newMember.email)) {
-      alert('Please enter a valid email address');
+      toast.warning('Please enter a valid email address');
       return;
     }
 
     const plan = currentUser?.organization?.plan;
     if (isAtLimit(plan, 'maxUsers', users.length)) {
-      alert(getUpgradeMessage(plan, 'maxUsers', users.length) || 'User limit reached. Upgrade in Settings → Billing.');
+      toast.warning(getUpgradeMessage(plan, 'maxUsers', users.length) || 'User limit reached. Upgrade in Settings → Billing.');
       return;
     }
 
@@ -317,18 +318,18 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       
       setShowInviteModal(false);
       setNewMember({ name: '', email: '', role: 'viewer' });
-      alert('Invitation sent successfully!');
+      toast.success('Invitation sent successfully!');
     } catch (error: any) {
       console.error('Failed to invite team member:', error);
       const errorMessage = error.message || 'Failed to invite team member. Please try again.';
       if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
-        alert('This email is already in use. Please use a different email.');
+        toast.warning('This email is already in use. Please use a different email.');
       } else if (errorMessage.includes('limit') || errorMessage.includes('Limit exceeded') || errorMessage.includes('Maximum Users')) {
-        alert(getUpgradeMessage(currentUser?.organization?.plan, 'maxUsers', users.length) || errorMessage);
+        toast.warning(getUpgradeMessage(currentUser?.organization?.plan, 'maxUsers', users.length) || errorMessage);
       } else if (errorMessage.includes('Too many requests')) {
-        alert('Too many requests from this IP. Please wait a few minutes and try again.');
+        toast.warning('Too many requests from this IP. Please wait a few minutes and try again.');
       } else {
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     }
   };
@@ -382,7 +383,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
 
   const handleBulkInvite = async () => {
     if (!bulkInviteFile) {
-      alert('Please select a CSV file');
+      toast.warning('Please select a CSV file');
       return;
     }
 
@@ -402,7 +403,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       // Don't close modal yet - show results
     } catch (error: any) {
       console.error('Failed to process bulk invite:', error);
-      alert(error.message || 'Failed to process bulk invite. Please check the CSV format.');
+      toast.error(error.message || 'Failed to process bulk invite. Please check the CSV format.');
     } finally {
       setIsProcessingBulkInvite(false);
     }
@@ -459,7 +460,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       console.error('Failed to create checkout:', error);
       const errorMessage = error.message || 'Failed to create checkout session. Please check your Stripe configuration.';
       setPlanChangeStatus(`Error: ${errorMessage}`);
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -471,26 +472,26 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       }
     } catch (error: any) {
       console.error('Failed to open billing portal:', error);
-      alert(error.message || 'Failed to open billing portal');
+      toast.error(error.message || 'Failed to open billing portal');
     }
   };
 
   const handleSaveProfile = async () => {
     // Validation
     if (!profileName || profileName.trim().length === 0) {
-      alert('Name is required');
+      toast.warning('Name is required');
       return;
     }
 
     if (profileName.length > 100) {
-      alert('Name is too long. Maximum 100 characters.');
+      toast.warning('Name is too long. Maximum 100 characters.');
       return;
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!profileEmail || !emailRegex.test(profileEmail)) {
-      alert('Please enter a valid email address');
+      toast.warning('Please enter a valid email address');
       return;
     }
 
@@ -513,14 +514,14 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         localStorage.setItem('user_data', JSON.stringify(updatedUser));
       }
 
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     } catch (error: any) {
       console.error('Failed to update profile:', error);
       const errorMessage = error.message || 'Failed to update profile';
       if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
-        alert('This email is already in use. Please use a different email.');
+        toast.warning('This email is already in use. Please use a different email.');
       } else {
-        alert(`Failed to update profile: ${errorMessage}`);
+        toast.error(`Failed to update profile: ${errorMessage}`);
       }
     } finally {
       setIsSavingProfile(false);
@@ -852,7 +853,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                        const file = e.target.files?.[0];
                        if (file) {
                          if (file.size > 1024 * 1024) {
-                           alert('File size must be less than 1MB');
+                           toast.warning('File size must be less than 1MB');
                            return;
                          }
                          try {
@@ -864,7 +865,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                            }
                          } catch (error: any) {
                            console.error('Avatar upload error:', error);
-                           alert(error.message || 'Failed to upload avatar');
+                           toast.error(error.message || 'Failed to upload avatar');
                          }
                        }
                      }}
@@ -970,7 +971,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                         setShow2FASetup(true);
                       } catch (error: any) {
                         console.error('Failed to setup 2FA:', error);
-                        alert(`Failed to setup 2FA: ${error.message || 'Unknown error'}`);
+                        toast.error(`Failed to setup 2FA: ${error.message || 'Unknown error'}`);
                       } finally {
                         setIsLoading2FA(false);
                       }
@@ -1028,7 +1029,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                         <button
                           onClick={async () => {
                             if (verificationToken.length !== 6) {
-                              alert('Please enter a 6-digit code');
+                              toast.warning('Please enter a 6-digit code');
                               return;
                             }
                             try {
@@ -1038,10 +1039,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                               setTwoFactorVerified(true);
                               setShow2FASetup(false);
                               setVerificationToken('');
-                              alert('Two-factor authentication enabled successfully!');
+                              toast.success('Two-factor authentication enabled successfully!');
                             } catch (error: any) {
                               console.error('Failed to enable 2FA:', error);
-                              alert(`Failed to enable 2FA: ${error.message || 'Invalid code. Please try again.'}`);
+                              toast.error(`Failed to enable 2FA: ${error.message || 'Invalid code. Please try again.'}`);
                             } finally {
                               setIsLoading2FA(false);
                             }
@@ -1103,10 +1104,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                           await api.twoFactor.disable();
                           setTwoFactorEnabled(false);
                           setTwoFactorVerified(false);
-                          alert('Two-factor authentication has been disabled.');
+                          toast.success('Two-factor authentication has been disabled.');
                         } catch (error: any) {
                           console.error('Failed to disable 2FA:', error);
-                          alert(`Failed to disable 2FA: ${error.message || 'Unknown error'}`);
+                          toast.error(`Failed to disable 2FA: ${error.message || 'Unknown error'}`);
                         } finally {
                           setIsLoading2FA(false);
                         }
@@ -1122,10 +1123,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                           setIsLoading2FA(true);
                           const result = await api.twoFactor.regenerateCodes() as any;
                           setBackupCodes(result.backupCodes || result.data?.backupCodes || []);
-                          alert('New backup codes generated. Please save them securely.');
+                          toast.success('New backup codes generated. Please save them securely.');
                         } catch (error: any) {
                           console.error('Failed to regenerate codes:', error);
-                          alert(`Failed to regenerate codes: ${error.message || 'Unknown error'}`);
+                          toast.error(`Failed to regenerate codes: ${error.message || 'Unknown error'}`);
                         } finally {
                           setIsLoading2FA(false);
                         }
@@ -1215,7 +1216,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                         setCurrentPassword('');
                         setNewPassword('');
                         setConfirmPassword('');
-                        alert('Password changed successfully!');
+                        toast.success('Password changed successfully!');
                       } catch (error: any) {
                         const errorMessage = error.message || 'Failed to change password';
                         if (errorMessage.includes('incorrect') || errorMessage.includes('current')) {
@@ -1435,22 +1436,22 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                                   
                                   // Prevent changing role if only admin
                                   if (isOnlyAdmin && newRole !== 'admin') {
-                                    alert('Cannot change role: This is the only admin user. Please assign another admin before changing this role.');
+                                    toast.warning('Cannot change role: This is the only admin user. Please assign another admin before changing this role.');
                                     return;
                                   }
-                                  
+
                                   try {
                                     await api.team.updateRole(u.id, newRole);
                                     const updated = await api.team.list();
                                     setUsers(updated);
-                                    alert(`Role updated to ${newRole} successfully!`);
+                                    toast.success(`Role updated to ${newRole} successfully!`);
                                   } catch (error: any) {
                                     console.error('Failed to update role:', error);
                                     const errorMsg = error.message || 'Unknown error';
                                     if (errorMsg.includes('only admin') || errorMsg.includes('last admin')) {
-                                      alert('Cannot change role: This is the only admin user. Please assign another admin before changing this role.');
+                                      toast.warning('Cannot change role: This is the only admin user. Please assign another admin before changing this role.');
                                     } else {
-                                      alert(`Failed to update role: ${errorMsg}`);
+                                      toast.error(`Failed to update role: ${errorMsg}`);
                                     }
                                   }
                                 }}
@@ -1477,11 +1478,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                                 await api.team.remove(u.id);
                                 const updated = await api.team.list();
                                 setUsers(updated);
-                                alert('Team member removed successfully');
-                                  alert('Team member removed successfully');
+                                toast.success('Team member removed successfully');
                                 } catch (error: any) {
                                   console.error('Failed to remove team member:', error);
-                                  alert(`Failed to remove team member: ${error.message || 'Unknown error'}`);
+                                  toast.error(`Failed to remove team member: ${error.message || 'Unknown error'}`);
                                 }
                               }
                             }}
@@ -1627,11 +1627,11 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                                 setIntegrations(Array.isArray(updated) ? updated : []);
                               } else {
                                 // For connecting, use the IntegrationModal instead
-                                alert('Please use the "View Catalog" button to connect new integrations.');
+                                toast.info('Please use the "View Catalog" button to connect new integrations.');
                               }
                             } catch (error: any) {
                               console.error('Failed to toggle integration:', error);
-                              alert(`Failed to toggle integration: ${error.message || 'Unknown error'}`);
+                              toast.error(`Failed to toggle integration: ${error.message || 'Unknown error'}`);
                             }
                           }} 
                         />

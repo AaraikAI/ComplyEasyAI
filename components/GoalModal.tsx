@@ -13,6 +13,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Target, AlertCircle, CheckCircle } from 'lucide-react';
 import { AVAILABLE_FRAMEWORKS } from '../constants';
 import { api } from '../services/api';
+import { toast } from 'sonner';
 
 interface GoalModalProps {
   isOpen: boolean;
@@ -144,7 +145,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
       onClose();
     } catch (error: any) {
       console.error('Error saving goal:', error);
-      alert(`Failed to ${goal ? 'update' : 'create'} goal: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to ${goal ? 'update' : 'create'} goal: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

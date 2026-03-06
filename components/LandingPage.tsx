@@ -12,6 +12,7 @@ import PricingSection from './PricingSection';
 import DemoBookingForm from './DemoBookingForm';
 import { TierName } from '../types';
 import { ThemeToggleCompact } from './ThemeToggle';
+import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
 // Feature data grouped by tab category
@@ -129,10 +130,10 @@ export const LandingPage: React.FC = () => {
       const errorMsg = e?.message || 'Failed to send magic link';
       // Backend auto-creates users, so errors are likely network/server issues
       if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch') || errorMsg.includes('Cannot connect')) {
-        alert('Cannot connect to server. Please check:\n1. Backend server is running\n2. Network connection is active');
+        toast.error('Cannot connect to server. Please check that the backend server is running and your network connection is active.');
       } else {
         // Show error but don't redirect to registration - backend handles user creation
-        alert(`Failed to send magic link: ${errorMsg}\n\nPlease try again or contact support if the issue persists.`);
+        toast.error(`Failed to send magic link: ${errorMsg}. Please try again or contact support if the issue persists.`);
       }
       // Don't redirect to registration - stay on email step so user can retry
     }
@@ -166,12 +167,12 @@ export const LandingPage: React.FC = () => {
       const errorMsg = error?.message || 'Unknown error';
       if (errorMsg.includes('already exists') || errorMsg.includes('409')) {
         // This shouldn't happen anymore since backend handles it, but just in case
-        alert('This email is already registered. A magic link has been sent to your email for login.');
+        toast.warning('This email is already registered. A magic link has been sent to your email for login.');
         setAuthStep('email');
       } else if (errorMsg.includes('Network') || errorMsg.includes('Failed to fetch')) {
-        alert('Cannot connect to server. Please check:\n1. Backend server is running\n2. Network connection is active');
+        toast.error('Cannot connect to server. Please check that the backend server is running and your network connection is active.');
       } else {
-        alert(`Registration failed: ${errorMsg}\n\nPlease try again or contact support if the issue persists.`);
+        toast.error(`Registration failed: ${errorMsg}. Please try again or contact support if the issue persists.`);
       }
     }
     setLoading(false);
@@ -188,13 +189,11 @@ export const LandingPage: React.FC = () => {
         // User is now logged in - the AuthContext will redirect to dashboard
       } else {
         // No devToken available (production mode) - inform user to check email
-        alert('Please check your email and click the magic link to sign in.\n\n' +
-              'The simulation feature is only available in development mode.');
+        toast.info('Please check your email and click the magic link to sign in. The simulation feature is only available in development mode.');
       }
     } catch (error: any) {
       console.error('Magic link verification error:', error);
-      alert(`Failed to verify magic link: ${error?.message || 'Unknown error'}\n\n` +
-            'Please try requesting a new magic link.');
+      toast.error(`Failed to verify magic link: ${error?.message || 'Unknown error'}. Please try requesting a new magic link.`);
     }
     setLoading(false);
   };
@@ -209,11 +208,11 @@ export const LandingPage: React.FC = () => {
         if (response?.devToken) {
           setDevToken(response.devToken);
         }
-        alert('A new magic link has been sent to your email.');
+        toast.success('A new magic link has been sent to your email.');
       }
     } catch (error: any) {
       console.error('Resend magic link error:', error);
-      alert(`Failed to resend magic link: ${error?.message || 'Unknown error'}`);
+      toast.error(`Failed to resend magic link: ${error?.message || 'Unknown error'}`);
     }
     setLoading(false);
   };
@@ -794,7 +793,7 @@ export const LandingPage: React.FC = () => {
                           window.location.reload();
                         } catch (error: any) {
                           console.error('Login error:', error);
-                          alert(error.message || 'Login failed. Please check your credentials.');
+                          toast.error(error.message || 'Login failed. Please check your credentials.');
                         } finally {
                           setLoading(false);
                         }

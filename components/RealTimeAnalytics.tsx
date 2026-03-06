@@ -38,6 +38,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { toast } from 'sonner';
 
 interface Metric {
   id: string;
@@ -350,7 +351,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Failed to export analytics data');
+      toast.error('Failed to export analytics data');
     }
   };
 

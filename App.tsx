@@ -11,6 +11,8 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
 import { api } from './services/api';
+import { Toaster } from 'sonner';
+import { toast } from 'sonner';
 
 // ── Lazy-loaded public pages ──────────────────────────────────────────
 const SignupPage = lazy(() => import('./components/SignupPage'));
@@ -144,7 +146,7 @@ const MainApp: React.FC = () => {
   const handleAddFramework = async (name: string, region?: string) => {
     const maxFrameworks = getLimit(user?.organization?.plan, 'maxFrameworks');
     if (isAtLimit(user?.organization?.plan, 'maxFrameworks', frameworks.length)) {
-      alert(getUpgradeMessage(user?.organization?.plan, 'maxFrameworks', frameworks.length) || 'Framework limit reached. Upgrade in Settings → Billing.');
+      toast.warning(getUpgradeMessage(user?.organization?.plan, 'maxFrameworks', frameworks.length) || 'Framework limit reached. Upgrade in Settings → Billing.');
       return;
     }
     // Optimistic Update
@@ -409,6 +411,7 @@ const PublicPageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }
 const App: React.FC = () => {
   return (
     <BrowserRouter>
+      <Toaster richColors position="top-right" />
       <ThemeProvider>
         <AuthProvider>
           <Routes>

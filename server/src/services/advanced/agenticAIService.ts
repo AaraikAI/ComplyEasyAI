@@ -10,7 +10,7 @@
  */
 
 import prisma from '../../config/database';
-import { Prisma } from '../../generated/prisma/client';
+import { Prisma, RiskStatus } from '../../generated/prisma/client';
 import logger from '../../config/logger';
 
 /** Rollback checkpoint data stored as JSON */
@@ -740,9 +740,9 @@ class AgenticAIService {
       await prisma.frameworkControl.update({
         where: { id: agenticAction.targetId },
         data: {
-          ...(status && { status }),
-          ...(description && { description }),
-          ...(evidence && { evidence }),
+          ...(status ? { status: status as string } : {}),
+          ...(description ? { description: description as string } : {}),
+          ...(evidence ? { evidence: evidence as string } : {}),
           updatedAt: new Date(),
         },
       });
@@ -768,9 +768,9 @@ class AgenticAIService {
       await prisma.policy.create({
         data: {
           organizationId,
-          title,
-          content,
-          category: category || 'General',
+          title: title as string,
+          content: content as string,
+          category: (category as string) || 'General',
           owner: userId,
           status: 'Draft',
         },
@@ -796,8 +796,8 @@ class AgenticAIService {
       await prisma.riskItem.update({
         where: { id: agenticAction.targetId },
         data: {
-          ...(mitigationPlan && { mitigationPlan }),
-          ...(status && { status }),
+          ...(mitigationPlan ? { mitigationPlan: mitigationPlan as string } : {}),
+          ...(status ? { status: status as RiskStatus } : {}),
           updatedAt: new Date(),
         },
       });
@@ -1009,7 +1009,7 @@ class AgenticAIService {
         await prisma.riskItem.update({
           where: { id: action.targetId },
           data: {
-            status: rollback.previousStatus,
+            ...(rollback.previousStatus ? { status: rollback.previousStatus as any } : {}),
             mitigationPlan: rollback.previousMitigationPlan,
             updatedAt: new Date(),
           },

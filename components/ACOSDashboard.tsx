@@ -35,6 +35,7 @@ import { GoalModal } from './GoalModal';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { Plus, X } from 'lucide-react';
 import { HomomorphicAI } from './AIFeatures/HomomorphicAI';
+import { toast } from 'sonner';
 
 interface ComplianceGoal {
   id: string;
@@ -159,7 +160,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
       await loadData();
     } catch (error) {
       console.error('Error deleting goal:', error);
-      alert('Failed to delete goal');
+      toast.error('Failed to delete goal');
     } finally {
       setDeletingGoal(null);
     }
@@ -171,7 +172,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
       await loadData();
     } catch (error) {
       console.error('Error restoring goal:', error);
-      alert('Failed to restore goal');
+      toast.error('Failed to restore goal');
     }
   };
 
@@ -795,7 +796,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
 
   const handleCreateLoop = async () => {
     if (!selectedControlId) {
-      alert('Please select a control');
+      toast.warning('Please select a control');
       return;
     }
     setLoading(true);
@@ -836,10 +837,10 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
         }
       }, 500);
       
-      alert('Control loop created successfully');
+      toast.success('Control loop created successfully');
     } catch (error: unknown) {
       console.error('Error creating control loop:', error);
-      alert(`Failed to create control loop: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
+      toast.error(`Failed to create control loop: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -856,7 +857,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
       await loadLoops();
     } catch (error) {
       console.error('Error executing control loop:', error);
-      alert('Failed to execute control loop');
+      toast.error('Failed to execute control loop');
     } finally {
       setLoading(false);
       setExecutingLoopId(null);
@@ -961,7 +962,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                         setHistory(historyData);
                         setShowHistory(loop.id);
                       } catch (error) {
-                        alert('Failed to load execution history');
+                        toast.error('Failed to load execution history');
                       }
                     } else {
                       setShowHistory(null);
@@ -989,7 +990,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                             setHistory(historyData);
                             setShowHistory(showHistory === loop.id ? null : loop.id);
                           } catch (error) {
-                            alert('Failed to load history');
+                            toast.error('Failed to load history');
                           }
                         }}
                         className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
@@ -1004,7 +1005,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                               await api.acos.resumeControlLoop(loop.id);
                               await loadLoops();
                             } catch (error) {
-                              alert('Failed to resume control loop');
+                              toast.error('Failed to resume control loop');
                             }
                           }}
                           className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
@@ -1019,7 +1020,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                               await api.acos.pauseControlLoop(loop.id);
                               await loadLoops();
                             } catch (error) {
-                              alert('Failed to pause control loop');
+                              toast.error('Failed to pause control loop');
                             }
                           }}
                           className="px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700"
@@ -1043,7 +1044,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
                               await api.acos.deleteControlLoop(loop.id);
                               await loadLoops();
                             } catch (error) {
-                              alert('Failed to delete control loop');
+                              toast.error('Failed to delete control loop');
                             }
                           }
                         }}
@@ -1389,7 +1390,7 @@ const SimulationsTab: React.FC = () => {
       setResult(data);
     } catch (error) {
       console.error('Error running simulation:', error);
-      alert('Failed to run simulation');
+      toast.error('Failed to run simulation');
     } finally {
       setLoading(false);
     }
@@ -1508,7 +1509,7 @@ const RedTeamTab: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavig
       setResults(data || []);
     } catch (error) {
       console.error('Error running scan:', error);
-      alert('Failed to run red team scan');
+      toast.error('Failed to run red team scan');
     } finally {
       setScanning(false);
     }
@@ -1811,7 +1812,7 @@ const IoTTab: React.FC = () => {
 
   const handleRegisterDevice = async () => {
     if (!deviceForm.deviceId || !deviceForm.deviceType || !deviceForm.location) {
-      alert('Please fill in all required fields');
+      toast.warning('Please fill in all required fields');
       return;
     }
     setLoading(true);
@@ -1820,10 +1821,10 @@ const IoTTab: React.FC = () => {
       setShowRegister(false);
       setDeviceForm({ deviceId: '', deviceType: '', location: '', mqttTopic: '' });
       await loadDevices(); // Reload devices
-      alert('Device registered successfully');
+      toast.success('Device registered successfully');
     } catch (error: unknown) {
       console.error('Error registering device:', error);
-      alert(`Failed to register device: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
+      toast.error(`Failed to register device: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -1964,7 +1965,7 @@ const NeuroSymbolicTab: React.FC = () => {
 
   const handleHybridReasoning = async () => {
     if (!query.trim()) {
-      alert('Please enter a query');
+      toast.warning('Please enter a query');
       return;
     }
     setLoading(true);
@@ -1974,7 +1975,7 @@ const NeuroSymbolicTab: React.FC = () => {
       await loadHistory();
     } catch (error: unknown) {
       console.error('Error performing hybrid reasoning:', error);
-      alert(`Failed to perform reasoning: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
+      toast.error(`Failed to perform reasoning: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -1982,7 +1983,7 @@ const NeuroSymbolicTab: React.FC = () => {
 
   const handleCausalReasoning = async () => {
     if (!violationData.controlId || !violationData.frameworkId) {
-      alert('Please fill in control ID and framework ID');
+      toast.warning('Please fill in control ID and framework ID');
       return;
     }
     setLoading(true);
@@ -1991,7 +1992,7 @@ const NeuroSymbolicTab: React.FC = () => {
       setCausalResult(result);
     } catch (error: unknown) {
       console.error('Error performing causal reasoning:', error);
-      alert(`Failed to perform causal reasoning: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
+      toast.error(`Failed to perform causal reasoning: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -2000,17 +2001,17 @@ const NeuroSymbolicTab: React.FC = () => {
   const handleInferRules = async () => {
     const validPatterns = patterns.filter(p => p.condition && p.outcome && p.frequency > 0);
     if (validPatterns.length === 0) {
-      alert('Please add at least one pattern with condition, outcome, and frequency');
+      toast.warning('Please add at least one pattern with condition, outcome, and frequency');
       return;
     }
     setLoading(true);
     try {
       const result = await api.acos.inferRulesFromPatterns(validPatterns) as any;
-      alert(`Inferred ${result.inferences?.length || 0} new rules from patterns`);
+      toast.success(`Inferred ${result.inferences?.length || 0} new rules from patterns`);
       await loadHistory();
     } catch (error: unknown) {
       console.error('Error inferring rules:', error);
-      alert(`Failed to infer rules: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
+      toast.error(`Failed to infer rules: ${(error instanceof Error ? error.message : String(error)) || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -2394,7 +2395,7 @@ const VRCollaborationsTab: React.FC = () => {
       loadSessions();
     } catch (error) {
       console.error('Error creating VR session:', error);
-      alert('Failed to create VR session. Please try again.');
+      toast.error('Failed to create VR session. Please try again.');
     } finally {
       setCreating(false);
     }
@@ -2450,13 +2451,13 @@ const VRCollaborationsTab: React.FC = () => {
                     onClick={async () => {
                       try {
                         await api.acos.joinVRSession(session.id);
-                        alert('Joining VR session...');
+                        toast.info('Joining VR session...');
                         // Refresh session list to get updated participant count
                         loadSessions();
                       } catch (err: unknown) {
                         console.error('Error joining session:', err);
                         const errorMessage = (err instanceof Error ? err.message : String(err)) || 'Failed to join session';
-                        alert(errorMessage);
+                        toast.error(errorMessage);
                         // If session not found, refresh the list
                         if (errorMessage.includes('not found') || errorMessage.includes('ended') || errorMessage.includes('inactive')) {
                           loadSessions();
@@ -2663,13 +2664,13 @@ const JITAccessTab: React.FC = () => {
 
     try {
       await api.acos.approveJITAccessRequest(requestId);
-      alert('Access request approved successfully!');
+      toast.success('Access request approved successfully!');
       await loadPendingRequests();
       await loadAllRequests();
       await loadSessions();
     } catch (error: unknown) {
       console.error('Error approving request:', error);
-      alert((error instanceof Error ? error.message : String(error)) || 'Failed to approve request');
+      toast.error((error instanceof Error ? error.message : String(error)) || 'Failed to approve request');
     }
   };
 
@@ -2677,13 +2678,13 @@ const JITAccessTab: React.FC = () => {
     if (!selectedRequest) return;
     
     if (!denyReason.trim()) {
-      alert('Please provide a reason for denial');
+      toast.warning('Please provide a reason for denial');
       return;
     }
 
     try {
       await api.acos.denyJITAccessRequest(selectedRequest.id, denyReason);
-      alert('Access request denied successfully!');
+      toast.success('Access request denied successfully!');
       setShowDenyModal(false);
       setSelectedRequest(null);
       setDenyReason('');
@@ -2692,7 +2693,7 @@ const JITAccessTab: React.FC = () => {
       await loadSessions();
     } catch (error: unknown) {
       console.error('Error denying request:', error);
-      alert((error instanceof Error ? error.message : String(error)) || 'Failed to deny request');
+      toast.error((error instanceof Error ? error.message : String(error)) || 'Failed to deny request');
     }
   };
 
@@ -2725,10 +2726,10 @@ const JITAccessTab: React.FC = () => {
         loadSessions();
       }, 500);
       
-      alert('JIT access requested successfully!');
+      toast.success('JIT access requested successfully!');
     } catch (error: unknown) {
       console.error('Error requesting JIT access:', error);
-      alert((error instanceof Error ? error.message : String(error)) || 'Failed to request JIT access. Please try again.');
+      toast.error((error instanceof Error ? error.message : String(error)) || 'Failed to request JIT access. Please try again.');
     } finally {
       setRequesting(false);
     }
@@ -3021,7 +3022,7 @@ const JITAccessTab: React.FC = () => {
                                 await loadSessions();
                               } catch (err: unknown) {
                                 console.error('Error canceling request:', err);
-                                alert((err instanceof Error ? err.message : String(err)) || 'Failed to cancel request');
+                                toast.error((err instanceof Error ? err.message : String(err)) || 'Failed to cancel request');
                               }
                             }
                           }}
@@ -3040,7 +3041,7 @@ const JITAccessTab: React.FC = () => {
                                 })
                                 .catch((err) => {
                                   console.error('Error revoking session:', err);
-                                  alert('Failed to revoke session');
+                                  toast.error('Failed to revoke session');
                                 });
                             }
                           }}
@@ -3055,7 +3056,7 @@ const JITAccessTab: React.FC = () => {
                           const details = isRequest 
                             ? `Request ID: ${sessionId}\nPrivilege: ${privilege}\nReason: ${reason}\nStatus: ${status}\nJustification: ${session.justification || 'N/A'}\nCreated: ${new Date(session.createdAt || Date.now()).toLocaleString()}\n${expiresAt ? `Expires: ${new Date(expiresAt).toLocaleString()}` : ''}`
                             : `Session ID: ${sessionId}\nPrivilege: ${privilege}\nStatus: ${status}\n${expiresAt ? `Expires: ${new Date(expiresAt).toLocaleString()}` : ''}`;
-                          alert(details);
+                          toast.info(details);
                         }}
                         className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
                       >

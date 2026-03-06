@@ -6,6 +6,9 @@
  * automatic token refresh, and offline-friendly error handling.
  */
 
+// React Native global — true in dev builds, false in production
+declare const __DEV__: boolean;
+
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.complyeasy.ai';
 const API_VERSION = 'v2';
 
@@ -15,6 +18,10 @@ const API_VERSION = 'v2';
 // Public key hashes (SPKI SHA-256) for api.complyeasy.ai.
 // To obtain your pin: openssl s_client -connect api.complyeasy.ai:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | base64
 // Always include a backup pin (e.g. an intermediate CA or next-rotation key).
+// Valid pin format: base64-encoded SHA-256 hash = exactly 44 characters ending with '='
+// Example: openssl s_client -connect api.complyeasy.ai:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | base64
+const PIN_REGEX = /^[A-Za-z0-9+/]{43}=$/;
+
 const CERTIFICATE_PINS = {
   'api.complyeasy.ai': {
     // Primary: leaf certificate public key hash
@@ -23,7 +30,7 @@ const CERTIFICATE_PINS = {
     pins: [
       process.env.EXPO_PUBLIC_CERT_PIN_PRIMARY || '',
       process.env.EXPO_PUBLIC_CERT_PIN_BACKUP || '',
-    ].filter(Boolean),
+    ],
     // Whether to enforce pinning (set false to monitor-only during rollout)
     enforce: process.env.EXPO_PUBLIC_CERT_PIN_ENFORCE === 'true',
   },
@@ -42,7 +49,25 @@ const CERTIFICATE_PINS = {
  */
 function validateCertificatePin(hostname: string): void {
   const pinConfig = CERTIFICATE_PINS[hostname as keyof typeof CERTIFICATE_PINS];
-  if (!pinConfig || pinConfig.pins.length === 0) return;
+  if (!pinConfig) return;
+
+  // Validate pin format: base64-encoded SHA-256 = 44 chars ending with '='
+  const validPins = pinConfig.pins.filter(pin => PIN_REGEX.test(pin));
+
+  if (validPins.length === 0) {
+    const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : process.env.EXPO_PUBLIC_ENV !== 'production';
+    if (!isDev) {
+      console.error(
+        '[CertPin] CRITICAL: No valid certificate pins configured for production! ' +
+        'Set EXPO_PUBLIC_CERT_PIN_PRIMARY and EXPO_PUBLIC_CERT_PIN_BACKUP with valid SPKI SHA-256 hashes. ' +
+        'See: openssl s_client -connect api.complyeasy.ai:443 | openssl x509 -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256 -binary | base64'
+      );
+      throw new Error(`Certificate pinning not configured for ${hostname}. Cannot proceed in production without valid pins.`);
+    } else {
+      console.warn('[CertPin] No certificate pins configured. Pinning is disabled in development mode.');
+    }
+    return;
+  }
 
   // Application-layer certificate pinning validation is performed by the
   // native SSL pinning library (react-native-ssl-pinning / TrustKit).
@@ -196,13 +221,11 @@ async function fetchApi<T = any>(
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
-  // Validate certificate pin before making request
-  try {
-    const apiHostname = new URL(API_BASE_URL).hostname;
-    validateCertificatePin(apiHostname);
-  } catch (pinErr) {
-    console.error('[CertPin] Certificate pin validation error:', pinErr);
-  }
+  // Validate certificate pin before making request.
+  // In production, this will throw if no valid pins are configured — intentionally
+  // preventing API calls without proper MITM protection.
+  const apiHostname = new URL(API_BASE_URL).hostname;
+  validateCertificatePin(apiHostname);
 
   try {
     const response = await fetch(url, {

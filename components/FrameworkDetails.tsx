@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle, Circle, FileText, Upload, AlertTriangle, Loader
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboarding } from '../hooks/useOnboarding';
+import { toast } from 'sonner';
 
 interface FrameworkControl {
   id: string;
@@ -245,7 +246,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       }, 3000);
     } catch (error: any) {
       console.error('Failed to accept suggestion:', error);
-      alert(`Failed to accept suggestion: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to accept suggestion: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -264,7 +265,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       }, 3000);
     } catch (error: any) {
       console.error('Failed to reject suggestion:', error);
-      alert(`Failed to reject suggestion: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to reject suggestion: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -282,7 +283,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     // Validate file size (max 50MB)
     const maxSize = 50 * 1024 * 1024; // 50MB
     if (file.size > maxSize) {
-      alert(`File size exceeds the maximum limit of 50MB. Please select a smaller file.`);
+      toast.warning(`File size exceeds the maximum limit of 50MB. Please select a smaller file.`);
       const input = fileInputRefs.current[controlId];
       if (input) {
         input.value = '';
@@ -324,7 +325,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     } catch (error: any) {
       console.error('Evidence upload failed:', error);
       const errorMessage = error.message || error.error || 'Unknown error';
-      alert(`Failed to upload evidence: ${errorMessage}\n\nPlease ensure:\n- You have the necessary permissions (admin/editor role)\n- The file format is supported\n- The file size is under 50MB`);
+      toast.error(`Failed to upload evidence: ${errorMessage}. Please ensure you have the necessary permissions, the file format is supported, and the file size is under 50MB.`);
     } finally {
       setUploadingControl(null);
       const input = fileInputRefs.current[controlId];
@@ -371,7 +372,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     } catch (error: any) {
       console.error('Failed to create control:', error);
       const errorMessage = error.message || error.error || 'Unknown error';
-      alert(`Failed to create control: ${errorMessage}`);
+      toast.error(`Failed to create control: ${errorMessage}`);
     }
   };
 
@@ -406,7 +407,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       }
     } catch (error: any) {
       console.error('Failed to update control status:', error);
-      alert(`Failed to update control status: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to update control status: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -466,7 +467,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
     try {
       const auditDate = new Date(newDate);
       if (isNaN(auditDate.getTime())) {
-        alert('Invalid date format. Please use YYYY-MM-DD format.');
+        toast.warning('Invalid date format. Please use YYYY-MM-DD format.');
         return;
       }
 
@@ -512,10 +513,10 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
           setPendingUpdate({ type: 'auditDate', data: { nextAuditDate: newDate } });
           setShowConflictModal(true);
         } catch (parseError) {
-          alert(`Conflict detected: Framework was modified by another user. Please refresh and try again.`);
+          toast.warning(`Conflict detected: Framework was modified by another user. Please refresh and try again.`);
         }
       } else {
-        alert(`Failed to update audit date: ${error.message || 'Unknown error'}`);
+        toast.error(`Failed to update audit date: ${error.message || 'Unknown error'}`);
       }
     }
   };
@@ -550,7 +551,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         onDataChanged();
       }
       
-      alert('Notes saved successfully');
+      toast.success('Notes saved successfully');
     } catch (error: any) {
       console.error('Failed to save notes:', error);
       
@@ -562,17 +563,17 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
           setPendingUpdate({ type: 'notes', data: { notes: frameworkNotes } });
           setShowConflictModal(true);
         } catch (parseError) {
-          alert(`Conflict detected: Framework was modified by another user. Please refresh and try again.`);
+          toast.warning(`Conflict detected: Framework was modified by another user. Please refresh and try again.`);
         }
       } else {
-        alert(`Failed to save notes: ${error.message || 'Unknown error'}`);
+        toast.error(`Failed to save notes: ${error.message || 'Unknown error'}`);
       }
     }
   };
 
   const handleBulkUpdate = async () => {
     if (!framework?.id || selectedControls.size === 0 || !bulkStatus) {
-      alert('Please select controls and choose a status');
+      toast.warning('Please select controls and choose a status');
       return;
     }
 
@@ -605,10 +606,10 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       setBulkStatus('');
       setBulkEvidenceRequired(false);
       setShowBulkUpdate(false);
-      alert(`Successfully updated ${selectedControls.size} control(s)`);
+      toast.success(`Successfully updated ${selectedControls.size} control(s)`);
     } catch (error: any) {
       console.error('Failed to bulk update controls:', error);
-      alert(`Failed to bulk update: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to bulk update: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -638,7 +639,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       }
     } catch (error: any) {
       console.error('Failed to delete control:', error);
-      alert(`Failed to delete control: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to delete control: ${error.message || 'Unknown error'}`);
     } finally {
       setDeletingControl(null);
     }
@@ -665,7 +666,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
       document.body.removeChild(a);
     } catch (error) {
       console.error('Failed to export control:', error);
-      alert('Failed to export control report. Please try again.');
+      toast.error('Failed to export control report. Please try again.');
     } finally {
       setExportingControl(null);
     }
@@ -757,11 +758,11 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                    setRegeneratingMappings(true);
                    try {
                      const result = await api.frameworks.regenerateMappings(framework.id);
-                     alert(`Mappings regenerated: ${result.created} created, ${result.deleted} removed`);
+                     toast.success(`Mappings regenerated: ${result.created} created, ${result.deleted} removed`);
                      // Refresh data if needed
                      if (onDataChanged) onDataChanged();
                    } catch (error: any) {
-                     alert(`Failed to regenerate mappings: ${error.message}`);
+                     toast.error(`Failed to regenerate mappings: ${error.message}`);
                    } finally {
                      setRegeneratingMappings(false);
                    }
@@ -1333,7 +1334,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                           setSelectedControl({ ...selectedControl, evidenceRequired });
                           await loadFrameworkDetails();
                         } catch (error: any) {
-                          alert(`Failed to update evidence required: ${error.message}`);
+                          toast.error(`Failed to update evidence required: ${error.message}`);
                         }
                       }}
                       className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
@@ -1362,9 +1363,9 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                         });
 
                         await loadFrameworkDetails();
-                        alert('Owner updated. Notification sent to owner.');
+                        toast.success('Owner updated. Notification sent to owner.');
                       } catch (error: any) {
-                        alert(`Failed to update owner: ${error.message}`);
+                        toast.error(`Failed to update owner: ${error.message}`);
                       }
                     }}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 w-full"
@@ -1391,7 +1392,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                           const result = await api.frameworks.getEvidenceUrl(framework!.id, selectedControl.id);
                           window.open(result.url, '_blank');
                         } catch (error: any) {
-                          alert(`Failed to open evidence: ${error.message}`);
+                          toast.error(`Failed to open evidence: ${error.message}`);
                         }
                       }}
                       className="text-brand-600 hover:underline block"
@@ -1421,9 +1422,9 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                                             await api.frameworks.restoreEvidenceVersion(selectedControl.id, version.id);
                                             await loadFrameworkDetails();
                                             setShowControlDetails(false);
-                                            alert('Version restored successfully');
+                                            toast.success('Version restored successfully');
                                           } catch (error: any) {
-                                            alert(`Failed to restore: ${error.message}`);
+                                            toast.error(`Failed to restore: ${error.message}`);
                                           }
                                         }
                                       }}
@@ -1447,9 +1448,9 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                               await api.frameworks.updateControl(framework!.id, selectedControl.id, { evidence: null });
                               setSelectedControl({ ...selectedControl, evidence: undefined });
                               await loadFrameworkDetails();
-                              alert('Evidence deleted successfully');
+                              toast.success('Evidence deleted successfully');
                             } catch (error: any) {
-                              alert(`Failed to delete evidence: ${error.message}`);
+                              toast.error(`Failed to delete evidence: ${error.message}`);
                             }
                           }
                         }}
@@ -1516,7 +1517,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                                         setControlMappings(controlMappings.filter(m => m.id !== mapping.id));
                                       }
                                     } catch (error: any) {
-                                      alert(`Failed to delete mapping: ${error.message}`);
+                                      toast.error(`Failed to delete mapping: ${error.message}`);
                                     }
                                   }
                                 }}
@@ -1554,7 +1555,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                             setAvailableControls(allControls);
                             setShowAddMappingModal(true);
                           } catch (error: any) {
-                            alert(`Failed to load controls: ${error.message}`);
+                            toast.error(`Failed to load controls: ${error.message}`);
                           }
                         }}
                         className="text-sm text-brand-600 hover:text-brand-800"
@@ -1680,7 +1681,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                     const confidence = confidenceInput ? parseFloat(confidenceInput) : undefined;
 
                     if (!targetControlId) {
-                      alert('Please select a target control');
+                      toast.warning('Please select a target control');
                       return;
                     }
 
@@ -1709,9 +1710,9 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                         setShowMappings(true);
                       }
                       
-                      alert('Mapping created successfully');
+                      toast.success('Mapping created successfully');
                     } catch (error: any) {
-                      alert(`Failed to create mapping: ${error.message}`);
+                      toast.error(`Failed to create mapping: ${error.message}`);
                     }
                   }}
                   className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700"

@@ -7,6 +7,7 @@ import {
   TrendingUp, BarChart3, Target, AlertCircle, Trash2
 } from 'lucide-react';
 import { CreateRiskActivityModal, CreateActorModal, EditRiskActivityModal } from './AISystemDetails_Modals';
+import { toast } from 'sonner';
 
 interface AISystemDetailsProps {
   systemId: string;
@@ -45,7 +46,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
       setSystem(data);
     } catch (error: any) {
       console.error('Failed to load AI system:', error);
-      alert(`Failed to load AI system: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to load AI system: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -58,7 +59,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
       setEditingField(null);
     } catch (error: any) {
       console.error('Failed to update:', error);
-      alert(`Failed to update: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to update: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -68,7 +69,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
       loadSystemDetails();
     } catch (error: any) {
       console.error('Failed to update subcategory:', error);
-      alert(`Failed to update subcategory: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to update subcategory: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -82,7 +83,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
       }));
     } catch (error: any) {
       console.error('Failed to update trustworthiness:', error);
-      alert(`Failed to update trustworthiness: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to update trustworthiness: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -92,7 +93,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
       loadSystemDetails();
     } catch (error: any) {
       console.error('Failed to calculate score:', error);
-      alert(`Failed to calculate score: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to calculate score: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -665,7 +666,7 @@ const LifecycleTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       if (onRefresh) onRefresh();
     } catch (error: any) {
       console.error('Failed to update lifecycle stage:', error);
-      alert(`Failed to update: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to update: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -857,7 +858,7 @@ const AssessmentsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
                           if (onRefresh) onRefresh();
                         } catch (error: any) {
                           console.error('Failed to delete assessment:', error);
-                          alert(`Failed to delete assessment: ${error.message || 'Unknown error'}`);
+                          toast.error(`Failed to delete assessment: ${error.message || 'Unknown error'}`);
                         }
                       }}
                       className="p-1 text-gray-400 hover:text-red-600 transition-colors"
@@ -996,7 +997,7 @@ const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       if (onRefresh) onRefresh();
     } catch (error: any) {
       console.error('Failed to delete risk activity:', error);
-      alert(`Failed to delete: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to delete: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -1160,7 +1161,7 @@ const ActorsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
       if (onRefresh) onRefresh();
     } catch (error: any) {
       console.error('Failed to remove actor:', error);
-      alert(`Failed to remove actor: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to remove actor: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -1309,7 +1310,7 @@ const CreateAssessmentModal: React.FC<any> = ({ systemId, system, onClose }) => 
       onClose();
     } catch (error: any) {
       console.error('Failed to create assessment:', error);
-      alert(`Failed to create assessment: ${error.message || 'Unknown error'}`);
+      toast.error(`Failed to create assessment: ${error.message || 'Unknown error'}`);
     }
   };
 

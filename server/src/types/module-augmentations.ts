@@ -40,7 +40,7 @@ declare module '@tensorflow/tfjs' {
     function l1l2(config?: any): any;
   }
 
-  export interface Logs {
+  export interface TrainingLogs {
     loss: number;
     acc?: number;
     val_loss?: number;

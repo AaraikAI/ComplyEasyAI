@@ -162,7 +162,7 @@ function createTokenStore(): TokenStore {
   if (redisUrl) {
     return new RedisTokenStore(redisUrl);
   }
-  logger.info('[CSRF] Using in-memory token store (not suitable for multi-instance production)');
+  logger.warn('[CSRF] Using in-memory token store (not suitable for multi-instance production — set REDIS_URL)');
   return new InMemoryTokenStore();
 }
 

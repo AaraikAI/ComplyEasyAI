@@ -759,7 +759,7 @@ export async function deleteICTIncident(
     where: { id: incidentId },
     data: {
       status: 'archived',
-      timeline: currentTimeline,
+      timeline: currentTimeline as unknown as Prisma.InputJsonValue,
     },
   });
 
@@ -1148,7 +1148,7 @@ export async function assessConcentrationRisk(organizationId: string) {
       !exit ||
       !exit.plan ||
       exit.plan === '' ||
-      (exit.alternativeProviders && exit.alternativeProviders.length === 0)
+      (exit.alternativeProviders && Array.isArray(exit.alternativeProviders) && exit.alternativeProviders.length === 0)
     );
   });
 

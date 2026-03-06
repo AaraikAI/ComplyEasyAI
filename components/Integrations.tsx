@@ -6,6 +6,7 @@ import { IntegrationModal } from './IntegrationModal';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
+import { toast } from 'sonner';
 
 // Comprehensive list of ALL available integrations (380+)
 const ALL_INTEGRATIONS: Integration[] = [
@@ -595,7 +596,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
 
   const handleIntegrationClick = (integration: Integration) => {
     if (!integration.connected && integrationLimitReached) {
-      alert(getUpgradeMessage(user?.organization?.plan, 'maxIntegrations', connectedCount) || 'Integration limit reached. Upgrade in Settings → Billing.');
+      toast.warning(getUpgradeMessage(user?.organization?.plan, 'maxIntegrations', connectedCount) || 'Integration limit reached. Upgrade in Settings → Billing.');
       return;
     }
     setSelectedIntegration(integration);
@@ -675,10 +676,10 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
       setSelectedIntegration(null);
       
       // Show success message
-      alert(`${integration.name} has been disconnected successfully.`);
+      toast.success(`${integration.name} has been disconnected successfully.`);
     } catch (error: unknown) {
       console.error('Failed to disconnect integration:', error);
-      alert(`Failed to disconnect: ${error instanceof Error ? error.message : String(error)}`);
+      toast.error(`Failed to disconnect: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -708,10 +709,10 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
         return { ...int, connected: false, lastSync: 'Never' };
       }));
       
-      alert(`${integration.name} synced successfully!`);
+      toast.success(`${integration.name} synced successfully!`);
     } catch (error: unknown) {
       console.error('Failed to sync integration:', error);
-      alert(`Failed to sync: ${error instanceof Error ? error.message : String(error)}`);
+      toast.error(`Failed to sync: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

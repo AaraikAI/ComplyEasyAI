@@ -5,6 +5,7 @@ import {
   ArrowLeft, FileText, Plus, Search, Filter, Calendar, 
   TrendingUp, BarChart3, Download, Eye, Edit, Trash2, X
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AIRMFAssessmentsProps {
   onBack: () => void;
@@ -66,7 +67,7 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
       setAllAssessments(allAssessments.filter(a => a.id !== assessmentId));
     } catch (error: unknown) {
       console.error('Failed to delete assessment:', error);
-      alert(`Failed to delete assessment: ${error instanceof Error ? error.message : String(error)}`);
+      toast.error(`Failed to delete assessment: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setDeletingAssessment(null);
     }
@@ -565,7 +566,7 @@ const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.systemId) {
-      alert('Please select an AI system');
+      toast.warning('Please select an AI system');
       return;
     }
 
@@ -595,7 +596,7 @@ const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect
       onClose();
     } catch (error: unknown) {
       console.error('Failed to create assessment:', error);
-      alert(`Failed to create assessment: ${error instanceof Error ? error.message : String(error)}`);
+      toast.error(`Failed to create assessment: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setSubmitting(false);
     }

@@ -14,6 +14,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   Tooltip, Legend,
 } from 'recharts';
+import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -243,7 +244,7 @@ export default function IssueManagement() {
   const handleCreateIssue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isAtLimit(plan, 'maxIssues', issues.length)) {
-      alert(getUpgradeMessage(plan, 'maxIssues', issues.length));
+      toast.warning(getUpgradeMessage(plan, 'maxIssues', issues.length));
       return;
     }
     setIsSaving(true);
