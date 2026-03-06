@@ -1,6 +1,8 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { Options } from 'express-rate-limit';
+import { Request, Response } from 'express';
 import config from '../config';
 import logger from '../config/logger';
+import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
 
 const isDev = config.server.env === 'development';
 
@@ -28,6 +30,30 @@ async function initRedisStore(): Promise<void> {
 // Initialize Redis store (async, best-effort)
 initRedisStore().catch(() => {});
 
+/**
+ * Shared rate-limit exhaustion handler.  Fires a security event before sending
+ * the standard 429 response.  The `limiterName` parameter is captured in a
+ * closure so each limiter can identify itself.
+ */
+function createRateLimitHandler(limiterName: string): Options['handler'] {
+  return (req: Request, res: Response) => {
+    logSecurityEvent({
+      type: SecurityEventType.RATE_LIMIT_EXCEEDED,
+      severity: 'high',
+      message: `Rate limit exceeded on ${limiterName} limiter`,
+      ip: req.ip,
+      method: req.method,
+      path: req.originalUrl || req.path,
+      userId: (req as any).user?.id,
+      details: { limiter: limiterName },
+    });
+    res.status(429).json({
+      error: 'Too many requests',
+      message: `Rate limit exceeded. Please try again later.`,
+    });
+  };
+}
+
 // In development, use generous but non-zero limits to catch runaway requests.
 // In production, use strict limits from config / hardcoded defaults.
 export const apiLimiter = rateLimit({
@@ -36,6 +62,7 @@ export const apiLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: createRateLimitHandler('api'),
   ...storeConfig,
 });
 
@@ -45,6 +72,7 @@ export const frameworkLimiter = rateLimit({
   message: 'Too many framework requests. Please slow down.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: createRateLimitHandler('framework'),
   ...storeConfig,
 });
 
@@ -53,6 +81,7 @@ export const authLimiter = rateLimit({
   max: isDev ? 50 : 5,
   message: 'Too many login attempts, please try again later.',
   skipSuccessfulRequests: true,
+  handler: createRateLimitHandler('auth'),
   ...storeConfig,
 });
 
@@ -60,5 +89,6 @@ export const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isDev ? 100 : 10,
   message: 'Too many AI requests, please slow down.',
+  handler: createRateLimitHandler('ai'),
   ...storeConfig,
 });

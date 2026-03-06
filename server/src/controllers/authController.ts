@@ -3,12 +3,14 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
+import { Prisma } from '../generated/prisma/client';
 import config from '../config';
 import { generateToken, generateRefreshToken, verifyRefreshToken } from '../middleware/auth';
 import emailService from '../services/emailService';
 import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import tokenBlacklist from '../services/tokenBlacklistService';
+import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
 
 // Cookie configuration for httpOnly secure token storage
 const COOKIE_OPTIONS = {
@@ -134,7 +136,7 @@ class AuthController {
       // If user doesn't exist, create a new one (auto-registration)
       // Wrapped in a transaction to ensure org + user are created atomically
       if (!user) {
-        user = await prisma.$transaction(async (tx) => {
+        user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
           // Create organization
           const organization = await tx.organization.create({
             data: {
@@ -254,10 +256,26 @@ class AuthController {
       });
 
       if (!magicLink || magicLink.used) {
+        logSecurityEvent({
+          type: SecurityEventType.AUTHENTICATION_FAILURE,
+          severity: 'medium',
+          message: `Magic link verification failed (${!magicLink ? 'not found' : 'already used'})`,
+          ip: req.ip,
+          method: req.method,
+          path: req.originalUrl,
+        });
         throw new AppError('Invalid or expired token', 401);
       }
 
       if (new Date() > magicLink.expiresAt) {
+        logSecurityEvent({
+          type: SecurityEventType.TOKEN_EXPIRED,
+          severity: 'low',
+          message: 'Magic link token expired',
+          ip: req.ip,
+          method: req.method,
+          path: req.originalUrl,
+        });
         throw new AppError('Token has expired', 401);
       }
 
@@ -362,6 +380,18 @@ class AuthController {
         },
       });
 
+      logSecurityEvent({
+        type: SecurityEventType.AUTHENTICATION_SUCCESS,
+        severity: 'low',
+        message: 'Magic link login successful',
+        ip: req.ip,
+        method: req.method,
+        path: req.originalUrl,
+        userId: user.id,
+        userEmail: user.email,
+        organizationId: user.organizationId,
+      });
+
       logger.info(`User logged in: ${user.email}`);
     } catch (error) {
       logger.error('Verify magic link error', error);
@@ -455,17 +485,46 @@ class AuthController {
       });
 
       if (!user) {
+        logSecurityEvent({
+          type: SecurityEventType.AUTHENTICATION_FAILURE,
+          severity: 'medium',
+          message: 'Login attempt for non-existent email',
+          ip: req.ip,
+          method: req.method,
+          path: req.originalUrl,
+          details: { emailDomain: email.split('@')[1] },
+        });
         throw new AppError('Invalid email or password', 401);
       }
 
       // Check if user has a password set
       if (!user.passwordHash) {
+        logSecurityEvent({
+          type: SecurityEventType.AUTHENTICATION_FAILURE,
+          severity: 'low',
+          message: 'Password login attempted on passwordless account',
+          ip: req.ip,
+          method: req.method,
+          path: req.originalUrl,
+          userId: user.id,
+        });
         throw new AppError('Password not set. Please use magic link login or set a password first.', 401);
       }
 
       // Verify password
       const isValidPassword = await bcrypt.compare(password, user.passwordHash);
       if (!isValidPassword) {
+        logSecurityEvent({
+          type: SecurityEventType.AUTHENTICATION_FAILURE,
+          severity: 'high',
+          message: 'Invalid password during login',
+          ip: req.ip,
+          method: req.method,
+          path: req.originalUrl,
+          userId: user.id,
+          userEmail: user.email,
+          organizationId: user.organizationId,
+        });
         throw new AppError('Invalid email or password', 401);
       }
 
@@ -537,6 +596,19 @@ class AuthController {
       } catch (auditErr: any) {
         logger.warn('[Auth] Failed to write audit log', auditErr?.message);
       }
+
+      // Log successful login as security event
+      logSecurityEvent({
+        type: SecurityEventType.AUTHENTICATION_SUCCESS,
+        severity: 'low',
+        message: 'Password login successful',
+        ip: req.ip,
+        method: req.method,
+        path: req.originalUrl,
+        userId: user.id,
+        userEmail: user.email,
+        organizationId: user.organizationId,
+      });
 
       // Set httpOnly secure cookies for token storage
       setAuthCookies(res, accessToken, refreshToken);
@@ -661,7 +733,7 @@ class AuthController {
       const token = uuidv4();
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      const { user } = await prisma.$transaction(async (tx) => {
+      const { user } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // Create organization with signup details
         const organization = await tx.organization.create({
           data: {
@@ -796,6 +868,15 @@ class AuthController {
         : false;
 
       if (!isValidToken && !isValidBackup) {
+        logSecurityEvent({
+          type: SecurityEventType.TWO_FACTOR_FAILURE,
+          severity: 'high',
+          message: 'Invalid 2FA code during login',
+          ip: req.ip,
+          method: req.method,
+          path: req.originalUrl,
+          userId,
+        });
         throw new AppError('Invalid authentication code', 401);
       }
 
@@ -845,6 +926,18 @@ class AuthController {
             plan: user.organization.plan,
           },
         },
+      });
+
+      logSecurityEvent({
+        type: SecurityEventType.TWO_FACTOR_SUCCESS,
+        severity: 'low',
+        message: `2FA login successful (method: ${isValidToken ? 'TOTP' : 'backup_code'})`,
+        ip: req.ip,
+        method: req.method,
+        path: req.originalUrl,
+        userId: user.id,
+        userEmail: user.email,
+        organizationId: user.organizationId,
       });
 
       logger.info(`User completed 2FA login: ${user.email}`);
@@ -979,6 +1072,16 @@ class AuthController {
       // Verify current password
       const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
       if (!isValid) {
+        logSecurityEvent({
+          type: SecurityEventType.AUTHENTICATION_FAILURE,
+          severity: 'high',
+          message: 'Incorrect current password during password change',
+          ip: req.ip,
+          method: req.method,
+          path: req.originalUrl,
+          userId,
+          organizationId,
+        });
         throw new AppError('Current password is incorrect', 401);
       }
 
@@ -1001,6 +1104,17 @@ class AuthController {
           ipAddress: req.ip || undefined,
           userAgent: req.headers['user-agent'] || undefined,
         },
+      });
+
+      logSecurityEvent({
+        type: SecurityEventType.PASSWORD_CHANGED,
+        severity: 'medium',
+        message: 'User password changed successfully',
+        ip: req.ip,
+        method: req.method,
+        path: req.originalUrl,
+        userId,
+        organizationId,
       });
 
       res.json({ message: 'Password changed successfully' });

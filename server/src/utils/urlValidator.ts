@@ -4,7 +4,7 @@
  */
 
 import { URL } from 'url';
-import logger from '../config/logger';
+import { logSecurityEvent, SecurityEventType } from './securityEventLogger';
 
 // Blocked hostnames (localhost, internal IPs)
 const BLOCKED_HOSTS = [
@@ -39,7 +39,12 @@ export function isUrlSafe(urlString: string): boolean {
 
     // Only allow HTTP/HTTPS protocols
     if (!['http:', 'https:'].includes(url.protocol)) {
-      logger.warn(`[Security] Blocked non-HTTP(S) protocol: ${url.protocol}`);
+      logSecurityEvent({
+        type: SecurityEventType.SSRF_ATTEMPT,
+        severity: 'high',
+        message: `Blocked non-HTTP(S) protocol: ${url.protocol}`,
+        details: { url: sanitizeUrlForLogging(urlString), protocol: url.protocol },
+      });
       return false;
     }
 
@@ -47,27 +52,47 @@ export function isUrlSafe(urlString: string): boolean {
 
     // Check against blocked hosts
     if (BLOCKED_HOSTS.includes(hostname)) {
-      logger.warn(`[Security] Blocked internal hostname: ${hostname}`);
+      logSecurityEvent({
+        type: SecurityEventType.SSRF_ATTEMPT,
+        severity: 'critical',
+        message: `Blocked request to internal hostname: ${hostname}`,
+        details: { url: sanitizeUrlForLogging(urlString), hostname },
+      });
       return false;
     }
 
     // Check against private IP ranges
     for (const range of BLOCKED_IP_RANGES) {
       if (range.test(hostname)) {
-        logger.warn(`[Security] Blocked private IP range: ${hostname}`);
+        logSecurityEvent({
+          type: SecurityEventType.SSRF_ATTEMPT,
+          severity: 'critical',
+          message: `Blocked request to private IP range: ${hostname}`,
+          details: { url: sanitizeUrlForLogging(urlString), hostname },
+        });
         return false;
       }
     }
 
     // Block URLs with @ symbol (credential injection)
     if (urlString.includes('@')) {
-      logger.warn(`[Security] Blocked URL with credentials: ${urlString}`);
+      logSecurityEvent({
+        type: SecurityEventType.SSRF_ATTEMPT,
+        severity: 'high',
+        message: 'Blocked URL with embedded credentials (@ symbol)',
+        details: { url: sanitizeUrlForLogging(urlString) },
+      });
       return false;
     }
 
     return true;
-  } catch (error) {
-    logger.warn(`[Security] Invalid URL format: ${urlString}`);
+  } catch (_error) {
+    logSecurityEvent({
+      type: SecurityEventType.SUSPICIOUS_INPUT,
+      severity: 'medium',
+      message: 'Invalid URL format rejected',
+      details: { url: urlString?.substring(0, 200) },
+    });
     return false;
   }
 }
@@ -97,7 +122,12 @@ export async function safeFetch(url: string, options?: RequestInit): Promise<Res
       const resolvedUrl = new URL(redirectUrl, url).href;
 
       if (!isUrlSafe(resolvedUrl)) {
-        logger.warn(`[Security] Blocked redirect to internal URL: ${resolvedUrl}`);
+        logSecurityEvent({
+          type: SecurityEventType.SSRF_ATTEMPT,
+          severity: 'critical',
+          message: 'Blocked redirect to internal URL',
+          details: { originalUrl: sanitizeUrlForLogging(url), redirectUrl: sanitizeUrlForLogging(resolvedUrl) },
+        });
         throw new Error('Redirect to internal URL blocked (SSRF protection)');
       }
     }
@@ -121,7 +151,12 @@ export function isWebhookUrlSafe(url: string): boolean {
 
     // Webhooks should use HTTPS in production
     if (process.env.NODE_ENV === 'production' && parsedUrl.protocol !== 'https:') {
-      logger.warn(`[Security] Webhook URL must use HTTPS in production: ${url}`);
+      logSecurityEvent({
+        type: SecurityEventType.SUSPICIOUS_INPUT,
+        severity: 'medium',
+        message: 'Webhook URL rejected: HTTPS required in production',
+        details: { url: sanitizeUrlForLogging(url) },
+      });
       return false;
     }
 

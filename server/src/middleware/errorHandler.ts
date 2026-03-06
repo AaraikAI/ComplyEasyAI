@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import logger from '../config/logger';
 import monitoring from '../config/monitoring';
+import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
 
 export class AppError extends Error {
   statusCode: number;
@@ -22,6 +23,29 @@ export const errorHandler = (
 ): void => {
   if (err instanceof AppError) {
     logger.error(`${err.statusCode} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+
+    // Log security-relevant HTTP errors as security events
+    if (err.statusCode === 401) {
+      logSecurityEvent({
+        type: SecurityEventType.AUTHENTICATION_FAILURE,
+        severity: 'medium',
+        message: err.message,
+        ip: req.ip,
+        method: req.method,
+        path: req.originalUrl,
+        userId: (req as any).user?.id,
+      });
+    } else if (err.statusCode === 403) {
+      logSecurityEvent({
+        type: SecurityEventType.AUTHORIZATION_FAILURE,
+        severity: 'high',
+        message: err.message,
+        ip: req.ip,
+        method: req.method,
+        path: req.originalUrl,
+        userId: (req as any).user?.id,
+      });
+    }
 
     res.status(err.statusCode).json({
       error: err.message,
