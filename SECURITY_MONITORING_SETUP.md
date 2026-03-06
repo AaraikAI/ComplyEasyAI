@@ -1,16 +1,112 @@
-# 🔒 SECURITY MONITORING (SIEM) SETUP GUIDE
+# SECURITY MONITORING (SIEM) SETUP GUIDE
 
 **Purpose:** Set up Security Information and Event Management (SIEM) for real-time threat detection and incident response.
 
+**Last updated:** March 5, 2026
+
 ---
 
-## 📊 OVERVIEW
+## OVERVIEW
 
 SIEM systems collect, analyze, and correlate security events from multiple sources to detect threats and respond to incidents.
 
+This guide covers:
+1. What monitoring infrastructure **already exists** in the ComplyEasyAI codebase
+2. Recommended SIEM solutions to layer on top
+3. Step-by-step instructions for adding SIEM event forwarding
+
 ---
 
-## 🎯 RECOMMENDED SIEM SOLUTIONS
+## EXISTING MONITORING INFRASTRUCTURE
+
+The following monitoring capabilities are **already implemented** in the codebase. No additional work is required to use them -- only the relevant environment variables need to be set.
+
+### a) Sentry Error Tracking (Implemented)
+
+- **File:** `server/src/config/monitoring.ts`
+- **Env vars:**
+  - `SENTRY_ENABLED=true` -- master toggle (disabled by default)
+  - `SENTRY_DSN` -- Sentry Data Source Name (required when enabled)
+  - `SENTRY_TRACES_SAMPLE_RATE` -- performance trace sampling (default `0.1`)
+  - `SENTRY_PROFILES_SAMPLE_RATE` -- profiling sampling (default `0.1`)
+- **Features:**
+  - Error capturing with `captureException()` and `captureMessage()`
+  - HTTP tracing integration (automatic request instrumentation)
+  - Express integration (route-level performance data)
+  - Profiling support via `@sentry/profiling-node`
+  - Sensitive data filtering in `beforeSend` (strips `authorization`, `cookie` headers and `token`/`password` query params)
+  - Breadcrumb support for debugging context
+  - User context tracking (`setUserContext()` / `clearUserContext()`)
+- **Status:** Fully implemented, optional (controlled by `SENTRY_ENABLED`)
+
+### b) Elastic APM (Implemented)
+
+- **File:** `server/src/config/monitoring.ts`
+- **Env vars:**
+  - `APM_ENABLED` -- master toggle (disabled by default)
+  - `ELASTIC_APM_SERVER_URL` -- APM server endpoint
+  - `ELASTIC_APM_SECRET_TOKEN` -- authentication token (optional)
+  - `ELASTIC_APM_API_KEY` -- API key authentication (optional)
+  - `ELASTIC_APM_SAMPLE_RATE` -- transaction sample rate (default `0.1`)
+  - `APM_SERVICE_NAME` -- service identifier (default: `complyeasy-api`)
+- **Status:** Fully implemented, optional. Enable by setting `APM_ENABLED=true` and `ELASTIC_APM_SERVER_URL`.
+
+### c) Elasticsearch Logging (Implemented)
+
+- **File:** `server/src/config/elasticsearch.ts`
+- **Env vars:**
+  - `ELASTICSEARCH_ENABLED` -- master toggle (disabled by default)
+  - `ELASTICSEARCH_URL` -- Elasticsearch node URL (default: `http://localhost:9200`)
+  - `ELASTICSEARCH_USERNAME` -- basic auth username (optional)
+  - `ELASTICSEARCH_PASSWORD` -- basic auth password (optional)
+  - `ELASTICSEARCH_INDEX_PREFIX` -- index name prefix (default: `complyeasy`)
+  - `ELASTICSEARCH_LOG_LEVEL` -- minimum log level to send (default: `info`)
+  - `ELASTICSEARCH_SSL_REJECT_UNAUTHORIZED` -- set to `false` for self-signed certs
+- **Features:** Winston transport that buffers logs in memory when ES is temporarily unavailable, automatic index template management, health-check ping on startup.
+- **Status:** Fully implemented, optional. Enable by setting `ELASTICSEARCH_ENABLED=true`.
+
+### d) Winston Logging (Implemented)
+
+- **File:** `server/src/config/logger.ts`
+- **Env vars:**
+  - `LOG_LEVEL` -- minimum log level (default: `info`)
+  - `LOG_CONSOLE` -- console output toggle (default: `true`; always enabled in non-production)
+  - `LOG_FILE` -- file output toggle (default: `true`)
+- **Features:**
+  - Structured JSON logging with timestamp, level, and message
+  - Automatic log sanitization (strips sensitive data via `logSanitizer`)
+  - Separate log files: `logs/error.log`, `logs/combined.log`, `logs/access.log`
+  - Exception and rejection handlers: `logs/exceptions.log`, `logs/rejections.log`
+  - Colorized console output in development
+- **Status:** Fully implemented and active by default.
+
+### e) New Relic (Configured)
+
+- **File:** `server/src/config/monitoring.ts`
+- **Env var:** `NEW_RELIC_LICENSE_KEY`
+- **Status:** Supported but optional. Set the license key and the module is loaded automatically when `APM_ENABLED=true`.
+
+### f) Correlation ID Middleware (Implemented)
+
+- **File:** `server/src/middleware/correlationId.ts`
+- **Features:**
+  - Adds a unique `X-Correlation-ID` and `X-Request-ID` to every request
+  - Accepts upstream correlation IDs for distributed tracing
+  - Exposes helper functions: `getCorrelationId()`, `getRequestId()`, `getTracingHeaders()`
+- **Status:** Fully implemented and active.
+
+### g) Error Handler with Monitoring Integration (Implemented)
+
+- **File:** `server/src/middleware/errorHandler.ts`
+- **Features:**
+  - Sends unhandled errors to Sentry via `monitoring.captureException()`
+  - Includes request context (method, path, query) and user context in error reports
+  - Distinguishes operational errors (`AppError`) from unexpected errors
+- **Status:** Fully implemented and active.
+
+---
+
+## RECOMMENDED SIEM SOLUTIONS
 
 ### 1. Cloud-Based Solutions (Recommended for Startups)
 
@@ -55,7 +151,7 @@ SIEM systems collect, analyze, and correlate security events from multiple sourc
 
 ---
 
-## 🚀 RECOMMENDED: WAZUH SETUP (Free & Open Source)
+## RECOMMENDED: WAZUH SETUP (Free & Open Source)
 
 ### Prerequisites
 - Ubuntu 20.04+ or CentOS 7+
@@ -106,6 +202,8 @@ if (process.env.WAZUH_ENABLED === 'true') {
 
 **File:** `server/src/config/wazuhTransport.ts` (Create)
 
+> **Note:** This file does not yet exist in the codebase. The code below is a recommended implementation.
+
 ```typescript
 import winston from 'winston';
 import { Client } from '@elastic/elasticsearch';
@@ -130,7 +228,7 @@ export function createElasticsearchTransport() {
 
 ---
 
-## 📡 LOG INTEGRATION
+## LOG INTEGRATION
 
 ### 1. Application Logs
 
@@ -151,6 +249,8 @@ const siemTransport = new winston.transports.Http({
 **Create Security Event Logger:**
 
 **File:** `server/src/utils/securityEventLogger.ts` (Create)
+
+> **Note:** This file does not yet exist in the codebase. The code below is a recommended implementation.
 
 ```typescript
 import logger from '../config/logger';
@@ -226,7 +326,22 @@ logSecurityEvent({
 
 ---
 
-## 🚨 ALERT RULES
+## ENVIRONMENT VARIABLES FOR SIEM
+
+The following environment variables would need to be added to `.env` (and `.env.example`) if implementing SIEM integration. **These are NOT currently defined in the codebase.**
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `SIEM_ENABLED` | Enable SIEM event forwarding | `true` |
+| `SIEM_ENDPOINT` | Syslog or HTTP endpoint for SIEM | `http://siem.example.com:514` |
+| `WAZUH_ENABLED` | Enable Wazuh log transport | `true` |
+| `WAZUH_INDEXER_URL` | Wazuh indexer URL | `http://localhost:9200` |
+| `WAZUH_USERNAME` | Wazuh indexer username | `admin` |
+| `WAZUH_PASSWORD` | Wazuh indexer password | `admin` |
+
+---
+
+## ALERT RULES
 
 ### Critical Alerts (Immediate Response)
 
@@ -262,7 +377,7 @@ logSecurityEvent({
 
 ---
 
-## 📊 DASHBOARD CONFIGURATION
+## DASHBOARD CONFIGURATION
 
 ### Key Metrics to Monitor
 
@@ -288,9 +403,9 @@ logSecurityEvent({
 
 ---
 
-## 🔧 INTEGRATION WITH EXISTING MONITORING
+## INTEGRATION WITH EXISTING MONITORING
 
-**File:** `server/src/services/monitoringService.ts`
+**File:** `server/src/config/monitoring.ts`
 
 Add SIEM integration:
 
@@ -298,7 +413,7 @@ Add SIEM integration:
 async logSecurityMetric(event: SecurityEvent) {
   // Existing monitoring
   await this.recordMetric('security_event', event);
-  
+
   // SIEM integration
   if (process.env.SIEM_ENABLED === 'true') {
     await logSecurityEvent(event);
@@ -308,12 +423,26 @@ async logSecurityMetric(event: SecurityEvent) {
 
 ---
 
-## 📋 SETUP CHECKLIST
+## SETUP CHECKLIST
+
+### Already Implemented
+
+- [x] Application logging (Winston) -- active by default
+- [x] Error tracking (Sentry) -- enable with `SENTRY_ENABLED=true` and `SENTRY_DSN`
+- [x] APM (Elastic APM) -- enable with `APM_ENABLED=true` and `ELASTIC_APM_SERVER_URL`
+- [x] Elasticsearch log transport -- enable with `ELASTICSEARCH_ENABLED=true`
+- [x] Correlation IDs for distributed tracing -- active by default
+- [x] Error handler with Sentry integration -- active by default
+- [x] New Relic support -- enable with `NEW_RELIC_LICENSE_KEY`
+
+### Still Needed for SIEM
 
 - [ ] Choose SIEM solution (Wazuh recommended for free)
 - [ ] Install and configure SIEM server
-- [ ] Configure application log forwarding
-- [ ] Set up security event logging
+- [ ] Add SIEM env vars to `.env` and `.env.example`
+- [ ] Create `server/src/utils/securityEventLogger.ts`
+- [ ] Create `server/src/config/wazuhTransport.ts` (if using Wazuh)
+- [ ] Configure application log forwarding to SIEM
 - [ ] Create alert rules
 - [ ] Configure dashboards
 - [ ] Test alert notifications
@@ -322,7 +451,7 @@ async logSecurityMetric(event: SecurityEvent) {
 
 ---
 
-## 🎯 RECOMMENDED ALERTING CHANNELS
+## RECOMMENDED ALERTING CHANNELS
 
 1. **Email:** For low/medium severity
 2. **Slack/PagerDuty:** For high/critical severity
@@ -330,7 +459,7 @@ async logSecurityMetric(event: SecurityEvent) {
 
 ---
 
-## 📚 RESOURCES
+## RESOURCES
 
 - **Wazuh Documentation:** https://documentation.wazuh.com/
 - **Splunk Security:** https://www.splunk.com/en_us/software/security-information-and-event-management.html
@@ -344,4 +473,3 @@ async logSecurityMetric(event: SecurityEvent) {
 3. Configure log forwarding
 4. Create alert rules
 5. Test and validate
-

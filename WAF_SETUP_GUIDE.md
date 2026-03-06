@@ -1,25 +1,48 @@
-# 🛡️ WEB APPLICATION FIREWALL (WAF) SETUP GUIDE
+# WEB APPLICATION FIREWALL (WAF) SETUP GUIDE
 
 **Purpose:** Protect the application from common web attacks and malicious traffic.
 
 ---
 
-## 📊 OVERVIEW
+## OVERVIEW
 
 A WAF sits between your application and the internet, filtering and blocking malicious requests before they reach your servers.
 
+> **Note:** The application-level WAF middleware (`wafMiddleware.ts`) shown in this guide has NOT been implemented in the codebase. The recommended approach is to use an external WAF (Cloudflare recommended). However, the application already includes significant security middleware at the application layer (see "Existing Application-Layer Security" section below).
+
 ---
 
-## 🎯 RECOMMENDED WAF SOLUTIONS
+## EXISTING APPLICATION-LAYER SECURITY
+
+Before considering an external or application-level WAF, note that the ComplyEasyAI codebase already implements the following security measures at the application layer:
+
+| Layer | Implementation | Details |
+|-------|---------------|---------|
+| **Helmet.js** | `server/src/index.ts` | CSP, HSTS, X-Frame-Options, X-Content-Type-Options, XSS protection headers |
+| **CSRF Protection** | `server/src/middleware/csrf.ts` | Double-submit cookie pattern (Redis-backed with in-memory fallback) |
+| **Rate Limiting** | `server/src/index.ts` | Configurable via `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX_REQUESTS` (default: 100 req/15min) |
+| **Input Validation** | `server/src/validators/` | 11 Zod schemas covering all major API routes (auth, AI, billing, risk, team, vendor, organization, enterprise, EU regulations, feature modules, AI RMF) |
+| **SQL Injection Prevention** | Prisma ORM | Parameterized queries throughout; no raw SQL |
+| **CORS** | `server/src/index.ts` | Configurable origin whitelist via `CORS_ORIGIN` env var |
+| **Authentication** | `server/src/middleware/` | JWT with httpOnly cookies, token blacklist (Redis-backed), 2FA support |
+| **URL Validation** | `server/src/utils/urlValidator.ts` | SSRF protection for outbound requests |
+| **Correlation IDs** | `server/src/middleware/correlationId.ts` | Distributed tracing across requests |
+| **Error Handler** | `server/src/middleware/` | Sanitized error responses in production, Sentry integration |
+
+These protections cover many of the same attack vectors a WAF would address (XSS, CSRF, SQL injection, SSRF, brute force). An external WAF provides an additional layer of defense-in-depth, particularly for DDoS protection and bot management that cannot be handled at the application layer alone.
+
+---
+
+## RECOMMENDED WAF SOLUTIONS
 
 ### 1. Cloudflare WAF (Recommended)
 
 **Pros:**
-- ✅ Free tier available
-- ✅ Easy setup
-- ✅ DDoS protection included
-- ✅ Global CDN
-- ✅ Bot management
+- Free tier available
+- Easy setup
+- DDoS protection included
+- Global CDN
+- Bot management
 
 **Pricing:**
 - Free: Basic protection
@@ -35,7 +58,7 @@ A WAF sits between your application and the internet, filtering and blocking mal
    - Update DNS nameservers
 
 2. **Enable WAF**
-   - Dashboard → Security → WAF
+   - Dashboard > Security > WAF
    - Enable "Managed Rules"
    - Enable "OWASP Core Rule Set"
 
@@ -55,7 +78,7 @@ A WAF sits between your application and the internet, filtering and blocking mal
 
    ```javascript
    // Block suspicious user agents
-   (http.user_agent contains "sqlmap" or 
+   (http.user_agent contains "sqlmap" or
     http.user_agent contains "nikto" or
     http.user_agent contains "nmap")
 
@@ -70,13 +93,13 @@ A WAF sits between your application and the internet, filtering and blocking mal
 ### 2. AWS WAF
 
 **Pros:**
-- ✅ Native AWS integration
-- ✅ Pay-per-use pricing
-- ✅ Highly customizable
+- Native AWS integration
+- Pay-per-use pricing
+- Highly customizable
 
 **Cons:**
-- ❌ Requires AWS infrastructure
-- ❌ More complex setup
+- Requires AWS infrastructure
+- More complex setup
 
 **Setup Steps:**
 
@@ -107,13 +130,13 @@ A WAF sits between your application and the internet, filtering and blocking mal
 ### 3. ModSecurity (Self-Hosted)
 
 **Pros:**
-- ✅ Free and open source
-- ✅ Highly customizable
-- ✅ Full control
+- Free and open source
+- Highly customizable
+- Full control
 
 **Cons:**
-- ❌ Requires technical expertise
-- ❌ Self-maintenance required
+- Requires technical expertise
+- Self-maintenance required
 
 **Setup Steps:**
 
@@ -121,7 +144,7 @@ A WAF sits between your application and the internet, filtering and blocking mal
    ```bash
    # Ubuntu/Debian
    apt-get install libapache2-mod-security2
-   
+
    # Enable module
    a2enmod security2
    ```
@@ -131,7 +154,7 @@ A WAF sits between your application and the internet, filtering and blocking mal
    # Download OWASP Core Rule Set
    cd /etc/modsecurity
    git clone https://github.com/coreruleset/coreruleset.git
-   
+
    # Configure modsecurity.conf
    SecRuleEngine On
    SecRequestBodyAccess On
@@ -140,7 +163,7 @@ A WAF sits between your application and the internet, filtering and blocking mal
 
 ---
 
-## 🚀 RECOMMENDED: CLOUDFLARE WAF SETUP
+## RECOMMENDED: CLOUDFLARE WAF SETUP
 
 ### Step 1: Add Domain to Cloudflare
 
@@ -151,14 +174,14 @@ A WAF sits between your application and the internet, filtering and blocking mal
 
 ### Step 2: Enable WAF
 
-1. Go to **Security** → **WAF**
+1. Go to **Security** > **WAF**
 2. Enable **Managed Rules**
 3. Enable **OWASP Core Rule Set**
 4. Set action to **Block** for high severity
 
 ### Step 3: Configure Rate Limiting
 
-1. Go to **Security** → **Rate Limiting**
+1. Go to **Security** > **Rate Limiting**
 2. Create rule:
    - **Rule name:** API Rate Limit
    - **Match:** URI path starts with `/api/`
@@ -167,7 +190,7 @@ A WAF sits between your application and the internet, filtering and blocking mal
 
 ### Step 4: Bot Management (Business/Enterprise)
 
-1. Go to **Security** → **Bots**
+1. Go to **Security** > **Bots**
 2. Enable **Bot Fight Mode** (Free tier)
 3. Or **Super Bot Fight Mode** (Pro+)
 
@@ -199,11 +222,13 @@ A WAF sits between your application and the internet, filtering and blocking mal
 
 ---
 
-## 🔧 APPLICATION-LEVEL WAF (Alternative)
+## APPLICATION-LEVEL WAF (Not Yet Implemented)
 
-If you can't use a cloud WAF, implement application-level protection:
+> **Note:** The following code is a recommended implementation if you cannot use an external WAF. This middleware has NOT been created in the codebase yet. The file `server/src/middleware/wafMiddleware.ts` does not exist.
 
-**File:** `server/src/middleware/wafMiddleware.ts` (Create)
+> **Dependency Note:** The `logSecurityEvent` import references `server/src/utils/securityEventLogger.ts`, which also does NOT exist yet. If implementing this WAF middleware, you would also need to create that utility. See `SECURITY_MONITORING_SETUP.md` for details.
+
+**File to create:** `server/src/middleware/wafMiddleware.ts`
 
 ```typescript
 import { Request, Response, NextFunction } from 'express';
@@ -257,7 +282,7 @@ export function wafMiddleware(req: Request, res: Response, next: NextFunction) {
 }
 ```
 
-**Apply to Express app:**
+**To apply to Express app (once created):**
 
 ```typescript
 // server/src/index.ts
@@ -268,7 +293,7 @@ app.use(wafMiddleware);
 
 ---
 
-## 📊 WAF RULES CONFIGURATION
+## WAF RULES CONFIGURATION
 
 ### OWASP Top 10 Protection
 
@@ -315,7 +340,7 @@ app.use(wafMiddleware);
 
 ---
 
-## 🚨 ALERTING
+## ALERTING
 
 ### Configure WAF Alerts
 
@@ -341,7 +366,7 @@ aws cloudwatch put-metric-alarm \
 
 ---
 
-## 📋 SETUP CHECKLIST
+## SETUP CHECKLIST
 
 - [ ] Choose WAF solution (Cloudflare recommended)
 - [ ] Add domain to WAF provider
@@ -356,29 +381,29 @@ aws cloudwatch put-metric-alarm \
 
 ---
 
-## 🎯 RECOMMENDED CONFIGURATION
+## RECOMMENDED CONFIGURATION
 
 ### Cloudflare Free Tier
-- ✅ Managed Rules (OWASP)
-- ✅ Bot Fight Mode
-- ✅ Rate Limiting (100 req/min)
-- ✅ DDoS Protection
+- Managed Rules (OWASP)
+- Bot Fight Mode
+- Rate Limiting (100 req/min)
+- DDoS Protection
 
 ### Cloudflare Pro ($20/month)
-- ✅ Everything in Free
-- ✅ Custom Firewall Rules
-- ✅ Advanced Rate Limiting
-- ✅ Enhanced Bot Management
+- Everything in Free
+- Custom Firewall Rules
+- Advanced Rate Limiting
+- Enhanced Bot Management
 
 ### Cloudflare Business ($200/month)
-- ✅ Everything in Pro
-- ✅ Advanced Custom Rules
-- ✅ Logpush (SIEM integration)
-- ✅ Priority Support
+- Everything in Pro
+- Advanced Custom Rules
+- Logpush (SIEM integration)
+- Priority Support
 
 ---
 
-## 📚 RESOURCES
+## RESOURCES
 
 - **Cloudflare WAF:** https://www.cloudflare.com/waf/
 - **AWS WAF:** https://aws.amazon.com/waf/
@@ -387,7 +412,7 @@ aws cloudwatch put-metric-alarm \
 
 ---
 
-## ✅ VERIFICATION
+## VERIFICATION
 
 Test WAF is working:
 
@@ -413,3 +438,6 @@ All should return 403 Forbidden or be blocked.
 4. Test and validate
 5. Monitor and tune
 
+---
+
+*Last updated: March 5, 2026*
