@@ -50,3 +50,6 @@ server/temp/
 playwright-report/
 test-results/
 playwright/.auth/
+
+# Claude Code
+.claude/
