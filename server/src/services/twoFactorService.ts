@@ -6,7 +6,7 @@
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
+import { hashPassword, verifyPassword } from '../utils/fipsPasswordHashing';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -181,7 +181,7 @@ class TwoFactorService {
       });
 
       for (const backupCode of backupCodes) {
-        const isMatch = await bcrypt.compare(code, backupCode.code);
+        const isMatch = await verifyPassword(code, backupCode.code);
 
         if (isMatch) {
           // Mark code as used
@@ -350,7 +350,7 @@ class TwoFactorService {
     const hashedCodes = await Promise.all(
       codes.map(async (code) => ({
         userId,
-        code: await bcrypt.hash(code, 12),
+        code: await hashPassword(code),
       }))
     );
 
@@ -360,43 +360,72 @@ class TwoFactorService {
   }
 
   /**
-   * Encrypt secret for storage
+   * Derive encryption key for 2FA secret storage.
+   * FIPS 140-3 compliant: PBKDF2-SHA256 key derivation.
    */
-  private get encryptionKey(): Buffer {
+  private deriveEncryptionKey(): Buffer {
     if (!process.env.ENCRYPTION_KEY) {
       throw new Error('ENCRYPTION_KEY environment variable is required for 2FA encryption');
     }
-    const salt = crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY).digest().slice(0, 16);
-    return crypto.scryptSync(process.env.ENCRYPTION_KEY, salt, 32);
-  }
-
-  private encryptSecret(secret: string): string {
-    const algorithm = 'aes-256-cbc';
-    const key = this.encryptionKey;
-    const iv = crypto.randomBytes(16);
-
-    const cipher = crypto.createCipheriv(algorithm, key, iv);
-    let encrypted = cipher.update(secret, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-
-    return `${iv.toString('hex')}:${encrypted}`;
+    const salt = crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY).digest().subarray(0, 16);
+    // FIPS 140-3 compliant: PBKDF2-SHA256 (SP 800-132)
+    return crypto.pbkdf2Sync(process.env.ENCRYPTION_KEY, salt, 100000, 32, 'sha256');
   }
 
   /**
-   * Decrypt secret from storage
+   * Encrypt secret for storage using AES-256-GCM.
+   * FIPS 140-3: Migrated from AES-256-CBC to AES-256-GCM for authenticated encryption.
+   * Output format: iv(24 hex):authTag(32 hex):ciphertext(hex)
+   */
+  private encryptSecret(secret: string): string {
+    const key = this.deriveEncryptionKey();
+    try {
+      const iv = crypto.randomBytes(12); // 12 bytes (96 bits) is standard for GCM
+      const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+      let encrypted = cipher.update(secret, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
+      const authTag = cipher.getAuthTag();
+
+      return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+    } finally {
+      key.fill(0); // FIPS 140-3 key zeroization
+    }
+  }
+
+  /**
+   * Decrypt secret from storage.
+   * Supports both new AES-256-GCM format (3 parts) and legacy AES-256-CBC (2 parts)
+   * for backward compatibility during migration.
    */
   private decryptSecret(encryptedSecret: string): string {
-    const algorithm = 'aes-256-cbc';
-    const key = this.encryptionKey;
+    const key = this.deriveEncryptionKey();
+    try {
+      const parts = encryptedSecret.split(':');
 
-    const [ivHex, encrypted] = encryptedSecret.split(':');
-    const iv = Buffer.from(ivHex, 'hex');
+      if (parts.length === 3) {
+        // New GCM format: iv:authTag:ciphertext
+        const [ivHex, authTagHex, ciphertext] = parts;
+        const iv = Buffer.from(ivHex, 'hex');
+        const authTag = Buffer.from(authTagHex, 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+        decipher.setAuthTag(authTag);
+        let decrypted = decipher.update(ciphertext, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+      } else if (parts.length === 2) {
+        // Legacy CBC format: iv:ciphertext (backward compatibility)
+        const [ivHex, encrypted] = parts;
+        const iv = Buffer.from(ivHex, 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+      }
 
-    const decipher = crypto.createDecipheriv(algorithm, key, iv);
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-
-    return decrypted;
+      throw new Error('Invalid encrypted secret format');
+    } finally {
+      key.fill(0); // FIPS 140-3 key zeroization
+    }
   }
 }
 

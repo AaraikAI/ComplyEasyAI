@@ -85,6 +85,52 @@ import workflowRoutes from './routes/workflow';
 // Privacy Management Routes
 import privacyRoutes from './routes/privacy';
 
+// DPIA Routes (GDPR Art. 35)
+import dpiaRoutes from './routes/dpia';
+
+// RoPA Routes (GDPR Art. 30)
+import ropaRoutes from './routes/ropa';
+
+// Cookie Consent Routes (ePrivacy Directive)
+import cookieConsentRoutes from './routes/cookieConsent';
+
+// DPO Designation Routes (GDPR Art. 37-39)
+import dpoRoutes from './routes/dpo';
+
+// Security Training Routes (SOC 2 CC1.4)
+import securityTrainingRoutes from './routes/securityTraining';
+
+// Data Anonymization Routes (GDPR Recital 26)
+import anonymizationRoutes from './routes/anonymization';
+
+// Enhancement Module Routes
+import incidentRoutes from './routes/incidents';
+import assetRoutes from './routes/assets';
+import calendarRoutes from './routes/calendar';
+import maturityRoutes from './routes/maturity';
+import biaRoutes from './routes/bia';
+import exceptionRoutes from './routes/exceptions';
+import certificationRoutes from './routes/certifications';
+import costRoutes from './routes/costs';
+import executiveRoutes from './routes/executive';
+import controlEffectivenessRoutes from './routes/controlEffectiveness';
+import regulatoryChangeRoutes from './routes/regulatoryChanges';
+import evidenceCollectionRoutes from './routes/evidenceCollection';
+import auditPrepRoutes from './routes/auditPrep';
+import controlTestingRoutes from './routes/controlTesting';
+import vendorMonitoringRoutes from './routes/vendorMonitoring';
+import cicdGateRoutes from './routes/cicdGates';
+import ssoRoutes from './routes/sso';
+import scimRoutes from './routes/scim';
+import roleRoutes from './routes/roles';
+import brandingRoutes from './routes/branding';
+import searchRoutes from './routes/search';
+import notificationRoutes from './routes/notifications';
+import dashboardRoutes from './routes/dashboards';
+import reportRoutes from './routes/reports';
+import bulkRoutes from './routes/bulk';
+import ticketingRoutes from './routes/ticketing';
+
 // API Versioning
 import v1Router from './routes/v1';
 import v2Router from './routes/v2';
@@ -98,6 +144,12 @@ import marketplaceRoutes from './routes/marketplace/marketplaceRoutes';
 
 // CSRF protection for state-changing API routes (session/cookie-based)
 import { csrfProtection, generateCsrfToken } from './middleware/csrf';
+
+// FIPS 140-3 (ISO 19790) Cryptographic Module Self-Tests
+import { runPreOperationalSelfTests } from './utils/fipsSelfTests';
+import { verifyModuleIntegrity } from './utils/fipsIntegrityCheck';
+import { startPeriodicHealthMonitoring } from './utils/fipsEntropyHealthTest';
+import { destroyKey } from './utils/credentialEncryption';
 
 // Background Job Queue
 import jobQueueService from './services/queue/jobQueue';
@@ -135,6 +187,25 @@ try {
   logger.error('\nPlease run "npm run validate:env" for detailed validation.');
   logger.error('See ENVIRONMENT_VARIABLES.md for setup instructions.\n');
   process.exit(1);
+}
+
+// FIPS 140-3 pre-operational self-tests (must pass before any cryptographic operations)
+try {
+  logger.info('Running FIPS 140-3 software integrity verification...');
+  verifyModuleIntegrity();
+  logger.info('Running FIPS 140-3 pre-operational self-tests (KATs)...');
+  runPreOperationalSelfTests();
+  logger.info('✓ FIPS 140-3 cryptographic module self-tests PASSED');
+} catch (error) {
+  logger.error('❌ FIPS 140-3 self-tests FAILED — cryptographic module entering error state:', error);
+  process.exit(1);
+}
+
+// Start periodic entropy health monitoring (SP 800-90B)
+let entropyMonitorInterval: ReturnType<typeof setInterval> | null = null;
+if (config.server.env === 'production') {
+  entropyMonitorInterval = startPeriodicHealthMonitoring(3600000); // 1 hour
+  logger.info('✓ FIPS 140-3 entropy health monitoring started (hourly)');
 }
 
 // Production deployment guard — prevent NODE_ENV=development from running in cloud environments
@@ -436,6 +507,52 @@ app.use('/api/workflows', apiLimiter, workflowRoutes);
 // Privacy Management routes
 app.use('/api/privacy', apiLimiter, privacyRoutes);
 
+// DPIA routes (GDPR Art. 35 — Data Protection Impact Assessment)
+app.use('/api/dpia', apiLimiter, dpiaRoutes);
+
+// RoPA routes (GDPR Art. 30 — Records of Processing Activities)
+app.use('/api/ropa', apiLimiter, ropaRoutes);
+
+// Cookie Consent routes (ePrivacy Directive)
+app.use('/api/cookie-consent', apiLimiter, cookieConsentRoutes);
+
+// DPO Designation routes (GDPR Art. 37-39)
+app.use('/api/dpo', apiLimiter, dpoRoutes);
+
+// Security Training routes (SOC 2 CC1.4)
+app.use('/api/security-training', apiLimiter, securityTrainingRoutes);
+
+// Data Anonymization routes (GDPR Recital 26)
+app.use('/api/anonymization', apiLimiter, anonymizationRoutes);
+
+// Enhancement Module routes
+app.use('/api/incidents', apiLimiter, incidentRoutes);
+app.use('/api/assets', apiLimiter, assetRoutes);
+app.use('/api/calendar', apiLimiter, calendarRoutes);
+app.use('/api/maturity', apiLimiter, maturityRoutes);
+app.use('/api/bia', apiLimiter, biaRoutes);
+app.use('/api/exceptions', apiLimiter, exceptionRoutes);
+app.use('/api/certifications', apiLimiter, certificationRoutes);
+app.use('/api/costs', apiLimiter, costRoutes);
+app.use('/api/executive', apiLimiter, executiveRoutes);
+app.use('/api/control-effectiveness', apiLimiter, controlEffectivenessRoutes);
+app.use('/api/regulatory-changes', apiLimiter, regulatoryChangeRoutes);
+app.use('/api/evidence-collection', apiLimiter, evidenceCollectionRoutes);
+app.use('/api/audit-prep', apiLimiter, auditPrepRoutes);
+app.use('/api/control-testing', apiLimiter, controlTestingRoutes);
+app.use('/api/vendor-monitoring', apiLimiter, vendorMonitoringRoutes);
+app.use('/api/cicd-gates', apiLimiter, cicdGateRoutes);
+app.use('/api/sso', ssoRoutes); // No rate limiter - SSO callbacks need to work
+app.use('/api/scim', scimRoutes); // SCIM has its own auth
+app.use('/api/roles', apiLimiter, roleRoutes);
+app.use('/api/branding', apiLimiter, brandingRoutes);
+app.use('/api/search', apiLimiter, searchRoutes);
+app.use('/api/notifications', apiLimiter, notificationRoutes);
+app.use('/api/dashboards', apiLimiter, dashboardRoutes);
+app.use('/api/reports', apiLimiter, reportRoutes);
+app.use('/api/bulk', apiLimiter, bulkRoutes);
+app.use('/api/ticketing', apiLimiter, ticketingRoutes);
+
 // GraphQL endpoint (authenticated + rate limited)
 app.post('/api/graphql', authenticate, apiLimiter, graphqlMiddleware());
 app.get('/api/graphql', authenticate, apiLimiter, graphqlMiddleware());
@@ -644,6 +761,17 @@ const gracefulShutdown = async (signal: string) => {
 
       // Disconnect MQTT
       mqttService.disconnect();
+
+      // FIPS 140-3 key zeroization: destroy cached encryption key material
+      try {
+        destroyKey();
+        if (entropyMonitorInterval) {
+          clearInterval(entropyMonitorInterval);
+        }
+        logger.info('FIPS 140-3 key zeroization complete');
+      } catch (error) {
+        logger.warn('Key zeroization error', error);
+      }
 
       await prisma.$disconnect();
       logger.info('Database connection closed');

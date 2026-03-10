@@ -1,0 +1,1351 @@
+/**
+ * Ticketing Integration Routes
+ *
+ * Unified API for managing ticketing system integrations (Jira, ServiceNow, Azure DevOps).
+ * Provides configuration, connection testing, synchronization, and ticket creation
+ * from any compliance resource (risks, incidents, findings, etc.).
+ */
+
+import { Router, Request, Response } from 'express';
+import { authenticate, AuthRequest } from '../middleware/auth';
+import { asyncHandler } from '../types/express';
+import prisma from '../config/database';
+import logger from '../config/logger';
+import jiraService from '../services/integrations/jiraService';
+import servicenowService from '../services/integrations/servicenowService';
+import azureDevOpsService from '../services/integrations/azureDevOpsService';
+
+const router = Router();
+router.use(authenticate);
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type TicketingProvider = 'jira' | 'servicenow' | 'azure_devops';
+
+interface TicketingConfig {
+  provider: TicketingProvider;
+  instanceUrl?: string;
+  organization?: string;
+  project?: string;
+  projectKey?: string;
+  authType: 'basic' | 'oauth' | 'pat';
+  username?: string;
+  password?: string;
+  pat?: string;
+  clientId?: string;
+  clientSecret?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  cloudId?: string;
+  siteName?: string;
+  siteUrl?: string;
+  tenantId?: string;
+  defaultIssueType?: string;
+  defaultPriority?: string;
+  syncEnabled?: boolean;
+  syncDirection?: 'push' | 'pull' | 'bidirectional';
+  syncIntervalMinutes?: number;
+  mappingRules?: {
+    risk?: { issueType: string; labels?: string[] };
+    incident?: { issueType: string; labels?: string[] };
+    finding?: { issueType: string; labels?: string[] };
+    exception?: { issueType: string; labels?: string[] };
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function getProviderForOrg(config: TicketingConfig): TicketingProvider {
+  return config.provider;
+}
+
+function sanitizeConfigForResponse(config: any): any {
+  if (!config) return null;
+  const sanitized = { ...config };
+  // Remove sensitive credentials from the response
+  delete sanitized.password;
+  delete sanitized.pat;
+  delete sanitized.clientSecret;
+  delete sanitized.accessToken;
+  delete sanitized.refreshToken;
+  // Mask username partially
+  if (sanitized.username) {
+    sanitized.username = sanitized.username.length > 4
+      ? sanitized.username.slice(0, 2) + '***' + sanitized.username.slice(-2)
+      : '****';
+  }
+  return sanitized;
+}
+
+// ============================================================================
+// GET /config - Get ticketing configuration
+// ============================================================================
+
+router.get(
+  '/config',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    // Look for any connected ticketing integration
+    const integrations = await prisma.integration.findMany({
+      where: {
+        organizationId,
+        provider: { in: ['jira', 'servicenow', 'azure_devops'] },
+      },
+      select: {
+        id: true,
+        provider: true,
+        name: true,
+        connected: true,
+        lastSync: true,
+        config: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    const activeIntegration = integrations.find((i) => i.connected);
+
+    res.json({
+      configured: !!activeIntegration,
+      activeProvider: activeIntegration?.provider || null,
+      integrations: integrations.map((i) => ({
+        id: i.id,
+        provider: i.provider,
+        name: i.name,
+        connected: i.connected,
+        lastSync: i.lastSync,
+        config: sanitizeConfigForResponse(i.config),
+        createdAt: i.createdAt,
+        updatedAt: i.updatedAt,
+      })),
+    });
+  })
+);
+
+// ============================================================================
+// POST /config - Save ticketing configuration
+// ============================================================================
+
+router.post(
+  '/config',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const config: TicketingConfig = req.body;
+
+    if (!config.provider) {
+      return res.status(400).json({ error: 'Provider is required (jira, servicenow, azure_devops)' });
+    }
+
+    if (!['jira', 'servicenow', 'azure_devops'].includes(config.provider)) {
+      return res.status(400).json({ error: 'Invalid provider. Use jira, servicenow, or azure_devops' });
+    }
+
+    try {
+      switch (config.provider) {
+        case 'jira': {
+          if (config.authType === 'oauth' && config.accessToken) {
+            await jiraService.saveIntegration(
+              organizationId,
+              {
+                access_token: config.accessToken,
+                refresh_token: config.refreshToken || '',
+                expires_in: 3600,
+                token_type: 'Bearer',
+                scope: 'read:jira-user read:jira-work write:jira-work offline_access',
+              },
+              config.cloudId || '',
+              config.siteName || '',
+              config.siteUrl || ''
+            );
+          } else {
+            // API token auth -- store as basic auth config
+            await prisma.integration.upsert({
+              where: {
+                organizationId_provider: { organizationId, provider: 'jira' },
+              },
+              create: {
+                organizationId,
+                name: 'Jira',
+                category: 'project',
+                provider: 'jira',
+                connected: true,
+                config: {
+                  instanceUrl: config.instanceUrl,
+                  authType: 'basic',
+                  username: config.username,
+                  apiToken: config.password,
+                  projectKey: config.projectKey,
+                  defaultIssueType: config.defaultIssueType || 'Task',
+                  syncEnabled: config.syncEnabled ?? false,
+                  syncDirection: config.syncDirection || 'bidirectional',
+                  mappingRules: config.mappingRules,
+                } as any,
+                lastSync: new Date(),
+              },
+              update: {
+                connected: true,
+                config: {
+                  instanceUrl: config.instanceUrl,
+                  authType: 'basic',
+                  username: config.username,
+                  apiToken: config.password,
+                  projectKey: config.projectKey,
+                  defaultIssueType: config.defaultIssueType || 'Task',
+                  syncEnabled: config.syncEnabled ?? false,
+                  syncDirection: config.syncDirection || 'bidirectional',
+                  mappingRules: config.mappingRules,
+                } as any,
+                lastSync: new Date(),
+              },
+            });
+          }
+          break;
+        }
+
+        case 'servicenow': {
+          await servicenowService.saveIntegration(organizationId, {
+            instanceUrl: config.instanceUrl || '',
+            authType: config.authType === 'oauth' ? 'oauth' : 'basic',
+            username: config.username,
+            password: config.password,
+            clientId: config.clientId,
+            clientSecret: config.clientSecret,
+            accessToken: config.accessToken,
+            refreshToken: config.refreshToken,
+          });
+          break;
+        }
+
+        case 'azure_devops': {
+          await azureDevOpsService.saveIntegration(organizationId, {
+            organization: config.organization || '',
+            project: config.project || '',
+            authType: config.authType === 'pat' ? 'pat' : 'oauth',
+            pat: config.pat,
+            clientId: config.clientId,
+            clientSecret: config.clientSecret,
+            accessToken: config.accessToken,
+            refreshToken: config.refreshToken,
+            tenantId: config.tenantId,
+          });
+          break;
+        }
+      }
+
+      logger.info(`Ticketing integration configured: ${config.provider} for org ${organizationId}`);
+
+      res.json({
+        success: true,
+        message: `${config.provider} integration configured successfully`,
+        provider: config.provider,
+      });
+    } catch (error: any) {
+      logger.error('Error saving ticketing config', error);
+      res.status(500).json({ error: error.message || 'Failed to save configuration' });
+    }
+  })
+);
+
+// ============================================================================
+// DELETE /config - Remove ticketing integration
+// ============================================================================
+
+router.delete(
+  '/config',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { provider } = req.query as { provider?: TicketingProvider };
+
+    if (!provider) {
+      return res.status(400).json({ error: 'Provider query parameter is required' });
+    }
+
+    try {
+      switch (provider) {
+        case 'jira':
+          await jiraService.disconnect(organizationId);
+          break;
+        case 'servicenow':
+          await servicenowService.disconnect(organizationId);
+          break;
+        case 'azure_devops':
+          await azureDevOpsService.disconnect(organizationId);
+          break;
+        default:
+          return res.status(400).json({ error: 'Invalid provider' });
+      }
+
+      logger.info(`Ticketing integration disconnected: ${provider} for org ${organizationId}`);
+      res.json({ success: true, message: `${provider} integration disconnected` });
+    } catch (error: any) {
+      logger.error('Error disconnecting ticketing integration', error);
+      res.status(500).json({ error: error.message || 'Failed to disconnect' });
+    }
+  })
+);
+
+// ============================================================================
+// POST /test - Test connection to ticketing system
+// ============================================================================
+
+router.post(
+  '/test',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { provider } = req.body as { provider?: TicketingProvider };
+
+    if (!provider) {
+      return res.status(400).json({ error: 'Provider is required' });
+    }
+
+    try {
+      let result: { success: boolean; message: string };
+
+      switch (provider) {
+        case 'jira': {
+          // Test by listing projects
+          const projects = await jiraService.listProjects(organizationId);
+          result = {
+            success: true,
+            message: `Connected to Jira. Found ${projects.length} project(s).`,
+          };
+          break;
+        }
+        case 'servicenow':
+          result = await servicenowService.testConnection(organizationId);
+          break;
+        case 'azure_devops':
+          result = await azureDevOpsService.testConnection(organizationId);
+          break;
+        default:
+          return res.status(400).json({ error: 'Invalid provider' });
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      logger.error(`Ticketing connection test failed for ${provider}`, error);
+      res.json({
+        success: false,
+        message: error.message || `Connection test failed for ${provider}`,
+      });
+    }
+  })
+);
+
+// ============================================================================
+// POST /sync - Manual sync from ticketing system
+// ============================================================================
+
+router.post(
+  '/sync',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { provider, direction, since } = req.body as {
+      provider?: TicketingProvider;
+      direction?: 'push' | 'pull' | 'bidirectional';
+      since?: string;
+    };
+
+    if (!provider) {
+      return res.status(400).json({ error: 'Provider is required' });
+    }
+
+    const sinceDate = since ? new Date(since) : undefined;
+
+    try {
+      let result: { pushed: number; pulled: number; updated: number; errors: string[] };
+
+      switch (provider) {
+        case 'jira':
+          result = await jiraService.syncComplianceIssues(organizationId, {
+            direction: direction || 'bidirectional',
+            since: sinceDate,
+          });
+          break;
+        case 'servicenow':
+          result = await servicenowService.syncIncidents(organizationId, {
+            direction: direction || 'bidirectional',
+            since: sinceDate,
+          });
+          break;
+        case 'azure_devops':
+          result = await azureDevOpsService.syncWorkItems(organizationId, {
+            direction: direction || 'bidirectional',
+            since: sinceDate,
+          });
+          break;
+        default:
+          return res.status(400).json({ error: 'Invalid provider' });
+      }
+
+      // Update last sync time
+      await prisma.integration.updateMany({
+        where: { organizationId, provider },
+        data: { lastSync: new Date() },
+      });
+
+      res.json({
+        success: true,
+        syncResult: result,
+      });
+    } catch (error: any) {
+      logger.error(`Ticketing sync failed for ${provider}`, error);
+      res.status(500).json({ error: error.message || `Sync failed for ${provider}` });
+    }
+  })
+);
+
+// ============================================================================
+// POST /create-ticket - Create ticket from compliance resource
+// ============================================================================
+
+router.post(
+  '/create-ticket',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const {
+      provider,
+      title,
+      description,
+      severity,
+      framework,
+      controlId,
+      sourceType,
+      sourceId,
+      projectKey,
+      issueType,
+    } = req.body;
+
+    if (!provider) {
+      return res.status(400).json({ error: 'Provider is required' });
+    }
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    try {
+      let ticket: any;
+
+      switch (provider) {
+        case 'jira': {
+          const integration = await jiraService.getIntegration(organizationId);
+          const config = integration?.config as any;
+          const targetProjectKey = projectKey || config?.projectKey || '';
+
+          if (!targetProjectKey) {
+            return res.status(400).json({ error: 'Jira project key is required' });
+          }
+
+          ticket = await jiraService.createComplianceTicket(organizationId, targetProjectKey, {
+            title,
+            description: description || '',
+            severity: severity || 'Medium',
+            framework,
+            controlId,
+          });
+          break;
+        }
+
+        case 'servicenow': {
+          ticket = await servicenowService.createComplianceIncident(organizationId, {
+            title,
+            description: description || '',
+            severity: severity || 'Medium',
+            framework,
+            controlId,
+            sourceType,
+            sourceId,
+          });
+          break;
+        }
+
+        case 'azure_devops': {
+          ticket = await azureDevOpsService.createComplianceWorkItem(organizationId, {
+            title,
+            description: description || '',
+            severity: severity || 'Medium',
+            framework,
+            controlId,
+            sourceType,
+            sourceId,
+          });
+          break;
+        }
+
+        default:
+          return res.status(400).json({ error: 'Invalid provider' });
+      }
+
+      // Record in audit log
+      await prisma.auditLog.create({
+        data: {
+          action: 'ticketing.ticket_created',
+          userId: req.user?.id,
+          organizationId,
+          hash: `${provider}:${sourceType || 'manual'}:${sourceId || 'none'}`,
+          details: JSON.stringify({
+            provider,
+            ticket,
+            sourceType,
+            sourceId,
+            framework,
+            controlId,
+          }),
+        },
+      });
+
+      res.json({
+        success: true,
+        provider,
+        ticket,
+      });
+    } catch (error: any) {
+      logger.error('Error creating ticket', error);
+      res.status(500).json({ error: error.message || 'Failed to create ticket' });
+    }
+  })
+);
+
+// ============================================================================
+// GET /tickets - List synced tickets
+// ============================================================================
+
+router.get(
+  '/tickets',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { provider, page = '1', limit = '20' } = req.query as Record<string, string>;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {
+      organizationId,
+      action: { startsWith: provider ? `${provider}_sync.` : '' },
+    };
+
+    // If no specific provider, get all ticketing sync records
+    if (!provider) {
+      where.action = {
+        in: [
+          'jira_sync.pushed',
+          'jira_sync.pulled',
+          'servicenow_sync.pushed',
+          'servicenow_sync.pulled',
+          'azuredevops_sync.pushed',
+          'azuredevops_sync.pulled',
+          'ticketing.ticket_created',
+        ],
+      };
+    }
+
+    const [tickets, totalCount] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        skip,
+        take: limitNum,
+        select: {
+          id: true,
+          action: true,
+          hash: true,
+          details: true,
+          timestamp: true,
+          userId: true,
+        },
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    const formattedTickets = tickets.map((t) => {
+      let parsedDetails: any = {};
+      try {
+        parsedDetails = JSON.parse(t.details || '{}');
+      } catch {
+        parsedDetails = {};
+      }
+
+      let ticketProvider = 'unknown';
+      if (t.action.startsWith('jira_sync') || t.action.includes('jira')) ticketProvider = 'jira';
+      else if (t.action.startsWith('servicenow_sync') || t.action.includes('servicenow')) ticketProvider = 'servicenow';
+      else if (t.action.startsWith('azuredevops_sync') || t.action.includes('azuredevops')) ticketProvider = 'azure_devops';
+
+      return {
+        id: t.id,
+        provider: ticketProvider,
+        action: t.action,
+        direction: t.action.includes('.pushed') ? 'push' : t.action.includes('.pulled') ? 'pull' : 'created',
+        externalId:
+          parsedDetails.jiraIssueKey ||
+          parsedDetails.snowIncidentNumber ||
+          parsedDetails.adoWorkItemId ||
+          parsedDetails.incidentNumber ||
+          null,
+        externalSysId:
+          parsedDetails.jiraIssueId ||
+          parsedDetails.snowIncidentSysId ||
+          parsedDetails.adoWorkItemId ||
+          parsedDetails.incidentSysId ||
+          null,
+        localIssueId: parsedDetails.localIssueId || null,
+        sourceType: parsedDetails.sourceType || null,
+        sourceId: parsedDetails.sourceId || null,
+        syncedAt: t.timestamp,
+        userId: t.userId,
+      };
+    });
+
+    res.json({
+      tickets: formattedTickets,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limitNum),
+      },
+    });
+  })
+);
+
+// ============================================================================
+// GET /sync-status - Get sync status for connected provider
+// ============================================================================
+
+router.get(
+  '/sync-status',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { provider } = req.query as { provider?: TicketingProvider };
+
+    if (!provider) {
+      return res.status(400).json({ error: 'Provider query parameter is required' });
+    }
+
+    try {
+      let status: {
+        lastSync: Date | null;
+        totalSynced: number;
+        pendingSync: number;
+        syncErrors: number;
+      };
+
+      switch (provider) {
+        case 'jira':
+          status = await jiraService.getSyncStatus(organizationId);
+          break;
+        case 'servicenow':
+          status = await servicenowService.getSyncStatus(organizationId);
+          break;
+        case 'azure_devops':
+          status = await azureDevOpsService.getSyncStatus(organizationId);
+          break;
+        default:
+          return res.status(400).json({ error: 'Invalid provider' });
+      }
+
+      res.json({ provider, ...status });
+    } catch (error: any) {
+      logger.error(`Error getting sync status for ${provider}`, error);
+      res.status(500).json({ error: error.message || 'Failed to get sync status' });
+    }
+  })
+);
+
+// ============================================================================
+// GET /connections - List all ticketing connections for org
+// ============================================================================
+
+router.get(
+  '/connections',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const integrations = await prisma.integration.findMany({
+      where: {
+        organizationId,
+        provider: { in: ['jira', 'servicenow', 'azure_devops'] },
+      },
+      select: {
+        id: true,
+        provider: true,
+        name: true,
+        connected: true,
+        lastSync: true,
+        config: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    res.json({
+      connections: integrations.map((i) => ({
+        id: i.id,
+        provider: i.provider,
+        name: i.name,
+        connected: i.connected,
+        lastSync: i.lastSync,
+        config: sanitizeConfigForResponse(i.config),
+        createdAt: i.createdAt,
+        updatedAt: i.updatedAt,
+      })),
+    });
+  })
+);
+
+// ============================================================================
+// POST /connections - Create / configure a new connection
+// ============================================================================
+
+router.post(
+  '/connections',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const config: TicketingConfig = req.body;
+
+    if (!config.provider || !['jira', 'servicenow', 'azure_devops'].includes(config.provider)) {
+      return res.status(400).json({ error: 'Valid provider required (jira, servicenow, azure_devops)' });
+    }
+
+    try {
+      switch (config.provider) {
+        case 'jira': {
+          if (config.authType === 'oauth' && config.accessToken) {
+            await jiraService.saveIntegration(
+              organizationId,
+              {
+                access_token: config.accessToken,
+                refresh_token: config.refreshToken || '',
+                expires_in: 3600,
+                token_type: 'Bearer',
+                scope: 'read:jira-user read:jira-work write:jira-work offline_access',
+              },
+              config.cloudId || '',
+              config.siteName || '',
+              config.siteUrl || ''
+            );
+          } else {
+            await prisma.integration.upsert({
+              where: {
+                organizationId_provider: { organizationId, provider: 'jira' },
+              },
+              create: {
+                organizationId,
+                name: 'Jira',
+                category: 'project',
+                provider: 'jira',
+                connected: true,
+                config: {
+                  instanceUrl: config.instanceUrl,
+                  authType: 'basic',
+                  username: config.username,
+                  apiToken: config.password,
+                  projectKey: config.projectKey,
+                  defaultIssueType: config.defaultIssueType || 'Task',
+                  syncEnabled: config.syncEnabled ?? false,
+                  syncDirection: config.syncDirection || 'bidirectional',
+                  mappingRules: config.mappingRules,
+                } as any,
+                lastSync: new Date(),
+              },
+              update: {
+                connected: true,
+                config: {
+                  instanceUrl: config.instanceUrl,
+                  authType: 'basic',
+                  username: config.username,
+                  apiToken: config.password,
+                  projectKey: config.projectKey,
+                  defaultIssueType: config.defaultIssueType || 'Task',
+                  syncEnabled: config.syncEnabled ?? false,
+                  syncDirection: config.syncDirection || 'bidirectional',
+                  mappingRules: config.mappingRules,
+                } as any,
+                lastSync: new Date(),
+              },
+            });
+          }
+          break;
+        }
+
+        case 'servicenow': {
+          await servicenowService.saveIntegration(organizationId, {
+            instanceUrl: config.instanceUrl || '',
+            authType: config.authType === 'oauth' ? 'oauth' : 'basic',
+            username: config.username,
+            password: config.password,
+            clientId: config.clientId,
+            clientSecret: config.clientSecret,
+            accessToken: config.accessToken,
+            refreshToken: config.refreshToken,
+          });
+          break;
+        }
+
+        case 'azure_devops': {
+          await azureDevOpsService.saveIntegration(organizationId, {
+            organization: config.organization || '',
+            project: config.project || '',
+            authType: config.authType === 'pat' ? 'pat' : 'oauth',
+            pat: config.pat,
+            clientId: config.clientId,
+            clientSecret: config.clientSecret,
+            accessToken: config.accessToken,
+            refreshToken: config.refreshToken,
+            tenantId: config.tenantId,
+          });
+          break;
+        }
+      }
+
+      logger.info(`Ticketing connection created: ${config.provider} for org ${organizationId}`);
+
+      // Fetch the saved integration to return
+      const saved = await prisma.integration.findUnique({
+        where: {
+          organizationId_provider: { organizationId, provider: config.provider },
+        },
+      });
+
+      res.json({
+        success: true,
+        connection: saved
+          ? {
+              id: saved.id,
+              provider: saved.provider,
+              name: saved.name,
+              connected: saved.connected,
+              lastSync: saved.lastSync,
+              config: sanitizeConfigForResponse(saved.config),
+            }
+          : null,
+      });
+    } catch (error: any) {
+      logger.error('Error creating ticketing connection', error);
+      res.status(500).json({ error: error.message || 'Failed to create connection' });
+    }
+  })
+);
+
+// ============================================================================
+// DELETE /connections/:id - Remove a specific connection
+// ============================================================================
+
+router.delete(
+  '/connections/:id',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { id } = req.params;
+
+    const integration = await prisma.integration.findFirst({
+      where: { id, organizationId, provider: { in: ['jira', 'servicenow', 'azure_devops'] } },
+    });
+
+    if (!integration) {
+      return res.status(404).json({ error: 'Connection not found' });
+    }
+
+    try {
+      switch (integration.provider) {
+        case 'jira':
+          await jiraService.disconnect(organizationId);
+          break;
+        case 'servicenow':
+          await servicenowService.disconnect(organizationId);
+          break;
+        case 'azure_devops':
+          await azureDevOpsService.disconnect(organizationId);
+          break;
+      }
+
+      logger.info(`Ticketing connection ${id} deleted for org ${organizationId}`);
+      res.json({ success: true, message: 'Connection removed' });
+    } catch (error: any) {
+      logger.error('Error deleting ticketing connection', error);
+      res.status(500).json({ error: error.message || 'Failed to delete connection' });
+    }
+  })
+);
+
+// ============================================================================
+// POST /connections/:id/test - Test a specific connection
+// ============================================================================
+
+router.post(
+  '/connections/:id/test',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { id } = req.params;
+
+    const integration = await prisma.integration.findFirst({
+      where: { id, organizationId, provider: { in: ['jira', 'servicenow', 'azure_devops'] } },
+    });
+
+    if (!integration) {
+      return res.status(404).json({ error: 'Connection not found' });
+    }
+
+    try {
+      let result: { success: boolean; message: string };
+
+      switch (integration.provider) {
+        case 'jira': {
+          const projects = await jiraService.listProjects(organizationId);
+          result = { success: true, message: `Connected. Found ${projects.length} project(s).` };
+          break;
+        }
+        case 'servicenow':
+          result = await servicenowService.testConnection(organizationId);
+          break;
+        case 'azure_devops':
+          result = await azureDevOpsService.testConnection(organizationId);
+          break;
+        default:
+          result = { success: false, message: 'Unknown provider' };
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.json({ success: false, message: error.message || 'Connection test failed' });
+    }
+  })
+);
+
+// ============================================================================
+// GET /tickets/:id - Get ticket details from external system
+// ============================================================================
+
+router.get(
+  '/tickets/:id',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { id } = req.params;
+
+    // Look up the sync record
+    const syncRecord = await prisma.auditLog.findFirst({
+      where: {
+        id,
+        organizationId,
+        action: {
+          in: [
+            'jira_sync.pushed', 'jira_sync.pulled',
+            'servicenow_sync.pushed', 'servicenow_sync.pulled',
+            'azuredevops_sync.pushed', 'azuredevops_sync.pulled',
+            'ticketing.ticket_created',
+          ],
+        },
+      },
+    });
+
+    if (!syncRecord) {
+      return res.status(404).json({ error: 'Ticket sync record not found' });
+    }
+
+    let parsedDetails: any = {};
+    try {
+      parsedDetails = JSON.parse(syncRecord.details || '{}');
+    } catch {
+      parsedDetails = {};
+    }
+
+    // Determine provider and fetch live details
+    let provider = 'unknown';
+    let externalDetails: any = null;
+
+    try {
+      if (syncRecord.action.startsWith('jira_sync') || syncRecord.action.includes('jira')) {
+        provider = 'jira';
+        // Jira issues can be fetched by key but we'd need the full API; return stored details
+        externalDetails = parsedDetails;
+      } else if (syncRecord.action.startsWith('servicenow_sync') || syncRecord.action.includes('servicenow')) {
+        provider = 'servicenow';
+        if (parsedDetails.snowIncidentSysId || parsedDetails.incidentSysId) {
+          const sysId = parsedDetails.snowIncidentSysId || parsedDetails.incidentSysId;
+          externalDetails = await servicenowService.getIncident(organizationId, sysId);
+        } else {
+          externalDetails = parsedDetails;
+        }
+      } else if (syncRecord.action.startsWith('azuredevops_sync') || syncRecord.action.includes('azuredevops')) {
+        provider = 'azure_devops';
+        if (parsedDetails.adoWorkItemId) {
+          externalDetails = await azureDevOpsService.getWorkItem(
+            organizationId,
+            Number(parsedDetails.adoWorkItemId)
+          );
+        } else {
+          externalDetails = parsedDetails;
+        }
+      }
+    } catch (error: any) {
+      logger.warn(`Could not fetch live details for ticket ${id}`, error.message);
+      externalDetails = parsedDetails;
+    }
+
+    res.json({
+      id: syncRecord.id,
+      provider,
+      action: syncRecord.action,
+      syncedAt: syncRecord.timestamp,
+      details: parsedDetails,
+      externalDetails,
+    });
+  })
+);
+
+// ============================================================================
+// PATCH /tickets/:id/sync - Sync status from external system for one ticket
+// ============================================================================
+
+router.patch(
+  '/tickets/:id/sync',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { id } = req.params;
+
+    const syncRecord = await prisma.auditLog.findFirst({
+      where: {
+        id,
+        organizationId,
+        action: {
+          in: [
+            'jira_sync.pushed', 'jira_sync.pulled',
+            'servicenow_sync.pushed', 'servicenow_sync.pulled',
+            'servicenow_sync.change_created',
+            'azuredevops_sync.pushed', 'azuredevops_sync.pulled',
+            'ticketing.ticket_created',
+          ],
+        },
+      },
+    });
+
+    if (!syncRecord) {
+      return res.status(404).json({ error: 'Ticket sync record not found' });
+    }
+
+    let parsedDetails: any = {};
+    try {
+      parsedDetails = JSON.parse(syncRecord.details || '{}');
+    } catch {
+      parsedDetails = {};
+    }
+
+    try {
+      let statusResult: any = null;
+
+      if (syncRecord.action.startsWith('servicenow_sync') || syncRecord.action.includes('servicenow')) {
+        const sysId = parsedDetails.snowIncidentSysId || parsedDetails.incidentSysId || parsedDetails.externalId;
+        if (sysId) {
+          const table = parsedDetails.table || 'incident';
+          statusResult = await servicenowService.syncStatus(organizationId, sysId, table);
+        }
+      } else if (syncRecord.action.startsWith('azuredevops_sync') || syncRecord.action.includes('azuredevops')) {
+        const wiId = parsedDetails.adoWorkItemId || parsedDetails.workItemId;
+        if (wiId) {
+          statusResult = await azureDevOpsService.syncStatus(organizationId, Number(wiId));
+        }
+      } else if (syncRecord.action.startsWith('jira_sync') || syncRecord.action.includes('jira')) {
+        // Jira status sync via update
+        if (parsedDetails.jiraIssueKey) {
+          statusResult = { message: 'Use Jira sync endpoint for full status sync' };
+        }
+      }
+
+      res.json({ success: true, statusResult });
+    } catch (error: any) {
+      logger.error(`Error syncing ticket ${id}`, error);
+      res.status(500).json({ error: error.message || 'Failed to sync ticket status' });
+    }
+  })
+);
+
+// ============================================================================
+// POST /tickets/bulk-sync - Sync all active tickets
+// ============================================================================
+
+router.post(
+  '/tickets/bulk-sync',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { provider } = req.body as { provider?: TicketingProvider };
+    const results: Record<string, any> = {};
+
+    try {
+      const providers = provider
+        ? [provider]
+        : ['jira', 'servicenow', 'azure_devops'] as TicketingProvider[];
+
+      for (const p of providers) {
+        const integration = await prisma.integration.findUnique({
+          where: {
+            organizationId_provider: { organizationId, provider: p },
+          },
+        });
+
+        if (!integration?.connected) continue;
+
+        try {
+          switch (p) {
+            case 'jira':
+              results.jira = await jiraService.syncComplianceIssues(organizationId, {
+                direction: 'bidirectional',
+              });
+              break;
+            case 'servicenow':
+              results.servicenow = await servicenowService.syncIncidents(organizationId, {
+                direction: 'bidirectional',
+              });
+              break;
+            case 'azure_devops':
+              results.azure_devops = await azureDevOpsService.syncWorkItems(organizationId, {
+                direction: 'bidirectional',
+              });
+              break;
+          }
+
+          // Update last sync time
+          await prisma.integration.update({
+            where: { id: integration.id },
+            data: { lastSync: new Date() },
+          });
+        } catch (err: any) {
+          results[p] = { error: err.message };
+        }
+      }
+
+      res.json({ success: true, results });
+    } catch (error: any) {
+      logger.error('Error in bulk sync', error);
+      res.status(500).json({ error: error.message || 'Bulk sync failed' });
+    }
+  })
+);
+
+// ============================================================================
+// GET /field-mapping/:provider - Get field mapping configuration
+// ============================================================================
+
+router.get(
+  '/field-mapping/:provider',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { provider } = req.params as { provider: TicketingProvider };
+
+    if (!['jira', 'servicenow', 'azure_devops'].includes(provider)) {
+      return res.status(400).json({ error: 'Invalid provider' });
+    }
+
+    const integration = await prisma.integration.findUnique({
+      where: {
+        organizationId_provider: { organizationId, provider },
+      },
+      select: { config: true },
+    });
+
+    const config = (integration?.config || {}) as any;
+
+    // Default mapping rules by provider
+    const defaultMappings: Record<string, any> = {
+      jira: {
+        risk: { issueType: 'Bug', labels: ['compliance', 'risk'] },
+        incident: { issueType: 'Bug', labels: ['compliance', 'incident'] },
+        finding: { issueType: 'Task', labels: ['compliance', 'finding'] },
+        exception: { issueType: 'Task', labels: ['compliance', 'exception'] },
+      },
+      servicenow: {
+        risk: { table: 'incident', category: 'Compliance', urgency: '2' },
+        incident: { table: 'incident', category: 'Security', urgency: '1' },
+        finding: { table: 'incident', category: 'Compliance', urgency: '3' },
+        exception: { table: 'change_request', category: 'Compliance', risk: 'moderate' },
+      },
+      azure_devops: {
+        risk: { workItemType: 'Bug', tags: 'compliance;risk' },
+        incident: { workItemType: 'Bug', tags: 'compliance;incident' },
+        finding: { workItemType: 'Task', tags: 'compliance;finding' },
+        exception: { workItemType: 'Task', tags: 'compliance;exception' },
+      },
+    };
+
+    const mappingRules = config.mappingRules || defaultMappings[provider] || {};
+
+    res.json({
+      provider,
+      mappingRules,
+      severityMapping: {
+        Critical: provider === 'azure_devops' ? 1 : '1',
+        High: provider === 'azure_devops' ? 2 : '2',
+        Medium: provider === 'azure_devops' ? 3 : '3',
+        Low: provider === 'azure_devops' ? 4 : '4',
+      },
+    });
+  })
+);
+
+// ============================================================================
+// PUT /field-mapping/:provider - Update field mapping
+// ============================================================================
+
+router.put(
+  '/field-mapping/:provider',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) {
+      return res.status(403).json({ error: 'Organization context required' });
+    }
+
+    const { provider } = req.params as { provider: TicketingProvider };
+    const { mappingRules } = req.body;
+
+    if (!['jira', 'servicenow', 'azure_devops'].includes(provider)) {
+      return res.status(400).json({ error: 'Invalid provider' });
+    }
+
+    if (!mappingRules || typeof mappingRules !== 'object') {
+      return res.status(400).json({ error: 'mappingRules object is required' });
+    }
+
+    try {
+      const integration = await prisma.integration.findUnique({
+        where: {
+          organizationId_provider: { organizationId, provider },
+        },
+      });
+
+      if (!integration) {
+        return res.status(404).json({ error: `${provider} integration not found` });
+      }
+
+      const existingConfig = (integration.config || {}) as any;
+      const updatedConfig = { ...existingConfig, mappingRules };
+
+      await prisma.integration.update({
+        where: { id: integration.id },
+        data: { config: updatedConfig as any },
+      });
+
+      logger.info(`Field mapping updated for ${provider} in org ${organizationId}`);
+
+      res.json({
+        success: true,
+        provider,
+        mappingRules,
+      });
+    } catch (error: any) {
+      logger.error('Error updating field mapping', error);
+      res.status(500).json({ error: error.message || 'Failed to update field mapping' });
+    }
+  })
+);
+
+// ============================================================================
+// POST /webhook/:provider - Webhook endpoint for receiving updates
+// ============================================================================
+
+router.post(
+  '/webhook/:provider',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { provider } = req.params as { provider: TicketingProvider };
+
+    // Webhooks need to identify the org. Strategy: use a shared secret in headers
+    // or derive from the webhook payload.
+    const orgId =
+      (req.headers['x-complyeasy-org-id'] as string) ||
+      (req.query.orgId as string);
+
+    if (!orgId) {
+      logger.warn(`[Ticketing Webhook] No organization ID in ${provider} webhook`);
+      return res.status(200).json({ message: 'Accepted (no org context)' });
+    }
+
+    try {
+      let result: { processed: boolean };
+
+      switch (provider) {
+        case 'jira':
+          result = await jiraService.processWebhookEvent(orgId, req.body);
+          break;
+        case 'servicenow':
+          result = await servicenowService.processWebhookEvent(orgId, req.body);
+          break;
+        case 'azure_devops':
+          result = await azureDevOpsService.processWebhookEvent(orgId, req.body);
+          break;
+        default:
+          return res.status(400).json({ error: 'Invalid provider' });
+      }
+
+      res.json({ received: true, processed: result.processed });
+    } catch (error: any) {
+      logger.error(`[Ticketing Webhook] Error processing ${provider} webhook`, error);
+      // Always return 200 so the webhook provider does not retry indefinitely
+      res.status(200).json({ received: true, processed: false, error: error.message });
+    }
+  })
+);
+
+export default router;

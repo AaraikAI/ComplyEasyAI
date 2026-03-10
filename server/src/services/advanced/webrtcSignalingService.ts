@@ -1452,7 +1452,7 @@ class WebRTCSignalingService {
     const ttl = parseInt(process.env.WEBRTC_TURN_TTL || String(TURN_CREDENTIAL_TTL_S), 10);
     const expiry = Math.floor(Date.now() / 1000) + ttl;
     const username = `${expiry}:complyeasy-${crypto.randomBytes(4).toString('hex')}`;
-    const hmac = crypto.createHmac('sha1', secret);
+    const hmac = crypto.createHmac('sha256', secret);
     hmac.update(username);
     const credential = hmac.digest('base64');
     return { username, credential };

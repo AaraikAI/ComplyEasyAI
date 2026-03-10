@@ -1263,7 +1263,7 @@ export class SOXService {
   // =========================================================================
 
   private generateId(): string {
-    return `sox_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    return `sox_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}`;
   }
 
   private groupBy<T>(items: T[], key: keyof T): Record<string, number> {

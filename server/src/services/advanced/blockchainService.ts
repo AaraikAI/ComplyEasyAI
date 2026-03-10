@@ -9,6 +9,32 @@
  * - Evidence chain-of-custody tracking
  * - Policy change audit trail
  * - Real-time blockchain event processing
+ *
+ * ============================================================================
+ * FIPS 140-2 BOUNDARY NOTICE
+ * ============================================================================
+ * This service operates OUTSIDE the FIPS cryptographic module boundary.
+ *
+ * Non-FIPS algorithms used:
+ *   - Keccak-256 (used by ethers.js keccak256) — Ethereum address/tx hashing
+ *   - secp256k1 (ECDSA) — Ethereum transaction signing
+ *
+ * These algorithms are REQUIRED by the Ethereum protocol specification (EIP-155,
+ * Yellow Paper §4.1) and CANNOT be substituted with FIPS-approved alternatives
+ * while maintaining blockchain interoperability.
+ *
+ * Note: Hyperledger Fabric integration uses ECDSA P-256 (prime256v1) with
+ * SHA-256, which ARE FIPS 140-2 approved algorithms.
+ *
+ * This service is isolated from the application's core security boundary
+ * and does NOT handle:
+ *   - User authentication or session management
+ *   - Encryption of personally identifiable information (PII)
+ *   - Password hashing or credential storage
+ *   - TLS/transport security
+ *
+ * Reference: docs/FIPS_CRYPTOGRAPHIC_MODULE_BOUNDARY.md
+ * ============================================================================
  */
 
 import { ethers } from 'ethers';

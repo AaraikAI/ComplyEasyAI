@@ -2617,6 +2617,10 @@ export const api = {
     createRule: async (data: any) => fetchAPI<any>('/workflows/rules', { method: 'POST', body: JSON.stringify(data) }),
     updateRule: async (id: string, data: any) => fetchAPI<any>(`/workflows/rules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     deleteRule: async (id: string) => fetchAPI<any>(`/workflows/rules/${id}`, { method: 'DELETE' }),
+    getRule: async (id: string) => fetchAPI<any>(`/workflows/rules/${id}`),
+    testRule: async (id: string) => fetchAPI<any>(`/workflows/rules/${id}/test`, { method: 'POST' }),
+    getExecutionLog: async (id: string) => fetchAPI<any>(`/workflows/rules/${id}/log`),
+    toggleRule: async (id: string, enabled: boolean) => fetchAPI<any>(`/workflows/rules/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
   },
 
   // --- Privacy Management Platform ---
@@ -2784,6 +2788,367 @@ export const api = {
       return fetchAPI<any>('/personnel/compliance-summary');
     },
   },
+
+  // --- Generic HTTP helpers (used by enhancement modules) ---
+  get: async (endpoint: string) => fetchAPI<any>(endpoint),
+  post: async (endpoint: string, data?: any) => fetchAPI<any>(endpoint, {
+    method: 'POST',
+    body: data ? JSON.stringify(data) : undefined,
+  }),
+  patch: async (endpoint: string, data?: any) => fetchAPI<any>(endpoint, {
+    method: 'PATCH',
+    body: data ? JSON.stringify(data) : undefined,
+  }),
+  delete: async (endpoint: string) => fetchAPI<any>(endpoint, { method: 'DELETE' }),
+  put: async (endpoint: string, data?: any) => fetchAPI<any>(endpoint, {
+    method: 'PUT',
+    body: data ? JSON.stringify(data) : undefined,
+  }),
+
+  // --- Incident Management ---
+  incidents: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/incidents${query}`);
+    },
+    get: async (id: string) => fetchAPI<any>(`/incidents/${encodeURIComponent(id)}`),
+    create: async (data: Record<string, any>) => fetchAPI<any>('/incidents', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/incidents/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: async (id: string) => fetchAPI<any>(`/incidents/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    addTimeline: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/incidents/${encodeURIComponent(id)}/timeline`, { method: 'POST', body: JSON.stringify(data) }),
+    getTimeline: async (id: string) => fetchAPI<any>(`/incidents/${encodeURIComponent(id)}/timeline`),
+    createTask: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/incidents/${encodeURIComponent(id)}/tasks`, { method: 'POST', body: JSON.stringify(data) }),
+    updateTask: async (id: string, taskId: string, data: Record<string, any>) => fetchAPI<any>(`/incidents/${encodeURIComponent(id)}/tasks/${encodeURIComponent(taskId)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    getMetrics: async () => fetchAPI<any>('/incidents/metrics'),
+  },
+
+  // --- IT Asset Management ---
+  assets: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/assets${query}`);
+    },
+    get: async (id: string) => fetchAPI<any>(`/assets/${encodeURIComponent(id)}`),
+    create: async (data: Record<string, any>) => fetchAPI<any>('/assets', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/assets/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: async (id: string) => fetchAPI<any>(`/assets/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    getStats: async () => fetchAPI<any>('/assets/stats'),
+  },
+
+  // --- Compliance Calendar ---
+  calendar: {
+    listDeadlines: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/calendar/deadlines${query}`);
+    },
+    getDeadline: async (id: string) => fetchAPI<any>(`/calendar/deadlines/${encodeURIComponent(id)}`),
+    createDeadline: async (data: Record<string, any>) => fetchAPI<any>('/calendar/deadlines', { method: 'POST', body: JSON.stringify(data) }),
+    updateDeadline: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/calendar/deadlines/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteDeadline: async (id: string) => fetchAPI<any>(`/calendar/deadlines/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    getUpcoming: async (days?: number) => fetchAPI<any>(`/calendar/upcoming${days ? `?days=${days}` : ''}`),
+    getOverdue: async () => fetchAPI<any>('/calendar/overdue'),
+    completeDeadline: async (id: string) => fetchAPI<any>(`/calendar/deadlines/${encodeURIComponent(id)}/complete`, { method: 'PATCH' }),
+  },
+
+  // --- GRC Maturity Assessment ---
+  maturity: {
+    listAssessments: async () => fetchAPI<any>('/maturity/assessments'),
+    getAssessment: async (id: string) => fetchAPI<any>(`/maturity/assessments/${encodeURIComponent(id)}`),
+    createAssessment: async (data: Record<string, any>) => fetchAPI<any>('/maturity/assessments', { method: 'POST', body: JSON.stringify(data) }),
+    getLatest: async () => fetchAPI<any>('/maturity/assessments/latest'),
+    getTrend: async () => fetchAPI<any>('/maturity/assessments/trend'),
+    generateRecommendations: async (id: string) => fetchAPI<any>(`/maturity/assessments/${encodeURIComponent(id)}/recommendations`, { method: 'POST' }),
+  },
+
+  // --- Business Impact Analysis ---
+  bia: {
+    listProcesses: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/bia/processes${query}`);
+    },
+    getProcess: async (id: string) => fetchAPI<any>(`/bia/processes/${encodeURIComponent(id)}`),
+    createProcess: async (data: Record<string, any>) => fetchAPI<any>('/bia/processes', { method: 'POST', body: JSON.stringify(data) }),
+    updateProcess: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/bia/processes/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteProcess: async (id: string) => fetchAPI<any>(`/bia/processes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    addDependency: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/bia/processes/${encodeURIComponent(id)}/dependencies`, { method: 'POST', body: JSON.stringify(data) }),
+    removeDependency: async (id: string, depId: string) => fetchAPI<any>(`/bia/processes/${encodeURIComponent(id)}/dependencies/${encodeURIComponent(depId)}`, { method: 'DELETE' }),
+    getStats: async () => fetchAPI<any>('/bia/stats'),
+  },
+
+  // --- Exception Management ---
+  exceptions: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/exceptions${query}`);
+    },
+    get: async (id: string) => fetchAPI<any>(`/exceptions/${encodeURIComponent(id)}`),
+    create: async (data: Record<string, any>) => fetchAPI<any>('/exceptions', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/exceptions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    approve: async (id: string) => fetchAPI<any>(`/exceptions/${encodeURIComponent(id)}/approve`, { method: 'PATCH' }),
+    reject: async (id: string) => fetchAPI<any>(`/exceptions/${encodeURIComponent(id)}/reject`, { method: 'PATCH' }),
+    getExpiring: async (days?: number) => fetchAPI<any>(`/exceptions/expiring${days ? `?days=${days}` : ''}`),
+    getStats: async () => fetchAPI<any>('/exceptions/stats'),
+  },
+
+  // --- Certification Lifecycle ---
+  certifications: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/certifications${query}`);
+    },
+    get: async (id: string) => fetchAPI<any>(`/certifications/${encodeURIComponent(id)}`),
+    create: async (data: Record<string, any>) => fetchAPI<any>('/certifications', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/certifications/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: async (id: string) => fetchAPI<any>(`/certifications/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    scheduleAudit: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/certifications/${encodeURIComponent(id)}/audits`, { method: 'POST', body: JSON.stringify(data) }),
+    updateAudit: async (id: string, auditId: string, data: Record<string, any>) => fetchAPI<any>(`/certifications/${encodeURIComponent(id)}/audits/${encodeURIComponent(auditId)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    getExpiring: async (days?: number) => fetchAPI<any>(`/certifications/expiring${days ? `?days=${days}` : ''}`),
+  },
+
+  // --- Compliance Cost Analytics ---
+  costs: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/costs${query}`);
+    },
+    create: async (data: Record<string, any>) => fetchAPI<any>('/costs', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/costs/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: async (id: string) => fetchAPI<any>(`/costs/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    getSummary: async () => fetchAPI<any>('/costs/summary'),
+    getTrend: async () => fetchAPI<any>('/costs/trend'),
+    getBudget: async () => fetchAPI<any>('/costs/budget'),
+  },
+
+  // --- Executive Dashboard ---
+  executive: {
+    getDashboard: async () => fetchAPI<any>('/executive/dashboard'),
+    getRAGStatus: async () => fetchAPI<any>('/executive/rag-status'),
+    generateBoardPack: async () => fetchAPI<any>('/executive/board-pack', { method: 'POST' }),
+    getTrends: async () => fetchAPI<any>('/executive/trends'),
+  },
+
+  // --- Control Effectiveness ---
+  controlEffectiveness: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/control-effectiveness${query}`);
+    },
+    create: async (data: Record<string, any>) => fetchAPI<any>('/control-effectiveness', { method: 'POST', body: JSON.stringify(data) }),
+    getForControl: async (controlId: string) => fetchAPI<any>(`/control-effectiveness/control/${encodeURIComponent(controlId)}`),
+    getTrend: async () => fetchAPI<any>('/control-effectiveness/trend'),
+    getDegrading: async () => fetchAPI<any>('/control-effectiveness/degrading'),
+    getStats: async () => fetchAPI<any>('/control-effectiveness/stats'),
+  },
+
+  // --- Regulatory Change Detection ---
+  regulatoryChanges: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/regulatory-changes${query}`);
+    },
+    get: async (id: string) => fetchAPI<any>(`/regulatory-changes/${encodeURIComponent(id)}`),
+    create: async (data: Record<string, any>) => fetchAPI<any>('/regulatory-changes', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/regulatory-changes/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    dismiss: async (id: string) => fetchAPI<any>(`/regulatory-changes/${encodeURIComponent(id)}/dismiss`, { method: 'PATCH' }),
+    getImpacts: async (id: string) => fetchAPI<any>(`/regulatory-changes/${encodeURIComponent(id)}/impacts`),
+    addImpact: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/regulatory-changes/${encodeURIComponent(id)}/impacts`, { method: 'POST', body: JSON.stringify(data) }),
+    updateImpact: async (id: string, impactId: string, data: Record<string, any>) => fetchAPI<any>(`/regulatory-changes/${encodeURIComponent(id)}/impacts/${encodeURIComponent(impactId)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    getStats: async () => fetchAPI<any>('/regulatory-changes/stats'),
+  },
+
+  // --- Evidence Auto-Collection ---
+  evidenceCollection: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/evidence-collection${query}`);
+    },
+    get: async (id: string) => fetchAPI<any>(`/evidence-collection/${encodeURIComponent(id)}`),
+    create: async (data: Record<string, any>) => fetchAPI<any>('/evidence-collection', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/evidence-collection/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: async (id: string) => fetchAPI<any>(`/evidence-collection/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    trigger: async (id: string) => fetchAPI<any>(`/evidence-collection/${encodeURIComponent(id)}/trigger`, { method: 'POST' }),
+    getStatus: async () => fetchAPI<any>('/evidence-collection/status'),
+  },
+
+  // --- Audit Preparation ---
+  auditPrep: {
+    getReadiness: async (frameworkId: string) => fetchAPI<any>(`/audit-prep/readiness/${encodeURIComponent(frameworkId)}`),
+    getGaps: async (frameworkId: string) => fetchAPI<any>(`/audit-prep/gaps/${encodeURIComponent(frameworkId)}`),
+    getMockQuestions: async (frameworkId: string) => fetchAPI<any>(`/audit-prep/mock-questions/${encodeURIComponent(frameworkId)}`, { method: 'POST' }),
+    getEvidencePackage: async (frameworkId: string) => fetchAPI<any>(`/audit-prep/evidence-package/${encodeURIComponent(frameworkId)}`, { method: 'POST' }),
+    getTimeline: async (frameworkId: string) => fetchAPI<any>(`/audit-prep/timeline/${encodeURIComponent(frameworkId)}`),
+  },
+
+  // --- Automated Control Testing ---
+  controlTesting: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/control-testing${query}`);
+    },
+    get: async (id: string) => fetchAPI<any>(`/control-testing/${encodeURIComponent(id)}`),
+    create: async (data: Record<string, any>) => fetchAPI<any>('/control-testing', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/control-testing/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: async (id: string) => fetchAPI<any>(`/control-testing/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    run: async (id: string) => fetchAPI<any>(`/control-testing/${encodeURIComponent(id)}/run`, { method: 'POST' }),
+    getResults: async (id: string) => fetchAPI<any>(`/control-testing/${encodeURIComponent(id)}/results`),
+    getCoverage: async () => fetchAPI<any>('/control-testing/coverage'),
+    getStats: async () => fetchAPI<any>('/control-testing/stats'),
+  },
+
+  // --- Vendor Monitoring ---
+  vendorMonitoring: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/vendor-monitoring${query}`);
+    },
+    create: async (data: Record<string, any>) => fetchAPI<any>('/vendor-monitoring', { method: 'POST', body: JSON.stringify(data) }),
+    getForVendor: async (vendorId: string) => fetchAPI<any>(`/vendor-monitoring/vendor/${encodeURIComponent(vendorId)}`),
+    triggerCheck: async (vendorId: string) => fetchAPI<any>(`/vendor-monitoring/vendor/${encodeURIComponent(vendorId)}/check`, { method: 'POST' }),
+    getAlerts: async () => fetchAPI<any>('/vendor-monitoring/alerts'),
+    getStats: async () => fetchAPI<any>('/vendor-monitoring/stats'),
+  },
+
+  // --- CI/CD Compliance Gates ---
+  cicdGates: {
+    listPolicies: async () => fetchAPI<any>('/cicd-gates/policies'),
+    getPolicy: async (id: string) => fetchAPI<any>(`/cicd-gates/policies/${encodeURIComponent(id)}`),
+    createPolicy: async (data: Record<string, any>) => fetchAPI<any>('/cicd-gates/policies', { method: 'POST', body: JSON.stringify(data) }),
+    updatePolicy: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/cicd-gates/policies/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deletePolicy: async (id: string) => fetchAPI<any>(`/cicd-gates/policies/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    check: async (data: Record<string, any>) => fetchAPI<any>('/cicd-gates/check', { method: 'POST', body: JSON.stringify(data) }),
+    report: async (data: Record<string, any>) => fetchAPI<any>('/cicd-gates/report', { method: 'POST', body: JSON.stringify(data) }),
+    listResults: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/cicd-gates/results${query}`);
+    },
+    getResult: async (id: string) => fetchAPI<any>(`/cicd-gates/results/${encodeURIComponent(id)}`),
+  },
+
+  // --- SSO Configuration ---
+  sso: {
+    getConfig: async () => fetchAPI<any>('/sso/config'),
+    saveConfig: async (data: Record<string, any>) => fetchAPI<any>('/sso/config', { method: 'POST', body: JSON.stringify(data) }),
+    deleteConfig: async () => fetchAPI<any>('/sso/config', { method: 'DELETE' }),
+    getMetadata: async () => fetchAPI<any>('/sso/metadata'),
+    testConnection: async () => fetchAPI<any>('/sso/test', { method: 'POST' }),
+  },
+
+  // --- SCIM Configuration ---
+  scim: {
+    getConfig: async () => fetchAPI<any>('/scim/config'),
+    saveConfig: async (data: Record<string, any>) => fetchAPI<any>('/scim/config', { method: 'POST', body: JSON.stringify(data) }),
+    generateToken: async () => fetchAPI<any>('/scim/generate-token', { method: 'POST' }),
+    getSyncStatus: async () => fetchAPI<any>('/scim/sync-status'),
+    getSyncLogs: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/scim/sync-logs${query}`);
+    },
+    triggerSync: async () => fetchAPI<any>('/scim/trigger-sync', { method: 'POST' }),
+  },
+
+  // --- Custom Roles ---
+  roles: {
+    list: async () => fetchAPI<any>('/roles'),
+    get: async (id: string) => fetchAPI<any>(`/roles/${encodeURIComponent(id)}`),
+    create: async (data: Record<string, any>) => fetchAPI<any>('/roles', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/roles/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: async (id: string) => fetchAPI<any>(`/roles/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    addPermission: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/roles/${encodeURIComponent(id)}/permissions`, { method: 'POST', body: JSON.stringify(data) }),
+    removePermission: async (id: string, permId: string) => fetchAPI<any>(`/roles/${encodeURIComponent(id)}/permissions/${encodeURIComponent(permId)}`, { method: 'DELETE' }),
+    getUsers: async (id: string) => fetchAPI<any>(`/roles/${encodeURIComponent(id)}/users`),
+    assignRole: async (data: Record<string, any>) => fetchAPI<any>('/roles/assign', { method: 'POST', body: JSON.stringify(data) }),
+    removeAssignment: async (userId: string, roleId: string) => fetchAPI<any>(`/roles/assign/${encodeURIComponent(userId)}/${encodeURIComponent(roleId)}`, { method: 'DELETE' }),
+  },
+
+  // --- Branding ---
+  branding: {
+    get: async () => fetchAPI<any>('/branding'),
+    save: async (data: Record<string, any>) => fetchAPI<any>('/branding', { method: 'POST', body: JSON.stringify(data) }),
+    reset: async () => fetchAPI<any>('/branding', { method: 'DELETE' }),
+  },
+
+  // --- Global Search ---
+  search: {
+    query: async (q: string, params?: Record<string, any>) => {
+      const searchParams = new URLSearchParams({ q, ...params });
+      return fetchAPI<any>(`/search?${searchParams.toString()}`);
+    },
+    getRecent: async () => fetchAPI<any>('/search/recent'),
+    saveRecent: async (query: string) => fetchAPI<any>('/search/recent', { method: 'POST', body: JSON.stringify({ query }) }),
+  },
+
+  // --- Notifications ---
+  notifications: {
+    list: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/notifications${query}`);
+    },
+    getUnreadCount: async () => fetchAPI<any>('/notifications/unread-count'),
+    markAsRead: async (id: string) => fetchAPI<any>(`/notifications/${encodeURIComponent(id)}/read`, { method: 'PATCH' }),
+    markAllAsRead: async () => fetchAPI<any>('/notifications/mark-all-read', { method: 'POST' }),
+    delete: async (id: string) => fetchAPI<any>(`/notifications/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    getPreferences: async () => fetchAPI<any>('/notifications/preferences'),
+    updatePreferences: async (data: Record<string, any>) => fetchAPI<any>('/notifications/preferences', { method: 'PATCH', body: JSON.stringify(data) }),
+  },
+
+  // --- Custom Dashboards ---
+  dashboards: {
+    list: async () => fetchAPI<any>('/dashboards'),
+    get: async (id: string) => fetchAPI<any>(`/dashboards/${encodeURIComponent(id)}`),
+    create: async (data: Record<string, any>) => fetchAPI<any>('/dashboards', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/dashboards/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: async (id: string) => fetchAPI<any>(`/dashboards/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    addWidget: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/dashboards/${encodeURIComponent(id)}/widgets`, { method: 'POST', body: JSON.stringify(data) }),
+    updateWidget: async (id: string, widgetId: string, data: Record<string, any>) => fetchAPI<any>(`/dashboards/${encodeURIComponent(id)}/widgets/${encodeURIComponent(widgetId)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    removeWidget: async (id: string, widgetId: string) => fetchAPI<any>(`/dashboards/${encodeURIComponent(id)}/widgets/${encodeURIComponent(widgetId)}`, { method: 'DELETE' }),
+    getTemplates: async () => fetchAPI<any>('/dashboards/templates'),
+    clone: async (id: string) => fetchAPI<any>(`/dashboards/${encodeURIComponent(id)}/clone`, { method: 'POST' }),
+  },
+
+  // --- Report Builder ---
+  reports: {
+    list: async () => fetchAPI<any>('/reports'),
+    get: async (id: string) => fetchAPI<any>(`/reports/${encodeURIComponent(id)}`),
+    create: async (data: Record<string, any>) => fetchAPI<any>('/reports', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id: string, data: Record<string, any>) => fetchAPI<any>(`/reports/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: async (id: string) => fetchAPI<any>(`/reports/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    generate: async (id: string) => fetchAPI<any>(`/reports/${encodeURIComponent(id)}/generate`, { method: 'POST' }),
+    getLibrary: async () => fetchAPI<any>('/reports/library'),
+  },
+
+  // --- Bulk Operations ---
+  bulk: {
+    update: async (data: Record<string, any>) => fetchAPI<any>('/bulk/update', { method: 'POST', body: JSON.stringify(data) }),
+    export: async (data: Record<string, any>) => fetchAPI<any>('/bulk/export', { method: 'POST', body: JSON.stringify(data) }),
+    delete: async (data: Record<string, any>) => fetchAPI<any>('/bulk/delete', { method: 'POST', body: JSON.stringify(data) }),
+    assign: async (data: Record<string, any>) => fetchAPI<any>('/bulk/assign', { method: 'POST', body: JSON.stringify(data) }),
+  },
+
+  // --- Ticketing Integrations ---
+  ticketing: {
+    getConfig: async () => fetchAPI<any>('/ticketing/config'),
+    saveConfig: async (data: Record<string, any>) => fetchAPI<any>('/ticketing/config', { method: 'POST', body: JSON.stringify(data) }),
+    deleteConfig: async (provider?: string) => fetchAPI<any>(`/ticketing/config${provider ? '?provider=' + encodeURIComponent(provider) : ''}`, { method: 'DELETE' }),
+    testConnection: async (data?: Record<string, any>) => fetchAPI<any>('/ticketing/test', { method: 'POST', body: JSON.stringify(data || {}) }),
+    sync: async (data?: Record<string, any>) => fetchAPI<any>('/ticketing/sync', { method: 'POST', body: JSON.stringify(data || {}) }),
+    createTicket: async (data: Record<string, any>) => fetchAPI<any>('/ticketing/create-ticket', { method: 'POST', body: JSON.stringify(data) }),
+    listTickets: async (params?: Record<string, any>) => {
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/ticketing/tickets${query}`);
+    },
+    listConnections: async () => fetchAPI<any>('/ticketing/connections'),
+    createConnection: async (data: Record<string, any>) => fetchAPI<any>('/ticketing/connections', { method: 'POST', body: JSON.stringify(data) }),
+    deleteConnection: async (id: string) => fetchAPI<any>(`/ticketing/connections/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    testConnectionById: async (id: string) => fetchAPI<any>(`/ticketing/connections/${encodeURIComponent(id)}/test`, { method: 'POST' }),
+    getTicket: async (id: string) => fetchAPI<any>(`/ticketing/tickets/${encodeURIComponent(id)}`),
+    syncTicket: async (id: string) => fetchAPI<any>(`/ticketing/tickets/${encodeURIComponent(id)}/sync`, { method: 'PATCH' }),
+    bulkSync: async (data?: Record<string, any>) => fetchAPI<any>('/ticketing/tickets/bulk-sync', { method: 'POST', body: JSON.stringify(data || {}) }),
+    getFieldMapping: async (provider: string) => fetchAPI<any>(`/ticketing/field-mapping/${encodeURIComponent(provider)}`),
+    updateFieldMapping: async (provider: string, data: Record<string, any>) => fetchAPI<any>(`/ticketing/field-mapping/${encodeURIComponent(provider)}`, { method: 'PUT', body: JSON.stringify(data) }),
+    getSyncStatus: async (provider: string) => fetchAPI<any>(`/ticketing/sync-status?provider=${encodeURIComponent(provider)}`),
+  },
+
+  // (workflows already defined above — see "Workflow Builder" section)
 };
 
 // Export helper functions
