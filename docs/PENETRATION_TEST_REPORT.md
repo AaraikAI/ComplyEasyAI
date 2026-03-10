@@ -4,25 +4,25 @@
 
 | Field | Value |
 |-------|-------|
-| **Test Date** | 2026-03-09 |
+| **Test Date** | 2026-03-10 |
 | **Target** | ComplyEasyAI Platform (http://localhost:3001) |
 | **Methodology** | OWASP Top 10 2021, OWASP ASVS 4.0, NIST SP 800-53, FIPS 140-2 |
-| **Test Duration** | 0.7s |
-| **Overall Risk Level** | **PASS** |
-| **Total Tests Executed** | 60 |
-| **Passed** | 53 |
-| **Failed** | 0 |
-| **Warnings** | 6 |
-| **Informational** | 1 |
+| **Test Duration** | 1.2s |
+| **Overall Risk Level** | **CRITICAL** |
+| **Total Tests Executed** | 66 |
+| **Passed** | 56 |
+| **Failed** | 3 |
+| **Warnings** | 7 |
+| **Informational** | 0 |
 | **Errors** | 0 |
 
 ### Findings by Severity
 
 | Severity | Failed | Warning | Total Findings |
 |----------|--------|---------|----------------|
-| CRITICAL | 0 | 0 | 11 |
-| HIGH | 0 | 4 | 23 |
-| MEDIUM | 0 | 2 | 20 |
+| CRITICAL | 3 | 0 | 14 |
+| HIGH | 0 | 5 | 25 |
+| MEDIUM | 0 | 2 | 21 |
 | LOW | 0 | 0 | 5 |
 | INFO | 0 | 0 | 1 |
 
@@ -30,7 +30,7 @@
 
 | Standard | Score |
 |----------|-------|
-| **Overall Pass Rate** | 88.3% (53/60) |
+| **Overall Pass Rate** | 84.8% (56/66) |
 | **OWASP Top 10 Coverage** | All 10 categories tested |
 | **FIPS 140-2 Compliance** | 5/5 checks passed |
 | **SOC 2 Security Controls** | Authentication, Authorization, Encryption, Logging verified |
@@ -39,21 +39,28 @@
 
 ## Injection
 
-> **8 passed** | 0 failed | 0 warnings | 8 total
+> **7 passed** | 1 failed | 0 warnings | 8 total
 
-### ✅ INJ-001: SQL Injection — Raw Query Detection
+### ❌ INJ-001: SQL Injection — Raw Query Detection
 
 | | |
 |---|---|
 | **Severity** | CRITICAL |
-| **Status** | PASS |
+| **Status** | FAIL |
 | **OWASP** | A03:2021 — Injection |
 | **CWE** | CWE-89 |
-| **Duration** | 74ms |
+| **Duration** | 91ms |
 
 **Description:** Scan for raw SQL string concatenation or template literals in database calls
 
-**Details:** Scanned 158 files — no raw SQL concatenation detected. Prisma ORM parameterized queries are used consistently.
+**Details:** 1 potential raw SQL patterns found
+
+**Evidence:**
+```
+src/routes/search.ts: 2 match(es) — prisma\.\$queryRawUnsafe\s*\(
+```
+
+**Remediation:** Replace raw SQL concatenation with Prisma parameterized queries ($queryRaw with Prisma.sql template tag).
 
 ---
 
@@ -65,11 +72,11 @@
 | **Status** | PASS |
 | **OWASP** | A03:2021 — Injection |
 | **CWE** | CWE-79 |
-| **Duration** | 17ms |
+| **Duration** | 23ms |
 
 **Description:** Check that user input is not directly inserted into HTML responses without sanitization
 
-**Details:** No direct user-input-to-response patterns detected in 158 files. API returns JSON (Content-Type: application/json), which mitigates reflected XSS.
+**Details:** No direct user-input-to-response patterns detected in 190 files. API returns JSON (Content-Type: application/json), which mitigates reflected XSS.
 
 ---
 
@@ -81,7 +88,7 @@
 | **Status** | PASS |
 | **OWASP** | A03:2021 — Injection |
 | **CWE** | CWE-78 |
-| **Duration** | 13ms |
+| **Duration** | 18ms |
 
 **Description:** Scan for child_process.exec or execSync with user-controlled input
 
@@ -97,7 +104,7 @@
 | **Status** | PASS |
 | **OWASP** | A01:2021 — Broken Access Control |
 | **CWE** | CWE-22 |
-| **Duration** | 16ms |
+| **Duration** | 20ms |
 
 **Description:** Check for unsanitized user input in filesystem operations
 
@@ -113,7 +120,7 @@
 | **Status** | PASS |
 | **OWASP** | A03:2021 — Injection |
 | **CWE** | CWE-943 |
-| **Duration** | 26ms |
+| **Duration** | 33ms |
 
 **Description:** Check for MongoDB-style $gt/$ne operators or unvalidated JSON in queries
 
@@ -129,7 +136,7 @@
 | **Status** | PASS |
 | **OWASP** | A03:2021 — Injection |
 | **CWE** | CWE-90 |
-| **Duration** | 8ms |
+| **Duration** | 10ms |
 
 **Description:** Check that LDAP filter strings are properly escaped
 
@@ -145,7 +152,7 @@
 | **Status** | PASS |
 | **OWASP** | A03:2021 — Injection |
 | **CWE** | CWE-113 |
-| **Duration** | 12ms |
+| **Duration** | 18ms |
 
 **Description:** Check for user input in HTTP response headers without sanitization
 
@@ -161,7 +168,7 @@
 | **Status** | PASS |
 | **OWASP** | A03:2021 — Injection |
 | **CWE** | CWE-1321 |
-| **Duration** | 15ms |
+| **Duration** | 18ms |
 
 **Description:** Check for unsafe deep-merge or Object.assign from user input
 
@@ -250,7 +257,7 @@ jwt.verify() called with explicit secret key
 | **Status** | PASS |
 | **OWASP** | A07:2021 — Identification & Auth Failures |
 | **CWE** | CWE-307 |
-| **Duration** | 0ms |
+| **Duration** | 1ms |
 
 **Description:** Verify rate limiting on authentication endpoints
 
@@ -282,7 +289,7 @@ jwt.verify() called with explicit secret key
 | **Status** | PASS |
 | **OWASP** | A07:2021 — Identification & Auth Failures |
 | **CWE** | CWE-613 |
-| **Duration** | 1ms |
+| **Duration** | 0ms |
 
 **Description:** Verify session timeout, concurrent session limits, and idle termination
 
@@ -322,7 +329,7 @@ jwt.verify() called with explicit secret key
 
 **Description:** Verify that role-based authorization middleware is enforced on sensitive routes
 
-**Details:** RBAC authorize() middleware detected. 28 route files with admin functionality all use role checks. Roles: Owner, Admin, Auditor, Member.
+**Details:** RBAC authorize() middleware detected. 41 route files with admin functionality all use role checks. Roles: Owner, Admin, Auditor, Member.
 
 ---
 
@@ -334,11 +341,11 @@ jwt.verify() called with explicit secret key
 | **Status** | PASS |
 | **OWASP** | A01:2021 — Broken Access Control |
 | **CWE** | CWE-639 |
-| **Duration** | 1ms |
+| **Duration** | 2ms |
 
 **Description:** Verify all data queries are scoped to organizationId from authenticated user
 
-**Details:** 14/14 route files with database access scope queries by organizationId. Multi-tenant isolation enforced at application layer + RLS at database layer.
+**Details:** 40/40 route files with database access scope queries by organizationId. Multi-tenant isolation enforced at application layer + RLS at database layer.
 
 ---
 
@@ -354,41 +361,48 @@ jwt.verify() called with explicit secret key
 
 **Description:** Verify RLS policies exist for all tables with organizationId
 
-**Details:** RLS enabled: 0, Tables with orgId: 146, Policies: 512
+**Details:** RLS enabled: 0, Tables with orgId: 167, Policies: 512
 
 **Remediation:** Add RLS policies for all remaining tables with organizationId columns.
 
 ---
 
-### ✅ AUTHZ-020: Function-Level Access Control
-
-| | |
-|---|---|
-| **Severity** | HIGH |
-| **Status** | PASS |
-| **OWASP** | A01:2021 — Broken Access Control |
-| **CWE** | CWE-285 |
-| **Duration** | 3ms |
-
-**Description:** Verify sensitive operations require elevated authorization
-
-**Details:** All DELETE endpoints and destructive operations protected by authenticate + authorize middleware.
-
----
-
-### ⚠️ AUTHZ-021: IDOR Prevention — ID Validation
+### ⚠️ AUTHZ-020: Function-Level Access Control
 
 | | |
 |---|---|
 | **Severity** | HIGH |
 | **Status** | WARNING |
 | **OWASP** | A01:2021 — Broken Access Control |
+| **CWE** | CWE-285 |
+| **Duration** | 6ms |
+
+**Description:** Verify sensitive operations require elevated authorization
+
+**Details:** 1 delete endpoint(s) may lack role authorization
+
+**Evidence:**
+```
+src/routes/scim.ts:549
+```
+
+**Remediation:** Apply authorize("Admin", "Owner") to all DELETE/destructive endpoints.
+
+---
+
+### ✅ AUTHZ-021: IDOR Prevention — ID Validation
+
+| | |
+|---|---|
+| **Severity** | HIGH |
+| **Status** | PASS |
+| **OWASP** | A01:2021 — Broken Access Control |
 | **CWE** | CWE-639 |
 | **Duration** | 2ms |
 
 **Description:** Verify resource IDs are validated as UUIDs and ownership is checked
 
-**Details:** 6/13 route files with :id params include organization-scoped lookups (findFirst/findUnique with organizationId). Prisma's UUID validation prevents non-UUID injection.
+**Details:** 23/30 route files with :id params include organization-scoped lookups (findFirst/findUnique with organizationId). Prisma's UUID validation prevents non-UUID injection.
 
 ---
 
@@ -574,7 +588,7 @@ jwt.verify() called with explicit secret key
 | **Status** | PASS |
 | **OWASP** | A05:2021 — Security Misconfiguration |
 | **CWE** | CWE-693 |
-| **Duration** | 1ms |
+| **Duration** | 0ms |
 
 **Description:** Verify Content-Security-Policy header is present and correctly configured
 
@@ -706,7 +720,7 @@ jwt.verify() called with explicit secret key
 | **Status** | PASS |
 | **OWASP** | A10:2021 — SSRF |
 | **CWE** | CWE-918 |
-| **Duration** | 13ms |
+| **Duration** | 16ms |
 
 **Description:** Check for server-side URL fetching with user-controlled URLs
 
@@ -722,7 +736,7 @@ jwt.verify() called with explicit secret key
 | **Status** | PASS |
 | **OWASP** | A10:2021 — SSRF |
 | **CWE** | CWE-918 |
-| **Duration** | 11ms |
+| **Duration** | 15ms |
 
 **Description:** Check for private IP and cloud metadata endpoint blocking
 
@@ -792,7 +806,7 @@ jwt.verify() called with explicit secret key
 | **Status** | WARNING |
 | **OWASP** | A09:2021 — Security Logging & Monitoring |
 | **CWE** | CWE-532 |
-| **Duration** | 4ms |
+| **Duration** | 5ms |
 
 **Description:** Check that passwords, tokens, and PII are not logged
 
@@ -815,7 +829,7 @@ src/controllers/authController.ts: logger.info(`[Auth] Migrated password
 | **Status** | PASS |
 | **OWASP** | A02:2021 — Cryptographic Failures |
 | **CWE** | CWE-200 |
-| **Duration** | 2ms |
+| **Duration** | 4ms |
 
 **Description:** Check that password hashes, tokens, and secrets are excluded from API responses
 
@@ -867,7 +881,7 @@ src/controllers/authController.ts: logger.info(`[Auth] Migrated password
 | **Status** | PASS |
 | **OWASP** | FIPS 140-2 §4 |
 | **CWE** | CWE-327 |
-| **Duration** | 243ms |
+| **Duration** | 261ms |
 
 **Description:** Scan production code for non-FIPS-approved cryptographic algorithms
 
@@ -915,7 +929,7 @@ src/controllers/authController.ts: logger.info(`[Auth] Migrated password
 | **Status** | PASS |
 | **OWASP** | A02:2021 — Cryptographic Failures |
 | **CWE** | CWE-338 |
-| **Duration** | 102ms |
+| **Duration** | 118ms |
 
 **Description:** Verify crypto.randomBytes is used instead of Math.random for security-critical operations
 
@@ -931,7 +945,7 @@ src/controllers/authController.ts: logger.info(`[Auth] Migrated password
 | **Status** | PASS |
 | **OWASP** | A02:2021 — Cryptographic Failures |
 | **CWE** | CWE-321 |
-| **Duration** | 79ms |
+| **Duration** | 87ms |
 
 **Description:** Verify encryption keys are derived properly and not hardcoded
 
@@ -951,7 +965,7 @@ src/controllers/authController.ts: logger.info(`[Auth] Migrated password
 | **Status** | PASS |
 | **OWASP** | A05:2021 — Security Misconfiguration |
 | **CWE** | CWE-250 |
-| **Duration** | 1ms |
+| **Duration** | 0ms |
 
 **Description:** Verify container runs as non-root user
 
@@ -1043,19 +1057,126 @@ src/controllers/authController.ts: logger.info(`[Auth] Migrated password
 
 ## Dynamic Testing
 
-> **0 passed** | 0 failed | 0 warnings | 1 total
+> **4 passed** | 2 failed | 1 warnings | 7 total
 
-### ℹ️ DYN-060: Server Reachability
+### ✅ DYN-060: Health Endpoint
 
 | | |
 |---|---|
 | **Severity** | INFO |
-| **Status** | INFO |
+| **Status** | PASS |
 | **Duration** | 0ms |
 
-**Description:** Check if the API server is running and reachable
+**Description:** Verify health endpoint responds correctly
 
-**Details:** API server at http://localhost:3001 is not reachable. Dynamic tests skipped. Static analysis results above provide comprehensive coverage. Start the server to enable HTTP-level penetration tests.
+**Details:** Health endpoint responded with status 200
+
+---
+
+### ❌ DYN-061: Missing Authorization — Protected Endpoints
+
+| | |
+|---|---|
+| **Severity** | CRITICAL |
+| **Status** | FAIL |
+| **OWASP** | A07:2021 — Identification & Auth Failures |
+| **CWE** | CWE-306 |
+| **Duration** | 10ms |
+
+**Description:** Verify protected endpoints reject unauthenticated requests
+
+**Details:** 1 endpoint(s) accessible without auth
+
+**Evidence:**
+```
+/api/v1/auth/me → 404
+```
+
+**Remediation:** Apply authenticate middleware to all protected routes.
+
+---
+
+### ❌ DYN-062: Expired JWT Token Rejection
+
+| | |
+|---|---|
+| **Severity** | CRITICAL |
+| **Status** | FAIL |
+| **OWASP** | A07:2021 — Identification & Auth Failures |
+| **CWE** | CWE-613 |
+| **Duration** | 2ms |
+
+**Description:** Verify expired JWT tokens are rejected with 401
+
+**Details:** Expected 401, got 404
+
+**Remediation:** Ensure JWT middleware validates exp claim.
+
+---
+
+### ✅ DYN-063: SQL Injection in Login
+
+| | |
+|---|---|
+| **Severity** | CRITICAL |
+| **Status** | PASS |
+| **OWASP** | A03:2021 — Injection |
+| **CWE** | CWE-89 |
+| **Duration** | 35ms |
+
+**Description:** Test SQL injection payloads in login fields
+
+**Details:** All SQL injection payloads safely rejected (no 200/500 responses).
+
+---
+
+### ✅ DYN-064: Reflected XSS via Query Parameters
+
+| | |
+|---|---|
+| **Severity** | HIGH |
+| **Status** | PASS |
+| **OWASP** | A03:2021 — Injection |
+| **CWE** | CWE-79 |
+| **Duration** | 7ms |
+
+**Description:** Test XSS payloads in query parameters
+
+**Details:** XSS payloads not reflected in responses. JSON API with Content-Type: application/json mitigates reflected XSS.
+
+---
+
+### ✅ DYN-065: Security Headers — Live Verification
+
+| | |
+|---|---|
+| **Severity** | MEDIUM |
+| **Status** | PASS |
+| **OWASP** | A05:2021 — Security Misconfiguration |
+| **CWE** | CWE-693 |
+| **Duration** | 16ms |
+
+**Description:** Verify security headers are present in actual HTTP responses
+
+**Details:** All security headers present: x-content-type-options, x-frame-options, strict-transport-security
+
+---
+
+### ⚠️ DYN-066: Rate Limiting — Brute Force Test
+
+| | |
+|---|---|
+| **Severity** | HIGH |
+| **Status** | WARNING |
+| **OWASP** | A07:2021 — Identification & Auth Failures |
+| **CWE** | CWE-307 |
+| **Duration** | 285ms |
+
+**Description:** Send rapid requests to verify rate limiter activates
+
+**Details:** Rate limiter did not trigger within 15 attempts. May have higher threshold.
+
+**Remediation:** Set auth rate limit to 5 attempts per 15-minute window.
 
 ---
 
@@ -1132,4 +1253,4 @@ This test does not constitute a guarantee of security.
 Annual external penetration testing by a CREST/OSCP-certified firm is recommended.
 
 ---
-*Report generated: 2026-03-09T05:41:51.614Z*
+*Report generated: 2026-03-10T20:16:41.463Z*
