@@ -39,6 +39,17 @@ function getKey(): Buffer {
 }
 
 /**
+ * FIPS 140-3 key zeroization: destroy the cached derived key.
+ * Call during graceful shutdown to clear key material from memory.
+ */
+export function destroyKey(): void {
+  if (_derivedKey) {
+    _derivedKey.fill(0);
+    _derivedKey = null;
+  }
+}
+
+/**
  * Encrypt a plaintext string value.
  * Returns a prefixed string: enc_v1:<iv>:<authTag>:<ciphertext>
  */

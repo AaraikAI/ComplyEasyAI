@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import bcrypt from 'bcryptjs';
+import { hashPassword, verifyPassword, needsRehash } from '../utils/fipsPasswordHashing';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
 import { Prisma } from '../generated/prisma/client';
@@ -512,7 +512,7 @@ class AuthController {
       }
 
       // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+      const isValidPassword = await verifyPassword(password, user.passwordHash);
       if (!isValidPassword) {
         logSecurityEvent({
           type: SecurityEventType.AUTHENTICATION_FAILURE,
@@ -537,6 +537,20 @@ class AuthController {
           message: 'Two-factor authentication required',
         });
         return;
+      }
+
+      // FIPS migration: rehash legacy bcrypt passwords with PBKDF2-SHA256 on successful login
+      if (needsRehash(user.passwordHash)) {
+        try {
+          const newHash = await hashPassword(password);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: newHash },
+          });
+          logger.info(`[Auth] Migrated password hash to PBKDF2-SHA256 for user ${user.id}`);
+        } catch (err: any) {
+          logger.warn('[Auth] Failed to rehash password during login', err?.message);
+        }
       }
 
       // Update last login (non-blocking on failure)
@@ -726,8 +740,8 @@ class AuthController {
         return;
       }
 
-      // Hash password if provided (before transaction to avoid holding DB lock during bcrypt)
-      const passwordHash = password ? await bcrypt.hash(password, 12) : null;
+      // Hash password if provided (before transaction to avoid holding DB lock during hashing)
+      const passwordHash = password ? await hashPassword(password) : null;
 
       // Create organization + user + magic link atomically
       const token = uuidv4();
@@ -1070,7 +1084,7 @@ class AuthController {
       }
 
       // Verify current password
-      const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      const isValid = await verifyPassword(currentPassword, user.passwordHash);
       if (!isValid) {
         logSecurityEvent({
           type: SecurityEventType.AUTHENTICATION_FAILURE,
@@ -1086,7 +1100,7 @@ class AuthController {
       }
 
       // Hash new password
-      const newPasswordHash = await bcrypt.hash(newPassword, 12);
+      const newPasswordHash = await hashPassword(newPassword);
 
       // Update password
       await prisma.user.update({

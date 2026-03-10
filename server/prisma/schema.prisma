@@ -147,6 +147,27 @@ model Organization {
   soxAssessments            SOXAssessment[]
   sodRules                  SoDRule[]
   sodViolations             SoDViolation[]
+  // Enhancement module relations
+  incidents                 Incident[]
+  itAssets                  Asset[]
+  complianceDeadlines       ComplianceDeadline[]
+  maturityAssessments       MaturityAssessment[]
+  businessProcesses         BusinessProcess[]
+  controlEffectiveness      ControlEffectivenessRecord[]
+  complianceCosts           ComplianceCost[]
+  complianceExceptions      ComplianceException[]
+  certificationRecords      Certification[]
+  ssoConfiguration          SSOConfiguration?
+  scimConfiguration         SCIMConfiguration?
+  customRoles               CustomRole[]
+  brandingConfig            BrandingConfig?
+  customDashboards          CustomDashboard[]
+  reportTemplates           ReportTemplate[]
+  cicdGatePolicies          CICDGatePolicy[]
+  searchIndices             SearchIndex[]
+  vendorMonitoringChecks    VendorMonitoringCheck[]
+  evidenceCollectionRules   EvidenceCollectionRule[]
+  controlTestRecords        ControlTest[]
   dsarRequests              DSARRequest[]
   consentRecords            ConsentRecord[]
   consentPreferences        ConsentPreference[]
@@ -165,6 +186,11 @@ model Organization {
   azurePolicyCompliance     AzurePolicyCompliance[]
   azureUsers                AzureUser[]
   azureSyncJobs             AzureSyncJob[]
+  // GDPR compliance module relations
+  dpias                     DataProtectionImpactAssessment[]
+  processingActivityRecords ProcessingActivityRecord[]
+  securityTrainings         SecurityTraining[]
+  securityTrainingRecords   SecurityTrainingRecord[]
 
   @@index([stripeCustomerId])
   @@index([parentOrganizationId])
@@ -230,6 +256,8 @@ model User {
   vrParticipants           VRParticipant[]
   vrTrainingProgresses     VRTrainingProgress[]
   livenessChallenges       LivenessChallenge[]
+  securityTrainingRecords  SecurityTrainingRecord[]
+  customUserRoles          UserRole[]
 
   @@index([email])
   @@index([organizationId])
@@ -5036,6 +5064,13 @@ model ConsentRecord {
   doubleOptInDate       DateTime?
   source                String?      // Where consent was collected
   metadata              Json?
+  dataSubjectAge            Int?
+  isMinor                   Boolean      @default(false)
+  parentalConsentGiven      Boolean      @default(false)
+  parentalConsentDate       DateTime?
+  parentalConsentEmail      String?
+  parentalConsentMethod     String?      // Email, InPerson, Phone, PostalMail
+  ageVerificationMethod     String?      // SelfDeclaration, IDVerification, ParentalConfirmation
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
   organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -5511,4 +5546,827 @@ model AzureSyncJob {
   @@index([status])
   @@index([syncType])
   @@index([startedAt])
+}
+
+// ============================================================================
+// GDPR COMPLIANCE MODULE
+// ============================================================================
+
+// --- Data Protection Impact Assessment (GDPR Art. 35) ---
+model DataProtectionImpactAssessment {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  title                 String
+  description           String?
+  processingActivity    String       // What processing is being assessed
+  dataCategories        String[]     // PersonalData, SpecialCategory, Financial, etc.
+  specialCategories     Boolean      @default(false)
+  dataSubjects          String[]     // Employees, Customers, Children, etc.
+  necessity             String?      // Why processing is necessary
+  proportionality       String?      // Why processing is proportionate
+  lawfulBasis           String?      // Legal basis for processing
+  screeningResult       String       @default("Required") // Required, NotRequired, Uncertain
+  status                String       @default("Draft") // Draft, InProgress, UnderReview, Approved, Rejected
+  overallRiskLevel      String?      // Low, Medium, High, VeryHigh
+  riskMitigations       Json?        // Array of mitigation measures
+  dpoConsulted          Boolean      @default(false)
+  dpoConsultationDate   DateTime?
+  dpoOpinion            String?
+  dpoName               String?
+  supervisoryAuthority  Boolean      @default(false) // Art. 36 prior consultation
+  approvedBy            String?
+  approvedAt            DateTime?
+  nextReviewDate        DateTime?
+  createdBy             String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  riskAssessments       DPIARiskAssessment[]
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([screeningResult])
+}
+
+model DPIARiskAssessment {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  dpiaId                String
+  riskCategory          String       // DataBreach, UnauthorizedAccess, DataLoss, etc.
+  riskDescription       String
+  likelihood            String       // VeryLow, Low, Medium, High, VeryHigh
+  impact                String       // VeryLow, Low, Medium, High, VeryHigh
+  riskLevel             String       // Calculated: Low, Medium, High, VeryHigh
+  existingControls      String[]
+  proposedMitigations   String[]
+  residualRisk          String?      // After mitigations
+  status                String       @default("Identified") // Identified, Mitigated, Accepted, Transferred
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  dpia                  DataProtectionImpactAssessment @relation(fields: [dpiaId], references: [id], onDelete: Cascade)
+
+  @@index([dpiaId])
+  @@index([riskLevel])
+}
+
+// --- Records of Processing Activities (GDPR Art. 30) ---
+model ProcessingActivityRecord {
+  id                         String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId             String
+  activityName               String
+  activityDescription        String?
+  controllerName             String?
+  controllerContact          String?
+  processorName              String?
+  processorContact           String?
+  dpoContact                 String?
+  purposes                   String[]
+  lawfulBasis                String       // Consent, LegitimateInterest, Contract, LegalObligation, VitalInterest, PublicTask
+  legitimateInterestDetails  String?
+  dataCategories             String[]     // Name, Email, Financial, Health, Biometric, etc.
+  specialCategories          String[]     // Racial, Political, Religious, Genetic, Health, Sexual, Criminal
+  dataSubjectCategories      String[]     // Employees, Customers, Prospects, Minors
+  recipients                 String[]     // Internal departments, third parties
+  internationalTransfers     Boolean      @default(false)
+  transferCountries          String[]
+  transferSafeguards         String?      // SCC, BCR, AdequacyDecision
+  retentionPeriod            String?
+  retentionJustification     String?
+  technicalMeasures          String[]     // Encryption, AccessControl, Pseudonymization, etc.
+  organizationalMeasures     String[]     // Training, Policies, Audits, etc.
+  automatedDecisionMaking    Boolean      @default(false)
+  automatedDecisionDetails   String?
+  dpiaRequired               Boolean      @default(false)
+  dpiaReference              String?
+  status                     String       @default("Active") // Active, UnderReview, Archived
+  lastReviewDate             DateTime?
+  nextReviewDate             DateTime?
+  createdBy                  String?
+  createdAt                  DateTime     @default(now())
+  updatedAt                  DateTime     @updatedAt
+  organization               Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([lawfulBasis])
+}
+
+// --- Security Training (SOC 2 CC1.4) ---
+model SecurityTraining {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  title                 String
+  description           String?
+  category              String       // SecurityAwareness, DataPrivacy, IncidentResponse, PhishingPrevention, ComplianceRegulatory, SecureCoding
+  content               String?      // Training content / URL
+  contentType           String       @default("Document") // Document, Video, Quiz, Interactive, External
+  duration              Int?         // Duration in minutes
+  passingScore          Int          @default(80)
+  maxAttempts           Int          @default(3)
+  isRequired            Boolean      @default(true)
+  recurrence            String       @default("Annual") // OneTime, Quarterly, SemiAnnual, Annual
+  validityPeriod        Int          @default(365) // Days before re-certification needed
+  status                String       @default("Active") // Active, Draft, Archived
+  createdBy             String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  records               SecurityTrainingRecord[]
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([status])
+}
+
+model SecurityTrainingRecord {
+  id                    String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId        String
+  trainingId            String
+  userId                String
+  status                String       @default("Assigned") // Assigned, InProgress, Completed, Failed, Overdue, Expired
+  assignedAt            DateTime     @default(now())
+  startedAt             DateTime?
+  completedAt           DateTime?
+  expiresAt             DateTime?
+  score                 Int?
+  attempts              Int          @default(0)
+  certificateUrl        String?
+  notes                 String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  training              SecurityTraining @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingId, userId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([trainingId])
+  @@index([status])
+}
+
+// ============================================================================
+// ENHANCEMENT MODULES - Visionary GRC Platform
+// ============================================================================
+
+// ── 4.3 Incident Management ───────────────────────────────────────────
+model Incident {
+  id               String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String
+  title            String
+  description      String
+  severity         IncidentSeverity
+  status           IncidentStatus    @default(DETECTED)
+  category         IncidentCategory
+  reportedBy       String
+  assignedTo       String?
+  detectedAt       DateTime          @default(now())
+  containedAt      DateTime?
+  resolvedAt       DateTime?
+  closedAt         DateTime?
+  rootCause        String?
+  impact           String?
+  lessonsLearned   String?
+  affectedSystems  String[]          @default([])
+  affectedControls String[]          @default([])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  timeline         IncidentTimelineEntry[]
+  tasks            IncidentTask[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([severity])
+  @@index([status])
+  @@index([category])
+}
+
+model IncidentTimelineEntry {
+  id          String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  incidentId  String
+  action      String
+  details     String
+  performedBy String
+  timestamp   DateTime @default(now())
+  incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+model IncidentTask {
+  id         String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  incidentId String
+  title      String
+  assignee   String
+  status     String   @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED
+  dueDate    DateTime?
+  completedAt DateTime?
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+enum IncidentSeverity { SEV1 SEV2 SEV3 SEV4 }
+enum IncidentStatus { DETECTED TRIAGED CONTAINED ERADICATED RECOVERED CLOSED POST_MORTEM }
+enum IncidentCategory {
+  DATA_BREACH
+  MALWARE
+  PHISHING
+  UNAUTHORIZED_ACCESS
+  DDOS
+  INSIDER_THREAT
+  SYSTEM_FAILURE
+  POLICY_VIOLATION
+  PHYSICAL_SECURITY
+  OTHER
+}
+
+// ── 4.4 IT Asset Management ───────────────────────────────────────────
+model Asset {
+  id              String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  name            String
+  type            AssetType
+  category        String?
+  owner           String
+  department      String?
+  location        String?
+  classification  DataClassification @default(INTERNAL)
+  status          AssetStatus       @default(ACTIVE)
+  ipAddress       String?
+  hostname        String?
+  serialNumber    String?
+  vendor          String?
+  purchaseDate    DateTime?
+  endOfLife       DateTime?
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([classification])
+  @@index([status])
+}
+
+enum AssetType { HARDWARE SOFTWARE DATA NETWORK CLOUD_SERVICE PEOPLE FACILITY }
+enum DataClassification { PUBLIC INTERNAL CONFIDENTIAL RESTRICTED }
+enum AssetStatus { ACTIVE DECOMMISSIONED IN_MAINTENANCE PLANNED }
+
+// ── 4.1 Compliance Calendar ───────────────────────────────────────────
+model ComplianceDeadline {
+  id             String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  title          String
+  description    String?
+  type           DeadlineType
+  dueDate        DateTime
+  frameworkId    String?
+  controlId      String?
+  assignedTo     String?
+  status         DeadlineStatus @default(UPCOMING)
+  reminderDays   Int[]          @default([30, 14, 7, 1])
+  recurrence     String?
+  completedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([dueDate])
+  @@index([status])
+  @@index([type])
+}
+
+enum DeadlineType {
+  AUDIT_DATE
+  CERTIFICATION_RENEWAL
+  POLICY_REVIEW
+  RISK_REASSESSMENT
+  REGULATORY_FILING
+  TRAINING_DUE
+  EVIDENCE_REFRESH
+  VENDOR_REVIEW
+  BOARD_REPORT
+  INCIDENT_REPORT_DEADLINE
+  DSAR_RESPONSE
+  BREACH_NOTIFICATION
+  CUSTOM
+}
+
+enum DeadlineStatus { UPCOMING DUE_SOON OVERDUE COMPLETED CANCELLED }
+
+// ── 4.2 GRC Maturity Assessment ───────────────────────────────────────
+model MaturityAssessment {
+  id              String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  assessmentDate  DateTime          @default(now())
+  overallLevel    Int               @default(1) // 1-5
+  recommendations Json?
+  domains         MaturityDomain[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([assessmentDate])
+}
+
+model MaturityDomain {
+  id           String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  assessmentId String
+  domain       String             // Governance, Risk, Compliance, Technology, People
+  currentLevel Int                @default(1) // 1-5
+  targetLevel  Int                @default(3)
+  gaps         Json?
+  assessment   MaturityAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+}
+
+// ── 4.5 Business Impact Analysis ──────────────────────────────────────
+model BusinessProcess {
+  id              String              @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  name            String
+  description     String?
+  owner           String
+  department      String
+  criticality     Criticality         @default(STANDARD)
+  rto             Int                 @default(24) // Recovery Time Objective (hours)
+  rpo             Int                 @default(24) // Recovery Point Objective (hours)
+  mtpd            Int                 @default(72) // Max Tolerable Period of Disruption
+  impactAnalysis  Json?               // financial, operational, reputational, regulatory
+  assets          String[]            @default([])
+  dependencies    ProcessDependency[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([criticality])
+}
+
+model ProcessDependency {
+  id         String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  processId  String
+  dependsOn  String
+  type       DependencyType
+  isCritical Boolean         @default(false)
+  process    BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  @@index([processId])
+}
+
+enum Criticality { MISSION_CRITICAL BUSINESS_CRITICAL IMPORTANT STANDARD LOW_PRIORITY }
+enum DependencyType { INTERNAL_PROCESS VENDOR_SERVICE TECHNOLOGY PERSONNEL FACILITY }
+
+// ── 4.6 Control Effectiveness Tracking ────────────────────────────────
+model ControlEffectivenessRecord {
+  id             String              @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  controlId      String
+  organizationId String
+  assessmentDate DateTime            @default(now())
+  rating         EffectivenessRating
+  testMethod     String
+  findings       String?
+  assessedBy     String
+  evidence       String[]            @default([])
+  createdAt      DateTime            @default(now())
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([controlId])
+  @@index([assessmentDate])
+}
+
+enum EffectivenessRating { EFFECTIVE PARTIALLY_EFFECTIVE INEFFECTIVE NOT_TESTED }
+
+// ── 4.7 Compliance Cost Analytics ─────────────────────────────────────
+model ComplianceCost {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  category       CostCategory
+  description    String
+  amount         Float
+  currency       String       @default("USD")
+  frameworkId    String?
+  controlId      String?
+  vendorId       String?
+  periodStart    DateTime
+  periodEnd      DateTime
+  createdBy      String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([category])
+  @@index([frameworkId])
+}
+
+enum CostCategory {
+  TOOL_LICENSE
+  CONSULTANT
+  AUDIT_FEE
+  TRAINING
+  PERSONNEL
+  REMEDIATION
+  INSURANCE
+  CERTIFICATION
+  LEGAL
+  OTHER
+}
+
+// ── 4.9 Exception Management ──────────────────────────────────────────
+model ComplianceException {
+  id                   String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId       String
+  controlId            String
+  title                String
+  justification        String
+  riskAcceptance       String
+  compensatingControls String?
+  requestedBy          String
+  approvedBy           String?
+  status               ExceptionStatus @default(REQUESTED)
+  expiryDate           DateTime
+  reviewDate           DateTime
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  organization         Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([expiryDate])
+}
+
+enum ExceptionStatus { REQUESTED APPROVED REJECTED EXPIRED RENEWED }
+
+// ── 4.10 Certification Lifecycle ──────────────────────────────────────
+model Certification {
+  id               String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String
+  frameworkId      String?
+  name             String
+  certBody         String
+  certNumber       String?
+  issueDate        DateTime
+  expiryDate       DateTime
+  status           CertStatus   @default(ACTIVE)
+  scope            String?
+  documents        String[]     @default([])
+  surveillanceAudits CertAudit[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([expiryDate])
+  @@index([status])
+}
+
+model CertAudit {
+  id              String        @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  certificationId String
+  type            CertAuditType
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  auditorName     String?
+  findings        Json?
+  result          String?       // PASS, CONDITIONAL_PASS, FAIL
+  certification   Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+
+  @@index([certificationId])
+}
+
+enum CertStatus { CERT_ACTIVE EXPIRING_SOON CERT_EXPIRED SUSPENDED REVOKED PENDING }
+enum CertAuditType { INITIAL SURVEILLANCE_1 SURVEILLANCE_2 RECERTIFICATION }
+
+// ── 3.1 Regulatory Change Detection ──────────────────────────────────
+model RegulatoryChangeDetection {
+  id               String                  @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  regulationName   String
+  changeType       RegChangeType
+  title            String
+  summary          String
+  sourceUrl        String?
+  effectiveDate    DateTime?
+  detectedAt       DateTime                @default(now())
+  impactAnalysis   Json?
+  status           RegChangeStatus         @default(NEW)
+  impacts          RegulatoryChangeImpact[]
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@index([regulationName])
+  @@index([status])
+  @@index([detectedAt])
+}
+
+model RegulatoryChangeImpact {
+  id                 String                    @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  regulatoryChangeId String
+  controlId          String
+  organizationId     String
+  impactLevel        String                    // Low, Medium, High, Critical
+  requiredAction     String
+  status             RegChangeStatus           @default(NEW)
+  regulatoryChange   RegulatoryChangeDetection @relation(fields: [regulatoryChangeId], references: [id], onDelete: Cascade)
+
+  @@index([regulatoryChangeId])
+  @@index([organizationId])
+}
+
+enum RegChangeType { NEW_REGULATION AMENDMENT GUIDANCE ENFORCEMENT REPEAL }
+enum RegChangeStatus { NEW REVIEWING IN_PROGRESS REG_RESOLVED DISMISSED }
+
+// ── 3.2 Evidence Auto-Collection ──────────────────────────────────────
+model EvidenceCollectionRule {
+  id              String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  controlId       String
+  integrationId   String?
+  sourceType      EvidenceSourceType
+  query           Json?
+  schedule        String?          // Cron expression
+  lastCollectedAt DateTime?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([controlId])
+}
+
+enum EvidenceSourceType {
+  AWS_CONFIG
+  AZURE_POLICY
+  GITHUB_ACTIONS
+  JIRA_TICKETS
+  SLACK_MESSAGES
+  GOOGLE_DRIVE
+  CLOUDTRAIL_LOGS
+  VULNERABILITY_SCAN
+  PENETRATION_TEST
+  ACCESS_REVIEW
+  TRAINING_RECORDS
+  MANUAL_UPLOAD
+}
+
+// ── 3.4 Automated Control Testing ─────────────────────────────────────
+model ControlTest {
+  id             String             @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  controlId      String
+  testType       ControlTestType
+  testConfig     Json?
+  schedule       String?
+  lastRunAt      DateTime?
+  isActive       Boolean            @default(true)
+  results        ControlTestResult[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([controlId])
+}
+
+model ControlTestResult {
+  id       String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  testId   String
+  status   TestResultStatus
+  details  Json?
+  evidence String?
+  testedAt DateTime         @default(now())
+  test     ControlTest      @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([testId])
+  @@index([testedAt])
+}
+
+enum ControlTestType {
+  ACCESS_REVIEW_TEST
+  CONFIGURATION_CHECK
+  VULNERABILITY_SCAN_TEST
+  POLICY_REVIEW_TEST
+  LOG_REVIEW
+  ENCRYPTION_CHECK
+  BACKUP_VERIFICATION
+  INCIDENT_RESPONSE_TEST
+  CHANGE_MANAGEMENT_REVIEW
+  NETWORK_SEGMENTATION_CHECK
+}
+
+enum TestResultStatus { PASS FAIL PARTIAL ERROR SKIPPED }
+
+// ── 2.1 SSO Configuration ────────────────────────────────────────────
+model SSOConfiguration {
+  id               String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId   String      @unique
+  provider         SSOProvider
+  enabled          Boolean     @default(false)
+  entityId         String?
+  ssoUrl           String?
+  certificate      String?     // Encrypted
+  metadataUrl      String?
+  attributeMapping Json?
+  defaultRole      String      @default("viewer")
+  autoProvision    Boolean     @default(true)
+  domains          String[]    @default([])
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+enum SSOProvider { SAML OIDC AZURE_AD OKTA GOOGLE_WORKSPACE ONELOGIN PING_IDENTITY }
+
+// ── 2.2 SCIM Configuration ───────────────────────────────────────────
+model SCIMConfiguration {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String       @unique
+  enabled        Boolean      @default(false)
+  bearerToken    String?      // Encrypted
+  lastSyncAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ── 2.5 Advanced RBAC ────────────────────────────────────────────────
+model CustomRole {
+  id             String           @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  name           String
+  description    String?
+  isSystem       Boolean          @default(false)
+  permissions    RolePermission[]
+  userRoles      UserRole[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model RolePermission {
+  id       String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  roleId   String
+  resource String
+  action   String          // create, read, update, delete, approve, export
+  scope    PermissionScope @default(OWN)
+  role     CustomRole      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, resource, action])
+  @@index([roleId])
+}
+
+model UserRole {
+  id     String     @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  userId String
+  roleId String
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+enum PermissionScope { OWN TEAM DEPARTMENT ORG }
+
+// ── 2.4 Branding / White-Labeling ────────────────────────────────────
+model BrandingConfig {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String       @unique
+  logoUrl        String?
+  faviconUrl     String?
+  primaryColor   String       @default("#3B82F6")
+  secondaryColor String       @default("#1E40AF")
+  accentColor    String       @default("#10B981")
+  companyName    String?
+  customDomain   String?
+  customCSS      String?
+  emailTemplate  Json?
+  loginPageHtml  String?
+  footerText     String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ── 1.5 Custom Dashboards ────────────────────────────────────────────
+model CustomDashboard {
+  id             String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  createdBy      String
+  name           String
+  description    String?
+  isDefault      Boolean           @default(false)
+  isShared       Boolean           @default(false)
+  layout         Json?
+  widgets        DashboardWidget[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model DashboardWidget {
+  id          String          @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  dashboardId String
+  type        String          // METRIC_CARD, LINE_CHART, BAR_CHART, etc.
+  title       String
+  config      Json?
+  position    Json?           // x, y, width, height
+  dashboard   CustomDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+
+  @@index([dashboardId])
+}
+
+// ── 6.1 Report Builder ───────────────────────────────────────────────
+model ReportTemplate {
+  id              String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId  String
+  name            String
+  description     String?
+  sections        Json?
+  filters         Json?
+  schedule        String?
+  recipients      String[]     @default([])
+  format          String       @default("PDF")
+  lastGeneratedAt DateTime?
+  createdBy       String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// ── 5.2 CI/CD Compliance Gates ───────────────────────────────────────
+model CICDGatePolicy {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  name           String
+  description    String?
+  rules          Json?        // Required checks, policies
+  isActive       Boolean      @default(true)
+  results        CICDGateResult[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model CICDGateResult {
+  id         String         @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  policyId   String
+  repository String
+  branch     String
+  commitHash String
+  status     String         // PASSED, FAILED, SKIPPED
+  details    Json?
+  triggeredAt DateTime      @default(now())
+  policy     CICDGatePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@index([policyId])
+  @@index([repository])
+}
+
+// ── 1.3 Search Index ─────────────────────────────────────────────────
+model SearchIndex {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  resourceType   String
+  resourceId     String
+  title          String
+  content        String
+  metadata       Json?
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, resourceType])
+  @@index([organizationId])
+}
+
+// ── 4.11 Vendor Continuous Monitoring ────────────────────────────────
+model VendorMonitoringCheck {
+  id             String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  organizationId String
+  vendorId       String
+  checkType      String       // domain_reputation, ssl_check, breach_check, soc2_expiry
+  status         String       // PASS, WARN, FAIL
+  details        Json?
+  checkedAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([vendorId])
+  @@index([checkedAt])
 }

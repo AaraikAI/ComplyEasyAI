@@ -514,7 +514,34 @@ export type ViewState =
   | 'auditor'
   | 'workflow-builder'
   | 'privacy'
-  | 'account-deletion';
+  | 'account-deletion'
+  // Enhancement Modules
+  | 'incidents'
+  | 'assets'
+  | 'calendar'
+  | 'maturity'
+  | 'bia'
+  | 'exceptions'
+  | 'certifications'
+  | 'costs'
+  | 'executive'
+  | 'report-builder'
+  | 'global-search'
+  | 'regulatory-changes'
+  | 'evidence-collection'
+  | 'audit-prep'
+  | 'control-testing'
+  | 'vendor-monitoring'
+  | 'cicd-gates'
+  | 'sso-settings'
+  | 'scim-settings'
+  | 'role-manager'
+  | 'branding-settings'
+  | 'risk-heatmap'
+  | 'notification-center'
+  | 'ticketing'
+  | 'accessibility-settings'
+  | 'workflow-automation';
 
 // ============================================================================
 // TIER CONFIGURATION (Frontend copy of backend tiers)

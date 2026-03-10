@@ -41,7 +41,8 @@
     "zkp:setup": "bash scripts/trusted-setup.sh",
     "opa:deploy": "cd docker/opa && docker-compose up -d",
     "opa:stop": "cd docker/opa && docker-compose down",
-    "seed:dma-obligations": "ts-node scripts/seedDMAObligations.ts"
+    "seed:dma-obligations": "ts-node scripts/seedDMAObligations.ts",
+    "fips:integrity": "node -e \"require('./dist/utils/fipsIntegrityCheck').computeAndSaveIntegrity('./dist')\""
   },
   "dependencies": {
     "@aws-sdk/client-cloudtrail": "^3.1001.0",

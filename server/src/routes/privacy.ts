@@ -2107,4 +2107,262 @@ router.post(
   })
 );
 
+// ============================================================================
+// PRIVACY NOTICES (Art. 13-14) — Serving & Tracking
+// ============================================================================
+
+// List privacy notices
+router.get('/notices', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const orgId = user.organizationId;
+  const { skip, take, page, limit } = paginate(req.query);
+  const { triggerContext, status, language } = req.query;
+
+  const where: any = { organizationId: orgId };
+  if (triggerContext) where.triggerContext = triggerContext;
+  if (status) where.status = status;
+  if (language) where.language = language;
+
+  const [notices, total] = await Promise.all([
+    prisma.jITPrivacyNotice.findMany({ where, skip, take, orderBy: { updatedAt: 'desc' } }),
+    prisma.jITPrivacyNotice.count({ where }),
+  ]);
+  res.json({ notices, total, page, limit });
+}));
+
+// Create privacy notice
+router.post('/notices', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const orgId = user.organizationId;
+  const notice = await prisma.jITPrivacyNotice.create({
+    data: { ...req.body, organizationId: orgId },
+  });
+  res.status(201).json(notice);
+}));
+
+// Get single privacy notice
+router.get('/notices/:id', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const notice = await prisma.jITPrivacyNotice.findFirst({
+    where: { id: req.params.id, organizationId: user.organizationId },
+  });
+  if (!notice) return res.status(404).json({ error: 'Notice not found' });
+  return res.json(notice);
+}));
+
+// Update privacy notice
+router.patch('/notices/:id', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const existing = await prisma.jITPrivacyNotice.findFirst({
+    where: { id: req.params.id, organizationId: user.organizationId },
+  });
+  if (!existing) return res.status(404).json({ error: 'Notice not found' });
+  const notice = await prisma.jITPrivacyNotice.update({
+    where: { id: req.params.id },
+    data: req.body,
+  });
+  return res.json(notice);
+}));
+
+// Delete privacy notice
+router.delete('/notices/:id', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const existing = await prisma.jITPrivacyNotice.findFirst({
+    where: { id: req.params.id, organizationId: user.organizationId },
+  });
+  if (!existing) return res.status(404).json({ error: 'Notice not found' });
+  await prisma.jITPrivacyNotice.delete({ where: { id: req.params.id } });
+  return res.json({ message: 'Notice deleted' });
+}));
+
+// Track impression
+router.post('/notices/:id/impression', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const notice = await prisma.jITPrivacyNotice.findFirst({
+    where: { id: req.params.id, organizationId: user.organizationId },
+  });
+  if (!notice) return res.status(404).json({ error: 'Notice not found' });
+  await prisma.jITPrivacyNotice.update({
+    where: { id: req.params.id },
+    data: { impressions: { increment: 1 } },
+  });
+  return res.json({ message: 'Impression tracked' });
+}));
+
+// Track acceptance
+router.post('/notices/:id/accept', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const notice = await prisma.jITPrivacyNotice.findFirst({
+    where: { id: req.params.id, organizationId: user.organizationId },
+  });
+  if (!notice) return res.status(404).json({ error: 'Notice not found' });
+  await prisma.jITPrivacyNotice.update({
+    where: { id: req.params.id },
+    data: { acceptances: { increment: 1 } },
+  });
+  return res.json({ message: 'Acceptance tracked' });
+}));
+
+// Track dismissal
+router.post('/notices/:id/dismiss', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const notice = await prisma.jITPrivacyNotice.findFirst({
+    where: { id: req.params.id, organizationId: user.organizationId },
+  });
+  if (!notice) return res.status(404).json({ error: 'Notice not found' });
+  await prisma.jITPrivacyNotice.update({
+    where: { id: req.params.id },
+    data: { dismissals: { increment: 1 } },
+  });
+  return res.json({ message: 'Dismissal tracked' });
+}));
+
+// Get notice by trigger context (for frontend consumption)
+router.get('/notices/by-context/:context', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const notices = await prisma.jITPrivacyNotice.findMany({
+    where: {
+      organizationId: user.organizationId,
+      triggerContext: req.params.context,
+      status: 'Active',
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+  res.json(notices);
+}));
+
+// ============================================================================
+// CHILD CONSENT / AGE VERIFICATION (Art. 8)
+// ============================================================================
+
+// Get age verification configuration
+router.get('/child-consent/config', asyncHandler(async (req: Request, res: Response) => {
+  // Default age thresholds by jurisdiction
+  const config = {
+    defaultMinimumAge: 16,
+    jurisdictions: {
+      EU: 16,
+      UK: 13,
+      IE: 13,
+      NL: 16,
+      FR: 15,
+      DE: 16,
+      BE: 13,
+      DK: 13,
+      ES: 14,
+      SE: 13,
+      AT: 14,
+      IT: 14,
+      PT: 13,
+      US_COPPA: 13,
+    },
+    verificationMethods: ['SelfDeclaration', 'IDVerification', 'ParentalConfirmation'],
+    parentalConsentMethods: ['Email', 'InPerson', 'Phone', 'PostalMail'],
+  };
+  res.json(config);
+}));
+
+// Submit age verification for a consent record
+router.post('/child-consent/verify-age', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const orgId = user.organizationId;
+  const {
+    consentRecordId,
+    dataSubjectAge,
+    jurisdiction,
+    ageVerificationMethod,
+    parentalConsentEmail,
+    parentalConsentMethod,
+  } = req.body;
+
+  if (!consentRecordId || dataSubjectAge === undefined) {
+    return res.status(400).json({ error: 'consentRecordId and dataSubjectAge are required' });
+  }
+
+  // Determine minimum age for jurisdiction
+  const jurisdictionAges: Record<string, number> = {
+    EU: 16, UK: 13, IE: 13, NL: 16, FR: 15, DE: 16, BE: 13, DK: 13, ES: 14, SE: 13, AT: 14, IT: 14, PT: 13, US_COPPA: 13,
+  };
+  const minimumAge = jurisdictionAges[jurisdiction] || 16;
+  const isMinor = dataSubjectAge < minimumAge;
+
+  const record = await prisma.consentRecord.findFirst({
+    where: { id: consentRecordId, organizationId: orgId },
+  });
+  if (!record) return res.status(404).json({ error: 'Consent record not found' });
+
+  const updateData: any = {
+    dataSubjectAge,
+    isMinor,
+    ageVerificationMethod: ageVerificationMethod || 'SelfDeclaration',
+  };
+
+  if (isMinor) {
+    updateData.parentalConsentGiven = false;
+    updateData.parentalConsentEmail = parentalConsentEmail || null;
+    updateData.parentalConsentMethod = parentalConsentMethod || null;
+  }
+
+  const updated = await prisma.consentRecord.update({
+    where: { id: consentRecordId },
+    data: updateData,
+  });
+
+  return res.json({
+    ...updated,
+    requiresParentalConsent: isMinor,
+    minimumAge,
+    jurisdiction: jurisdiction || 'EU',
+  });
+}));
+
+// Record parental consent
+router.post('/child-consent/parental-consent', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const orgId = user.organizationId;
+  const { consentRecordId, parentalConsentEmail, parentalConsentMethod } = req.body;
+
+  if (!consentRecordId) {
+    return res.status(400).json({ error: 'consentRecordId is required' });
+  }
+
+  const record = await prisma.consentRecord.findFirst({
+    where: { id: consentRecordId, organizationId: orgId, isMinor: true },
+  });
+  if (!record) return res.status(404).json({ error: 'Minor consent record not found' });
+
+  const updated = await prisma.consentRecord.update({
+    where: { id: consentRecordId },
+    data: {
+      parentalConsentGiven: true,
+      parentalConsentDate: new Date(),
+      parentalConsentEmail: parentalConsentEmail || record.parentalConsentEmail,
+      parentalConsentMethod: parentalConsentMethod || 'Email',
+    },
+  });
+
+  logger.info(`Parental consent recorded for consent record ${consentRecordId}`);
+  return res.json(updated);
+}));
+
+// Get minor consent records requiring parental consent
+router.get('/child-consent/pending', asyncHandler(async (req: Request, res: Response) => {
+  const user = (req as AuthRequest).user!;
+  const orgId = user.organizationId;
+  const { skip, take, page, limit } = paginate(req.query);
+
+  const where = {
+    organizationId: orgId,
+    isMinor: true,
+    parentalConsentGiven: false,
+  };
+
+  const [records, total] = await Promise.all([
+    prisma.consentRecord.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
+    prisma.consentRecord.count({ where }),
+  ]);
+
+  res.json({ records, total, page, limit });
+}));
+
 export default router;

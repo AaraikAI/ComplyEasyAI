@@ -1,4 +1,5 @@
 import AWS from 'aws-sdk';
+import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import config from '../config';
 import logger from '../config/logger';
@@ -283,7 +284,7 @@ class S3Service {
         const macie = new AWS.Macie2({ region: process.env.AWS_REGION || 'us-east-1' });
 
         // Create a temporary S3 object for scanning
-        const tempKey = `scan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const tempKey = `scan-${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
         const tempBucket = process.env.SCAN_TEMP_BUCKET || config.aws.s3Bucket;
 
         // Upload to temp location

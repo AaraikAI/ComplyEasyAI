@@ -78,6 +78,13 @@ RUN npx prisma generate
 # Copy compiled backend code
 COPY --from=backend-build /app/server/dist ./dist
 
+# FIPS 140-3 (SP 800-140D): Compute software integrity manifest over crypto module files
+# Requires FIPS_INTEGRITY_KEY to be set as a build arg (skips if not set)
+ARG FIPS_INTEGRITY_KEY=""
+RUN if [ -n "$FIPS_INTEGRITY_KEY" ]; then \
+      FIPS_INTEGRITY_KEY="$FIPS_INTEGRITY_KEY" node -e "require('./dist/utils/fipsIntegrityCheck').computeAndSaveIntegrity('./dist')"; \
+    fi
+
 # Copy runtime data files (framework templates, control definitions)
 COPY --from=backend-build /app/server/src/data ./dist/data
 
@@ -92,6 +99,11 @@ USER complyeasy
 
 ENV NODE_ENV=production
 ENV PORT=3001
+# FIPS 140-3 (ISO 19790): Enable OpenSSL FIPS mode in Node.js
+# Requires all crypto operations to use FIPS-approved algorithms only.
+# DEPENDENCY: SHA-1 HMAC, bcrypt, and scrypt migrations must be complete
+# before enabling this flag — non-FIPS algorithms will cause runtime crashes.
+ENV NODE_OPTIONS="--force-fips"
 
 EXPOSE 3001
 

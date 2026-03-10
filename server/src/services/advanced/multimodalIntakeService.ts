@@ -659,12 +659,12 @@ class MultimodalIntakeService {
       const tempVideoPath = path.join(
         __dirname,
         '../../../temp',
-        `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${format.split('/')[1] || 'mp4'}`
+        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
       );
       const tempAudioPath = path.join(
         __dirname,
         '../../../temp',
-        `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.wav`
+        `audio_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.wav`
       );
 
       const tempDir = path.dirname(tempVideoPath);
@@ -715,7 +715,7 @@ class MultimodalIntakeService {
       const tempVideoPath = path.join(
         __dirname,
         '../../../temp',
-        `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${format.split('/')[1] || 'mp4'}`
+        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
       );
       const tempDir = path.dirname(tempVideoPath);
       if (!fs.existsSync(tempDir)) {
@@ -809,7 +809,7 @@ class MultimodalIntakeService {
       const tempVideoPath = path.join(
         __dirname,
         '../../../temp',
-        `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${format.split('/')[1] || 'mp4'}`
+        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
       );
       const tempDir = path.dirname(tempVideoPath);
       if (!fs.existsSync(tempDir)) {
@@ -955,7 +955,7 @@ class MultimodalIntakeService {
       const tempVideoPath = path.join(
         __dirname,
         '../../../temp',
-        `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${format.split('/')[1] || 'mp4'}`
+        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
       );
       const tempDir = path.dirname(tempVideoPath);
       if (!fs.existsSync(tempDir)) {
@@ -1071,7 +1071,7 @@ class MultimodalIntakeService {
       const tempVideoPath = path.join(
         __dirname,
         '../../../temp',
-        `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${format.split('/')[1] || 'mp4'}`
+        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
       );
       const tempDir = path.dirname(tempVideoPath);
       if (!fs.existsSync(tempDir)) {
@@ -1375,7 +1375,7 @@ class MultimodalIntakeService {
       const tempVideoPath = path.join(
         __dirname,
         '../../../temp',
-        `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${format.split('/')[1] || 'mp4'}`
+        `video_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}.${format.split('/')[1] || 'mp4'}`
       );
       const tempDir = path.dirname(tempVideoPath);
       if (!fs.existsSync(tempDir)) {

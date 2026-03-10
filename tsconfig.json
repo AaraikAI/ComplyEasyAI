@@ -6,7 +6,7 @@
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-    "types": ["node"],
+    "types": ["node", "vite/client"],
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
@@ -16,6 +16,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["components/**/*", "services/**/*", "hooks/**/*", "contexts/**/*", "constants/**/*", "constants.ts", "*.tsx", "*.ts"],
+  "include": ["components/**/*", "services/**/*", "hooks/**/*", "contexts/**/*", "constants/**/*", "i18n/**/*", "routes/**/*", "constants.ts", "*.tsx", "*.ts"],
   "exclude": ["server", "e2e", "**/__tests__/**", "**/*.test.*", "**/*.spec.*", "playwright.config.ts"]
 }

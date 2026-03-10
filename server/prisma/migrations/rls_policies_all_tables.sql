@@ -1308,3 +1308,52 @@ CREATE POLICY "org_isolation_select" ON "Organization" FOR SELECT USING (id = pu
 CREATE POLICY "org_isolation_insert" ON "Organization" FOR INSERT WITH CHECK (id = public.get_current_organization_id());
 CREATE POLICY "org_isolation_update" ON "Organization" FOR UPDATE USING (id = public.get_current_organization_id());
 CREATE POLICY "org_isolation_delete" ON "Organization" FOR DELETE USING (id = public.get_current_organization_id());
+
+-- =====================================================
+-- BATCH: New Certification Gap Remediation Tables
+-- Added for DPIA, RoPA, SecurityTraining, and related models
+-- =====================================================
+
+-- DataProtectionImpactAssessment (GDPR Art. 35)
+DROP POLICY IF EXISTS "org_isolation_select" ON "DataProtectionImpactAssessment";
+DROP POLICY IF EXISTS "org_isolation_insert" ON "DataProtectionImpactAssessment";
+DROP POLICY IF EXISTS "org_isolation_update" ON "DataProtectionImpactAssessment";
+DROP POLICY IF EXISTS "org_isolation_delete" ON "DataProtectionImpactAssessment";
+CREATE POLICY "org_isolation_select" ON "DataProtectionImpactAssessment" FOR SELECT USING ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_insert" ON "DataProtectionImpactAssessment" FOR INSERT WITH CHECK ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_update" ON "DataProtectionImpactAssessment" FOR UPDATE USING ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_delete" ON "DataProtectionImpactAssessment" FOR DELETE USING ("organizationId" = public.get_current_organization_id());
+
+-- DPIARiskAssessment (linked via DPIA — no direct organizationId, inherit via join)
+-- Note: RLS is enforced at the DPIA level; DPIARiskAssessment access is controlled
+-- through the parent DataProtectionImpactAssessment's organizationId.
+
+-- ProcessingActivityRecord (GDPR Art. 30 — RoPA)
+DROP POLICY IF EXISTS "org_isolation_select" ON "ProcessingActivityRecord";
+DROP POLICY IF EXISTS "org_isolation_insert" ON "ProcessingActivityRecord";
+DROP POLICY IF EXISTS "org_isolation_update" ON "ProcessingActivityRecord";
+DROP POLICY IF EXISTS "org_isolation_delete" ON "ProcessingActivityRecord";
+CREATE POLICY "org_isolation_select" ON "ProcessingActivityRecord" FOR SELECT USING ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_insert" ON "ProcessingActivityRecord" FOR INSERT WITH CHECK ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_update" ON "ProcessingActivityRecord" FOR UPDATE USING ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_delete" ON "ProcessingActivityRecord" FOR DELETE USING ("organizationId" = public.get_current_organization_id());
+
+-- SecurityTraining (SOC 2 CC1.4)
+DROP POLICY IF EXISTS "org_isolation_select" ON "SecurityTraining";
+DROP POLICY IF EXISTS "org_isolation_insert" ON "SecurityTraining";
+DROP POLICY IF EXISTS "org_isolation_update" ON "SecurityTraining";
+DROP POLICY IF EXISTS "org_isolation_delete" ON "SecurityTraining";
+CREATE POLICY "org_isolation_select" ON "SecurityTraining" FOR SELECT USING ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_insert" ON "SecurityTraining" FOR INSERT WITH CHECK ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_update" ON "SecurityTraining" FOR UPDATE USING ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_delete" ON "SecurityTraining" FOR DELETE USING ("organizationId" = public.get_current_organization_id());
+
+-- SecurityTrainingRecord
+DROP POLICY IF EXISTS "org_isolation_select" ON "SecurityTrainingRecord";
+DROP POLICY IF EXISTS "org_isolation_insert" ON "SecurityTrainingRecord";
+DROP POLICY IF EXISTS "org_isolation_update" ON "SecurityTrainingRecord";
+DROP POLICY IF EXISTS "org_isolation_delete" ON "SecurityTrainingRecord";
+CREATE POLICY "org_isolation_select" ON "SecurityTrainingRecord" FOR SELECT USING ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_insert" ON "SecurityTrainingRecord" FOR INSERT WITH CHECK ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_update" ON "SecurityTrainingRecord" FOR UPDATE USING ("organizationId" = public.get_current_organization_id());
+CREATE POLICY "org_isolation_delete" ON "SecurityTrainingRecord" FOR DELETE USING ("organizationId" = public.get_current_organization_id());

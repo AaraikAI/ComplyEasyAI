@@ -1,15 +1,20 @@
 
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ViewState, ComplianceFramework, RiskItem } from './types';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { ComplianceFramework, RiskItem } from './types';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { normalizePlan, canAccessView } from './constants/tierFeatures';
+import { WebSocketProvider } from './contexts/WebSocketContext';
+import { I18nProvider } from './contexts/I18nContext';
+import { QueryProvider } from './contexts/QueryProvider';
+import { normalizePlan } from './constants/tierFeatures';
 import { getLimit, isAtLimit, getUpgradeMessage } from './constants/tierLimits';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { LandingPage } from './components/LandingPage';
+import { ProtectedRoute } from './routes/ProtectedRoute';
+import { ROUTES } from './routes/routeConfig';
 import { api } from './services/api';
 import { Toaster } from 'sonner';
 import { toast } from 'sonner';
@@ -106,29 +111,90 @@ const WorkflowBuilderComponent = lazy(() => import('./components/WorkflowBuilder
 const PrivacyManagementPlatform = lazy(() => import('./components/PrivacyManagementPlatform').then(m => ({ default: m.PrivacyManagementPlatform })));
 const AccountDeletionWorkflow = lazy(() => import('./components/AccountDeletionWorkflow').then(m => ({ default: m.AccountDeletionWorkflow })));
 
+// ── New Enhancement Module Lazy Loads ─────────────────────────────────
+const IncidentManagement = lazy(() => import('./components/IncidentManagement'));
+const AssetManagement = lazy(() => import('./components/AssetManagement'));
+const ComplianceCalendar = lazy(() => import('./components/ComplianceCalendar'));
+const MaturityAssessment = lazy(() => import('./components/MaturityAssessment'));
+const BusinessImpactAnalysis = lazy(() => import('./components/BusinessImpactAnalysis'));
+const ExceptionManagement = lazy(() => import('./components/ExceptionManagement'));
+const CertificationTracker = lazy(() => import('./components/CertificationTracker'));
+const ComplianceCostDashboard = lazy(() => import('./components/ComplianceCostDashboard'));
+const ExecutiveDashboard = lazy(() => import('./components/ExecutiveDashboard'));
+const ReportBuilder = lazy(() => import('./components/ReportBuilder'));
+const GlobalSearch = lazy(() => import('./components/GlobalSearch'));
+const RegulatoryChangeTracker = lazy(() => import('./components/RegulatoryChangeTracker'));
+const EvidenceCollectionRules = lazy(() => import('./components/EvidenceCollectionRules'));
+const AuditPrepAssistant = lazy(() => import('./components/AuditPrepAssistant'));
+const ControlTestResults = lazy(() => import('./components/ControlTestResults'));
+const VendorMonitoringDashboard = lazy(() => import('./components/VendorMonitoringDashboard'));
+const CICDGateSettings = lazy(() => import('./components/CICDGateSettings'));
+const SSOSettings = lazy(() => import('./components/SSOSettings'));
+const SCIMSettings = lazy(() => import('./components/SCIMSettings'));
+const RoleManager = lazy(() => import('./components/RoleManager'));
+const BrandingSettings = lazy(() => import('./components/BrandingSettings'));
+const RiskHeatMap = lazy(() => import('./components/RiskHeatMap'));
+const NotificationCenter = lazy(() => import('./components/NotificationCenter'));
+const WorkflowAutomationRules = lazy(() => import('./components/WorkflowAutomationRules'));
+const TicketingIntegrations = lazy(() => import('./components/TicketingIntegrations'));
+const AccessibilitySettings = lazy(() => import('./components/AccessibilitySettings'));
+const OfflineBanner = lazy(() => import('./components/OfflineBanner'));
+const UpdateAvailableBanner = lazy(() => import('./components/UpdateAvailableBanner'));
+
+// ── Loading Spinner ──────────────────────────────────────────────────
+const LoadingSpinner = () => (
+  <div className="flex h-full items-center justify-center p-8">
+    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
+// ── Framework Details Wrapper (extracts ID from URL params) ──────────
+const FrameworkDetailsRoute: React.FC<{
+  frameworks: ComplianceFramework[];
+  loadData: () => void;
+}> = ({ frameworks, loadData }) => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const framework = frameworks.find(f => f.id === id);
+
+  return (
+    <FrameworkDetails
+      framework={framework}
+      onBack={() => {
+        loadData();
+        navigate(ROUTES.FRAMEWORKS);
+      }}
+      onDataChanged={loadData}
+    />
+  );
+};
+
+// ── AI RMF Details Wrapper ──────────────────────────────────────────
+const AIRMFDetailsRoute: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  return (
+    <AISystemDetails
+      systemId={id || ''}
+      onBack={() => navigate(ROUTES.AI_RMF_SYSTEMS)}
+    />
+  );
+};
+
+// ── Main Authenticated App ──────────────────────────────────────────
 const MainApp: React.FC = () => {
-  const { isAuthenticated, user, isLoading } = useAuth();
-  const [currentView, setCurrentView] = useState<ViewState>('dashboard');
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [frameworks, setFrameworks] = useState<ComplianceFramework[]>([]);
   const [risks, setRisks] = useState<RiskItem[]>([]);
-  const [selectedFrameworkId, setSelectedFrameworkId] = useState<string | null>(null);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
 
-  // Navigation helper that accepts string and casts to ViewState
-  const handleNavigate = (view: string) => setCurrentView(view as ViewState);
-
   useEffect(() => {
-    if (isAuthenticated) {
-      loadData();
-    }
-  }, [isAuthenticated]);
+    loadData();
+  }, []);
 
   const userPlan = normalizePlan(user?.organization?.plan);
-  useEffect(() => {
-    if (user && !canAccessView(userPlan, currentView)) {
-      setCurrentView('dashboard');
-    }
-  }, [user, userPlan, currentView]);
 
   const loadData = async () => {
     try {
@@ -144,249 +210,232 @@ const MainApp: React.FC = () => {
   };
 
   const handleAddFramework = async (name: string, region?: string) => {
-    const maxFrameworks = getLimit(user?.organization?.plan, 'maxFrameworks');
     if (isAtLimit(user?.organization?.plan, 'maxFrameworks', frameworks.length)) {
-      toast.warning(getUpgradeMessage(user?.organization?.plan, 'maxFrameworks', frameworks.length) || 'Framework limit reached. Upgrade in Settings → Billing.');
+      toast.warning(getUpgradeMessage(user?.organization?.plan, 'maxFrameworks', frameworks.length) || 'Framework limit reached. Upgrade in Settings.');
       return;
     }
-    // Optimistic Update
     const newFw: ComplianceFramework = { id: 'temp', name, region: region || '', status: 'In Review', progress: 0, nextAuditDate: '2025-01-01' } as ComplianceFramework;
     setFrameworks([...frameworks, newFw]);
-    // API Call
     await api.frameworks.create(newFw);
-    loadData(); // Refresh to get real ID and sync
+    loadData();
   };
 
-  const handleSelectFramework = (id: string) => {
-    setSelectedFrameworkId(id);
-    setCurrentView('framework-details');
-  };
-
-  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
-
-  if (!isAuthenticated) {
-    return <LandingPage />;
-  }
-
-  const renderContent = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
-      case 'reports':
-        return <Reports />;
-      case 'audit':
-        return <AuditTrail />;
-      case 'frameworks':
-        return (
-          <Frameworks 
-            activeFrameworks={frameworks} 
-            onAddFramework={handleAddFramework} 
-            onSelectFramework={handleSelectFramework}
-            onFrameworkDeleted={loadData}
-            maxFrameworks={getLimit(user?.organization?.plan, 'maxFrameworks')}
-          />
-        );
-      case 'framework-details':
-        return (
-          <FrameworkDetails 
-            framework={frameworks.find(f => f.id === selectedFrameworkId)} 
-            onBack={() => {
-              loadData(); // Refresh data when going back
-              setCurrentView('frameworks');
-            }}
-            onDataChanged={loadData} // Refresh when controls are created/updated
-          />
-        );
-      case 'risks':
-        return <RiskManagement onBack={() => { loadData(); setCurrentView('dashboard'); }} />;
-      case 'my-tasks':
-        return <MyTasks />;
-      case 'integrations':
-        return <Integrations />;
-      case 'ai-policy':
-        return <PolicyGenerator onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-contract':
-        return <ContractAnalyzer onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-gap':
-        return <GapAnalysis onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-rfp':
-        return <RFPResponder onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-phishing':
-        return <PhishingGenerator onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-vendor':
-        return <VendorScorer onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-data-map':
-        return <DataMapper onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-bcp':
-        return <BCPGenerator onBack={() => setCurrentView('dashboard')} />;
-      case 'settings':
-        if (user?.role !== 'admin') return <div>Access Denied</div>;
-        return <Settings onNavigateToIntegrations={() => setCurrentView('integrations')} />;
-      case 'acos':
-        return <ACOSDashboard onBack={() => setCurrentView('dashboard')} onNavigate={handleNavigate} />;
-      case 'security':
-        return <SecurityFeatures onBack={() => setCurrentView('dashboard')} />;
-      case 'analytics':
-        return <RealTimeAnalytics onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-rmf':
-        return (
-          <AIRMFDashboard 
-            onNavigate={(view: string, systemId?: string) => {
-              if (view === 'ai-rmf-systems') {
-                setCurrentView('ai-rmf-systems');
-              } else if (view === 'ai-rmf-create') {
-                setCurrentView('ai-rmf-create');
-              } else if (view === 'ai-rmf-assessments') {
-                setCurrentView('ai-rmf-assessments');
-              } else if (view === 'ai-rmf-details' && systemId) {
-                setSelectedFrameworkId(systemId);
-                setCurrentView('ai-rmf-details');
-              }
-            }} 
-          />
-        );
-      case 'ai-rmf-systems':
-        return (
-          <AISystemList
-            onSelectSystem={(systemId: string) => {
-              setSelectedFrameworkId(systemId);
-              setCurrentView('ai-rmf-details');
-            }}
-            onCreateNew={() => setCurrentView('ai-rmf-create')}
-          />
-        );
-      case 'ai-rmf-create':
-        return (
-          <AISystemCreate
-            onBack={() => setCurrentView('ai-rmf')}
-            onSuccess={(systemId: string) => {
-              setSelectedFrameworkId(systemId);
-              setCurrentView('ai-rmf-details');
-            }}
-          />
-        );
-      case 'ai-rmf-details':
-        return (
-          <AISystemDetails
-            systemId={selectedFrameworkId || ''}
-            onBack={() => setCurrentView('ai-rmf-systems')}
-          />
-        );
-      case 'ai-rmf-assessments':
-        return (
-          <AIRMFAssessments
-            onBack={() => setCurrentView('ai-rmf')}
-            onViewSystem={(systemId: string) => {
-              setSelectedFrameworkId(systemId);
-              setCurrentView('ai-rmf-details');
-            }}
-          />
-        );
-      case 'eu-ai-act':
-        return <EUAIActDashboard />;
-      case 'dma':
-        return <DMAGatekeeperManagement />;
-      case 'dsa':
-        return <DSAPlatformManagement />;
-      case 'vendors':
-        return <VendorManagement onBack={() => setCurrentView('dashboard')} />;
-      case 'policies':
-        return <PolicyManagement onBack={() => setCurrentView('dashboard')} />;
-      case 'monitoring':
-        return <MonitoringDashboard />;
-      case 'workspaces':
-        return <WorkspaceManagement />;
-      case 'questionnaires':
-        return <QuestionnaireManagement />;
-      case 'issues':
-        return <IssueManagement />;
-      // Phase 1: EU Regulations & US Privacy
-      case 'eu-cra':
-        return <EUCRADashboard />;
-      case 'csrd':
-        return <CSRDDashboard />;
-      case 'ecodesign':
-        return <EcodesignDashboard />;
-      case 'nis2':
-        return <NIS2Dashboard />;
-      case 'us-privacy':
-        return <USPrivacyTracker />;
-      // Phase 2-3: Process Mapping & Governance
-      case 'process-mapper':
-        return <ProcessMapper onBack={() => setCurrentView('dashboard')} />;
-      case 'governance':
-        return <GovernanceManager onBack={() => setCurrentView('dashboard')} />;
-      // Phase 5: Certification & Market Access
-      case 'ce-marking':
-        return <CEMarkingWorkflow onBack={() => setCurrentView('dashboard')} />;
-      case 'digital-product-passport':
-        return <DigitalProductPassport onBack={() => setCurrentView('dashboard')} />;
-      // Phase 6: ESG & Surveillance
-      case 'esg-reporting':
-        return <ESGReportingModule onBack={() => setCurrentView('dashboard')} />;
-      case 'post-market-surveillance':
-        return <PostMarketSurveillance onBack={() => setCurrentView('dashboard')} />;
-      // Phase 7: Breach Management
-      case 'breach-wizard':
-        return <BreachNotificationWizard onBack={() => setCurrentView('dashboard')} />;
-      // Phase 8: Post-Market Lifecycle
-      case 'sbom-manager':
-        return <SBOMManager onBack={() => setCurrentView('dashboard')} />;
-      case 'product-decommissioning':
-        return <ProductDecommissioning onBack={() => setCurrentView('dashboard')} />;
-      case 'environmental-lifecycle':
-        return <EnvironmentalLifecycle onBack={() => setCurrentView('dashboard')} />;
-      // AI Tier Features
-      case 'ai-cross-mapper':
-        return <CrossFrameworkMapper onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-auto-remediation':
-        return <RegulatoryAutoRemediation onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-evidence-checker':
-        return <EvidenceCompletenessChecker onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-agentic-vendor':
-        return <AgenticVendorRisk onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-audit-simulator':
-        return <AuditSimulator onBack={() => setCurrentView('dashboard')} />;
-      case 'ai-nl-query':
-        return <NaturalLanguageQuery onBack={() => setCurrentView('dashboard')} />;
-      case 'compliance-forecasting':
-        return <ComplianceScoreForecasting onBack={() => setCurrentView('dashboard')} />;
-      case 'product-lifecycle':
-        return <ProductLifecycleTracker onBack={() => setCurrentView('dashboard')} />;
-      // New Modules: SOX, SoD, MDM, DORA, Auditor, Workflow, Privacy
-      case 'sox':
-        return <SOXComplianceDashboard onBack={() => setCurrentView('dashboard')} />;
-      case 'sod':
-        return <SoDAnalysisDashboard onBack={() => setCurrentView('dashboard')} />;
-      case 'mdm':
-        return <MDMDashboard onBack={() => setCurrentView('dashboard')} />;
-      case 'dora':
-        return <DORADashboard onBack={() => setCurrentView('dashboard')} />;
-      case 'auditor':
-        return <AuditorHub onBack={() => setCurrentView('dashboard')} />;
-      case 'workflow-builder':
-        return <WorkflowBuilderComponent onBack={() => setCurrentView('dashboard')} />;
-      case 'privacy':
-        return <PrivacyManagementPlatform onBack={() => setCurrentView('dashboard')} />;
-      case 'account-deletion':
-        return <AccountDeletionWorkflow onBack={() => setCurrentView('dashboard')} />;
-      default:
-        return <Dashboard frameworks={frameworks} risks={risks} onNavigate={setCurrentView} />;
-    }
+  // Backward-compatible onNavigate for components that still use it
+  const handleNavigate = (view: string) => {
+    const { viewToPath } = require('./routes/routeConfig');
+    navigate(viewToPath(view));
   };
 
   return (
     <OnboardingProvider onNavigate={handleNavigate}>
-      <Layout currentView={currentView} onNavigate={handleNavigate}>
-        <Suspense fallback={
-          <div className="flex h-full items-center justify-center p-8">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        }>
-          {renderContent()}
+      <Layout>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            {/* Dashboard */}
+            <Route index element={<Dashboard frameworks={frameworks} risks={risks} onNavigate={handleNavigate} />} />
+
+            {/* Platform Core */}
+            <Route path="tasks" element={<MyTasks />} />
+            <Route path="risks" element={<RiskManagement onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="issues" element={<IssueManagement />} />
+            <Route path="vendors" element={<VendorManagement onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="policies" element={<PolicyManagement onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="integrations" element={<Integrations />} />
+            <Route path="frameworks" element={
+              <Frameworks
+                activeFrameworks={frameworks}
+                onAddFramework={handleAddFramework}
+                onSelectFramework={(id: string) => navigate(`/frameworks/${id}`)}
+                onFrameworkDeleted={loadData}
+                maxFrameworks={getLimit(user?.organization?.plan, 'maxFrameworks')}
+              />
+            } />
+            <Route path="frameworks/:id" element={<FrameworkDetailsRoute frameworks={frameworks} loadData={loadData} />} />
+
+            {/* Settings */}
+            <Route path="settings" element={
+              user?.role === 'admin'
+                ? <Settings onNavigateToIntegrations={() => navigate(ROUTES.INTEGRATIONS)} />
+                : <Navigate to="/dashboard" replace />
+            } />
+            <Route path="settings/sso" element={<ProtectedRoute requiredRole="admin"><SSOSettings /></ProtectedRoute>} />
+            <Route path="settings/scim" element={<ProtectedRoute requiredRole="admin"><SCIMSettings /></ProtectedRoute>} />
+            <Route path="settings/roles" element={<ProtectedRoute requiredRole="admin"><RoleManager /></ProtectedRoute>} />
+            <Route path="settings/branding" element={<ProtectedRoute requiredRole="admin"><BrandingSettings /></ProtectedRoute>} />
+
+            {/* Reports & Audit */}
+            <Route path="reports" element={<Reports />} />
+            <Route path="audit" element={<AuditTrail />} />
+            <Route path="monitoring" element={<MonitoringDashboard />} />
+            <Route path="analytics" element={<RealTimeAnalytics onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+
+            {/* AI Features */}
+            <Route path="ai/policy-generator" element={<PolicyGenerator onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/contract-analyzer" element={<ContractAnalyzer onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/gap-analysis" element={<GapAnalysis onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/rfp-responder" element={<RFPResponder onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/phishing-simulator" element={<PhishingGenerator onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/vendor-scorer" element={<VendorScorer onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/data-mapper" element={<DataMapper onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/bcp-generator" element={<BCPGenerator onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/cross-framework-mapper" element={<CrossFrameworkMapper onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/auto-remediation" element={<RegulatoryAutoRemediation onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/evidence-checker" element={<EvidenceCompletenessChecker onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/agentic-vendor-risk" element={<AgenticVendorRisk onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/audit-simulator" element={<AuditSimulator onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/compliance-query" element={<NaturalLanguageQuery onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="ai/compliance-forecasting" element={<ComplianceScoreForecasting onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+
+            {/* AI Governance (NIST AI RMF) */}
+            <Route path="ai-rmf" element={
+              <AIRMFDashboard
+                onNavigate={(view: string, systemId?: string) => {
+                  if (view === 'ai-rmf-systems') navigate(ROUTES.AI_RMF_SYSTEMS);
+                  else if (view === 'ai-rmf-create') navigate(ROUTES.AI_RMF_CREATE);
+                  else if (view === 'ai-rmf-assessments') navigate(ROUTES.AI_RMF_ASSESSMENTS);
+                  else if (view === 'ai-rmf-details' && systemId) navigate(`/ai-rmf/systems/${systemId}`);
+                }}
+              />
+            } />
+            <Route path="ai-rmf/systems" element={
+              <AISystemList
+                onSelectSystem={(systemId: string) => navigate(`/ai-rmf/systems/${systemId}`)}
+                onCreateNew={() => navigate(ROUTES.AI_RMF_CREATE)}
+              />
+            } />
+            <Route path="ai-rmf/systems/new" element={
+              <AISystemCreate
+                onBack={() => navigate(ROUTES.AI_RMF)}
+                onSuccess={(systemId: string) => navigate(`/ai-rmf/systems/${systemId}`)}
+              />
+            } />
+            <Route path="ai-rmf/systems/:id" element={<AIRMFDetailsRoute />} />
+            <Route path="ai-rmf/assessments" element={
+              <AIRMFAssessments
+                onBack={() => navigate(ROUTES.AI_RMF)}
+                onViewSystem={(systemId: string) => navigate(`/ai-rmf/systems/${systemId}`)}
+              />
+            } />
+
+            {/* EU Regulations */}
+            <Route path="regulations/eu-ai-act" element={<EUAIActDashboard />} />
+            <Route path="regulations/dma" element={<DMAGatekeeperManagement />} />
+            <Route path="regulations/dsa" element={<DSAPlatformManagement />} />
+            <Route path="regulations/eu-cra" element={<EUCRADashboard />} />
+            <Route path="regulations/csrd" element={<CSRDDashboard />} />
+            <Route path="regulations/ecodesign" element={<EcodesignDashboard />} />
+            <Route path="regulations/nis2" element={<NIS2Dashboard />} />
+            <Route path="regulations/us-privacy" element={<USPrivacyTracker />} />
+
+            {/* Governance & Process */}
+            <Route path="governance" element={<GovernanceManager onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="governance/process-mapper" element={<ProcessMapper onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="governance/sox" element={<SOXComplianceDashboard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="governance/sod" element={<SoDAnalysisDashboard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="governance/workflow-builder" element={<WorkflowBuilderComponent onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+
+            {/* Products & Lifecycle */}
+            <Route path="products/ce-marking" element={<CEMarkingWorkflow onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="products/digital-passport" element={<DigitalProductPassport onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="products/lifecycle" element={<ProductLifecycleTracker onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="products/sbom" element={<SBOMManager onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="products/decommissioning" element={<ProductDecommissioning onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="products/environmental-lifecycle" element={<EnvironmentalLifecycle onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+
+            {/* Monitoring & Assurance */}
+            <Route path="esg-reporting" element={<ESGReportingModule onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="surveillance" element={<PostMarketSurveillance onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="breach-notification" element={<BreachNotificationWizard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+
+            {/* Privacy & Data */}
+            <Route path="privacy" element={<PrivacyManagementPlatform onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="privacy/data-deletion" element={<AccountDeletionWorkflow onBack={() => navigate(ROUTES.PRIVACY)} />} />
+
+            {/* Enterprise */}
+            <Route path="enterprise/workspaces" element={<WorkspaceManagement />} />
+            <Route path="enterprise/questionnaires" element={<QuestionnaireManagement />} />
+            <Route path="enterprise/security" element={<SecurityFeatures onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="enterprise/acos" element={<ACOSDashboard onBack={() => navigate(ROUTES.DASHBOARD)} onNavigate={handleNavigate} />} />
+            <Route path="enterprise/mdm" element={<MDMDashboard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="enterprise/dora" element={<DORADashboard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            <Route path="enterprise/auditor" element={<AuditorHub onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+
+            {/* ── NEW ENHANCEMENT MODULES ────────────────────────────── */}
+
+            {/* Incident Management (4.3) */}
+            <Route path="incidents" element={<IncidentManagement />} />
+            <Route path="incidents/:id" element={<IncidentManagement />} />
+
+            {/* IT Asset Management (4.4) */}
+            <Route path="assets" element={<AssetManagement />} />
+            <Route path="assets/:id" element={<AssetManagement />} />
+
+            {/* Compliance Calendar (4.1) */}
+            <Route path="calendar" element={<ComplianceCalendar />} />
+
+            {/* GRC Maturity Model (4.2) */}
+            <Route path="maturity" element={<MaturityAssessment />} />
+
+            {/* Business Impact Analysis (4.5) */}
+            <Route path="business-impact-analysis" element={<BusinessImpactAnalysis />} />
+
+            {/* Exception Management (4.9) */}
+            <Route path="exceptions" element={<ExceptionManagement />} />
+
+            {/* Certification Lifecycle (4.10) */}
+            <Route path="certifications" element={<CertificationTracker />} />
+
+            {/* Compliance Cost Analytics (4.7) */}
+            <Route path="cost-analytics" element={<ComplianceCostDashboard />} />
+
+            {/* Executive Dashboard (4.8) */}
+            <Route path="executive" element={<ExecutiveDashboard />} />
+
+            {/* Custom Report Builder (6.1) */}
+            <Route path="report-builder" element={<ReportBuilder />} />
+
+            {/* Regulatory Change Tracker (3.1) */}
+            <Route path="regulatory-changes" element={<RegulatoryChangeTracker />} />
+
+            {/* Evidence Auto-Collection (3.2) */}
+            <Route path="evidence-collection" element={<EvidenceCollectionRules />} />
+
+            {/* AI Audit Prep (3.3) */}
+            <Route path="audit-prep" element={<AuditPrepAssistant />} />
+
+            {/* Control Testing (3.4) */}
+            <Route path="control-testing" element={<ControlTestResults />} />
+
+            {/* Vendor Continuous Monitoring (4.11) */}
+            <Route path="vendor-monitoring" element={<VendorMonitoringDashboard />} />
+
+            {/* CI/CD Compliance Gates (5.2) */}
+            <Route path="cicd-gates" element={<CICDGateSettings />} />
+
+            {/* Global Search (1.3) */}
+            <Route path="search" element={<GlobalSearch />} />
+
+            {/* Risk Heat Map (6.2) */}
+            <Route path="risk-heatmap" element={<RiskHeatMap />} />
+
+            {/* Notification Center */}
+            <Route path="notifications" element={<NotificationCenter />} />
+
+            {/* Workflow Automation Rules (5.1) */}
+            <Route path="workflow-automation" element={<WorkflowAutomationRules />} />
+
+            {/* Ticketing Integrations (5.3) */}
+            <Route path="ticketing" element={<TicketingIntegrations />} />
+
+            {/* Accessibility Settings (7.2) */}
+            <Route path="settings/accessibility" element={<AccessibilitySettings />} />
+
+            {/* Catch-all: redirect to dashboard */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </Suspense>
         {/* AI Compliance Copilot Sidebar */}
-        <AIComplianceCopilot currentView={currentView} isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
+        <AIComplianceCopilot currentView="dashboard" isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
       </Layout>
     </OnboardingProvider>
   );
@@ -412,48 +461,52 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Toaster richColors position="top-right" />
+      <QueryProvider>
+      <I18nProvider>
       <ThemeProvider>
         <AuthProvider>
+        <WebSocketProvider>
           <Routes>
-          {/* Public Routes - accessible without authentication */}
-          <Route path="/signup" element={
-            <PublicPageWrapper>
-              <SignupPage />
-            </PublicPageWrapper>
-          } />
-          <Route path="/learn" element={
-            <PublicPageWrapper>
-              <LearnPage />
-            </PublicPageWrapper>
-          } />
-          <Route path="/community" element={
-            <PublicPageWrapper>
-              <CommunityPage />
-            </PublicPageWrapper>
-          } />
-          <Route path="/status" element={
-            <PublicPageWrapper>
-              <StatusPage />
-            </PublicPageWrapper>
-          } />
-          <Route path="/docs" element={
-            <PublicPageWrapper>
-              <DocsPage />
-            </PublicPageWrapper>
-          } />
-          <Route path="/docs/*" element={
-            <PublicPageWrapper>
-              <DocsPage />
-            </PublicPageWrapper>
-          } />
-          
-          {/* Main App Route - handles authentication */}
-          <Route path="/*" element={<MainApp />} />
+            {/* Public Routes */}
+            <Route path="/signup" element={<PublicPageWrapper><SignupPage /></PublicPageWrapper>} />
+            <Route path="/learn" element={<PublicPageWrapper><LearnPage /></PublicPageWrapper>} />
+            <Route path="/community" element={<PublicPageWrapper><CommunityPage /></PublicPageWrapper>} />
+            <Route path="/status" element={<PublicPageWrapper><StatusPage /></PublicPageWrapper>} />
+            <Route path="/docs" element={<PublicPageWrapper><DocsPage /></PublicPageWrapper>} />
+            <Route path="/docs/*" element={<PublicPageWrapper><DocsPage /></PublicPageWrapper>} />
+
+            {/* Landing page at root for unauthenticated users */}
+            <Route path="/" element={<AuthGate />} />
+
+            {/* Authenticated App Routes */}
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <MainApp />
+              </ProtectedRoute>
+            } />
           </Routes>
+        </WebSocketProvider>
         </AuthProvider>
       </ThemeProvider>
+      </I18nProvider>
+      </QueryProvider>
     </BrowserRouter>
   );
+};
+
+/** Shows landing page or redirects to dashboard based on auth state */
+const AuthGate: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
 };
 
 export default App;
