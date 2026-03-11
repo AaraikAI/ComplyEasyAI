@@ -20,7 +20,7 @@
     "expo-status-bar": "^55.0.4",
     "react": "^19.0.0",
     "react-native": "^0.84.0",
-    "react-native-safe-area-context": "^5.0.0",
+    "react-native-safe-area-context": "^5.7.0",
     "react-native-screens": "^4.4.0",
     "react-native-svg": "^15.15.0"
   },
