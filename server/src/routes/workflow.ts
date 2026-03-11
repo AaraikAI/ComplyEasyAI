@@ -49,18 +49,25 @@ router.get(
       ];
     }
 
-    const [workflows, total] = await Promise.all([
-      prisma.gRCWorkflow.findMany({
-        where,
-        orderBy: { updatedAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-        include: { _count: { select: { executions: true } } },
-      }),
-      prisma.gRCWorkflow.count({ where }),
-    ]);
+    try {
+      const [workflows, total] = await Promise.all([
+        prisma.gRCWorkflow.findMany({
+          where,
+          orderBy: { updatedAt: 'desc' },
+          skip: (page - 1) * limit,
+          take: limit,
+          include: { _count: { select: { executions: true } } },
+        }),
+        prisma.gRCWorkflow.count({ where }),
+      ]);
 
-    res.json({ workflows, total, page, limit });
+      res.json({ workflows, total, page, limit });
+    } catch (error: any) {
+      if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
+        return res.json({ workflows: [], total: 0, page, limit });
+      }
+      throw error;
+    }
   })
 );
 

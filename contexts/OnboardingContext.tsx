@@ -143,6 +143,14 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
             firstReportGenerated: false,
             acosConfigured: false,
             digitalTwinActivated: false,
+            riskHeatmapViewed: false,
+            regulatoryTrackerViewed: false,
+            vendorMonitoringConfigured: false,
+            privacyPlatformViewed: false,
+            incidentManagementViewed: false,
+            controlTestingConfigured: false,
+            auditPrepStarted: false,
+            workflowAutomationConfigured: false,
             completedAt: null,
           };
           setProgress(defaultProgress);

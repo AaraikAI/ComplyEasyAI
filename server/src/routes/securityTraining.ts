@@ -255,7 +255,11 @@ router.get(
       ]);
 
       res.json({ modules, total, page, limit, totalPages: Math.ceil(total / limit) });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
+        logger.warn('Security training table not yet available, returning empty data');
+        return res.json({ modules: [], total: 0, page, limit, totalPages: 0 });
+      }
       logger.error('Error fetching training modules:', error);
       res.status(500).json({ error: 'Failed to fetch training modules' });
     }

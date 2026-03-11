@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, User, Bot, Lock, AlertCircle, Trash2, Paperclip, FileText } from 'lucide-react';
+import { MessageSquare, X, Send, User, Bot, Lock, AlertCircle, Trash2, Paperclip, FileText, GripVertical } from 'lucide-react';
 import { chatWithComplianceBot } from '../services/geminiService';
 import { ChatMessage } from '../types';
 import ReactMarkdown from 'react-markdown';
@@ -7,6 +7,7 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { canAccessView, normalizePlan, VIEW_TO_FEATURE } from '../constants/tierFeatures';
 import { toast } from 'sonner';
+import { useDraggable } from '../hooks/useDraggable';
 
 interface ComplianceChatProps {
   onNavigate?: (view: string) => void;
@@ -71,6 +72,10 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
   const { user } = useAuth();
   const userPlan = normalizePlan(user?.organization?.plan);
   const [isOpen, setIsOpen] = useState(false);
+  const { position, isDragging, hasDragged, handleMouseDown, style: dragStyle } = useDraggable({
+    storageKey: 'chatbot-position',
+    defaultPosition: { x: 24, y: 24 },
+  });
   const [messages, setMessages] = useState<ChatMessage[]>([
     { 
       id: '1', 
@@ -831,7 +836,10 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end pointer-events-none">
+    <div
+      className="fixed z-50 flex flex-col items-end pointer-events-none"
+      style={dragStyle}
+    >
       {isOpen && (
         <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-96 h-[500px] mb-4 pointer-events-auto flex flex-col overflow-hidden animate-fadeIn">
           {/* Header */}
@@ -967,13 +975,21 @@ export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, curr
         </div>
       )}
 
-      {/* Toggle Button */}
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="pointer-events-auto bg-brand-600 text-white p-4 rounded-full shadow-lg shadow-brand-600/30 hover:bg-brand-700 transition-transform hover:scale-105"
+      {/* Toggle Button with drag handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        className={`pointer-events-auto flex items-center gap-1 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
-        {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
-      </button>
+        <div className="text-gray-400 hover:text-gray-600 p-1 rounded-full bg-white/80 shadow-sm border border-gray-200" title="Drag to move">
+          <GripVertical size={14} />
+        </div>
+        <button
+          onClick={() => { if (!hasDragged.current) setIsOpen(!isOpen); }}
+          className="bg-brand-600 text-white p-4 rounded-full shadow-lg shadow-brand-600/30 hover:bg-brand-700 transition-transform hover:scale-105"
+        >
+          {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
+        </button>
+      </div>
     </div>
   );
 };

@@ -148,7 +148,7 @@ const RegulatoryChangeTracker: React.FC = () => {
   const loadChanges = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/api/regulatory-changes');
+      const res = await api.get('/regulatory-changes');
       setChanges(Array.isArray(res.data) ? res.data : (res.data?.changes || []));
     } catch {
       setChanges([]);
@@ -159,7 +159,7 @@ const RegulatoryChangeTracker: React.FC = () => {
 
   const loadMetrics = async () => {
     try {
-      const res = await api.get('/api/regulatory-changes/metrics');
+      const res = await api.get('/regulatory-changes/metrics');
       setMetrics(res.data);
     } catch {
       setMetrics(null);
@@ -169,11 +169,11 @@ const RegulatoryChangeTracker: React.FC = () => {
   const saveChange = async () => {
     try {
       if (editingId) {
-        const res = await api.put(`/api/regulatory-changes/${editingId}`, form);
+        const res = await api.put(`/regulatory-changes/${editingId}`, form);
         setChanges(prev => prev.map(c => c.id === editingId ? (res.data || { ...c, ...form }) : c));
         toast.success('Regulatory change updated');
       } else {
-        const res = await api.post('/api/regulatory-changes', form);
+        const res = await api.post('/regulatory-changes', form);
         setChanges(prev => [res.data || { ...form, id: `rc_${Date.now()}`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), affectedControlsCount: 0, affectedControls: [], remediationSuggestions: [] } as RegulatoryChange, ...prev]);
         toast.success('Regulatory change created');
       }
@@ -188,7 +188,7 @@ const RegulatoryChangeTracker: React.FC = () => {
 
   const deleteChange = async (id: string) => {
     try {
-      await api.delete(`/api/regulatory-changes/${id}`);
+      await api.delete(`/regulatory-changes/${id}`);
       setChanges(prev => prev.filter(c => c.id !== id));
       if (selectedChange?.id === id) {
         setSelectedChange(null);
@@ -204,7 +204,7 @@ const RegulatoryChangeTracker: React.FC = () => {
 
   const updateStatus = async (id: string, status: ChangeStatus) => {
     try {
-      await api.patch(`/api/regulatory-changes/${id}`, { status });
+      await api.patch(`/regulatory-changes/${id}`, { status });
       setChanges(prev => prev.map(c => c.id === id ? { ...c, status, updatedAt: new Date().toISOString() } : c));
       if (selectedChange?.id === id) {
         setSelectedChange({ ...selectedChange, status, updatedAt: new Date().toISOString() });
@@ -219,7 +219,7 @@ const RegulatoryChangeTracker: React.FC = () => {
   const runImpactAnalysis = async (id: string) => {
     setAnalyzing(true);
     try {
-      const res = await api.post(`/api/regulatory-changes/${id}/analyze`);
+      const res = await api.post(`/regulatory-changes/${id}/analyze`);
       const analysisData = res.data;
       setChanges(prev => prev.map(c => c.id === id ? {
         ...c,

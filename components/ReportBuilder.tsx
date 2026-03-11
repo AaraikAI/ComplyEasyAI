@@ -229,7 +229,7 @@ const ReportBuilder: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get('/api/reports/templates');
+      const res = await api.get('/reports/templates');
       const serverTemplates: ReportTemplate[] = Array.isArray(res.data) ? res.data : [];
       const builtInWithDates = BUILT_IN_TEMPLATES.map(t => ({
         ...t,
@@ -257,7 +257,7 @@ const ReportBuilder: React.FC = () => {
 
   const loadGeneratedReports = async () => {
     try {
-      const res = await api.get('/api/reports/generated');
+      const res = await api.get('/reports/generated');
       setGeneratedReports(Array.isArray(res.data) ? res.data : []);
     } catch {
       setGeneratedReports([]);
@@ -268,12 +268,12 @@ const ReportBuilder: React.FC = () => {
     try {
       if (template.id.startsWith('builtin-')) {
         const customTemplate = { ...template, id: generateId(), isBuiltIn: false };
-        const res = await api.post('/api/reports/templates', customTemplate);
+        const res = await api.post('/reports/templates', customTemplate);
         setTemplates(prev => [...prev, res.data || customTemplate]);
         toast.success('Template saved as custom copy');
         return res.data || customTemplate;
       } else {
-        const res = await api.put(`/api/reports/templates/${template.id}`, template);
+        const res = await api.put(`/reports/templates/${template.id}`, template);
         setTemplates(prev => prev.map(t => t.id === template.id ? (res.data || template) : t));
         toast.success('Template saved');
         return res.data || template;
@@ -286,7 +286,7 @@ const ReportBuilder: React.FC = () => {
 
   const deleteTemplate = async (id: string) => {
     try {
-      await api.delete(`/api/reports/templates/${id}`);
+      await api.delete(`/reports/templates/${id}`);
       setTemplates(prev => prev.filter(t => t.id !== id));
       toast.success('Template deleted');
       setShowDeleteConfirm(null);
@@ -302,7 +302,7 @@ const ReportBuilder: React.FC = () => {
   const generateReport = async (template: ReportTemplate, format?: ExportFormat) => {
     setGenerating(true);
     try {
-      const res = await api.post('/api/reports/generate', {
+      const res = await api.post('/reports/generate', {
         templateId: template.id,
         format: format || template.exportFormat,
         filters: template.filters,

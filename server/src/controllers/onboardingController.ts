@@ -76,6 +76,15 @@ class OnboardingController {
         aiFeatureTrialCompleted: true,
         acosDigitalTwinTourCompleted: true,
         advancedFeaturesTourCompleted: true,
+        // Enterprise GRC module flows
+        riskHeatmapCompleted: true,
+        regulatoryTrackerCompleted: true,
+        vendorMonitoringCompleted: true,
+        privacyPlatformCompleted: true,
+        incidentManagementCompleted: true,
+        controlTestingCompleted: true,
+        auditPrepCompleted: true,
+        workflowAutomationCompleted: true,
         tooltipsShown: true,
         skippedFlows: true,
         completedAt: true,
@@ -435,6 +444,15 @@ class OnboardingController {
         firstReportGenerated: true,
         acosConfigured: true,
         digitalTwinActivated: true,
+        // Enterprise GRC modules
+        riskHeatmapViewed: true,
+        regulatoryTrackerViewed: true,
+        vendorMonitoringConfigured: true,
+        privacyPlatformViewed: true,
+        incidentManagementViewed: true,
+        controlTestingConfigured: true,
+        auditPrepStarted: true,
+        workflowAutomationConfigured: true,
       };
 
       const sanitizedUpdates: Record<string, any> = {};

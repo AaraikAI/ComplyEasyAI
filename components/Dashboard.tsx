@@ -29,6 +29,7 @@ import {
 import { ComplianceFramework, ViewState, RiskItem } from '../types';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { toast } from 'sonner';
+import { api } from '../services/api';
 
 interface DashboardProps {
   frameworks: ComplianceFramework[];
@@ -88,12 +89,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
 
     const fetchHistoricalScores = async () => {
       try {
-        const res = await fetch('/api/frameworks/scores/history?months=6', {
-          credentials: 'include',
-        });
-        if (!res.ok) throw new Error(`Failed to fetch compliance score history (HTTP ${res.status})`);
-        const data = await res.json();
-        if (!cancelled && data.scores && Array.isArray(data.scores)) {
+        const data = await api.get('/frameworks/scores/history?months=6');
+        if (!cancelled && data?.scores && Array.isArray(data.scores)) {
           setTrendData(data.scores.map((s: any) => ({ name: s.name, score: s.score })));
           return;
         }

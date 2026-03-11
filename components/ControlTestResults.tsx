@@ -157,7 +157,7 @@ const ControlTestResults: React.FC = () => {
   const loadTests = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/api/control-testing/tests');
+      const res = await api.get('/control-testing/tests');
       setTests(Array.isArray(res.data) ? res.data : (res.data?.tests || []));
     } catch {
       setTests([]);
@@ -168,7 +168,7 @@ const ControlTestResults: React.FC = () => {
 
   const loadCoverage = async () => {
     try {
-      const res = await api.get('/api/control-testing/coverage');
+      const res = await api.get('/control-testing/coverage');
       setCoverage(res.data);
     } catch {
       setCoverage(null);
@@ -177,7 +177,7 @@ const ControlTestResults: React.FC = () => {
 
   const loadTrends = async () => {
     try {
-      const res = await api.get('/api/control-testing/trends');
+      const res = await api.get('/control-testing/trends');
       setTrendData(Array.isArray(res.data) ? res.data : (res.data?.trends || []));
     } catch {
       setTrendData([]);
@@ -187,7 +187,7 @@ const ControlTestResults: React.FC = () => {
   const saveTest = async () => {
     try {
       if (editingId) {
-        const res = await api.put(`/api/control-testing/tests/${editingId}`, form);
+        const res = await api.put(`/control-testing/tests/${editingId}`, form);
         setTests(prev => prev.map(t => t.id === editingId ? { ...t, ...form, ...(res.data || {}), updatedAt: new Date().toISOString() } as ControlTest : t));
         toast.success('Test updated');
       } else {
@@ -195,7 +195,7 @@ const ControlTestResults: React.FC = () => {
           ...form, id: generateId(), lastStatus: 'not_run' as TestStatus, passRate: 0, totalRuns: 0,
           consecutivePasses: 0, results: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
         };
-        const res = await api.post('/api/control-testing/tests', form);
+        const res = await api.post('/control-testing/tests', form);
         setTests(prev => [...prev, (res.data || newTest) as ControlTest]);
         toast.success('Test created');
       }
@@ -209,7 +209,7 @@ const ControlTestResults: React.FC = () => {
 
   const deleteTest = async (id: string) => {
     try {
-      await api.delete(`/api/control-testing/tests/${id}`);
+      await api.delete(`/control-testing/tests/${id}`);
       setTests(prev => prev.filter(t => t.id !== id));
       toast.success('Test deleted');
       setShowDeleteConfirm(null);
@@ -221,7 +221,7 @@ const ControlTestResults: React.FC = () => {
   const runTest = async (testId: string) => {
     setRunning(testId);
     try {
-      const res = await api.post(`/api/control-testing/tests/${testId}/run`);
+      const res = await api.post(`/control-testing/tests/${testId}/run`);
       toast.success('Test execution started');
       setTimeout(() => {
         loadTests();

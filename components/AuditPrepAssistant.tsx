@@ -163,7 +163,7 @@ const AuditPrepAssistant: React.FC = () => {
     if (!selectedFramework) return;
     setLoading(true);
     try {
-      const res = await api.post('/api/audit-prep/analyze', { framework: selectedFramework });
+      const res = await api.post('/audit-prep/analyze', { framework: selectedFramework });
       setAnalysis(res.data || {
         overallScore: 0,
         frameworkName: FRAMEWORKS_LIST.find(f => f.id === selectedFramework)?.name || selectedFramework,
@@ -187,7 +187,7 @@ const AuditPrepAssistant: React.FC = () => {
   const loadGaps = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/api/audit-prep/gaps?framework=${selectedFramework}`);
+      const res = await api.get(`/audit-prep/gaps?framework=${selectedFramework}`);
       setGaps(Array.isArray(res.data) ? res.data : (res.data?.gaps || []));
     } catch {
       setGaps([]);
@@ -199,7 +199,7 @@ const AuditPrepAssistant: React.FC = () => {
   const generateMockQA = async () => {
     setGenerating(true);
     try {
-      const res = await api.post('/api/audit-prep/mock-qa', { framework: selectedFramework });
+      const res = await api.post('/audit-prep/mock-qa', { framework: selectedFramework });
       setMockQuestions(Array.isArray(res.data) ? res.data : (res.data?.questions || []));
     } catch {
       toast.error('Failed to generate mock Q&A');
@@ -211,7 +211,7 @@ const AuditPrepAssistant: React.FC = () => {
   const loadEvidencePackage = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/api/audit-prep/evidence-package?framework=${selectedFramework}`);
+      const res = await api.get(`/audit-prep/evidence-package?framework=${selectedFramework}`);
       const items = Array.isArray(res.data) ? res.data : (res.data?.items || []);
       setEvidenceItems(items.map((item: any) => ({ ...item, selected: item.status === 'included' })));
     } catch {
@@ -224,7 +224,7 @@ const AuditPrepAssistant: React.FC = () => {
   const generateSummary = async () => {
     setGenerating(true);
     try {
-      const res = await api.post('/api/audit-prep/executive-summary', { framework: selectedFramework });
+      const res = await api.post('/audit-prep/executive-summary', { framework: selectedFramework });
       setExecutiveSummary(res.data);
     } catch {
       toast.error('Failed to generate executive summary');
@@ -237,7 +237,7 @@ const AuditPrepAssistant: React.FC = () => {
     setExportingEvidence(true);
     try {
       const selectedIds = evidenceItems.filter(i => i.selected).map(i => i.id);
-      const res = await api.post('/api/audit-prep/export-evidence', {
+      const res = await api.post('/audit-prep/export-evidence', {
         framework: selectedFramework,
         evidenceIds: selectedIds,
       });

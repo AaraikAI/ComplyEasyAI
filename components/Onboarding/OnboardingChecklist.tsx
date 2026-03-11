@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, ListChecks, Sparkles } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, ListChecks, Sparkles, X } from 'lucide-react';
 import { useOnboardingChecklist } from '../../hooks/useOnboarding';
 import { useOnboardingContext } from '../../contexts/OnboardingContext';
 
@@ -15,6 +15,9 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
   const { isOnboarding, currentStep } = useOnboardingContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasNewItems, setHasNewItems] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    try { return localStorage.getItem('onboarding-checklist-dismissed') === 'true'; } catch { return false; }
+  });
 
   // Auto-close when user advances onboarding step (clicks Next)
   useEffect(() => {
@@ -30,8 +33,14 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
     }
   }, [completedCount, totalCount]);
 
-  // Don't render if all items complete
-  if (isComplete || totalCount === 0) return null;
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDismissed(true);
+    try { localStorage.setItem('onboarding-checklist-dismissed', 'true'); } catch {}
+  };
+
+  // Don't render if dismissed, all items complete, or no items
+  if (isDismissed || isComplete || totalCount === 0) return null;
 
   // Circular progress ring
   const ringSize = 36;
@@ -60,9 +69,18 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
                 <ListChecks className="w-5 h-5 text-brand-400" />
                 <h3 className="text-sm font-bold text-white">Setup Checklist</h3>
               </div>
-              <span className="text-xs font-medium text-slate-400">
-                {completedCount}/{totalCount}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-400">
+                  {completedCount}/{totalCount}
+                </span>
+                <button
+                  onClick={handleDismiss}
+                  className="p-0.5 rounded hover:bg-slate-600 text-slate-400 hover:text-white transition-colors"
+                  aria-label="Dismiss setup checklist"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             {/* Progress bar */}
             <div className="mt-3 w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
@@ -162,11 +180,20 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
           </p>
         </div>
 
+        {/* Dismiss button */}
+        <button
+          onClick={handleDismiss}
+          className="p-1 rounded hover:bg-slate-600 text-slate-400 hover:text-white transition-colors ml-1"
+          aria-label="Dismiss setup progress"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+
         {/* Expand/collapse icon */}
         {isExpanded ? (
-          <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />
+          <ChevronDown className="w-4 h-4 text-slate-400" />
         ) : (
-          <ChevronUp className="w-4 h-4 text-slate-400 ml-1" />
+          <ChevronUp className="w-4 h-4 text-slate-400" />
         )}
 
         {/* Incomplete badge */}

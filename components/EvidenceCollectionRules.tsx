@@ -166,7 +166,7 @@ const EvidenceCollectionRules: React.FC = () => {
   const loadRules = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/api/evidence-collection/rules');
+      const res = await api.get('/evidence-collection/rules');
       setRules(Array.isArray(res.data) ? res.data : (res.data?.rules || []));
     } catch {
       setRules([]);
@@ -177,7 +177,7 @@ const EvidenceCollectionRules: React.FC = () => {
 
   const loadMetrics = async () => {
     try {
-      const res = await api.get('/api/evidence-collection/metrics');
+      const res = await api.get('/evidence-collection/metrics');
       setMetrics(res.data);
     } catch {
       setMetrics(null);
@@ -186,7 +186,7 @@ const EvidenceCollectionRules: React.FC = () => {
 
   const loadControls = async () => {
     try {
-      const res = await api.get('/api/controls');
+      const res = await api.get('/controls');
       const controls = Array.isArray(res.data) ? res.data : (res.data?.controls || []);
       setAvailableControls(controls.map((c: any) => ({ id: c.id, name: c.name || c.title, framework: c.framework || '' })));
     } catch {
@@ -197,7 +197,7 @@ const EvidenceCollectionRules: React.FC = () => {
   const saveRule = async () => {
     try {
       if (editingId) {
-        const res = await api.put(`/api/evidence-collection/rules/${editingId}`, form);
+        const res = await api.put(`/evidence-collection/rules/${editingId}`, form);
         setRules(prev => prev.map(r => r.id === editingId ? { ...r, ...form, ...(res.data || {}), updatedAt: new Date().toISOString() } as EvidenceRule : r));
         toast.success('Rule updated');
       } else {
@@ -211,7 +211,7 @@ const EvidenceCollectionRules: React.FC = () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        const res = await api.post('/api/evidence-collection/rules', form);
+        const res = await api.post('/evidence-collection/rules', form);
         setRules(prev => [...prev, (res.data || newRule) as EvidenceRule]);
         toast.success('Rule created');
       }
@@ -226,7 +226,7 @@ const EvidenceCollectionRules: React.FC = () => {
 
   const deleteRule = async (id: string) => {
     try {
-      await api.delete(`/api/evidence-collection/rules/${id}`);
+      await api.delete(`/evidence-collection/rules/${id}`);
       setRules(prev => prev.filter(r => r.id !== id));
       toast.success('Rule deleted');
       setShowDeleteConfirm(null);
@@ -239,7 +239,7 @@ const EvidenceCollectionRules: React.FC = () => {
   const toggleRuleStatus = async (rule: EvidenceRule) => {
     const newStatus: RuleStatus = rule.status === 'active' ? 'inactive' : 'active';
     try {
-      await api.patch(`/api/evidence-collection/rules/${rule.id}`, { status: newStatus });
+      await api.patch(`/evidence-collection/rules/${rule.id}`, { status: newStatus });
       setRules(prev => prev.map(r => r.id === rule.id ? { ...r, status: newStatus } : r));
       toast.success(`Rule ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
     } catch {
@@ -250,7 +250,7 @@ const EvidenceCollectionRules: React.FC = () => {
   const triggerCollection = async (ruleId: string) => {
     setTriggering(ruleId);
     try {
-      await api.post(`/api/evidence-collection/rules/${ruleId}/trigger`);
+      await api.post(`/evidence-collection/rules/${ruleId}/trigger`);
       toast.success('Collection triggered');
       setTimeout(() => {
         loadRules();
