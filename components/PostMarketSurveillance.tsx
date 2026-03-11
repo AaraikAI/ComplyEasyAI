@@ -335,8 +335,8 @@ const ProgressBar: React.FC<{ value: number; max?: number; color?: string }> = (
   );
 };
 
-const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string | number; subLabel?: string; color: string; alert?: boolean }> = ({ icon, label, value, subLabel, color, alert }) => (
-  <div className={`bg-white rounded-xl border ${alert ? 'border-red-300 ring-1 ring-red-200' : 'border-gray-200'} p-5 hover:shadow-md transition-shadow`}>
+const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string | number; subLabel?: string; color: string; alert?: boolean; onClick?: () => void }> = ({ icon, label, value, subLabel, color, alert, onClick }) => (
+  <div onClick={onClick} className={`bg-white rounded-xl border ${alert ? 'border-red-300 ring-1 ring-red-200' : 'border-gray-200'} p-5 hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}>
     <div className="flex items-center justify-between mb-3">
       <div className={`p-2.5 rounded-lg ${color}`}>{icon}</div>
       {alert && <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />}
@@ -481,7 +481,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
               <p className="text-xs text-red-600 mt-0.5">Safety incidents require notification to the competent authority within the required timeframe.</p>
             </div>
           </div>
-          <button className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+          <button onClick={() => setActiveTab('incidents')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
             Review Now
           </button>
         </div>
@@ -489,17 +489,17 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<AlertTriangle size={20} className="text-yellow-600" />} label="Open Incidents" value={overviewStats.openIncidents} subLabel={`${overviewStats.criticalIncidents} critical`} color="bg-yellow-50" alert={overviewStats.criticalIncidents > 0} />
-        <StatCard icon={<ClipboardCheck size={20} className="text-blue-600" />} label="Open CAPAs" value={overviewStats.openCapas} subLabel={overviewStats.overdueCapas > 0 ? `${overviewStats.overdueCapas} overdue` : 'All on track'} color="bg-blue-50" alert={overviewStats.overdueCapas > 0} />
-        <StatCard icon={<RotateCcw size={20} className="text-orange-600" />} label="Active Recalls" value={overviewStats.activeRecalls} color="bg-orange-50" alert={overviewStats.activeRecalls > 0} />
-        <StatCard icon={<Flag size={20} className="text-purple-600" />} label="Open Non-Conformities" value={overviewStats.openNCs} color="bg-purple-50" />
+        <StatCard icon={<AlertTriangle size={20} className="text-yellow-600" />} label="Open Incidents" value={overviewStats.openIncidents} subLabel={`${overviewStats.criticalIncidents} critical`} color="bg-yellow-50" alert={overviewStats.criticalIncidents > 0} onClick={() => setActiveTab('incidents')} />
+        <StatCard icon={<ClipboardCheck size={20} className="text-blue-600" />} label="Open CAPAs" value={overviewStats.openCapas} subLabel={overviewStats.overdueCapas > 0 ? `${overviewStats.overdueCapas} overdue` : 'All on track'} color="bg-blue-50" alert={overviewStats.overdueCapas > 0} onClick={() => setActiveTab('capa')} />
+        <StatCard icon={<RotateCcw size={20} className="text-orange-600" />} label="Active Recalls" value={overviewStats.activeRecalls} color="bg-orange-50" alert={overviewStats.activeRecalls > 0} onClick={() => setActiveTab('recalls')} />
+        <StatCard icon={<Flag size={20} className="text-purple-600" />} label="Open Non-Conformities" value={overviewStats.openNCs} color="bg-purple-50" onClick={() => setActiveTab('incidents')} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<Eye size={20} className="text-teal-600" />} label="Active Plans" value={overviewStats.plansActive} subLabel={`${plans.length} total`} color="bg-teal-50" />
-        <StatCard icon={<Bell size={20} className="text-red-600" />} label="Pending Notifications" value={overviewStats.pendingNotifications} color="bg-red-50" alert={overviewStats.pendingNotifications > 0} />
-        <StatCard icon={<FileText size={20} className="text-indigo-600" />} label="Reports Generated" value={reports.length} color="bg-indigo-50" />
-        <StatCard icon={<Shield size={20} className="text-green-600" />} label="Resolved This Month" value={incidents.filter(i => i.resolvedDate && i.resolvedDate.startsWith('2026-02')).length} color="bg-green-50" />
+        <StatCard icon={<Eye size={20} className="text-teal-600" />} label="Active Plans" value={overviewStats.plansActive} subLabel={`${plans.length} total`} color="bg-teal-50" onClick={() => setActiveTab('plans')} />
+        <StatCard icon={<Bell size={20} className="text-red-600" />} label="Pending Notifications" value={overviewStats.pendingNotifications} color="bg-red-50" alert={overviewStats.pendingNotifications > 0} onClick={() => setActiveTab('incidents')} />
+        <StatCard icon={<FileText size={20} className="text-indigo-600" />} label="Reports Generated" value={reports.length} color="bg-indigo-50" onClick={() => setActiveTab('reports')} />
+        <StatCard icon={<Shield size={20} className="text-green-600" />} label="Resolved This Month" value={incidents.filter(i => i.resolvedDate && i.resolvedDate.startsWith('2026-02')).length} color="bg-green-50" onClick={() => setActiveTab('incidents')} />
       </div>
 
       {/* Incident Trend & Severity Distribution */}

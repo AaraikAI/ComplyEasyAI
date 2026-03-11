@@ -134,7 +134,11 @@ router.get(
       ]);
 
       res.json({ dpias, total, page, limit, totalPages: Math.ceil(total / limit) });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
+        logger.warn('DPIA table not yet available, returning empty data');
+        return res.json({ dpias: [], total: 0, page, limit, totalPages: 0 });
+      }
       logger.error('Error fetching DPIAs:', error);
       res.status(500).json({ error: 'Failed to fetch DPIAs' });
     }

@@ -928,6 +928,218 @@ export const acosDigitalTwinFlow: OnboardingFlowConfig = {
 };
 
 // ============================================================================
+// ENTERPRISE GRC MODULE FLOWS
+// ============================================================================
+
+export const riskHeatmapFlow: OnboardingFlowConfig = {
+  id: 'risk_heatmap',
+  name: 'Risk Heat Map',
+  description: 'Visualize your risk landscape with an interactive heat map.',
+  skippable: true,
+  estimatedMinutes: 3,
+  steps: [
+    {
+      id: 'risk-heatmap-intro',
+      title: 'Risk Heat Map',
+      description: 'The Risk Heat Map provides a visual overview of all identified risks plotted by likelihood and impact. Use it to quickly identify high-priority areas requiring immediate attention.',
+      position: 'center',
+      action: 'navigate',
+      targetRoute: 'risk-heatmap',
+    },
+    {
+      id: 'risk-heatmap-explore',
+      title: 'Explore Your Risk Landscape',
+      description: 'Click on any cell to see the risks in that category. You can filter by framework, status, or owner. The heat map updates in real-time as risks are added or resolved.',
+      position: 'center',
+      action: 'observe',
+      showConfetti: true,
+    },
+  ],
+};
+
+export const regulatoryTrackerFlow: OnboardingFlowConfig = {
+  id: 'regulatory_tracker',
+  name: 'Regulatory Change Tracker',
+  description: 'Monitor and manage regulatory updates impacting your compliance posture.',
+  skippable: true,
+  estimatedMinutes: 3,
+  steps: [
+    {
+      id: 'reg-tracker-intro',
+      title: 'Regulatory Change Tracker',
+      description: 'Stay ahead of regulatory changes with automated monitoring. Track new regulations, amendments, and enforcement actions across all your compliance frameworks.',
+      position: 'center',
+      action: 'navigate',
+      targetRoute: 'regulatory-changes',
+    },
+    {
+      id: 'reg-tracker-ai',
+      title: 'AI Impact Analysis',
+      description: 'Use the AI Impact Analysis feature to automatically identify which controls are affected by a regulatory change and get remediation suggestions.',
+      position: 'center',
+      action: 'observe',
+      showConfetti: true,
+    },
+  ],
+};
+
+export const vendorMonitoringFlow: OnboardingFlowConfig = {
+  id: 'vendor_monitoring',
+  name: 'Vendor Continuous Monitoring',
+  description: 'Enable continuous monitoring of vendor compliance and security posture.',
+  skippable: true,
+  estimatedMinutes: 3,
+  steps: [
+    {
+      id: 'vendor-mon-intro',
+      title: 'Vendor Monitoring',
+      description: 'Vendor Continuous Monitoring tracks the compliance status of your third-party vendors in real time. Set up alerts for security incidents, compliance lapses, and contract renewals.',
+      position: 'center',
+      action: 'navigate',
+      targetRoute: 'vendor-monitoring',
+    },
+    {
+      id: 'vendor-mon-setup',
+      title: 'Configure Monitoring',
+      description: 'Add your vendors and configure monitoring rules. The system will automatically track their compliance certifications, security ratings, and alert you to any changes.',
+      position: 'center',
+      action: 'observe',
+      showConfetti: true,
+    },
+  ],
+};
+
+export const privacyPlatformFlow: OnboardingFlowConfig = {
+  id: 'privacy_platform',
+  name: 'Privacy Management Platform',
+  description: 'Manage consent records, data retention policies, and privacy compliance.',
+  skippable: true,
+  estimatedMinutes: 3,
+  steps: [
+    {
+      id: 'privacy-intro',
+      title: 'Privacy Management',
+      description: 'The Privacy Management Platform centralizes consent management, data retention enforcement, and DPIA tracking. Stay compliant with GDPR, CCPA, and other privacy regulations.',
+      position: 'center',
+      action: 'navigate',
+      targetRoute: 'privacy',
+    },
+    {
+      id: 'privacy-explore',
+      title: 'Explore Privacy Features',
+      description: 'Navigate through Consent Management, Data Retention, and Subject Access Requests. Each module helps you maintain full privacy compliance with automated tracking and enforcement.',
+      position: 'center',
+      action: 'observe',
+      showConfetti: true,
+    },
+  ],
+};
+
+export const incidentManagementFlow: OnboardingFlowConfig = {
+  id: 'incident_management',
+  name: 'Incident Management',
+  description: 'Track and resolve compliance incidents efficiently.',
+  skippable: true,
+  estimatedMinutes: 3,
+  steps: [
+    {
+      id: 'incident-intro',
+      title: 'Incident Management',
+      description: 'Log, track, and resolve compliance incidents with a structured workflow. Set up severity levels, assign owners, and monitor resolution timelines.',
+      position: 'center',
+      action: 'navigate',
+      targetRoute: 'incidents',
+    },
+    {
+      id: 'incident-create',
+      title: 'Create Your First Incident',
+      description: 'Click the "New Incident" button to log an incident. Include details like severity, category, affected systems, and assigned team members for proper tracking.',
+      position: 'center',
+      action: 'observe',
+      showConfetti: true,
+    },
+  ],
+};
+
+export const controlTestingFlow: OnboardingFlowConfig = {
+  id: 'control_testing',
+  name: 'Control Testing',
+  description: 'Set up automated and manual control testing to validate compliance effectiveness.',
+  skippable: true,
+  estimatedMinutes: 3,
+  steps: [
+    {
+      id: 'control-test-intro',
+      title: 'Control Testing',
+      description: 'Control Testing validates that your compliance controls are working effectively. Create test plans, schedule recurring tests, and track pass/fail rates over time.',
+      position: 'center',
+      action: 'navigate',
+      targetRoute: 'control-testing',
+    },
+    {
+      id: 'control-test-setup',
+      title: 'Configure Tests',
+      description: 'Create test cases for your critical controls. You can set up automated tests that run on a schedule, or manual tests that require reviewer sign-off.',
+      position: 'center',
+      action: 'observe',
+      showConfetti: true,
+    },
+  ],
+};
+
+export const auditPrepFlow: OnboardingFlowConfig = {
+  id: 'audit_prep',
+  name: 'Audit Preparation Assistant',
+  description: 'Prepare for audits with AI-powered readiness analysis and evidence packaging.',
+  skippable: true,
+  estimatedMinutes: 3,
+  steps: [
+    {
+      id: 'audit-prep-intro',
+      title: 'Audit Prep Assistant',
+      description: 'The Audit Prep Assistant uses AI to analyze your readiness for upcoming audits. It identifies gaps, generates mock Q&A, and packages evidence for auditors.',
+      position: 'center',
+      action: 'navigate',
+      targetRoute: 'audit-prep',
+    },
+    {
+      id: 'audit-prep-run',
+      title: 'Run Readiness Analysis',
+      description: 'Select a framework and run the readiness analysis. The AI will score your preparedness, highlight gaps, and provide an executive summary you can share with stakeholders.',
+      position: 'center',
+      action: 'observe',
+      showConfetti: true,
+    },
+  ],
+};
+
+export const workflowAutomationFlow: OnboardingFlowConfig = {
+  id: 'workflow_automation',
+  name: 'Workflow Automation',
+  description: 'Automate compliance workflows with triggers, conditions, and actions.',
+  skippable: true,
+  estimatedMinutes: 3,
+  steps: [
+    {
+      id: 'workflow-intro',
+      title: 'Workflow Automation',
+      description: 'Automate repetitive compliance tasks with configurable workflows. Set up triggers based on events (new risk, control failure, audit due) and define automated actions.',
+      position: 'center',
+      action: 'navigate',
+      targetRoute: 'workflow-automation',
+    },
+    {
+      id: 'workflow-create',
+      title: 'Create a Workflow',
+      description: 'Build your first automation by selecting a trigger event, adding conditions, and defining actions like notifications, task creation, or status updates.',
+      position: 'center',
+      action: 'observe',
+      showConfetti: true,
+    },
+  ],
+};
+
+// ============================================================================
 // FLOW REGISTRY — Maps flow names to configs
 // ============================================================================
 
@@ -956,6 +1168,22 @@ export const getFlowConfig = (
       return advancedFeaturesFlow;
     case 'acos_digital_twin':
       return acosDigitalTwinFlow;
+    case 'risk_heatmap':
+      return riskHeatmapFlow;
+    case 'regulatory_tracker':
+      return regulatoryTrackerFlow;
+    case 'vendor_monitoring':
+      return vendorMonitoringFlow;
+    case 'privacy_platform':
+      return privacyPlatformFlow;
+    case 'incident_management':
+      return incidentManagementFlow;
+    case 'control_testing':
+      return controlTestingFlow;
+    case 'audit_prep':
+      return auditPrepFlow;
+    case 'workflow_automation':
+      return workflowAutomationFlow;
     default:
       return null;
   }
@@ -973,10 +1201,16 @@ export const getFlowsForTier = (tier: TierName): OnboardingFlowName[] => {
     'first_control',
     'invite_team',
     'ai_feature_trial',
+    // Enterprise GRC modules (available to all tiers)
+    'risk_heatmap',
+    'regulatory_tracker',
+    'incident_management',
+    'control_testing',
+    'audit_prep',
   ];
 
   if (tier === 'Essentials' || tier === 'Growth' || tier === 'Visionary') {
-    base.push('advanced_features', 'integration_setup');
+    base.push('advanced_features', 'integration_setup', 'vendor_monitoring', 'privacy_platform', 'workflow_automation');
   }
 
   if (tier === 'Growth' || tier === 'Visionary') {
@@ -1000,4 +1234,13 @@ export const checklistToFlowMap: Record<string, OnboardingFlowName> = {
   firstReportGenerated: 'first_framework',
   acosConfigured: 'acos_digital_twin',
   digitalTwinActivated: 'acos_digital_twin',
+  // Enterprise GRC modules
+  riskHeatmapViewed: 'risk_heatmap',
+  regulatoryTrackerViewed: 'regulatory_tracker',
+  vendorMonitoringConfigured: 'vendor_monitoring',
+  privacyPlatformViewed: 'privacy_platform',
+  incidentManagementViewed: 'incident_management',
+  controlTestingConfigured: 'control_testing',
+  auditPrepStarted: 'audit_prep',
+  workflowAutomationConfigured: 'workflow_automation',
 };

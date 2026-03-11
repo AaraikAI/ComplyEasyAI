@@ -172,7 +172,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onC
       if (filters.statuses.length > 0) params.statuses = filters.statuses.join(',');
 
       const qs = new URLSearchParams(params as Record<string, string>).toString();
-      const data: SearchResponse = await api.get(`/api/search?${qs}`) || { results: [], total: 0, query: searchQuery, took: 0 };
+      const data: SearchResponse = await api.get(`/search?${qs}`) || { results: [], total: 0, query: searchQuery, took: 0 };
       setResults(data.results || []);
       setTotalResults(data.total || 0);
       setSearchTime(data.took || 0);

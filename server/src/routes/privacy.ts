@@ -551,7 +551,12 @@ router.get(
       );
 
       res.json(purposes);
-    } catch (error) {
+    } catch (error: any) {
+      // Return empty array if table doesn't exist yet (migration pending)
+      if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
+        logger.warn('Consent records table not yet available, returning empty data');
+        return res.json([]);
+      }
       logger.error('Error fetching consent purposes:', error);
       res.status(500).json({ error: 'Failed to fetch consent purposes' });
     }
@@ -608,7 +613,11 @@ router.get(
       }
 
       res.json({ totalRecords, grantedRate, withdrawalRate, byPurpose });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
+        logger.warn('Consent records table not yet available, returning empty stats');
+        return res.json({ totalRecords: 0, grantedRate: 0, withdrawalRate: 0, byPurpose: {} });
+      }
       logger.error('Error fetching consent stats:', error);
       res.status(500).json({ error: 'Failed to fetch consent stats' });
     }
@@ -645,7 +654,11 @@ router.get(
       ]);
 
       res.json({ preferences, total, page, limit, totalPages: Math.ceil(total / limit) });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
+        logger.warn('Consent preferences table not yet available, returning empty data');
+        return res.json({ preferences: [], total: 0, page, limit, totalPages: 0 });
+      }
       logger.error('Error fetching consent preferences:', error);
       res.status(500).json({ error: 'Failed to fetch consent preferences' });
     }
@@ -728,7 +741,12 @@ router.get(
       ]);
 
       res.json({ policies, total, page, limit, totalPages: Math.ceil(total / limit) });
-    } catch (error) {
+    } catch (error: any) {
+      // Return empty data if table doesn't exist yet (migration pending)
+      if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
+        logger.warn('Retention policies table not yet available, returning empty data');
+        return res.json({ policies: [], total: 0, page, limit, totalPages: 0 });
+      }
       logger.error('Error fetching retention policies:', error);
       res.status(500).json({ error: 'Failed to fetch retention policies' });
     }

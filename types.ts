@@ -585,6 +585,14 @@ export type OnboardingFlowName =
   | 'ai_feature_trial'
   | 'acos_digital_twin'
   | 'advanced_features'
+  | 'risk_heatmap'
+  | 'regulatory_tracker'
+  | 'vendor_monitoring'
+  | 'privacy_platform'
+  | 'incident_management'
+  | 'control_testing'
+  | 'audit_prep'
+  | 'workflow_automation'
   | 'complete';
 
 export interface OnboardingProgress {
@@ -625,6 +633,15 @@ export interface OnboardingChecklist {
   firstReportGenerated: boolean;
   acosConfigured: boolean;
   digitalTwinActivated: boolean;
+  // Enterprise GRC modules
+  riskHeatmapViewed: boolean;
+  regulatoryTrackerViewed: boolean;
+  vendorMonitoringConfigured: boolean;
+  privacyPlatformViewed: boolean;
+  incidentManagementViewed: boolean;
+  controlTestingConfigured: boolean;
+  auditPrepStarted: boolean;
+  workflowAutomationConfigured: boolean;
   completedAt: string | null;
 }
 

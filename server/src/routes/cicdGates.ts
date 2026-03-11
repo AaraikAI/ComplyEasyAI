@@ -110,7 +110,11 @@ router.get(
         status: 'success',
         data: { policies, total, page, limit, totalPages: Math.ceil(total / limit) },
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
+        logger.warn('CI/CD gate policies table not yet available, returning empty data');
+        return res.json({ status: 'success', data: { policies: [], total: 0, page, limit, totalPages: 0 } });
+      }
       logger.error('Error fetching CI/CD gate policies:', error);
       res.status(500).json({ error: 'Failed to fetch gate policies' });
     }

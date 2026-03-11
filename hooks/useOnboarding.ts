@@ -159,15 +159,41 @@ export const useOnboardingChecklist = () => {
       { key: 'firstControlPassed', label: 'Pass your first control', done: checklist.firstControlPassed, flow: 'first_control' as OnboardingFlowName },
       { key: 'aiFeatureUsed', label: 'Try an AI feature', done: checklist.aiFeatureUsed, flow: 'ai_feature_trial' as OnboardingFlowName },
       { key: 'firstReportGenerated', label: 'Generate a report', done: checklist.firstReportGenerated, flow: 'first_framework' as OnboardingFlowName },
+      // Enterprise GRC modules
+      { key: 'riskHeatmapViewed', label: 'Explore Risk Heat Map', done: checklist.riskHeatmapViewed, flow: 'risk_heatmap' as OnboardingFlowName },
+      { key: 'regulatoryTrackerViewed', label: 'Review Regulatory Changes', done: checklist.regulatoryTrackerViewed, flow: 'regulatory_tracker' as OnboardingFlowName },
+      { key: 'incidentManagementViewed', label: 'Set up Incident Management', done: checklist.incidentManagementViewed, flow: 'incident_management' as OnboardingFlowName },
+      { key: 'controlTestingConfigured', label: 'Configure Control Testing', done: checklist.controlTestingConfigured, flow: 'control_testing' as OnboardingFlowName },
+      { key: 'auditPrepStarted', label: 'Start Audit Preparation', done: checklist.auditPrepStarted, flow: 'audit_prep' as OnboardingFlowName },
     ];
 
     if (organizationPlan === 'Essentials' || organizationPlan === 'Growth' || organizationPlan === 'Visionary') {
-      baseItems.push({
-        key: 'integrationConnected',
-        label: 'Connect an integration',
-        done: checklist.integrationConnected,
-        flow: 'integration_setup' as OnboardingFlowName,
-      });
+      baseItems.push(
+        {
+          key: 'integrationConnected',
+          label: 'Connect an integration',
+          done: checklist.integrationConnected,
+          flow: 'integration_setup' as OnboardingFlowName,
+        },
+        {
+          key: 'vendorMonitoringConfigured',
+          label: 'Enable Vendor Monitoring',
+          done: checklist.vendorMonitoringConfigured,
+          flow: 'vendor_monitoring' as OnboardingFlowName,
+        },
+        {
+          key: 'privacyPlatformViewed',
+          label: 'Explore Privacy Platform',
+          done: checklist.privacyPlatformViewed,
+          flow: 'privacy_platform' as OnboardingFlowName,
+        },
+        {
+          key: 'workflowAutomationConfigured',
+          label: 'Set up Workflow Automation',
+          done: checklist.workflowAutomationConfigured,
+          flow: 'workflow_automation' as OnboardingFlowName,
+        }
+      );
     }
 
     if (organizationPlan === 'Growth' || organizationPlan === 'Visionary') {

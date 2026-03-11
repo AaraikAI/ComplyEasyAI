@@ -3245,6 +3245,16 @@ model OnboardingChecklist {
   acosConfigured       Boolean @default(false)
   digitalTwinActivated Boolean @default(false)
 
+  // Enterprise GRC modules
+  riskHeatmapViewed             Boolean @default(false)
+  regulatoryTrackerViewed       Boolean @default(false)
+  vendorMonitoringConfigured    Boolean @default(false)
+  privacyPlatformViewed         Boolean @default(false)
+  incidentManagementViewed      Boolean @default(false)
+  controlTestingConfigured      Boolean @default(false)
+  auditPrepStarted              Boolean @default(false)
+  workflowAutomationConfigured  Boolean @default(false)
+
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
