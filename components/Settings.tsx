@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Integration, Role, TierName, SubscriptionDetails, UsageMetrics, TIER_ORDER } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { Save, User as UserIcon, Users, CreditCard, Layers, Power, Plus, X, Trash2, CheckCircle, RefreshCw, Upload, Lock, Loader2, Shield, AlertTriangle, ExternalLink, Sparkles } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
 import PricingSection from './PricingSection';
@@ -17,6 +18,7 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) => {
   const { user: currentUser } = useAuth();
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'organization' | 'team' | 'integrations' | 'billing' | 'features'>('profile');
 
   // Onboarding: trigger invite_team flow when user visits team tab
@@ -532,15 +534,15 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[600px] flex flex-col md:flex-row overflow-hidden relative animate-fadeIn">
       <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50 p-4">
-        <h2 className="text-lg font-bold text-gray-800 mb-6 px-4">Settings</h2>
+        <h2 className="text-lg font-bold text-gray-800 mb-6 px-4">{t('settings.title')}</h2>
         <nav className="space-y-1">
           {[
-            { id: 'profile', label: 'Profile', icon: UserIcon },
-            { id: 'security', label: 'Security', icon: Lock },
-            { id: 'organization', label: 'Organization', icon: Layers, adminOnly: true },
-            { id: 'team', label: 'Team Members', icon: Users },
-            { id: 'integrations', label: 'Integrations', icon: Layers },
-            { id: 'billing', label: 'Billing & Plan', icon: CreditCard },
+            { id: 'profile', label: t('settings.profile'), icon: UserIcon },
+            { id: 'security', label: t('settings.security'), icon: Lock },
+            { id: 'organization', label: t('settings.organization'), icon: Layers, adminOnly: true },
+            { id: 'team', label: t('settings.teamMembers'), icon: Users },
+            { id: 'integrations', label: t('settings.general'), icon: Layers },
+            { id: 'billing', label: t('settings.billing'), icon: CreditCard },
             { id: 'features', label: 'Feature Marketplace', icon: Sparkles, adminOnly: true },
           ].filter(item => !item.adminOnly || currentUser?.role === 'admin').map(item => (
             <button
@@ -577,14 +579,14 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         {activeTab === 'billing' && (
           <div className="animate-fadeIn space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-900">Plan & Billing</h3>
+              <h3 className="text-xl font-bold text-gray-900">{t('settings.billing')}</h3>
               {subscriptionDetails && (
                 <button
                   onClick={handleManageSubscription}
                   className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
                 >
                   <ExternalLink size={16} />
-                  Manage Subscription
+                  {t('settings.manageBilling')}
                 </button>
               )}
             </div>
@@ -605,7 +607,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
               <div className="relative z-10">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-indigo-400 text-sm font-medium mb-1 uppercase tracking-wider">Current Subscription</p>
+                    <p className="text-indigo-400 text-sm font-medium mb-1 uppercase tracking-wider">{t('settings.currentPlan')}</p>
                     <h2 className="text-4xl font-bold mb-2">{currentTier}</h2>
                     {subscriptionDetails ? (
                       <div className="space-y-1">
@@ -692,7 +694,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                 {isLoadingFeatures ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="animate-spin text-brand-600 mr-3" size={20} />
-                    <span className="text-gray-600">Loading features...</span>
+                    <span className="text-gray-600">{t('common.loading')}</span>
                   </div>
                 ) : (
                   <>
@@ -821,7 +823,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         {/* --- Profile Tab --- */}
         {activeTab === 'profile' && (
           <div className="animate-fadeIn space-y-6 max-w-2xl">
-            <h3 className="text-xl font-bold text-gray-900">My Profile</h3>
+            <h3 className="text-xl font-bold text-gray-900">{t('settings.profile')}</h3>
             
             <div className="flex items-center space-x-6 mb-8">
               <div className="w-24 h-24 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 text-3xl font-bold border-4 border-white shadow-md overflow-hidden">
@@ -878,7 +880,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
                   <input 
                     type="text" 
                     value={profileName}
@@ -914,7 +916,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                  className="flex items-center space-x-2 bg-brand-600 text-white px-6 py-2.5 rounded-lg hover:bg-brand-700 transition-colors shadow-sm"
                >
                  {isSavingProfile ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
-                 <span>{isSavingProfile ? 'Saving...' : 'Save Changes'}</span>
+                 <span>{isSavingProfile ? `${t('common.loading')}` : t('common.save')}</span>
                </button>
             </div>
           </div>
@@ -923,14 +925,14 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         {/* --- Security Tab (2FA) --- */}
         {activeTab === 'security' && (
           <div className="animate-fadeIn space-y-6 max-w-2xl">
-            <h3 className="text-xl font-bold text-gray-900">Security Settings</h3>
+            <h3 className="text-xl font-bold text-gray-900">{t('settings.security')}</h3>
             
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h4 className="font-bold text-gray-900 flex items-center">
                     <Shield className="mr-2 text-brand-600" size={20} />
-                    Two-Factor Authentication
+                    {t('settings.twoFactorAuth')}
                   </h4>
                   <p className="text-sm text-gray-500 mt-1">
                     Add an extra layer of security to your account
@@ -940,11 +942,11 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                   {twoFactorEnabled ? (
                     <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium flex items-center">
                       <CheckCircle size={14} className="mr-1" />
-                      Enabled
+                      {t('common.enabled')}
                     </span>
                   ) : (
                     <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
-                      Disabled
+                      {t('common.disabled')}
                     </span>
                   )}
                 </div>
@@ -987,7 +989,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                     ) : (
                       <>
                         <Shield className="mr-2" size={18} />
-                        Enable Two-Factor Authentication
+                        {t('settings.enable2FA')}
                       </>
                     )}
                   </button>
@@ -1061,7 +1063,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                           }}
                           className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </button>
                       </div>
 
@@ -1115,7 +1117,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                       disabled={isLoading2FA}
                       className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
                     >
-                      {isLoading2FA ? 'Disabling...' : 'Disable 2FA'}
+                      {isLoading2FA ? `${t('common.loading')}` : t('settings.disable2FA')}
                     </button>
                     <button
                       onClick={async () => {
@@ -1249,12 +1251,12 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
         {/* --- Organization Tab --- */}
         {activeTab === 'organization' && currentUser?.role === 'admin' && (
           <div className="animate-fadeIn space-y-6 max-w-2xl">
-            <h3 className="text-xl font-bold text-gray-900">Organization Settings</h3>
+            <h3 className="text-xl font-bold text-gray-900">{t('settings.organization')}</h3>
 
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.organizationName')}</label>
                   <input
                     type="text"
                     value={organizationName}
@@ -1264,13 +1266,13 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Plan</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.currentPlan')}</label>
                   <div className="px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-medium">
                     {currentTier}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Upgrade Plan</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.upgradePlan')}</label>
                   <select
                     value={organizationTier}
                     onChange={(e) => setOrganizationTier(e.target.value as TierName)}
@@ -1334,7 +1336,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                     ) : (
                       <>
                         <Save size={18} className="mr-2" />
-                        Save Changes
+                        {t('common.save')}
                       </>
                     )}
                   </button>
@@ -1362,7 +1364,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
             )}
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-bold text-xl text-gray-900">Team Members</h3>
+                <h3 className="font-bold text-xl text-gray-900">{t('settings.teamMembers')}</h3>
                 <p className="text-sm text-gray-500">Manage access and roles for your organization.</p>
               </div>
               <div className="flex items-center space-x-2">
@@ -1378,7 +1380,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                   disabled={isAtLimit(currentUser?.organization?.plan, 'maxUsers', users.length)}
                   className="flex items-center space-x-2 bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Plus size={16} /> <span>Invite Member</span>
+                  <Plus size={16} /> <span>{t('settings.inviteMember')}</span>
                 </button>
               </div>
             </div>
@@ -1386,13 +1388,13 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
             {isLoadingUsers ? (
               <div className="bg-white border border-gray-200 rounded-xl p-12 flex items-center justify-center">
                 <RefreshCw className="animate-spin text-brand-600 mr-3" size={24} />
-                <span className="text-gray-600">Loading team members...</span>
+                <span className="text-gray-600">{t('common.loading')}</span>
               </div>
             ) : (
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                 {users.length === 0 ? (
                   <div className="p-8 text-center text-gray-500">
-                    <p>No team members found.</p>
+                    <p>{t('common.noResults')}</p>
                   </div>
                 ) : (
                   users.map((u, idx) => (
@@ -1519,7 +1521,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
               {isLoadingIntegrations ? (
                 <div className="bg-white border border-gray-200 rounded-xl p-12 flex items-center justify-center">
                   <RefreshCw className="animate-spin text-brand-600 mr-3" size={24} />
-                  <span className="text-gray-600">Loading integrations...</span>
+                  <span className="text-gray-600">{t('common.loading')}</span>
                 </div>
               ) : integrations.length === 0 ? (
                 <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
@@ -1659,12 +1661,12 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
            <div className="bg-white p-6 rounded-xl max-w-sm w-full shadow-xl animate-scaleIn">
              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-lg">Invite Member</h3>
+                <h3 className="font-bold text-lg">{t('settings.inviteMember')}</h3>
                 <button onClick={() => setShowInviteModal(false)}><X className="text-gray-400 hover:text-gray-600" size={20}/></button>
              </div>
              <form onSubmit={handleInvite} className="space-y-4">
                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('common.name')}</label>
                   <input required placeholder="John Doe" value={newMember.name} onChange={e=>setNewMember({...newMember, name: e.target.value})} className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"/>
                </div>
                <div>
@@ -1762,8 +1764,8 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Email</th>
-                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Name</th>
-                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Error</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{t('common.name')}</th>
+                            <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{t('common.error')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -1789,7 +1791,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                     }}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                   >
-                    Close
+                    {t('common.close')}
                   </button>
                 </div>
               </div>

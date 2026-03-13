@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
   Plus,
@@ -206,6 +207,7 @@ const SYSTEM_ROLES: Omit<Role, 'id' | 'createdAt' | 'updatedAt'>[] = [
 // ── Component ───────────────────────────────────────────────────────────────
 
 const RoleManager: React.FC<RoleManagerProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'custom' | 'system' | 'users' | 'audit'>('custom');
   const [roles, setRoles] = useState<Role[]>([]);
   const [roleUsers, setRoleUsers] = useState<Record<string, RoleUser[]>>({});
@@ -420,7 +422,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ onBack }) => {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading roles...</span>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}</span>
       </div>
     );
   }
@@ -436,7 +438,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ onBack }) => {
             </button>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Role Manager</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('settings.roles')}</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">Configure roles and permissions</p>
           </div>
         </div>
@@ -551,8 +553,8 @@ const RoleManager: React.FC<RoleManagerProps> = ({ onBack }) => {
                   <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-between">
                     <span className="text-sm text-red-700 dark:text-red-300">Delete this role? Users will lose these permissions.</span>
                     <div className="flex gap-2">
-                      <button onClick={() => setShowDeleteConfirm(null)} className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">Cancel</button>
-                      <button onClick={() => deleteRole(role.id)} className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+                      <button onClick={() => setShowDeleteConfirm(null)} className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">{t('common.cancel')}</button>
+                      <button onClick={() => deleteRole(role.id)} className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">{t('common.delete')}</button>
                     </div>
                   </div>
                 )}
@@ -878,7 +880,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ onBack }) => {
             </div>
             <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
               <button onClick={() => setShowRoleModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={saveRole}
@@ -886,7 +888,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ onBack }) => {
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editingRole ? 'Update Role' : 'Create Role'}
+                {editingRole ? t('common.edit') : t('common.create')}
               </button>
             </div>
           </div>
@@ -929,7 +931,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ onBack }) => {
             </div>
             <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
               <button onClick={() => setShowAssignModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={assignUser}

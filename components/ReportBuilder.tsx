@@ -15,6 +15,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Plus, Loader2, Search, X, ChevronDown, ChevronUp, Trash2,
   Edit3, FileText, BarChart3, Table, Type, GripVertical, Download, Calendar,
@@ -195,6 +196,7 @@ const generateId = () => `sec_${Date.now()}_${Math.random().toString(36).substr(
 
 const ReportBuilder: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('library');
   const [templates, setTemplates] = useState<ReportTemplate[]>([]);
   const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
@@ -444,7 +446,7 @@ const ReportBuilder: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Report Builder</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('reports.title')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Build, customize, and schedule compliance reports
           </p>
@@ -694,7 +696,7 @@ const ReportBuilder: React.FC = () => {
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm disabled:opacity-50"
             >
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-              Generate
+              {t('reports.generateReport')}
             </button>
           </div>
         </div>
@@ -773,7 +775,7 @@ const ReportBuilder: React.FC = () => {
           <div className="space-y-4">
             {/* Export Format */}
             <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Export Format</h4>
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{t('reports.format')}</h4>
               <div className="flex gap-2">
                 {(['PDF', 'Excel', 'CSV'] as ExportFormat[]).map(fmt => (
                   <button
@@ -1141,7 +1143,7 @@ const ReportBuilder: React.FC = () => {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowScheduleModal(false)}>
         <div className="bg-white dark:bg-surface-800 rounded-xl shadow-xl w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Schedule Report</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{t('reports.schedule')}</h3>
             <button onClick={() => setShowScheduleModal(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
               <X className="w-5 h-5 text-gray-500" />
             </button>
@@ -1254,7 +1256,7 @@ const ReportBuilder: React.FC = () => {
   const renderDeleteConfirm = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowDeleteConfirm(null)}>
       <div className="bg-white dark:bg-surface-800 rounded-xl shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Template</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('common.delete')}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Are you sure you want to delete this report template? This action cannot be undone.</p>
         <div className="flex justify-end gap-2">
           <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">

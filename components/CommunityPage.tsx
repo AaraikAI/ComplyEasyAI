@@ -6,6 +6,7 @@ import {
   GitBranch, Globe, Slack, Video, FileText, HelpCircle, Lightbulb,
   Trophy, Target, Share2, Bookmark, Bell, ChevronRight, Hash
 } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 interface ForumPost {
   id: string;
@@ -217,6 +218,7 @@ const topContributors = [
 ];
 
 export const CommunityPage: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'forum' | 'events' | 'resources' | 'showcase'>('forum');
   const [selectedCategory, setSelectedCategory] = useState('All Discussions');
   const [searchQuery, setSearchQuery] = useState('');
@@ -267,10 +269,10 @@ export const CommunityPage: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <a href="/learn" className="text-slate-400 hover:text-white transition-colors text-sm">
-                Learn
+                {t('nav.learn')}
               </a>
               <a href="/docs" className="text-slate-400 hover:text-white transition-colors text-sm">
-                Docs
+                {t('nav.docs')}
               </a>
               <a href="/signup" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all">
                 Join Community

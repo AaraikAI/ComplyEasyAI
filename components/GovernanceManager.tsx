@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft, ArrowDown, ArrowRight, Plus, Trash2, Edit3, Save, Download, ChevronDown, ChevronRight,
@@ -364,6 +365,7 @@ const formatMinutes = (m: number) => {
 /* ------------------------------------------------------------------ */
 
 export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'dpo' | 'committees' | 'escalation'>('dpo');
 
   /* ---- DPO state ---- */
@@ -458,7 +460,7 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
   }, [newTask]);
 
   const updateTaskStatus = useCallback((taskId: string, status: DPOTask['status']) => {
-    setDpo(prev => ({ ...prev, tasks: prev.tasks.map(t => t.id === taskId ? { ...t, status } : t) }));
+    setDpo(prev => ({ ...prev, tasks: prev.tasks.map(tk => tk.id === taskId ? { ...tk, status } : tk) }));
   }, []);
 
   /* ---- Committee callbacks ---- */
@@ -546,9 +548,9 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
           { key: 'dpo' as const, label: 'DPO Management', icon: <UserCheck size={15} /> },
           { key: 'committees' as const, label: 'Committees', icon: <Users size={15} /> },
           { key: 'escalation' as const, label: 'Escalation Paths', icon: <ArrowUpRight size={15} /> },
-        ]).map(t => (
-          <button key={t.key} onClick={() => setActiveTab(t.key)} className={`flex items-center gap-1.5 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-brand-600 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-            {t.icon}{t.label}
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-1.5 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key ? 'border-brand-600 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+            {tab.icon}{tab.label}
           </button>
         ))}
       </div>
@@ -630,7 +632,7 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
                   <h4 className="font-semibold text-gray-900 mb-3">Task Summary</h4>
                   <div className="space-y-2">
                     {(['Critical', 'High', 'Medium', 'Low'] as const).map(p => {
-                      const count = dpo.tasks.filter(t => t.priority === p && t.status !== 'Completed').length;
+                      const count = dpo.tasks.filter(tk => tk.priority === p && tk.status !== 'Completed').length;
                       return (
                         <div key={p} className="flex justify-between items-center text-sm">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityColor(p)}`}>{p}</span>
@@ -1149,7 +1151,7 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
                 <div className="flex justify-between items-center"><h3 className="text-lg font-bold">Add Escalation Trigger</h3><button onClick={() => setShowAddTrigger(false)} className="p-1 hover:bg-gray-100 rounded-full"><X size={18} /></button></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Trigger Name *</label><input value={newTrigger.name} onChange={e => setNewTrigger(p => ({ ...p, name: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="e.g., Critical vulnerability detected" /></div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Type</label><select value={newTrigger.type} onChange={e => setNewTrigger(p => ({ ...p, type: e.target.value as any }))} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">{['SLA Breach', 'Risk Threshold', 'Incident Severity', 'Audit Finding', 'Regulatory Deadline'].map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Type</label><select value={newTrigger.type} onChange={e => setNewTrigger(p => ({ ...p, type: e.target.value as any }))} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">{['SLA Breach', 'Risk Threshold', 'Incident Severity', 'Audit Finding', 'Regulatory Deadline'].map(typ => <option key={typ} value={typ}>{typ}</option>)}</select></div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">Starts at Level</label><select value={newTrigger.startsAtLevel} onChange={e => setNewTrigger(p => ({ ...p, startsAtLevel: e.target.value as EscalationLevel }))} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">{(['L1', 'L2', 'L3', 'Executive', 'Board'] as EscalationLevel[]).map(l => <option key={l} value={l}>{l}</option>)}</select></div>
                 </div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Condition</label><input value={newTrigger.condition} onChange={e => setNewTrigger(p => ({ ...p, condition: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-brand-500 outline-none" placeholder="e.g., severity >= Critical AND impact >= High" /></div>

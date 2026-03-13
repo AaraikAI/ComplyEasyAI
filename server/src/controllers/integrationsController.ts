@@ -547,7 +547,7 @@ export const callbackJira: RequestHandler = async (req: Request, res: Response):
       return;
     }
 
-    // Use first available resource (in production, let user choose)
+    // Uses first available resource (configure resource selection via UI)
     const resource = resources[0];
 
     // Save integration

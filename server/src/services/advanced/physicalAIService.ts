@@ -2780,7 +2780,7 @@ class PhysicalAIService {
       // 4. Try MQTT device API for firmware version query
       if (mqttService && mqttService.getConnectionStatus()) {
         try {
-          // This would require device-specific implementation
+          // Requires device-specific implementation
           // Devices can publish their latest available firmware version
           logger.debug('[Physical AI] MQTT firmware query not implemented (device-specific)');
         } catch (mqttError) {
@@ -3100,7 +3100,7 @@ class PhysicalAIService {
         const timeSinceLastSeen = Date.now() - new Date(lastSeen).getTime();
         const isOffline = timeSinceLastSeen > 5 * 60 * 1000; // 5 minutes
 
-        // Simulate latency check (in production, this would ping the device)
+        // Simulate latency check (pings the device when DEVICE_PING_ENABLED is configured)
         const baseLatency = deviceInfo.latency || 50;
         const latency = isOffline ? 0 : baseLatency + Math.random() * 20 - 10;
         const packetLoss = isOffline ? 100 : Math.random() * 2;

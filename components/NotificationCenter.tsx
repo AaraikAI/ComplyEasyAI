@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Check, CheckCheck, X, AlertTriangle, Shield, FileText, Users, Clock, ChevronRight, Settings, Volume2, VolumeX, Filter } from 'lucide-react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 
 interface Notification {
   id: string;
@@ -32,6 +33,7 @@ const TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = {
 };
 
 const NotificationCenter: React.FC = () => {
+  const { t } = useI18n();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -166,7 +168,7 @@ const NotificationCenter: React.FC = () => {
         <div className="absolute right-0 top-full mt-2 w-[420px] max-h-[600px] bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-surface-200 dark:border-surface-700">
-            <h3 className="text-base font-semibold text-surface-900 dark:text-surface-100">Notifications</h3>
+            <h3 className="text-base font-semibold text-surface-900 dark:text-surface-100">{t('notifications.title')}</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSoundEnabled(!soundEnabled)}
@@ -181,7 +183,7 @@ const NotificationCenter: React.FC = () => {
                   className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 rounded-md transition-colors"
                 >
                   <CheckCheck size={12} />
-                  Mark all read
+                  {t('notifications.markAllRead')}
                 </button>
               )}
             </div>
@@ -214,13 +216,13 @@ const NotificationCenter: React.FC = () => {
             {isLoading && notifications.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="animate-spin w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full mx-auto" />
-                <p className="text-sm text-surface-500 dark:text-surface-400 mt-2">Loading...</p>
+                <p className="text-sm text-surface-500 dark:text-surface-400 mt-2">{t('common.loading')}</p>
               </div>
             ) : filteredNotifications.length === 0 ? (
               <div className="p-8 text-center">
                 <Bell size={32} className="mx-auto text-surface-300 dark:text-surface-600 mb-2" />
                 <p className="text-sm text-surface-500 dark:text-surface-400">
-                  {activeTab === 'unread' ? 'No unread notifications' : 'No notifications yet'}
+                  {activeTab === 'unread' ? t('notifications.noNotifications') : t('notifications.noNotifications')}
                 </p>
               </div>
             ) : (
@@ -272,7 +274,7 @@ const NotificationCenter: React.FC = () => {
                     onClick={() => fetchNotifications(page + 1)}
                     className="w-full py-3 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-surface-50 dark:hover:bg-surface-750 transition-colors"
                   >
-                    {isLoading ? 'Loading...' : 'Load more'}
+                    {isLoading ? t('common.loading') : 'Load more'}
                   </button>
                 )}
               </>
@@ -283,7 +285,7 @@ const NotificationCenter: React.FC = () => {
           <div className="border-t border-surface-200 dark:border-surface-700 px-4 py-2">
             <button className="flex items-center gap-1 text-xs text-surface-500 dark:text-surface-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
               <Settings size={12} />
-              Notification preferences
+              {t('notifications.preferences')}
             </button>
           </div>
         </div>

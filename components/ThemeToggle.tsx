@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useI18n } from '../contexts/I18nContext';
 
 interface ThemeToggleProps {
   variant?: 'icon' | 'dropdown';
@@ -9,6 +10,7 @@ interface ThemeToggleProps {
 
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({ variant = 'icon', className = '' }) => {
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const { t } = useI18n();
 
   if (variant === 'dropdown') {
     return (
@@ -18,9 +20,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ variant = 'icon', clas
           onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
           className="appearance-none bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg px-3 py-2 pr-8 text-sm text-surface-700 dark:text-surface-200 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
         >
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-          <option value="system">System</option>
+          <option value="light">{t('settings.lightMode')}</option>
+          <option value="dark">{t('settings.darkMode')}</option>
+          <option value="system">{t('settings.systemTheme')}</option>
         </select>
         <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
           {theme === 'light' && <Sun size={14} className="text-amber-500" />}
@@ -50,9 +52,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ variant = 'icon', clas
   };
 
   const getTooltip = () => {
-    if (theme === 'light') return 'Switch to dark mode';
-    if (theme === 'dark') return 'Switch to system theme';
-    return 'Switch to light mode';
+    if (theme === 'light') return t('settings.darkMode');
+    if (theme === 'dark') return t('settings.systemTheme');
+    return t('settings.lightMode');
   };
 
   return (
@@ -79,6 +81,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ variant = 'icon', clas
 // Compact version for headers
 export const ThemeToggleCompact: React.FC<{ className?: string }> = ({ className = '' }) => {
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const { t: translate } = useI18n();
 
   const handleClick = () => {
     if (theme === 'light') {
@@ -98,8 +101,8 @@ export const ThemeToggleCompact: React.FC<{ className?: string }> = ({ className
           ? 'bg-surface-700/50 hover:bg-surface-600/50 text-yellow-300'
           : 'bg-surface-100 hover:bg-surface-200 text-surface-600'
       } ${className}`}
-      title={`Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)}`}
-      aria-label={`Current theme: ${theme}. Click to change.`}
+      title={translate('accessibility.toggleTheme')}
+      aria-label={translate('accessibility.toggleTheme')}
     >
       <div className="relative transition-transform duration-300">
         {theme === 'light' && <Sun size={18} className="text-amber-500" />}

@@ -18,6 +18,7 @@ import {
   Globe, Wifi, Database, Bug, RefreshCw, Users, Building2, Zap, Loader2
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -138,21 +139,22 @@ function mapApiProvider(p: any): ThirdPartyProvider {
   };
 }
 
-function mapApiTest(t: any): ResilienceTest {
+function mapApiTest(item: any): ResilienceTest {
   return {
-    id: t.id, testName: t.testName || t.name || '',
-    type: (t.type as TestType) || 'Vulnerability Scan', scope: t.scope || '',
-    lastExecuted: t.lastExecuted ? new Date(t.lastExecuted).toLocaleDateString('sv') : 'N/A',
-    result: (t.result as TestResult) || 'Partial',
-    nextScheduled: t.nextScheduled ? new Date(t.nextScheduled).toLocaleDateString('sv') : 'N/A',
-    findingsCount: t.findingsCount ?? 0, description: t.description || '',
-    testedBy: t.testedBy || '',
+    id: item.id, testName: item.testName || item.name || '',
+    type: (item.type as TestType) || 'Vulnerability Scan', scope: item.scope || '',
+    lastExecuted: item.lastExecuted ? new Date(item.lastExecuted).toLocaleDateString('sv') : 'N/A',
+    result: (item.result as TestResult) || 'Partial',
+    nextScheduled: item.nextScheduled ? new Date(item.nextScheduled).toLocaleDateString('sv') : 'N/A',
+    findingsCount: item.findingsCount ?? 0, description: item.description || '',
+    testedBy: item.testedBy || '',
   };
 }
 
 // ── Component ──────────────────────────────────────────────────────────
 
 export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -210,9 +212,9 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const openIncidents = incidents.filter(i => i.status === 'Open' || i.status === 'Investigating').length;
   const criticalProviders = providers.filter(p => p.criticality === 'Critical').length;
   const testsCompleted = tests.length;
-  const testsPassed = tests.filter(t => t.result === 'Pass').length;
-  const testsFailed = tests.filter(t => t.result === 'Fail').length;
-  const totalFindings = tests.reduce((sum, t) => sum + t.findingsCount, 0);
+  const testsPassed = tests.filter(tst => tst.result === 'Pass').length;
+  const testsFailed = tests.filter(tst => tst.result === 'Fail').length;
+  const totalFindings = tests.reduce((sum, tst) => sum + tst.findingsCount, 0);
   const reportedIncidents = incidents.filter(i => i.notificationStatus === 'Final Sent' || i.notificationStatus === 'Intermediate Sent' || i.notificationStatus === 'Initial Sent').length;
   const providersWithoutExit = providers.filter(p => !p.exitStrategyExists).length;
 
@@ -242,7 +244,7 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const concentrationBg = (c: ConcentrationRisk) => c === 'High' ? 'bg-red-500/20 text-red-400' : c === 'Medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400';
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: 'overview', label: 'Overview', icon: <BarChart3 size={15} /> },
+    { key: 'overview', label: t('common.overview'), icon: <BarChart3 size={15} /> },
     { key: 'ict_risk', label: 'ICT Risk Management', icon: <Shield size={15} /> },
     { key: 'incidents', label: 'Incident Reporting', icon: <AlertTriangle size={15} /> },
     { key: 'third_party', label: 'Third-Party Risk', icon: <Building2 size={15} /> },
@@ -369,7 +371,7 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <div className="text-xs text-slate-400">Passed</div>
             </div>
             <div className="bg-slate-900 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-amber-400">{tests.filter(t => t.result === 'Partial').length}</div>
+              <div className="text-2xl font-bold text-amber-400">{tests.filter(tst => tst.result === 'Partial').length}</div>
               <div className="text-xs text-slate-400">Partial</div>
             </div>
             <div className="bg-slate-900 rounded-lg p-3 text-center">
@@ -382,11 +384,11 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <span className="text-lg font-bold text-amber-400">{totalFindings}</span>
           </div>
           <div className="mt-3 space-y-2">
-            {tests.filter(t => t.result === 'Fail').map(t => (
-              <div key={t.id} className="flex items-center gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded">
+            {tests.filter(tst => tst.result === 'Fail').map(tst => (
+              <div key={tst.id} className="flex items-center gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded">
                 <XCircle size={14} className="text-red-400 flex-shrink-0" />
-                <span className="text-sm text-red-300">{t.testName}</span>
-                <span className="text-xs text-red-400 ml-auto">{t.findingsCount} findings</span>
+                <span className="text-sm text-red-300">{tst.testName}</span>
+                <span className="text-xs text-red-400 ml-auto">{tst.findingsCount} findings</span>
               </div>
             ))}
           </div>
@@ -680,7 +682,7 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           { label: 'Tests Conducted', value: tests.length, color: 'text-blue-400', icon: Activity },
           { label: 'Pass Rate', value: `${Math.round((testsPassed / tests.length) * 100)}%`, color: 'text-emerald-400', icon: CheckCircle },
           { label: 'Open Findings', value: totalFindings, color: 'text-amber-400', icon: Bug },
-          { label: 'TLPT Completed', value: tests.filter(t => t.type === 'TLPT').length, color: 'text-purple-400', icon: Shield },
+          { label: 'TLPT Completed', value: tests.filter(tst => tst.type === 'TLPT').length, color: 'text-purple-400', icon: Shield },
         ].map(m => (
           <div key={m.label} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
             <div className="flex items-center justify-between mb-1">
@@ -709,27 +711,27 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </tr>
             </thead>
             <tbody>
-              {tests.map(t => (
-                <tr key={t.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                  <td className="p-3 text-white font-medium max-w-[200px] truncate">{t.testName}</td>
+              {tests.map(tst => (
+                <tr key={tst.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                  <td className="p-3 text-white font-medium max-w-[200px] truncate">{tst.testName}</td>
                   <td className="p-3">
                     <span className={`text-xs px-2 py-1 rounded ${
-                      t.type === 'TLPT' ? 'bg-purple-500/20 text-purple-400' :
-                      t.type === 'Penetration Test' ? 'bg-blue-500/20 text-blue-400' :
-                      t.type === 'Vulnerability Scan' ? 'bg-cyan-500/20 text-cyan-400' :
+                      tst.type === 'TLPT' ? 'bg-purple-500/20 text-purple-400' :
+                      tst.type === 'Penetration Test' ? 'bg-blue-500/20 text-blue-400' :
+                      tst.type === 'Vulnerability Scan' ? 'bg-cyan-500/20 text-cyan-400' :
                       'bg-slate-600 text-slate-300'
-                    }`}>{t.type}</span>
+                    }`}>{tst.type}</span>
                   </td>
-                  <td className="p-3 text-slate-300 max-w-[200px] truncate">{t.scope}</td>
-                  <td className="p-3 text-slate-400 whitespace-nowrap">{t.lastExecuted}</td>
-                  <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full ${testResultBg(t.result)}`}>{t.result}</span></td>
+                  <td className="p-3 text-slate-300 max-w-[200px] truncate">{tst.scope}</td>
+                  <td className="p-3 text-slate-400 whitespace-nowrap">{tst.lastExecuted}</td>
+                  <td className="p-3"><span className={`text-xs px-2 py-1 rounded-full ${testResultBg(tst.result)}`}>{tst.result}</span></td>
                   <td className="p-3">
-                    <span className={`text-sm font-medium ${t.findingsCount > 5 ? 'text-amber-400' : t.findingsCount > 0 ? 'text-slate-300' : 'text-emerald-400'}`}>
-                      {t.findingsCount}
+                    <span className={`text-sm font-medium ${tst.findingsCount > 5 ? 'text-amber-400' : tst.findingsCount > 0 ? 'text-slate-300' : 'text-emerald-400'}`}>
+                      {tst.findingsCount}
                     </span>
                   </td>
-                  <td className="p-3 text-slate-400 whitespace-nowrap">{t.nextScheduled}</td>
-                  <td className="p-3 text-slate-300 max-w-[150px] truncate">{t.testedBy}</td>
+                  <td className="p-3 text-slate-400 whitespace-nowrap">{tst.nextScheduled}</td>
+                  <td className="p-3 text-slate-300 max-w-[150px] truncate">{tst.testedBy}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-1">
                       <button className="p-1.5 hover:bg-slate-600 rounded" title="View Report"><Eye size={14} className="text-slate-400" /></button>
@@ -936,7 +938,7 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div>
               <label className="block text-sm text-slate-400 mb-1">Type</label>
               <select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">
-                {(['Cyber Attack', 'System Failure', 'Data Breach', 'Third-Party Outage'] as IncidentType[]).map(t => <option key={t}>{t}</option>)}
+                {(['Cyber Attack', 'System Failure', 'Data Breach', 'Third-Party Outage'] as IncidentType[]).map(it => <option key={it}>{it}</option>)}
               </select>
             </div>
             <div>
@@ -976,9 +978,9 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         <div className="flex gap-1 mb-6 border-b border-slate-700 overflow-x-auto">
-          {tabs.map(t => (
-            <button key={t.key} onClick={() => { setActiveTab(t.key); setSearchQuery(''); setCategoryFilter('all'); }} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === t.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>
-              {t.icon}{t.label}
+          {tabs.map(tab => (
+            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchQuery(''); setCategoryFilter('all'); }} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>
+              {tab.icon}{tab.label}
             </button>
           ))}
         </div>

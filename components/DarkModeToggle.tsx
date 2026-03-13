@@ -6,9 +6,11 @@
 import React from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useDarkMode } from '../hooks/useDarkMode';
+import { useI18n } from '../contexts/I18nContext';
 
 export const DarkModeToggle: React.FC<{ className?: string }> = ({ className = '' }) => {
   const { theme, setTheme, isDark } = useDarkMode();
+  const { t } = useI18n();
 
   return (
     <div className={`flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg ${className}`}>
@@ -19,8 +21,8 @@ export const DarkModeToggle: React.FC<{ className?: string }> = ({ className = '
             ? 'bg-white dark:bg-gray-700 text-brand-600 dark:text-brand-400'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
         }`}
-        title="Light mode"
-        aria-label="Switch to light mode"
+        title={t('settings.lightMode')}
+        aria-label={t('settings.lightMode')}
       >
         <Sun className="w-4 h-4" />
       </button>
@@ -32,8 +34,8 @@ export const DarkModeToggle: React.FC<{ className?: string }> = ({ className = '
             ? 'bg-white dark:bg-gray-700 text-brand-600 dark:text-brand-400'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
         }`}
-        title="System theme"
-        aria-label="Use system theme"
+        title={t('settings.systemTheme')}
+        aria-label={t('settings.systemTheme')}
       >
         <Monitor className="w-4 h-4" />
       </button>
@@ -45,8 +47,8 @@ export const DarkModeToggle: React.FC<{ className?: string }> = ({ className = '
             ? 'bg-white dark:bg-gray-700 text-brand-600 dark:text-brand-400'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
         }`}
-        title="Dark mode"
-        aria-label="Switch to dark mode"
+        title={t('settings.darkMode')}
+        aria-label={t('settings.darkMode')}
       >
         <Moon className="w-4 h-4" />
       </button>
@@ -59,13 +61,14 @@ export const DarkModeToggle: React.FC<{ className?: string }> = ({ className = '
  */
 export const DarkModeToggleSimple: React.FC<{ className?: string }> = ({ className = '' }) => {
   const { toggleDarkMode, isDark } = useDarkMode();
+  const { t: translate } = useI18n();
 
   return (
     <button
       onClick={toggleDarkMode}
       className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${className}`}
-      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? translate('settings.lightMode') : translate('settings.darkMode')}
+      aria-label={isDark ? translate('settings.lightMode') : translate('settings.darkMode')}
     >
       {isDark ? (
         <Sun className="w-5 h-5 text-gray-600 dark:text-gray-400" />

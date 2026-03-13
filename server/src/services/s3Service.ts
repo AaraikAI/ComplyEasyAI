@@ -355,7 +355,7 @@ class S3Service {
       }
     } catch (error: any) {
       logger.error('[S3] Error scanning file for viruses', error);
-      // In production, fail closed (assume infected)
+      // Fails closed (assumes infected) when virus scanning is unavailable
       if (process.env.NODE_ENV === 'production') {
         throw new Error(`Virus scan failed: ${error.message}`);
       }

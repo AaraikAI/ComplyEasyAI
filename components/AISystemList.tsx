@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { 
   Brain, Plus, Search, Filter, ArrowRight, Shield, 
   AlertTriangle, CheckCircle, Clock, Trash2 
@@ -14,6 +15,7 @@ interface AISystemListProps {
 
 export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCreateNew }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [systems, setSystems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -139,7 +141,7 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Search systems..."
+              placeholder={`${t('common.search')}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -175,7 +177,7 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
       {filteredSystems.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
           <Brain className="mx-auto mb-4 text-gray-400" size={64} />
-          <h3 className="text-lg font-bold text-gray-900 mb-2">No AI Systems Found</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">{t('common.noResults')}</h3>
           <p className="text-gray-500 mb-6">
             {searchTerm || statusFilter !== 'all' || lifecycleFilter !== 'all'
               ? 'Try adjusting your filters'
@@ -209,7 +211,7 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
                       }}
                       disabled={deletingSystem === system.id}
                       className="p-1.5 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
-                      title="Delete System"
+                      title={t('common.delete')}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -218,7 +220,7 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
 
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Type</span>
+                    <span className="text-gray-500">{t('common.type')}</span>
                     <span className="font-medium text-gray-900">{system.systemType}</span>
                   </div>
                   {system.deploymentContext && (
@@ -235,7 +237,7 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
                   </div>
                   {system.riskLevel && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Risk Level</span>
+                      <span className="text-gray-500">{t('risks.riskLevel')}</span>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getRiskLevelColor(system.riskLevel)}`}>
                         {system.riskLevel}
                       </span>
@@ -270,7 +272,7 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
                   onClick={() => onSelectSystem(system.id)}
                   className="w-full flex items-center justify-center space-x-2 bg-brand-50 text-brand-600 hover:bg-brand-100 px-4 py-2 rounded-lg transition-colors font-medium"
                 >
-                  <span>View Details</span>
+                  <span>{t('common.details')}</span>
                   <ArrowRight size={16} />
                 </button>
               </div>

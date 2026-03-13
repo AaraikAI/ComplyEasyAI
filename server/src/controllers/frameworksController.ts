@@ -345,7 +345,7 @@ class FrameworksController {
         // Keep existing data, just refresh
         finalData = existingFramework;
       } else {
-        // Merge: Combine both (simplified - in production would be more sophisticated)
+        // Merge: Combine both (simplified - can be enhanced with more sophisticated merge strategies)
         finalData = {
           ...existingFramework,
           ...(req.body.updateData || req.body),

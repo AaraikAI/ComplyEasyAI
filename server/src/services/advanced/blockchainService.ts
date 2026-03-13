@@ -1020,7 +1020,7 @@ class BlockchainService {
    * otherwise returns pre-compiled ComplianceRecordStorage contract (solc 0.8.19).
    */
   private getDefaultContractBytecode(): string {
-    // In production, prefer bytecode from environment variable for custom contracts
+    // Prefers bytecode from COMPLIANCE_CONTRACT_BYTECODE env var for custom contracts
     if (process.env.NODE_ENV === 'production') {
       if (!process.env.COMPLIANCE_CONTRACT_BYTECODE) {
         throw new Error('COMPLIANCE_CONTRACT_BYTECODE environment variable required in production');

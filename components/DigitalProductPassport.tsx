@@ -16,6 +16,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft,
@@ -396,6 +397,7 @@ interface DigitalProductPassportProps {
 // Main Component
 // ---------------------------------------------------------------------------
 export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ onBack }) => {
+  const { t } = useI18n();
   type TabId = 'overview' | 'products' | 'materials' | 'carbon' | 'supply_chain';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [products, setProducts] = useState<DPPProduct[]>(DEMO_PRODUCTS);
@@ -745,7 +747,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
             <div className="grid grid-cols-2 gap-3 text-sm mb-3">
               <div><p className="text-gray-500 text-xs">GTIN</p><p className="font-mono text-gray-700">{product.gtin}</p></div>
               <div><p className="text-gray-500 text-xs">Batch</p><p className="font-mono text-gray-700">{product.batchNumber}</p></div>
-              <div><p className="text-gray-500 text-xs">Category</p><p className="text-gray-700">{product.category}</p></div>
+              <div><p className="text-gray-500 text-xs">{t('common.category')}</p><p className="text-gray-700">{product.category}</p></div>
               <div><p className="text-gray-500 text-xs">Origin</p><p className="text-gray-700">{product.countryOfOrigin}</p></div>
             </div>
             <div className="flex items-center justify-between">
@@ -849,7 +851,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Material</th>
-                  <th className="text-left py-3 px-3 font-medium text-gray-600">Type</th>
+                  <th className="text-left py-3 px-3 font-medium text-gray-600">{t('common.type')}</th>
                   <th className="text-right py-3 px-3 font-medium text-gray-600">%</th>
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Origin</th>
                   <th className="text-left py-3 px-3 font-medium text-gray-600">Supplier</th>
@@ -909,7 +911,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
             <Leaf size={32} className="text-green-500 mb-3" />
             <p className="text-4xl font-bold text-gray-900">{Math.round(totalEmissions * 10) / 10}</p>
             <p className="text-sm text-gray-500 mt-1">kg CO2 equivalent</p>
-            <p className="text-xs text-gray-400 mt-2">Total product carbon footprint</p>
+            <p className="text-xs text-gray-400 mt-2">{t('common.total')} product carbon footprint</p>
             <div className="mt-4 flex items-center gap-2 text-xs">
               <span className="px-2 py-1 bg-green-50 text-green-700 rounded-full">PEF 3.0 Methodology</span>
               {productCarbon.some(c => c.verifiedBy) && <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full">Third-Party Verified</span>}
@@ -973,7 +975,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
                   </tr>
                 ))}
                 <tr className="border-t-2 border-gray-300 font-semibold">
-                  <td className="py-2.5 px-3 text-gray-900">Total</td>
+                  <td className="py-2.5 px-3 text-gray-900">{t('common.total')}</td>
                   <td className="py-2.5 px-3 text-right font-mono text-gray-900">{Math.round(totalEmissions * 10) / 10}</td>
                   <td colSpan={3}></td>
                 </tr>
@@ -1204,7 +1206,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
           </div>
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button onClick={() => setShowShareModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button onClick={() => setShowShareModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
           <button
             onClick={handleGrantAccess}
             disabled={isSharing || !shareForm.partyName}
@@ -1221,7 +1223,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Create Digital Product Passport</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('common.create')} Digital Product Passport</h3>
           <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-gray-100 rounded-lg"><X size={20} className="text-gray-500" /></button>
         </div>
         <div className="p-6 space-y-4">
@@ -1237,7 +1239,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.category')}</label>
               <select value={createForm.category} onChange={e => setCreateForm(f => ({ ...f, category: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                 {PRODUCT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -1257,7 +1259,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
           </div>
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
           <button
             onClick={handleCreatePassport}
             disabled={isCreating || !createForm.name || !createForm.gtin}
@@ -1304,7 +1306,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-500">Loading product passport data...</span>
+          <span className="ml-3 text-gray-500">{t('common.loading')} product passport data...</span>
         </div>
       )}
       {loadError && (

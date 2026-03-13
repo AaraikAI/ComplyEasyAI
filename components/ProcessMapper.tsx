@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Plus, Trash2, Edit3, Save, Download, ChevronDown, ChevronRight,
   AlertTriangle, CheckCircle, XCircle, Play, Square, Diamond, Circle,
@@ -231,6 +232,7 @@ const uid = (prefix = 'id') => `${prefix}-${++_uid}`;
 /* ------------------------------------------------------------------ */
 
 export const ProcessMapper: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   /* ---- state ---- */
   const [processes, setProcesses] = useState<ProcessMap[]>(makeDemoProcesses);
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
@@ -702,7 +704,7 @@ ${edgesDi}
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setShowAddProcess(false)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                <button onClick={() => setShowAddProcess(false)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">{t('common.cancel')}</button>
                 <button onClick={addNewProcess} disabled={!newProcess.name.trim()} className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 disabled:opacity-50">Create Process</button>
                 <button onClick={aiGenerateProcess} disabled={!newProcess.name.trim() || isAiGenerating} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
                   {isAiGenerating ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
@@ -751,9 +753,9 @@ ${edgesDi}
           { key: 'raci', label: 'RACI Matrix', icon: <Users size={14} /> },
           { key: 'gaps', label: `Gap Analysis${gaps.length > 0 ? ` (${gaps.length})` : ''}`, icon: <AlertTriangle size={14} /> },
           { key: 'export', label: 'Details & Edges', icon: <Settings size={14} /> },
-        ] as const).map(t => (
-          <button key={t.key} onClick={() => setActiveTab(t.key)} className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-brand-600 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-            {t.icon}{t.label}
+        ] as const).map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key ? 'border-brand-600 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+            {tab.icon}{tab.label}
           </button>
         ))}
       </div>
@@ -829,8 +831,8 @@ ${edgesDi}
                   {/* Compliance tags */}
                   {showComplianceLayer && node.complianceTags.length > 0 && (
                     <div className={`absolute -bottom-5 left-0 flex gap-0.5 ${node.kind === 'decision' ? '-rotate-45' : ''}`}>
-                      {node.complianceTags.slice(0, 3).map(t => (
-                        <span key={t} className="px-1 py-0 rounded bg-blue-100 text-blue-700 text-[8px] font-medium">{t}</span>
+                      {node.complianceTags.slice(0, 3).map(tag => (
+                        <span key={tag} className="px-1 py-0 rounded bg-blue-100 text-blue-700 text-[8px] font-medium">{tag}</span>
                       ))}
                       {node.complianceTags.length > 3 && <span className="text-[8px] text-gray-400">+{node.complianceTags.length - 3}</span>}
                     </div>
@@ -871,7 +873,7 @@ ${edgesDi}
                 <label className="block text-xs font-medium text-gray-600 mb-1">Compliance Tags</label>
                 <div className="flex flex-wrap gap-1">
                   {COMPLIANCE_TAGS.map(tag => (
-                    <button key={tag} onClick={() => updateNode(selectedNode.id, n => ({ ...n, complianceTags: n.complianceTags.includes(tag) ? n.complianceTags.filter(t => t !== tag) : [...n.complianceTags, tag] }))}
+                    <button key={tag} onClick={() => updateNode(selectedNode.id, n => ({ ...n, complianceTags: n.complianceTags.includes(tag) ? n.complianceTags.filter(ct => ct !== tag) : [...n.complianceTags, tag] }))}
                       className={`px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${selectedNode.complianceTags.includes(tag) ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'}`}>
                       {tag}
                     </button>
@@ -1068,7 +1070,7 @@ ${edgesDi}
                     <td className="px-4 py-2 font-medium text-gray-900">{n.label}</td>
                     <td className="px-4 py-2 capitalize text-gray-600">{n.kind}</td>
                     <td className="px-4 py-2"><span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${riskColor(n.riskLevel)}`}>{n.riskLevel}</span></td>
-                    <td className="px-4 py-2"><div className="flex flex-wrap gap-1">{n.complianceTags.map(t => <span key={t} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-xs">{t}</span>)}</div></td>
+                    <td className="px-4 py-2"><div className="flex flex-wrap gap-1">{n.complianceTags.map(ct => <span key={ct} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-xs">{ct}</span>)}</div></td>
                     <td className="px-4 py-2 text-gray-600 text-xs">{n.controls.join(', ') || '-'}</td>
                     <td className="px-4 py-2 text-gray-600">{n.owner || '-'}</td>
                   </tr>
@@ -1106,7 +1108,7 @@ ${edgesDi}
               <input value={edgeLabel} onChange={e => setEdgeLabel(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none" placeholder="e.g., Yes, No, Next Step" />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setShowEdgeCreator(false)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setShowEdgeCreator(false)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">{t('common.cancel')}</button>
               <button onClick={addEdge} disabled={!edgeFrom || !edgeTo} className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 disabled:opacity-50">Add Edge</button>
             </div>
           </div>

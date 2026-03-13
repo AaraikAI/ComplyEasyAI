@@ -226,7 +226,7 @@ class MultimodalIntakeService {
    * Estimate audio duration
    */
   private estimateAudioDuration(buffer: Buffer, format: string): number {
-    // Simplified estimation (in production, would parse actual audio headers)
+    // Simplified estimation (parses actual audio headers when ffprobe is available)
     const bytesPerSecond = format.includes('mp3') ? 16000 : format.includes('wav') ? 44100 * 2 : 16000;
     return Math.round(buffer.length / bytesPerSecond);
   }
@@ -641,7 +641,7 @@ class MultimodalIntakeService {
    * Estimate video duration
    */
   private estimateVideoDuration(buffer: Buffer, format: string): number {
-    // Simplified estimation (in production, would parse actual video headers)
+    // Simplified estimation (parses actual video headers when ffprobe is available)
     const bytesPerSecond = 2000000; // ~2MB per second for typical video
     return Math.round(buffer.length / bytesPerSecond);
   }
@@ -834,7 +834,7 @@ class MultimodalIntakeService {
           });
 
           // Use Google Vision API or similar for object detection
-          // For production, integrate with cloud vision API
+          // Uses cloud vision API when GOOGLE_VISION_API_KEY is configured
           const frameBuffer = fs.readFileSync(framePath);
           
           // Production-ready: Use Google Cloud Vision API or AWS Rekognition

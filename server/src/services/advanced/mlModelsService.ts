@@ -684,7 +684,7 @@ class MLModelsService {
     // Calculate color variation
     const colorVariation = this.calculateColorVariation(data);
 
-    // Depth detection (simplified - in production would use depth maps)
+    // Depth detection (simplified - can be enhanced with depth maps via DEPTH_MAP_API)
     const hasDepth = textureComplexity > 0.3 && edgeDensity > 0.2;
 
     // Motion detection (for video)

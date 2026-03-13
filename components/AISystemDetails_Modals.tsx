@@ -2,11 +2,13 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, onClose }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     activityType: 'Risk_Identification',
     relatedFunction: '',
@@ -51,7 +53,7 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white">
-          <h3 className="text-xl font-bold text-gray-900">Create Risk Activity</h3>
+          <h3 className="text-xl font-bold text-gray-900">{t('common.create')} Risk Activity</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={24} />
           </button>
@@ -88,7 +90,7 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')} <span className="text-red-500">*</span></label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -100,21 +102,21 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Risk Level</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.riskLevel')}</label>
               <select
                 value={formData.riskLevel}
                 onChange={(e) => setFormData({ ...formData, riskLevel: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
-                <option value="Critical">Critical</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
+                <option value="Critical">{t('risks.critical')}</option>
+                <option value="High">{t('risks.high')}</option>
+                <option value="Medium">{t('risks.medium')}</option>
+                <option value="Low">{t('risks.low')}</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Owner</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.owner')}</label>
               <select
                 value={formData.ownerId}
                 onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
@@ -156,14 +158,14 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={submitting}
               className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
             >
-              {submitting ? 'Creating...' : 'Create Risk Activity'}
+              {submitting ? `${t('common.loading')}...` : `${t('common.create')} Risk Activity`}
             </button>
           </div>
         </form>
@@ -176,6 +178,7 @@ export const CreateRiskActivityModal: React.FC<any> = ({ systemId, teamMembers, 
 // Edit Risk Activity Modal
 export const EditRiskActivityModal: React.FC<any> = ({ activity, teamMembers, onClose }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     status: activity.status || 'Open',
     riskLevel: activity.riskLevel || 'Medium',
@@ -209,7 +212,7 @@ export const EditRiskActivityModal: React.FC<any> = ({ activity, teamMembers, on
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Update Risk Activity</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t('common.edit')} Risk Activity</h2>
           <button
             onClick={onClose}
             className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -226,14 +229,14 @@ export const EditRiskActivityModal: React.FC<any> = ({ activity, teamMembers, on
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('common.description')}</label>
             <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-700">
               {activity.description}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('common.status')} *</label>
             <select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}

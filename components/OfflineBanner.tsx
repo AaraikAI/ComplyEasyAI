@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { WifiOff, RefreshCw, X } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 interface OfflineBannerProps {
   /** Number of pending sync operations (optional) */
@@ -24,6 +25,7 @@ export function OfflineBanner({
   isOnline: isOnlineProp,
   showDelay = 1500,
 }: OfflineBannerProps) {
+  const { t } = useI18n();
   const [online, setOnline] = useState(
     isOnlineProp !== undefined ? isOnlineProp : navigator.onLine
   );
@@ -123,7 +125,7 @@ export function OfflineBanner({
           className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-amber-200 bg-amber-500/20 border border-amber-500/30 rounded-md hover:bg-amber-500/30 transition-colors"
         >
           <RefreshCw className="w-3 h-3" />
-          Retry
+          {t('common.refresh')}
         </button>
 
         <button

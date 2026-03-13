@@ -6,6 +6,7 @@ import {
   LifeBuoy, Lock, ArrowRight, Command, Hash, Zap
 } from 'lucide-react';
 import { ViewState } from '../types';
+import { useI18n } from '../contexts/I18nContext';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ interface CommandItem {
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavigate }) => {
+  const { t } = useI18n();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -141,7 +143,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search commands, pages, AI tools..."
+            placeholder={t('commandPalette.placeholder')}
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="w-full px-3 py-4 text-base bg-transparent outline-none placeholder:text-surface-400"
@@ -156,7 +158,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
           {filteredCommands.length === 0 ? (
             <div className="py-12 text-center">
               <Search size={32} className="mx-auto text-surface-300 mb-3" />
-              <p className="text-sm text-surface-500">No results for "{query}"</p>
+              <p className="text-sm text-surface-500">{t('commandPalette.noResults')}</p>
             </div>
           ) : (
             Object.entries(groupedCommands).map(([category, items]) => (

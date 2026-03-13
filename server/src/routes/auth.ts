@@ -18,7 +18,14 @@ router.post('/logout', asyncHandler(authController.logout.bind(authController)))
 // User profile update (requires authentication)
 import { authenticate } from '../middleware/auth';
 import multer from 'multer';
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB max for avatars
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    cb(null, allowed.includes(file.mimetype));
+  },
+});
 router.patch('/profile', authenticate, validateBody(updateProfileSchema), asyncHandler(authController.updateProfile.bind(authController)));
 router.post('/profile/avatar', authenticate, upload.single('avatar'), asyncHandler(authController.uploadAvatar.bind(authController)));
 router.patch('/password', authenticate, validateBody(changePasswordSchema), asyncHandler(authController.changePassword.bind(authController)));

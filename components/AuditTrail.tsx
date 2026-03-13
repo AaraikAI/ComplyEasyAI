@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AuditLog } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { ShieldCheck, Search, Filter, Download, Loader2, ArrowUpDown, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import crypto from 'crypto';
 
@@ -45,6 +46,7 @@ type SortOrder = 'asc' | 'desc';
 
 export const AuditTrail: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [filterText, setFilterText] = useState('');
   const [filterUser, setFilterUser] = useState<string>('');
   const [filterAction, setFilterAction] = useState<string>('');
@@ -189,7 +191,7 @@ export const AuditTrail: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Immutable Audit Logs</h2>
+          <h2 className="text-lg font-bold text-gray-900">{t('audit.title')}</h2>
           <p className="text-sm text-gray-500">
             {user?.role === 'admin' ? 'All organization activity history' : 'Your activity history'}
           </p>
@@ -200,7 +202,7 @@ export const AuditTrail: React.FC = () => {
             className="flex items-center space-x-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 transition-colors"
           >
             <Download size={16} />
-            <span className="hidden sm:inline">Export CSV</span>
+            <span className="hidden sm:inline">{t('audit.exportAuditLog')}</span>
           </button>
         </div>
       </div>
@@ -209,7 +211,7 @@ export const AuditTrail: React.FC = () => {
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-gray-500 mb-1">Search</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('common.search')}</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
               <input 
@@ -224,13 +226,13 @@ export const AuditTrail: React.FC = () => {
           
           {user?.role === 'admin' && (
             <div className="min-w-[150px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">User</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('audit.filterByUser')}</label>
               <select
                 value={filterUser}
                 onChange={(e) => setFilterUser(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               >
-                <option value="">All Users</option>
+                <option value="">{t('common.all')}</option>
                 {allUsers.map(u => (
                   <option key={u} value={u}>{u}</option>
                 ))}
@@ -239,13 +241,13 @@ export const AuditTrail: React.FC = () => {
           )}
 
           <div className="min-w-[150px]">
-            <label className="block text-xs font-medium text-gray-500 mb-1">Action</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('audit.filterByAction')}</label>
             <select
               value={filterAction}
               onChange={(e) => setFilterAction(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
-              <option value="">All Actions</option>
+              <option value="">{t('common.all')}</option>
               {allActions.map(a => (
                 <option key={a} value={a}>{a}</option>
               ))}
@@ -268,7 +270,7 @@ export const AuditTrail: React.FC = () => {
       {isLoading ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 flex items-center justify-center">
           <Loader2 className="animate-spin text-brand-600 mr-3" size={24} />
-          <span className="text-gray-600">Loading audit logs...</span>
+          <span className="text-gray-600">{t('common.loading')}</span>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -281,7 +283,7 @@ export const AuditTrail: React.FC = () => {
                   onClick={() => handleSort('timestamp')}
                 >
                   <div className="flex items-center">
-                    Timestamp
+                    {t('audit.timestamp')}
                     <ArrowUpDown size={14} className="ml-1" />
                     {sortField === 'timestamp' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </div>
@@ -292,7 +294,7 @@ export const AuditTrail: React.FC = () => {
                     onClick={() => handleSort('user')}
                   >
                     <div className="flex items-center">
-                      User / Agent
+                      {t('audit.performedBy')}
                       <ArrowUpDown size={14} className="ml-1" />
                       {sortField === 'user' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </div>
@@ -303,7 +305,7 @@ export const AuditTrail: React.FC = () => {
                   onClick={() => handleSort('action')}
                 >
                   <div className="flex items-center">
-                    Action
+                    {t('audit.action')}
                     <ArrowUpDown size={14} className="ml-1" />
                     {sortField === 'action' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </div>
@@ -318,7 +320,7 @@ export const AuditTrail: React.FC = () => {
                     {sortField === 'hash' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </div>
                 </th>
-                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium">{t('common.status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -381,7 +383,7 @@ export const AuditTrail: React.FC = () => {
               )) : (
                  <tr>
                     <td colSpan={user?.role === 'admin' ? 5 : 4} className="px-6 py-8 text-center text-gray-500">
-                       No audit logs found matching your criteria.
+                       {t('common.noResults')}
                     </td>
                  </tr>
               )}

@@ -88,6 +88,12 @@ export const ROUTES = {
   // Privacy & Data
   PRIVACY: '/privacy',
   ACCOUNT_DELETION: '/privacy/data-deletion',
+  DPIA: '/privacy/dpia',
+  ROPA: '/privacy/ropa',
+  PRIVACY_NOTICES: '/privacy/notices',
+
+  // Security Training
+  SECURITY_TRAINING: '/security-training',
 
   // Enterprise
   WORKSPACES: '/enterprise/workspaces',
@@ -192,6 +198,10 @@ export const VIEW_TO_ROUTE: Record<string, string> = {
   'breach-wizard': ROUTES.BREACH_WIZARD,
   'privacy': ROUTES.PRIVACY,
   'account-deletion': ROUTES.ACCOUNT_DELETION,
+  'dpia': ROUTES.DPIA,
+  'ropa': ROUTES.ROPA,
+  'privacy-notices': ROUTES.PRIVACY_NOTICES,
+  'security-training': ROUTES.SECURITY_TRAINING,
   'workspaces': ROUTES.WORKSPACES,
   'questionnaires': ROUTES.QUESTIONNAIRES,
   'security': ROUTES.SECURITY,
@@ -401,6 +411,10 @@ export function getBreadcrumbs(path: string): BreadcrumbItem[] {
     [ROUTES.BREACH_WIZARD]: 'Breach Notification',
     [ROUTES.PRIVACY]: 'Privacy Platform',
     [ROUTES.ACCOUNT_DELETION]: 'Data Deletion',
+    [ROUTES.DPIA]: 'DPIA Workflow',
+    [ROUTES.ROPA]: 'Records of Processing',
+    [ROUTES.PRIVACY_NOTICES]: 'Privacy Notices',
+    [ROUTES.SECURITY_TRAINING]: 'Security Training',
     [ROUTES.INCIDENTS]: 'Incidents',
     [ROUTES.ASSETS]: 'Assets',
     [ROUTES.CALENDAR]: 'Compliance Calendar',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, AlertTriangle, CheckCircle, XCircle, Clock, RefreshCw, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronRight, Activity, Globe, Lock, FileText, Search, Filter, Plus, Eye, Zap } from 'lucide-react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 
 interface MonitoringCheck {
   id: string;
@@ -53,6 +54,7 @@ const RESULT_CONFIG: Record<string, { bg: string; text: string; icon: React.Reac
 };
 
 const VendorMonitoringDashboard: React.FC = () => {
+  const { t } = useI18n();
   const [checks, setChecks] = useState<MonitoringCheck[]>([]);
   const [alerts, setAlerts] = useState<MonitoringCheck[]>([]);
   const [stats, setStats] = useState<MonitoringStats | null>(null);
@@ -223,12 +225,12 @@ const VendorMonitoringDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">Vendor Monitoring</h1>
+          <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">{t('vendors.title')}</h1>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">Continuous third-party risk monitoring and alerting</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={fetchData} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-surface-300 dark:border-surface-600 rounded-lg text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700">
-            <RefreshCw size={14} /> Refresh
+            <RefreshCw size={14} /> {t('common.refresh')}
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
@@ -296,7 +298,7 @@ const VendorMonitoringDashboard: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search vendors..."
+                placeholder={`${t('common.search')} vendors...`}
                 className="w-full pl-9 pr-3 py-2 text-sm border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100"
               />
             </div>
@@ -305,7 +307,7 @@ const VendorMonitoringDashboard: React.FC = () => {
               onChange={e => setFilterStatus(e.target.value)}
               className="px-3 py-2 text-sm border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100"
             >
-              <option value="">All Status</option>
+              <option value="">{t('common.all')} {t('common.status')}</option>
               <option value="healthy">Healthy Only</option>
               <option value="issues">With Issues</option>
             </select>
@@ -411,7 +413,7 @@ const VendorMonitoringDashboard: React.FC = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 text-xs text-surface-400">
-                          <RefreshCw size={12} className="animate-spin" /> Loading history...
+                          <RefreshCw size={12} className="animate-spin" /> {t('common.loading')}...
                         </div>
                       )}
                     </div>
@@ -523,14 +525,14 @@ const VendorMonitoringDashboard: React.FC = () => {
             </div>
             <div className="flex justify-end gap-2 p-4 border-t border-surface-200 dark:border-surface-700">
               <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm border border-surface-300 dark:border-surface-600 rounded-lg text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={createCheck}
                 disabled={!newCheck.vendorId}
                 className="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
               >
-                Create Check
+                {t('common.create')} Check
               </button>
             </div>
           </div>

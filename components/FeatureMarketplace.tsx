@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 
 interface Feature {
   id: string;
@@ -73,6 +74,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function FeatureMarketplace() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [features, setFeatures] = useState<FeatureAvailability[]>([]);
   const [subscriptions, setSubscriptions] = useState<FeatureSubscription[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,7 +181,7 @@ export default function FeatureMarketplace() {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Monthly
+            {t('subscription.monthly')}
           </button>
           <button
             onClick={() => setBillingCycle('annual')}
@@ -189,7 +191,7 @@ export default function FeatureMarketplace() {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Annual
+            {t('subscription.annual')}
           </button>
         </div>
       </div>
@@ -235,7 +237,7 @@ export default function FeatureMarketplace() {
                       )}
                       {item.isSubscribed && !item.isIncluded && (
                         <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          Active
+                          {t('common.active')}
                         </span>
                       )}
                     </div>
@@ -265,7 +267,7 @@ export default function FeatureMarketplace() {
                           {isSubscribing ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
-                            'Cancel'
+                            t('common.cancel')
                           )}
                         </button>
                       ) : item.canSubscribe ? (
@@ -282,7 +284,7 @@ export default function FeatureMarketplace() {
                           ) : (
                             <>
                               <ShoppingCart className="w-4 h-4" />
-                              <span>Add</span>
+                              <span>{t('common.add')}</span>
                             </>
                           )}
                         </button>

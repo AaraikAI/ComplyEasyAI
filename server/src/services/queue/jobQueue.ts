@@ -577,7 +577,7 @@ class JobQueueService extends EventEmitter {
     if (!options.repeat.cron) return;
 
     // Simple cron-to-interval conversion for common patterns
-    // In production with Redis, BullMQ handles this natively
+    // When Redis is configured, BullMQ handles this natively
     const intervalMs = this.cronToInterval(options.repeat.cron);
     if (!intervalMs) {
       logger.warn(`[JobQueue] Unsupported cron pattern: ${options.repeat.cron}`);

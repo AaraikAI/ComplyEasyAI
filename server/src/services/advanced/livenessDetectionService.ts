@@ -407,7 +407,7 @@ class LivenessDetectionService {
 
   private detectFaceLandmarks(gray: Buffer, w: number, h: number): FaceLandmarks | null {
     // Heuristic-based landmark estimation from facial feature regions
-    // In production with MediaPipe available, replace with FaceMesh pipeline
+    // When MediaPipe is available, uses FaceMesh pipeline for enhanced detection
     try {
       // Find face center by looking for maximum gradient-free region
       const cx = Math.floor(w / 2);

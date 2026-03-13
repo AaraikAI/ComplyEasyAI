@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Award,
   Plus,
@@ -151,6 +152,7 @@ const initialCerts: Certification[] = [
 // ── Component ───────────────────────────────────────────────────────────────
 
 const CertificationTracker: React.FC = () => {
+  const { t } = useI18n();
   const [certs, setCerts] = useState<Certification[]>(initialCerts);
   const [activeTab, setActiveTab] = useState<TabId>('registry');
   const [searchQuery, setSearchQuery] = useState('');
@@ -205,15 +207,15 @@ const CertificationTracker: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-purple-500/20 rounded-lg"><Award className="w-6 h-6 text-purple-400" /></div>
-          <div><h1 className="text-2xl font-bold">Certification Tracker</h1><p className="text-slate-400 text-sm">Manage certification lifecycle and compliance</p></div>
+          <div><h1 className="text-2xl font-bold">{t('certifications.title')}</h1><p className="text-slate-400 text-sm">Manage certification lifecycle and compliance</p></div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-4"><span className="text-slate-400 text-sm">Total</span><div className="text-2xl font-bold mt-1">{stats.total}</div></div>
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-4"><span className="text-green-400 text-sm">Active</span><div className="text-2xl font-bold mt-1 text-green-400">{stats.active}</div></div>
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-4"><span className="text-yellow-400 text-sm">Expiring</span><div className="text-2xl font-bold mt-1 text-yellow-400">{stats.expiring}</div></div>
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-4"><span className="text-red-400 text-sm">Expired</span><div className="text-2xl font-bold mt-1 text-red-400">{stats.expired}</div></div>
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-4"><span className="text-slate-400 text-sm">{t('common.total')}</span><div className="text-2xl font-bold mt-1">{stats.total}</div></div>
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-4"><span className="text-green-400 text-sm">{t('certifications.valid')}</span><div className="text-2xl font-bold mt-1 text-green-400">{stats.active}</div></div>
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-4"><span className="text-yellow-400 text-sm">{t('certifications.expiring')}</span><div className="text-2xl font-bold mt-1 text-yellow-400">{stats.expiring}</div></div>
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-4"><span className="text-red-400 text-sm">{t('certifications.expired')}</span><div className="text-2xl font-bold mt-1 text-red-400">{stats.expired}</div></div>
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-4"><span className="text-blue-400 text-sm">Upcoming Audits</span><div className="text-2xl font-bold mt-1 text-blue-400">{stats.upcomingAudits}</div></div>
       </div>
 
@@ -226,9 +228,9 @@ const CertificationTracker: React.FC = () => {
       {activeTab === 'registry' && !selectedCert && (
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
-            <div className="relative flex-1 w-full"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" /><input type="text" placeholder="Search certifications..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+            <div className="relative flex-1 w-full"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" /><input type="text" placeholder={t('common.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as CertStatus | 'all')} className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"><option value="all">All Status</option>{Object.keys(statusConfig).map(s => <option key={s} value={s}>{s}</option>)}</select>
-            <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> Add Certification</button>
+            <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('common.add')} {t('certifications.certificationName')}</button>
           </div>
           <div className="space-y-3">
             {filtered.map(cert => {
@@ -270,9 +272,9 @@ const CertificationTracker: React.FC = () => {
             <h2 className="text-xl font-bold mb-1">{selectedCert.name}</h2>
             <p className="text-slate-400 text-sm">{selectedCert.scope}</p>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6 mb-6">
-              <div className="p-3 bg-slate-700/30 rounded-lg"><span className="text-xs text-slate-500">Cert Body</span><p className="text-sm font-medium mt-0.5">{selectedCert.certBody}</p></div>
-              <div className="p-3 bg-slate-700/30 rounded-lg"><span className="text-xs text-slate-500">Issue Date</span><p className="text-sm font-medium mt-0.5">{selectedCert.issueDate || 'Pending'}</p></div>
-              <div className="p-3 bg-slate-700/30 rounded-lg"><span className="text-xs text-slate-500">Expiry Date</span><p className="text-sm font-medium mt-0.5">{selectedCert.expiryDate || 'N/A'}</p></div>
+              <div className="p-3 bg-slate-700/30 rounded-lg"><span className="text-xs text-slate-500">{t('certifications.issuingBody')}</span><p className="text-sm font-medium mt-0.5">{selectedCert.certBody}</p></div>
+              <div className="p-3 bg-slate-700/30 rounded-lg"><span className="text-xs text-slate-500">{t('certifications.issueDate')}</span><p className="text-sm font-medium mt-0.5">{selectedCert.issueDate || 'Pending'}</p></div>
+              <div className="p-3 bg-slate-700/30 rounded-lg"><span className="text-xs text-slate-500">{t('certifications.expiryDate')}</span><p className="text-sm font-medium mt-0.5">{selectedCert.expiryDate || 'N/A'}</p></div>
               <div className="p-3 bg-slate-700/30 rounded-lg"><span className="text-xs text-slate-500">Next Audit</span><p className="text-sm font-medium mt-0.5">{selectedCert.nextAuditDate || 'TBD'}</p></div>
             </div>
             <h3 className="text-sm font-semibold mb-3">Audit History</h3>
@@ -306,7 +308,7 @@ const CertificationTracker: React.FC = () => {
 
       {activeTab === 'schedule' && (
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-          <h3 className="text-sm font-semibold mb-4">Upcoming Audit Schedule</h3>
+          <h3 className="text-sm font-semibold mb-4">{t('calendar.upcoming')} Audit Schedule</h3>
           <div className="space-y-3">
             {allAudits.filter(a => a.status === 'Scheduled').map(audit => (
               <div key={audit.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl">
@@ -353,7 +355,7 @@ const CertificationTracker: React.FC = () => {
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700"><h2 className="text-lg font-semibold">Add Certification</h2><button onClick={() => setShowCreateForm(false)} className="p-1 text-slate-400 hover:text-white"><X className="w-5 h-5" /></button></div>
+            <div className="flex items-center justify-between p-4 border-b border-slate-700"><h2 className="text-lg font-semibold">{t('common.add')} {t('certifications.certificationName')}</h2><button onClick={() => setShowCreateForm(false)} className="p-1 text-slate-400 hover:text-white"><X className="w-5 h-5" /></button></div>
             <div className="p-4 space-y-4">
               <div><label className="block text-sm text-slate-400 mb-1">Name</label><input type="text" value={formName} onChange={e => setFormName(e.target.value)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. SOC 2 Type II" /></div>
               <div><label className="block text-sm text-slate-400 mb-1">Standard</label><input type="text" value={formStandard} onChange={e => setFormStandard(e.target.value)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
@@ -365,8 +367,8 @@ const CertificationTracker: React.FC = () => {
               <div><label className="block text-sm text-slate-400 mb-1">Target Expiry</label><input type="date" value={formExpiry} onChange={e => setFormExpiry(e.target.value)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
             </div>
             <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-700">
-              <button onClick={() => setShowCreateForm(false)} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">Cancel</button>
-              <button onClick={handleCreate} disabled={!formName.trim()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> Add</button>
+              <button onClick={() => setShowCreateForm(false)} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">{t('common.cancel')}</button>
+              <button onClick={handleCreate} disabled={!formName.trim()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('common.add')}</button>
             </div>
           </div>
         </div>

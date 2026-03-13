@@ -29,6 +29,7 @@ import {
   Eye,
   FileText,
 } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,7 @@ const periodComparison = {
 // ── Component ───────────────────────────────────────────────────────────────
 
 const ExecutiveDashboard: React.FC = () => {
+  const { t } = useI18n();
   const [selectedPeriod, setSelectedPeriod] = useState<'quarter' | 'year'>('quarter');
 
   const overallScore = useMemo(() => Math.round(frameworks.reduce((s, f) => s + f.score, 0) / frameworks.length), []);
@@ -132,7 +134,7 @@ const ExecutiveDashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/20 rounded-lg"><BarChart3 className="w-6 h-6 text-blue-400" /></div>
-            <div><h1 className="text-2xl font-bold">Executive Dashboard</h1><p className="text-slate-400 text-sm">Board-level compliance and risk overview</p></div>
+            <div><h1 className="text-2xl font-bold">{t('executive.title')}</h1><p className="text-slate-400 text-sm">Board-level compliance and risk overview</p></div>
           </div>
           <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg p-0.5">
             <button onClick={() => setSelectedPeriod('quarter')} className={`px-3 py-1.5 rounded-md text-sm ${selectedPeriod === 'quarter' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Quarterly</button>
@@ -154,7 +156,7 @@ const ExecutiveDashboard: React.FC = () => {
             </div>
           </div>
           <div>
-            <h2 className="text-lg font-semibold">Overall Compliance</h2>
+            <h2 className="text-lg font-semibold">{t('executive.compliancePosture')}</h2>
             <div className="flex items-center gap-2 mt-1">
               <div className={`w-3 h-3 rounded-full ${lightColor(overallStatus)}`} />
               <span className="text-sm text-slate-400 capitalize">{overallStatus === 'green' ? 'Healthy' : overallStatus === 'yellow' ? 'Needs Attention' : 'Critical'}</span>
@@ -165,7 +167,7 @@ const ExecutiveDashboard: React.FC = () => {
 
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-slate-400">Risk Posture</span>
+            <span className="text-sm text-slate-400">{t('executive.riskOverview')}</span>
             <Target className="w-4 h-4 text-orange-400" />
           </div>
           <div className="text-3xl font-bold mb-1">{periodComparison.current.riskScore}/100</div>
@@ -219,7 +221,7 @@ const ExecutiveDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Top Risks */}
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-          <h3 className="text-sm font-semibold mb-4">Top Risks</h3>
+          <h3 className="text-sm font-semibold mb-4">{t('risks.topRisks')}</h3>
           <div className="space-y-3">
             {topRisks.map(risk => (
               <div key={risk.id} className="flex items-start gap-3 p-3 bg-slate-700/30 rounded-lg">
@@ -275,12 +277,12 @@ const ExecutiveDashboard: React.FC = () => {
         <h3 className="text-sm font-semibold mb-4">Period Comparison</h3>
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
           {[
-            { label: 'Compliance Score', current: periodComparison.current.complianceScore, previous: periodComparison.previous.complianceScore, suffix: '%', higherBetter: true },
-            { label: 'Risk Score', current: periodComparison.current.riskScore, previous: periodComparison.previous.riskScore, suffix: '/100', higherBetter: true },
+            { label: t('executive.compliancePosture'), current: periodComparison.current.complianceScore, previous: periodComparison.previous.complianceScore, suffix: '%', higherBetter: true },
+            { label: t('risks.riskScore'), current: periodComparison.current.riskScore, previous: periodComparison.previous.riskScore, suffix: '/100', higherBetter: true },
             { label: 'Open Incidents', current: periodComparison.current.incidents, previous: periodComparison.previous.incidents, suffix: '', higherBetter: false },
             { label: 'Open Findings', current: periodComparison.current.openFindings, previous: periodComparison.previous.openFindings, suffix: '', higherBetter: false },
             { label: 'Control Coverage', current: periodComparison.current.controlCoverage, previous: periodComparison.previous.controlCoverage, suffix: '%', higherBetter: true },
-            { label: 'Vendor Compliance', current: periodComparison.current.vendorCompliance, previous: periodComparison.previous.vendorCompliance, suffix: '%', higherBetter: true },
+            { label: `${t('vendors.title')} ${t('vendors.complianceStatus')}`, current: periodComparison.current.vendorCompliance, previous: periodComparison.previous.vendorCompliance, suffix: '%', higherBetter: true },
           ].map(metric => {
             const change = metric.current - metric.previous;
             const isPositive = metric.higherBetter ? change > 0 : change < 0;

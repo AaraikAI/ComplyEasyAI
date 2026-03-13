@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 
 interface FormData {
   email: string;
@@ -65,6 +66,7 @@ const features = [
 
 export const SignupPage: React.FC = () => {
   const { register } = useAuth();
+  const { t } = useI18n();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -241,12 +243,12 @@ export const SignupPage: React.FC = () => {
               <span className="font-bold text-xl text-white">ComplyEasy AI</span>
             </a>
             <div className="flex items-center space-x-4">
-              <span className="text-slate-400 text-sm hidden sm:block">Already have an account?</span>
+              <span className="text-slate-400 text-sm hidden sm:block">{t('auth.alreadyHaveAccount')}</span>
               <a 
                 href="/" 
                 className="text-brand-400 font-medium hover:text-brand-300 transition-colors"
               >
-                Sign In
+                {t('auth.login')}
               </a>
             </div>
           </div>
@@ -289,7 +291,7 @@ export const SignupPage: React.FC = () => {
               {/* Step 1: Account Credentials */}
               {step === 1 && (
                 <form onSubmit={handleStep1Submit}>
-                  <h2 className="text-2xl font-bold text-white mb-2">Create Your Account</h2>
+                  <h2 className="text-2xl font-bold text-white mb-2">{t('auth.createAccount')}</h2>
                   <p className="text-slate-400 mb-6">Start your 3-day free trial. No credit card required.</p>
 
                   {error && (
@@ -302,7 +304,7 @@ export const SignupPage: React.FC = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Work Email
+                        {t('auth.email')}
                       </label>
                       <input
                         type="email"
@@ -316,7 +318,7 @@ export const SignupPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Password
+                        {t('auth.password')}
                       </label>
                       <div className="relative">
                         <input
@@ -366,7 +368,7 @@ export const SignupPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Confirm Password
+                        {t('auth.confirmPassword')}
                       </label>
                       <input
                         type="password"
@@ -392,10 +394,7 @@ export const SignupPage: React.FC = () => {
 
                   <div className="mt-6 pt-6 border-t border-slate-700">
                     <p className="text-xs text-slate-400 text-center">
-                      By signing up, you agree to our{' '}
-                      <a href="/terms" className="text-brand-400 hover:underline">Terms of Service</a>
-                      {' '}and{' '}
-                      <a href="/privacy" className="text-brand-400 hover:underline">Privacy Policy</a>
+                      {t('auth.termsAgreement')}
                     </p>
                   </div>
                 </form>
@@ -417,7 +416,7 @@ export const SignupPage: React.FC = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Full Name
+                        {t('auth.fullName')}
                       </label>
                       <input
                         type="text"
@@ -431,7 +430,7 @@ export const SignupPage: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-2">
-                        Organization Name
+                        {t('auth.organizationName')}
                       </label>
                       <input
                         type="text"
@@ -450,7 +449,7 @@ export const SignupPage: React.FC = () => {
                       onClick={() => setStep(1)}
                       className="flex-1 border border-slate-600 text-slate-300 py-3 px-6 rounded-xl font-semibold hover:bg-slate-700/50 transition-all"
                     >
-                      Back
+                      {t('common.back')}
                     </button>
                     <button
                       type="submit"
@@ -572,7 +571,7 @@ export const SignupPage: React.FC = () => {
                       onClick={() => setStep(2)}
                       className="flex-1 border border-slate-600 text-slate-300 py-3 px-6 rounded-xl font-semibold hover:bg-slate-700/50 transition-all"
                     >
-                      Back
+                      {t('common.back')}
                     </button>
                     <button
                       type="submit"
@@ -601,15 +600,15 @@ export const SignupPage: React.FC = () => {
                   {/* Summary */}
                   <div className="bg-slate-900/50 rounded-xl p-4 mb-6 space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Email</span>
+                      <span className="text-slate-400">{t('auth.email')}</span>
                       <span className="text-white">{formData.email}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Name</span>
+                      <span className="text-slate-400">{t('common.name')}</span>
                       <span className="text-white">{formData.fullName}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Organization</span>
+                      <span className="text-slate-400">{t('auth.organizationName')}</span>
                       <span className="text-white">{formData.organizationName}</span>
                     </div>
                     <div className="flex justify-between">
@@ -688,7 +687,7 @@ export const SignupPage: React.FC = () => {
                       onClick={() => setStep(3)}
                       className="flex-1 border border-slate-600 text-slate-300 py-3 px-6 rounded-xl font-semibold hover:bg-slate-700/50 transition-all"
                     >
-                      Back
+                      {t('common.back')}
                     </button>
                     <button
                       type="submit"

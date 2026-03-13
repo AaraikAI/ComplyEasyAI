@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { 
   Brain, Plus, TrendingUp, AlertTriangle, CheckCircle, 
   Clock, BarChart3, Shield, Activity, ArrowRight 
@@ -20,6 +21,7 @@ interface AIRMFDashboardProps {
 
 export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [recentSystems, setRecentSystems] = useState<any[]>([]);
@@ -109,7 +111,7 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Brain className="text-brand-600" size={28} />
-            NIST AI RMF Dashboard
+            {t('ai.title')}
           </h2>
           <p className="text-sm text-gray-500 mt-1">
             Manage AI systems and assess risk using the NIST AI Risk Management Framework
@@ -129,7 +131,7 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total AI Systems</p>
+              <p className="text-sm text-gray-500">{t('common.total')} AI Systems</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.totalSystems || 0}</p>
             </div>
             <Brain className="text-brand-600" size={32} />
@@ -175,7 +177,7 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
 
       {/* Quick Actions */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">{t('common.actions')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
             onClick={() => onNavigate('ai-rmf-systems')}
@@ -183,7 +185,7 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
           >
             <BarChart3 className="text-brand-600" size={24} />
             <div>
-              <p className="font-medium text-gray-900">View All Systems</p>
+              <p className="font-medium text-gray-900">{t('common.all')} Systems</p>
               <p className="text-sm text-gray-500">Manage all AI systems</p>
             </div>
           </button>
@@ -194,7 +196,7 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
           >
             <Plus className="text-brand-600" size={24} />
             <div>
-              <p className="font-medium text-gray-900">Create AI System</p>
+              <p className="font-medium text-gray-900">{t('common.create')} AI System</p>
               <p className="text-sm text-gray-500">Add a new AI system</p>
             </div>
           </button>
@@ -215,7 +217,7 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
       {/* Recent Systems */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold text-gray-900">Recent AI Systems</h3>
+          <h3 className="text-lg font-bold text-gray-900">{t('common.overview')}</h3>
           <button
             onClick={() => onNavigate('ai-rmf-systems')}
             className="text-sm text-brand-600 hover:text-brand-800 font-medium flex items-center"
@@ -264,7 +266,7 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
       {/* Status Breakdown */}
       {(stats?.byStatus && Object.keys(stats.byStatus).length > 0) && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Status Breakdown</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">{t('common.status')}</h3>
           <div className="space-y-3">
             {Object.entries(stats.byStatus).map(([status, count]) => (
               <div key={status} className="flex items-center justify-between">

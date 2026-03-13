@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
   Shield,
@@ -166,6 +167,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 // ── Component ───────────────────────────────────────────────────────────────
 
 const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RoPAStatus | 'All'>('All');
   const [legalBasisFilter, setLegalBasisFilter] = useState<LegalBasis | 'All'>('All');
@@ -272,7 +274,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       dataSubjects: activity.dataSubjects.join(', '),
       recipients: activity.recipients.join(', '),
       internationalTransfers: activity.internationalTransfers
-        .map(t => `${t.country} (${t.safeguard})`)
+        .map(item => `${item.country} (${item.safeguard})`)
         .join(', '),
       retentionPeriod: activity.retentionPeriod,
       technicalMeasures: activity.technicalMeasures.join(', '),
@@ -386,7 +388,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         `"${a.specialCategories.join('; ')}"`,
         `"${a.dataSubjects.join('; ')}"`,
         `"${a.recipients.join('; ')}"`,
-        `"${a.internationalTransfers.map(t => `${t.country} (${t.safeguard})`).join('; ')}"`,
+        `"${a.internationalTransfers.map(item => `${item.country} (${item.safeguard})`).join('; ')}"`,
         a.retentionPeriod,
         `"${a.technicalMeasures.join('; ')}"`,
         `"${a.organizationalMeasures.join('; ')}"`,
@@ -479,7 +481,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search activities..."
+              placeholder={`${t('common.search')}...`}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-64"
@@ -512,7 +514,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="flex items-center gap-2">
           <div className="relative group">
             <button className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors">
-              <Download className="w-4 h-4" /> Export
+              <Download className="w-4 h-4" /> {t('common.export')}
             </button>
             <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
               <button
@@ -533,7 +535,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             onClick={handleOpenCreate}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
           >
-            <Plus className="w-4 h-4" /> New Activity
+            <Plus className="w-4 h-4" /> {t('ropa.createRecord')}
           </button>
         </div>
       </div>
@@ -544,12 +546,12 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <thead>
               <tr className="border-b border-slate-700">
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Activity Name</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Purposes</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Legal Basis</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Data Categories</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Status</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('ropa.processingPurpose')}</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('ropa.lawfulBasis')}</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('ropa.categoriesOfData')}</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.status')}</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Updated</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Actions</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -636,7 +638,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
             <h2 className="text-lg font-semibold text-white">
-              {editingId ? 'Edit Processing Activity' : 'Create Processing Activity'}
+              {editingId ? `${t('common.edit')} ${t('ropa.createRecord')}` : t('ropa.createRecord')}
             </h2>
             <button
               onClick={() => {
@@ -666,7 +668,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Description</label>
+                  <label className="block text-xs text-slate-400 mb-1">{t('common.description')}</label>
                   <textarea
                     value={form.description}
                     onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
@@ -744,7 +746,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Purposes (comma-separated) *</label>
+                  <label className="block text-xs text-slate-400 mb-1">{t('ropa.processingPurpose')} (comma-separated) *</label>
                   <input
                     type="text"
                     value={form.purposes}
@@ -755,7 +757,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Legal Basis *</label>
+                    <label className="block text-xs text-slate-400 mb-1">{t('ropa.lawfulBasis')} *</label>
                     <select
                       value={form.legalBasis}
                       onChange={e => setForm(prev => ({ ...prev, legalBasis: e.target.value as LegalBasis }))}
@@ -780,7 +782,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Data Categories (comma-separated) *</label>
+                  <label className="block text-xs text-slate-400 mb-1">{t('ropa.categoriesOfData')} (comma-separated) *</label>
                   <input
                     type="text"
                     value={form.dataCategories}
@@ -800,7 +802,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Data Subjects (comma-separated)</label>
+                  <label className="block text-xs text-slate-400 mb-1">{t('dpia.dataSubjects')} (comma-separated)</label>
                   <input
                     type="text"
                     value={form.dataSubjects}
@@ -810,7 +812,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Recipients (comma-separated)</label>
+                  <label className="block text-xs text-slate-400 mb-1">{t('ropa.recipients')} (comma-separated)</label>
                   <input
                     type="text"
                     value={form.recipients}
@@ -841,7 +843,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Retention Period *</label>
+                  <label className="block text-xs text-slate-400 mb-1">{t('ropa.retentionPeriod')} *</label>
                   <input
                     type="text"
                     value={form.retentionPeriod}
@@ -860,7 +862,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Technical Measures (comma-separated)</label>
+                  <label className="block text-xs text-slate-400 mb-1">{t('ropa.technicalMeasures')} (comma-separated)</label>
                   <textarea
                     value={form.technicalMeasures}
                     onChange={e => setForm(prev => ({ ...prev, technicalMeasures: e.target.value }))}
@@ -871,7 +873,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">
-                    Organizational Measures (comma-separated)
+                    {t('ropa.organizationalMeasures')} (comma-separated)
                   </label>
                   <textarea
                     value={form.organizationalMeasures}
@@ -892,14 +894,14 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               }}
               className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleSubmitForm}
               disabled={!form.activityName || !form.controllerName || submitting}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
             >
-              <CheckCircle className="w-4 h-4" /> {submitting ? 'Saving...' : editingId ? 'Update Activity' : 'Create Activity'}
+              <CheckCircle className="w-4 h-4" /> {submitting ? `${t('common.loading')}...` : t('common.save')}
             </button>
           </div>
         </div>
@@ -932,7 +934,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <span className="text-xs text-slate-500">ID: {a.id}</span>
             </div>
             <div>
-              <div className="text-xs text-slate-400 mb-1">Description</div>
+              <div className="text-xs text-slate-400 mb-1">{t('common.description')}</div>
               <div className="text-sm text-slate-200">{a.description || 'No description'}</div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -948,14 +950,14 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
             </div>
             <div>
-              <div className="text-xs text-slate-400 mb-1">Legal Basis</div>
+              <div className="text-xs text-slate-400 mb-1">{t('ropa.lawfulBasis')}</div>
               <div className="text-sm text-slate-200">{legalBasisLabels[a.legalBasis]}</div>
               {a.legalBasisJustification && (
                 <div className="text-xs text-slate-500 mt-0.5">{a.legalBasisJustification}</div>
               )}
             </div>
             <div>
-              <div className="text-xs text-slate-400 mb-1">Purposes</div>
+              <div className="text-xs text-slate-400 mb-1">{t('ropa.processingPurpose')}</div>
               <div className="flex gap-1 flex-wrap">
                 {a.purposes.map((p, i) => (
                   <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">
@@ -965,7 +967,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
             </div>
             <div>
-              <div className="text-xs text-slate-400 mb-1">Data Categories</div>
+              <div className="text-xs text-slate-400 mb-1">{t('ropa.categoriesOfData')}</div>
               <div className="flex gap-1 flex-wrap">
                 {a.dataCategories.map((c, i) => (
                   <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">
@@ -987,7 +989,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
             )}
             <div>
-              <div className="text-xs text-slate-400 mb-1">Recipients</div>
+              <div className="text-xs text-slate-400 mb-1">{t('ropa.recipients')}</div>
               <div className="flex gap-1 flex-wrap">
                 {a.recipients.map((r, i) => (
                   <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">
@@ -998,23 +1000,23 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
             {a.internationalTransfers.length > 0 && (
               <div>
-                <div className="text-xs text-slate-400 mb-1">International Transfers</div>
+                <div className="text-xs text-slate-400 mb-1">{t('ropa.transfers')}</div>
                 <div className="space-y-1">
-                  {a.internationalTransfers.map((t, i) => (
+                  {a.internationalTransfers.map((item, i) => (
                     <div key={i} className="text-sm text-slate-200">
-                      {t.country} <span className="text-xs text-slate-500">({t.safeguard})</span>
+                      {item.country} <span className="text-xs text-slate-500">({item.safeguard})</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
             <div>
-              <div className="text-xs text-slate-400 mb-1">Retention Period</div>
+              <div className="text-xs text-slate-400 mb-1">{t('ropa.retentionPeriod')}</div>
               <div className="text-sm text-slate-200">{a.retentionPeriod}</div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs text-slate-400 mb-1">Technical Measures</div>
+                <div className="text-xs text-slate-400 mb-1">{t('ropa.technicalMeasures')}</div>
                 <div className="space-y-0.5">
                   {a.technicalMeasures.map((m, i) => (
                     <div key={i} className="text-xs text-slate-300 flex items-center gap-1">
@@ -1024,7 +1026,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
               </div>
               <div>
-                <div className="text-xs text-slate-400 mb-1">Organizational Measures</div>
+                <div className="text-xs text-slate-400 mb-1">{t('ropa.organizationalMeasures')}</div>
                 <div className="space-y-0.5">
                   {a.organizationalMeasures.map((m, i) => (
                     <div key={i} className="text-xs text-slate-300 flex items-center gap-1">
@@ -1076,12 +1078,12 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm">Back</span>
+                <span className="text-sm">{t('common.back')}</span>
               </button>
               <div className="h-5 w-px bg-slate-700" />
               <div className="flex items-center gap-2">
                 <Database className="w-5 h-5 text-blue-400" />
-                <h1 className="text-lg font-semibold text-white">Records of Processing Activities</h1>
+                <h1 className="text-lg font-semibold text-white">{t('ropa.title')}</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -1104,7 +1106,7 @@ const RoPAManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
-            <span className="ml-3 text-slate-400">Loading processing activities...</span>
+            <span className="ml-3 text-slate-400">{t('common.loading')}...</span>
           </div>
         ) : (
           <>

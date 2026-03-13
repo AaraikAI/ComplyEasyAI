@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
 import ReactMarkdown from 'react-markdown';
@@ -88,6 +89,7 @@ const CHART_COLORS = ['#3b82f6', '#06b6d4', '#f59e0b', '#10b981', '#ef4444', '#0
 // Component
 // ---------------------------------------------------------------------------
 export default function WorkspaceManagement() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const plan = user?.organization?.plan || 'Foundation';
 
@@ -485,7 +487,7 @@ export default function WorkspaceManagement() {
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />} Create Workspace
           </button>
-          <button type="button" onClick={() => setViewMode('dashboard')} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button type="button" onClick={() => setViewMode('dashboard')} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
         </div>
       </form>
     </div>
@@ -532,7 +534,7 @@ export default function WorkspaceManagement() {
             className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />} Clone Framework
           </button>
-          <button type="button" onClick={() => setViewMode('dashboard')} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button type="button" onClick={() => setViewMode('dashboard')} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
         </div>
       </form>
     </div>
@@ -572,7 +574,7 @@ export default function WorkspaceManagement() {
             className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />} Move User
           </button>
-          <button type="button" onClick={() => setViewMode('dashboard')} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button type="button" onClick={() => setViewMode('dashboard')} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
         </div>
       </form>
     </div>
@@ -871,22 +873,22 @@ export default function WorkspaceManagement() {
             <div className="bg-red-50 border border-red-200 rounded-xl p-6">
               <h3 className="font-semibold text-red-800 mb-3">Emerging Threats</h3>
               <div className="space-y-2">
-                {predictiveRisk.emergingThreats.map((t: any, i: number) => (
+                {predictiveRisk.emergingThreats.map((threat: any, i: number) => (
                   <div key={i} className="bg-white rounded-lg p-3 border border-red-100">
                     <p className="text-sm font-medium text-gray-900">
-                      {t.title || t.threat || t.category || (typeof t === 'string' ? t : 'Emerging Threat')}
+                      {threat.title || threat.threat || threat.category || (typeof threat === 'string' ? threat : 'Emerging Threat')}
                     </p>
-                    {t.description && <p className="text-xs text-gray-600 mt-1">{t.description}</p>}
-                    {t.predictedRisks !== undefined && (
-                      <p className="text-xs text-gray-600 mt-1">Predicted occurrences: {t.predictedRisks}</p>
+                    {threat.description && <p className="text-xs text-gray-600 mt-1">{threat.description}</p>}
+                    {threat.predictedRisks !== undefined && (
+                      <p className="text-xs text-gray-600 mt-1">Predicted occurrences: {threat.predictedRisks}</p>
                     )}
-                    {t.likelihood && (
+                    {threat.likelihood && (
                       <span className={`inline-block mt-2 text-xs px-2 py-0.5 rounded ${
-                        t.likelihood === 'High' ? 'bg-red-100 text-red-700' :
-                        t.likelihood === 'Medium' ? 'bg-orange-100 text-orange-700' :
+                        threat.likelihood === 'High' ? 'bg-red-100 text-red-700' :
+                        threat.likelihood === 'Medium' ? 'bg-orange-100 text-orange-700' :
                         'bg-yellow-100 text-yellow-700'
                       }`}>
-                        {t.likelihood} likelihood
+                        {threat.likelihood} likelihood
                       </span>
                     )}
                   </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../contexts/I18nContext';
 
 /**
  * Skip to main content link for keyboard navigation.
@@ -6,6 +7,8 @@ import React from 'react';
  * Should be the first focusable element in the page.
  */
 const SkipNavLink: React.FC<{ targetId?: string }> = ({ targetId = 'main-content' }) => {
+  const { t } = useI18n();
+
   return (
     <a
       href={`#${targetId}`}
@@ -20,7 +23,7 @@ const SkipNavLink: React.FC<{ targetId?: string }> = ({ targetId = 'main-content
         }
       }}
     >
-      Skip to main content
+      {t('accessibility.skipToContent')}
     </a>
   );
 };

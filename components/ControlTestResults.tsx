@@ -14,6 +14,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Plus, Loader2, Search, X, Filter, Trash2, Edit3, Eye,
   CheckCircle, Clock, AlertTriangle, Play, RefreshCw, Settings,
@@ -128,6 +129,7 @@ const generateId = () => `ct_${Date.now()}_${Math.random().toString(36).substr(2
 
 const ControlTestResults: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [tests, setTests] = useState<ControlTest[]>([]);
   const [selectedTest, setSelectedTest] = useState<ControlTest | null>(null);
@@ -188,7 +190,7 @@ const ControlTestResults: React.FC = () => {
     try {
       if (editingId) {
         const res = await api.put(`/control-testing/tests/${editingId}`, form);
-        setTests(prev => prev.map(t => t.id === editingId ? { ...t, ...form, ...(res.data || {}), updatedAt: new Date().toISOString() } as ControlTest : t));
+        setTests(prev => prev.map(item => item.id === editingId ? { ...item, ...form, ...(res.data || {}), updatedAt: new Date().toISOString() } as ControlTest : item));
         toast.success('Test updated');
       } else {
         const newTest = {
@@ -210,7 +212,7 @@ const ControlTestResults: React.FC = () => {
   const deleteTest = async (id: string) => {
     try {
       await api.delete(`/control-testing/tests/${id}`);
-      setTests(prev => prev.filter(t => t.id !== id));
+      setTests(prev => prev.filter(item => item.id !== id));
       toast.success('Test deleted');
       setShowDeleteConfirm(null);
     } catch {
@@ -253,17 +255,17 @@ const ControlTestResults: React.FC = () => {
   };
 
   const filteredTests = useMemo(() => {
-    return tests.filter(t => {
-      if (filterType !== 'all' && t.testType !== filterType) return false;
-      if (filterStatus !== 'all' && t.lastStatus !== filterStatus) return false;
-      if (searchQuery && !t.name.toLowerCase().includes(searchQuery.toLowerCase()) && !t.controlName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return tests.filter(test => {
+      if (filterType !== 'all' && test.testType !== filterType) return false;
+      if (filterStatus !== 'all' && test.lastStatus !== filterStatus) return false;
+      if (searchQuery && !test.name.toLowerCase().includes(searchQuery.toLowerCase()) && !test.controlName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
   }, [tests, filterType, filterStatus, searchQuery]);
 
-  const passCount = tests.filter(t => t.lastStatus === 'passed').length;
-  const failCount = tests.filter(t => t.lastStatus === 'failed').length;
-  const warnCount = tests.filter(t => t.lastStatus === 'warning').length;
+  const passCount = tests.filter(test => test.lastStatus === 'passed').length;
+  const failCount = tests.filter(test => test.lastStatus === 'failed').length;
+  const warnCount = tests.filter(test => test.lastStatus === 'warning').length;
 
   // ── Render: Dashboard ─────────────────────────────────────────────────
 
@@ -271,7 +273,7 @@ const ControlTestResults: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Control Testing</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('controls.title')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Automated control testing and compliance verification</p>
         </div>
         <div className="flex items-center gap-2">
@@ -296,12 +298,12 @@ const ControlTestResults: React.FC = () => {
         <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
           <CheckCircle className="w-5 h-5 text-green-500 mb-2" />
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">{passCount}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Passing</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('controls.pass')}</p>
         </div>
         <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
           <XCircle className="w-5 h-5 text-red-500 mb-2" />
           <p className="text-2xl font-bold text-red-600 dark:text-red-400">{failCount}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Failing</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('controls.fail')}</p>
         </div>
         <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
           <AlertTriangle className="w-5 h-5 text-yellow-500 mb-2" />
@@ -378,7 +380,7 @@ const ControlTestResults: React.FC = () => {
           <h3 className="font-semibold text-gray-900 dark:text-white">Recent Test Executions</h3>
           <button onClick={loadTests} className="text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
             <RefreshCw className="w-3 h-3" />
-            Refresh
+            {t('common.refresh')}
           </button>
         </div>
         {loading ? (
@@ -386,7 +388,7 @@ const ControlTestResults: React.FC = () => {
         ) : tests.length === 0 ? (
           <div className="text-center py-12">
             <Activity className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">No tests configured yet</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('common.noResults')}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -437,7 +439,7 @@ const ControlTestResults: React.FC = () => {
           <button onClick={() => setViewMode('dashboard')} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
             <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">All Control Tests</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('controls.title')}</h2>
         </div>
         <button onClick={() => { resetForm(); setEditingId(null); setViewMode('create'); }} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">
           <Plus className="w-4 h-4" />
@@ -448,7 +450,7 @@ const ControlTestResults: React.FC = () => {
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search tests..." className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500" />
+          <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t('common.search')} className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500" />
         </div>
         <select value={filterType} onChange={e => setFilterType(e.target.value as any)} className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white">
           <option value="all">All Types</option>
@@ -468,9 +470,9 @@ const ControlTestResults: React.FC = () => {
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Type</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Schedule</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Last Run</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.status')}</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Pass Rate</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -520,7 +522,7 @@ const ControlTestResults: React.FC = () => {
         {filteredTests.length === 0 && (
           <div className="text-center py-12">
             <Activity className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">No tests match your filters</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('common.noResults')}</p>
           </div>
         )}
       </div>
@@ -556,7 +558,7 @@ const ControlTestResults: React.FC = () => {
             </button>
             <button onClick={() => openEdit(selectedTest)} className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition">
               <Edit3 className="w-4 h-4" />
-              Edit
+              {t('common.edit')}
             </button>
           </div>
         </div>
@@ -638,7 +640,7 @@ const ControlTestResults: React.FC = () => {
           {(!selectedTest.results || selectedTest.results.length === 0) ? (
             <div className="text-center py-8">
               <Clock className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">No test results yet</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('common.noResults')}</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -682,28 +684,28 @@ const ControlTestResults: React.FC = () => {
         <button onClick={() => { setViewMode('list'); setEditingId(null); }} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
           <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         </button>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{editingId ? 'Edit' : 'Create'} Control Test</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{editingId ? t('common.edit') : t('common.create')} Control Test</h2>
       </div>
 
       <div className="max-w-2xl space-y-6">
         <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Test Name</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('controls.controlName')}</label>
             <input type="text" value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="e.g., MFA Enforcement Check" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
             <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="Describe what this test verifies" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Test Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('controls.controlType')}</label>
               <select value={form.testType} onChange={e => setForm({ ...form, testType: e.target.value as TestType })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white text-sm">
                 {Object.entries(TEST_TYPE_CONFIG).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Schedule</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('controls.testingFrequency')}</label>
               <select value={form.frequency} onChange={e => setForm({ ...form, frequency: e.target.value as TestFrequency })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white text-sm">
                 {FREQUENCIES.map(f => (<option key={f.value} value={f.value}>{f.label}</option>))}
               </select>
@@ -711,7 +713,7 @@ const ControlTestResults: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Control Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('controls.controlName')}</label>
               <input type="text" value={form.controlName || ''} onChange={e => setForm({ ...form, controlName: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="e.g., CC6.1 - Logical Access" />
             </div>
             <div>
@@ -720,11 +722,11 @@ const ControlTestResults: React.FC = () => {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Owner</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('controls.controlOwner')}</label>
             <input type="text" value={form.owner || ''} onChange={e => setForm({ ...form, owner: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="Test owner" />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Automated</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('controls.automated')}</span>
             <button
               onClick={() => setForm({ ...form, automated: !form.automated })}
               className={`relative w-11 h-6 rounded-full transition ${form.automated ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
@@ -735,7 +737,7 @@ const ControlTestResults: React.FC = () => {
         </div>
 
         <div className="flex justify-end gap-2">
-          <button onClick={() => { setViewMode('list'); setEditingId(null); }} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
+          <button onClick={() => { setViewMode('list'); setEditingId(null); }} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">{t('common.cancel')}</button>
           <button onClick={saveTest} disabled={!form.name} className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">{editingId ? 'Update' : 'Create'} Test</button>
         </div>
       </div>
@@ -745,11 +747,11 @@ const ControlTestResults: React.FC = () => {
   const renderDeleteConfirm = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowDeleteConfirm(null)}>
       <div className="bg-white dark:bg-surface-800 rounded-xl shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Test</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('common.delete')}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">This will delete the test and all its history.</p>
         <div className="flex justify-end gap-2">
-          <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
-          <button onClick={() => showDeleteConfirm && deleteTest(showDeleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
+          <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">{t('common.cancel')}</button>
+          <button onClick={() => showDeleteConfirm && deleteTest(showDeleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">{t('common.delete')}</button>
         </div>
       </div>
     </div>

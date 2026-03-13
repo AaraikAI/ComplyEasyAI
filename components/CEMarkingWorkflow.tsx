@@ -16,6 +16,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft,
@@ -441,6 +442,7 @@ interface CEMarkingWorkflowProps {
 // Main Component
 // ---------------------------------------------------------------------------
 export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) => {
+  const { t } = useI18n();
   type TabId = 'overview' | 'products' | 'assessment' | 'documentation' | 'notified_bodies';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [products, setProducts] = useState<CEProduct[]>(DEMO_PRODUCTS);
@@ -744,10 +746,10 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-4 font-medium text-gray-600">Product</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-600">Hazard</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-600">Category</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-600">{t('common.category')}</th>
                 <th className="text-center py-3 px-4 font-medium text-gray-600">Risk Score</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-600">Residual Risk</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-600">{t('common.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -787,14 +789,14 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder={`${t('common.search')}...`}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
             />
           </div>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-            <option value="all">All Statuses</option>
+            <option value="all">{t('common.all')} Statuses</option>
             <option value="draft">Draft</option>
             <option value="in_assessment">In Assessment</option>
             <option value="tested">Tested</option>
@@ -802,11 +804,11 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
             <option value="marked">CE Marked</option>
           </select>
           <select value={filterRisk} onChange={e => setFilterRisk(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-            <option value="all">All Risk Levels</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
+            <option value="all">{t('common.all')} Risk Levels</option>
+            <option value="low">{t('risks.low')}</option>
+            <option value="medium">{t('risks.medium')}</option>
+            <option value="high">{t('risks.high')}</option>
+            <option value="critical">{t('risks.critical')}</option>
           </select>
         </div>
         <button onClick={() => setShowAddProductModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
@@ -897,10 +899,10 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
 
           {currentProduct && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div><p className="text-gray-500 text-xs">Category</p><p className="font-medium">{currentProduct.category}</p></div>
+              <div><p className="text-gray-500 text-xs">{t('common.category')}</p><p className="font-medium">{currentProduct.category}</p></div>
               <div><p className="text-gray-500 text-xs">Assessment Module</p><p className="font-medium">{currentProduct.assessmentModule} - {ASSESSMENT_MODULES[currentProduct.assessmentModule]?.name.split(' - ')[1] || ''}</p></div>
               <div><p className="text-gray-500 text-xs">Notified Body Required</p><p className="font-medium">{ASSESSMENT_MODULES[currentProduct.assessmentModule]?.notifiedBodyRequired ? 'Yes' : 'No'}</p></div>
-              <div><p className="text-gray-500 text-xs">Status</p><StatusBadge status={currentProduct.status} /></div>
+              <div><p className="text-gray-500 text-xs">{t('common.status')}</p><StatusBadge status={currentProduct.status} /></div>
             </div>
           )}
         </div>
@@ -1036,7 +1038,7 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
         {/* Doc stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <StatCard icon={<FileText size={20} className="text-blue-600" />} label="Total Documents" value={documents.length} color="bg-blue-50" />
-          <StatCard icon={<CheckCircle size={20} className="text-green-600" />} label="Approved" value={documents.filter(d => d.status === 'approved').length} color="bg-green-50" />
+          <StatCard icon={<CheckCircle size={20} className="text-green-600" />} label={t('common.approved')} value={documents.filter(d => d.status === 'approved').length} color="bg-green-50" />
           <StatCard icon={<Eye size={20} className="text-indigo-600" />} label="In Review" value={documents.filter(d => d.status === 'review').length} color="bg-indigo-50" />
           <StatCard icon={<Edit3 size={20} className="text-yellow-600" />} label="Drafts" value={documents.filter(d => d.status === 'draft').length} color="bg-yellow-50" />
         </div>
@@ -1114,7 +1116,7 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
         {/* Upload area */}
         <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
           <Upload size={32} className="mx-auto text-gray-400 mb-3" />
-          <p className="text-sm font-medium text-gray-700">Upload Technical Documentation</p>
+          <p className="text-sm font-medium text-gray-700">{t('common.upload')} Technical Documentation</p>
           <p className="text-xs text-gray-500 mt-1">Drop files here or click to browse. Supports PDF, DOCX, and image formats.</p>
         </div>
       </div>
@@ -1233,7 +1235,7 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
           </div>
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button onClick={() => setShowAddProductModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
+          <button onClick={() => setShowAddProductModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">{t('common.cancel')}</button>
           <button onClick={handleAddProduct} disabled={!newProduct.name || !newProduct.modelNumber} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Register Product</button>
         </div>
       </div>
@@ -1308,7 +1310,7 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
           </div>
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button onClick={() => setShowDocModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button onClick={() => setShowDocModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
           <button onClick={() => setShowDocModal(false)} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Generate DoC</button>
         </div>
       </div>
@@ -1348,7 +1350,7 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-500">Loading CE marking data...</span>
+          <span className="ml-3 text-gray-500">{t('common.loading')} CE marking data...</span>
         </div>
       )}
       {isSaving && (

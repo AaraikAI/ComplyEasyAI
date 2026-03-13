@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Shield,
   Plus,
@@ -317,6 +318,7 @@ function formatDate(dateStr: string): string {
 // ── Component ───────────────────────────────────────────────────────────────
 
 const IncidentManagement: React.FC = () => {
+  const { t } = useI18n();
   const [incidents, setIncidents] = useState<Incident[]>(initialIncidents);
   const [activeTab, setActiveTab] = useState<TabId>('incidents');
   const [searchQuery, setSearchQuery] = useState('');
@@ -465,7 +467,7 @@ const IncidentManagement: React.FC = () => {
             <AlertTriangle className="w-6 h-6 text-red-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Incident Management</h1>
+            <h1 className="text-2xl font-bold">{t('incidents.title')}</h1>
             <p className="text-slate-400 text-sm">Track, manage, and resolve security incidents</p>
           </div>
         </div>
@@ -479,11 +481,11 @@ const IncidentManagement: React.FC = () => {
             <Activity className="w-4 h-4 text-slate-500" />
           </div>
           <div className="text-2xl font-bold">{metrics.total}</div>
-          <div className="text-xs text-slate-500 mt-1">{metrics.open} open</div>
+          <div className="text-xs text-slate-500 mt-1">{metrics.open} {t('incidents.open')}</div>
         </div>
         <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 dark:border-slate-800 p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-400 text-sm">Avg. MTTD</span>
+            <span className="text-slate-400 text-sm">{t('incidents.mttd')}</span>
             <Timer className="w-4 h-4 text-blue-400" />
           </div>
           <div className="text-2xl font-bold">{metrics.avgMTTD.toFixed(1)}h</div>
@@ -499,7 +501,7 @@ const IncidentManagement: React.FC = () => {
         </div>
         <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 dark:border-slate-800 p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-400 text-sm">Avg. MTTR</span>
+            <span className="text-slate-400 text-sm">{t('incidents.mttr')}</span>
             <CheckCircle className="w-4 h-4 text-green-400" />
           </div>
           <div className="text-2xl font-bold">{metrics.avgMTTR.toFixed(1)}h</div>
@@ -534,7 +536,7 @@ const IncidentManagement: React.FC = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 type="text"
-                placeholder="Search incidents..."
+                placeholder={t('common.search')}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-slate-800 dark:bg-slate-900 border border-slate-700 dark:border-slate-800 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -546,13 +548,13 @@ const IncidentManagement: React.FC = () => {
                 showFilters ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
               }`}
             >
-              <Filter className="w-4 h-4" /> Filters
+              <Filter className="w-4 h-4" /> {t('common.filter')}
             </button>
             <button
               onClick={() => setShowCreateForm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"
             >
-              <Plus className="w-4 h-4" /> New Incident
+              <Plus className="w-4 h-4" /> {t('incidents.createIncident')}
             </button>
           </div>
 
@@ -597,7 +599,7 @@ const IncidentManagement: React.FC = () => {
             {filteredIncidents.length === 0 && (
               <div className="text-center py-12 text-slate-500">
                 <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>No incidents match your filters</p>
+                <p>{t('common.noResults')}</p>
               </div>
             )}
             {filteredIncidents.map(incident => (
@@ -712,7 +714,7 @@ const IncidentManagement: React.FC = () => {
                 <p className="text-sm font-medium">{categoryLabels[selectedIncident.category]}</p>
               </div>
               <div>
-                <span className="text-xs text-slate-500">Assigned To</span>
+                <span className="text-xs text-slate-500">{t('incidents.assignedTo')}</span>
                 <p className="text-sm font-medium">{selectedIncident.assignedTo}</p>
               </div>
               <div>
@@ -720,7 +722,7 @@ const IncidentManagement: React.FC = () => {
                 <p className="text-sm font-medium">{selectedIncident.reporter}</p>
               </div>
               <div>
-                <span className="text-xs text-slate-500">Affected Systems</span>
+                <span className="text-xs text-slate-500">{t('incidents.affectedSystems')}</span>
                 <div className="flex flex-wrap gap-1 mt-0.5">
                   {selectedIncident.affectedSystems.map(sys => (
                     <span key={sys} className="text-xs px-1.5 py-0.5 bg-slate-700 rounded">{sys}</span>
@@ -731,7 +733,7 @@ const IncidentManagement: React.FC = () => {
 
             {/* Timeline */}
             <div className="mb-6">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /> Timeline</h3>
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /> {t('incidents.timeline')}</h3>
               <div className="space-y-3">
                 {selectedIncident.timeline.map((event, idx) => (
                   <div key={event.id} className="flex gap-3">
@@ -784,7 +786,7 @@ const IncidentManagement: React.FC = () => {
       {/* ── Timeline Tab ────────────────────────────────────────── */}
       {activeTab === 'timeline' && (
         <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 dark:border-slate-800 p-6">
-          <h2 className="text-lg font-semibold mb-4">Global Incident Timeline</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('incidents.timeline')}</h2>
           <div className="space-y-4">
             {incidents
               .flatMap(inc => inc.timeline.map(ev => ({ ...ev, incidentId: inc.id, incidentTitle: inc.title, severity: inc.severity })))
@@ -833,7 +835,7 @@ const IncidentManagement: React.FC = () => {
                       />
                     </div>
                     <span className="text-sm font-mono text-white w-8 text-right">{item.count}</span>
-                    <span className="text-xs text-slate-500 w-16">{item.open} open</span>
+                    <span className="text-xs text-slate-500 w-16">{item.open} {t('incidents.open')}</span>
                   </div>
                 ))}
               </div>
@@ -882,7 +884,7 @@ const IncidentManagement: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 dark:border-slate-800 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h2 className="text-lg font-semibold">Create New Incident</h2>
+              <h2 className="text-lg font-semibold">{t('incidents.createIncident')}</h2>
               <button onClick={() => setShowCreateForm(false)} className="p-1 text-slate-400 hover:text-white transition-colors">
                 <X className="w-5 h-5" />
               </button>
@@ -899,7 +901,7 @@ const IncidentManagement: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Description</label>
+                <label className="block text-sm text-slate-400 mb-1">{t('common.description')}</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
@@ -910,7 +912,7 @@ const IncidentManagement: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Severity</label>
+                  <label className="block text-sm text-slate-400 mb-1">{t('incidents.severity')}</label>
                   <select
                     value={form.severity}
                     onChange={e => setForm(prev => ({ ...prev, severity: e.target.value as IncidentSeverity }))}
@@ -935,7 +937,7 @@ const IncidentManagement: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Assigned To</label>
+                <label className="block text-sm text-slate-400 mb-1">{t('incidents.assignedTo')}</label>
                 <input
                   type="text"
                   value={form.assignedTo}
@@ -945,7 +947,7 @@ const IncidentManagement: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Affected Systems (comma separated)</label>
+                <label className="block text-sm text-slate-400 mb-1">{t('incidents.affectedSystems')}</label>
                 <input
                   type="text"
                   value={form.affectedSystems}
@@ -960,14 +962,14 @@ const IncidentManagement: React.FC = () => {
                 onClick={() => { setShowCreateForm(false); setForm(defaultForm); }}
                 className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleCreateIncident}
                 disabled={!form.title.trim()}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
               >
-                <Plus className="w-4 h-4" /> Create Incident
+                <Plus className="w-4 h-4" /> {t('incidents.createIncident')}
               </button>
             </div>
           </div>

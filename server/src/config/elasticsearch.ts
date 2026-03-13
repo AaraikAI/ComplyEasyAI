@@ -31,7 +31,7 @@ const config: ElasticsearchConfig = {
   password: process.env.ELASTICSEARCH_PASSWORD,
   indexPrefix: process.env.ELASTICSEARCH_INDEX_PREFIX || 'complyeasy',
   ssl: {
-    // In production you typically want this true; allow overriding for self‑signed
+    // Recommended true; can override for self-signed certificates
     rejectUnauthorized: process.env.ELASTICSEARCH_SSL_REJECT_UNAUTHORIZED !== 'false',
   },
   level: process.env.ELASTICSEARCH_LOG_LEVEL || 'info',

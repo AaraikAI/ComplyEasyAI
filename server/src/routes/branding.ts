@@ -216,7 +216,7 @@ router.post(
         return;
       }
 
-      // In production, upload to S3/CloudStorage and get URL.
+      // Uploads to S3/CloudStorage when AWS_S3_BUCKET is configured.
       // For now, store as a data URI or use the S3 service if available.
       let logoUrl: string;
 

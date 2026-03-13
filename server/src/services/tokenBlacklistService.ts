@@ -2,7 +2,7 @@
  * JWT Token Blacklist Service
  *
  * Maintains a blacklist of revoked JWT tokens using the cache layer
- * (Redis in production, in-memory fallback for development).
+ * Uses Redis when REDIS_URL is configured; falls back to in-memory storage otherwise.
  *
  * Tokens are blacklisted on logout and checked during authentication.
  * Each blacklist entry auto-expires when the original token would have expired,

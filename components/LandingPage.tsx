@@ -13,6 +13,7 @@ import DemoBookingForm from './DemoBookingForm';
 import { TierName } from '../types';
 import { ThemeToggleCompact } from './ThemeToggle';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 // ---------------------------------------------------------------------------
 // Feature data grouped by tab category
@@ -80,6 +81,7 @@ const tabOrder: FeatureTab[] = ['core', 'ai', 'security', 'regulatory'];
 
 export const LandingPage: React.FC = () => {
   const { verifyMagicLink, register, loginWithMagicLink } = useAuth();
+  const { t } = useI18n();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showDemoModal, setShowDemoModal] = useState(false);
@@ -241,7 +243,7 @@ export const LandingPage: React.FC = () => {
                 onClick={() => { setAuthStep('email'); setShowAuthModal(true); }}
                 className="bg-amber-500 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20"
               >
-                Sign In
+                {t('auth.login')}
               </button>
             </div>
           </div>
@@ -689,7 +691,7 @@ export const LandingPage: React.FC = () => {
               </button>
 
               <p className="text-xs text-surface-400">
-                Already have an account?{' '}
+                {t('auth.alreadyHaveAccount')}{' '}
                 <button
                   onClick={() => {
                     setShowSignupModal(false);
@@ -698,7 +700,7 @@ export const LandingPage: React.FC = () => {
                   }}
                   className="text-brand-600 hover:underline font-medium"
                 >
-                  Sign In
+                  {t('auth.login')}
                 </button>
               </p>
             </div>
@@ -748,7 +750,7 @@ export const LandingPage: React.FC = () => {
                             : 'text-surface-600 hover:text-surface-900'
                         }`}
                       >
-                        Magic Link
+                        {t('auth.magicLink')}
                       </button>
                       <button
                         type="button"
@@ -759,7 +761,7 @@ export const LandingPage: React.FC = () => {
                             : 'text-surface-600 hover:text-surface-900'
                         }`}
                       >
-                        Password
+                        {t('auth.password')}
                       </button>
                     </div>
 
@@ -778,7 +780,7 @@ export const LandingPage: React.FC = () => {
                             disabled={loading}
                             className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex justify-center items-center"
                           >
-                             {loading ? <Loader2 className="animate-spin" /> : 'Send Magic Link'}
+                             {loading ? <Loader2 className="animate-spin" /> : t('auth.magicLink')}
                           </button>
                         </div>
                         <p className="mt-4 text-xs text-surface-400">Secure passwordless authentication</p>
@@ -812,19 +814,19 @@ export const LandingPage: React.FC = () => {
                             type="password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
-                            placeholder="Password"
+                            placeholder={t('auth.password')}
                             className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
                           />
                           <button
                             disabled={loading}
                             className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex justify-center items-center"
                           >
-                             {loading ? <Loader2 className="animate-spin" /> : 'Sign In'}
+                             {loading ? <Loader2 className="animate-spin" /> : t('auth.login')}
                           </button>
                         </div>
                         <p className="mt-4 text-xs text-surface-400">
                           <button type="button" className="text-brand-600 hover:underline">
-                            Forgot password?
+                            {t('auth.forgotPassword')}
                           </button>
                         </p>
                       </form>
@@ -869,7 +871,7 @@ export const LandingPage: React.FC = () => {
 
                {authStep === 'register' && (
                   <form onSubmit={handleRegister}>
-                    <h3 className="text-2xl font-bold text-surface-900 mb-2">Create Account</h3>
+                    <h3 className="text-2xl font-bold text-surface-900 mb-2">{t('auth.createAccount')}</h3>
                     <p className="text-surface-500 mb-6">Looks like you're new here!</p>
 
                     <div className="space-y-4">
@@ -886,7 +888,7 @@ export const LandingPage: React.FC = () => {
                         type="text"
                         value={name}
                         onChange={e => setName(e.target.value)}
-                        placeholder="Full Name"
+                        placeholder={t('auth.fullName')}
                         className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none transition-all"
                       />
                       <input
@@ -900,7 +902,7 @@ export const LandingPage: React.FC = () => {
                         disabled={loading}
                         className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-colors flex justify-center items-center"
                       >
-                         {loading ? <Loader2 className="animate-spin" /> : 'Create Account'}
+                         {loading ? <Loader2 className="animate-spin" /> : t('auth.createAccount')}
                       </button>
                     </div>
                     <p className="mt-4 text-xs text-surface-400">

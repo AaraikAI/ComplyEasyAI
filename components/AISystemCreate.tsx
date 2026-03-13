@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { api } from '../services/api';
 import { ArrowLeft, Brain, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 interface AISystemCreateProps {
   onBack: () => void;
@@ -9,6 +10,7 @@ interface AISystemCreateProps {
 }
 
 export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSuccess }) => {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -62,7 +64,7 @@ export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSucces
         </button>
         <div className="flex items-center space-x-3">
           <Brain className="text-brand-600" size={28} />
-          <h2 className="text-2xl font-bold text-gray-900">Create AI System</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('common.create')} AI System</h2>
         </div>
       </div>
 
@@ -72,7 +74,7 @@ export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSucces
           {/* Name */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              System Name <span className="text-red-500">*</span>
+              {t('common.name')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -89,7 +91,7 @@ export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSucces
           {/* System Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              System Type <span className="text-red-500">*</span>
+              {t('common.type')} <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.systemType}
@@ -168,7 +170,7 @@ export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSucces
           {/* Description */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              {t('common.description')}
             </label>
             <textarea
               value={formData.description}
@@ -215,7 +217,7 @@ export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSucces
             className="flex items-center space-x-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
           >
             <X size={18} />
-            <span>Cancel</span>
+            <span>{t('common.cancel')}</span>
           </button>
           <button
             type="submit"
@@ -223,7 +225,7 @@ export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSucces
             className="flex items-center space-x-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save size={18} />
-            <span>{submitting ? 'Creating...' : 'Create AI System'}</span>
+            <span>{submitting ? `${t('common.loading')}...` : `${t('common.save')}`}</span>
           </button>
         </div>
       </form>

@@ -15,6 +15,7 @@ import {
   Tooltip, Legend,
 } from 'recharts';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -136,6 +137,7 @@ const STATUSES: Array<Issue['status']> = ['Open', 'In_Progress', 'Resolved', 'Cl
 // ---------------------------------------------------------------------------
 export default function IssueManagement() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const plan = user?.organization?.plan || 'Foundation';
 
   // Core state
@@ -659,9 +661,9 @@ Return a JSON object with:
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {[
             { label: 'Total Issues', value: d?.totalIssues ?? 0, icon: <FileText className="w-5 h-5 text-blue-600" /> },
-            { label: 'Open', value: d?.statusDistribution.open ?? 0, icon: <AlertCircle className="w-5 h-5 text-blue-600" /> },
-            { label: 'In Progress', value: d?.statusDistribution.inProgress ?? 0, icon: <Play className="w-5 h-5 text-yellow-600" /> },
-            { label: 'Overdue', value: d?.overdueIssues ?? 0, icon: <Clock className="w-5 h-5 text-red-600" /> },
+            { label: t('incidents.open'), value: d?.statusDistribution.open ?? 0, icon: <AlertCircle className="w-5 h-5 text-blue-600" /> },
+            { label: t('tasks.inProgress'), value: d?.statusDistribution.inProgress ?? 0, icon: <Play className="w-5 h-5 text-yellow-600" /> },
+            { label: t('tasks.overdue'), value: d?.overdueIssues ?? 0, icon: <Clock className="w-5 h-5 text-red-600" /> },
             { label: 'Unassigned', value: d?.unassignedIssues ?? 0, icon: <User className="w-5 h-5 text-gray-500" /> },
             { label: 'Avg Resolution', value: `${d?.averageResolutionTime ?? 0} days`, icon: <TrendingUp className="w-5 h-5 text-green-600" /> },
           ].map(s => (
@@ -679,7 +681,7 @@ Return a JSON object with:
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {statusData.length > 0 && (
             <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Status Distribution</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{t('common.status')} Distribution</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${value}`}>
@@ -692,7 +694,7 @@ Return a JSON object with:
           )}
           {priorityData.length > 0 && (
             <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Priority Distribution</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{t('common.priority')} Distribution</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={priorityData}>
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
@@ -789,20 +791,20 @@ Return a JSON object with:
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Search issues..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+          <input type="text" placeholder={`${t('common.search')}...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm" />
         </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
-          <option value="All">All Status</option>
+          <option value="All">{t('common.all')} {t('common.status')}</option>
           {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
         </select>
         <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
-          <option value="All">All Priorities</option>
+          <option value="All">{t('common.all')} {t('common.priority')}</option>
           {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="All">All Types</option>
-          {ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          {ISSUE_TYPES.map(it => <option key={it} value={it}>{it}</option>)}
         </select>
       </div>
 
@@ -811,7 +813,7 @@ Return a JSON object with:
         {filteredIssues.length === 0 && (
           <div className="text-center py-12 bg-white rounded-xl border">
             <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No issues found</p>
+            <p className="text-gray-500">{t('common.noResults')}</p>
           </div>
         )}
         {filteredIssues.map(issue => (
@@ -853,10 +855,10 @@ Return a JSON object with:
                   className="p-1.5 rounded hover:bg-green-50 text-green-600 disabled:opacity-50" title="AI Remediation">
                   <Zap className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleEditIssue(issue)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Edit">
+                <button onClick={() => handleEditIssue(issue)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title={t('common.edit')}>
                   <Edit3 className="w-4 h-4" />
                 </button>
-                <button onClick={() => handleDeleteIssue(issue.id)} className="p-1.5 rounded hover:bg-red-50 text-red-600" title="Delete">
+                <button onClick={() => handleDeleteIssue(issue.id)} className="p-1.5 rounded hover:bg-red-50 text-red-600" title={t('common.delete')}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -891,7 +893,7 @@ Return a JSON object with:
             </button>
             <button onClick={() => handleEditIssue(issue)}
               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-              <Edit3 className="w-3.5 h-3.5" /> Edit
+              <Edit3 className="w-3.5 h-3.5" /> {t('common.edit')}
             </button>
           </div>
         </div>
@@ -925,7 +927,7 @@ Return a JSON object with:
           {/* Meta info */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
             <div>
-              <p className="text-xs text-gray-500">Assigned To</p>
+              <p className="text-xs text-gray-500">{t('incidents.assignedTo')}</p>
               <p className="text-sm font-medium text-gray-900">{issue.assignedTo?.name || 'Unassigned'}</p>
             </div>
             <div>
@@ -933,7 +935,7 @@ Return a JSON object with:
               <p className="text-sm font-medium text-gray-900">{issue.createdBy?.name || 'Unknown'}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Due Date</p>
+              <p className="text-xs text-gray-500">{t('tasks.dueDate')}</p>
               <p className="text-sm font-medium text-gray-900">
                 {issue.dueDate ? new Date(issue.dueDate).toLocaleDateString() : 'Not set'}
               </p>
@@ -952,7 +954,7 @@ Return a JSON object with:
 
         {/* Status workflow */}
         <div className="bg-white rounded-xl border p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Update Status</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('common.status')}</h3>
           <div className="flex flex-wrap gap-2">
             {STATUSES.map(status => (
               <button
@@ -973,7 +975,7 @@ Return a JSON object with:
 
         {/* Assign */}
         <div className="bg-white rounded-xl border p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Assign Issue</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('common.assignee')}</h3>
           <select
             value={issue.assignedToId || ''}
             onChange={(e) => handleAssign(issue.id, e.target.value)}
@@ -1062,7 +1064,7 @@ Return a JSON object with:
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')} *</label>
           <textarea required value={issueForm.description} onChange={e => setIssueForm(f => ({ ...f, description: e.target.value }))}
             className="w-full border rounded-lg px-3 py-2 text-sm" rows={4} placeholder="Detailed description of the issue..." />
           {!isEdit && issueForm.description && (
@@ -1079,7 +1081,7 @@ Return a JSON object with:
             <label className="block text-sm font-medium text-gray-700 mb-1">Issue Type</label>
             <select value={issueForm.issueType} onChange={e => setIssueForm(f => ({ ...f, issueType: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
-              {ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {ISSUE_TYPES.map(it => <option key={it} value={it}>{it}</option>)}
             </select>
           </div>
           <div>
@@ -1094,14 +1096,14 @@ Return a JSON object with:
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.priority')}</label>
             <select value={issueForm.priority} onChange={e => setIssueForm(f => ({ ...f, priority: e.target.value as any }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
               {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('incidents.assignedTo')}</label>
             <select value={issueForm.assignedToId} onChange={e => setIssueForm(f => ({ ...f, assignedToId: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
               <option value="">Unassigned</option>
@@ -1112,7 +1114,7 @@ Return a JSON object with:
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.dueDate')}</label>
             <input type="date" value={issueForm.dueDate} onChange={e => setIssueForm(f => ({ ...f, dueDate: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
           </div>
@@ -1136,7 +1138,7 @@ Return a JSON object with:
             {isEdit ? 'Update Issue' : 'Create Issue'}
           </button>
           <button type="button" onClick={() => { setViewMode(isEdit ? 'detail' : 'list'); if (!isEdit) resetForm(); }}
-            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancel</button>
+            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
         </div>
       </form>
     </div>
@@ -1172,13 +1174,13 @@ Return a JSON object with:
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="bg-white rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">Suggested Severity</p>
+                <p className="text-xs text-gray-500 mb-1">{t('common.severity')}</p>
                 <span className={`text-sm px-2 py-0.5 rounded-full ${PRIORITY_COLORS[aiClassification.severity] || 'bg-gray-100'}`}>
                   {aiClassification.severity}
                 </span>
               </div>
               <div className="bg-white rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">Suggested Priority</p>
+                <p className="text-xs text-gray-500 mb-1">{t('common.priority')}</p>
                 <span className={`text-sm px-2 py-0.5 rounded-full ${PRIORITY_COLORS[aiClassification.suggestedPriority] || 'bg-gray-100'}`}>
                   {aiClassification.suggestedPriority}
                 </span>
@@ -1255,7 +1257,7 @@ Return a JSON object with:
 
           <div className="space-y-4">
             <div className="bg-white rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Root Cause</h4>
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">{t('incidents.rootCause')}</h4>
               <p className="text-sm text-gray-900">{aiRootCause.rootCause}</p>
             </div>
 

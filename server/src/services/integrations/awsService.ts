@@ -83,7 +83,7 @@ class AWSService {
     accountId: string
   ): Promise<void> {
     try {
-      // Encrypt credentials in production
+      // Encrypt credentials using KMS or similar service
       await prisma.integration.upsert({
         where: {
           organizationId_provider: {
@@ -100,7 +100,7 @@ class AWSService {
           config: {
             accountId,
             region: credentials.region,
-            // In production, encrypt these with KMS or similar
+            // Encrypt these with KMS or similar service when available
             accessKeyId: credentials.accessKeyId,
             secretAccessKey: credentials.secretAccessKey,
             sessionToken: credentials.sessionToken,

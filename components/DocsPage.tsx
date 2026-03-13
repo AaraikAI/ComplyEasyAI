@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Shield, BookOpen, Code, Search, ChevronRight, ChevronDown,
   Zap, Lock, Globe, Server, Database, Users, Settings, FileText,
@@ -220,6 +221,7 @@ POST /api/v1/webhooks
 };
 
 export const DocsPage: React.FC = () => {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSection, setExpandedSection] = useState<string>('getting-started');
   const [selectedDoc, setSelectedDoc] = useState<string>('quickstart');
@@ -258,7 +260,7 @@ export const DocsPage: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search docs..."
+                  placeholder={t('common.search')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-64 pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all text-sm"

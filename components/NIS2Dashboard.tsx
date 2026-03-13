@@ -17,6 +17,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Shield, AlertTriangle, CheckCircle, X, Plus, FileText, Clock,
   Search, Download, Lock, Cpu, ChevronRight, BarChart3, Calendar,
@@ -240,6 +241,7 @@ const renderScoreBar = (score: number, max: number = 100) => (
 // ── Component ────────────────────────────────────────────────────────────
 
 export const NIS2Dashboard: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [entity, setEntity] = useState<NIS2Entity>(DEFAULT_ENTITY);
   const [measures, setMeasures] = useState<SecurityMeasure[]>(DEFAULT_MEASURES);
@@ -356,7 +358,7 @@ export const NIS2Dashboard: React.FC = () => {
   }, [entity, measureComplianceRate, openIncidents, criticalSuppliers, measures]);
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: 'overview', label: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
+    { key: 'overview', label: t('common.overview'), icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'classification', label: 'Classification', icon: <Building2 className="w-4 h-4" /> },
     { key: 'measures', label: 'Risk Measures', icon: <Shield className="w-4 h-4" /> },
     { key: 'incidents', label: 'Incidents', icon: <AlertTriangle className="w-4 h-4" /> },
@@ -804,7 +806,7 @@ export const NIS2Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">NIS2 Directive Compliance</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.nis2')}</h2>
           <p className="text-gray-600 mt-1">Network and Information Security Directive (EU) 2022/2555</p>
         </div>
         <div className="flex gap-3">
@@ -853,7 +855,7 @@ export const NIS2Dashboard: React.FC = () => {
               <label className="flex items-center gap-2"><input type="checkbox" checked={incidentForm.crossBorderImpact} onChange={(e) => setIncidentForm({ ...incidentForm, crossBorderImpact: e.target.checked })} className="rounded border-gray-300 text-red-600" /><span className="text-sm text-gray-700">Cross-border impact (affects other EU member states)</span></label>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Report Incident</button>
-                <button type="button" onClick={() => setShowIncidentModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button type="button" onClick={() => setShowIncidentModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -903,7 +905,7 @@ export const NIS2Dashboard: React.FC = () => {
                 <p><strong>Compliance gaps that increase penalty risk:</strong></p>
                 <ul className="list-disc list-inside">{measures.filter(m => m.status !== 'implemented').map(m => <li key={m.id}>{m.article21Ref}: {m.measure}</li>)}</ul>
               </div>
-              <button onClick={() => setShowPenaltyModal(false)} className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Close</button>
+              <button onClick={() => setShowPenaltyModal(false)} className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.close')}</button>
             </div>
           </div>
         </div>

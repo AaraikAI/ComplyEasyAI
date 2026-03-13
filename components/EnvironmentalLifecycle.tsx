@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Search, Plus, Download, Eye, Edit3, Trash2,
   AlertTriangle, ShieldCheck, Shield, CheckCircle, XCircle,
@@ -302,6 +303,7 @@ interface EnvironmentalLifecycleProps {
 }
 
 export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [selectedStage, setSelectedStage] = useState<LifecycleStageData | null>(null);
   const [improvementStageFilter, setImprovementStageFilter] = useState<string>('All');
@@ -1009,7 +1011,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
   // Main Render
   // ---------------------------------------------------------------------------
   const tabs: { key: MainTab; label: string; icon: React.ReactNode }[] = [
-    { key: 'overview', label: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
+    { key: 'overview', label: t('common.overview'), icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'lifecycle_stages', label: 'Lifecycle Stages', icon: <RotateCcw className="w-4 h-4" /> },
     { key: 'impact_assessment', label: 'Impact Assessment', icon: <Activity className="w-4 h-4" /> },
     { key: 'improvements', label: 'Improvements', icon: <Lightbulb className="w-4 h-4" /> },
@@ -1069,7 +1071,7 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
         {isLoading && (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
-            <span className="ml-3 text-gray-500">Loading lifecycle data...</span>
+            <span className="ml-3 text-gray-500">{t('common.loading')}</span>
           </div>
         )}
         {loadError && (

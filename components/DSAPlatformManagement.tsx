@@ -13,6 +13,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import { Globe, CheckCircle, AlertTriangle, X, Plus, FileText, Shield, Users, Eye, Megaphone, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -50,6 +51,7 @@ interface IllegalContentReport {
 }
 
 export const DSAPlatformManagement: React.FC = () => {
+  const { t } = useI18n();
   const [platforms, setPlatforms] = useState<DSAPlatform[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -416,7 +418,7 @@ export const DSAPlatformManagement: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Digital Services Act (DSA) Compliance</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.dsa')}</h2>
           <p className="text-gray-600 mt-1">Manage online platforms and ensure DSA compliance (Regulation EU 2022/2065)</p>
         </div>
         <button
@@ -738,7 +740,7 @@ export const DSAPlatformManagement: React.FC = () => {
                   onClick={() => setShowRegisterModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -815,7 +817,7 @@ export const DSAPlatformManagement: React.FC = () => {
                   onClick={() => setShowModerationModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
               <div className="mt-6 border-t border-gray-200 pt-4">
@@ -925,7 +927,7 @@ export const DSAPlatformManagement: React.FC = () => {
                   onClick={() => setShowReportModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -1026,7 +1028,7 @@ export const DSAPlatformManagement: React.FC = () => {
                   onClick={() => setShowAdModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -1122,7 +1124,7 @@ export const DSAPlatformManagement: React.FC = () => {
                   onClick={() => setShowEditPlatformModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -1303,7 +1305,7 @@ export const DSAPlatformManagement: React.FC = () => {
                   onClick={() => setShowRiskAssessmentModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -1495,7 +1497,7 @@ export const DSAPlatformManagement: React.FC = () => {
                     }}
                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
                   >
-                    Close
+                    {t('common.close')}
                   </button>
                 </div>
               </div>
@@ -1733,7 +1735,7 @@ export const DSAPlatformManagement: React.FC = () => {
                   onClick={() => setShowFeedConfigModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -1822,7 +1824,7 @@ export const DSAPlatformManagement: React.FC = () => {
                   }}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>

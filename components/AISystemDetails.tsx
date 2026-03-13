@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { 
   ArrowLeft, Brain, Shield, Activity, FileText, Users, 
   CheckCircle, Clock, AlertTriangle, Edit, Save, X, Plus,
@@ -16,6 +17,7 @@ interface AISystemDetailsProps {
 
 export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBack }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [system, setSystem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'functions' | 'trustworthiness' | 'lifecycle' | 'assessments' | 'risks' | 'actors'>('overview');
@@ -109,12 +111,12 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
     return (
       <div className="text-center py-12">
         <AlertCircle className="mx-auto mb-4 text-gray-400" size={48} />
-        <p className="text-gray-500">AI System not found</p>
+        <p className="text-gray-500">{t('common.noResults')}</p>
         <button
           onClick={onBack}
           className="mt-4 text-brand-600 hover:text-brand-800 font-medium"
         >
-          Go Back
+          {t('common.back')}
         </button>
       </div>
     );
@@ -171,7 +173,7 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
       <div className="border-b border-gray-200">
         <nav className="flex space-x-8">
           {[
-            { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'overview', label: t('common.overview'), icon: BarChart3 },
             { id: 'functions', label: 'Core Functions', icon: Target },
             { id: 'trustworthiness', label: 'Trustworthiness', icon: Shield },
             { id: 'lifecycle', label: 'Lifecycle', icon: Activity },
@@ -239,10 +241,11 @@ export const AISystemDetails: React.FC<AISystemDetailsProps> = ({ systemId, onBa
 
 // Overview Tab Component
 const OverviewTab: React.FC<any> = ({ system, onUpdate, editingField, setEditingField, editValue, setEditValue }) => {
+  const { t } = useI18n();
   const fields = [
-    { key: 'name', label: 'Name', type: 'text' },
-    { key: 'description', label: 'Description', type: 'textarea' },
-    { key: 'systemType', label: 'System Type', type: 'text' },
+    { key: 'name', label: t('common.name'), type: 'text' },
+    { key: 'description', label: t('common.description'), type: 'textarea' },
+    { key: 'systemType', label: t('common.type'), type: 'text' },
     { key: 'useCase', label: 'Use Case', type: 'textarea' },
     { key: 'deploymentContext', label: 'Deployment Context', type: 'text' },
     { key: 'lifecycleStage', label: 'Lifecycle Stage', type: 'select', options: [
@@ -252,10 +255,10 @@ const OverviewTab: React.FC<any> = ({ system, onUpdate, editingField, setEditing
     { key: 'autonomyLevel', label: 'Autonomy Level', type: 'select', options: [
       'Fully_Autonomous', 'Human_in_Loop', 'Human_Override', 'Fully_Manual'
     ]},
-    { key: 'status', label: 'Status', type: 'select', options: [
+    { key: 'status', label: t('common.status'), type: 'select', options: [
       'In_Development', 'Deployed', 'Under_Review', 'Retired'
     ]},
-    { key: 'riskLevel', label: 'Risk Level', type: 'select', options: [
+    { key: 'riskLevel', label: t('risks.riskLevel'), type: 'select', options: [
       'Critical', 'High', 'Medium', 'Low'
     ]},
   ];
@@ -426,6 +429,7 @@ const CoreFunctionsTab: React.FC<any> = ({ system, onSubcategoryUpdate }) => {
 
 // Subcategory Item Component
 const SubcategoryItem: React.FC<any> = ({ subcategory, onUpdate }) => {
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
   const [status, setStatus] = useState(subcategory.status);
   const [evidence, setEvidence] = useState(subcategory.evidence || '');
@@ -500,13 +504,13 @@ const SubcategoryItem: React.FC<any> = ({ subcategory, onUpdate }) => {
               }}
               className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleSave}
               className="px-3 py-1 text-sm bg-brand-600 text-white rounded hover:bg-brand-700"
             >
-              Save
+              {t('common.save')}
             </button>
           </div>
         </div>
@@ -629,6 +633,7 @@ const TrustworthinessCard: React.FC<any> = ({ characteristic, onUpdate }) => {
 
 // Lifecycle Tab Component
 const LifecycleTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
+  const { t } = useI18n();
   const [stages, setStages] = useState<any[]>(system.lifecycleStages || []);
   const [editingStage, setEditingStage] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
@@ -756,13 +761,13 @@ const LifecycleTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
                       onClick={handleCancel}
                       className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => handleSave(stage.id, stage.stage)}
                       className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
                     >
-                      Save
+                      {t('common.save')}
                     </button>
                   </div>
                 </div>
@@ -794,6 +799,7 @@ const LifecycleTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
 // Assessments Tab Component
 const AssessmentsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [assessments, setAssessments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -816,7 +822,7 @@ const AssessmentsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading assessments...</div>;
+    return <div className="text-center py-8">{t('common.loading')}...</div>;
   }
 
   return (
@@ -951,6 +957,7 @@ const AssessmentsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
 // Risk Activities Tab Component
 const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [riskActivities, setRiskActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -1002,7 +1009,7 @@ const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading risk activities...</div>;
+    return <div className="text-center py-8">{t('common.loading')}...</div>;
   }
 
   return (
@@ -1119,6 +1126,7 @@ const RiskActivitiesTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
 // Actors Tab Component
 const ActorsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [actors, setActors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -1166,7 +1174,7 @@ const ActorsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading actors...</div>;
+    return <div className="text-center py-8">{t('common.loading')}...</div>;
   }
 
   return (
@@ -1253,6 +1261,7 @@ const ActorsTab: React.FC<any> = ({ systemId, system, onRefresh }) => {
 // Create Assessment Modal Component
 const CreateAssessmentModal: React.FC<any> = ({ systemId, system, onClose }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [formData, setFormData] = useState(() => {
     // Auto-populate from core functions
     let functionScores: any = { GOVERN: 0, MAP: 0, MEASURE: 0, MANAGE: 0 };
@@ -1397,13 +1406,13 @@ const CreateAssessmentModal: React.FC<any> = ({ systemId, system, onClose }) => 
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700"
             >
-              Create Assessment
+              {t('common.create')} Assessment
             </button>
           </div>
         </form>

@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Activity,
   Plus,
@@ -139,6 +140,7 @@ function scoreColor(score: number): string {
 // ── Component ───────────────────────────────────────────────────────────────
 
 const BusinessImpactAnalysis: React.FC = () => {
+  const { t } = useI18n();
   const [processes, setProcesses] = useState<BusinessProcess[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -248,7 +250,7 @@ const BusinessImpactAnalysis: React.FC = () => {
   const tabItems: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'processes', label: 'Process Registry', icon: <Building className="w-4 h-4" /> },
     { id: 'impact', label: 'Impact Analysis', icon: <TrendingDown className="w-4 h-4" /> },
-    { id: 'dependencies', label: 'Dependencies', icon: <Link2 className="w-4 h-4" /> },
+    { id: 'dependencies', label: t('bia.dependencies'), icon: <Link2 className="w-4 h-4" /> },
     { id: 'prioritization', label: 'Prioritization', icon: <BarChart3 className="w-4 h-4" /> },
   ];
 
@@ -262,7 +264,7 @@ const BusinessImpactAnalysis: React.FC = () => {
           <div className="flex items-center gap-3">
             <Activity className="w-6 h-6 text-orange-600 dark:text-orange-400" />
             <div>
-              <h1 className="text-xl font-bold text-surface-900 dark:text-surface-100">Business Impact Analysis</h1>
+              <h1 className="text-xl font-bold text-surface-900 dark:text-surface-100">{t('bia.title')}</h1>
               <p className="text-sm text-surface-500 dark:text-surface-400">Assess and manage business continuity requirements</p>
             </div>
           </div>
@@ -298,10 +300,10 @@ const BusinessImpactAnalysis: React.FC = () => {
 
         {/* Tabs */}
         <div className="flex items-center gap-1 bg-surface-100 dark:bg-surface-700 rounded-lg p-0.5 w-fit">
-          {tabItems.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === t.id ? 'bg-white dark:bg-surface-600 text-surface-900 dark:text-surface-100 shadow-sm' : 'text-surface-500 dark:text-surface-400 hover:text-surface-700'}`}>
-              {t.icon}{t.label}
+          {tabItems.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-white dark:bg-surface-600 text-surface-900 dark:text-surface-100 shadow-sm' : 'text-surface-500 dark:text-surface-400 hover:text-surface-700'}`}>
+              {tab.icon}{tab.label}
             </button>
           ))}
         </div>
@@ -318,7 +320,7 @@ const BusinessImpactAnalysis: React.FC = () => {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <RefreshCw className="w-6 h-6 text-orange-600 animate-spin" />
-          <span className="ml-3 text-sm text-surface-500 dark:text-surface-400">Loading processes...</span>
+          <span className="ml-3 text-sm text-surface-500 dark:text-surface-400">{t('common.loading')}</span>
         </div>
       ) : (
         <div className="p-6">
@@ -439,7 +441,7 @@ const BusinessImpactAnalysis: React.FC = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-2">Dependencies ({(selectedProcess.dependencies || []).length})</h3>
+                    <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-2">{t('bia.dependencies')} ({(selectedProcess.dependencies || []).length})</h3>
                     {(!selectedProcess.dependencies || selectedProcess.dependencies.length === 0) ? (
                       <p className="text-sm text-surface-500">No dependencies recorded</p>
                     ) : (
@@ -557,7 +559,7 @@ const BusinessImpactAnalysis: React.FC = () => {
                       <th className="text-left py-2 px-3 text-surface-500 font-medium">#</th>
                       <th className="text-left py-2 px-3 text-surface-500 font-medium">Process</th>
                       <th className="text-left py-2 px-3 text-surface-500 font-medium">Department</th>
-                      <th className="text-center py-2 px-3 text-surface-500 font-medium">Criticality</th>
+                      <th className="text-center py-2 px-3 text-surface-500 font-medium">{t('bia.criticalityRating')}</th>
                       <th className="text-center py-2 px-3 text-surface-500 font-medium">RTO</th>
                       <th className="text-center py-2 px-3 text-surface-500 font-medium">RPO</th>
                       <th className="text-center py-2 px-3 text-surface-500 font-medium">MTPD</th>
@@ -615,18 +617,18 @@ const BusinessImpactAnalysis: React.FC = () => {
               {impactStep === 0 && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Process Name <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">{t('bia.processName')} <span className="text-red-500">*</span></label>
                     <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g., Customer Data Processing"
                       className="w-full px-3 py-2 border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 text-sm focus:ring-2 focus:ring-orange-500" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Description</label>
+                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">{t('common.description')}</label>
                     <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2}
                       className="w-full px-3 py-2 border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 text-sm resize-none" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Owner</label>
+                      <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">{t('common.owner')}</label>
                       <input type="text" value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))}
                         className="w-full px-3 py-2 border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 text-sm" />
                     </div>
@@ -725,7 +727,7 @@ const BusinessImpactAnalysis: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <button onClick={() => { setShowModal(false); setEditingProcess(null); setForm(emptyForm); }}
-                  className="px-4 py-2 text-sm text-surface-600 dark:text-surface-400">Cancel</button>
+                  className="px-4 py-2 text-sm text-surface-600 dark:text-surface-400">{t('common.cancel')}</button>
                 {impactStep === 0 ? (
                   <button onClick={() => setImpactStep(1)} disabled={!form.name.trim()}
                     className="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed rounded-lg flex items-center gap-1">

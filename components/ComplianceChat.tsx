@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { canAccessView, normalizePlan, VIEW_TO_FEATURE } from '../constants/tierFeatures';
 import { toast } from 'sonner';
 import { useDraggable } from '../hooks/useDraggable';
+import { useI18n } from '../contexts/I18nContext';
 
 interface ComplianceChatProps {
   onNavigate?: (view: string) => void;
@@ -70,6 +71,7 @@ const VIEW_DISPLAY_NAMES: Record<string, string> = {
 
 export const ComplianceChat: React.FC<ComplianceChatProps> = ({ onNavigate, currentView }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const userPlan = normalizePlan(user?.organization?.plan);
   const [isOpen, setIsOpen] = useState(false);
   const { position, isDragging, hasDragged, handleMouseDown, style: dragStyle } = useDraggable({

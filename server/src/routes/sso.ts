@@ -40,7 +40,7 @@ router.post(
       const samlResponseXml = Buffer.from(SAMLResponse, 'base64').toString('utf-8');
 
       // Extract NameID and attributes from the SAML response
-      // In production, use a full SAML library (e.g., saml2-js or passport-saml) for
+      // For SAML XML verification, configure a full SAML library (e.g., saml2-js or passport-saml) for
       // proper signature verification. This implementation provides structural parsing.
       const nameIdMatch = samlResponseXml.match(/<(?:saml2?:)?NameID[^>]*>([^<]+)<\/(?:saml2?:)?NameID>/);
       const issuerMatch = samlResponseXml.match(/<(?:saml2?:)?Issuer[^>]*>([^<]+)<\/(?:saml2?:)?Issuer>/);

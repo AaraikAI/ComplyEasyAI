@@ -4,6 +4,7 @@
  * Controls, testing, deficiencies, walkthroughs, and ICFR reporting
  */
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft, Shield, CheckCircle, AlertTriangle, XCircle, Search, Plus, X,
@@ -51,6 +52,7 @@ interface Walkthrough {
 
 // ── Component ──────────────────────────────────────────────────────────
 export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -197,13 +199,13 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
         <div className="bg-slate-800 rounded-lg p-5 border border-slate-700">
           <h3 className="text-lg font-semibold text-white mb-4">Recent Testing Activity</h3>
           <div className="space-y-3">
-            {tests.slice(0, 5).map(t => (
-              <div key={t.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+            {tests.slice(0, 5).map(tr => (
+              <div key={tr.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
                 <div>
-                  <div className="text-sm font-medium text-white">{t.controlId}: {t.controlTitle.slice(0, 35)}...</div>
-                  <div className="text-xs text-slate-400">{t.tester} · {t.testDate}</div>
+                  <div className="text-sm font-medium text-white">{tr.controlId}: {tr.controlTitle.slice(0, 35)}...</div>
+                  <div className="text-xs text-slate-400">{tr.tester} · {tr.testDate}</div>
                 </div>
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${resultBg(t.result)}`}>{t.result}</span>
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${resultBg(tr.result)}`}>{tr.result}</span>
               </div>
             ))}
           </div>
@@ -235,7 +237,7 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input type="text" placeholder="Search controls..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          <input type="text" placeholder={t('common.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
         </div>
         <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm">
           <option value="all">All Categories</option>
@@ -286,7 +288,7 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
       <div className="flex items-center justify-between">
         <div className="flex gap-4">
           {['Pass', 'Fail', 'Exception'].map(r => {
-            const count = tests.filter(t => t.result === r).length;
+            const count = tests.filter(tr => tr.result === r).length;
             return <div key={r} className="bg-slate-800 rounded-lg px-4 py-2 border border-slate-700"><span className="text-xs text-slate-400">{r}</span><div className={`text-xl font-bold ${r === 'Pass' ? 'text-emerald-400' : r === 'Fail' ? 'text-red-400' : 'text-amber-400'}`}>{count}</div></div>;
           })}
         </div>
@@ -301,15 +303,15 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
             ))}
           </tr></thead>
           <tbody>
-            {tests.map(t => (
-              <tr key={t.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                <td className="px-4 py-3"><div className="text-blue-400 font-mono text-xs">{t.controlId}</div><div className="text-white text-xs">{t.controlTitle.slice(0, 30)}...</div></td>
-                <td className="px-4 py-3 text-slate-300">{t.tester}</td>
-                <td className="px-4 py-3 text-slate-300">{t.methodology}</td>
-                <td className="px-4 py-3 text-slate-400">{t.sampleSize || 'N/A'}</td>
-                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${resultBg(t.result)}`}>{t.result}</span></td>
-                <td className="px-4 py-3 text-slate-400">{t.testDate}</td>
-                <td className="px-4 py-3 text-slate-300 text-xs max-w-[200px] truncate">{t.findings}</td>
+            {tests.map(tr => (
+              <tr key={tr.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                <td className="px-4 py-3"><div className="text-blue-400 font-mono text-xs">{tr.controlId}</div><div className="text-white text-xs">{tr.controlTitle.slice(0, 30)}...</div></td>
+                <td className="px-4 py-3 text-slate-300">{tr.tester}</td>
+                <td className="px-4 py-3 text-slate-300">{tr.methodology}</td>
+                <td className="px-4 py-3 text-slate-400">{tr.sampleSize || 'N/A'}</td>
+                <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${resultBg(tr.result)}`}>{tr.result}</span></td>
+                <td className="px-4 py-3 text-slate-400">{tr.testDate}</td>
+                <td className="px-4 py-3 text-slate-300 text-xs max-w-[200px] truncate">{tr.findings}</td>
               </tr>
             ))}
           </tbody>
@@ -473,7 +475,7 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
           <div><label className="block text-sm text-slate-400 mb-1">Owner</label><input type="text" placeholder="Control owner" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" /></div>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => setShowCreateControl(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
+          <button onClick={() => setShowCreateControl(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">{t('common.cancel')}</button>
           <button onClick={async () => {
             try { await api.sox.createControl({ status: 'Active' }); setShowCreateControl(false); loadData(); } catch { setShowCreateControl(false); }
           }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create Control</button>
@@ -548,13 +550,13 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
       <div className="p-6">
         <div className="flex items-center gap-4 mb-6">
           <button onClick={onBack} className="p-2 hover:bg-slate-800 rounded-lg"><ArrowLeft size={20} /></button>
-          <div><h1 className="text-2xl font-bold">SOX Compliance</h1><p className="text-sm text-slate-400">Sarbanes-Oxley Section 404 Internal Controls Management</p></div>
+          <div><h1 className="text-2xl font-bold">SOX Compliance</h1><p className="text-sm text-slate-400">{t('controls.title')}</p></div>
         </div>
 
         <div className="flex gap-1 mb-6 border-b border-slate-700 overflow-x-auto">
-          {tabs.map(t => (
-            <button key={t.key} onClick={() => setActiveTab(t.key)} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === t.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>
-              {t.icon}{t.label}
+          {tabs.map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>
+              {tab.icon}{tab.label}
             </button>
           ))}
         </div>
@@ -585,7 +587,7 @@ export const SOXComplianceDashboard: React.FC<{ onBack: () => void }> = ({ onBac
               <div><label className="block text-sm text-slate-400 mb-1">Findings</label><textarea placeholder="Describe test findings..." className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm h-20 resize-none" /></div>
             </div>
             <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-              <button onClick={() => setShowCreateTest(false)} className="px-4 py-2 text-sm text-slate-400">Cancel</button>
+              <button onClick={() => setShowCreateTest(false)} className="px-4 py-2 text-sm text-slate-400">{t('common.cancel')}</button>
               <button onClick={async () => {
                 try { await api.sox.createTestResult({}); setShowCreateTest(false); loadData(); } catch { setShowCreateTest(false); }
               }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Create Test</button>

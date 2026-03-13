@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { 
   ArrowLeft, FileText, Plus, Search, Filter, Calendar, 
   TrendingUp, BarChart3, Download, Eye, Edit, Trash2, X
@@ -14,6 +15,7 @@ interface AIRMFAssessmentsProps {
 
 export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onViewSystem }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [allAssessments, setAllAssessments] = useState<any[]>([]);
   const [systems, setSystems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,7 +146,7 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Search assessments..."
+              placeholder={`${t('common.search')}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -177,7 +179,7 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <div className="text-sm text-gray-500">Total Assessments</div>
+          <div className="text-sm text-gray-500">{t('common.total')} Assessments</div>
           <div className="text-2xl font-bold text-gray-900 mt-1">{allAssessments.length}</div>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
@@ -216,7 +218,7 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
       {filteredAssessments.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
           <FileText className="mx-auto mb-4 text-gray-400" size={64} />
-          <h3 className="text-lg font-bold text-gray-900 mb-2">No Assessments Found</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">{t('common.noResults')}</h3>
           <p className="text-gray-500 mb-6">
             {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
               ? 'Try adjusting your filters'
@@ -393,12 +395,13 @@ export const AIRMFAssessments: React.FC<AIRMFAssessmentsProps> = ({ onBack, onVi
 
 // Assessment Detail Modal
 const AssessmentDetailModal: React.FC<any> = ({ assessment, onClose }) => {
+  const { t } = useI18n();
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white">
           <h3 className="text-xl font-bold text-gray-900">
-            Assessment Details
+            Assessment {t('common.details')}
           </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={24} />
@@ -411,7 +414,7 @@ const AssessmentDetailModal: React.FC<any> = ({ assessment, onClose }) => {
               <div className="font-medium text-gray-900">{assessment.assessmentType.replace(/_/g, ' ')}</div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">Status</div>
+              <div className="text-sm text-gray-500">{t('common.status')}</div>
               <div className="font-medium text-gray-900">{assessment.status}</div>
             </div>
             <div>
@@ -523,7 +526,7 @@ const AssessmentDetailModal: React.FC<any> = ({ assessment, onClose }) => {
               onClick={onClose}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              Close
+              {t('common.close')}
             </button>
           </div>
         </div>
@@ -535,6 +538,7 @@ const AssessmentDetailModal: React.FC<any> = ({ assessment, onClose }) => {
 // Create Assessment Modal (Enhanced)
 const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [selectedSystemData, setSelectedSystemData] = useState<any>(null);
   const [formData, setFormData] = useState({
     systemId: '',
@@ -606,7 +610,7 @@ const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white">
-          <h3 className="text-xl font-bold text-gray-900">Create Assessment</h3>
+          <h3 className="text-xl font-bold text-gray-900">{t('common.create')} Assessment</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={24} />
           </button>
@@ -859,14 +863,14 @@ const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={submitting}
               className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
             >
-              {submitting ? 'Creating...' : 'Create Assessment'}
+              {submitting ? `${t('common.loading')}...` : `${t('common.create')} Assessment`}
             </button>
           </div>
         </form>

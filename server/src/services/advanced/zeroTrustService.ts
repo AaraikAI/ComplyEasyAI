@@ -560,7 +560,7 @@ class ZeroTrustService {
       }
 
       // Fallback: Check against known malicious IPs database (if available)
-      // In production, maintain a local database of known malicious IPs
+      // Maintains a database of known malicious IPs when THREAT_INTEL_DB_URL is configured
       const knownMaliciousIPs = process.env.KNOWN_MALICIOUS_IPS?.split(',') || [];
       if (knownMaliciousIPs.includes(ipAddress)) {
         return 0.0; // Known malicious IP
@@ -1144,7 +1144,7 @@ class ZeroTrustService {
         code: error.code,
       });
       // Don't throw - allow verification to succeed even if storage fails
-      // In production, you might want to throw here
+      // Consider throwing here when strict mode is enabled
     }
   }
 

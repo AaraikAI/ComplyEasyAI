@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft, Package, Shield, CheckCircle, Clock, AlertTriangle,
@@ -405,6 +406,7 @@ const getMilestoneStyles = (status: string): string => {
 // ---------------------------------------------------------------------------
 
 export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabId>('portfolio');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -517,7 +519,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Products</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('common.total')} Products</span>
             <Package className="w-5 h-5 text-indigo-500" />
           </div>
           <div className="text-3xl font-bold text-gray-900 dark:text-white">{portfolioStats.total}</div>
@@ -578,13 +580,13 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search products..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+          <input type="text" placeholder={`${t('common.search')}...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
         </div>
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
           className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-          <option value="all">All Types</option>
-          {productTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          <option value="all">{t('common.all')} Types</option>
+          {productTypes.map(pt => <option key={pt} value={pt}>{pt}</option>)}
         </select>
         {(stageFilter !== 'all' || typeFilter !== 'all' || searchQuery) && (
           <button onClick={() => { setStageFilter('all'); setTypeFilter('all'); setSearchQuery(''); }}
@@ -721,7 +723,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
               </span>
             </div>
             <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Owner</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('common.owner')}</div>
               <div className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-gray-400" />
                 <span className="text-sm text-gray-900 dark:text-white">{product.owner}</span>
@@ -782,7 +784,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
                   {expandedMilestones.has(ms.id) && (
                     <div className="mt-3 pl-8 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300">
                       <p>{ms.notes}</p>
-                      {ms.approvalDate && <p className="text-xs text-gray-400 mt-2">Approved: {ms.approvalDate}</p>}
+                      {ms.approvalDate && <p className="text-xs text-gray-400 mt-2">{t('common.approved')}: {ms.approvalDate}</p>}
                     </div>
                   )}
                 </div>
@@ -845,7 +847,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
                   <span className="text-sm text-indigo-600">{eolPolicy.migrationPath}</span>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('common.status')}</div>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                     eolPolicy.status === 'completed' ? 'bg-green-100 text-green-800' :
                     eolPolicy.status === 'active' ? 'bg-orange-100 text-orange-800' :
@@ -1025,7 +1027,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
                           <p className={`text-sm ${req.completed ? 'text-gray-500 line-through' : 'text-gray-900 dark:text-white'}`}>{req.title}</p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-xs text-gray-400">{req.category}</span>
-                            {req.mandatory && <span className="text-xs px-1.5 py-0.5 rounded bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400">Required</span>}
+                            {req.mandatory && <span className="text-xs px-1.5 py-0.5 rounded bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400">{t('common.required')}</span>}
                             {req.dueDate && !req.completed && <span className="text-xs text-orange-500 flex items-center gap-0.5"><Clock className="w-3 h-3" /> {req.dueDate}</span>}
                           </div>
                         </div>
@@ -1065,7 +1067,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
             <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Product:</span>
             <select value={product?.id || ''} onChange={e => { const p = PRODUCTS.find(pr => pr.id === e.target.value); setSelectedProduct(p || null); }}
               className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm flex-1">
-              <option value="">All Products</option>
+              <option value="">{t('common.all')} Products</option>
               {PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name} ({p.type})</option>)}
             </select>
           </div>
@@ -1125,7 +1127,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
                   <thead>
                     <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
                       <th className="px-5 py-2.5 text-left font-medium">Requirement</th>
-                      <th className="px-5 py-2.5 text-center font-medium">Status</th>
+                      <th className="px-5 py-2.5 text-center font-medium">{t('common.status')}</th>
                       <th className="px-5 py-2.5 text-center font-medium">Applicable Stages</th>
                       <th className="px-5 py-2.5 text-center font-medium">Due Date</th>
                       <th className="px-5 py-2.5 text-center font-medium">Evidence</th>
@@ -1186,7 +1188,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
             <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Product:</span>
             <select value={selectedProduct?.id || ''} onChange={e => { const p = PRODUCTS.find(pr => pr.id === e.target.value); setSelectedProduct(p || null); }}
               className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-              <option value="">All Products</option>
+              <option value="">{t('common.all')} Products</option>
               {PRODUCTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
@@ -1194,7 +1196,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
             <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Stage:</span>
             <select value={docStageFilter} onChange={e => setDocStageFilter(e.target.value as LifecycleStage | 'all')}
               className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-              <option value="all">All Stages</option>
+              <option value="all">{t('common.all')} Stages</option>
               {STAGE_ORDER.map(s => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
             </select>
           </div>
@@ -1208,7 +1210,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
             { label: 'Total Documents', value: docs.length, icon: <FileText className="w-5 h-5 text-indigo-500" /> },
-            { label: 'Approved', value: docs.filter(d => d.status === 'approved').length, icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
+            { label: t('common.approved'), value: docs.filter(d => d.status === 'approved').length, icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
             { label: 'In Review', value: docs.filter(d => d.status === 'review').length, icon: <Clock className="w-5 h-5 text-blue-500" /> },
             { label: 'Drafts', value: docs.filter(d => d.status === 'draft').length, icon: <Edit3 className="w-5 h-5 text-yellow-500" /> },
           ].map(stat => (
@@ -1235,13 +1237,13 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
               <thead>
                 <tr className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
                   <th className="px-5 py-2.5 text-left font-medium">Document</th>
-                  <th className="px-5 py-2.5 text-center font-medium">Type</th>
+                  <th className="px-5 py-2.5 text-center font-medium">{t('common.type')}</th>
                   <th className="px-5 py-2.5 text-center font-medium">Stage</th>
-                  <th className="px-5 py-2.5 text-center font-medium">Version</th>
-                  <th className="px-5 py-2.5 text-center font-medium">Status</th>
+                  <th className="px-5 py-2.5 text-center font-medium">{t('common.version')}</th>
+                  <th className="px-5 py-2.5 text-center font-medium">{t('common.status')}</th>
                   <th className="px-5 py-2.5 text-center font-medium">Uploaded</th>
                   <th className="px-5 py-2.5 text-center font-medium">Size</th>
-                  <th className="px-5 py-2.5 text-center font-medium">Actions</th>
+                  <th className="px-5 py-2.5 text-center font-medium">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -1350,7 +1352,7 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
         {isLoading && (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-500">Loading data...</span>
+            <span className="ml-3 text-gray-500">{t('common.loading')}...</span>
           </div>
         )}
         {loadError && (

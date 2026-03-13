@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   Recycle, Leaf, Package, FileText, CheckCircle, AlertTriangle,
@@ -285,6 +286,7 @@ const renderScoreBar = (score: number, max: number = 100, color?: string) => (
 // ── Component ────────────────────────────────────────────────────────────
 
 export const EcodesignDashboard: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [products, setProducts] = useState<EcoProduct[]>(DEFAULT_PRODUCTS);
   const [passports, setPassports] = useState<DigitalProductPassport[]>(DEFAULT_PASSPORTS);
@@ -865,7 +867,7 @@ export const EcodesignDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Ecodesign for Sustainable Products</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.ecodesign')}</h2>
           <p className="text-gray-600 mt-1">Manage compliance with the ESPR (EU) 2024/1781 and Digital Product Passports</p>
         </div>
         <div className="flex gap-3">
