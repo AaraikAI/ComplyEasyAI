@@ -6,7 +6,10 @@ import multer from 'multer';
 import { requireAcosFeature, requireVisionaryFeature, requireFeature } from '../middleware/tierMiddleware';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB max for audio/video/evidence files
+});
 
 // All routes require authentication and Growth+ tier for aCOS features
 router.use(authenticate);

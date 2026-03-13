@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { TierName, TIER_ORDER } from '../types';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 
 // ============================================================================
 // TYPES
@@ -106,6 +107,7 @@ const DemoBookingForm: React.FC<DemoBookingFormProps> = ({
   preselectedTier,
   source = 'pricing_page',
 }) => {
+  const { t } = useI18n();
   const [step, setStep] = useState<'form' | 'submitting' | 'success' | 'error'>('form');
   const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState<DemoFormData>({
@@ -470,7 +472,7 @@ const DemoBookingForm: React.FC<DemoBookingFormProps> = ({
                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                 >
                   <Send size={20} />
-                  Request Demo
+                  {t('common.submit')}
                 </button>
                 <p className="text-xs text-gray-500 text-center mt-3">
                   By submitting, you agree to our Privacy Policy. We'll respond within 24 hours.
@@ -482,7 +484,7 @@ const DemoBookingForm: React.FC<DemoBookingFormProps> = ({
           {step === 'submitting' && (
             <div className="py-16 flex flex-col items-center justify-center">
               <Loader2 size={48} className="text-indigo-600 animate-spin mb-4" />
-              <p className="text-lg text-gray-600">Submitting your request...</p>
+              <p className="text-lg text-gray-600">{t('common.loading')}</p>
             </div>
           )}
 
@@ -503,7 +505,7 @@ const DemoBookingForm: React.FC<DemoBookingFormProps> = ({
                 onClick={onClose}
                 className="bg-gray-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition-colors"
               >
-                Close
+                {t('common.close')}
               </button>
             </div>
           )}
@@ -528,7 +530,7 @@ const DemoBookingForm: React.FC<DemoBookingFormProps> = ({
                   onClick={onClose}
                   className="bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition-colors"
                 >
-                  Close
+                  {t('common.close')}
                 </button>
               </div>
             </div>

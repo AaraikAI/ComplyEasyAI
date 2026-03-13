@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Shield,
   X,
@@ -117,6 +118,7 @@ async function syncPreferencesToApi(prefs: CookiePreferences): Promise<void> {
 // ── Component ───────────────────────────────────────────────────────────────
 
 const CookieConsentBanner: React.FC = () => {
+  const { t } = useI18n();
   const [visible, setVisible] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<CookieCategory | null>(null);
@@ -258,7 +260,7 @@ const CookieConsentBanner: React.FC = () => {
               <div className="flex items-start gap-3 flex-1">
                 <Shield className="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h2 className="text-sm font-medium text-white mb-1">We value your privacy</h2>
+                  <h2 className="text-sm font-medium text-white mb-1">{t('privacy.cookieConsent')}</h2>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     We use cookies to enhance your browsing experience, serve personalized content, and analyze our
                     traffic. By clicking &quot;Accept All&quot;, you consent to our use of cookies. You can customize
@@ -290,7 +292,7 @@ const CookieConsentBanner: React.FC = () => {
                   aria-label="Accept all cookies"
                   className="flex-1 sm:flex-initial px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
                 >
-                  {saving ? 'Saving...' : 'Accept All'}
+                  {saving ? `${t('common.loading')}...` : 'Accept All'}
                 </button>
               </div>
             </div>
@@ -300,11 +302,11 @@ const CookieConsentBanner: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Settings className="w-5 h-5 text-blue-400" />
-                  <h2 className="text-sm font-medium text-white">Customize Cookie Preferences</h2>
+                  <h2 className="text-sm font-medium text-white">{t('privacy.cookieConsent')}</h2>
                 </div>
                 <button
                   onClick={() => setShowCustomize(false)}
-                  aria-label="Close customization panel"
+                  aria-label={t('common.close')}
                   className="p-1.5 text-slate-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
                 >
                   <X className="w-4 h-4" />
@@ -399,7 +401,7 @@ const CookieConsentBanner: React.FC = () => {
                   className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800"
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
-                  {saving ? 'Saving...' : 'Save Preferences'}
+                  {saving ? `${t('common.loading')}...` : t('common.save')}
                 </button>
                 <button
                   onClick={handleAcceptAll}

@@ -39,6 +39,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 interface Metric {
   id: string;
@@ -62,6 +63,7 @@ interface ChartData {
 
 const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [timeRange, setTimeRange] = useState<'1h' | '24h' | '7d' | '30d'>('24h');
@@ -444,7 +446,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             title="Risk Distribution"
             type="pie"
             data={{
-              labels: ['Critical', 'High', 'Medium', 'Low'],
+              labels: [t('risks.critical'), t('risks.high'), t('risks.medium'), t('risks.low')],
               datasets: [{
                 label: 'Risks',
                 data: [
@@ -565,7 +567,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               className="px-3 py-1 text-sm text-slate-600 hover:bg-slate-50 rounded-lg flex items-center gap-1"
             >
               <Download className="w-4 h-4" />
-              Export
+              {t('common.export')}
             </button>
           </div>
           <ActivityFeed />
@@ -602,6 +604,7 @@ const MetricCard: React.FC<{ metric: Metric }> = ({ metric }) => {
 };
 
 const ChartCard: React.FC<{ title: string; type: 'line' | 'bar' | 'pie'; data: ChartData }> = ({ title, type, data }) => {
+  const { t } = useI18n();
   const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#06b6d4'];
 
   const renderChart = () => {
@@ -609,7 +612,7 @@ const ChartCard: React.FC<{ title: string; type: 'line' | 'bar' | 'pie'; data: C
       return (
         <div className="text-center text-slate-500 py-12">
           <BarChart3 className="w-12 h-12 mx-auto mb-2 text-slate-400" />
-          <p className="text-sm">No data available</p>
+          <p className="text-sm">{t('common.noResults')}</p>
         </div>
       );
     }

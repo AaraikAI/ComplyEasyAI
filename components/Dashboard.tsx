@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { ComplianceFramework, ViewState, RiskItem } from '../types';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
+import { useI18n } from '../contexts/I18nContext';
 import { toast } from 'sonner';
 import { api } from '../services/api';
 
@@ -78,6 +79,7 @@ const generateTrendDataLocal = (frameworks: ComplianceFramework[]) => {
 };
 
 export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavigate }) => {
+  const { t } = useI18n();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartReady, setChartReady] = useState(false);
   const [trendData, setTrendData] = useState<{ name: string; score: number }[]>([]);
@@ -282,7 +284,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/15 hover:bg-white/25 backdrop-blur-sm rounded-xl text-sm font-semibold transition-all border border-white/20"
             >
               <Zap size={16} />
-              Quick Actions
+              {t('dashboard.quickActions')}
               <ChevronDown size={14} className={`transition-transform ${quickActionsOpen ? 'rotate-180' : ''}`} />
             </button>
             {quickActionsOpen && (
@@ -341,7 +343,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
             </div>
             {/* Text */}
             <div className="min-w-0">
-              <p className="text-sm font-medium text-surface-500">Compliance Score</p>
+              <p className="text-sm font-medium text-surface-500">{t('dashboard.complianceScore')}</p>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <TrendingUp size={14} className="text-accent-500" />
                 <span className="text-sm font-semibold text-accent-600">+4%</span>
@@ -390,7 +392,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
               <Layers size={20} className="text-brand-500" />
             </div>
           </div>
-          <p className="text-sm font-medium text-surface-500 group-hover:text-brand-600 transition-colors">Active Frameworks</p>
+          <p className="text-sm font-medium text-surface-500 group-hover:text-brand-600 transition-colors">{t('dashboard.activeFrameworks')}</p>
           <h3 className="text-3xl font-bold text-surface-900 mt-0.5">{activeCount}</h3>
           <div className="mt-3 flex items-center text-sm">
             <span className="text-surface-500 truncate">{frameworks.map(f => f.name).join(', ') || 'None added'}</span>
@@ -471,7 +473,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
         <div className="lg:col-span-2 bg-white dark:bg-surface-800 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700 p-6 animate-fadeInUp" style={{ animationDelay: '200ms' }}>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-surface-800">Compliance Readiness Trend</h3>
+              <h3 className="text-lg font-bold text-surface-800">{t('dashboard.complianceTrend')}</h3>
               <p className="text-sm text-surface-400 mt-0.5">6-month rolling score</p>
             </div>
             <div className="flex items-center gap-2 text-xs text-surface-400">
@@ -519,7 +521,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
               <div className="flex items-center justify-center h-full text-surface-400">
                 <div className="text-center">
                   <div className="w-8 h-8 border-2 border-brand-300 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                  <p className="text-sm">Loading chart...</p>
+                  <p className="text-sm">{t('common.loading')}</p>
                 </div>
               </div>
             ) : (
@@ -544,7 +546,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
               onClick={() => onNavigate('risks')}
               className="text-sm text-brand-600 font-semibold hover:text-brand-800 transition-colors"
             >
-              View All
+              {t('common.viewAll')}
             </button>
           </div>
           <div className="space-y-3 flex-1 custom-scrollbar overflow-y-auto">
@@ -560,7 +562,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ frameworks, risks, onNavig
                     risk.severity === 'High' ? 'bg-red-100 text-red-700' :
                     risk.severity === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-brand-100 text-brand-700'
                   }`}>
-                    {risk.severity}
+                    {risk.severity === 'High' ? t('risks.high') : risk.severity === 'Medium' ? t('risks.medium') : risk.severity === 'Low' ? t('risks.low') : risk.severity}
                   </span>
                   <div className="flex items-center gap-1 text-xs text-surface-400">
                     <Clock size={12} />

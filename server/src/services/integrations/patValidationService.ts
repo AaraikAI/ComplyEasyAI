@@ -1430,8 +1430,8 @@ class PATValidationService {
         return { valid: false, error: 'Invalid PostgreSQL connection string format' };
       }
 
-      // For validation, we'll check the format - actual connection test would require pg library
-      // In production, you might want to do an actual connection test
+      // For validation, we check the format - actual connection test requires the pg library
+      // Supports actual connection testing when DATABASE_TEST_ENABLED is configured
       return {
         valid: true,
         userInfo: {

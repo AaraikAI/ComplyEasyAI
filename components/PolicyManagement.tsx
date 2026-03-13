@@ -15,6 +15,7 @@ import {
   Tooltip, Legend,
 } from 'recharts';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -110,6 +111,7 @@ interface PolicyManagementProps {
 
 const PolicyManagement: React.FC<PolicyManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const plan = user?.organization?.plan;
 
   // Data
@@ -466,12 +468,12 @@ ${policy.content.substring(0, 3000)}`;
       ? sortDir === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
       : <ChevronDown size={14} className="opacity-30" />;
 
-  const applyTemplate = (t: PolicyTemplate) => {
+  const applyTemplate = (tpl: PolicyTemplate) => {
     setPolicyForm(prev => ({
       ...prev,
-      title: t.title,
-      category: t.category,
-      content: t.content,
+      title: tpl.title,
+      category: tpl.category,
+      content: tpl.content,
     }));
     setViewMode('create');
   };
@@ -486,7 +488,7 @@ ${policy.content.substring(0, 3000)}`;
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="animate-spin text-brand-600" size={32} />
-        <span className="ml-3 text-gray-600">Loading policy management...</span>
+        <span className="ml-3 text-gray-600">{t('common.loading')}</span>
       </div>
     );
   }
@@ -511,11 +513,11 @@ ${policy.content.substring(0, 3000)}`;
         {/* Stats cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">Total Policies</div>
+            <div className="text-sm text-gray-500">{t('policies.title')}</div>
             <div className="text-2xl font-bold mt-1">{metrics.total}</div>
           </div>
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-sm text-gray-500">Approved</div>
+            <div className="text-sm text-gray-500">{t('common.approved')}</div>
             <div className="text-2xl font-bold mt-1 text-green-600">{metrics.byStatus.approved}</div>
           </div>
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
@@ -607,7 +609,7 @@ ${policy.content.substring(0, 3000)}`;
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Search policies..."
+          <input type="text" placeholder={`${t('common.search')}...`}
             value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500" />
         </div>
@@ -637,23 +639,23 @@ ${policy.content.substring(0, 3000)}`;
                   <span className="flex items-center gap-1">Title <SortIcon field="title" /></span>
                 </th>
                 <th className="text-left px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('category')}>
-                  <span className="flex items-center gap-1">Category <SortIcon field="category" /></span>
+                  <span className="flex items-center gap-1">{t('common.category')} <SortIcon field="category" /></span>
                 </th>
                 <th className="text-left px-4 py-3">Framework</th>
                 <th className="text-left px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('status')}>
-                  <span className="flex items-center gap-1">Status <SortIcon field="status" /></span>
+                  <span className="flex items-center gap-1">{t('common.status')} <SortIcon field="status" /></span>
                 </th>
-                <th className="text-left px-4 py-3">Version</th>
+                <th className="text-left px-4 py-3">{t('common.version')}</th>
                 <th className="text-left px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('updatedAt')}>
                   <span className="flex items-center gap-1">Updated <SortIcon field="updatedAt" /></span>
                 </th>
-                <th className="text-right px-4 py-3">Actions</th>
+                <th className="text-right px-4 py-3">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sortedPolicies.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-12 text-gray-400">
-                  {policies.length === 0 ? 'No policies yet. Create your first policy or generate one with AI.' : 'No policies match your filters.'}
+                  {policies.length === 0 ? 'No policies yet. Create your first policy or generate one with AI.' : t('common.noResults')}
                 </td></tr>
               ) : sortedPolicies.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50 transition-colors">
@@ -737,7 +739,7 @@ ${policy.content.substring(0, 3000)}`;
           )}
           <button onClick={() => openEdit(p)}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
-            <Edit3 size={14} /> Edit
+            <Edit3 size={14} /> {t('common.edit')}
           </button>
           <button onClick={() => handleDuplicate(p)}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
@@ -745,14 +747,14 @@ ${policy.content.substring(0, 3000)}`;
           </button>
           <button onClick={() => handleArchivePolicy(p)}
             className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50 flex items-center gap-2">
-            <Trash2 size={14} /> Archive
+            <Trash2 size={14} /> {t('common.archived')}
           </button>
         </div>
 
         {/* Metadata */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">Owner</div>
+            <div className="text-xs text-gray-500 mb-1">{t('common.owner')}</div>
             <div className="text-sm font-medium">{p.owner || 'Unassigned'}</div>
           </div>
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -760,11 +762,11 @@ ${policy.content.substring(0, 3000)}`;
             <div className="text-sm font-medium">{p.approver || 'None'}</div>
           </div>
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">Effective Date</div>
+            <div className="text-xs text-gray-500 mb-1">{t('policies.effectiveDate')}</div>
             <div className="text-sm font-medium">{p.effectiveDate ? new Date(p.effectiveDate).toLocaleDateString() : 'Not set'}</div>
           </div>
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">Review Date</div>
+            <div className="text-xs text-gray-500 mb-1">{t('policies.reviewDate')}</div>
             <div className="text-sm font-medium">{p.reviewDate ? new Date(p.reviewDate).toLocaleDateString() : 'Not set'}</div>
           </div>
         </div>
@@ -806,7 +808,7 @@ ${policy.content.substring(0, 3000)}`;
       <form onSubmit={isEdit ? handleUpdatePolicy : handleCreatePolicy} className="space-y-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-700">{isEdit ? 'Edit Policy' : 'Create New Policy'}</h3>
+            <h3 className="text-sm font-semibold text-gray-700">{isEdit ? t('policies.editPolicy') : t('policies.createPolicy')}</h3>
             {!isEdit && (
               <div className="flex gap-2">
                 <button type="button" onClick={() => setViewMode('ai-generate')}
@@ -823,12 +825,12 @@ ${policy.content.substring(0, 3000)}`;
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('policies.policyName')} *</label>
               <input required value={f.title || ''} onChange={e => setField('title', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.category')} *</label>
               <select value={f.category || ''} onChange={e => setField('category', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                 {POLICY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -841,17 +843,17 @@ ${policy.content.substring(0, 3000)}`;
                 placeholder="e.g. SOC 2, ISO 27001, GDPR" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Version</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('policies.policyVersion')}</label>
               <input value={f.version || '1.0'} onChange={e => setField('version', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Owner</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('policies.policyOwner')}</label>
               <input value={f.owner || ''} onChange={e => setField('owner', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Review Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('policies.reviewDate')}</label>
               <input type="date" value={f.reviewDate ? new Date(f.reviewDate).toISOString().split('T')[0] : ''}
                 onChange={e => setField('reviewDate', e.target.value ? new Date(e.target.value).toISOString() : undefined)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
@@ -859,7 +861,7 @@ ${policy.content.substring(0, 3000)}`;
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Summary</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
             <textarea value={f.summary || ''} onChange={e => setField('summary', e.target.value)}
               rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
               placeholder="Brief summary of the policy..." />
@@ -876,11 +878,11 @@ ${policy.content.substring(0, 3000)}`;
 
         <div className="flex items-center justify-end gap-3">
           <button type="button" onClick={() => setViewMode(isEdit ? 'detail' : 'list')}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">{t('common.cancel')}</button>
           <button type="submit" disabled={isSaving || !f.title || !f.content}
             className="px-6 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
             {isSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-            {isEdit ? 'Save Changes' : 'Create Policy'}
+            {isEdit ? t('common.save') : t('policies.createPolicy')}
           </button>
         </div>
       </form>
@@ -903,14 +905,14 @@ ${policy.content.substring(0, 3000)}`;
           <div key={category}>
             <h3 className="text-sm font-semibold text-gray-700 mb-3">{category}</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {(tpls as PolicyTemplate[]).map((t, i) => (
+              {(tpls as PolicyTemplate[]).map((tpl, i) => (
                 <div key={i} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-gray-900">{t.title}</h4>
-                    <Badge text={t.category} className="bg-blue-50 text-blue-700 border-blue-200" />
+                    <h4 className="font-medium text-gray-900">{tpl.title}</h4>
+                    <Badge text={tpl.category} className="bg-blue-50 text-blue-700 border-blue-200" />
                   </div>
-                  <p className="text-sm text-gray-500 mb-4 line-clamp-3">{t.content.substring(0, 200)}...</p>
-                  <button onClick={() => applyTemplate(t)}
+                  <p className="text-sm text-gray-500 mb-4 line-clamp-3">{tpl.content.substring(0, 200)}...</p>
+                  <button onClick={() => applyTemplate(tpl)}
                     disabled={policyLimitReached}
                     className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
                     <FileText size={14} /> Use Template
@@ -936,10 +938,10 @@ ${policy.content.substring(0, 3000)}`;
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4 h-fit">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Policy Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.type')}</label>
             <select value={aiGenType} onChange={e => setAiGenType(e.target.value)}
               className="w-full p-2 border rounded-lg text-sm">
-              {POLICY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {POLICY_TYPES.map(pt => <option key={pt} value={pt}>{pt}</option>)}
             </select>
           </div>
           <div>
@@ -958,7 +960,7 @@ ${policy.content.substring(0, 3000)}`;
           </div>
           <button onClick={handleAIGenerate} disabled={aiGenLoading}
             className="w-full bg-brand-600 text-white py-2.5 rounded-lg hover:bg-brand-700 disabled:opacity-50 flex justify-center items-center gap-2 text-sm font-medium">
-            {aiGenLoading ? <><Loader2 size={16} className="animate-spin" /> Generating...</> : <><Sparkles size={16} /> Generate Policy</>}
+            {aiGenLoading ? <><Loader2 size={16} className="animate-spin" /> {t('common.loading')}</> : <><Sparkles size={16} /> {t('policies.generatePolicy')}</>}
           </button>
         </div>
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 overflow-y-auto max-h-[70vh]">
@@ -1000,14 +1002,14 @@ ${policy.content.substring(0, 3000)}`;
         <div className="space-y-4">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
               <textarea value={aiNLDescription} onChange={e => setAiNLDescription(e.target.value)}
                 rows={6} className="w-full p-3 border rounded-lg text-sm resize-none"
                 placeholder="e.g. We need a policy that requires all employees to use MFA, change passwords every 90 days, and report lost devices within 2 hours..." />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.category')}</label>
                 <select value={aiNLCategory} onChange={e => setAiNLCategory(e.target.value)}
                   className="w-full p-2 border rounded-lg text-sm">
                   {POLICY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -1179,7 +1181,7 @@ ${policy.content.substring(0, 3000)}`;
             </button>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Policy Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('policies.title')}</h1>
             <p className="text-sm text-gray-500">{policies.length} polic{policies.length !== 1 ? 'ies' : 'y'}</p>
           </div>
         </div>
@@ -1200,7 +1202,7 @@ ${policy.content.substring(0, 3000)}`;
                 disabled={policyLimitReached}
                 title={policyLimitReached ? getUpgradeMessage(plan, 'maxPolicies', policies.length) : undefined}
                 className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 shadow-md flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                <Plus size={16} /> New Policy
+                <Plus size={16} /> {t('policies.createPolicy')}
               </button>
             </>
           )}

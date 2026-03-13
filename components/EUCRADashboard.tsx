@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   Shield, AlertTriangle, CheckCircle, X, Plus, FileText, Clock,
@@ -366,6 +367,7 @@ const formatDate = (d: string | null): string => {
 // ── Component ────────────────────────────────────────────────────────────
 
 export const EUCRADashboard: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [products, setProducts] = useState<CRAProduct[]>(DEFAULT_PRODUCTS);
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>(DEFAULT_VULNERABILITIES);
@@ -565,7 +567,7 @@ export const EUCRADashboard: React.FC = () => {
   // ── Tab definitions ──
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: 'overview', label: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
+    { key: 'overview', label: t('common.overview'), icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'products', label: 'Products', icon: <Package className="w-4 h-4" /> },
     { key: 'vulnerabilities', label: 'Vulnerabilities', icon: <Bug className="w-4 h-4" /> },
     { key: 'updates', label: 'Security Updates', icon: <RefreshCw className="w-4 h-4" /> },
@@ -785,7 +787,7 @@ export const EUCRADashboard: React.FC = () => {
               <span className="flex items-center gap-1"><Cpu className="w-4 h-4" /> {product.manufacturer}</span>
               <span className="flex items-center gap-1">
                 {product.ceMarking ? <CheckCircle className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-gray-400" />}
-                CE Marking
+                {t('euRegulations.ceMarking')}
               </span>
               <span className="flex items-center gap-1">
                 {product.sbomAvailable ? <CheckCircle className="w-4 h-4 text-green-600" /> : <X className="w-4 h-4 text-gray-400" />}
@@ -917,7 +919,7 @@ export const EUCRADashboard: React.FC = () => {
                 <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">CVE ID</th>
                 <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Title</th>
                 <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Product</th>
-                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Severity</th>
+                <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">{t('common.severity')}</th>
                 <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
                 <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Reported</th>
                 <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Actions</th>
@@ -1164,12 +1166,12 @@ export const EUCRADashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">EU Cyber Resilience Act</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.eucra')}</h2>
           <p className="text-gray-600 mt-1">Manage product security compliance with Regulation (EU) 2024/2847</p>
         </div>
         <div className="flex gap-3">
           <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-            <Download className="w-4 h-4" /> Export Report
+            <Download className="w-4 h-4" /> {t('common.export')}
           </button>
         </div>
       </div>
@@ -1210,7 +1212,7 @@ export const EUCRADashboard: React.FC = () => {
             </div>
             <form onSubmit={handleAddProduct} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} *</label>
                 <input type="text" required value={productForm.name} onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
               </div>
@@ -1254,7 +1256,7 @@ export const EUCRADashboard: React.FC = () => {
               </label>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Add Product</button>
-                <button type="button" onClick={() => setShowProductModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button type="button" onClick={() => setShowProductModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -1289,7 +1291,7 @@ export const EUCRADashboard: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Severity *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.severity')} *</label>
                   <select required value={vulnForm.severity} onChange={(e) => setVulnForm({ ...vulnForm, severity: e.target.value as VulnerabilitySeverity })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="critical">Critical</option>
@@ -1321,7 +1323,7 @@ export const EUCRADashboard: React.FC = () => {
               </label>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Report Vulnerability</button>
-                <button type="button" onClick={() => setShowVulnModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button type="button" onClick={() => setShowVulnModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -1347,7 +1349,7 @@ export const EUCRADashboard: React.FC = () => {
                     <div><label className="text-sm font-medium text-gray-700">Compliance Score</label><p className="text-gray-900 mt-1">{selectedProduct.complianceScore}%</p></div>
                     <div><label className="text-sm font-medium text-gray-700">Manufacturer</label><p className="text-gray-900 mt-1">{selectedProduct.manufacturer}</p></div>
                     <div><label className="text-sm font-medium text-gray-700">Version</label><p className="text-gray-900 mt-1">{selectedProduct.version}</p></div>
-                    <div><label className="text-sm font-medium text-gray-700">CE Marking</label><p className="text-gray-900 mt-1">{selectedProduct.ceMarking ? 'Yes' : 'No'}</p></div>
+                    <div><label className="text-sm font-medium text-gray-700">{t('euRegulations.ceMarking')}</label><p className="text-gray-900 mt-1">{selectedProduct.ceMarking ? 'Yes' : 'No'}</p></div>
                     <div><label className="text-sm font-medium text-gray-700">SBOM Available</label><p className="text-gray-900 mt-1">{selectedProduct.sbomAvailable ? 'Yes' : 'No'}</p></div>
                     <div><label className="text-sm font-medium text-gray-700">Support Until</label><p className="text-gray-900 mt-1">{formatDate(selectedProduct.supportEndDate)}</p></div>
                     <div><label className="text-sm font-medium text-gray-700">Security Contact</label><p className="text-gray-900 mt-1">{selectedProduct.contactInfo}</p></div>

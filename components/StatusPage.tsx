@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Shield, CheckCircle, AlertTriangle, XCircle, Clock, Activity,
   Server, Database, Globe, Cloud, Lock, Zap, RefreshCw, Bell,
@@ -213,6 +214,7 @@ const uptimeHistory: UptimeData[] = Array.from({ length: 90 }, (_, i) => {
 });
 
 export const StatusPage: React.FC = () => {
+  const { t } = useI18n();
   const [expandedIncident, setExpandedIncident] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -386,7 +388,7 @@ export const StatusPage: React.FC = () => {
         <section className="mb-12">
           <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
             <Activity className="w-5 h-5 text-brand-400" />
-            Service Status
+            {t('common.status')}
           </h2>
           <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
             <div className="divide-y divide-slate-700">

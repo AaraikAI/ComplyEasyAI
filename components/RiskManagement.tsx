@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 interface RiskManagementProps {
   onBack: () => void;
@@ -21,6 +22,7 @@ type SortOrder = 'asc' | 'desc';
 
 export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
@@ -320,7 +322,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
     }
   };
 
-  if (isLoadingData) return <div className="p-8 text-center text-gray-500">Loading risks data from database...</div>;
+  if (isLoadingData) return <div className="p-8 text-center text-gray-500">{t('common.loading')}</div>;
 
   const issuesLimitReached = isAtLimit(user?.organization?.plan, 'maxIssues', risks.length);
 
@@ -352,8 +354,8 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
           <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col animate-scaleIn">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
               <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                <CheckSquare className="mr-2 text-brand-600" /> 
-                Remediation & Task
+                <CheckSquare className="mr-2 text-brand-600" />
+                {t('risks.treatmentPlan')}
               </h3>
               <button onClick={() => setSelectedRisk(null)} className="text-gray-400 hover:text-gray-600">
                 <X size={24} />
@@ -363,7 +365,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               <div className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Status</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t('common.status')}</label>
                   <select 
                     value={newStatus} 
                     onChange={(e) => setNewStatus(e.target.value as any)}
@@ -376,7 +378,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Assign To</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t('risks.riskOwner')}</label>
                   <select 
                     value={assigneeId} 
                     onChange={(e) => setAssigneeId(e.target.value)}
@@ -403,7 +405,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-bold text-gray-900">Technical Remediation Plan</h4>
+                  <h4 className="font-bold text-gray-900">{t('risks.mitigationPlan')}</h4>
                   {selectedRisk.targetDate && (
                     <div className="text-sm">
                       <span className="text-gray-600">Due Date: </span>
@@ -435,7 +437,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
               {selectedRisk.targetDate && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Update Remediation Due Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.reviewDate')}</label>
                   <input
                     type="date"
                     value={selectedRisk.targetDate ? new Date(selectedRisk.targetDate).toISOString().split('T')[0] : ''}
@@ -451,8 +453,8 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
             </div>
 
             <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
-              <button onClick={() => setSelectedRisk(null)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors">Cancel</button>
-              <button onClick={saveRiskChanges} className="px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors shadow-lg">Save Changes</button>
+              <button onClick={() => setSelectedRisk(null)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors">{t('common.cancel')}</button>
+              <button onClick={saveRiskChanges} className="px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors shadow-lg">{t('common.save')}</button>
             </div>
           </div>
         </div>
@@ -464,8 +466,8 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
           <div className="flex items-center space-x-4">
             <button onClick={onBack} className="p-2 hover:bg-gray-200 rounded-lg transition-colors"><ArrowLeft size={20} className="text-gray-600" /></button>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Risk Management</h2>
-              <p className="text-sm text-gray-500">Monitor threats, assign tasks, and track mitigation.</p>
+              <h2 className="text-2xl font-bold text-gray-900">{t('risks.title')}</h2>
+              <p className="text-sm text-gray-500">{t('risks.riskIndicators')}</p>
             </div>
           </div>
           <div className="flex gap-3">
@@ -486,7 +488,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                 }`}
               >
                 <Grid3x3 size={16} className="mr-1.5" />
-                Heat Map
+                {t('risks.heatMap')}
               </button>
             </div>
             {(user?.role === 'admin' || user?.role === 'editor') && (
@@ -497,7 +499,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                 className="bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 shadow-md flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="mr-2" size={16} />
-                Add Risk
+                {t('risks.createRisk')}
               </button>
             )}
              <button onClick={handleAIPrioritization} disabled={isPrioritizing} className="bg-purple-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-purple-700 shadow-md flex items-center transition-colors">
@@ -516,7 +518,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
       {viewMode === 'heatmap' && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Risk Heat Map</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('risks.heatMap')}</h3>
             <p className="text-sm text-gray-600">Click on a cell to view risks in that likelihood × impact range</p>
           </div>
           
@@ -604,23 +606,23 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                 <div className="flex items-center justify-center gap-4 text-xs">
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-green-200 rounded"></div>
-                    <span>Low Risk (1-5)</span>
+                    <span>{t('risks.low')} (1-5)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-yellow-200 rounded"></div>
-                    <span>Medium Risk (6-9)</span>
+                    <span>{t('risks.medium')} (6-9)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-yellow-400 rounded"></div>
-                    <span>High Risk (10-14)</span>
+                    <span>{t('risks.high')} (10-14)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-red-400 rounded"></div>
-                    <span>Very High Risk (15-19)</span>
+                    <span>{t('risks.high')} (15-19)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-red-600 rounded"></div>
-                    <span>Critical Risk (20-25)</span>
+                    <span>{t('risks.critical')} (20-25)</span>
                   </div>
                 </div>
 
@@ -678,8 +680,8 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                 {risks.length === 0 && (
                   <div className="text-center py-12 text-gray-400">
                     <Grid3x3 size={48} className="mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">No risks to display</p>
-                    <p className="text-sm mt-2">Add risks to see them visualized on the heat map</p>
+                    <p className="text-lg font-medium">{t('common.noResults')}</p>
+                    <p className="text-sm mt-2">{t('risks.createRisk')}</p>
                   </div>
                 )}
               </div>
@@ -697,20 +699,20 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
               <tr>
                 <th className="px-6 py-4 font-medium cursor-pointer whitespace-nowrap" onClick={() => handleSort('severity')}>
                    <div className="flex items-center gap-1">
-                     <span>SEVERITY</span>
+                     <span>{t('common.severity').toUpperCase()}</span>
                      {sortField === 'severity' && (sortOrder === 'asc' ? <SortAsc size={14}/> : <SortDesc size={14}/>)}
                    </div>
                 </th>
-                <th className="px-6 py-4 font-medium whitespace-nowrap">DESCRIPTION</th>
-                <th className="px-6 py-4 font-medium whitespace-nowrap">ASSIGNEE</th>
+                <th className="px-6 py-4 font-medium whitespace-nowrap">{t('common.description').toUpperCase()}</th>
+                <th className="px-6 py-4 font-medium whitespace-nowrap">{t('common.assignee').toUpperCase()}</th>
                 <th className="px-6 py-4 font-medium cursor-pointer whitespace-nowrap" onClick={() => handleSort('aiScore')}>
                   <div className="flex items-center gap-1">
-                    <span>AI SCORE</span>
+                    <span>{t('risks.riskScore').toUpperCase()}</span>
                     {sortField === 'aiScore' && (sortOrder === 'asc' ? <SortAsc size={14}/> : <SortDesc size={14}/>)}
                   </div>
                 </th>
-                <th className="px-6 py-4 font-medium whitespace-nowrap">STATUS</th>
-                <th className="px-6 py-4 font-medium text-right whitespace-nowrap">ACTION</th>
+                <th className="px-6 py-4 font-medium whitespace-nowrap">{t('common.status').toUpperCase()}</th>
+                <th className="px-6 py-4 font-medium text-right whitespace-nowrap">{t('common.actions').toUpperCase()}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -776,7 +778,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                     </td>
                     <td className="px-6 py-4 text-right align-middle">
                        <button onClick={() => handleOpenRemediation(risk)} className="text-brand-600 font-medium hover:text-brand-800 px-3 py-1.5 border border-brand-200 rounded-lg whitespace-nowrap">
-                         Manage
+                         {t('common.edit')}
                        </button>
                     </td>
                   </tr>
@@ -793,8 +795,8 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full animate-scaleIn">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
               <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                <Plus className="mr-2 text-brand-600" size={20} /> 
-                Create New Risk
+                <Plus className="mr-2 text-brand-600" size={20} />
+                {t('risks.createRisk')}
               </h3>
               <button onClick={() => setShowAddRiskModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X size={24} />
@@ -803,7 +805,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
             
             <form onSubmit={handleCreateRisk} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.title')} ({t('common.optional')})</label>
                 <input
                   type="text"
                   value={newRisk.title}
@@ -814,7 +816,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')} *</label>
                 <textarea
                   value={newRisk.description}
                   onChange={(e) => setNewRisk({ ...newRisk, description: e.target.value })}
@@ -827,7 +829,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.riskCategory')} *</label>
                   <input
                     type="text"
                     value={newRisk.category}
@@ -839,23 +841,23 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Severity *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.severity')} *</label>
                   <select
                     value={newRisk.severity}
                     onChange={(e) => setNewRisk({ ...newRisk, severity: e.target.value as any })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
                     required
                   >
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
+                    <option value="High">{t('risks.high')}</option>
+                    <option value="Medium">{t('risks.medium')}</option>
+                    <option value="Low">{t('risks.low')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Likelihood (1-5) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.likelihood')} (1-5) *</label>
                   <input
                     type="number"
                     min="1"
@@ -872,7 +874,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Impact (1-5) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.impact')} (1-5) *</label>
                   <input
                     type="number"
                     min="1"
@@ -891,13 +893,13 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm font-medium text-blue-900">
-                  Risk Score: <span className="text-lg font-bold">{newRisk.likelihood * newRisk.impact}</span>
+                  {t('risks.riskScore')}: <span className="text-lg font-bold">{newRisk.likelihood * newRisk.impact}</span>
                   <span className="text-xs text-blue-700 ml-2">({newRisk.likelihood} × {newRisk.impact})</span>
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Remediation Plan (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.mitigationPlan')} ({t('common.optional')})</label>
                 <textarea
                   value={newRisk.mitigationPlan}
                   onChange={(e) => setNewRisk({ ...newRisk, mitigationPlan: e.target.value })}
@@ -909,7 +911,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Remediation Due Date (Optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.reviewDate')} ({t('common.optional')})</label>
                   <input
                     type="date"
                     value={newRisk.targetDate}
@@ -919,7 +921,7 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign To (Optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('risks.riskOwner')} ({t('common.optional')})</label>
                   <select
                     value={newRisk.assignedToId}
                     onChange={(e) => setNewRisk({ ...newRisk, assignedToId: e.target.value })}
@@ -952,13 +954,13 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
                   }}
                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors shadow-lg"
                 >
-                  Create Risk
+                  {t('risks.createRisk')}
                 </button>
               </div>
             </form>

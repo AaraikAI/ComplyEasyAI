@@ -14,6 +14,7 @@ import { X, Calendar, Target, AlertCircle, CheckCircle } from 'lucide-react';
 import { AVAILABLE_FRAMEWORKS } from '../constants';
 import { api } from '../services/api';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 interface GoalModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ interface GoalModalProps {
 }
 
 export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess, goal }) => {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     goalType: 'maintain' as 'maintain' | 'achieve' | 'improve',
     frameworks: [] as string[],
@@ -224,7 +226,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
             </label>
             <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto">
               {availableFrameworks.length === 0 ? (
-                <p className="text-sm text-gray-500">Loading frameworks...</p>
+                <p className="text-sm text-gray-500">{t('common.loading')}</p>
               ) : (
                 <div className="space-y-2">
                   {availableFrameworks.map((framework) => (
@@ -351,14 +353,14 @@ export const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, onSuccess
               onClick={onClose}
               className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? 'Saving...' : goal ? 'Update Goal' : 'Create Goal'}
+              {loading ? t('common.loading') : goal ? t('common.save') : t('common.create')}
             </button>
           </div>
         </form>

@@ -204,7 +204,7 @@ class DSAService {
       if (vlopStatus.isVLOSE && 
           platformData.platformType === 'online_platform') {
         // Note: VLOSE typically applies to search engines, but we check user count
-        // This would need to be refined based on business logic
+        // This should be refined based on business logic
       }
     }
 

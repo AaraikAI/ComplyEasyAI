@@ -507,7 +507,7 @@ class WhisperService {
       const maxSpeakers = options.maxSpeakers || 10;
 
       // Speaker diarization using segment analysis
-      // In production with PYANNOTE_SERVICE_URL, this calls the real pyannote.audio service
+      // When PYANNOTE_SERVICE_URL is configured, calls the pyannote.audio service
       const speakerMap = new Map<string, {
         label: string;
         segments: Array<{ start: number; end: number; text: string }>;

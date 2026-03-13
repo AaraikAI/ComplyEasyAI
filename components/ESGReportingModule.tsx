@@ -19,6 +19,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
   BarChart3,
@@ -317,6 +318,7 @@ interface ESGReportingModuleProps {
 // Main Component
 // ---------------------------------------------------------------------------
 export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }) => {
+  const { t } = useI18n();
   type TabId = 'overview' | 'environmental' | 'social' | 'governance' | 'materiality' | 'reports';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [metrics, setMetrics] = useState<ESGMetric[]>(DEMO_METRICS);
@@ -362,15 +364,15 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
 
       // --- Materiality ---
       if (apiMateriality && apiMateriality.length > 0) {
-        setMaterialityTopics(apiMateriality.map((t: any) => ({
-          id: t.id,
-          topic: t.topic || '',
-          esrsStandard: t.esrsStandard || '',
-          financialMateriality: t.financialMateriality || 0,
-          impactMateriality: t.impactMateriality || 0,
-          overallMateriality: t.overallMateriality || 'medium',
-          stakeholderRelevance: t.stakeholderRelevance || 0,
-          status: t.status || 'pending',
+        setMaterialityTopics(apiMateriality.map((item: any) => ({
+          id: item.id,
+          topic: item.topic || '',
+          esrsStandard: item.esrsStandard || '',
+          financialMateriality: item.financialMateriality || 0,
+          impactMateriality: item.impactMateriality || 0,
+          overallMateriality: item.overallMateriality || 'medium',
+          stakeholderRelevance: item.stakeholderRelevance || 0,
+          status: item.status || 'pending',
         })));
       }
 
@@ -445,7 +447,7 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
 
   // Tab definitions
   const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
-    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'overview', label: t('common.overview'), icon: BarChart3 },
     { id: 'environmental', label: 'Environmental', icon: Leaf },
     { id: 'social', label: 'Social', icon: Users },
     { id: 'governance', label: 'Governance', icon: Shield },
@@ -805,8 +807,8 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
   // Render: Materiality Tab
   // ---------------------------------------------------------------------------
   const renderMateriality = () => {
-    const highTopics = materialityTopics.filter(t => t.overallMateriality === 'high');
-    const mediumTopics = materialityTopics.filter(t => t.overallMateriality === 'medium');
+    const highTopics = materialityTopics.filter(mt => mt.overallMateriality === 'high');
+    const mediumTopics = materialityTopics.filter(mt => mt.overallMateriality === 'medium');
 
     return (
       <div className="space-y-6">
@@ -814,7 +816,7 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard icon={<Target size={20} className="text-red-600" />} label="High Materiality" value={highTopics.length} subLabel="Requires detailed disclosure" color="bg-red-50" />
           <StatCard icon={<Target size={20} className="text-yellow-600" />} label="Medium Materiality" value={mediumTopics.length} subLabel="Condensed disclosure" color="bg-yellow-50" />
-          <StatCard icon={<CheckCircle size={20} className="text-green-600" />} label="Assessed Topics" value={`${materialityTopics.filter(t => t.status === 'assessed').length}/${materialityTopics.length}`} subLabel="Double materiality complete" color="bg-green-50" />
+          <StatCard icon={<CheckCircle size={20} className="text-green-600" />} label="Assessed Topics" value={`${materialityTopics.filter(mt => mt.status === 'assessed').length}/${materialityTopics.length}`} subLabel="Double materiality complete" color="bg-green-50" />
         </div>
 
         {/* Double Materiality Matrix (visual) */}
@@ -1071,7 +1073,7 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
     try {
       const updated = await api.modules.esg.updateMateriality(id, data);
       if (updated) {
-        setMaterialityTopics(prev => prev.map(t => t.id === id ? { ...t, ...updated } : t));
+        setMaterialityTopics(prev => prev.map(mt => mt.id === id ? { ...mt, ...updated } : mt));
       }
     } catch (err: any) {
       setLoadError('Failed to update materiality topic.');
@@ -1121,7 +1123,7 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
           </div>
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button onClick={() => setShowReportModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button onClick={() => setShowReportModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
           <button onClick={handleGenerateReport} disabled={isGeneratingReport} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50">
             {isGeneratingReport ? 'Generating...' : 'Generate Report'}
           </button>

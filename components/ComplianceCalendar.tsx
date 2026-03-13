@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Calendar as CalendarIcon,
   Plus,
@@ -184,6 +185,7 @@ const emptyForm: DeadlineForm = {
 // ── Component ───────────────────────────────────────────────────────────────
 
 const ComplianceCalendar: React.FC = () => {
+  const { t } = useI18n();
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(today);
   const [viewMode, setViewMode] = useState<ViewMode>('month');
@@ -543,10 +545,10 @@ const ComplianceCalendar: React.FC = () => {
             </div>
           </div>
           <div className="px-6 py-4 border-t border-surface-200 dark:border-surface-700 flex items-center justify-end gap-3">
-            <button onClick={() => { setShowModal(false); setEditingDeadline(null); setForm(emptyForm); }} className="px-4 py-2 text-sm text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">Cancel</button>
+            <button onClick={() => { setShowModal(false); setEditingDeadline(null); setForm(emptyForm); }} className="px-4 py-2 text-sm text-surface-600 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200">{t('common.cancel')}</button>
             <button onClick={saveDeadline} disabled={saving || !form.title.trim() || !form.dueDate}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-lg">
-              {saving ? 'Saving...' : editingDeadline ? 'Update Deadline' : 'Create Deadline'}
+              {saving ? t('common.loading') : editingDeadline ? t('common.save') : t('common.create')}
             </button>
           </div>
         </div>
@@ -596,11 +598,11 @@ const ComplianceCalendar: React.FC = () => {
                 <p className={`text-sm font-medium ${dl.priority === 'critical' ? 'text-red-600 dark:text-red-400' : dl.priority === 'high' ? 'text-orange-600 dark:text-orange-400' : dl.priority === 'medium' ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}`}>{PRIORITY_LABELS[dl.priority]}</p>
               </div>
               <div className="bg-surface-50 dark:bg-surface-700/50 rounded-lg p-3">
-                <span className="text-xs text-surface-500 dark:text-surface-400">Status</span>
-                <p className="text-sm font-medium text-surface-900 dark:text-surface-100">{od ? 'Overdue' : STATUS_LABELS[dl.status]}</p>
+                <span className="text-xs text-surface-500 dark:text-surface-400">{t('common.status')}</span>
+                <p className="text-sm font-medium text-surface-900 dark:text-surface-100">{od ? t('calendar.overdue') : STATUS_LABELS[dl.status]}</p>
               </div>
               <div className="bg-surface-50 dark:bg-surface-700/50 rounded-lg p-3">
-                <span className="text-xs text-surface-500 dark:text-surface-400">Recurrence</span>
+                <span className="text-xs text-surface-500 dark:text-surface-400">{t('calendar.recurring')}</span>
                 <p className="text-sm font-medium text-surface-900 dark:text-surface-100 capitalize">{dl.recurrence === 'semi_annual' ? 'Semi-Annual' : dl.recurrence === 'none' ? 'One-time' : dl.recurrence}</p>
               </div>
             </div>
@@ -627,12 +629,12 @@ const ComplianceCalendar: React.FC = () => {
             {dl.notes && <div><h4 className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Notes</h4><p className="text-sm text-surface-600 dark:text-surface-400">{dl.notes}</p></div>}
           </div>
           <div className="px-6 py-4 border-t border-surface-200 dark:border-surface-700 flex items-center justify-between">
-            <button onClick={() => deleteDeadline(dl.id)} className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 flex items-center gap-1"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
+            <button onClick={() => deleteDeadline(dl.id)} className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 flex items-center gap-1"><Trash2 className="w-3.5 h-3.5" /> {t('common.delete')}</button>
             <div className="flex items-center gap-2">
               {dl.status !== 'completed' && (
-                <button onClick={() => markComplete(dl.id)} className="px-3 py-1.5 text-sm font-medium text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 rounded-lg flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Complete</button>
+                <button onClick={() => markComplete(dl.id)} className="px-3 py-1.5 text-sm font-medium text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 rounded-lg flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> {t('calendar.completed')}</button>
               )}
-              <button onClick={() => openEdit(dl)} className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1"><Edit className="w-3.5 h-3.5" /> Edit</button>
+              <button onClick={() => openEdit(dl)} className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center gap-1"><Edit className="w-3.5 h-3.5" /> {t('common.edit')}</button>
             </div>
           </div>
         </div>
@@ -649,20 +651,20 @@ const ComplianceCalendar: React.FC = () => {
           <div className="flex items-center gap-3">
             <CalendarIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             <div>
-              <h1 className="text-xl font-bold text-surface-900 dark:text-surface-100">Compliance Calendar</h1>
+              <h1 className="text-xl font-bold text-surface-900 dark:text-surface-100">{t('calendar.title')}</h1>
               <p className="text-sm text-surface-500 dark:text-surface-400">Track and manage compliance deadlines across all frameworks</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setShowFilters(!showFilters)} className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700'}`}><Filter className="w-4 h-4" /></button>
             <button onClick={fetchDeadlines} disabled={loading} className="p-2 rounded-lg text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-700"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
-            <button onClick={() => openCreate()} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"><Plus className="w-4 h-4" /> Add Deadline</button>
+            <button onClick={() => openCreate()} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"><Plus className="w-4 h-4" /> {t('calendar.addEvent')}</button>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" /><span className="text-xs font-medium text-red-700 dark:text-red-300">Overdue</span></div>
+            <div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" /><span className="text-xs font-medium text-red-700 dark:text-red-300">{t('calendar.overdue')}</span></div>
             <span className="text-2xl font-bold text-red-700 dark:text-red-300">{overdueCount}</span>
           </div>
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
@@ -670,7 +672,7 @@ const ComplianceCalendar: React.FC = () => {
             <span className="text-2xl font-bold text-amber-700 dark:text-amber-300">{upcomingCount}</span>
           </div>
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1"><CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" /><span className="text-xs font-medium text-green-700 dark:text-green-300">Completed</span></div>
+            <div className="flex items-center gap-2 mb-1"><CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" /><span className="text-xs font-medium text-green-700 dark:text-green-300">{t('calendar.completed')}</span></div>
             <span className="text-2xl font-bold text-green-700 dark:text-green-300">{completedCount}</span>
           </div>
         </div>
@@ -717,7 +719,7 @@ const ComplianceCalendar: React.FC = () => {
             <button onClick={navigatePrev} className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700 text-surface-600 dark:text-surface-400"><ChevronLeft className="w-5 h-5" /></button>
             <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100 min-w-[260px] text-center">{navLabel}</h2>
             <button onClick={navigateNext} className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-700 text-surface-600 dark:text-surface-400"><ChevronRight className="w-5 h-5" /></button>
-            <button onClick={goToToday} className="ml-2 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-700 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20">Today</button>
+            <button onClick={goToToday} className="ml-2 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-700 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20">{t('calendar.today')}</button>
           </div>
           <div className="flex items-center bg-surface-100 dark:bg-surface-700 rounded-lg p-0.5">
             {(['month', 'week', 'day'] as ViewMode[]).map(mode => (
@@ -741,7 +743,7 @@ const ComplianceCalendar: React.FC = () => {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <RefreshCw className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin" />
-          <span className="ml-3 text-sm text-surface-500 dark:text-surface-400">Loading calendar...</span>
+          <span className="ml-3 text-sm text-surface-500 dark:text-surface-400">{t('common.loading')}</span>
         </div>
       ) : (
         <div className="p-4">

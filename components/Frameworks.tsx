@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
@@ -88,6 +89,7 @@ export const Frameworks: React.FC<FrameworksProps> = ({
   maxFrameworks = -1
 }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingFramework, setDeletingFramework] = useState<string | null>(null);
@@ -267,11 +269,11 @@ export const Frameworks: React.FC<FrameworksProps> = ({
   }, [activeFrameworks, onSelectFramework]);
 
   const getTemplateForFramework = (frameworkName: string): TemplateInfo | undefined => {
-    return templates.find(t =>
-      t.frameworkType === frameworkName ||
-      t.displayName === frameworkName ||
-      frameworkName.includes(t.frameworkType) ||
-      t.frameworkType.includes(frameworkName)
+    return templates.find(tmpl =>
+      tmpl.frameworkType === frameworkName ||
+      tmpl.displayName === frameworkName ||
+      frameworkName.includes(tmpl.frameworkType) ||
+      tmpl.frameworkType.includes(frameworkName)
     );
   };
 
@@ -720,7 +722,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
             title="Export Control Report"
           >
             <Download size={18} />
-            <span>Export</span>
+            <span>{t('common.export')}</span>
           </button>
           <button
             onClick={() => !frameworkLimitReached && setIsModalOpen(true)}
@@ -730,7 +732,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
             title={frameworkLimitReached ? 'Framework limit reached. Upgrade in Settings → Billing.' : undefined}
           >
             <Plus size={18} />
-            <span>Add Framework</span>
+            <span>{t('frameworks.addFramework')}</span>
           </button>
         </div>
       </div>
@@ -760,7 +762,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
 
                 <div className="mb-4">
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-500">Status</span>
+                    <span className="text-gray-500">{t('common.status')}</span>
                     <span className="font-bold text-gray-900">{fw.progress}%</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
@@ -897,7 +899,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
           <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
             <Plus className="text-gray-400 group-hover:text-brand-500" size={24} />
           </div>
-          <h3 className="text-sm font-bold text-gray-900">Add Framework</h3>
+          <h3 className="text-sm font-bold text-gray-900">{t('frameworks.addFramework')}</h3>
           <p className="text-xs text-gray-500 mt-1">{frameworkLimitReached ? 'Limit reached — upgrade to add more' : 'Browse catalog...'}</p>
         </button>
       </div>
@@ -908,7 +910,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl animate-fadeIn">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Add Compliance Framework</h3>
+                <h3 className="text-xl font-bold text-gray-900">{t('frameworks.addFramework')}</h3>
                 {templatesLoaded && templates.length > 0 && (
                   <p className="text-sm text-gray-500 mt-1">
                     {templates.length} frameworks have pre-built control templates
@@ -937,7 +939,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
               {/* Framework List */}
               <div className={`${templatePreview ? 'w-1/2 border-r border-gray-100' : 'w-full'} overflow-y-auto p-6 space-y-3`}>
                 {filteredAvailable.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">No matching frameworks found.</p>
+                  <p className="text-center text-gray-500 py-8">{t('common.noResults')}</p>
                 ) : (
                   filteredAvailable.map((fw, idx) => {
                     const template = getTemplateForFramework(fw.name);
@@ -976,7 +978,7 @@ Return as JSON array with: id, type, title, description, priority, impact, sugge
                           }}
                           className="flex-shrink-0 ml-3 bg-white text-brand-600 border border-brand-200 hover:bg-brand-600 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                         >
-                          Add
+                          {t('common.add')}
                         </button>
                       </div>
                     );

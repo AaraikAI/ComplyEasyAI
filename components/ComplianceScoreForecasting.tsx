@@ -9,6 +9,7 @@ import {
   PieChart as PieChartIcon, Info, Star, ExternalLink, Play,
   BookOpen, Filter, X, Sliders, Sparkles, Award, Gauge,
 } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -310,6 +311,7 @@ const getCategoryIcon = (category: string) => {
 // ---------------------------------------------------------------------------
 
 export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [selectedFramework, setSelectedFramework] = useState<string | null>(null);
   const [projectionFilter, setProjectionFilter] = useState<'all' | 'improving' | 'stable' | 'declining'>('all');
@@ -529,9 +531,9 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
           <div className="text-3xl font-bold text-gray-900 dark:text-white">{activeRiskCount}</div>
           <div className="flex items-center gap-2 mt-1">
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-              {criticalRiskCount} critical
+              {criticalRiskCount} {t('risks.critical')}
             </span>
-            <span className="text-xs text-gray-400">{RISK_FACTORS.length} total</span>
+            <span className="text-xs text-gray-400">{RISK_FACTORS.length} {t('common.total')}</span>
           </div>
         </div>
 
@@ -743,7 +745,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
     <div className="space-y-6">
       {/* Filter Bar */}
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Filter by trend:</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('common.filter')} by trend:</span>
         {(['all', 'improving', 'stable', 'declining'] as const).map(filter => (
           <button
             key={filter}
@@ -1314,7 +1316,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Priority:</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('common.priority')}:</span>
           {['all', 'critical', 'high', 'medium', 'low'].map(p => (
             <button key={p} onClick={() => setRecPriorityFilter(p)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
@@ -1454,11 +1456,11 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
                 className="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-1.5"
                 disabled={isExporting}>
                 {isExporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                {isExporting ? 'Exporting...' : 'Export Report'}
+                {isExporting ? `${t('common.export')}...` : `${t('common.export')} Report`}
               </button>
               <button className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5">
                 <RefreshCw className="w-4 h-4" />
-                Refresh Forecast
+                {t('common.refresh')} Forecast
               </button>
             </div>
           </div>

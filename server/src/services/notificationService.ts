@@ -501,7 +501,7 @@ class NotificationService {
     }
 
     // Get phone number from user's notification preferences metadata
-    // In production, phone numbers should be stored securely in user metadata or a separate table
+    // Phone numbers should be stored in user metadata or a dedicated secure table
     const prefCategories = user.notificationPreference?.categories as unknown as PreferenceCategoriesJson;
     const phoneNumber = prefCategories?.phoneNumber || null;
 

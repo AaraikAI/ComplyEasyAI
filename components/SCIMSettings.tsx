@@ -42,6 +42,7 @@ import {
   ChevronDown,
   Info,
 } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
 
@@ -135,6 +136,7 @@ const ROLE_OPTIONS = ['admin', 'compliance_manager', 'risk_manager', 'auditor', 
 // ── Component ───────────────────────────────────────────────────────────────
 
 const SCIMSettings: React.FC<SCIMSettingsProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'mappings'>('overview');
   const [config, setConfig] = useState<SCIMConfig | null>(null);
   const [syncStats, setSyncStats] = useState<SyncStats | null>(null);
@@ -302,7 +304,7 @@ const SCIMSettings: React.FC<SCIMSettingsProps> = ({ onBack }) => {
   // ── Tab Config ───────────────────────────────────────────────────────
 
   const tabs = [
-    { id: 'overview' as const, label: 'Overview', icon: Activity },
+    { id: 'overview' as const, label: t('common.overview'), icon: Activity },
     { id: 'logs' as const, label: 'Sync Logs', icon: Clock },
     { id: 'mappings' as const, label: 'Group Mappings', icon: Users },
   ];
@@ -313,7 +315,7 @@ const SCIMSettings: React.FC<SCIMSettingsProps> = ({ onBack }) => {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading SCIM settings...</span>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}...</span>
       </div>
     );
   }
@@ -329,7 +331,7 @@ const SCIMSettings: React.FC<SCIMSettingsProps> = ({ onBack }) => {
             </button>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">SCIM Provisioning</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('settings.scim')}</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">Automated user lifecycle management via SCIM 2.0</p>
           </div>
         </div>
@@ -612,8 +614,8 @@ const SCIMSettings: React.FC<SCIMSettingsProps> = ({ onBack }) => {
                       <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Action</th>
                       <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">User</th>
                       <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Email</th>
-                      <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Status</th>
-                      <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Details</th>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('common.status')}</th>
+                      <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('common.details')}</th>
                       <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Timestamp</th>
                     </tr>
                   </thead>
@@ -680,7 +682,7 @@ const SCIMSettings: React.FC<SCIMSettingsProps> = ({ onBack }) => {
                     <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">SCIM Group</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Application Role</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Auto-Assign</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Actions</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -772,7 +774,7 @@ const SCIMSettings: React.FC<SCIMSettingsProps> = ({ onBack }) => {
             </div>
             <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
               <button onClick={() => setShowMappingModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={saveMapping}

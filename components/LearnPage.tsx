@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Shield, BookOpen, Video, FileText, GraduationCap, Award, Clock,
   Play, CheckCircle, ArrowRight, Search, Filter, Star, Users,
@@ -280,6 +281,7 @@ const certifications = [
 ];
 
 export const LearnPage: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'courses' | 'tutorials' | 'webinars' | 'certifications'>('courses');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -368,7 +370,7 @@ export const LearnPage: React.FC = () => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search courses, tutorials, and resources..."
+                placeholder={t('common.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"

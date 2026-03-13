@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
   Shield,
@@ -157,6 +158,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 // ── Component ───────────────────────────────────────────────────────────────
 
 const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<DPIAStatus | 'All'>('All');
@@ -405,7 +407,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search DPIAs..."
+              placeholder={`${t('common.search')}...`}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-64"
@@ -428,7 +430,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           onClick={() => setShowCreateModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
         >
-          <Plus className="w-4 h-4" /> New DPIA
+          <Plus className="w-4 h-4" /> {t('dpia.createDPIA')}
         </button>
       </div>
 
@@ -440,11 +442,11 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">ID</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Title</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Project</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Status</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.status')}</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Risk Level</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Assigned To</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.assignee')}</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Updated</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Actions</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -612,7 +614,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             }}
             className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors"
           >
-            <RefreshCw className="w-4 h-4" /> Reset
+            <RefreshCw className="w-4 h-4" /> {t('common.reset')}
           </button>
           <div className="text-sm text-slate-400">
             {Object.values(screeningAnswers).filter(Boolean).length} of {screeningQuestions.length} indicators checked
@@ -947,7 +949,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-xs text-slate-400 mb-1">DPO Comments</label>
+            <label className="block text-xs text-slate-400 mb-1">{t('dpia.dpoOpinion')}</label>
             <textarea
               value={dpoReviewForm.comments}
               onChange={e => setDpoReviewForm(prev => ({ ...prev, comments: e.target.value }))}
@@ -967,7 +969,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 className="w-4 h-4 rounded border-slate-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 bg-slate-700"
               />
               <span className="text-sm text-slate-300">
-                Supervisory authority consultation required (Article 36)
+                {t('dpia.consultationRequired')}
               </span>
             </label>
           </div>
@@ -978,7 +980,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             disabled={!dpoReviewForm.dpiaId || !dpoReviewForm.dpoName || submitting}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
           >
-            <CheckCircle className="w-4 h-4" /> {submitting ? 'Submitting...' : 'Submit Review'}
+            <CheckCircle className="w-4 h-4" /> {submitting ? `${t('common.loading')}...` : t('common.submit')}
           </button>
         </div>
       </div>
@@ -993,7 +995,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-            <h2 className="text-lg font-semibold text-white">Create New DPIA</h2>
+            <h2 className="text-lg font-semibold text-white">{t('dpia.createDPIA')}</h2>
             <button
               onClick={() => setShowCreateModal(false)}
               className="p-1 text-slate-400 hover:text-white transition-colors"
@@ -1013,7 +1015,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Description *</label>
+              <label className="block text-xs text-slate-400 mb-1">{t('common.description')} *</label>
               <textarea
                 value={createForm.description}
                 onChange={e => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
@@ -1046,7 +1048,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
             <div>
               <label className="block text-xs text-slate-400 mb-1">
-                Data Subjects (comma-separated)
+                {t('dpia.dataSubjects')} (comma-separated)
               </label>
               <input
                 type="text"
@@ -1058,7 +1060,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
             <div>
               <label className="block text-xs text-slate-400 mb-1">
-                Processing Purposes (comma-separated)
+                {t('dpia.processingActivity')} (comma-separated)
               </label>
               <input
                 type="text"
@@ -1069,7 +1071,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Necessity and Proportionality Justification</label>
+              <label className="block text-xs text-slate-400 mb-1">{t('dpia.necessity')}</label>
               <textarea
                 value={createForm.necessityJustification}
                 onChange={e => setCreateForm(prev => ({ ...prev, necessityJustification: e.target.value }))}
@@ -1084,14 +1086,14 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               onClick={() => setShowCreateModal(false)}
               className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleCreateDPIA}
               disabled={!createForm.title || !createForm.description || !createForm.projectName || submitting}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
             >
-              <Plus className="w-4 h-4" /> {submitting ? 'Creating...' : 'Create DPIA'}
+              <Plus className="w-4 h-4" /> {submitting ? `${t('common.loading')}...` : t('dpia.createDPIA')}
             </button>
           </div>
         </div>
@@ -1124,7 +1126,7 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       return (
         <div className="flex items-center justify-center py-20">
           <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
-          <span className="ml-3 text-slate-400">Loading DPIA data...</span>
+          <span className="ml-3 text-slate-400">{t('common.loading')}...</span>
         </div>
       );
     }
@@ -1155,12 +1157,12 @@ const DPIAWorkflow: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm">Back</span>
+                <span className="text-sm">{t('common.back')}</span>
               </button>
               <div className="h-5 w-px bg-slate-700" />
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-blue-400" />
-                <h1 className="text-lg font-semibold text-white">DPIA Workflow</h1>
+                <h1 className="text-lg font-semibold text-white">{t('dpia.title')}</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">

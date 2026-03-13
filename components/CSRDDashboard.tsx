@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   Leaf, BarChart3, Users, Building2, FileText, CheckCircle, AlertTriangle,
@@ -227,6 +228,7 @@ const formatDate = (d: string): string => new Date(d).toLocaleDateString('en-GB'
 // ── Component ────────────────────────────────────────────────────────────
 
 export const CSRDDashboard: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [topics, setTopics] = useState<MaterialityTopic[]>(DEFAULT_MATERIALITY_TOPICS);
   const [envMetrics, setEnvMetrics] = useState<EnvironmentalMetrics>(DEFAULT_ENVIRONMENTAL);
@@ -282,22 +284,22 @@ export const CSRDDashboard: React.FC = () => {
 
   // ── Computed ──
 
-  const materialTopics = useMemo(() => topics.filter(t => t.overallMateriality !== 'not_material'), [topics]);
-  const highMateriality = useMemo(() => topics.filter(t => t.overallMateriality === 'high'), [topics]);
+  const materialTopics = useMemo(() => topics.filter(tp => tp.overallMateriality !== 'not_material'), [topics]);
+  const highMateriality = useMemo(() => topics.filter(tp => tp.overallMateriality === 'high'), [topics]);
   const dataReadiness = useMemo(() => {
     const total = materialTopics.length;
     if (total === 0) return 0;
-    const ready = materialTopics.filter(t => t.dataCollectionStatus === 'compliant').length;
-    const partial = materialTopics.filter(t => t.dataCollectionStatus === 'partial').length;
+    const ready = materialTopics.filter(tp => tp.dataCollectionStatus === 'compliant').length;
+    const partial = materialTopics.filter(tp => tp.dataCollectionStatus === 'partial').length;
     return Math.round(((ready + partial * 0.5) / total) * 100);
   }, [materialTopics]);
 
   const totalGHG = useMemo(() => envMetrics.ghg.scope1.total + envMetrics.ghg.scope2.marketBased + envMetrics.ghg.scope3.total, [envMetrics]);
 
   const filteredTopics = useMemo(() => {
-    return topics.filter(t => {
-      const matchesSearch = t.topic.toLowerCase().includes(searchTerm.toLowerCase()) || t.esrsStandard.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCat = categoryFilter === 'all' || t.category === categoryFilter;
+    return topics.filter(tp => {
+      const matchesSearch = tp.topic.toLowerCase().includes(searchTerm.toLowerCase()) || tp.esrsStandard.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCat = categoryFilter === 'all' || tp.category === categoryFilter;
       return matchesSearch && matchesCat;
     });
   }, [topics, searchTerm, categoryFilter]);
@@ -320,7 +322,7 @@ export const CSRDDashboard: React.FC = () => {
   const handleDownloadReport = useCallback(() => {
     const data = {
       generatedAt: new Date().toISOString(), reportType: 'CSRD Sustainability Report',
-      materialTopics: materialTopics.map(t => ({ standard: t.esrsStandard, topic: t.topic, materiality: t.overallMateriality })),
+      materialTopics: materialTopics.map(tp => ({ standard: tp.esrsStandard, topic: tp.topic, materiality: tp.overallMateriality })),
       environmental: { totalGHG, scope1: envMetrics.ghg.scope1.total, scope2: envMetrics.ghg.scope2.marketBased, scope3: envMetrics.ghg.scope3.total, renewableEnergy: Math.round((envMetrics.energyConsumption.renewable / envMetrics.energyConsumption.total) * 100), wasteRecycled: Math.round((envMetrics.waste.recycled / envMetrics.waste.totalGenerated) * 100) },
       social: { employees: socialMetrics.workforce.totalEmployees, genderPayGap: socialMetrics.payGap.genderPayGap, incidentRate: socialMetrics.healthSafety.incidentRate },
       governance: { boardIndependence: Math.round((govMetrics.board.independentMembers / govMetrics.board.totalMembers) * 100), antiCorruptionTraining: govMetrics.antiCorruption.trainingCoverage },
@@ -340,7 +342,7 @@ export const CSRDDashboard: React.FC = () => {
   );
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: 'overview', label: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
+    { key: 'overview', label: t('common.overview'), icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'materiality', label: 'Double Materiality', icon: <Scale className="w-4 h-4" /> },
     { key: 'environmental', label: 'Environmental', icon: <Leaf className="w-4 h-4" /> },
     { key: 'social', label: 'Social', icon: <Users className="w-4 h-4" /> },
@@ -821,7 +823,7 @@ export const CSRDDashboard: React.FC = () => {
               <span className="flex items-center gap-1"><FileText className="w-4 h-4" /> {report.esrsTopicsCovered.length} ESRS topics</span>
             </div>
             {report.esrsTopicsCovered.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">{report.esrsTopicsCovered.map(t => <span key={t} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs">{t}</span>)}</div>
+              <div className="flex flex-wrap gap-1 mt-2">{report.esrsTopicsCovered.map(tp => <span key={tp} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs">{tp}</span>)}</div>
             )}
           </div>
         ))}
@@ -844,11 +846,11 @@ export const CSRDDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">CSRD Compliance</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.csrd')}</h2>
           <p className="text-gray-600 mt-1">Corporate Sustainability Reporting Directive (EU) 2022/2464 with ESRS standards</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"><Download className="w-4 h-4" /> Export Data</button>
+          <button onClick={handleDownloadReport} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"><Download className="w-4 h-4" /> {t('common.export')}</button>
         </div>
       </div>
 
@@ -907,7 +909,7 @@ export const CSRDDashboard: React.FC = () => {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Assurance Level</label><select value={reportForm.assuranceLevel} onChange={(e) => setReportForm({ ...reportForm, assuranceLevel: e.target.value as any })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"><option value="limited">Limited</option><option value="reasonable">Reasonable</option><option value="none">None</option></select></div>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Create Report</button>
-                <button type="button" onClick={() => setShowReportModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button type="button" onClick={() => setShowReportModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -928,8 +930,8 @@ export const CSRDDashboard: React.FC = () => {
                 <strong>Data sources:</strong> {materialTopics.length} material topics, GHG data (Scopes 1-3), {socialMetrics.workforce.totalEmployees} employees, {govMetrics.board.totalMembers} board members.
               </div>
               <div className="flex gap-3">
-                <button onClick={() => { setShowGenerateModal(false); handleDownloadReport(); }} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Generate & Download</button>
-                <button onClick={() => setShowGenerateModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button onClick={() => { setShowGenerateModal(false); handleDownloadReport(); }} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">{t('common.download')}</button>
+                <button onClick={() => setShowGenerateModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">{t('common.cancel')}</button>
               </div>
             </div>
           </div>

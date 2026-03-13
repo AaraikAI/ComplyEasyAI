@@ -16,6 +16,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, ArrowRight, Loader2, Search, X, CheckCircle, AlertTriangle,
   Shield, FileText, Brain, Eye, BarChart3, Download, Calendar, Clock,
@@ -112,6 +113,7 @@ const PRIORITY_CONFIG: Record<GapPriority, { label: string; color: string }> = {
   high: { label: 'High', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' },
   medium: { label: 'Medium', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' },
   low: { label: 'Low', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
+
 };
 
 const FRAMEWORKS_LIST = [
@@ -138,6 +140,7 @@ const WIZARD_STEPS: { key: WizardStep; label: string; icon: React.ReactNode }[] 
 
 const AuditPrepAssistant: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [step, setStep] = useState<WizardStep>('framework');
   const [selectedFramework, setSelectedFramework] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -311,7 +314,7 @@ const AuditPrepAssistant: React.FC = () => {
         <div className="w-16 h-16 mx-auto bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-4">
           <Shield className="w-8 h-8 text-primary-600 dark:text-primary-400" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Audit Preparation Assistant</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('audit.auditPrep')}</h2>
         <p className="text-gray-500 dark:text-gray-400">Select a framework to begin your audit readiness assessment</p>
       </div>
 
@@ -352,7 +355,7 @@ const AuditPrepAssistant: React.FC = () => {
     if (!analysis) return null;
     return (
       <div className="space-y-6">
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{analysis.frameworkName} Readiness Analysis</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{analysis.frameworkName} {t('audit.auditReadiness')}</h3>
 
         {/* Overall Score */}
         <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center">
@@ -376,7 +379,7 @@ const AuditPrepAssistant: React.FC = () => {
           {[
             { label: 'Total Controls', value: analysis.totalControls, icon: <ListChecks className="w-5 h-5 text-blue-500" /> },
             { label: 'Passing', value: analysis.passingControls, icon: <CheckCircle className="w-5 h-5 text-green-500" /> },
-            { label: 'Gaps Found', value: analysis.gapsCount, icon: <AlertTriangle className="w-5 h-5 text-red-500" /> },
+            { label: t('audit.findingsCount'), value: analysis.gapsCount, icon: <AlertTriangle className="w-5 h-5 text-red-500" /> },
             { label: 'Est. Days to Ready', value: analysis.estimatedDaysToReady, icon: <Calendar className="w-5 h-5 text-purple-500" /> },
           ].map((m, i) => (
             <div key={i} className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center">
@@ -460,7 +463,7 @@ const AuditPrepAssistant: React.FC = () => {
       ) : filteredGaps.length === 0 ? (
         <div className="text-center py-20 bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl">
           <CheckCircle className="w-12 h-12 mx-auto text-green-400 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">No gaps found matching your filters</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('common.noResults')}</p>
         </div>
       ) : (
         <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -469,10 +472,10 @@ const AuditPrepAssistant: React.FC = () => {
               <tr>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Control</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Gap Type</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Priority</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.priority')}</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Effort</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Remediation</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -628,14 +631,14 @@ const AuditPrepAssistant: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition disabled:opacity-50"
           >
             {exportingEvidence ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            Export ZIP ({selectedCount} items)
+            {t('common.export')} ZIP ({selectedCount} items)
           </button>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 text-center">
             <p className="text-2xl font-bold text-green-700 dark:text-green-300">{evidenceItems.filter(i => i.status === 'included').length}</p>
-            <p className="text-sm text-green-600 dark:text-green-400">Current</p>
+            <p className="text-sm text-green-600 dark:text-green-400">{t('evidence.current')}</p>
           </div>
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-center">
             <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{staleCount}</p>
@@ -652,7 +655,7 @@ const AuditPrepAssistant: React.FC = () => {
         ) : evidenceItems.length === 0 ? (
           <div className="text-center py-20 bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl">
             <Package className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">No evidence items found</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('common.noResults')}</p>
           </div>
         ) : (
           <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -838,11 +841,11 @@ const AuditPrepAssistant: React.FC = () => {
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button onClick={prevStep} className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
               <ArrowLeft className="w-4 h-4" />
-              Previous
+              {t('common.back')}
             </button>
             {currentStepIdx < WIZARD_STEPS.length - 1 && (
               <button onClick={nextStep} className="flex items-center gap-2 px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition">
-                Next
+                {t('common.next')}
                 <ArrowRight className="w-4 h-4" />
               </button>
             )}

@@ -8,6 +8,7 @@ import {
   formatLimit,
   formatPrice,
 } from '../types';
+import { useI18n } from '../contexts/I18nContext';
 
 interface TierCardProps {
   tier: Tier;
@@ -44,6 +45,7 @@ const TierCard: React.FC<TierCardProps> = ({
   isDowngrade = false,
   canDowngrade = true,
 }) => {
+  const { t } = useI18n();
   const colors = TIER_COLORS[tier.name];
 
   const calculatePrice = () => {
@@ -74,11 +76,11 @@ const TierCard: React.FC<TierCardProps> = ({
   };
 
   const getButtonText = () => {
-    if (isCurrentTier) return 'Current Plan';
+    if (isCurrentTier) return t('subscription.currentPlan');
     if (disabled) return 'Contact Sales';
-    if (isUpgrade) return 'Upgrade';
-    if (isDowngrade) return canDowngrade ? 'Downgrade' : 'Cannot Downgrade';
-    return 'Get Started';
+    if (isUpgrade) return t('subscription.upgrade');
+    if (isDowngrade) return canDowngrade ? t('subscription.downgrade') : 'Cannot Downgrade';
+    return t('onboarding.getStarted');
   };
 
   const getButtonStyle = () => {
@@ -165,7 +167,7 @@ const TierCard: React.FC<TierCardProps> = ({
       {/* Current tier badge */}
       {isCurrentTier && (
         <div className="absolute -top-3 right-4 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full">
-          Current Plan
+          {t('subscription.currentPlan')}
         </div>
       )}
 
@@ -212,7 +214,7 @@ const TierCard: React.FC<TierCardProps> = ({
 
         {isCurrentTier && (
           <div className="text-center text-sm text-green-600 font-medium py-2">
-            Your Current Plan
+            {t('subscription.currentPlan')}
           </div>
         )}
       </div>

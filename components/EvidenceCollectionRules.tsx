@@ -14,6 +14,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Plus, Loader2, Search, X, Filter, Trash2, Edit3, Eye,
   CheckCircle, Clock, AlertTriangle, Play, Pause, RefreshCw, Settings,
@@ -131,6 +132,7 @@ const getFreshnessColor = (dateStr?: string): { color: string; label: string; bg
 
 const EvidenceCollectionRules: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [rules, setRules] = useState<EvidenceRule[]>([]);
   const [selectedRule, setSelectedRule] = useState<EvidenceRule | null>(null);
@@ -306,7 +308,7 @@ const EvidenceCollectionRules: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Evidence Collection</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('evidence.title')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Automated evidence collection rules and monitoring</p>
         </div>
         <div className="flex items-center gap-2">
@@ -349,7 +351,7 @@ const EvidenceCollectionRules: React.FC = () => {
         ) : rules.length === 0 ? (
           <div className="text-center py-20 bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl">
             <Database className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">No collection rules configured</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('common.noResults')}</p>
             <button onClick={() => setViewMode('create')} className="mt-4 text-primary-600 dark:text-primary-400 text-sm hover:underline">Create your first rule</button>
           </div>
         ) : (
@@ -457,7 +459,7 @@ const EvidenceCollectionRules: React.FC = () => {
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search rules..." className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500" />
+          <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t('common.search')} className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500" />
         </div>
         <select value={filterSource} onChange={e => setFilterSource(e.target.value)} className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white">
           <option value="all">All Sources</option>
@@ -478,9 +480,9 @@ const EvidenceCollectionRules: React.FC = () => {
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Source</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Schedule</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Freshness</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.status')}</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Stats</th>
-              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('common.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -530,7 +532,7 @@ const EvidenceCollectionRules: React.FC = () => {
         {filteredRules.length === 0 && (
           <div className="text-center py-12">
             <Database className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">No rules found</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('common.noResults')}</p>
           </div>
         )}
       </div>
@@ -545,7 +547,7 @@ const EvidenceCollectionRules: React.FC = () => {
         <button onClick={() => { setViewMode('rules'); setEditingId(null); }} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
           <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         </button>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{editingId ? 'Edit' : 'Create'} Collection Rule</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{editingId ? t('common.edit') : t('common.create')} Collection Rule</h2>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
@@ -554,11 +556,11 @@ const EvidenceCollectionRules: React.FC = () => {
           <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
             <h3 className="font-semibold text-gray-900 dark:text-white">Rule Details</h3>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.name')}</label>
               <input type="text" value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="e.g., AWS IAM Policy Evidence" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
               <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="Describe what this rule collects" />
             </div>
           </div>
@@ -606,12 +608,12 @@ const EvidenceCollectionRules: React.FC = () => {
 
           {/* Control Linkage */}
           <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Linked Controls</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{t('evidence.linkedControl')}</h3>
             <input
               type="text"
               value={controlSearch}
               onChange={e => setControlSearch(e.target.value)}
-              placeholder="Search controls..."
+              placeholder={t('common.search')}
               className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white text-sm"
             />
             {(form.linkedControls || []).length > 0 && (
@@ -681,7 +683,7 @@ const EvidenceCollectionRules: React.FC = () => {
           {/* Status Toggle */}
           <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('common.active')}</span>
               <button
                 onClick={() => setForm({ ...form, status: form.status === 'active' ? 'inactive' : 'active' })}
                 className={`relative w-11 h-6 rounded-full transition ${form.status === 'active' ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
@@ -698,7 +700,7 @@ const EvidenceCollectionRules: React.FC = () => {
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition disabled:opacity-50"
           >
             <CheckCircle className="w-4 h-4" />
-            {editingId ? 'Update Rule' : 'Create Rule'}
+            {editingId ? t('common.save') : t('common.create')}
           </button>
         </div>
       </div>
@@ -730,7 +732,7 @@ const EvidenceCollectionRules: React.FC = () => {
             </button>
             <button onClick={() => openEdit(selectedRule)} className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition">
               <Edit3 className="w-4 h-4" />
-              Edit
+              {t('common.edit')}
             </button>
           </div>
         </div>
@@ -806,11 +808,11 @@ const EvidenceCollectionRules: React.FC = () => {
   const renderDeleteConfirm = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowDeleteConfirm(null)}>
       <div className="bg-white dark:bg-surface-800 rounded-xl shadow-xl w-full max-w-sm mx-4 p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Rule</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('common.delete')}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">This will permanently delete this collection rule and all its history.</p>
         <div className="flex justify-end gap-2">
-          <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
-          <button onClick={() => showDeleteConfirm && deleteRule(showDeleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
+          <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">{t('common.cancel')}</button>
+          <button onClick={() => showDeleteConfirm && deleteRule(showDeleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">{t('common.delete')}</button>
         </div>
       </div>
     </div>

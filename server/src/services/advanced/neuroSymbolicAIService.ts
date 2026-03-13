@@ -379,7 +379,7 @@ Format as JSON with: {prediction, confidence, factors}`;
 
       // Filter rules based on context
       const applicableRules = defaultRules.filter((rule) => {
-        // Simple matching - in production, use proper rule engine
+        // Simple matching - can be enhanced with a dedicated rule engine (e.g., Drools)
         if (context?.frameworks && rule.framework) {
           return context.frameworks.includes(rule.framework);
         }

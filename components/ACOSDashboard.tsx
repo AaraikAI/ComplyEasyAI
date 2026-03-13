@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { GoalModal } from './GoalModal';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { Plus, X } from 'lucide-react';
@@ -66,6 +67,7 @@ interface EarlyWarning {
 
 const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) => void }> = ({ onBack, onNavigate }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'overview' | 'goals' | 'loops' | 'predictions' | 'simulations' | 'redteam' | 'swarm' | 'iot' | 'neuroSymbolic' | 'vr' | 'jit' | 'homomorphic'>('overview');
   const [goals, setGoals] = useState<ComplianceGoal[]>([]);
   const [loops, setLoops] = useState<ControlLoop[]>([]);
@@ -184,14 +186,14 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">aCOS Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('common.overview')}</h1>
           <p className="text-gray-600 mt-1">Autonomous Compliance Operating System</p>
         </div>
         <button
           onClick={onBack}
           className="px-4 py-2 text-gray-600 hover:text-gray-900"
         >
-          ← Back
+          {t('common.back')}
         </button>
       </div>
 
@@ -357,7 +359,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="animate-spin text-blue-500 mb-4" size={48} />
-                <p className="text-gray-600 text-lg">Loading aCOS Dashboard...</p>
+                <p className="text-gray-600 text-lg">{t('common.loading')}</p>
                 <p className="text-gray-500 text-sm mt-2">Fetching Active Goals, Control Loops, and Early Warnings</p>
               </div>
             ) : (
@@ -737,6 +739,7 @@ const GoalsTab: React.FC<{
 };
 
 const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; setLoops: (loops: ControlLoop[]) => void }> = ({ loops, onRefresh, setLoops }) => {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedControlId, setSelectedControlId] = useState('');
@@ -933,7 +936,7 @@ const ControlLoopsTab: React.FC<{ loops: ControlLoop[]; onRefresh: () => void; s
       {loading && loops.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Zap className="mx-auto text-gray-400 mb-4 animate-spin" size={48} />
-          <p className="text-gray-600">Loading control loops...</p>
+          <p className="text-gray-600">{t('common.loading')}</p>
         </div>
       ) : loops.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg">

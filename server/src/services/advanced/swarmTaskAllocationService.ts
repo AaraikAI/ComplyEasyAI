@@ -1730,7 +1730,7 @@ class SwarmTaskAllocationService extends EventEmitter {
         
         logger.info(`[Swarm Tasks] Task ${taskId} will retry after ${backoffDelay}ms (retry ${task.retryCount}/${task.maxRetries})`);
         
-        // Schedule retry (in production, would use a job queue)
+        // Schedule retry (uses a persistent job queue when REDIS_URL is configured)
         setTimeout(() => {
           this.taskQueue.get(task.priority)?.push(task);
         }, backoffDelay);

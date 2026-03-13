@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft,
@@ -171,6 +172,7 @@ const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
 // ── Component ───────────────────────────────────────────────────────────────
 
 export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [dsarStatusFilter, setDsarStatusFilter] = useState<DSARStatus | 'All'>('All');
@@ -415,11 +417,11 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-purple-400 text-sm mb-2">
-            <Globe className="w-4 h-4" /> Cross-Border Transfers
+            <Globe className="w-4 h-4" /> {t('privacy.crossBorderTransfers')}
           </div>
           <div className="text-2xl font-bold text-white">{transfers.length}</div>
           <div className="text-xs text-slate-500 mt-1">
-            {transfers.filter(t => t.status === 'Active').length} active, {transfers.filter(t => t.status === 'Under Review').length} under review
+            {transfers.filter(xfer => xfer.status === 'Active').length} active, {transfers.filter(xfer => xfer.status === 'Under Review').length} under review
           </div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
@@ -452,7 +454,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search DSARs..."
+              placeholder={`${t('common.search')}...`}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-64"
@@ -474,8 +476,8 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
             className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="All">All Types</option>
-            {(['Access', 'Deletion', 'Rectification', 'Portability', 'Restriction', 'Objection'] as DSARType[]).map(t => (
-              <option key={t} value={t}>{t}</option>
+            {(['Access', 'Deletion', 'Rectification', 'Portability', 'Restriction', 'Objection'] as DSARType[]).map(item => (
+              <option key={item} value={item}>{item}</option>
             ))}
           </select>
         </div>
@@ -483,7 +485,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           onClick={() => setShowCreateDSAR(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
         >
-          <Plus className="w-4 h-4" /> New DSAR
+          <Plus className="w-4 h-4" /> {t('privacy.dataSubjectRequests')}
         </button>
       </div>
 
@@ -493,14 +495,14 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
             <thead>
               <tr className="border-b border-slate-700">
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">ID</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Type</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Data Subject</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.type')}</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('dpia.dataSubjects')}</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Submitted</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Deadline</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Status</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Assigned To</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Priority</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Actions</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.status')}</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.assignee')}</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.priority')}</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -577,7 +579,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-lg mx-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">New DSAR Request</h3>
+            <h3 className="text-lg font-medium text-white">{t('privacy.dataSubjectRequests')}</h3>
             <button onClick={() => setShowCreateDSAR(false)} className="text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
@@ -586,8 +588,8 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
             <div>
               <label className="block text-sm text-slate-400 mb-1">Request Type</label>
               <select className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
-                {(['Access', 'Deletion', 'Rectification', 'Portability', 'Restriction', 'Objection'] as DSARType[]).map(t => (
-                  <option key={t} value={t}>{t}</option>
+                {(['Access', 'Deletion', 'Rectification', 'Portability', 'Restriction', 'Objection'] as DSARType[]).map(item => (
+                  <option key={item} value={item}>{item}</option>
                 ))}
               </select>
             </div>
@@ -602,7 +604,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
               </div>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Priority</label>
+              <label className="block text-sm text-slate-400 mb-1">{t('common.priority')}</label>
               <select className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
                 <option value="High">High</option>
                 <option value="Medium">Medium</option>
@@ -610,7 +612,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-1">Description</label>
+              <label className="block text-sm text-slate-400 mb-1">{t('common.description')}</label>
               <textarea rows={3} placeholder="Details of the request..." className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none" />
             </div>
             <div className="flex gap-3 justify-end pt-2">
@@ -618,7 +620,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
                 onClick={() => setShowCreateDSAR(false)}
                 className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={async () => {
@@ -626,7 +628,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
                 }}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
               >
-                Create DSAR
+                {t('common.create')}
               </button>
             </div>
           </div>
@@ -715,7 +717,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
 
       <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-700">
-          <h3 className="text-sm font-medium text-white">Consent Purpose Configuration</h3>
+          <h3 className="text-sm font-medium text-white">{t('privacy.consentManagement')}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -870,7 +872,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <h3 className="text-sm font-medium text-white mb-3">Transfer Mechanisms</h3>
           <div className="space-y-2">
             {(['SCC', 'BCR', 'Adequacy Decision', 'Derogation'] as const).map(mechanism => {
-              const count = transfers.filter(t => t.legalMechanism === mechanism).length;
+              const count = transfers.filter(xfer => xfer.legalMechanism === mechanism).length;
               return (
                 <div key={mechanism} className="flex items-center justify-between">
                   <span className="text-xs text-slate-400">{mechanism}</span>
@@ -884,7 +886,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <h3 className="text-sm font-medium text-white mb-3">Risk Distribution</h3>
           <div className="space-y-2">
             {(['Low', 'Medium', 'High'] as const).map(risk => {
-              const count = transfers.filter(t => t.riskLevel === risk).length;
+              const count = transfers.filter(xfer => xfer.riskLevel === risk).length;
               const pct = transfers.length > 0 ? (count / transfers.length) * 100 : 0;
               return (
                 <div key={risk} className="flex items-center gap-3">
@@ -908,20 +910,20 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">BCR Transfers</span>
-              <span className="text-xs font-medium text-white">{transfers.filter(t => t.legalMechanism === 'BCR').length}</span>
+              <span className="text-xs font-medium text-white">{transfers.filter(xfer => xfer.legalMechanism === 'BCR').length}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">TIA Completed</span>
-              <span className="text-xs font-medium text-green-400">{transfers.filter(t => t.tiaCompleted).length} / {transfers.length}</span>
+              <span className="text-xs font-medium text-green-400">{transfers.filter(xfer => xfer.tiaCompleted).length} / {transfers.length}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">Pending Review</span>
-              <span className="text-xs font-medium text-yellow-400">{transfers.filter(t => t.status === 'Under Review').length}</span>
+              <span className="text-xs font-medium text-yellow-400">{transfers.filter(xfer => xfer.status === 'Under Review').length}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">TIA Missing</span>
-              <span className={`text-xs font-medium ${transfers.filter(t => !t.tiaCompleted).length > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                {transfers.filter(t => !t.tiaCompleted).length}
+              <span className={`text-xs font-medium ${transfers.filter(xfer => !xfer.tiaCompleted).length > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                {transfers.filter(xfer => !xfer.tiaCompleted).length}
               </span>
             </div>
           </div>
@@ -930,7 +932,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
 
       <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
-          <h3 className="text-sm font-medium text-white">Transfer Registry</h3>
+          <h3 className="text-sm font-medium text-white">{t('privacy.crossBorderTransfers')}</h3>
           <button className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs transition-colors">
             <Plus className="w-3.5 h-3.5" /> Add Transfer
           </button>
@@ -950,28 +952,28 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
               </tr>
             </thead>
             <tbody>
-              {transfers.map(t => (
-                <tr key={t.id} className="border-b border-slate-700/50 hover:bg-slate-750/50">
-                  <td className="px-4 py-3 text-slate-200">{t.transferName}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{t.sourceCountry}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{t.destinationCountry}</td>
+              {transfers.map(xfer => (
+                <tr key={xfer.id} className="border-b border-slate-700/50 hover:bg-slate-750/50">
+                  <td className="px-4 py-3 text-slate-200">{xfer.transferName}</td>
+                  <td className="px-4 py-3 text-slate-400 text-xs">{xfer.sourceCountry}</td>
+                  <td className="px-4 py-3 text-slate-400 text-xs">{xfer.destinationCountry}</td>
                   <td className="px-4 py-3">
-                    <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300">{t.legalMechanism}</span>
+                    <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300">{xfer.legalMechanism}</span>
                   </td>
                   <td className="px-4 py-3">
-                    {t.tiaCompleted ? (
+                    {xfer.tiaCompleted ? (
                       <CheckCircle className="w-4 h-4 text-green-400" />
                     ) : (
                       <AlertTriangle className="w-4 h-4 text-red-400" />
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded ${transferRiskColors[t.riskLevel]}`}>{t.riskLevel}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${transferRiskColors[xfer.riskLevel]}`}>{xfer.riskLevel}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded ${transferStatusColors[t.status]}`}>{t.status}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${transferStatusColors[xfer.status]}`}>{xfer.status}</span>
                   </td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{t.reviewDate}</td>
+                  <td className="px-4 py-3 text-slate-400 text-xs">{xfer.reviewDate}</td>
                 </tr>
               ))}
             </tbody>
@@ -1056,7 +1058,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search suppression list..."
+                placeholder={`${t('common.search')}...`}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="pl-9 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 w-64"
@@ -1075,7 +1077,7 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
             </select>
           </div>
           <button className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors">
-            <Download className="w-4 h-4" /> Export List
+            <Download className="w-4 h-4" /> {t('common.export')}
           </button>
         </div>
 
@@ -1165,12 +1167,12 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
                 className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm">Back</span>
+                <span className="text-sm">{t('common.back')}</span>
               </button>
               <div className="h-5 w-px bg-slate-700" />
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-blue-400" />
-                <h1 className="text-lg font-semibold text-white">Privacy Management Platform</h1>
+                <h1 className="text-lg font-semibold text-white">{t('privacy.title')}</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">

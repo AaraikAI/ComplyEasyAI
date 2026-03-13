@@ -13,6 +13,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Plus, Loader2, Search, X, Filter, ChevronDown, ChevronUp,
   AlertTriangle, CheckCircle, Clock, Eye, Edit3, Trash2, ExternalLink,
@@ -92,6 +93,7 @@ const SEVERITY_CONFIG: Record<ChangeSeverity, { label: string; color: string; do
   high: { label: 'High', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300', dotColor: 'bg-orange-500' },
   medium: { label: 'Medium', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300', dotColor: 'bg-yellow-500' },
   low: { label: 'Low', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', dotColor: 'bg-green-500' },
+
 };
 
 const STATUS_CONFIG: Record<ChangeStatus, { label: string; color: string; icon: React.ReactNode }> = {
@@ -109,6 +111,7 @@ const REGULATIONS = ['GDPR', 'CCPA/CPRA', 'SOC 2', 'HIPAA', 'PCI DSS', 'ISO 2700
 
 const RegulatoryChangeTracker: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [changes, setChanges] = useState<RegulatoryChange[]>([]);
   const [selectedChange, setSelectedChange] = useState<RegulatoryChange | null>(null);
@@ -339,7 +342,7 @@ const RegulatoryChangeTracker: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search regulatory changes..."
+            placeholder={t('common.search')}
             className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500"
           />
         </div>
@@ -350,7 +353,7 @@ const RegulatoryChangeTracker: React.FC = () => {
           }`}
         >
           <Filter className="w-4 h-4" />
-          Filters
+          {t('common.filter')}
         </button>
       </div>
 
@@ -381,7 +384,7 @@ const RegulatoryChangeTracker: React.FC = () => {
       ) : filteredChanges.length === 0 ? (
         <div className="text-center py-20">
           <Scale className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">No regulatory changes found</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('common.noResults')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -478,7 +481,7 @@ const RegulatoryChangeTracker: React.FC = () => {
             </button>
             <button onClick={() => openEdit(selectedChange)} className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition">
               <Edit3 className="w-4 h-4" />
-              Edit
+              {t('common.edit')}
             </button>
             <button onClick={() => setShowDeleteConfirm(selectedChange.id)} className="flex items-center gap-2 px-3 py-2 text-sm border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition">
               <Trash2 className="w-4 h-4" />
@@ -607,7 +610,7 @@ const RegulatoryChangeTracker: React.FC = () => {
           {/* Sidebar */}
           <div className="space-y-4">
             <div className="bg-white dark:bg-surface-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Details</h4>
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{t('common.details')}</h4>
               {[
                 { label: 'Regulation', value: selectedChange.regulation },
                 { label: 'Jurisdiction', value: selectedChange.jurisdiction },
@@ -653,7 +656,7 @@ const RegulatoryChangeTracker: React.FC = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setShowAddModal(false); setEditingId(null); }}>
       <div className="bg-white dark:bg-surface-800 rounded-xl shadow-xl w-full max-w-xl mx-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold text-gray-900 dark:text-white">{editingId ? 'Edit' : 'Add'} Regulatory Change</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white">{editingId ? t('common.edit') : t('common.add')} Regulatory Change</h3>
           <button onClick={() => { setShowAddModal(false); setEditingId(null); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
         <div className="p-4 space-y-4">
@@ -669,7 +672,7 @@ const RegulatoryChangeTracker: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Severity</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.severity')}</label>
               <select value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value as ChangeSeverity })} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white text-sm">
                 {Object.entries(SEVERITY_CONFIG).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
               </select>
@@ -693,7 +696,7 @@ const RegulatoryChangeTracker: React.FC = () => {
             <textarea value={form.summary || ''} onChange={e => setForm({ ...form, summary: e.target.value })} rows={3} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="Brief summary of the change" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
             <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} rows={4} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-surface-700 text-gray-900 dark:text-white" placeholder="Detailed description" />
           </div>
           <div>
@@ -712,8 +715,8 @@ const RegulatoryChangeTracker: React.FC = () => {
           </div>
         </div>
         <div className="flex justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
-          <button onClick={() => { setShowAddModal(false); setEditingId(null); }} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
-          <button onClick={saveChange} disabled={!form.title} className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">{editingId ? 'Update' : 'Create'}</button>
+          <button onClick={() => { setShowAddModal(false); setEditingId(null); }} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">{t('common.cancel')}</button>
+          <button onClick={saveChange} disabled={!form.title} className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">{editingId ? t('common.save') : t('common.create')}</button>
         </div>
       </div>
     </div>
@@ -725,8 +728,8 @@ const RegulatoryChangeTracker: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Change</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Are you sure? This action cannot be undone.</p>
         <div className="flex justify-end gap-2">
-          <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
-          <button onClick={() => showDeleteConfirm && deleteChange(showDeleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
+          <button onClick={() => setShowDeleteConfirm(null)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">{t('common.cancel')}</button>
+          <button onClick={() => showDeleteConfirm && deleteChange(showDeleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">{t('common.delete')}</button>
         </div>
       </div>
     </div>

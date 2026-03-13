@@ -2957,7 +2957,7 @@ class ACOSController {
 
       const keys = await homomorphicAIService.generateKeys(scheme as 'BFV' | 'CKKS', securityLevel as 128 | 192 | 256);
       
-      // Store keys securely (in production, use proper key management)
+      // Store keys securely (use proper key management (e.g., AWS KMS, HashiCorp Vault))
       logger.info(`Generated ${scheme} homomorphic keys for user ${authReq.user!.id}`);
       
       res.json(keys);

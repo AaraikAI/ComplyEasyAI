@@ -1512,7 +1512,7 @@ class ComplianceDigitalTwinService {
 
     // If correlations are enabled, maintain relationships between variables
     if (withCorrelations && Object.keys(varied).length > 1) {
-      // Apply correlated variation (simplified - in production, use proper correlation matrix)
+      // Apply correlated variation (simplified - can be enhanced with a proper correlation matrix)
       const correlationFactor = rng() * 0.5 - 0.25; // -0.25 to 0.25
       for (const key in varied) {
         if (typeof varied[key] === 'number') {

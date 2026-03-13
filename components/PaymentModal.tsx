@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Lock, CheckCircle, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 interface PaymentModalProps {
   plan: string;
@@ -13,6 +14,7 @@ interface PaymentModalProps {
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billingCycle = 'annual', onClose, onSuccess }) => {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'processing' | 'success'>('form');
   const [cardNumber, setCardNumber] = useState('');
@@ -60,8 +62,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billing
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
               <CheckCircle size={40} className="text-green-600" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900">Payment Successful</h3>
-            <p className="text-gray-500 mt-2">You have been upgraded to the {plan} Plan.</p>
+            <h3 className="text-2xl font-bold text-gray-900">{t('common.success')}</h3>
+            <p className="text-gray-500 mt-2">{t('subscription.upgrade')} {plan}</p>
           </div>
         ) : (
           <>
@@ -91,12 +93,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billing
                 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Plan</span>
+                    <span className="text-gray-600">{t('subscription.currentPlan')}</span>
                     <span className="font-bold text-gray-900">{plan}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">Price</span>
-                    <span className="font-bold text-gray-900">{price}/mo</span>
+                    <span className="font-bold text-gray-900">{price}/{t('subscription.perMonth')}</span>
                   </div>
                 </div>
 
@@ -108,7 +110,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billing
                   {loading ? (
                     <>
                       <Loader2 className="animate-spin mr-2" size={20} />
-                      Processing...
+                      {t('common.loading')}
                     </>
                   ) : (
                     <>

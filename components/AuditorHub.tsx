@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
   Shield,
@@ -259,6 +260,7 @@ const workpaperStatusColor: Record<string, string> = {
 };
 
 export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateEngagement, setShowCreateEngagement] = useState(false);
@@ -271,7 +273,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
   const [workpaperStatusFilter, setWorkpaperStatusFilter] = useState<string>('all');
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: 'overview', label: 'Overview', icon: <BarChart3 size={16} /> },
+    { id: 'overview', label: t('common.overview'), icon: <BarChart3 size={16} /> },
     { id: 'engagements', label: 'Engagements', icon: <Briefcase size={16} /> },
     { id: 'findings', label: 'Findings', icon: <AlertTriangle size={16} /> },
     { id: 'evidence', label: 'Evidence Requests', icon: <FileText size={16} /> },
@@ -342,7 +344,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
         </div>
         <div className="bg-slate-800 rounded-lg border border-slate-700 p-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-slate-400 text-sm">Open Findings</span>
+            <span className="text-slate-400 text-sm">{t('audit.findingsCount')}</span>
             <AlertTriangle size={18} className="text-orange-400" />
           </div>
           <div className="text-3xl font-bold text-white">{overviewStats.openFindings}</div>
@@ -350,7 +352,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
         </div>
         <div className="bg-slate-800 rounded-lg border border-slate-700 p-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-slate-400 text-sm">Pending Requests</span>
+            <span className="text-slate-400 text-sm">{t('common.pending')}</span>
             <Clock size={18} className="text-yellow-400" />
           </div>
           <div className="text-3xl font-bold text-white">{overviewStats.pendingRequests}</div>
@@ -1126,7 +1128,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
       return (
         <div className="flex items-center justify-center py-20">
           <RefreshCw size={32} className="text-blue-400 animate-spin" />
-          <span className="text-slate-400 ml-3">Loading audit data...</span>
+          <span className="text-slate-400 ml-3">{t('common.loading')}</span>
         </div>
       );
     }
@@ -1182,7 +1184,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
                   <Shield size={20} className="text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-white">Auditor Hub</h1>
+                  <h1 className="text-xl font-bold text-white">{t('audit.title')}</h1>
                   <p className="text-sm text-slate-400">Manage audits, findings, evidence, and auditor relationships</p>
                 </div>
               </div>

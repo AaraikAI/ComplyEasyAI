@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import { AlertTriangle, CheckCircle, Clock, X, Plus, FileText, Shield, TrendingUp, AlertCircle, Database, Eye, Download } from 'lucide-react';
 
@@ -48,6 +49,7 @@ interface RiskAssessment {
 }
 
 export const EUAIActDashboard: React.FC = () => {
+  const { t } = useI18n();
   const [systems, setSystems] = useState<AISystem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -366,7 +368,7 @@ export const EUAIActDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">EU AI Act Compliance</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.euAiAct')}</h2>
           <p className="text-gray-600 mt-1">Manage AI systems and ensure compliance with Regulation (EU) 2024/1689</p>
         </div>
         <div className="flex gap-3">
@@ -402,7 +404,7 @@ export const EUAIActDashboard: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Systems</p>
+              <p className="text-sm text-gray-600">{t('common.total')} Systems</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{systems.length}</p>
             </div>
             <Database className="w-8 h-8 text-blue-600" />
@@ -411,7 +413,7 @@ export const EUAIActDashboard: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">High-Risk Systems</p>
+              <p className="text-sm text-gray-600">{t('euRegulations.highRisk')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {systems.filter(s => s.riskLevel === 'high').length}
               </p>
@@ -599,7 +601,7 @@ export const EUAIActDashboard: React.FC = () => {
             </div>
             <form onSubmit={handleRegisterSystem} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">System Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} *</label>
                 <input
                   type="text"
                   required
@@ -609,7 +611,7 @@ export const EUAIActDashboard: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
                 <textarea
                   value={registrationForm.description}
                   onChange={(e) => setRegistrationForm({ ...registrationForm, description: e.target.value })}
@@ -720,7 +722,7 @@ export const EUAIActDashboard: React.FC = () => {
                   onClick={() => setShowRegisterModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -811,7 +813,7 @@ export const EUAIActDashboard: React.FC = () => {
                   onClick={() => setShowAssessmentModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -824,23 +826,23 @@ export const EUAIActDashboard: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">AI System Details: {selectedSystem.name}</h3>
+              <h3 className="text-xl font-semibold text-gray-900">{t('common.details')}: {selectedSystem.name}</h3>
               <button onClick={() => setShowDetailsModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Description</label>
+                <label className="text-sm font-medium text-gray-700">{t('common.description')}</label>
                 <p className="text-gray-900 mt-1">{selectedSystem.description || 'No description provided'}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Risk Level</label>
+                  <label className="text-sm font-medium text-gray-700">{t('risks.riskLevel')}</label>
                   <p className="text-gray-900 mt-1 capitalize">{selectedSystem.riskLevel}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Compliance Status</label>
+                  <label className="text-sm font-medium text-gray-700">{t('common.status')}</label>
                   <p className="text-gray-900 mt-1 capitalize">{selectedSystem.complianceStatus.replace('_', ' ')}</p>
                 </div>
               </div>
@@ -894,7 +896,7 @@ export const EUAIActDashboard: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Update Compliance Status</h3>
+              <h3 className="text-xl font-semibold text-gray-900">{t('common.status')}</h3>
               <button onClick={() => setShowStatusUpdateModal(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-5 h-5" />
               </button>
@@ -935,7 +937,7 @@ export const EUAIActDashboard: React.FC = () => {
                   onClick={() => setShowStatusUpdateModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -968,7 +970,7 @@ export const EUAIActDashboard: React.FC = () => {
                   onClick={() => setShowReportModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>
@@ -988,7 +990,7 @@ export const EUAIActDashboard: React.FC = () => {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  Download
+                  {t('common.download')}
                 </button>
                 <button onClick={() => setShowReportViewModal(false)} className="text-gray-400 hover:text-gray-600">
                   <X className="w-5 h-5" />
@@ -1024,7 +1026,7 @@ export const EUAIActDashboard: React.FC = () => {
                   <p className="text-3xl font-bold text-blue-900 mt-1">{systems.filter(s => s.isGenerative).length}</p>
                 </div>
                 <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                  <p className="text-sm text-gray-600">High-Risk Systems</p>
+                  <p className="text-sm text-gray-600">{t('euRegulations.highRisk')}</p>
                   <p className="text-3xl font-bold text-orange-900 mt-1">{systems.filter(s => s.riskLevel === 'high').length}</p>
                 </div>
               </div>
@@ -1065,7 +1067,7 @@ export const EUAIActDashboard: React.FC = () => {
                 )}
               </div>
 
-              {/* High-Risk Systems */}
+              {/* {t('euRegulations.highRisk')} */}
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-2">
                   High-Risk AI Systems ({generatedReport.highRiskSystems?.length || 0})
@@ -1134,7 +1136,7 @@ export const EUAIActDashboard: React.FC = () => {
                   onClick={() => setShowReportViewModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Close
+                  {t('common.close')}
                 </button>
               </div>
             </div>

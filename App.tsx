@@ -140,6 +140,11 @@ const TicketingIntegrations = lazy(() => import('./components/TicketingIntegrati
 const AccessibilitySettings = lazy(() => import('./components/AccessibilitySettings'));
 const OfflineBanner = lazy(() => import('./components/OfflineBanner'));
 const UpdateAvailableBanner = lazy(() => import('./components/UpdateAvailableBanner'));
+const DPIAWorkflow = lazy(() => import('./components/DPIAWorkflow'));
+const RoPAManagement = lazy(() => import('./components/RoPAManagement'));
+const SecurityTrainingDashboard = lazy(() => import('./components/SecurityTrainingDashboard'));
+const CookieConsentBanner = lazy(() => import('./components/CookieConsentBanner'));
+const PrivacyNoticeServing = lazy(() => import('./components/PrivacyNoticeServing'));
 
 // ── Loading Spinner ──────────────────────────────────────────────────
 const LoadingSpinner = () => (
@@ -189,6 +194,30 @@ const MainApp: React.FC = () => {
   const [frameworks, setFrameworks] = useState<ComplianceFramework[]>([]);
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
+
+  // Service worker update detection
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then(reg => {
+        if (reg) {
+          setSwRegistration(reg);
+          if (reg.waiting) setSwUpdateAvailable(true);
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  setSwUpdateAvailable(true);
+                }
+              });
+            }
+          });
+        }
+      });
+    }
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -350,6 +379,12 @@ const MainApp: React.FC = () => {
             {/* Privacy & Data */}
             <Route path="privacy" element={<PrivacyManagementPlatform onBack={() => navigate(ROUTES.DASHBOARD)} />} />
             <Route path="privacy/data-deletion" element={<AccountDeletionWorkflow onBack={() => navigate(ROUTES.PRIVACY)} />} />
+            <Route path="privacy/dpia" element={<DPIAWorkflow onBack={() => navigate(ROUTES.PRIVACY)} />} />
+            <Route path="privacy/ropa" element={<RoPAManagement onBack={() => navigate(ROUTES.PRIVACY)} />} />
+            <Route path="privacy/notices" element={<PrivacyNoticeServing onBack={() => navigate(ROUTES.PRIVACY)} />} />
+
+            {/* Security Training */}
+            <Route path="security-training" element={<SecurityTrainingDashboard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
 
             {/* Enterprise */}
             <Route path="enterprise/workspaces" element={<WorkspaceManagement />} />
@@ -437,6 +472,12 @@ const MainApp: React.FC = () => {
         {/* AI Compliance Copilot Sidebar */}
         <AIComplianceCopilot currentView="dashboard" isOpen={isCopilotOpen} onClose={() => setIsCopilotOpen(false)} />
       </Layout>
+      {/* Global Banners */}
+      <Suspense fallback={null}>
+        <OfflineBanner />
+        <UpdateAvailableBanner isUpdateAvailable={swUpdateAvailable} registration={swRegistration} />
+        <CookieConsentBanner />
+      </Suspense>
     </OnboardingProvider>
   );
 };

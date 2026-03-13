@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import { Building2, CheckCircle, AlertTriangle, X, Plus, FileText, Shield, TrendingUp, Clock, BarChart3 } from 'lucide-react';
 
 interface Gatekeeper {
@@ -36,6 +37,7 @@ interface ObligationTracking {
 }
 
 export const DMAGatekeeperManagement: React.FC = () => {
+  const { t } = useI18n();
   const [gatekeepers, setGatekeepers] = useState<Gatekeeper[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -216,7 +218,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Digital Markets Act (DMA) Compliance</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('euRegulations.dma')}</h2>
           <p className="text-gray-600 mt-1">Manage gatekeeper platforms and track DMA obligations (Regulation EU 2022/1925)</p>
         </div>
         <button
@@ -243,7 +245,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Platforms</p>
+              <p className="text-sm text-gray-600">{t('common.total')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{gatekeepers.length}</p>
             </div>
             <Building2 className="w-8 h-8 text-blue-600" />
@@ -252,7 +254,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Designated Gatekeepers</p>
+              <p className="text-sm text-gray-600">{t('common.status')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {gatekeepers.filter(g => g.designationStatus === 'designated').length}
               </p>
@@ -263,7 +265,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Compliant Platforms</p>
+              <p className="text-sm text-gray-600">{t('common.status')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {gatekeepers.filter(g => g.complianceStatus === 'compliant').length}
               </p>
@@ -493,7 +495,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
                   onClick={() => setShowRegisterModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -612,7 +614,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
                   onClick={() => setShowUpdateStatusModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -677,7 +679,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
                   onClick={() => setShowReportViewModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Close
+                  {t('common.close')}
                 </button>
               </div>
             </div>
@@ -743,7 +745,7 @@ export const DMAGatekeeperManagement: React.FC = () => {
                   onClick={() => setShowReportModal(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>

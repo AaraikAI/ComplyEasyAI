@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 interface FrameworkControl {
   id: string;
@@ -28,6 +29,7 @@ interface FrameworkDetailsProps {
 
 export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, onBack, onDataChanged }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const { completeMilestone, triggerCelebration, progress } = useOnboarding();
   const [controls, setControls] = useState<FrameworkControl[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -707,7 +709,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
         className="flex items-center text-gray-500 hover:text-gray-800 transition-colors"
       >
         <ArrowLeft size={18} className="mr-2" />
-        Back to Frameworks
+        {t('common.back')}
       </button>
 
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -810,7 +812,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
               }}
               className="text-sm text-brand-600 hover:text-brand-800 font-medium"
             >
-              {isEditingNotes ? 'Save' : 'Edit'}
+              {isEditingNotes ? t('common.save') : t('common.edit')}
             </button>
           )}
         </div>
@@ -832,7 +834,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                 }}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={(e) => {
@@ -842,7 +844,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                 }}
                 className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700"
               >
-                Save Notes
+                {t('common.save')}
               </button>
             </div>
           </div>
@@ -997,7 +999,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
               className="text-sm bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200 flex items-center shadow-sm"
             >
               <Plus size={14} className="mr-2" />
-              Add Control
+              {t('common.add')}
             </button>
             <button 
               onClick={() => smartUploadRef.current?.click()}
@@ -1077,7 +1079,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                   type="submit"
                   className="bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors"
                 >
-                  Create
+                  {t('common.create')}
                 </button>
                 <button
                   type="button"
@@ -1087,7 +1089,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                   }}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -1098,7 +1100,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
           {isLoading ? (
             <div className="p-8 text-center">
               <Loader2 className="animate-spin mx-auto mb-2 text-brand-600" size={24} />
-              <p className="text-gray-500">Loading controls...</p>
+              <p className="text-gray-500">{t('common.loading')}</p>
             </div>
           ) : controls.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
@@ -1204,7 +1206,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                         <Download size={18} />
                       )}
                     </button>
-                    <span className="text-xs text-gray-500 mt-1">Export</span>
+                    <span className="text-xs text-gray-500 mt-1">{t('common.export')}</span>
                   </div>
                   <div className="flex flex-col items-center">
                     <label 
@@ -1226,7 +1228,7 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                         <Upload size={18} />
                       )}
                     </label>
-                    <span className="text-xs text-gray-500 mt-1">Upload</span>
+                    <span className="text-xs text-gray-500 mt-1">{t('common.upload')}</span>
                   </div>
                 </div>
               </div>
@@ -1290,13 +1292,13 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
 
               {selectedControl.category && (
                 <div>
-                  <h4 className="font-semibold text-gray-700 mb-2">Category</h4>
+                  <h4 className="font-semibold text-gray-700 mb-2">{t('common.category')}</h4>
                   <p className="text-gray-600">{selectedControl.category}</p>
                 </div>
               )}
 
               <div>
-                <h4 className="font-semibold text-gray-700 mb-2">Status</h4>
+                <h4 className="font-semibold text-gray-700 mb-2">{t('common.status')}</h4>
                 <div className="space-y-2">
                   <select
                     value={selectedControl.status}
@@ -1339,14 +1341,14 @@ export const FrameworkDetails: React.FC<FrameworkDetailsProps> = ({ framework, o
                       }}
                       className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
                     />
-                    <span className="text-sm text-gray-700">Evidence Required</span>
+                    <span className="text-sm text-gray-700">{t('frameworks.evidenceRequired')}</span>
                   </label>
                 </div>
               </div>
 
               {(user?.role === 'admin') && (
                 <div>
-                  <h4 className="font-semibold text-gray-700 mb-2">Owner</h4>
+                  <h4 className="font-semibold text-gray-700 mb-2">{t('controls.controlOwner')}</h4>
                   <select
                     value={selectedControl.ownerId || ''}
                     onChange={async (e) => {

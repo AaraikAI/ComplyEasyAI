@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Target,
   Plus,
@@ -192,6 +193,7 @@ function radarPoints(scores: number[], cx: number, cy: number, maxRadius: number
 // ── Component ───────────────────────────────────────────────────────────────
 
 const MaturityAssessment: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
   const [wizardDomain, setWizardDomain] = useState<Domain>('Governance');
@@ -382,7 +384,7 @@ const MaturityAssessment: React.FC = () => {
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'questionnaire', label: 'Assessment', icon: <FileText className="w-4 h-4" /> },
-    { id: 'gap_analysis', label: 'Gap Analysis', icon: <Lightbulb className="w-4 h-4" /> },
+    { id: 'gap_analysis', label: t('maturity.gap'), icon: <Lightbulb className="w-4 h-4" /> },
     { id: 'history', label: 'History', icon: <History className="w-4 h-4" /> },
   ];
 
@@ -396,7 +398,7 @@ const MaturityAssessment: React.FC = () => {
           <div className="flex items-center gap-3">
             <Target className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             <div>
-              <h1 className="text-xl font-bold text-surface-900 dark:text-surface-100">Maturity Assessment</h1>
+              <h1 className="text-xl font-bold text-surface-900 dark:text-surface-100">{t('maturity.title')}</h1>
               <p className="text-sm text-surface-500 dark:text-surface-400">GRC maturity evaluation across Governance, Risk, Compliance, Technology, and People</p>
             </div>
           </div>
@@ -415,7 +417,7 @@ const MaturityAssessment: React.FC = () => {
         <div className="bg-surface-50 dark:bg-surface-700/50 rounded-lg p-4 mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-sm text-surface-500 dark:text-surface-400">Overall Maturity Score</span>
+              <span className="text-sm text-surface-500 dark:text-surface-400">{t('maturity.maturityScore')}</span>
               <div className="flex items-center gap-3 mt-1">
                 <span className="text-4xl font-bold text-surface-900 dark:text-surface-100">{overallScore.toFixed(1)}</span>
                 <span className="text-lg text-surface-400">/ 5</span>
@@ -464,7 +466,7 @@ const MaturityAssessment: React.FC = () => {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <RefreshCw className="w-6 h-6 text-purple-600 animate-spin" />
-          <span className="ml-3 text-sm text-surface-500 dark:text-surface-400">Loading assessments...</span>
+          <span className="ml-3 text-sm text-surface-500 dark:text-surface-400">{t('common.loading')}</span>
         </div>
       ) : (
         <div className="p-6">
@@ -477,14 +479,14 @@ const MaturityAssessment: React.FC = () => {
                   <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">Maturity Radar</h3>
                   {renderRadarChart()}
                   <div className="flex items-center justify-center gap-4 mt-4">
-                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-blue-500" /><span className="text-xs text-surface-500 dark:text-surface-400">Current</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 border-t-2 border-dashed border-slate-400" style={{ width: 12 }} /><span className="text-xs text-surface-500 dark:text-surface-400">Target</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-blue-500" /><span className="text-xs text-surface-500 dark:text-surface-400">{t('maturity.currentLevel')}</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 border-t-2 border-dashed border-slate-400" style={{ width: 12 }} /><span className="text-xs text-surface-500 dark:text-surface-400">{t('maturity.targetLevel')}</span></div>
                   </div>
                 </div>
 
                 {/* Domain Scores */}
                 <div className="bg-surface-50 dark:bg-surface-700/30 rounded-xl p-6 border border-surface-200 dark:border-surface-700">
-                  <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">Domain Scores</h3>
+                  <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">{t('maturity.domain')} Scores</h3>
                   <div className="space-y-4">
                     {domainScores.map(ds => {
                       const diff = ds.currentScore - ds.previousScore;
@@ -673,7 +675,7 @@ const MaturityAssessment: React.FC = () => {
                   <button onClick={fetchRecommendations} disabled={loadingRecs}
                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 border border-purple-300 dark:border-purple-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20">
                     {loadingRecs ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    {loadingRecs ? 'Generating...' : 'Generate Recommendations'}
+                    {loadingRecs ? 'Generating...' : t('maturity.recommendations')}
                   </button>
                 </div>
 

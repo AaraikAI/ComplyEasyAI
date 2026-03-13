@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Plus, Search, Filter, X, Play, Pause, Copy, Trash2, Edit3,
   Eye, Clock, CheckCircle, XCircle, AlertTriangle, Zap, GitBranch, Bell,
@@ -124,14 +125,14 @@ function mapApiRule(r: any): AutomationRule {
   };
 }
 
-function mapApiTemplate(t: any): WorkflowTemplate {
+function mapApiTemplate(tpl: any): WorkflowTemplate {
   return {
-    id: t.id,
-    name: t.name,
-    category: (t.category as TemplateCategory) || 'Compliance',
-    description: t.description || '',
-    stepsCount: t.steps ?? t.stepsCount ?? 0,
-    popularity: t.popularity ?? 0,
+    id: tpl.id,
+    name: tpl.name,
+    category: (tpl.category as TemplateCategory) || 'Compliance',
+    description: tpl.description || '',
+    stepsCount: tpl.steps ?? tpl.stepsCount ?? 0,
+    popularity: tpl.popularity ?? 0,
   };
 }
 
@@ -218,6 +219,7 @@ const NODE_PALETTE: { type: NodeType; label: string }[] = [
 // ── Component ──────────────────────────────────────────────────────────
 
 export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('workflows');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -410,9 +412,9 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
   }, [workflows, searchQuery, statusFilter]);
 
   const filteredTemplates = useMemo(() => {
-    return templates.filter(t => {
-      if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
-      if (searchQuery && !t.name.toLowerCase().includes(searchQuery.toLowerCase()) && !t.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return templates.filter(tpl => {
+      if (categoryFilter !== 'all' && tpl.category !== categoryFilter) return false;
+      if (searchQuery && !tpl.name.toLowerCase().includes(searchQuery.toLowerCase()) && !tpl.description.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
   }, [templates, searchQuery, categoryFilter]);
@@ -466,7 +468,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
           </div>
         </div>
         <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
-          <Plus size={16} /> Create Workflow
+          <Plus size={16} /> {t('workflow.createWorkflow')}
         </button>
       </div>
 
@@ -486,7 +488,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <span className="text-xs text-slate-500">{wf.nodeCount} nodes</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs mb-4">
-                <div><span className="text-slate-500">Last run: </span><span className="text-slate-300">{wf.lastRun}</span></div>
+                <div><span className="text-slate-500">{t('workflow.lastRun')}: </span><span className="text-slate-300">{wf.lastRun}</span></div>
                 <div><span className="text-slate-500">Next run: </span><span className="text-slate-300">{wf.nextRun}</span></div>
                 <div className="col-span-2">
                   <span className="text-slate-500">Success rate: </span>
@@ -894,7 +896,7 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
         <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between p-5 border-b border-slate-700">
-            <h3 className="text-lg font-semibold text-white">Create Workflow</h3>
+            <h3 className="text-lg font-semibold text-white">{t('workflow.createWorkflow')}</h3>
             <button onClick={() => setShowCreateModal(false)} className="p-1 hover:bg-slate-700 rounded"><X size={18} className="text-slate-400" /></button>
           </div>
           <div className="p-5 space-y-4">
@@ -932,13 +934,13 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             </div>
           </div>
           <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-            <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancel</button>
+            <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">{t('common.cancel')}</button>
             <button
               onClick={handleCreateWorkflow}
               disabled={actionLoading === 'create' || !newName.trim()}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
             >
-              {actionLoading === 'create' ? 'Creating...' : 'Create Workflow'}
+              {actionLoading === 'create' ? t('common.loading') : t('workflow.createWorkflow')}
             </button>
           </div>
         </div>
@@ -1057,12 +1059,12 @@ export const WorkflowBuilder: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm">Back</span>
+                <span className="text-sm">{t('common.back')}</span>
               </button>
               <div className="h-5 w-px bg-slate-700" />
               <div className="flex items-center gap-2">
                 <Workflow className="w-5 h-5 text-blue-400" />
-                <h1 className="text-lg font-semibold text-white">Workflow Builder</h1>
+                <h1 className="text-lg font-semibold text-white">{t('workflow.title')}</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">

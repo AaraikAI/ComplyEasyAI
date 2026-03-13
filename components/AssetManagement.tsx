@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Shield,
   Plus,
@@ -206,6 +207,7 @@ const initialAssets: Asset[] = [
 // ── Component ───────────────────────────────────────────────────────────────
 
 const AssetManagement: React.FC = () => {
+  const { t } = useI18n();
   const [assets, setAssets] = useState<Asset[]>(initialAssets);
   const [activeTab, setActiveTab] = useState<TabId>('registry');
   const [searchQuery, setSearchQuery] = useState('');
@@ -222,7 +224,7 @@ const AssetManagement: React.FC = () => {
       const matchesSearch = searchQuery === '' ||
         a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         a.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+        a.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesType = typeFilter === 'all' || a.type === typeFilter;
       const matchesClass = classFilter === 'all' || a.classification === classFilter;
       const matchesLifecycle = lifecycleFilter === 'all' || a.lifecycle === lifecycleFilter;
@@ -286,7 +288,7 @@ const AssetManagement: React.FC = () => {
             <Server className="w-6 h-6 text-blue-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Asset Management</h1>
+            <h1 className="text-2xl font-bold">{t('assets.title')}</h1>
             <p className="text-slate-400 text-sm">IT asset register with lifecycle and classification tracking</p>
           </div>
         </div>
@@ -296,14 +298,14 @@ const AssetManagement: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 dark:border-slate-800 p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-400 text-sm">Total Assets</span>
+            <span className="text-slate-400 text-sm">{t('common.total')} Assets</span>
             <Package className="w-4 h-4 text-slate-500" />
           </div>
           <div className="text-2xl font-bold">{stats.total}</div>
         </div>
         <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 dark:border-slate-800 p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-400 text-sm">Active</span>
+            <span className="text-slate-400 text-sm">{t('common.active')}</span>
             <CheckCircle className="w-4 h-4 text-green-400" />
           </div>
           <div className="text-2xl font-bold text-green-400">{stats.active}</div>
@@ -354,10 +356,10 @@ const AssetManagement: React.FC = () => {
               />
             </div>
             <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-colors ${showFilters ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'}`}>
-              <Filter className="w-4 h-4" /> Filters
+              <Filter className="w-4 h-4" /> {t('common.filter')}
             </button>
             <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors">
-              <Plus className="w-4 h-4" /> Add Asset
+              <Plus className="w-4 h-4" /> {t('assets.addAsset')}
             </button>
           </div>
 
@@ -365,7 +367,7 @@ const AssetManagement: React.FC = () => {
             <div className="flex flex-wrap gap-3 mb-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
               <select value={typeFilter} onChange={e => setTypeFilter(e.target.value as AssetType | 'all')} className="px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="all">All Types</option>
-                {Object.keys(assetTypeConfig).map(t => <option key={t} value={t}>{t === 'CloudService' ? 'Cloud Service' : t}</option>)}
+                {Object.keys(assetTypeConfig).map(typ => <option key={typ} value={typ}>{typ === 'CloudService' ? 'Cloud Service' : typ}</option>)}
               </select>
               <select value={classFilter} onChange={e => setClassFilter(e.target.value as DataClassification | 'all')} className="px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="all">All Classifications</option>
@@ -384,11 +386,11 @@ const AssetManagement: React.FC = () => {
                 <tr className="border-b border-slate-700">
                   <th className="text-left py-3 px-4 text-slate-400 font-medium">Asset</th>
                   <th className="text-left py-3 px-4 text-slate-400 font-medium">Type</th>
-                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Classification</th>
+                  <th className="text-left py-3 px-4 text-slate-400 font-medium">{t('assets.classification')}</th>
                   <th className="text-left py-3 px-4 text-slate-400 font-medium">Lifecycle</th>
-                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Owner</th>
+                  <th className="text-left py-3 px-4 text-slate-400 font-medium">{t('common.owner')}</th>
                   <th className="text-left py-3 px-4 text-slate-400 font-medium">Risk</th>
-                  <th className="text-right py-3 px-4 text-slate-400 font-medium">Actions</th>
+                  <th className="text-right py-3 px-4 text-slate-400 font-medium">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -465,8 +467,8 @@ const AssetManagement: React.FC = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div><span className="text-xs text-slate-500 flex items-center gap-1"><User className="w-3 h-3" />Owner</span><p className="text-sm font-medium">{selectedAsset.owner}</p></div>
-              <div><span className="text-xs text-slate-500 flex items-center gap-1"><MapPin className="w-3 h-3" />Location</span><p className="text-sm font-medium">{selectedAsset.location}</p></div>
+              <div><span className="text-xs text-slate-500 flex items-center gap-1"><User className="w-3 h-3" />{t('common.owner')}</span><p className="text-sm font-medium">{selectedAsset.owner}</p></div>
+              <div><span className="text-xs text-slate-500 flex items-center gap-1"><MapPin className="w-3 h-3" />{t('assets.location')}</span><p className="text-sm font-medium">{selectedAsset.location}</p></div>
               <div><span className="text-xs text-slate-500 flex items-center gap-1"><Calendar className="w-3 h-3" />Purchase Date</span><p className="text-sm font-medium">{selectedAsset.purchaseDate}</p></div>
               <div><span className="text-xs text-slate-500">Cost</span><p className="text-sm font-medium">${selectedAsset.cost.toLocaleString()}</p></div>
             </div>
@@ -564,27 +566,27 @@ const AssetManagement: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 dark:border-slate-800 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h2 className="text-lg font-semibold">Add New Asset</h2>
+              <h2 className="text-lg font-semibold">{t('assets.addAsset')}</h2>
               <button onClick={() => setShowCreateForm(false)} className="p-1 text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Asset Name</label>
+                <label className="block text-sm text-slate-400 mb-1">{t('assets.assetName')}</label>
                 <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Production Web Server" />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Description</label>
+                <label className="block text-sm text-slate-400 mb-1">{t('common.description')}</label>
                 <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Type</label>
+                  <label className="block text-sm text-slate-400 mb-1">{t('common.type')}</label>
                   <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as AssetType }))} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="Hardware">Hardware</option><option value="Software">Software</option><option value="Data">Data</option><option value="Network">Network</option><option value="CloudService">Cloud Service</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Classification</label>
+                  <label className="block text-sm text-slate-400 mb-1">{t('assets.classification')}</label>
                   <select value={form.classification} onChange={e => setForm(p => ({ ...p, classification: e.target.value as DataClassification }))} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="Public">Public</option><option value="Internal">Internal</option><option value="Confidential">Confidential</option><option value="Restricted">Restricted</option>
                   </select>
@@ -592,7 +594,7 @@ const AssetManagement: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Owner</label>
+                  <label className="block text-sm text-slate-400 mb-1">{t('common.owner')}</label>
                   <input type="text" value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
@@ -611,7 +613,7 @@ const AssetManagement: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Location</label>
+                <label className="block text-sm text-slate-400 mb-1">{t('assets.location')}</label>
                 <input type="text" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. AWS us-east-1, Office Floor 3" />
               </div>
               <div>
@@ -620,9 +622,9 @@ const AssetManagement: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-700">
-              <button onClick={() => { setShowCreateForm(false); setForm(defaultForm); }} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">Cancel</button>
+              <button onClick={() => { setShowCreateForm(false); setForm(defaultForm); }} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">{t('common.cancel')}</button>
               <button onClick={handleCreate} disabled={!form.name.trim()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors">
-                <Plus className="w-4 h-4" /> Add Asset
+                <Plus className="w-4 h-4" /> {t('assets.addAsset')}
               </button>
             </div>
           </div>

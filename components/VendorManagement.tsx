@@ -15,6 +15,7 @@ import {
   Tooltip, Legend,
 } from 'recharts';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -128,6 +129,7 @@ interface VendorManagementProps {
 
 const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const plan = user?.organization?.plan;
 
   // Data
@@ -458,7 +460,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="animate-spin text-brand-600" size={32} />
-        <span className="ml-3 text-gray-600">Loading vendor management...</span>
+        <span className="ml-3 text-gray-600">{t('common.loading')}</span>
       </div>
     );
   }
@@ -523,7 +525,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
             )}
           </div>
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Compliance Certifications</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('vendors.complianceStatus')}</h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={certData}>
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -583,7 +585,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
-            type="text" placeholder="Search vendors..."
+            type="text" placeholder={`${t('common.search')}...`}
             value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500"
           />
@@ -614,24 +616,24 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
             <thead className="bg-gray-50 text-gray-600">
               <tr>
                 <th className="text-left px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('name')}>
-                  <span className="flex items-center gap-1">Vendor <SortIcon field="name" /></span>
+                  <span className="flex items-center gap-1">{t('vendors.vendorName')} <SortIcon field="name" /></span>
                 </th>
-                <th className="text-left px-4 py-3">Category</th>
+                <th className="text-left px-4 py-3">{t('common.category')}</th>
                 <th className="text-left px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('riskScore')}>
-                  <span className="flex items-center gap-1">Risk Score <SortIcon field="riskScore" /></span>
+                  <span className="flex items-center gap-1">{t('vendors.vendorScore')} <SortIcon field="riskScore" /></span>
                 </th>
-                <th className="text-left px-4 py-3">Risk Level</th>
+                <th className="text-left px-4 py-3">{t('vendors.riskTier')}</th>
                 <th className="text-left px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('status')}>
-                  <span className="flex items-center gap-1">Status <SortIcon field="status" /></span>
+                  <span className="flex items-center gap-1">{t('common.status')} <SortIcon field="status" /></span>
                 </th>
-                <th className="text-left px-4 py-3">Data Access</th>
-                <th className="text-right px-4 py-3">Actions</th>
+                <th className="text-left px-4 py-3">{t('vendors.dataProcessing')}</th>
+                <th className="text-right px-4 py-3">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sortedVendors.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-12 text-gray-400">
-                  {vendors.length === 0 ? 'No vendors yet. Add your first vendor.' : 'No vendors match your filters.'}
+                  {vendors.length === 0 ? `${t('common.noResults')}` : `${t('common.noResults')}`}
                 </td></tr>
               ) : sortedVendors.map(v => (
                 <tr key={v.id} className="hover:bg-gray-50 transition-colors">
@@ -665,15 +667,15 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
                         {aiScoreLoading === v.id ? <Loader2 size={16} className="animate-spin" /> : <Brain size={16} />}
                       </button>
                       <button onClick={() => openDetail(v)}
-                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title="View Details">
+                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title={t('common.details')}>
                         <Eye size={16} />
                       </button>
                       <button onClick={() => openEdit(v)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit">
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title={t('common.edit')}>
                         <Edit3 size={16} />
                       </button>
                       <button onClick={() => handleArchiveVendor(v)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title="Archive">
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title={t('common.delete')}>
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -725,10 +727,10 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
           </div>
           <div className="flex items-center space-x-2">
             <button onClick={() => openEdit(v)} className="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1">
-              <Edit3 size={14} /> Edit
+              <Edit3 size={14} /> {t('common.edit')}
             </button>
             <button onClick={() => handleArchiveVendor(v)} className="px-3 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50 flex items-center gap-1">
-              <Trash2 size={14} /> Archive
+              <Trash2 size={14} /> {t('common.delete')}
             </button>
           </div>
         </div>
@@ -736,19 +738,19 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
         {/* Quick info cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">Risk Score</div>
+            <div className="text-xs text-gray-500 mb-1">{t('vendors.vendorScore')}</div>
             <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold ${riskScoreBadge(v.riskScore)}`}>{v.riskScore}</span>
           </div>
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">Risk Level</div>
+            <div className="text-xs text-gray-500 mb-1">{t('vendors.riskTier')}</div>
             <Badge text={v.riskLevel} className={RISK_COLORS[v.riskLevel]} />
           </div>
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">Status</div>
+            <div className="text-xs text-gray-500 mb-1">{t('common.status')}</div>
             <Badge text={v.status} className={STATUS_COLORS[v.status] || ''} />
           </div>
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 mb-1">Data Access</div>
+            <div className="text-xs text-gray-500 mb-1">{t('vendors.dataProcessing')}</div>
             <span className={`text-sm font-medium ${v.hasDataAccess ? 'text-red-600' : 'text-green-600'}`}>
               {v.hasDataAccess ? 'Yes' : 'No'}
             </span>
@@ -768,7 +770,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
             </div>
           </div>
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700">Contract Details</h3>
+            <h3 className="text-sm font-semibold text-gray-700">{t('vendors.contractExpiry')}</h3>
             <div className="space-y-2 text-sm">
               {v.contractStart && <div className="flex items-center gap-2 text-gray-600"><Calendar size={14} />Start: {new Date(v.contractStart).toLocaleDateString()}</div>}
               {v.contractEnd && <div className="flex items-center gap-2 text-gray-600"><Calendar size={14} />End: {new Date(v.contractEnd).toLocaleDateString()}</div>}
@@ -780,7 +782,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
 
         {/* Certifications */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Compliance Certifications</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('vendors.complianceStatus')}</h3>
           <div className="flex flex-wrap gap-3">
             {[
               { label: 'SOC 2', active: v.soc2Report },
@@ -799,7 +801,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
         {/* Assessments */}
         {v.assessments && v.assessments.length > 0 && (
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Assessment History</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('vendors.lastAssessment')}</h3>
             <div className="space-y-2">
               {v.assessments.map((a: any) => (
                 <div key={a.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
@@ -838,13 +840,13 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
               disabled={dueDiligenceLoading}
               className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors disabled:opacity-50">
               {dueDiligenceLoading ? <Loader2 size={16} className="animate-spin" /> : <BarChart3 size={16} />}
-              Due Diligence Report
+              {t('vendors.dueDiligence')}
             </button>
             <button onClick={() => handleAIMonitoring(v)}
               disabled={monitoringLoading}
               className="flex items-center gap-2 px-4 py-3 bg-white border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors disabled:opacity-50">
               {monitoringLoading ? <Loader2 size={16} className="animate-spin" /> : <ListChecks size={16} />}
-              AI Monitoring Setup
+              {t('vendors.monitoringFrequency')}
             </button>
           </div>
         </div>
@@ -865,7 +867,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
 
         {/* Create assessment */}
         <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">New Assessment</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('vendors.questionnaire')}</h3>
           <div className="flex items-center gap-3">
             <select value={assessmentType} onChange={e => setAssessmentType(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1">
@@ -879,7 +881,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
             <button onClick={handleCreateAssessment} disabled={assessmentLoading}
               className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
               {assessmentLoading ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-              Create Assessment
+              {t('common.create')}
             </button>
           </div>
         </div>
@@ -897,11 +899,11 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
     return (
       <form onSubmit={isEdit ? handleUpdateVendor : handleCreateVendor} className="space-y-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-5">
-          <h3 className="text-sm font-semibold text-gray-700">{isEdit ? 'Edit Vendor' : 'Add New Vendor'}</h3>
+          <h3 className="text-sm font-semibold text-gray-700">{isEdit ? `${t('common.edit')} ${t('vendors.vendorName')}` : t('vendors.addVendor')}</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Vendor Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('vendors.vendorName')} *</label>
               <input required value={f.name || ''} onChange={e => setField('name', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500" />
             </div>
@@ -919,7 +921,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="https://" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Service Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
               <input value={f.serviceDescription || ''} onChange={e => setField('serviceDescription', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             </div>
@@ -953,7 +955,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contract End</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('vendors.contractExpiry')}</label>
               <input type="date" value={f.contractEnd ? new Date(f.contractEnd).toISOString().split('T')[0] : ''}
                 onChange={e => setField('contractEnd', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
@@ -1001,7 +1003,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
             </div>
           </div>
 
-          <h4 className="text-sm font-semibold text-gray-700 pt-2">Compliance Certifications</h4>
+          <h4 className="text-sm font-semibold text-gray-700 pt-2">{t('vendors.complianceStatus')}</h4>
           <div className="flex flex-wrap gap-4">
             {[
               { key: 'soc2Report', label: 'SOC 2' },
@@ -1022,12 +1024,12 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
         <div className="flex items-center justify-end gap-3">
           <button type="button" onClick={() => setViewMode(isEdit ? 'detail' : 'list')}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-            Cancel
+            {t('common.cancel')}
           </button>
           <button type="submit" disabled={isSaving || !f.name}
             className="px-6 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
             {isSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-            {isEdit ? 'Save Changes' : 'Add Vendor'}
+            {isEdit ? t('common.save') : t('vendors.addVendor')}
           </button>
         </div>
       </form>
@@ -1085,7 +1087,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
   const renderDueDiligence = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">AI Due Diligence Report</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('vendors.dueDiligence')}</h2>
         {selectedVendor && <p className="text-sm text-gray-500 mt-1">Vendor: {selectedVendor.name}</p>}
       </div>
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[400px]">
@@ -1186,7 +1188,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
             </button>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Vendor Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('vendors.title')}</h1>
             <p className="text-sm text-gray-500">{vendors.length} vendor{vendors.length !== 1 ? 's' : ''} tracked</p>
           </div>
         </div>
@@ -1196,7 +1198,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
               <div className="flex bg-gray-100 rounded-lg p-0.5">
                 <button onClick={() => setViewMode('dashboard')}
                   className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'dashboard' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-                  Dashboard
+                  {t('common.overview')}
                 </button>
                 <button onClick={() => setViewMode('list')}
                   className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -1207,7 +1209,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
                 disabled={vendorLimitReached}
                 title={vendorLimitReached ? getUpgradeMessage(plan, 'maxVendors', vendors.length) : undefined}
                 className="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-700 shadow-md flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                <Plus size={16} /> Add Vendor
+                <Plus size={16} /> {t('vendors.addVendor')}
               </button>
             </>
           )}

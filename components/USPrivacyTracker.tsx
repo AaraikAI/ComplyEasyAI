@@ -16,6 +16,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import {
   MapPin, Shield, CheckCircle, AlertTriangle, X, Plus, FileText,
   Clock, Search, Download, Eye, ChevronRight, BarChart3,
@@ -320,6 +321,7 @@ const formatDate = (d: string): string => new Date(d).toLocaleDateString('en-US'
 // ── Component ────────────────────────────────────────────────────────────
 
 export const USPrivacyTracker: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [laws, setLaws] = useState<StatePrivacyLaw[]>(DEFAULT_STATE_LAWS);
   const [gaps, setGaps] = useState<ComplianceGap[]>(DEFAULT_GAPS);
@@ -385,7 +387,7 @@ export const USPrivacyTracker: React.FC = () => {
   const comparedLaws = useMemo(() => laws.filter(l => compareStates.includes(l.stateCode)), [laws, compareStates]);
 
   const handleToggleTask = useCallback((taskId: string) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t));
+    setTasks(prev => prev.map(tk => tk.id === taskId ? { ...tk, completed: !tk.completed } : tk));
   }, []);
 
   const handleToggleCompare = useCallback((code: string) => {
@@ -397,7 +399,7 @@ export const USPrivacyTracker: React.FC = () => {
       generatedAt: new Date().toISOString(), reportType: 'US State Privacy Compliance Report',
       summary: { totalLawsTracked: laws.length, effectiveLaws: effectiveLaws.length, compliant: compliantCount, overallRate: overallComplianceRate + '%' },
       laws: laws.map(l => ({ state: l.stateCode, law: l.lawAbbreviation, status: l.status, effectiveDate: l.effectiveDate, compliance: l.complianceLevel })),
-      openGaps: gaps.filter(g => g.currentStatus !== 'met').length, pendingTasks: tasks.filter(t => !t.completed).length,
+      openGaps: gaps.filter(g => g.currentStatus !== 'met').length, pendingTasks: tasks.filter(tk => !tk.completed).length,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -407,7 +409,7 @@ export const USPrivacyTracker: React.FC = () => {
   }, [laws, effectiveLaws, compliantCount, overallComplianceRate, gaps, tasks]);
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: 'overview', label: 'Overview', icon: <BarChart3 className="w-4 h-4" /> },
+    { key: 'overview', label: t('common.overview'), icon: <BarChart3 className="w-4 h-4" /> },
     { key: 'map', label: 'State Map', icon: <MapPin className="w-4 h-4" /> },
     { key: 'comparison', label: 'Comparison', icon: <ArrowLeftRight className="w-4 h-4" /> },
     { key: 'gap_analysis', label: 'Gap Analysis', icon: <AlertCircle className="w-4 h-4" /> },
@@ -448,10 +450,10 @@ export const USPrivacyTracker: React.FC = () => {
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-600">Pending Tasks</p><p className="text-2xl font-bold text-gray-900 mt-1">{tasks.filter(t => !t.completed).length}</p></div>
+            <div><p className="text-sm text-gray-600">Pending Tasks</p><p className="text-2xl font-bold text-gray-900 mt-1">{tasks.filter(tk => !tk.completed).length}</p></div>
             <Clock className="w-8 h-8 text-purple-600" />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{tasks.filter(t => t.completed).length}/{tasks.length} completed</p>
+          <p className="text-xs text-gray-500 mt-2">{tasks.filter(tk => tk.completed).length}/{tasks.length} completed</p>
         </div>
       </div>
 
@@ -709,8 +711,8 @@ export const USPrivacyTracker: React.FC = () => {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">Multi-State Compliance Checklist</h3>
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span>{tasks.filter(t => t.completed).length}/{tasks.length} completed</span>
-          <div className="w-32">{renderScoreBar(Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100))}</div>
+          <span>{tasks.filter(tk => tk.completed).length}/{tasks.length} completed</span>
+          <div className="w-32">{renderScoreBar(Math.round((tasks.filter(tk => tk.completed).length / tasks.length) * 100))}</div>
         </div>
       </div>
 
@@ -751,7 +753,7 @@ export const USPrivacyTracker: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">US State Privacy Law Tracker</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('privacy.title')}</h2>
           <p className="text-gray-600 mt-1">Comprehensive tracking of all US state privacy laws and multi-state compliance</p>
         </div>
         <div className="flex gap-3">

@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   AlertTriangle,
   Plus,
@@ -160,6 +161,7 @@ const initialExceptions: ExceptionRecord[] = [
 // ── Component ───────────────────────────────────────────────────────────────
 
 const ExceptionManagement: React.FC = () => {
+  const { t } = useI18n();
   const [exceptions, setExceptions] = useState<ExceptionRecord[]>(initialExceptions);
   const [activeTab, setActiveTab] = useState<TabId>('exceptions');
   const [searchQuery, setSearchQuery] = useState('');
@@ -226,17 +228,17 @@ const ExceptionManagement: React.FC = () => {
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-yellow-500/20 rounded-lg"><AlertTriangle className="w-6 h-6 text-yellow-400" /></div>
           <div>
-            <h1 className="text-2xl font-bold">Exception Management</h1>
+            <h1 className="text-2xl font-bold">{t('exceptions.title')}</h1>
             <p className="text-slate-400 text-sm">Track and manage compliance exceptions and waivers</p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 p-4"><span className="text-slate-400 text-sm">Total Exceptions</span><div className="text-2xl font-bold mt-1">{metrics.total}</div></div>
-        <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 p-4"><span className="text-green-400 text-sm">Active</span><div className="text-2xl font-bold mt-1 text-green-400">{metrics.active}</div></div>
-        <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 p-4"><span className="text-yellow-400 text-sm">Pending Review</span><div className="text-2xl font-bold mt-1 text-yellow-400">{metrics.pending}</div></div>
-        <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 p-4"><span className="text-red-400 text-sm">Expired</span><div className="text-2xl font-bold mt-1 text-red-400">{metrics.expired}</div></div>
+        <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 p-4"><span className="text-slate-400 text-sm">{t('common.total')} {t('exceptions.title')}</span><div className="text-2xl font-bold mt-1">{metrics.total}</div></div>
+        <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 p-4"><span className="text-green-400 text-sm">{t('common.active')}</span><div className="text-2xl font-bold mt-1 text-green-400">{metrics.active}</div></div>
+        <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 p-4"><span className="text-yellow-400 text-sm">{t('common.pending')}</span><div className="text-2xl font-bold mt-1 text-yellow-400">{metrics.pending}</div></div>
+        <div className="bg-slate-800 dark:bg-slate-900 rounded-xl border border-slate-700 p-4"><span className="text-red-400 text-sm">{t('certifications.expired')}</span><div className="text-2xl font-bold mt-1 text-red-400">{metrics.expired}</div></div>
       </div>
 
       <div className="flex items-center gap-1 mb-6 bg-slate-800 rounded-xl p-1 w-fit border border-slate-700">
@@ -248,9 +250,9 @@ const ExceptionManagement: React.FC = () => {
       {activeTab === 'exceptions' && !selectedExc && (
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
-            <div className="relative flex-1 w-full"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" /><input type="text" placeholder="Search exceptions..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+            <div className="relative flex-1 w-full"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" /><input type="text" placeholder={t('common.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as ExceptionStatus | 'all')} className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"><option value="all">All Statuses</option>{Object.keys(statusConfig).map(s => <option key={s} value={s}>{s === 'UnderReview' ? 'Under Review' : s}</option>)}</select>
-            <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> Request Exception</button>
+            <button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('exceptions.createException')}</button>
           </div>
           <div className="space-y-3">
             {filtered.map(exc => {
@@ -277,7 +279,7 @@ const ExceptionManagement: React.FC = () => {
                 </div>
               );
             })}
-            {filtered.length === 0 && <div className="text-center py-12 text-slate-500"><AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" /><p>No exceptions found</p></div>}
+            {filtered.length === 0 && <div className="text-center py-12 text-slate-500"><AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" /><p>{t('common.noResults')}</p></div>}
           </div>
         </>
       )}
@@ -297,11 +299,11 @@ const ExceptionManagement: React.FC = () => {
               <div><span className="text-xs text-slate-500">Control</span><p className="text-sm">{selectedExc.controlId} - {selectedExc.controlName}</p></div>
               <div><span className="text-xs text-slate-500">Framework</span><p className="text-sm">{selectedExc.framework}</p></div>
               <div><span className="text-xs text-slate-500">Requested By</span><p className="text-sm">{selectedExc.requestedBy} on {selectedExc.requestedDate}</p></div>
-              <div><span className="text-xs text-slate-500">Expiry</span><p className="text-sm">{selectedExc.expiryDate} ({daysUntilExpiry(selectedExc.expiryDate)}d)</p></div>
+              <div><span className="text-xs text-slate-500">{t('exceptions.expirationDate')}</span><p className="text-sm">{selectedExc.expiryDate} ({daysUntilExpiry(selectedExc.expiryDate)}d)</p></div>
             </div>
-            <div className="mb-6"><h3 className="text-sm font-semibold mb-2">Justification</h3><p className="text-sm text-slate-300 p-3 bg-slate-700/30 rounded-lg">{selectedExc.justification}</p></div>
+            <div className="mb-6"><h3 className="text-sm font-semibold mb-2">{t('exceptions.justification')}</h3><p className="text-sm text-slate-300 p-3 bg-slate-700/30 rounded-lg">{selectedExc.justification}</p></div>
             <div className="mb-6">
-              <h3 className="text-sm font-semibold mb-2">Compensating Controls ({selectedExc.compensatingControls.length})</h3>
+              <h3 className="text-sm font-semibold mb-2">{t('exceptions.compensatingControls')} ({selectedExc.compensatingControls.length})</h3>
               <div className="space-y-2">
                 {selectedExc.compensatingControls.map(cc => (
                   <div key={cc.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
@@ -313,8 +315,8 @@ const ExceptionManagement: React.FC = () => {
             </div>
             {(selectedExc.status === 'Pending' || selectedExc.status === 'UnderReview') && (
               <div className="flex items-center gap-3 pt-4 border-t border-slate-700">
-                <button onClick={() => { updateStatus(selectedExc.id, 'Approved'); setSelectedExc(null); }} className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition-colors"><CheckCircle className="w-4 h-4" /> Approve</button>
-                <button onClick={() => { updateStatus(selectedExc.id, 'Denied'); setSelectedExc(null); }} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"><XCircle className="w-4 h-4" /> Deny</button>
+                <button onClick={() => { updateStatus(selectedExc.id, 'Approved'); setSelectedExc(null); }} className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition-colors"><CheckCircle className="w-4 h-4" /> {t('common.approved')}</button>
+                <button onClick={() => { updateStatus(selectedExc.id, 'Denied'); setSelectedExc(null); }} className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"><XCircle className="w-4 h-4" /> {t('common.rejected')}</button>
                 {selectedExc.status === 'Pending' && <button onClick={() => updateStatus(selectedExc.id, 'UnderReview')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"><Eye className="w-4 h-4" /> Start Review</button>}
               </div>
             )}
@@ -398,7 +400,7 @@ const ExceptionManagement: React.FC = () => {
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700"><h2 className="text-lg font-semibold">Request Exception</h2><button onClick={() => setShowCreateForm(false)} className="p-1 text-slate-400 hover:text-white"><X className="w-5 h-5" /></button></div>
+            <div className="flex items-center justify-between p-4 border-b border-slate-700"><h2 className="text-lg font-semibold">{t('exceptions.createException')}</h2><button onClick={() => setShowCreateForm(false)} className="p-1 text-slate-400 hover:text-white"><X className="w-5 h-5" /></button></div>
             <div className="p-4 space-y-4">
               <div><label className="block text-sm text-slate-400 mb-1">Title</label><input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
               <div><label className="block text-sm text-slate-400 mb-1">Description</label><textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" /></div>
@@ -415,8 +417,8 @@ const ExceptionManagement: React.FC = () => {
               <div><label className="block text-sm text-slate-400 mb-1">Compensating Control</label><input type="text" value={form.compensatingControl} onChange={e => setForm(p => ({ ...p, compensatingControl: e.target.value }))} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Describe the compensating control" /></div>
             </div>
             <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-700">
-              <button onClick={() => { setShowCreateForm(false); setForm(defaultForm); }} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">Cancel</button>
-              <button onClick={handleCreate} disabled={!form.title.trim()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> Submit Request</button>
+              <button onClick={() => { setShowCreateForm(false); setForm(defaultForm); }} className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition-colors">{t('common.cancel')}</button>
+              <button onClick={handleCreate} disabled={!form.title.trim()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('common.submit')}</button>
             </div>
           </div>
         </div>

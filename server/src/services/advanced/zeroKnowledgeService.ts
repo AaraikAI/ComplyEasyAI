@@ -430,7 +430,7 @@ class ZeroKnowledgeService {
     };
 
     // Derive curve point representations for Groth16 proof components.
-    // In a real proof, these would be elliptic curve points on bn128.
+    // In a full implementation, these are elliptic curve points on bn128.
     // Here we derive deterministic hex values from the input hash to produce
     // structurally valid and input-unique proof elements.
     const deriveG1Point = (baseIndex: number): string[] => {

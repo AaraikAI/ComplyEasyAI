@@ -4,8 +4,10 @@ import { FileText, Loader2, Download, RefreshCw, Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { api } from '../services/api';
 import { ComplianceFramework } from '../types';
+import { useI18n } from '../contexts/I18nContext';
 
 export const AIReportGenerator: React.FC = () => {
+  const { t } = useI18n();
   const [frameworks, setFrameworks] = useState<ComplianceFramework[]>([]);
   const [framework, setFramework] = useState('SOC 2');
   const [companyName, setCompanyName] = useState('Acme Corp');
@@ -63,7 +65,7 @@ export const AIReportGenerator: React.FC = () => {
             {loadingFrameworks ? (
               <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 flex items-center">
                 <Loader2 className="animate-spin mr-2" size={16} />
-                <span className="text-gray-500">Loading frameworks...</span>
+                <span className="text-gray-500">{t('common.loading')}...</span>
               </div>
             ) : (
               <select 
@@ -122,12 +124,12 @@ export const AIReportGenerator: React.FC = () => {
           {loading ? (
             <>
               <Loader2 className="animate-spin mr-2" size={20} />
-              Analyzing with AI...
+              {t('ai.analyzing')}...
             </>
           ) : (
             <>
               <Send className="mr-2" size={20} />
-              Generate Report
+              {t('ai.generating')}
             </>
           )}
         </button>
@@ -138,10 +140,10 @@ export const AIReportGenerator: React.FC = () => {
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
           <h3 className="font-semibold text-gray-700">Report Preview</h3>
           <div className="flex space-x-2">
-             <button className="p-2 text-gray-500 hover:text-brand-600 hover:bg-white rounded-lg transition-colors" title="Regenerate">
+             <button className="p-2 text-gray-500 hover:text-brand-600 hover:bg-white rounded-lg transition-colors" title={t('common.refresh')}>
               <RefreshCw size={18} />
             </button>
-            <button className="p-2 text-gray-500 hover:text-brand-600 hover:bg-white rounded-lg transition-colors" title="Export PDF">
+            <button className="p-2 text-gray-500 hover:text-brand-600 hover:bg-white rounded-lg transition-colors" title={t('common.export')}>
               <Download size={18} />
             </button>
           </div>

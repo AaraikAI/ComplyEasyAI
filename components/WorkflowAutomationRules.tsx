@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Workflow,
   Play,
@@ -248,6 +249,7 @@ function formatDuration(ms: number | null): string {
 // ============================================================================
 
 const WorkflowAutomationRules: React.FC = () => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabId>('workflows');
   const [workflows, setWorkflows] = useState<WorkflowRule[]>([]);
   const [executions, setExecutions] = useState<ExecutionRecord[]>([]);
@@ -743,7 +745,7 @@ const WorkflowAutomationRules: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Workflow className="w-7 h-7 text-blue-400" />
-            Workflow Automation
+            {t('workflow.automation')}
           </h1>
           <p className="text-sm text-white/60 mt-1">
             Create automated rules to streamline compliance operations
@@ -753,7 +755,7 @@ const WorkflowAutomationRules: React.FC = () => {
           onClick={openCreateModal}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
         >
-          <Plus className="w-4 h-4" /> Create Workflow
+          <Plus className="w-4 h-4" /> {t('workflow.createWorkflow')}
         </button>
       </div>
 
@@ -812,9 +814,9 @@ const WorkflowAutomationRules: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">{t('common.all')} {t('common.status')}</option>
+              <option value="active">{t('common.active')}</option>
+              <option value="inactive">{t('common.inactive')}</option>
             </select>
           </div>
 
@@ -826,7 +828,7 @@ const WorkflowAutomationRules: React.FC = () => {
           ) : filteredWorkflows.length === 0 ? (
             <div className="text-center py-20 bg-white/5 border border-white/10 rounded-xl">
               <Workflow className="w-12 h-12 text-white/20 mx-auto mb-3" />
-              <p className="text-white/50 text-sm">No workflows found</p>
+              <p className="text-white/50 text-sm">{t('common.noResults')}</p>
               <button
                 onClick={openCreateModal}
                 className="mt-3 text-sm text-blue-400 hover:text-blue-300"
@@ -953,8 +955,8 @@ const WorkflowAutomationRules: React.FC = () => {
                 <thead>
                   <tr className="border-b border-white/10">
                     <th className="text-left px-4 py-3 text-xs text-white/50 font-medium uppercase tracking-wider">Workflow</th>
-                    <th className="text-left px-4 py-3 text-xs text-white/50 font-medium uppercase tracking-wider">Trigger</th>
-                    <th className="text-left px-4 py-3 text-xs text-white/50 font-medium uppercase tracking-wider">Status</th>
+                    <th className="text-left px-4 py-3 text-xs text-white/50 font-medium uppercase tracking-wider">{t('workflow.trigger')}</th>
+                    <th className="text-left px-4 py-3 text-xs text-white/50 font-medium uppercase tracking-wider">{t('common.status')}</th>
                     <th className="text-left px-4 py-3 text-xs text-white/50 font-medium uppercase tracking-wider">Duration</th>
                     <th className="text-left px-4 py-3 text-xs text-white/50 font-medium uppercase tracking-wider">Started</th>
                     <th className="text-left px-4 py-3 text-xs text-white/50 font-medium uppercase tracking-wider"></th>
@@ -993,7 +995,7 @@ const WorkflowAutomationRules: React.FC = () => {
               <div className="p-2 bg-red-500/20 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
               </div>
-              <h3 className="text-white font-semibold">Delete Workflow</h3>
+              <h3 className="text-white font-semibold">{t('common.delete')}</h3>
             </div>
             <p className="text-sm text-white/60 mb-6">
               Are you sure you want to delete this workflow? This action cannot be undone. All execution history will also be removed.
@@ -1028,7 +1030,7 @@ const WorkflowAutomationRules: React.FC = () => {
             </div>
             <div className="space-y-3 mb-4">
               <div className="flex justify-between text-sm">
-                <span className="text-white/50">Status</span>
+                <span className="text-white/50">{t('common.status')}</span>
                 {getStatusBadge(selectedExecution.status)}
               </div>
               <div className="flex justify-between text-sm">
@@ -1036,7 +1038,7 @@ const WorkflowAutomationRules: React.FC = () => {
                 <span className="text-white">{formatDuration(selectedExecution.duration)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-white/50">Trigger</span>
+                <span className="text-white/50">{t('workflow.trigger')}</span>
                 <span className="text-white">{selectedExecution.triggerType}</span>
               </div>
               <div className="flex justify-between text-sm">
@@ -1098,7 +1100,7 @@ const WorkflowAutomationRules: React.FC = () => {
               {/* Basic Info */}
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-white/60 mb-1">Name *</label>
+                  <label className="block text-xs font-medium text-white/60 mb-1">{t('common.name')} *</label>
                   <input
                     type="text"
                     value={form.name}
@@ -1108,7 +1110,7 @@ const WorkflowAutomationRules: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-white/60 mb-1">Description</label>
+                  <label className="block text-xs font-medium text-white/60 mb-1">{t('common.description')}</label>
                   <textarea
                     value={form.description}
                     onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}

@@ -19,6 +19,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
   Eye,
@@ -358,6 +359,7 @@ interface PostMarketSurveillanceProps {
 // Main Component
 // ---------------------------------------------------------------------------
 export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ onBack }) => {
+  const { t } = useI18n();
   type TabId = 'overview' | 'plans' | 'incidents' | 'capa' | 'recalls' | 'reports';
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [plans, setPlans] = useState<SurveillancePlan[]>(DEMO_PLANS);
@@ -458,7 +460,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
 
   // Tab definitions
   const tabs: { id: TabId; label: string; icon: React.ElementType; badge?: number }[] = [
-    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'overview', label: t('common.overview'), icon: BarChart3 },
     { id: 'plans', label: 'Surveillance Plans', icon: Eye },
     { id: 'incidents', label: 'Incidents', icon: AlertTriangle, badge: overviewStats.openIncidents },
     { id: 'capa', label: 'CAPA', icon: ClipboardCheck, badge: overviewStats.openCapas },
@@ -1240,14 +1242,14 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
           </div>
         </div>
         <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button onClick={() => setShowIncidentModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancel</button>
+          <button onClick={() => setShowIncidentModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
           <button
             onClick={handleSubmitIncident}
             disabled={isSubmittingIncident || !incidentForm.title || !incidentForm.description}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
           >
             {isSubmittingIncident && <Loader2 size={14} className="animate-spin" />}
-            {isSubmittingIncident ? 'Submitting...' : 'Submit Incident'}
+            {isSubmittingIncident ? `${t('common.submit')}...` : `${t('common.submit')} Incident`}
           </button>
         </div>
       </div>
@@ -1423,7 +1425,7 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-500">Loading data...</span>
+          <span className="ml-3 text-gray-500">{t('common.loading')}...</span>
         </div>
       )}
       {loadError && (

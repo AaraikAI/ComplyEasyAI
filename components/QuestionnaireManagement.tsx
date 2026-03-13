@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
 import ReactMarkdown from 'react-markdown';
@@ -118,6 +119,7 @@ const ConfidenceBadge: React.FC<{ confidence: number }> = ({ confidence }) => {
 // ---------------------------------------------------------------------------
 export default function QuestionnaireManagement() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const plan = user?.organization?.plan || 'Foundation';
 
   // Core state
@@ -596,12 +598,12 @@ export default function QuestionnaireManagement() {
             className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm" />
         </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
-          <option value="All">All Status</option>
+          <option value="All">{t('common.all')} {t('common.status')}</option>
           {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
-          <option value="All">All Types</option>
-          {QUESTIONNAIRE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          <option value="All">{t('common.all')} {t('common.type')}</option>
+          {QUESTIONNAIRE_TYPES.map(qt => <option key={qt} value={qt}>{qt}</option>)}
         </select>
       </div>
 
@@ -793,9 +795,9 @@ export default function QuestionnaireManagement() {
                           <div className="flex gap-2">
                             <button onClick={() => handleSubmitResponse(question.id)}
                               className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1">
-                              <Send className="w-3 h-3" /> Save
+                              <Send className="w-3 h-3" /> {t('common.save')}
                             </button>
-                            <button onClick={() => setEditingResponseId(null)} className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancel</button>
+                            <button onClick={() => setEditingResponseId(null)} className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
                           </div>
                         </div>
                       )}
@@ -824,7 +826,7 @@ export default function QuestionnaireManagement() {
                               <Check className="w-3 h-3" /> Accept
                             </button>
                             <button onClick={() => { setEditingResponseId(question.id); setResponseText(typeof aiRfpResult.result === 'string' ? aiRfpResult.result : aiRfpResult.result.response || ''); setAiRfpResult(null); }}
-                              className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">Edit</button>
+                              className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">{t('common.edit')}</button>
                             <button onClick={() => setAiRfpResult(null)} className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Dismiss</button>
                           </div>
                         </div>
@@ -855,12 +857,12 @@ export default function QuestionnaireManagement() {
                   className="border rounded-lg px-3 py-2 text-sm" placeholder="Category" />
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={newQuestion.required} onChange={e => setNewQuestion(q => ({ ...q, required: e.target.checked }))} />
-                  Required
+                  {t('common.required')}
                 </label>
               </div>
               <div className="flex gap-2">
-                <button onClick={handleAddQuestion} className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">Add Question</button>
-                <button onClick={() => setShowAddQuestion(false)} className="px-4 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancel</button>
+                <button onClick={handleAddQuestion} className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">{t('common.add')}</button>
+                <button onClick={() => setShowAddQuestion(false)} className="px-4 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
               </div>
             </div>
           </div>
@@ -892,16 +894,16 @@ export default function QuestionnaireManagement() {
             className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="e.g., Annual Vendor Security Assessment" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
           <textarea value={qForm.description} onChange={e => setQForm(f => ({ ...f, description: e.target.value }))}
             className="w-full border rounded-lg px-3 py-2 text-sm" rows={3} placeholder="Describe the purpose of this questionnaire..." />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.type')}</label>
             <select value={qForm.questionnaireType} onChange={e => setQForm(f => ({ ...f, questionnaireType: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
-              {QUESTIONNAIRE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {QUESTIONNAIRE_TYPES.map(qt => <option key={qt} value={qt}>{qt}</option>)}
             </select>
           </div>
           <div>
@@ -922,7 +924,7 @@ export default function QuestionnaireManagement() {
             {isEdit ? 'Update' : 'Create Questionnaire'}
           </button>
           <button type="button" onClick={() => { setViewMode(isEdit ? 'detail' : 'list'); if (!isEdit) resetForm(); }}
-            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancel</button>
+            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
         </div>
       </form>
     </div>
@@ -942,21 +944,21 @@ export default function QuestionnaireManagement() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {templates.map(t => (
-          <div key={t.id} className="bg-white rounded-xl border p-5 hover:border-purple-200 transition">
+        {templates.map(tpl => (
+          <div key={tpl.id} className="bg-white rounded-xl border p-5 hover:border-purple-200 transition">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <h4 className="font-semibold text-gray-900">{t.title}</h4>
-                <p className="text-xs text-gray-500 mt-0.5">{t.type} · {t.questionCount} questions</p>
+                <h4 className="font-semibold text-gray-900">{tpl.title}</h4>
+                <p className="text-xs text-gray-500 mt-0.5">{tpl.type} · {tpl.questionCount} questions</p>
               </div>
-              <button onClick={() => handleCreateFromTemplate(t)} disabled={limitReached || isSaving}
+              <button onClick={() => handleCreateFromTemplate(tpl)} disabled={limitReached || isSaving}
                 className="flex items-center gap-1 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 shrink-0">
                 {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />} Use
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-3">{t.description}</p>
+            <p className="text-sm text-gray-600 mb-3">{tpl.description}</p>
             <div className="flex flex-wrap gap-1">
-              {t.categories.map((cat, i) => (
+              {tpl.categories.map((cat, i) => (
                 <span key={i} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{cat}</span>
               ))}
             </div>

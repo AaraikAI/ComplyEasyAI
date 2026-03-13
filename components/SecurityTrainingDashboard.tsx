@@ -36,6 +36,7 @@ import {
   Filter,
   ChevronRight,
 } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
 
@@ -200,6 +201,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 // ── Component ───────────────────────────────────────────────────────────────
 
 const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState<ViewMode>('admin');
   const [adminTab, setAdminTab] = useState<AdminTab>('modules');
   const [searchQuery, setSearchQuery] = useState('');
@@ -517,19 +519,19 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-green-400 text-sm mb-1">
-            <CheckCircle className="w-4 h-4" /> Completed
+            <CheckCircle className="w-4 h-4" /> {t('training.completed')}
           </div>
           <div className="text-3xl font-bold text-green-400">{assignmentStats.completed}</div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-yellow-400 text-sm mb-1">
-            <Clock className="w-4 h-4" /> In Progress
+            <Clock className="w-4 h-4" /> {t('training.inProgress')}
           </div>
           <div className="text-3xl font-bold text-yellow-400">{assignmentStats.inProgress}</div>
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-red-400 text-sm mb-1">
-            <AlertTriangle className="w-4 h-4" /> Overdue
+            <AlertTriangle className="w-4 h-4" /> {t('training.overdue')}
           </div>
           <div className="text-3xl font-bold text-red-400">{assignmentStats.overdue}</div>
         </div>
@@ -582,8 +584,8 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Category</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Progress</th>
                 <th className="text-left px-4 py-3 text-slate-400 font-medium">Status</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Due Date</th>
-                <th className="text-left px-4 py-3 text-slate-400 font-medium">Score</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('training.dueDate')}</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">{t('training.score')}</th>
               </tr>
             </thead>
             <tbody>
@@ -853,7 +855,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-green-400 text-sm mb-1">
-            <CheckCircle className="w-4 h-4" /> Completed
+            <CheckCircle className="w-4 h-4" /> {t('training.completed')}
           </div>
           <div className="text-3xl font-bold text-green-400">
             {myAssignments.filter(a => a.status === 'Completed').length}
@@ -868,7 +870,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-yellow-400 text-sm mb-1">
-            <Clock className="w-4 h-4" /> In Progress
+            <Clock className="w-4 h-4" /> {t('training.inProgress')}
           </div>
           <div className="text-3xl font-bold text-yellow-400">
             {myAssignments.filter(a => a.status === 'InProgress').length}
@@ -877,7 +879,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
         </div>
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-2 text-red-400 text-sm mb-1">
-            <AlertTriangle className="w-4 h-4" /> Overdue
+            <AlertTriangle className="w-4 h-4" /> {t('training.overdue')}
           </div>
           <div className="text-3xl font-bold text-red-400">
             {myAssignments.filter(a => a.status === 'Overdue').length}
@@ -1047,7 +1049,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Passing Score (%)</label>
+                <label className="block text-xs text-slate-400 mb-1">{t('training.passingScore')} (%)</label>
                 <input
                   type="number"
                   value={createForm.passingScore}
@@ -1085,7 +1087,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
               onClick={() => setShowCreateModuleModal(false)}
               className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleCreateModule}
@@ -1108,7 +1110,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg mx-4">
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-            <h2 className="text-lg font-semibold text-white">Assign Training</h2>
+            <h2 className="text-lg font-semibold text-white">{t('training.assignTraining')}</h2>
             <button
               onClick={() => setShowAssignModal(false)}
               className="p-1 text-slate-400 hover:text-white transition-colors"
@@ -1161,7 +1163,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
               onClick={() => setShowAssignModal(false)}
               className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleAssignTraining}
@@ -1201,7 +1203,7 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
       return (
         <div className="flex items-center justify-center py-20">
           <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
-          <span className="ml-3 text-slate-400">Loading training data...</span>
+          <span className="ml-3 text-slate-400">{t('common.loading')}...</span>
         </div>
       );
     }
@@ -1235,12 +1237,12 @@ const SecurityTrainingDashboard: React.FC<{ onBack: () => void }> = ({ onBack })
                 className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm">Back</span>
+                <span className="text-sm">{t('common.back')}</span>
               </button>
               <div className="h-5 w-px bg-slate-700" />
               <div className="flex items-center gap-2">
                 <GraduationCap className="w-5 h-5 text-blue-400" />
-                <h1 className="text-lg font-semibold text-white">Security Training</h1>
+                <h1 className="text-lg font-semibold text-white">{t('training.title')}</h1>
               </div>
             </div>
             <div className="flex items-center gap-3">

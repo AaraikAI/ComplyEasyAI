@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Ticket,
   Link2,
@@ -169,6 +170,7 @@ const defaultCreateForm: CreateTicketForm = {
 // ---------------------------------------------------------------------------
 
 const TicketingIntegrations: React.FC = () => {
+  const { t } = useI18n();
   // --- State ---
   const [activeTab, setActiveTab] = useState<TabId>('connections');
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -544,7 +546,7 @@ const TicketingIntegrations: React.FC = () => {
                 <div className="space-y-2 mb-3">
                   <div className="flex items-center gap-2 text-xs text-white/60">
                     <Clock className="w-3 h-3" />
-                    Last sync: {formatDate(conn?.lastSync || null)}
+                    {t('integrations.lastSync')}: {formatDate(conn?.lastSync || null)}
                   </div>
                   {syncStatus && (
                     <div className="grid grid-cols-3 gap-2 text-xs">
@@ -554,7 +556,7 @@ const TicketingIntegrations: React.FC = () => {
                       </div>
                       <div className="bg-white/5 rounded p-1.5 text-center">
                         <div className="text-white/80 font-medium">{syncStatus.pendingSync}</div>
-                        <div className="text-white/40">Pending</div>
+                        <div className="text-white/40">{t('common.pending')}</div>
                       </div>
                       <div className="bg-white/5 rounded p-1.5 text-center">
                         <div
@@ -880,7 +882,7 @@ const TicketingIntegrations: React.FC = () => {
           ) : (
             <RefreshCw className="w-3.5 h-3.5" />
           )}
-          Sync All
+          {t('integrations.syncNow')}
         </button>
       </div>
 
@@ -1336,7 +1338,7 @@ const TicketingIntegrations: React.FC = () => {
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-2xl font-bold text-blue-400">{connectedProviders.length}</div>
-          <div className="text-xs text-white/40 mt-1">Connected Providers</div>
+          <div className="text-xs text-white/40 mt-1">{t('integrations.connected')}</div>
         </div>
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="text-2xl font-bold text-green-400">
@@ -1408,7 +1410,7 @@ const TicketingIntegrations: React.FC = () => {
 
       {/* Sync Status per Provider */}
       <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-white mb-4">Sync Status</h3>
+        <h3 className="text-sm font-semibold text-white mb-4">{t('integrations.syncStatus')}</h3>
         <div className="space-y-3">
           {(Object.keys(providerMeta) as TicketingProvider[]).map((provider) => {
             const syncStatus = syncStatuses[provider];
@@ -1463,7 +1465,7 @@ const TicketingIntegrations: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
             <Ticket className="w-7 h-7 text-blue-400" />
-            Ticketing Integrations
+            {t('integrations.title')}
           </h1>
           <p className="text-sm text-white/50 mt-1">
             Connect and manage Jira, ServiceNow, and Azure DevOps ticketing systems

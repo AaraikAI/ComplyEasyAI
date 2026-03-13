@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, Filter, Download, BarChart3, Target, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 
 interface RiskItem {
   id: string;
@@ -50,6 +51,7 @@ function getRiskLevel(likelihood: number, impact: number): 'critical' | 'high' |
 }
 
 const RiskHeatMap: React.FC = () => {
+  const { t } = useI18n();
   const [risks, setRisks] = useState<RiskItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -189,7 +191,7 @@ const RiskHeatMap: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">Risk Heat Map</h1>
+          <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100">{t('risks.heatMap')}</h1>
           <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">Interactive 5x5 risk matrix — Likelihood vs Impact</p>
         </div>
         <div className="flex items-center gap-2">
@@ -206,7 +208,7 @@ const RiskHeatMap: React.FC = () => {
           </button>
           <button onClick={exportHeatMap} className="flex items-center gap-1.5 px-3 py-2 text-sm border border-surface-300 dark:border-surface-600 rounded-lg text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700">
             <Download size={14} />
-            Export
+            {t('common.export')}
           </button>
           <button onClick={fetchRisks} className="p-2 border border-surface-300 dark:border-surface-600 rounded-lg text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700">
             <RefreshCw size={14} />
@@ -217,15 +219,15 @@ const RiskHeatMap: React.FC = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-4">
-          <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase">Total Risks</p>
+          <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase">{t('common.total')} {t('risks.title')}</p>
           <p className="text-2xl font-bold text-surface-900 dark:text-surface-100 mt-1">{stats.total}</p>
         </div>
         <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-4">
-          <p className="text-xs font-medium text-red-500 uppercase">Critical</p>
+          <p className="text-xs font-medium text-red-500 uppercase">{t('risks.critical')}</p>
           <p className="text-2xl font-bold text-red-600 mt-1">{stats.critical}</p>
         </div>
         <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-4">
-          <p className="text-xs font-medium text-orange-500 uppercase">High</p>
+          <p className="text-xs font-medium text-orange-500 uppercase">{t('risks.high')}</p>
           <p className="text-2xl font-bold text-orange-600 mt-1">{stats.high}</p>
         </div>
         <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-4">
@@ -250,7 +252,7 @@ const RiskHeatMap: React.FC = () => {
           <div className="relative">
             {/* Y-axis label */}
             <div className="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90 text-xs font-semibold text-surface-500 dark:text-surface-400 tracking-wider uppercase whitespace-nowrap">
-              Likelihood
+              {t('risks.likelihood')}
             </div>
 
             <div className="ml-8">
@@ -294,7 +296,7 @@ const RiskHeatMap: React.FC = () => {
 
               {/* X-axis title */}
               <p className="text-center text-xs font-semibold text-surface-500 dark:text-surface-400 tracking-wider uppercase mt-2">
-                Impact
+                {t('risks.impact')}
               </p>
             </div>
           </div>
@@ -302,10 +304,10 @@ const RiskHeatMap: React.FC = () => {
           {/* Legend */}
           <div className="flex items-center justify-center gap-4 mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
             {[
-              { level: 'critical', label: 'Critical (20-25)' },
-              { level: 'high', label: 'High (12-19)' },
-              { level: 'medium', label: 'Medium (6-11)' },
-              { level: 'low', label: 'Low (3-5)' },
+              { level: 'critical', label: `${t('risks.critical')} (20-25)` },
+              { level: 'high', label: `${t('risks.high')} (12-19)` },
+              { level: 'medium', label: `${t('risks.medium')} (6-11)` },
+              { level: 'low', label: `${t('risks.low')} (3-5)` },
               { level: 'minimal', label: 'Minimal (1-2)' },
             ].map(item => (
               <div key={item.level} className="flex items-center gap-1.5">
@@ -344,7 +346,7 @@ const RiskHeatMap: React.FC = () => {
                       {risk.severity}
                     </span>
                     <span className="text-[10px] text-surface-500 dark:text-surface-400">
-                      Score: {risk.likelihood * risk.impact}
+                      {t('risks.riskScore')}: {risk.likelihood * risk.impact}
                     </span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                       risk.status === 'Open' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
@@ -355,7 +357,7 @@ const RiskHeatMap: React.FC = () => {
                     </span>
                   </div>
                   {risk.owner && (
-                    <p className="text-[10px] text-surface-400 dark:text-surface-500 mt-1">Owner: {risk.owner}</p>
+                    <p className="text-[10px] text-surface-400 dark:text-surface-500 mt-1">{t('common.owner')}: {risk.owner}</p>
                   )}
                 </div>
               ))}

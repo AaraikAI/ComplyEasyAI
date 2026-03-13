@@ -14,6 +14,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, Smartphone, Shield, CheckCircle, XCircle, AlertTriangle,
   Search, Plus, X, Lock, Trash2, Eye, Download, Settings, Filter,
@@ -96,6 +97,7 @@ interface ActionLogEntry {
 
 // ── Component ──────────────────────────────────────────────────────────
 export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [platformFilter, setPlatformFilter] = useState<string>('all');
@@ -206,8 +208,8 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     s === 'Pending' ? 'bg-amber-500/20 text-amber-400' :
     'bg-red-500/20 text-red-400';
 
-  const actionIcon = (t: ActionType) => {
-    switch (t) {
+  const actionIcon = (actionType: ActionType) => {
+    switch (actionType) {
       case 'Lock': return <Lock size={14} className="text-amber-400" />;
       case 'Wipe': return <Trash2 size={14} className="text-red-400" />;
       case 'Message': return <MessageSquare size={14} className="text-blue-400" />;
@@ -373,7 +375,7 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input type="text" placeholder="Search devices, users, serial numbers..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          <input type="text" placeholder={t('common.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
         </div>
         <select value={platformFilter} onChange={e => setPlatformFilter(e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm">
           <option value="all">All Platforms</option>
@@ -748,7 +750,7 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
           </div>
           <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-            <button onClick={() => setShowCreatePolicy(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
+            <button onClick={() => setShowCreatePolicy(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">{t('common.cancel')}</button>
             <button onClick={async () => {
               try { await api.mdm.createPolicy({ ...policyForm, status: 'Draft' }); setShowCreatePolicy(false); loadData(); } catch { setShowCreatePolicy(false); }
             }} className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm hover:bg-slate-500">Save as Draft</button>
@@ -794,7 +796,7 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
           </div>
           <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-            <button onClick={() => setShowActionConfirm(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
+            <button onClick={() => setShowActionConfirm(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">{t('common.cancel')}</button>
             <button
               disabled={actionLoading}
               onClick={async () => {
@@ -830,14 +832,14 @@ export const MDMDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <p className="text-sm text-slate-400">Manage, secure, and monitor your corporate device fleet</p>
           </div>
           <button onClick={loadData} disabled={loading} className="ml-auto flex items-center gap-2 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-300 hover:text-white disabled:opacity-50">
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> {t('common.refresh')}
           </button>
         </div>
 
         <div className="flex gap-1 mb-6 border-b border-slate-700 overflow-x-auto">
-          {tabs.map(t => (
-            <button key={t.key} onClick={() => setActiveTab(t.key)} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === t.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>
-              {t.icon}{t.label}
+          {tabs.map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>
+              {tab.icon}{tab.label}
             </button>
           ))}
         </div>

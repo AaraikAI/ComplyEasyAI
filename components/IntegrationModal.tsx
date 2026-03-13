@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ExternalLink, CheckCircle, AlertCircle, Loader, Key, User, Lock, FileText, Globe } from 'lucide-react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 
 interface IntegrationModalProps {
   integration: {
@@ -23,6 +24,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
   onConnect,
   onDisconnect,
 }) => {
+  const { t } = useI18n();
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'connecting' | 'success' | 'error'>('idle');
@@ -680,17 +682,17 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
         <div className="space-y-4">
           <div className="flex items-center space-x-2 text-green-600">
             <CheckCircle size={18} />
-            <span className="font-medium">Connected</span>
+            <span className="font-medium">{t('integrations.connected')}</span>
           </div>
           <p className="text-sm text-gray-600">
-            Last synced: {integration.lastSync}
+            {t('integrations.lastSync')}: {integration.lastSync}
           </p>
           <button
             onClick={handleDisconnect}
             disabled={isConnecting}
             className="w-full py-2.5 px-4 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isConnecting ? 'Disconnecting...' : 'Disconnect'}
+            {isConnecting ? t('common.loading') : t('integrations.disconnect')}
           </button>
         </div>
       );
@@ -716,7 +718,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
               ) : (
                 <>
                   <ExternalLink size={18} />
-                  <span>Connect with {integration.name}</span>
+                  <span>{t('integrations.connect')} {integration.name}</span>
                 </>
               )}
             </button>

@@ -4,6 +4,7 @@
  * and compensating controls for ERP/financial system access governance
  */
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft, Shield, AlertTriangle, CheckCircle, Search, Plus, X,
@@ -65,6 +66,7 @@ const MATRIX_FUNCTIONS: MatrixFunction[] = [
 
 // ── Component ──────────────────────────────────────────────────────────
 export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('all');
@@ -301,7 +303,7 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input type="text" placeholder="Search rules, functions..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          <input type="text" placeholder={t('common.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
         </div>
         <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm">
           <option value="all">All Risk Levels</option>
@@ -351,7 +353,7 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input type="text" placeholder="Search violations, users..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          <input type="text" placeholder={t('common.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
         </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm">
           <option value="all">All Statuses</option>
@@ -502,7 +504,7 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
             );
           })}
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><Download size={16} /> Export Report</button>
+        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"><Download size={16} /> {t('common.export')}</button>
       </div>
 
       <div className="space-y-3">
@@ -562,7 +564,7 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
           <div><label className="block text-sm text-slate-400 mb-1">Category</label><select className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm">{['Procure-to-Pay', 'Order-to-Cash', 'Financial Close', 'Basis / Security', 'HR / Payroll'].map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-slate-700">
-          <button onClick={() => setShowCreateRule(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Cancel</button>
+          <button onClick={() => setShowCreateRule(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">{t('common.cancel')}</button>
           <button onClick={async () => {
             try {
               await api.sod.createRule({ ...ruleForm, status: 'Active' });
@@ -629,9 +631,9 @@ export const SoDAnalysisDashboard: React.FC<{ onBack: () => void }> = ({ onBack 
         </div>
 
         <div className="flex gap-1 mb-6 border-b border-slate-700 overflow-x-auto">
-          {tabs.map(t => (
-            <button key={t.key} onClick={() => { setActiveTab(t.key); setSearchQuery(''); setRiskFilter('all'); setStatusFilter('all'); setSystemFilter('all'); }} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === t.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>
-              {t.icon}{t.label}
+          {tabs.map(tab => (
+            <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchQuery(''); setRiskFilter('all'); setStatusFilter('all'); setSystemFilter('all'); }} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>
+              {tab.icon}{tab.label}
             </button>
           ))}
         </div>

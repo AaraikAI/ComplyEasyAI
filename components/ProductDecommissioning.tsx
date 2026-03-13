@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft, Search, Plus, Download, Eye, Edit3, Trash2,
@@ -238,8 +239,8 @@ const dataActionColor = (a: string) => {
   }
 };
 
-const notifTypeColor = (t: string) => {
-  switch (t) {
+const notifTypeColor = (nType: string) => {
+  switch (nType) {
     case 'end_of_sale': return 'bg-blue-100 text-blue-800';
     case 'end_of_support': return 'bg-yellow-100 text-yellow-800';
     case 'end_of_life': return 'bg-orange-100 text-orange-800';
@@ -259,6 +260,7 @@ interface ProductDecommissioningProps {
 }
 
 export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [productSearch, setProductSearch] = useState('');
   const [productStatusFilter, setProductStatusFilter] = useState<string>('All');
@@ -340,7 +342,7 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
     ), [products, productSearch, productStatusFilter]);
 
   const filteredTasks = useMemo(() =>
-    workflowTasks.filter(t => workflowProductFilter === 'All' || t.productId === workflowProductFilter), [workflowTasks, workflowProductFilter]);
+    workflowTasks.filter(wt => workflowProductFilter === 'All' || wt.productId === workflowProductFilter), [workflowTasks, workflowProductFilter]);
 
   const filteredDataPlans = useMemo(() =>
     dataPlans.filter(d => dataProductFilter === 'All' || d.productId === dataProductFilter), [dataPlans, dataProductFilter]);
@@ -359,9 +361,9 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
 
   const taskStats = useMemo(() => ({
     total: workflowTasks.length,
-    completed: workflowTasks.filter(t => t.status === 'completed').length,
-    inProgress: workflowTasks.filter(t => t.status === 'in_progress').length,
-    notStarted: workflowTasks.filter(t => t.status === 'not_started').length,
+    completed: workflowTasks.filter(wt => wt.status === 'completed').length,
+    inProgress: workflowTasks.filter(wt => wt.status === 'in_progress').length,
+    notStarted: workflowTasks.filter(wt => wt.status === 'not_started').length,
   }), [workflowTasks]);
 
   // ---------------------------------------------------------------------------
@@ -586,10 +588,10 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
         <div className="flex items-center gap-3 text-sm">
           <span className="text-gray-500">{filteredTasks.length} tasks</span>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-green-500 rounded-full" /> {filteredTasks.filter(t => t.status === 'completed').length} done
+            <span className="w-2 h-2 bg-green-500 rounded-full" /> {filteredTasks.filter(wt => wt.status === 'completed').length} done
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-blue-500 rounded-full" /> {filteredTasks.filter(t => t.status === 'in_progress').length} active
+            <span className="w-2 h-2 bg-blue-500 rounded-full" /> {filteredTasks.filter(wt => wt.status === 'in_progress').length} active
           </div>
         </div>
       </div>
@@ -599,26 +601,26 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-            <span className="text-sm font-bold text-gray-900">{Math.round((filteredTasks.filter(t => t.status === 'completed').length / filteredTasks.length) * 100)}%</span>
+            <span className="text-sm font-bold text-gray-900">{Math.round((filteredTasks.filter(wt => wt.status === 'completed').length / filteredTasks.length) * 100)}%</span>
           </div>
           <div className="w-full h-3 bg-gray-200 rounded-full">
             <div className="h-3 bg-green-500 rounded-full transition-all"
-              style={{ width: `${(filteredTasks.filter(t => t.status === 'completed').length / filteredTasks.length) * 100}%` }} />
+              style={{ width: `${(filteredTasks.filter(wt => wt.status === 'completed').length / filteredTasks.length) * 100}%` }} />
           </div>
         </div>
       )}
 
       {/* Tasks grouped by phase */}
-      {Array.from(new Set(filteredTasks.map(t => t.phase))).map(phase => (
+      {Array.from(new Set(filteredTasks.map(wt => wt.phase))).map(phase => (
         <div key={phase} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
             <span className="font-medium text-gray-900 text-sm">{phase}</span>
             <span className="text-xs text-gray-500">
-              {filteredTasks.filter(t => t.phase === phase && t.status === 'completed').length}/{filteredTasks.filter(t => t.phase === phase).length} complete
+              {filteredTasks.filter(wt => wt.phase === phase && wt.status === 'completed').length}/{filteredTasks.filter(wt => wt.phase === phase).length} complete
             </span>
           </div>
           <div className="divide-y divide-gray-100">
-            {filteredTasks.filter(t => t.phase === phase).map(task => (
+            {filteredTasks.filter(wt => wt.phase === phase).map(task => (
               <div key={task.id}>
                 <div className="px-4 py-3 cursor-pointer hover:bg-gray-50 flex items-center justify-between"
                   onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}>

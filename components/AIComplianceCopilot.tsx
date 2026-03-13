@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import {
   X,
   Send,
@@ -484,6 +485,7 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { t } = useI18n();
   const [activeSection, setActiveSection] = useState<'suggestions' | 'chat' | 'deadlines' | 'actions'>('suggestions');
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -659,7 +661,7 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
               <Sparkles size={16} className="text-white" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">AI Compliance Copilot</h3>
+              <h3 className="text-sm font-semibold text-gray-900">{t('ai.complianceCopilot')}</h3>
               <p className="text-xs text-gray-500 flex items-center gap-1.5">
                 Context: <span className="font-medium text-brand-600">{getViewLabel(currentView)}</span>
                 <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
@@ -691,10 +693,10 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
         {/* Section Tabs */}
         <div className="flex border-b border-gray-200 px-2">
           {[
-            { key: 'suggestions', label: 'Suggestions', icon: <Lightbulb size={14} /> },
-            { key: 'chat', label: 'Ask AI', icon: <MessageSquare size={14} /> },
+            { key: 'suggestions', label: t('ai.suggestion'), icon: <Lightbulb size={14} /> },
+            { key: 'chat', label: t('ai.askCopilot'), icon: <MessageSquare size={14} /> },
             { key: 'deadlines', label: 'Deadlines', icon: <Clock size={14} /> },
-            { key: 'actions', label: 'Quick Actions', icon: <Zap size={14} /> },
+            { key: 'actions', label: t('common.actions'), icon: <Zap size={14} /> },
           ].map(tab => (
             <button
               key={tab.key}
@@ -872,7 +874,7 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
                           {/* Confidence */}
                           {message.confidence && (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500">Confidence:</span>
+                              <span className="text-xs text-gray-500">{t('ai.confidence')}:</span>
                               <ConfidenceMeter score={message.confidence} />
                             </div>
                           )}
@@ -978,7 +980,7 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
                       <Loader2 size={14} className="animate-spin" />
                       <span className="text-sm">
                         {isApiAvailable
-                          ? 'Analyzing your compliance data with AI...'
+                          ? `${t('ai.analyzing')}...`
                           : 'Retrieving cached compliance data...'}
                       </span>
                     </div>
@@ -1072,7 +1074,7 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
             <div className="p-4 space-y-3">
               <div className="flex items-center justify-between mb-1">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Quick Actions
+                  {t('common.actions')}
                 </h4>
               </div>
 
@@ -1103,7 +1105,7 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">Run Compliance Health Check</p>
-                      <p className="text-xs text-gray-500">AI-powered assessment of your overall compliance posture</p>
+                      <p className="text-xs text-gray-500">{t('ai.aiPowered')} assessment of your overall compliance posture</p>
                     </div>
                     <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
                   </button>

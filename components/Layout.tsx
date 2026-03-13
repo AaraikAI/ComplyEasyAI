@@ -18,9 +18,12 @@ import {
 import { ComplianceChat } from './ComplianceChat';
 import { OnboardingOverlay, OnboardingChecklistWidget } from './Onboarding';
 import { CommandPalette } from './CommandPalette';
+import GlobalSearch from './GlobalSearch';
+import NotificationCenter from './NotificationCenter';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeToggleCompact } from './ThemeToggle';
 import { Breadcrumbs } from './Breadcrumbs';
-import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -51,57 +54,22 @@ interface NavSection {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
+  const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isGlobalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
-  const [notifications, setNotifications] = useState<any[]>([]);
 
   const currentPath = location.pathname;
 
-  useEffect(() => {
-    let isMounted = true;
-    let timeoutId: NodeJS.Timeout;
-
-    const loadNotifications = async () => {
-      if (!user) { setNotifications([]); return; }
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(async () => {
-        try {
-          try {
-            const risks = await api.risks.list({ assignedTo: user.name });
-            if (!isMounted) return;
-            const taskNotifications = risks.map((r: any) => ({
-              id: r.id, title: 'Risk Assigned to You', desc: r.description, time: r.detectedAt, type: 'task'
-            }));
-            const system = [
-              { id: 'sys1', title: 'Audit Preparedness', desc: 'SOC 2 Audit is in 20 days.', time: '1 day ago', type: 'alert' }
-            ];
-            if (isMounted) setNotifications([...taskNotifications, ...system]);
-          } catch (rateLimitError: any) {
-            if (rateLimitError.message?.includes('429') || rateLimitError.message?.includes('Too Many Requests')) {
-              const system = [{ id: 'sys1', title: 'Audit Preparedness', desc: 'SOC 2 Audit is in 20 days.', time: '1 day ago', type: 'alert' }];
-              if (isMounted) setNotifications(system);
-            } else { throw rateLimitError; }
-          }
-        } catch (error) {
-          console.error('Failed to load notifications:', error);
-          if (isMounted) setNotifications([]);
-        }
-      }, 500);
-    };
-    loadNotifications();
-    return () => { isMounted = false; clearTimeout(timeoutId); };
-  }, [user]);
-
-  // Command Palette global keyboard shortcut
+  // Global Search keyboard shortcut (Cmd+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setCommandPaletteOpen(prev => !prev);
+        setGlobalSearchOpen(prev => !prev);
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -110,127 +78,134 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const navItems: NavItem[] = [
     // Platform
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: ROUTES.DASHBOARD, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'my-tasks', label: 'My Tasks', icon: CheckSquare, path: ROUTES.MY_TASKS, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'risks', label: 'Risk Management', icon: ShieldAlert, path: ROUTES.RISKS, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'issues', label: 'Issue Management', icon: AlertTriangle, path: ROUTES.ISSUES, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'vendors', label: 'Vendor Management', icon: Users, path: ROUTES.VENDORS, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'policies', label: 'Policy Management', icon: FileCheck, path: ROUTES.POLICIES, roles: ['admin', 'editor'] },
-    { id: 'integrations', label: 'Integrations', icon: Layers, path: ROUTES.INTEGRATIONS, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'frameworks', label: 'Frameworks', icon: ShieldCheck, path: ROUTES.FRAMEWORKS, roles: ['admin', 'editor'], relatedPaths: ['/frameworks/'] },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard, path: ROUTES.DASHBOARD, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'my-tasks', label: t('nav.tasks'), icon: CheckSquare, path: ROUTES.MY_TASKS, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'risks', label: t('nav.risks'), icon: ShieldAlert, path: ROUTES.RISKS, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'issues', label: t('nav.issues'), icon: AlertTriangle, path: ROUTES.ISSUES, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'vendors', label: t('nav.vendors'), icon: Users, path: ROUTES.VENDORS, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'policies', label: t('nav.policies'), icon: FileCheck, path: ROUTES.POLICIES, roles: ['admin', 'editor'] },
+    { id: 'integrations', label: t('nav.integrations'), icon: Layers, path: ROUTES.INTEGRATIONS, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'frameworks', label: t('nav.frameworks'), icon: ShieldCheck, path: ROUTES.FRAMEWORKS, roles: ['admin', 'editor'], relatedPaths: ['/frameworks/'] },
     // Regulatory
-    { id: 'ai-rmf', label: 'NIST AI RMF', icon: Brain, path: ROUTES.AI_RMF, roles: ['admin', 'editor', 'viewer'], relatedPaths: ['/ai-rmf/'] },
-    { id: 'eu-ai-act', label: 'EU AI Act', icon: ShieldCheck, path: ROUTES.EU_AI_ACT, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'eu-cra', label: 'EU CRA', icon: Shield, path: ROUTES.EU_CRA, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'csrd', label: 'CSRD / ESG', icon: Leaf, path: ROUTES.CSRD, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'ecodesign', label: 'Ecodesign', icon: Recycle, path: ROUTES.ECODESIGN, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'nis2', label: 'NIS2', icon: Network, path: ROUTES.NIS2, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'dma', label: 'DMA', icon: ShieldCheck, path: ROUTES.DMA, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'dsa', label: 'DSA', icon: ShieldCheck, path: ROUTES.DSA, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'us-privacy', label: 'US Privacy Laws', icon: MapPin, path: ROUTES.US_PRIVACY, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'ai-rmf', label: t('nav.nistAiRmf'), icon: Brain, path: ROUTES.AI_RMF, roles: ['admin', 'editor', 'viewer'], relatedPaths: ['/ai-rmf/'] },
+    { id: 'eu-ai-act', label: t('nav.euAiAct'), icon: ShieldCheck, path: ROUTES.EU_AI_ACT, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'eu-cra', label: t('nav.euCra'), icon: Shield, path: ROUTES.EU_CRA, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'csrd', label: t('nav.csrdEsg'), icon: Leaf, path: ROUTES.CSRD, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'ecodesign', label: t('nav.ecodesign'), icon: Recycle, path: ROUTES.ECODESIGN, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'nis2', label: t('nav.nis2'), icon: Network, path: ROUTES.NIS2, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'dma', label: t('nav.dma'), icon: ShieldCheck, path: ROUTES.DMA, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'dsa', label: t('nav.dsa'), icon: ShieldCheck, path: ROUTES.DSA, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'us-privacy', label: t('nav.usPrivacy'), icon: MapPin, path: ROUTES.US_PRIVACY, roles: ['admin', 'editor', 'viewer'] },
     // Governance & Process
-    { id: 'governance', label: 'Governance', icon: UserCheck, path: ROUTES.GOVERNANCE, roles: ['admin', 'editor'] },
-    { id: 'process-mapper', label: 'Process Mapper', icon: Workflow, path: ROUTES.PROCESS_MAPPER, roles: ['admin', 'editor'] },
-    { id: 'sox', label: 'SOX Compliance', icon: Landmark, path: ROUTES.SOX, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'sod', label: 'SoD Analysis', icon: Scale, path: ROUTES.SOD, roles: ['admin', 'editor'] },
-    { id: 'workflow-builder', label: 'Workflow Builder', icon: Workflow, path: ROUTES.WORKFLOW_BUILDER, roles: ['admin', 'editor'] },
+    { id: 'governance', label: t('nav.governance'), icon: UserCheck, path: ROUTES.GOVERNANCE, roles: ['admin', 'editor'] },
+    { id: 'dpo-designation', label: t('nav.dpoDesignation'), icon: Key, path: ROUTES.GOVERNANCE, roles: ['admin'] },
+    { id: 'process-mapper', label: t('nav.processMapper'), icon: Workflow, path: ROUTES.PROCESS_MAPPER, roles: ['admin', 'editor'] },
+    { id: 'sox', label: t('nav.soxCompliance'), icon: Landmark, path: ROUTES.SOX, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'sod', label: t('nav.sodAnalysis'), icon: Scale, path: ROUTES.SOD, roles: ['admin', 'editor'] },
+    { id: 'workflow-builder', label: t('nav.workflowBuilder'), icon: Workflow, path: ROUTES.WORKFLOW_BUILDER, roles: ['admin', 'editor'] },
     // Cert & Products
-    { id: 'ce-marking', label: 'CE Marking', icon: Award, path: ROUTES.CE_MARKING, roles: ['admin', 'editor'] },
-    { id: 'digital-product-passport', label: 'Digital Passport', icon: Package, path: ROUTES.DIGITAL_PRODUCT_PASSPORT, roles: ['admin', 'editor'] },
-    { id: 'product-lifecycle', label: 'Product Lifecycle', icon: Recycle, path: ROUTES.PRODUCT_LIFECYCLE, roles: ['admin', 'editor'] },
-    { id: 'sbom-manager', label: 'SBOM Manager', icon: FileCode, path: ROUTES.SBOM_MANAGER, roles: ['admin', 'editor'] },
-    { id: 'product-decommissioning', label: 'Decommissioning', icon: Trash2, path: ROUTES.PRODUCT_DECOMMISSIONING, roles: ['admin', 'editor'] },
-    { id: 'environmental-lifecycle', label: 'Env. Lifecycle', icon: TreePine, path: ROUTES.ENVIRONMENTAL_LIFECYCLE, roles: ['admin', 'editor'] },
+    { id: 'ce-marking', label: t('nav.ceMarking'), icon: Award, path: ROUTES.CE_MARKING, roles: ['admin', 'editor'] },
+    { id: 'digital-product-passport', label: t('nav.digitalPassport'), icon: Package, path: ROUTES.DIGITAL_PRODUCT_PASSPORT, roles: ['admin', 'editor'] },
+    { id: 'product-lifecycle', label: t('nav.productLifecycle'), icon: Recycle, path: ROUTES.PRODUCT_LIFECYCLE, roles: ['admin', 'editor'] },
+    { id: 'sbom-manager', label: t('nav.sbomManager'), icon: FileCode, path: ROUTES.SBOM_MANAGER, roles: ['admin', 'editor'] },
+    { id: 'product-decommissioning', label: t('nav.decommissioning'), icon: Trash2, path: ROUTES.PRODUCT_DECOMMISSIONING, roles: ['admin', 'editor'] },
+    { id: 'environmental-lifecycle', label: t('nav.envLifecycle'), icon: TreePine, path: ROUTES.ENVIRONMENTAL_LIFECYCLE, roles: ['admin', 'editor'] },
     // Monitoring & Assurance
-    { id: 'esg-reporting', label: 'ESG Reporting', icon: TreePine, path: ROUTES.ESG_REPORTING, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'post-market-surveillance', label: 'Surveillance', icon: ScanSearch, path: ROUTES.POST_MARKET_SURVEILLANCE, roles: ['admin', 'editor'] },
-    { id: 'compliance-forecasting', label: 'Score Forecast', icon: TrendingUp, path: ROUTES.COMPLIANCE_FORECASTING, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'breach-wizard', label: 'Breach Wizard', icon: AlertOctagon, path: ROUTES.BREACH_WIZARD, roles: ['admin', 'editor'] },
+    { id: 'esg-reporting', label: t('nav.esgReporting'), icon: TreePine, path: ROUTES.ESG_REPORTING, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'post-market-surveillance', label: t('nav.surveillance'), icon: ScanSearch, path: ROUTES.POST_MARKET_SURVEILLANCE, roles: ['admin', 'editor'] },
+    { id: 'compliance-forecasting', label: t('nav.scoreForecast'), icon: TrendingUp, path: ROUTES.COMPLIANCE_FORECASTING, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'breach-wizard', label: t('nav.breachWizard'), icon: AlertOctagon, path: ROUTES.BREACH_WIZARD, roles: ['admin', 'editor'] },
     // Reports & Audit
-    { id: 'reports', label: 'Report Generator', icon: FileText, path: ROUTES.REPORTS, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'audit', label: 'Audit Trail', icon: Activity, path: ROUTES.AUDIT_TRAIL, roles: ['admin', 'editor'] },
-    { id: 'monitoring', label: 'Monitoring', icon: Monitor, path: ROUTES.MONITORING, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'analytics', label: 'Real-time Analytics', icon: Activity, path: ROUTES.ANALYTICS, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'auditor', label: 'Auditor Hub', icon: BookOpen, path: ROUTES.AUDITOR, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'reports', label: t('nav.reports'), icon: FileText, path: ROUTES.REPORTS, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'audit', label: t('nav.auditTrail'), icon: Activity, path: ROUTES.AUDIT_TRAIL, roles: ['admin', 'editor'] },
+    { id: 'monitoring', label: t('nav.monitoring'), icon: Monitor, path: ROUTES.MONITORING, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'analytics', label: t('nav.analytics'), icon: Activity, path: ROUTES.ANALYTICS, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'auditor', label: t('nav.auditorHub'), icon: BookOpen, path: ROUTES.AUDITOR, roles: ['admin', 'editor', 'viewer'] },
     // Privacy & Data
-    { id: 'privacy', label: 'Privacy Platform', icon: Fingerprint, path: ROUTES.PRIVACY, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'account-deletion', label: 'Data Deletion', icon: UserX, path: ROUTES.ACCOUNT_DELETION, roles: ['admin', 'editor'] },
+    { id: 'privacy', label: t('nav.privacyPlatform'), icon: Fingerprint, path: ROUTES.PRIVACY, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'dpia', label: t('nav.dpia'), icon: Eye, path: ROUTES.DPIA, roles: ['admin', 'editor'] },
+    { id: 'ropa', label: t('nav.ropa'), icon: ClipboardList, path: ROUTES.ROPA, roles: ['admin', 'editor'] },
+    { id: 'privacy-notices', label: t('nav.privacyNotices'), icon: FileText, path: ROUTES.PRIVACY_NOTICES, roles: ['admin', 'editor'] },
+    { id: 'account-deletion', label: t('nav.dataDeletion'), icon: UserX, path: ROUTES.ACCOUNT_DELETION, roles: ['admin', 'editor'] },
     // Enterprise
-    { id: 'workspaces', label: 'Workspaces', icon: Building2, path: ROUTES.WORKSPACES, roles: ['admin', 'editor'] },
-    { id: 'questionnaires', label: 'Questionnaires', icon: ClipboardList, path: ROUTES.QUESTIONNAIRES, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'security', label: 'Security Features', icon: Lock, path: ROUTES.SECURITY, roles: ['admin', 'editor'] },
-    { id: 'acos', label: 'aCOS', icon: Brain, path: ROUTES.ACOS, roles: ['admin', 'editor'] },
-    { id: 'mdm', label: 'MDM', icon: Smartphone, path: ROUTES.MDM, roles: ['admin', 'editor'] },
-    { id: 'dora', label: 'DORA', icon: Shield, path: ROUTES.DORA, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'workspaces', label: t('nav.workspaces'), icon: Building2, path: ROUTES.WORKSPACES, roles: ['admin', 'editor'] },
+    { id: 'questionnaires', label: t('nav.questionnaires'), icon: ClipboardList, path: ROUTES.QUESTIONNAIRES, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'security', label: t('nav.securityFeatures'), icon: Lock, path: ROUTES.SECURITY, roles: ['admin', 'editor'] },
+    { id: 'acos', label: t('nav.acos'), icon: Brain, path: ROUTES.ACOS, roles: ['admin', 'editor'] },
+    { id: 'mdm', label: t('nav.mdm'), icon: Smartphone, path: ROUTES.MDM, roles: ['admin', 'editor'] },
+    { id: 'dora', label: t('nav.dora'), icon: Shield, path: ROUTES.DORA, roles: ['admin', 'editor', 'viewer'] },
     // ── New Enhancement Modules ──
-    { id: 'incidents', label: 'Incidents', icon: AlertOctagon, path: ROUTES.INCIDENTS, roles: ['admin', 'editor', 'viewer'], relatedPaths: ['/incidents/'] },
-    { id: 'assets', label: 'IT Assets', icon: Boxes, path: ROUTES.ASSETS, roles: ['admin', 'editor', 'viewer'], relatedPaths: ['/assets/'] },
-    { id: 'calendar', label: 'Compliance Calendar', icon: Calendar, path: ROUTES.CALENDAR, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'maturity', label: 'GRC Maturity', icon: Gauge, path: ROUTES.MATURITY, roles: ['admin', 'editor'] },
-    { id: 'bia', label: 'Business Impact', icon: Radar, path: ROUTES.BIA, roles: ['admin', 'editor'] },
-    { id: 'exceptions', label: 'Exceptions', icon: FileWarning, path: ROUTES.EXCEPTIONS, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'certifications', label: 'Certifications', icon: BadgeCheck, path: ROUTES.CERTIFICATIONS, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'cost-analytics', label: 'Cost Analytics', icon: DollarSign, path: ROUTES.COST_ANALYTICS, roles: ['admin', 'editor'] },
-    { id: 'executive', label: 'Executive Dashboard', icon: PieChart, path: ROUTES.EXECUTIVE_DASHBOARD, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'report-builder', label: 'Report Builder', icon: BarChart3, path: ROUTES.REPORT_BUILDER, roles: ['admin', 'editor'] },
-    { id: 'regulatory-changes', label: 'Reg. Changes', icon: Globe, path: ROUTES.REGULATORY_CHANGES, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'evidence-collection', label: 'Evidence Collection', icon: ScanSearch, path: ROUTES.EVIDENCE_COLLECTION, roles: ['admin', 'editor'] },
-    { id: 'audit-prep', label: 'Audit Prep', icon: Target, path: ROUTES.AUDIT_PREP, roles: ['admin', 'editor'] },
-    { id: 'control-testing', label: 'Control Testing', icon: TestTube, path: ROUTES.CONTROL_TESTING, roles: ['admin', 'editor'] },
-    { id: 'vendor-monitoring', label: 'Vendor Monitoring', icon: Satellite, path: ROUTES.VENDOR_MONITORING, roles: ['admin', 'editor', 'viewer'] },
-    { id: 'cicd-gates', label: 'CI/CD Gates', icon: GitBranch, path: ROUTES.CICD_GATES, roles: ['admin', 'editor'] },
+    { id: 'incidents', label: t('nav.incidents'), icon: AlertOctagon, path: ROUTES.INCIDENTS, roles: ['admin', 'editor', 'viewer'], relatedPaths: ['/incidents/'] },
+    { id: 'assets', label: t('nav.assets'), icon: Boxes, path: ROUTES.ASSETS, roles: ['admin', 'editor', 'viewer'], relatedPaths: ['/assets/'] },
+    { id: 'calendar', label: t('nav.calendar'), icon: Calendar, path: ROUTES.CALENDAR, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'maturity', label: t('nav.maturity'), icon: Gauge, path: ROUTES.MATURITY, roles: ['admin', 'editor'] },
+    { id: 'bia', label: t('nav.bia'), icon: Radar, path: ROUTES.BIA, roles: ['admin', 'editor'] },
+    { id: 'exceptions', label: t('nav.exceptions'), icon: FileWarning, path: ROUTES.EXCEPTIONS, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'certifications', label: t('nav.certifications'), icon: BadgeCheck, path: ROUTES.CERTIFICATIONS, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'cost-analytics', label: t('nav.costs'), icon: DollarSign, path: ROUTES.COST_ANALYTICS, roles: ['admin', 'editor'] },
+    { id: 'executive', label: t('nav.executive'), icon: PieChart, path: ROUTES.EXECUTIVE_DASHBOARD, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'report-builder', label: t('nav.reportBuilder'), icon: BarChart3, path: ROUTES.REPORT_BUILDER, roles: ['admin', 'editor'] },
+    { id: 'regulatory-changes', label: t('nav.regChanges'), icon: Globe, path: ROUTES.REGULATORY_CHANGES, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'evidence-collection', label: t('nav.evidenceCollection'), icon: ScanSearch, path: ROUTES.EVIDENCE_COLLECTION, roles: ['admin', 'editor'] },
+    { id: 'audit-prep', label: t('nav.auditPrep'), icon: Target, path: ROUTES.AUDIT_PREP, roles: ['admin', 'editor'] },
+    { id: 'control-testing', label: t('nav.controlTesting'), icon: TestTube, path: ROUTES.CONTROL_TESTING, roles: ['admin', 'editor'] },
+    { id: 'vendor-monitoring', label: t('nav.vendorMonitoring'), icon: Satellite, path: ROUTES.VENDOR_MONITORING, roles: ['admin', 'editor', 'viewer'] },
+    { id: 'cicd-gates', label: t('nav.cicdGates'), icon: GitBranch, path: ROUTES.CICD_GATES, roles: ['admin', 'editor'] },
+    { id: 'security-training', label: t('nav.securityTraining'), icon: BookOpen, path: ROUTES.SECURITY_TRAINING, roles: ['admin', 'editor'] },
   ];
 
   const aiTools: AiToolItem[] = [
-    { id: 'ai-policy', label: 'Policy Generator', icon: Sparkles, path: ROUTES.AI_POLICY },
-    { id: 'ai-contract', label: 'Contract Analyzer', icon: Briefcase, path: ROUTES.AI_CONTRACT },
-    { id: 'ai-gap', label: 'Gap Analysis', icon: GitGraph, path: ROUTES.AI_GAP },
-    { id: 'ai-rfp', label: 'RFP Responder', icon: FileText, path: ROUTES.AI_RFP },
-    { id: 'ai-phishing', label: 'Phishing Sim', icon: Mail, path: ROUTES.AI_PHISHING },
-    { id: 'ai-vendor', label: 'Vendor Risk', icon: ShieldAlert, path: ROUTES.AI_VENDOR },
-    { id: 'ai-data-map', label: 'GDPR Mapper', icon: Database, path: ROUTES.AI_DATA_MAP },
-    { id: 'ai-bcp', label: 'BCP Generator', icon: LifeBuoy, path: ROUTES.AI_BCP },
-    { id: 'ai-cross-mapper', label: 'Control Mapper', icon: GitGraph, path: ROUTES.AI_CROSS_MAPPER },
-    { id: 'ai-auto-remediation', label: 'Auto-Remediation', icon: Bot, path: ROUTES.AI_AUTO_REMEDIATION },
-    { id: 'ai-evidence-checker', label: 'Evidence Checker', icon: ScanSearch, path: ROUTES.AI_EVIDENCE_CHECKER },
-    { id: 'ai-agentic-vendor', label: 'Agentic VRM', icon: Target, path: ROUTES.AI_AGENTIC_VENDOR },
-    { id: 'ai-audit-simulator', label: 'Audit Simulator', icon: Crosshair, path: ROUTES.AI_AUDIT_SIMULATOR },
-    { id: 'ai-nl-query', label: 'Compliance Query', icon: MessageSquare, path: ROUTES.AI_NL_QUERY },
+    { id: 'ai-policy', label: t('nav.aiPolicyGenerator'), icon: Sparkles, path: ROUTES.AI_POLICY },
+    { id: 'ai-contract', label: t('nav.aiContractAnalyzer'), icon: Briefcase, path: ROUTES.AI_CONTRACT },
+    { id: 'ai-gap', label: t('nav.aiGapAnalysis'), icon: GitGraph, path: ROUTES.AI_GAP },
+    { id: 'ai-rfp', label: t('nav.aiRfpResponder'), icon: FileText, path: ROUTES.AI_RFP },
+    { id: 'ai-phishing', label: t('nav.aiPhishingSim'), icon: Mail, path: ROUTES.AI_PHISHING },
+    { id: 'ai-vendor', label: t('nav.aiVendorRisk'), icon: ShieldAlert, path: ROUTES.AI_VENDOR },
+    { id: 'ai-data-map', label: t('nav.aiGdprMapper'), icon: Database, path: ROUTES.AI_DATA_MAP },
+    { id: 'ai-bcp', label: t('nav.aiBcpGenerator'), icon: LifeBuoy, path: ROUTES.AI_BCP },
+    { id: 'ai-cross-mapper', label: t('nav.aiControlMapper'), icon: GitGraph, path: ROUTES.AI_CROSS_MAPPER },
+    { id: 'ai-auto-remediation', label: t('nav.aiAutoRemediation'), icon: Bot, path: ROUTES.AI_AUTO_REMEDIATION },
+    { id: 'ai-evidence-checker', label: t('nav.aiEvidenceChecker'), icon: ScanSearch, path: ROUTES.AI_EVIDENCE_CHECKER },
+    { id: 'ai-agentic-vendor', label: t('nav.aiAgenticVrm'), icon: Target, path: ROUTES.AI_AGENTIC_VENDOR },
+    { id: 'ai-audit-simulator', label: t('nav.aiAuditSimulator'), icon: Crosshair, path: ROUTES.AI_AUDIT_SIMULATOR },
+    { id: 'ai-nl-query', label: t('nav.aiComplianceQuery'), icon: MessageSquare, path: ROUTES.AI_NL_QUERY },
   ];
 
   const userPlan = normalizePlan(user?.organization?.plan);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const navItemsFiltered = useMemo(
     () => navItems.filter((item) => canAccessView(userPlan, item.id)),
-    [userPlan]
+    [userPlan, t]
   );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const aiToolsFiltered = useMemo(
     () => aiTools.filter((item) => canAccessView(userPlan, item.id)),
-    [userPlan]
+    [userPlan, t]
   );
 
   // Build nav sections
   const platformIds = ['dashboard', 'my-tasks', 'risks', 'issues', 'vendors', 'policies', 'integrations', 'frameworks'];
   const regulatoryIds = ['ai-rmf', 'eu-ai-act', 'eu-cra', 'csrd', 'ecodesign', 'nis2', 'dma', 'dsa', 'us-privacy', 'dora', 'regulatory-changes'];
-  const governanceIds = ['governance', 'process-mapper', 'sox', 'sod', 'workflow-builder', 'exceptions'];
+  const governanceIds = ['governance', 'dpo-designation', 'process-mapper', 'sox', 'sod', 'workflow-builder', 'exceptions'];
   const certProductIds = ['ce-marking', 'digital-product-passport', 'product-lifecycle', 'sbom-manager', 'product-decommissioning', 'environmental-lifecycle', 'certifications'];
   const monitoringSurveillanceIds = ['esg-reporting', 'post-market-surveillance', 'compliance-forecasting', 'breach-wizard', 'incidents', 'vendor-monitoring', 'control-testing', 'evidence-collection'];
   const reportsAuditIds = ['reports', 'report-builder', 'audit', 'monitoring', 'analytics', 'auditor', 'executive', 'cost-analytics', 'audit-prep'];
-  const privacyIds = ['privacy', 'account-deletion'];
-  const workspacesIds = ['workspaces', 'questionnaires', 'security', 'acos', 'mdm', 'assets', 'calendar', 'maturity', 'bia', 'cicd-gates'];
+  const privacyIds = ['privacy', 'dpia', 'ropa', 'privacy-notices', 'account-deletion'];
+  const workspacesIds = ['workspaces', 'questionnaires', 'security', 'acos', 'mdm', 'assets', 'calendar', 'maturity', 'bia', 'cicd-gates', 'security-training'];
 
   const navSections: NavSection[] = useMemo(() => {
     const roleFiltered = navItemsFiltered.filter(item => user && item.roles.includes(user.role));
     return [
-      { key: 'platform', label: 'Platform', collapsible: false, items: roleFiltered.filter(item => platformIds.includes(item.id)) },
-      { key: 'regulatory', label: 'Regulatory', collapsible: true, items: roleFiltered.filter(item => regulatoryIds.includes(item.id)) },
-      { key: 'governance', label: 'Governance', collapsible: true, items: roleFiltered.filter(item => governanceIds.includes(item.id)) },
-      { key: 'cert-product', label: 'Products & Lifecycle', collapsible: true, items: roleFiltered.filter(item => certProductIds.includes(item.id)) },
-      { key: 'monitoring-surveillance', label: 'Monitoring & Assurance', collapsible: true, items: roleFiltered.filter(item => monitoringSurveillanceIds.includes(item.id)) },
-      { key: 'reports-audit', label: 'Reports & Analytics', collapsible: true, items: roleFiltered.filter(item => reportsAuditIds.includes(item.id)) },
-      { key: 'privacy', label: 'Privacy & Data', collapsible: true, items: roleFiltered.filter(item => privacyIds.includes(item.id)) },
-      { key: 'workspaces', label: 'Enterprise', collapsible: true, items: roleFiltered.filter(item => workspacesIds.includes(item.id)) },
+      { key: 'platform', label: t('nav.sectionPlatform'), collapsible: false, items: roleFiltered.filter(item => platformIds.includes(item.id)) },
+      { key: 'regulatory', label: t('nav.sectionRegulatory'), collapsible: true, items: roleFiltered.filter(item => regulatoryIds.includes(item.id)) },
+      { key: 'governance', label: t('nav.sectionGovernance'), collapsible: true, items: roleFiltered.filter(item => governanceIds.includes(item.id)) },
+      { key: 'cert-product', label: t('nav.sectionProducts'), collapsible: true, items: roleFiltered.filter(item => certProductIds.includes(item.id)) },
+      { key: 'monitoring-surveillance', label: t('nav.sectionMonitoring'), collapsible: true, items: roleFiltered.filter(item => monitoringSurveillanceIds.includes(item.id)) },
+      { key: 'reports-audit', label: t('nav.sectionReports'), collapsible: true, items: roleFiltered.filter(item => reportsAuditIds.includes(item.id)) },
+      { key: 'privacy', label: t('nav.sectionPrivacy'), collapsible: true, items: roleFiltered.filter(item => privacyIds.includes(item.id)) },
+      { key: 'workspaces', label: t('nav.sectionEnterprise'), collapsible: true, items: roleFiltered.filter(item => workspacesIds.includes(item.id)) },
     ].filter(section => section.items.length > 0);
-  }, [navItemsFiltered, user]);
+  }, [navItemsFiltered, user, t]);
 
   const toggleSection = (sectionKey: string) => {
     setCollapsedSections(prev => ({ ...prev, [sectionKey]: !prev[sectionKey] }));
@@ -336,7 +311,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {aiToolsFiltered.length > 0 && (
             <div className="mb-2">
               <p className="px-3 py-2 text-xs font-semibold text-brand-400 uppercase tracking-wider flex items-center">
-                <Sparkles size={10} className="mr-1.5" /> AI Tools
+                <Sparkles size={10} className="mr-1.5" /> {t('nav.aiTools')}
               </p>
               <div className="space-y-0.5">
                 {aiToolsFiltered.map((item) => {
@@ -368,7 +343,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {/* Admin Section */}
           {user.role === 'admin' && (
             <div className="mb-2">
-              <p className="px-3 py-2 text-xs font-semibold text-surface-500 uppercase tracking-wider">Admin</p>
+              <p className="px-3 py-2 text-xs font-semibold text-surface-500 uppercase tracking-wider">{t('nav.sectionAdmin')}</p>
               <Link
                 to={ROUTES.SETTINGS}
                 onClick={() => setSidebarOpen(false)}
@@ -382,7 +357,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 `}
               >
                 <Settings size={18} className={currentPath.startsWith('/settings') ? 'text-white' : 'text-surface-500 group-hover:text-surface-300'} />
-                <span className="font-medium text-sm">Settings</span>
+                <span className="font-medium text-sm">{t('nav.settings')}</span>
               </Link>
             </div>
           )}
@@ -393,14 +368,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="mb-3 px-3 flex items-center space-x-2 text-xs text-emerald-400">
             <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
             <Lock size={12} />
-            <span>Encrypted &bull; Zero Trust</span>
+            <span>{t('nav.encryptedZeroTrust')}</span>
           </div>
           <button
             onClick={logout}
             className="w-full flex items-center space-x-3 px-3 py-2.5 text-surface-400 hover:bg-surface-800 hover:text-white rounded-xl transition-all duration-150 cursor-pointer group"
           >
             <LogOut size={18} className="text-surface-500 group-hover:text-surface-300" />
-            <span className="font-medium text-sm">Sign Out</span>
+            <span className="font-medium text-sm">{t('nav.signOut')}</span>
           </button>
         </div>
       </aside>
@@ -421,13 +396,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </h1>
           </div>
 
-          {/* Center: Command Palette Trigger */}
+          {/* Center: Global Search Trigger */}
           <button
-            onClick={() => setCommandPaletteOpen(true)}
+            onClick={() => setGlobalSearchOpen(true)}
             className="hidden md:flex items-center space-x-3 bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 rounded-xl px-4 py-2 transition-colors cursor-pointer group max-w-md w-full mx-8"
           >
             <Search size={16} className="text-surface-400 group-hover:text-surface-500 dark:group-hover:text-surface-300 flex-shrink-0" />
-            <span className="text-sm text-surface-400 group-hover:text-surface-500 dark:group-hover:text-surface-300 flex-1 text-left">Search or jump to...</span>
+            <span className="text-sm text-surface-400 group-hover:text-surface-500 dark:group-hover:text-surface-300 flex-1 text-left">{t('nav.searchPlaceholder')}</span>
             <kbd className="hidden lg:flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium text-surface-400 bg-white dark:bg-surface-700 rounded-md border border-surface-200 dark:border-surface-600 shadow-sm">
               <Command size={10} />K
             </kbd>
@@ -435,65 +410,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* Right: Notifications + User */}
           <div className="flex items-center space-x-3">
-            <button onClick={() => setCommandPaletteOpen(true)} className="md:hidden p-2 text-surface-400 hover:text-surface-600 transition-colors">
+            <button onClick={() => setGlobalSearchOpen(true)} className="md:hidden p-2 text-surface-400 hover:text-surface-600 transition-colors">
               <Search size={20} />
             </button>
 
-            {/* Notification Bell */}
-            <div className="relative">
-              <button
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="relative p-2 text-surface-400 hover:text-surface-600 transition-colors focus:outline-none rounded-xl hover:bg-surface-100"
-              >
-                <Bell size={20} />
-                {notifications.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
-                )}
-              </button>
-
-              {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-surface-800 rounded-2xl shadow-2xl border border-surface-200 dark:border-surface-700 overflow-hidden z-50 animate-fadeInDown">
-                  <div className="p-4 border-b border-surface-100 dark:border-surface-700 bg-surface-50 dark:bg-surface-900">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-surface-900 dark:text-surface-100">Notifications</h3>
-                      {notifications.length > 0 && (
-                        <span className="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
-                          {notifications.length} new
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto custom-scrollbar">
-                    {notifications.length > 0 ? notifications.map(n => (
-                      <div key={n.id} className="p-4 border-b border-surface-100 hover:bg-surface-50 transition-colors cursor-pointer">
-                        <div className="flex items-start space-x-3">
-                          <div className={`mt-0.5 p-1.5 rounded-lg ${n.type === 'task' ? 'bg-brand-50 text-brand-600' : 'bg-amber-50 text-amber-600'}`}>
-                            {n.type === 'task' ? <CheckSquare size={14}/> : <ShieldAlert size={14}/>}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-surface-900">{n.title}</p>
-                            <p className="text-xs text-surface-500 mt-0.5 truncate">{n.desc}</p>
-                            <p className="text-xs text-surface-400 mt-1">{n.time}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )) : (
-                      <div className="p-8 text-center text-surface-500">
-                        <Bell size={24} className="mx-auto text-surface-300 mb-2" />
-                        <p className="text-sm">No new notifications.</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3 text-center border-t border-surface-100 bg-surface-50">
-                    <button className="text-xs font-semibold text-brand-600 hover:text-brand-800 transition-colors">
-                      Mark all as read
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Notification Center */}
+            <NotificationCenter />
 
             <ThemeToggleCompact />
+            <LanguageSwitcher compact />
 
             {/* User Avatar + Name */}
             <div className="flex items-center space-x-3 border-l border-surface-200 pl-3">
@@ -533,7 +458,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <ComplianceChat onNavigate={(view: string) => navigate(viewToPath(view))} currentView={pathToView(currentPath)} />
       </div>
 
-      {/* Command Palette */}
+      {/* Global Search */}
+      <GlobalSearch
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setGlobalSearchOpen(false)}
+        onNavigate={(url) => {
+          navigate(url);
+          setGlobalSearchOpen(false);
+        }}
+      />
+
+      {/* Command Palette (navigation) */}
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}

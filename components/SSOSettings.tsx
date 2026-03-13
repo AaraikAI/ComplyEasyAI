@@ -40,6 +40,7 @@ import {
   Info,
   ExternalLink,
 } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
 
@@ -132,6 +133,7 @@ const DEFAULT_MAPPINGS: AttributeMapping[] = [
 // ── Component ───────────────────────────────────────────────────────────────
 
 const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'config' | 'mapping' | 'metadata' | 'advanced'>('config');
   const [config, setConfig] = useState<SSOConfig | null>(null);
   const [spMetadata, setSpMetadata] = useState<SPMetadata | null>(null);
@@ -344,7 +346,7 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading SSO settings...</span>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}...</span>
       </div>
     );
   }
@@ -360,7 +362,7 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
             </button>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Single Sign-On (SSO)</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('settings.sso')}</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">Configure SAML 2.0 / OIDC authentication</p>
           </div>
         </div>
@@ -379,7 +381,7 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save Configuration
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -673,7 +675,7 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
                   <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">IdP Attribute</th>
                   <th className="px-4 py-3 text-center font-medium text-gray-600 dark:text-gray-300"></th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">User Field</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Actions</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -742,7 +744,7 @@ const SSOSettings: React.FC<SSOSettingsProps> = ({ onBack }) => {
                 onClick={downloadMetadata}
                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                <Download className="w-4 h-4" /> Download
+                <Download className="w-4 h-4" /> {t('common.download')}
               </button>
             </div>
           </div>

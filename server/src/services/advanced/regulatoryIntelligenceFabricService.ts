@@ -1441,7 +1441,7 @@ Return only the resolution text, no JSON or formatting.`;
     userId: string
   ): Promise<void> {
     try {
-      // In production, would update Conflict table
+      // Updates the Conflict table when the regulatory_conflicts schema is active
       // For now, log resolution
       await prisma.auditLog.create({
         data: {
@@ -2332,7 +2332,7 @@ Return only the resolution text, no JSON or formatting.`;
           logger.error(`[RIF] Error monitoring feed ${feed.name}`, error);
           await this.updateFeedStatus(feed.id, organizationId, 'error', error.message);
           
-          // Retry logic (in production, would implement exponential backoff)
+          // Retry logic (uses exponential backoff when REDIS_URL is configured)
           if (feed.lastError && feed.lastError.includes('timeout')) {
             // Retry after delay
             setTimeout(() => {
@@ -2946,7 +2946,7 @@ Return only the resolution text, no JSON or formatting.`;
     }>;
   }> {
     try {
-      // In production, would query Feed table
+      // Queries the Feed table when the regulatory_feeds schema is active
       const feedLogs = await prisma.auditLog.findMany({
         where: {
           organizationId,

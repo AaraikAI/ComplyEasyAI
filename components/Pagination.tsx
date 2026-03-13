@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 export interface PaginationProps {
   currentPage: number;
@@ -31,6 +32,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   showInfo = true,
   className = '',
 }) => {
+  const { t } = useI18n();
   const startItem = currentPage * pageSize + 1;
   const endItem = Math.min((currentPage + 1) * pageSize, totalItems);
 
@@ -99,16 +101,14 @@ export const Pagination: React.FC<PaginationProps> = ({
       <div className="flex items-center gap-4">
         {showInfo && (
           <div className="text-sm text-gray-700">
-            Showing <span className="font-medium">{startItem}</span> to{' '}
-            <span className="font-medium">{endItem}</span> of{' '}
-            <span className="font-medium">{totalItems}</span> results
+            {t('table.showingResults', { from: startItem, to: endItem, total: totalItems })}
           </div>
         )}
 
         {showPageSizeSelector && onPageSizeChange && (
           <div className="flex items-center gap-2">
             <label htmlFor="pageSize" className="text-sm text-gray-700">
-              Per page:
+              {t('table.rowsPerPage')}:
             </label>
             <select
               id="pageSize"

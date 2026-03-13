@@ -16,6 +16,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Search, X, Loader2, FileText, Shield, AlertTriangle, CheckCircle,
   Building2, AlertCircle, Monitor, Clock, ArrowRight, Hash,
@@ -87,6 +88,7 @@ interface GlobalSearchProps {
 
 const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onClose, onNavigate }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(controlledOpen ?? false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -285,7 +287,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onC
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search policies, controls, risks, vendors..."
+            placeholder={t('common.search')}
             className="flex-1 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 text-base focus:outline-none"
           />
           {loading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
@@ -433,7 +435,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onC
           {query.trim() && loading && (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-primary-500 mr-2" />
-              <span className="text-sm text-gray-500 dark:text-gray-400">Searching...</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{t('common.loading')}</span>
             </div>
           )}
 
@@ -507,7 +509,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onC
           {query.trim() && !loading && results.length === 0 && (
             <div className="text-center py-12">
               <Search className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">No results found for &ldquo;{query}&rdquo;</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('common.noResults')}</p>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Try different keywords or adjust your filters</p>
             </div>
           )}
@@ -522,7 +524,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onC
             <span className="flex items-center gap-1">
               <CornerDownLeft className="w-3 h-3" /> Select
             </span>
-            <span className="flex items-center gap-1">ESC Close</span>
+            <span className="flex items-center gap-1">ESC {t('common.close')}</span>
           </div>
           <span className="text-xs text-gray-400">
             <Command className="w-3 h-3 inline" />K to toggle

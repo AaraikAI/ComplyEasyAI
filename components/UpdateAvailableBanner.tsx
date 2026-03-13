@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Download, X } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 interface UpdateAvailableBannerProps {
   /** Whether an update is available */
@@ -27,6 +28,7 @@ export function UpdateAvailableBanner({
   onUpdate,
   onDismiss,
 }: UpdateAvailableBannerProps) {
+  const { t } = useI18n();
   const [dismissed, setDismissed] = useState(false);
   const [visible, setVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -105,7 +107,7 @@ export function UpdateAvailableBanner({
           onClick={handleUpdate}
           className="flex items-center gap-1 px-3 py-1 text-xs font-semibold text-white bg-blue-500/30 border border-blue-400/40 rounded-md hover:bg-blue-500/50 transition-colors"
         >
-          Update Now
+          {t('common.update')}
         </button>
 
         <button

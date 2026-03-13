@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft,
@@ -100,6 +101,7 @@ const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
 ];
 
 export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RequestStatus | 'All'>('All');
@@ -345,7 +347,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-full max-w-lg mx-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">New Deletion Request</h3>
+            <h3 className="text-lg font-medium text-white">{t('privacy.accountDeletion')}</h3>
             <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
@@ -383,12 +385,12 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button onClick={async () => {
               try { await api.privacy.createDeletion({ status: 'Submitted' }); setShowCreateModal(false); loadData(); } catch { setShowCreateModal(false); }
             }} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">
-              Submit Request
+              {t('common.submit')}
             </button>
           </div>
         </div>
@@ -426,7 +428,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
                 <div className="text-sm text-white">{selectedRequest.assignedTo}</div>
               </div>
               <div>
-                <div className="text-xs text-slate-500">Priority</div>
+                <div className="text-xs text-slate-500">{t('common.priority')}</div>
                 <div className={`text-sm ${selectedRequest.priority === 'High' ? 'text-red-400' : selectedRequest.priority === 'Medium' ? 'text-yellow-400' : 'text-slate-400'}`}>
                   {selectedRequest.priority}
                 </div>
@@ -438,12 +440,12 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
             </div>
 
             <div>
-              <div className="text-xs text-slate-500 mb-2">Status Flow</div>
+              <div className="text-xs text-slate-500 mb-2">{t('common.status')}</div>
               {renderStatusFlow(selectedRequest.status)}
             </div>
 
             <div>
-              <div className="text-xs text-slate-500 mb-2">Data Inventory</div>
+              <div className="text-xs text-slate-500 mb-2">{t('privacy.dataInventory')}</div>
               {selectedRequest.dataLocations.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {selectedRequest.dataLocations.map(loc => (
@@ -470,7 +472,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <button onClick={() => setSelectedRequest(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
-              Close
+              {t('common.close')}
             </button>
           </div>
         </div>
@@ -489,7 +491,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-              placeholder="Search requests..."
+              placeholder={`${t('common.search')}...`}
             />
           </div>
           <div className="relative">
@@ -510,7 +512,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
           onClick={() => setShowCreateModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
         >
-          <Plus className="w-4 h-4" /> New Request
+          <Plus className="w-4 h-4" /> {t('common.create')}
         </button>
       </div>
 
@@ -715,7 +717,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
           </select>
         </div>
         <button className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white bg-slate-800 border border-slate-700 rounded-lg transition-colors">
-          <Download className="w-4 h-4" /> Export Log
+          <Download className="w-4 h-4" /> {t('common.export')}
         </button>
       </div>
 
@@ -966,7 +968,7 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
       return (
         <div className="flex items-center justify-center py-20">
           <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
-          <span className="ml-3 text-slate-400">Loading...</span>
+          <span className="ml-3 text-slate-400">{t('common.loading')}...</span>
         </div>
       );
     }
@@ -992,12 +994,12 @@ export const AccountDeletionWorkflow: React.FC<AccountDeletionWorkflowProps> = (
                 className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm">Back</span>
+                <span className="text-sm">{t('common.back')}</span>
               </button>
               <div className="h-5 w-px bg-slate-700" />
               <div className="flex items-center gap-2">
                 <Trash2 className="w-5 h-5 text-red-400" />
-                <h1 className="text-lg font-semibold text-white">Account Deletion Workflow</h1>
+                <h1 className="text-lg font-semibold text-white">{t('privacy.accountDeletion')}</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">

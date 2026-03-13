@@ -7,6 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
@@ -61,37 +62,29 @@ router.get(
         return;
       }
 
-      // Build metadata filter conditions for the raw query
-      const conditions: string[] = [
-        `"organizationId" = $1`,
+      // Build conditions using Prisma.sql fragments for full parameterization
+      const conditions: Prisma.Sql[] = [
+        Prisma.sql`"organizationId" = ${orgId}`,
       ];
-      const params: any[] = [orgId];
-      let paramIndex = 2;
 
       if (type) {
-        conditions.push(`"resourceType" = $${paramIndex}`);
-        params.push(type);
-        paramIndex++;
+        conditions.push(Prisma.sql`"resourceType" = ${type}`);
       }
 
       // Framework and status are stored in the metadata JSON column
       if (framework) {
-        conditions.push(`"metadata"->>'framework' = $${paramIndex}`);
-        params.push(framework);
-        paramIndex++;
+        conditions.push(Prisma.sql`"metadata"->>'framework' = ${framework}`);
       }
 
       if (status) {
-        conditions.push(`"metadata"->>'status' = $${paramIndex}`);
-        params.push(status);
-        paramIndex++;
+        conditions.push(Prisma.sql`"metadata"->>'status' = ${status}`);
       }
 
-      const whereClause = conditions.join(' AND ');
+      const whereClause = Prisma.join(conditions, ' AND ');
 
       // Use PostgreSQL full-text search with ts_rank for ordering
       // to_tsvector combines title (weight A) and content (weight B) for ranking
-      const searchQuery = `
+      const results: any[] = await prisma.$queryRaw(Prisma.sql`
         SELECT
           id,
           "organizationId",
@@ -104,47 +97,30 @@ router.get(
           ts_rank(
             setweight(to_tsvector('english', COALESCE(title, '')), 'A') ||
             setweight(to_tsvector('english', COALESCE(content, '')), 'B'),
-            to_tsquery('english', $${paramIndex})
+            to_tsquery('english', ${tsQueryTerms})
           ) as rank
         FROM "SearchIndex"
         WHERE ${whereClause}
           AND (
             setweight(to_tsvector('english', COALESCE(title, '')), 'A') ||
             setweight(to_tsvector('english', COALESCE(content, '')), 'B')
-          ) @@ to_tsquery('english', $${paramIndex})
+          ) @@ to_tsquery('english', ${tsQueryTerms})
         ORDER BY rank DESC
-        LIMIT $${paramIndex + 1}
-      `;
+        LIMIT ${limitParam}
+      `);
 
-      params.push(tsQueryTerms, limitParam);
-
-      const results: any[] = await prisma.$queryRawUnsafe(searchQuery, ...params);
-
-      // Get total count for the same query (without LIMIT)
-      const countQuery = `
-        SELECT COUNT(*)::int as total
-        FROM "SearchIndex"
-        WHERE ${whereClause}
-          AND (
-            setweight(to_tsvector('english', COALESCE(title, '')), 'A') ||
-            setweight(to_tsvector('english', COALESCE(content, '')), 'B')
-          ) @@ to_tsquery('english', $${paramIndex - conditions.length + 1 + conditions.length - 1})
-      `;
-
-      // Simpler count query using same params minus the limit
-      const countParams = [...params.slice(0, -1)]; // Remove the limit param
+      // Count query for pagination
       let total = results.length;
       try {
-        const countResult: any[] = await prisma.$queryRawUnsafe(
-          `SELECT COUNT(*)::int as total
-           FROM "SearchIndex"
-           WHERE ${whereClause}
-             AND (
-               setweight(to_tsvector('english', COALESCE(title, '')), 'A') ||
-               setweight(to_tsvector('english', COALESCE(content, '')), 'B')
-             ) @@ to_tsquery('english', $${paramIndex})`,
-          ...countParams
-        );
+        const countResult: any[] = await prisma.$queryRaw(Prisma.sql`
+          SELECT COUNT(*)::int as total
+          FROM "SearchIndex"
+          WHERE ${whereClause}
+            AND (
+              setweight(to_tsvector('english', COALESCE(title, '')), 'A') ||
+              setweight(to_tsvector('english', COALESCE(content, '')), 'B')
+            ) @@ to_tsquery('english', ${tsQueryTerms})
+        `);
         total = countResult[0]?.total ?? results.length;
       } catch {
         // If count query fails, use results length

@@ -107,7 +107,7 @@ class AuditController {
           'polygon' // Default to Polygon for lower gas fees
         ).then((blockchainRecord) => {
           // Store blockchain record in metadata for now
-          // Note: In production, add transactionHash, network, blockNumber fields to AuditLog model
+          // Note: Add transactionHash, network, blockNumber fields to AuditLog model for blockchain integration
           prisma.auditLog.update({
             where: { id: auditLog.id },
             data: {
@@ -219,7 +219,7 @@ class AuditController {
       }
 
       // For audit logs, we record the archive action but don't modify original logs
-      // (audit logs should be immutable in production)
+      // (audit logs should be immutable)
       const archiveResult = { count: logsToArchive.length };
 
       // Create audit log for the archive action

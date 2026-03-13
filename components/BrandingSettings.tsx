@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
   Save,
@@ -99,6 +100,7 @@ const DEFAULTS: Omit<BrandingConfig, 'id' | 'updatedAt'> = {
 // ── Component ───────────────────────────────────────────────────────────────
 
 const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'general' | 'domain' | 'email' | 'login' | 'advanced'>('general');
   const [config, setConfig] = useState<BrandingConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);

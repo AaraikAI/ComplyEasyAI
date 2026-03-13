@@ -39,6 +39,7 @@ import {
   LayoutTemplate,
   Webhook,
 } from 'lucide-react';
+import { useI18n } from '../contexts/I18nContext';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
 
@@ -164,6 +165,7 @@ const TEMPLATES: PolicyTemplate[] = [
 // ── Component ───────────────────────────────────────────────────────────────
 
 const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'policies' | 'history' | 'integration' | 'templates'>('policies');
   const [policies, setPolicies] = useState<GatePolicy[]>([]);
   const [results, setResults] = useState<GateResult[]>([]);
@@ -374,7 +376,7 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading CI/CD gate settings...</span>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}...</span>
       </div>
     );
   }
@@ -478,7 +480,7 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
                           ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                           : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                       }`}>
-                        {policy.isActive ? 'Active' : 'Inactive'}
+                        {policy.isActive ? t('common.active') : t('common.inactive')}
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{policy.description}</p>
@@ -527,10 +529,10 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
                     <span className="text-sm text-red-700 dark:text-red-300">Delete this policy? This cannot be undone.</span>
                     <div className="flex gap-2">
                       <button onClick={() => setShowDeleteConfirm(null)} className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        Cancel
+                        {t('common.cancel')}
                       </button>
                       <button onClick={() => deletePolicy(policy.id)} className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
-                        Delete
+                        {t('common.delete')}
                       </button>
                     </div>
                   </div>
@@ -555,7 +557,7 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Status</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('common.status')}</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Policy</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Repository</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Pipeline</th>
@@ -794,7 +796,7 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
                 <textarea
                   value={policyForm.description}
                   onChange={e => setPolicyForm(prev => ({ ...prev, description: e.target.value }))}
@@ -873,7 +875,7 @@ const CICDGateSettings: React.FC<CICDGateSettingsProps> = ({ onBack }) => {
             </div>
             <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
               <button onClick={() => setShowPolicyModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={savePolicy}

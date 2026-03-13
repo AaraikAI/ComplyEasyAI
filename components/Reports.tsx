@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { ComplianceFramework } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { getLimit, isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
 import {
@@ -80,6 +81,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 export const Reports: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const plan = user?.organization?.plan || 'Foundation';
 
   // View state
@@ -202,7 +204,7 @@ export const Reports: React.FC = () => {
 
       const reportText = await Promise.race([reportPromise, timeoutPromise]) as string;
 
-      let fullReport = `# Compliance Report\n\n`;
+      let fullReport = `# ${t('reports.complianceReport')}\n\n`;
       fullReport += `**Generated:** ${new Date().toLocaleString()}\n`;
       fullReport += `**Date Range:** ${new Date(reportOptions.startDate).toLocaleDateString()} - ${new Date(reportOptions.endDate).toLocaleDateString()}\n`;
       fullReport += `**Frameworks:** ${selectedFrameworksData.map(f => f.name).join(', ')}\n\n`;
@@ -408,7 +410,7 @@ export const Reports: React.FC = () => {
             <!DOCTYPE html>
             <html>
               <head>
-                <title>Compliance Report - ${new Date().toLocaleDateString()}</title>
+                <title>${t('reports.complianceReport')} - ${new Date().toLocaleDateString()}</title>
                 <style>
                   body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; }
                   h1 { color: #1f2937; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; }
@@ -419,7 +421,7 @@ export const Reports: React.FC = () => {
                 </style>
               </head>
               <body>
-                <h1>Compliance Report</h1>
+                <h1>${t('reports.complianceReport')}</h1>
                 <div class="meta">
                   <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
                   <p><strong>Date Range:</strong> ${reportOptions.startDate} to ${reportOptions.endDate}</p>
@@ -456,7 +458,7 @@ export const Reports: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Compliance Reports</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
           <p className="text-gray-500 mt-1">AI-powered compliance reporting and analytics</p>
         </div>
       </div>
@@ -491,7 +493,7 @@ export const Reports: React.FC = () => {
             <div className="p-2 bg-blue-100 rounded-lg">
               <FileText className="w-5 h-5 text-blue-600" />
             </div>
-            <h3 className="font-semibold text-gray-900">Generate Report</h3>
+            <h3 className="font-semibold text-gray-900">{t('reports.generateReport')}</h3>
           </div>
           <p className="text-sm text-gray-500">Create customizable compliance reports with AI-powered insights</p>
         </button>
@@ -505,7 +507,7 @@ export const Reports: React.FC = () => {
             <div className="p-2 bg-purple-100 rounded-lg">
               <Brain className="w-5 h-5 text-purple-600" />
             </div>
-            <h3 className="font-semibold text-gray-900">AI Executive Summary</h3>
+            <h3 className="font-semibold text-gray-900">{t('reports.executiveReport')}</h3>
           </div>
           <p className="text-sm text-gray-500">Generate board-ready executive summary with AI analysis</p>
         </button>
@@ -533,7 +535,7 @@ export const Reports: React.FC = () => {
             <div className="p-2 bg-red-100 rounded-lg">
               <AlertCircle className="w-5 h-5 text-red-600" />
             </div>
-            <h3 className="font-semibold text-gray-900">Risk Report</h3>
+            <h3 className="font-semibold text-gray-900">{t('reports.riskReport')}</h3>
           </div>
           <p className="text-sm text-gray-500">AI-powered risk analysis with predictive insights</p>
         </button>
@@ -572,7 +574,7 @@ export const Reports: React.FC = () => {
           >
             <Calendar className="w-5 h-5 text-blue-600" />
             <div>
-              <h4 className="font-medium text-gray-900">Audit Trail Report</h4>
+              <h4 className="font-medium text-gray-900">{t('reports.auditReport')}</h4>
               <p className="text-xs text-gray-500">Complete audit history and timeline</p>
             </div>
           </button>
@@ -608,7 +610,7 @@ export const Reports: React.FC = () => {
         <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
           <ArrowLeft className="w-4 h-4" /> Dashboard
         </button>
-        <h2 className="text-xl font-bold text-gray-900">Generate Compliance Report</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('reports.generateReport')}</h2>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -691,7 +693,7 @@ export const Reports: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('reports.dateRange')}</label>
                   <div className="space-y-2">
                     <div>
                       <label className="text-xs text-gray-500">Start Date</label>
@@ -739,7 +741,7 @@ export const Reports: React.FC = () => {
               ) : (
                 <>
                   <Brain className="mr-2" size={18} />
-                  AI Generate Report
+                  {t('reports.generateReport')}
                 </>
               )}
             </button>
@@ -760,7 +762,7 @@ export const Reports: React.FC = () => {
                     className="flex-1 flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
                   >
                     <Download size={16} className="mr-2" />
-                    PDF
+                    {t('reports.pdf')}
                   </button>
                 </div>
               </div>
@@ -806,7 +808,7 @@ export const Reports: React.FC = () => {
           <ArrowLeft className="w-4 h-4" /> Dashboard
         </button>
         <Brain className="w-5 h-5 text-purple-600" />
-        <h2 className="text-xl font-bold text-gray-900">AI Executive Summary</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('reports.executiveReport')}</h2>
       </div>
 
       {aiLoading && (
@@ -910,7 +912,7 @@ export const Reports: React.FC = () => {
               }}
               className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg hover:bg-gray-50"
             >
-              <Download className="w-4 h-4" /> Export JSON
+              <Download className="w-4 h-4" /> {t('common.export')} JSON
             </button>
           </div>
         </>
@@ -1058,7 +1060,7 @@ export const Reports: React.FC = () => {
           <ArrowLeft className="w-4 h-4" /> Dashboard
         </button>
         <AlertCircle className="w-5 h-5 text-red-600" />
-        <h2 className="text-xl font-bold text-gray-900">AI Risk Report</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('reports.riskReport')}</h2>
       </div>
 
       {aiLoading && (

@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import {
   Accessibility,
   Eye,
@@ -166,6 +167,7 @@ function injectAccessibilityStyles(): void {
 // ── Component ─────────────────────────────────────────────────────────────
 
 const AccessibilitySettings: React.FC = () => {
+  const { t } = useI18n();
   const [preferences, setPreferences] = useState<AccessibilityPreferences>(DEFAULT_PREFERENCES);
   const [saved, setSaved] = useState(false);
 
@@ -237,7 +239,7 @@ const AccessibilitySettings: React.FC = () => {
               aria-label="Reset accessibility settings to defaults"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Reset
+              {t('common.reset')}
             </button>
           )}
         </div>

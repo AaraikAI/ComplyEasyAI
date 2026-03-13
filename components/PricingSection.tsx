@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import TierCard from './TierCard';
 import DemoBookingForm from './DemoBookingForm';
+import { useI18n } from '../contexts/I18nContext';
 import {
   TierName,
   Tier,
@@ -333,6 +334,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
   loading = false,
   embedded = false,
 }) => {
+  const { t } = useI18n();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [showComparison, setShowComparison] = useState(false);
   const [showDemoModal, setShowDemoModal] = useState(false);
@@ -398,7 +400,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Monthly
+              {t('subscription.monthly')}
             </button>
             <button
               onClick={() => setBillingCycle('annual')}
@@ -408,7 +410,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Annual
+              {t('subscription.annual')}
               <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 Save 15-20%
               </span>
@@ -420,7 +422,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
         {loading && (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-            <span className="ml-3 text-gray-600">Loading plans...</span>
+            <span className="ml-3 text-gray-600">{t('common.loading')}</span>
           </div>
         )}
 

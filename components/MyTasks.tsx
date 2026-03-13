@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import { RiskItem } from '../types';
 import { generateRemediationPlan } from '../services/geminiService';
 import { 
@@ -15,6 +16,7 @@ type SortOrder = 'asc' | 'desc';
 
 export const MyTasks: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [tasks, setTasks] = useState<RiskItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -155,7 +157,7 @@ export const MyTasks: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center text-gray-500">
-        <Loader2 className="animate-spin mr-2" /> Loading your tasks...
+        <Loader2 className="animate-spin mr-2" /> {t('common.loading')}
       </div>
     );
   }
@@ -164,7 +166,7 @@ export const MyTasks: React.FC = () => {
     <div className="space-y-6 animate-fadeIn pb-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">My Tasks</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('tasks.myTasks')}</h2>
           <p className="text-sm text-gray-500">Manage compliance risks assigned to you.</p>
         </div>
       </div>
@@ -172,7 +174,7 @@ export const MyTasks: React.FC = () => {
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-center">
         <div className="flex items-center gap-2">
           <Filter size={16} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-700">Filter:</span>
+          <span className="text-sm font-medium text-gray-700">{t('common.filter')}:</span>
         </div>
         
         <select 
@@ -205,7 +207,7 @@ export const MyTasks: React.FC = () => {
                <CheckCircle className="text-green-500" size={32} />
              </div>
              <h3 className="text-lg font-bold text-gray-900">All Caught Up!</h3>
-             <p className="text-gray-500 mt-2">No tasks matching your criteria.</p>
+             <p className="text-gray-500 mt-2">{t('common.noResults')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -222,8 +224,8 @@ export const MyTasks: React.FC = () => {
                   <th className="px-6 py-4 font-medium cursor-pointer hover:text-brand-600" onClick={() => handleSort('aiScore')}>
                     <div className="flex items-center">AI Score {sortField === 'aiScore' && (sortOrder === 'asc' ? <SortAsc size={14}/> : <SortDesc size={14}/>)}</div>
                   </th>
-                  <th className="px-6 py-4 font-medium">Status</th>
-                  <th className="px-6 py-4 font-medium text-right">Action</th>
+                  <th className="px-6 py-4 font-medium">{t('common.status')}</th>
+                  <th className="px-6 py-4 font-medium text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -265,7 +267,7 @@ export const MyTasks: React.FC = () => {
                         onClick={() => handleOpenTask(task)} 
                         className="text-brand-600 font-medium hover:text-brand-800 px-3 py-1.5 border border-brand-200 rounded-lg bg-white hover:bg-brand-50 transition-colors"
                       >
-                        Action
+                        {t('common.actions')}
                       </button>
                     </td>
                   </tr>
@@ -334,8 +336,8 @@ export const MyTasks: React.FC = () => {
             </div>
 
             <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
-              <button onClick={() => setSelectedTask(null)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors">Cancel</button>
-              <button onClick={handleSaveTask} className="px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors shadow-lg">Save Update</button>
+              <button onClick={() => setSelectedTask(null)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors">{t('common.cancel')}</button>
+              <button onClick={handleSaveTask} className="px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors shadow-lg">{t('common.save')}</button>
             </div>
           </div>
         </div>

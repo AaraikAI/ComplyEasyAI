@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
+import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft, ArrowRight, AlertTriangle, Shield, ShieldAlert, ShieldCheck,
   Clock, Globe, FileText, Send, CheckCircle, XCircle, Mail, Phone,
@@ -350,6 +351,7 @@ interface BreachNotificationWizardProps {
 }
 
 export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> = ({ onBack }) => {
+  const { t } = useI18n();
   // Tab state
   const [activeTab, setActiveTab] = useState<MainTab>('wizard');
 
@@ -754,7 +756,7 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Affected Systems</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">{t('incidents.affectedSystems')}</label>
         <div className="flex gap-2 mb-2">
           <input type="text" value={newSystemInput} onChange={e => setNewSystemInput(e.target.value)}
             placeholder="Add affected system..." onKeyDown={e => { if (e.key === 'Enter' && newSystemInput.trim()) { setImpact(prev => ({ ...prev, affectedSystems: [...prev.affectedSystems, newSystemInput.trim()] })); setNewSystemInput(''); } }}
@@ -1063,7 +1065,7 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
               </div>
               <button onClick={() => addSubmission(j.jurisdiction + ' - ' + j.regulation)}
                 className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm inline-flex items-center gap-1">
-                <Send className="w-3 h-3" />Submit
+                <Send className="w-3 h-3" />{t('common.submit')}
               </button>
             </div>
           ))}
@@ -1304,10 +1306,10 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
                     <Copy className="w-3 h-3" />Copy
                   </button>
                   <button className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1">
-                    <Edit3 className="w-3 h-3" />Edit
+                    <Edit3 className="w-3 h-3" />{t('common.edit')}
                   </button>
                   <button className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1">
-                    <Download className="w-3 h-3" />Export
+                    <Download className="w-3 h-3" />{t('common.export')}
                   </button>
                 </div>
               </div>
@@ -1397,7 +1399,7 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
                   <Bell className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-gray-900">Breach Notification Wizard</h1>
+                  <h1 className="text-lg font-bold text-gray-900">{t('incidents.breachNotification')}</h1>
                   <p className="text-xs text-gray-500">AI-Powered Incident Response & Regulatory Notification</p>
                 </div>
               </div>
@@ -1415,7 +1417,7 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-500">Loading breach data...</span>
+          <span className="ml-3 text-gray-500">{t('common.loading')}</span>
         </div>
       )}
       {loadError && (

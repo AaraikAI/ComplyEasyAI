@@ -16,6 +16,7 @@ import {
   Tooltip, Legend, LineChart, Line, CartesianGrid,
 } from 'recharts';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,6 +133,7 @@ const FREQUENCIES = ['Hourly', 'Daily', 'Weekly', 'Monthly'];
 // ---------------------------------------------------------------------------
 export default function MonitoringDashboard() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const plan = user?.organization?.plan || 'Foundation';
 
   // Core state
@@ -474,9 +476,9 @@ export default function MonitoringDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {[
             { label: 'Total Monitors', value: d?.totalMonitors ?? 0, icon: <Activity className="w-5 h-5 text-blue-600" /> },
-            { label: 'Active', value: d?.activeMonitors ?? 0, icon: <Power className="w-5 h-5 text-green-600" /> },
+            { label: t('common.active'), value: d?.activeMonitors ?? 0, icon: <Power className="w-5 h-5 text-green-600" /> },
             { label: 'Passing', value: d?.statusDistribution.passing ?? 0, icon: <CheckCircle className="w-5 h-5 text-green-600" /> },
-            { label: 'Warning', value: d?.statusDistribution.warning ?? 0, icon: <AlertTriangle className="w-5 h-5 text-yellow-600" /> },
+            { label: t('common.warning'), value: d?.statusDistribution.warning ?? 0, icon: <AlertTriangle className="w-5 h-5 text-yellow-600" /> },
             { label: 'Failing', value: d?.statusDistribution.failing ?? 0, icon: <XCircle className="w-5 h-5 text-red-600" /> },
             { label: 'Auto-Remediated', value: d?.autoRemediatedCount ?? 0, icon: <Zap className="w-5 h-5 text-purple-600" /> },
           ].map(s => (
@@ -494,7 +496,7 @@ export default function MonitoringDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {statusData.length > 0 && (
             <div className="bg-white rounded-xl border p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Status Distribution</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{t('common.status')} Distribution</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${value}`}>
@@ -588,11 +590,11 @@ export default function MonitoringDashboard() {
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Search monitors..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+          <input type="text" placeholder={`${t('common.search')} monitors...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm" />
         </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
-          <option value="All">All Status</option>
+          <option value="All">{t('common.all')} {t('common.status')}</option>
           <option value="Passing">Passing</option>
           <option value="Warning">Warning</option>
           <option value="Failing">Failing</option>
@@ -600,7 +602,7 @@ export default function MonitoringDashboard() {
         </select>
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="All">All Types</option>
-          {MONITOR_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          {MONITOR_TYPES.map(mt => <option key={mt} value={mt}>{mt}</option>)}
         </select>
       </div>
 
@@ -684,7 +686,7 @@ export default function MonitoringDashboard() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <button onClick={() => setViewMode('list')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-            <ArrowLeft className="w-4 h-4" /> Back to List
+            <ArrowLeft className="w-4 h-4" /> {t('common.back')} to List
           </button>
           <div className="flex gap-2">
             <button onClick={() => handleAIAnalyze(m)} disabled={aiLoading}
@@ -782,8 +784,8 @@ export default function MonitoringDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-2 px-3">Date</th>
-                    <th className="text-left py-2 px-3">Status</th>
+                    <th className="text-left py-2 px-3">{t('common.date')}</th>
+                    <th className="text-left py-2 px-3">{t('common.status')}</th>
                     <th className="text-left py-2 px-3">Passed</th>
                     <th className="text-left py-2 px-3">Failed</th>
                     <th className="text-left py-2 px-3">Auto-Remediated</th>
@@ -897,14 +899,14 @@ export default function MonitoringDashboard() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <button onClick={() => { setViewMode(isEdit ? 'detail' : 'list'); resetForm(); }} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" /> {t('common.back')}
         </button>
-        <h2 className="text-xl font-bold text-gray-900">{isEdit ? 'Edit Monitor' : 'Create Monitor'}</h2>
+        <h2 className="text-xl font-bold text-gray-900">{isEdit ? `${t('common.edit')} Monitor` : `${t('common.create')} Monitor`}</h2>
       </div>
 
       <form onSubmit={isEdit ? handleUpdateMonitor : handleCreateMonitor} className="bg-white rounded-xl border p-6 space-y-4 max-w-2xl">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Monitor Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Monitor {t('common.name')}</label>
           <input type="text" required value={monitorForm.name} onChange={e => setMonitorForm(f => ({ ...f, name: e.target.value }))}
             className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="e.g., SSL Certificate Monitoring" />
         </div>
@@ -914,7 +916,7 @@ export default function MonitoringDashboard() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
             <select value={monitorForm.monitorType} onChange={e => setMonitorForm(f => ({ ...f, monitorType: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
-              {MONITOR_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {MONITOR_TYPES.map(mt => <option key={mt} value={mt}>{mt}</option>)}
             </select>
           </div>
           <div>
@@ -927,7 +929,7 @@ export default function MonitoringDashboard() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
           <textarea value={monitorForm.configuration.description}
             onChange={e => setMonitorForm(f => ({ ...f, configuration: { ...f.configuration, description: e.target.value } }))}
             className="w-full border rounded-lg px-3 py-2 text-sm" rows={3} placeholder="What does this monitor check?" />
@@ -969,7 +971,7 @@ export default function MonitoringDashboard() {
             {isEdit ? 'Update Monitor' : 'Create Monitor'}
           </button>
           <button type="button" onClick={() => { setViewMode(isEdit ? 'detail' : 'list'); resetForm(); }}
-            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Cancel</button>
+            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">{t('common.cancel')}</button>
         </div>
       </form>
     </div>
@@ -982,7 +984,7 @@ export default function MonitoringDashboard() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" /> {t('common.back')}
         </button>
         <Brain className="w-5 h-5 text-purple-600" />
         <h2 className="text-xl font-bold text-gray-900">AI Monitor Suggestions</h2>
@@ -1060,7 +1062,7 @@ export default function MonitoringDashboard() {
       <div className="flex items-center gap-3">
         <button onClick={() => { if (selectedMonitor) handleViewDetail(selectedMonitor); else setViewMode('list'); }}
           className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-          <ArrowLeft className="w-4 h-4" /> Back to {selectedMonitor?.name || 'List'}
+          <ArrowLeft className="w-4 h-4" /> {t('common.back')} to {selectedMonitor?.name || 'List'}
         </button>
         <Brain className="w-5 h-5 text-purple-600" />
         <h2 className="text-xl font-bold text-gray-900">AI Trend Analysis</h2>
@@ -1094,7 +1096,7 @@ export default function MonitoringDashboard() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <button onClick={() => setViewMode('dashboard')} className="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" /> {t('common.back')}
         </button>
         <Zap className="w-5 h-5 text-orange-600" />
         <h2 className="text-xl font-bold text-gray-900">AI Alert Triage</h2>

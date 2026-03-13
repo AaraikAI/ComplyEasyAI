@@ -7,6 +7,7 @@ import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { toast } from 'sonner';
+import { useI18n } from '../contexts/I18nContext';
 
 // Comprehensive list of ALL available integrations (380+)
 const ALL_INTEGRATIONS: Integration[] = [
@@ -528,6 +529,7 @@ interface IntegrationsProps {
 
 export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>(ALL_INTEGRATIONS);
@@ -727,7 +729,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
       )}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Integrations Catalog</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('integrations.title')}</h1>
           <p className="text-gray-500 mt-1">
             Connect your tools to automate compliance collection. {connectedCount} of {totalCount} connected.
           </p>
@@ -749,7 +751,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input
             type="text"
-            placeholder="Search integrations..."
+            placeholder={t('common.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
@@ -799,7 +801,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
                     title="Sync Integration"
                   >
                     <RefreshCw size={14} className="mr-1" />
-                    Sync
+                    {t('integrations.syncNow')}
                   </button>
                 )}
                 <button
@@ -814,7 +816,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
                         : 'bg-brand-600 text-white hover:bg-brand-700'
                   }`}
                 >
-                  {int.connected ? 'Manage' : 'Connect'}
+                  {int.connected ? t('integrations.configure') : t('integrations.connect')}
                 </button>
               </div>
             </div>
@@ -828,13 +830,13 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
                     <span className="text-gray-300">•</span>
                     <span className="flex items-center text-green-600">
                       <CheckCircle size={12} className="mr-1" />
-                      Connected
+                      {t('integrations.connected')}
                     </span>
                   </>
                 )}
               </div>
               {int.connected && (
-                <p className="text-xs text-gray-500">Last sync: {int.lastSync}</p>
+                <p className="text-xs text-gray-500">{t('integrations.lastSync')}: {int.lastSync}</p>
               )}
             </div>
           </div>
@@ -843,7 +845,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({ onBack }) => {
 
       {filteredIntegrations.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No integrations found matching your search.</p>
+          <p className="text-gray-500 text-lg">{t('common.noResults')}</p>
           <button
             onClick={() => {
               setSearchQuery('');

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useI18n } from '../contexts/I18nContext';
 import { api } from '../services/api';
 import {
   ArrowLeft, Search, Plus, Download, Upload, Eye, Edit3, Trash2,
@@ -205,6 +206,7 @@ interface SBOMManagerProps {
 }
 
 export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [componentSearch, setComponentSearch] = useState('');
   const [vulnSearch, setVulnSearch] = useState('');
@@ -420,7 +422,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <Package className="w-5 h-5 text-blue-600 mb-2" />
           <div className="text-2xl font-bold text-gray-900">{totalComponents}</div>
-          <div className="text-xs text-gray-500">Total Components</div>
+          <div className="text-xs text-gray-500">{t('common.total')} Components</div>
         </div>
         <div className="bg-white border border-red-200 rounded-lg p-4">
           <Bug className="w-5 h-5 text-red-600 mb-2" />
@@ -531,7 +533,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
         </button>
         <button onClick={() => setShowExportModal(true)}
           className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 inline-flex items-center gap-2">
-          <Download className="w-4 h-4" />Export SBOM
+          <Download className="w-4 h-4" />{t('common.export')} SBOM
         </button>
         {isScanning && (
           <div className="flex-1">
@@ -555,7 +557,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
         </div>
         <select value={componentTypeFilter} onChange={e => setComponentTypeFilter(e.target.value)}
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-          <option value="All">All Types</option>
+          <option value="All">{t('common.all')} Types</option>
           <option value="library">Library</option>
           <option value="framework">Framework</option>
           <option value="application">Application</option>
@@ -568,13 +570,13 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-4 py-3 font-medium text-gray-700">Component</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">Version</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">Type</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">{t('common.version')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">{t('common.type')}</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-700">Supplier</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-700">License</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-700">Vulns</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-700">Direct</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">Actions</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -632,7 +634,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             <button onClick={() => setSelectedComponent(null)} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div><div className="text-xs text-gray-500">Type</div><div className="text-sm font-medium capitalize">{selectedComponent.type}</div></div>
+            <div><div className="text-xs text-gray-500">{t('common.type')}</div><div className="text-sm font-medium capitalize">{selectedComponent.type}</div></div>
             <div><div className="text-xs text-gray-500">Supplier</div><div className="text-sm font-medium">{selectedComponent.supplier}</div></div>
             <div><div className="text-xs text-gray-500">License</div><div className="text-sm font-medium">{selectedComponent.license}</div></div>
             <div><div className="text-xs text-gray-500">Size</div><div className="text-sm font-medium">{selectedComponent.size}</div></div>
@@ -674,7 +676,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
         <div className="flex items-center gap-2">
           <select value={vulnSeverityFilter} onChange={e => setVulnSeverityFilter(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-            <option value="All">All Severity</option>
+            <option value="All">{t('common.all')} Severity</option>
             <option value="Critical">Critical</option>
             <option value="High">High</option>
             <option value="Medium">Medium</option>
@@ -682,7 +684,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
           </select>
           <select value={vulnStatusFilter} onChange={e => setVulnStatusFilter(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-            <option value="All">All Status</option>
+            <option value="All">{t('common.all')} {t('common.status')}</option>
             <option value="open">Open</option>
             <option value="in_progress">In Progress</option>
             <option value="mitigated">Mitigated</option>
@@ -858,8 +860,8 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             </div>
             <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
               <button onClick={() => { api.modules.sbom.updateRepository(repo.id, { status: 'scanning' }).catch(() => {}); runScan(); }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><RefreshCw className="w-3 h-3" />Scan Now</button>
-              <button onClick={() => setShowExportModal(true)} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />Export</button>
-              <button onClick={() => deleteRepository(repo.id)} className="px-3 py-1.5 border border-red-300 text-red-700 rounded text-xs hover:bg-red-50 inline-flex items-center gap-1"><Trash2 className="w-3 h-3" />Remove</button>
+              <button onClick={() => setShowExportModal(true)} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />{t('common.export')}</button>
+              <button onClick={() => deleteRepository(repo.id)} className="px-3 py-1.5 border border-red-300 text-red-700 rounded text-xs hover:bg-red-50 inline-flex items-center gap-1"><Trash2 className="w-3 h-3" />{t('common.remove')}</button>
             </div>
           </div>
         ))}
@@ -909,8 +911,8 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
               <div><span className="text-xs text-gray-500">Licenses: </span><span className="text-sm font-medium">{rpt.licenseCount}</span></div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => downloadReport(rpt, 'json')} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><Download className="w-3 h-3" />Download JSON</button>
-              <button onClick={() => downloadReport(rpt, 'xml')} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />Download XML</button>
+              <button onClick={() => downloadReport(rpt, 'json')} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><Download className="w-3 h-3" />{t('common.download')} JSON</button>
+              <button onClick={() => downloadReport(rpt, 'xml')} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />{t('common.download')} XML</button>
               <button onClick={() => setPreviewReport(rpt)} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Eye className="w-3 h-3" />Preview</button>
               <button onClick={() => setShowCompareModal(true)} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><GitMerge className="w-3 h-3" />Compare</button>
             </div>
@@ -957,8 +959,8 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">{JSON.stringify(buildReportData(previewReport), null, 2)}</pre>
           </div>
           <div className="flex items-center gap-2 mt-3">
-            <button onClick={() => downloadReport(previewReport, 'json')} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><Download className="w-3 h-3" />Download JSON</button>
-            <button onClick={() => downloadReport(previewReport, 'xml')} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />Download XML</button>
+            <button onClick={() => downloadReport(previewReport, 'json')} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><Download className="w-3 h-3" />{t('common.download')} JSON</button>
+            <button onClick={() => downloadReport(previewReport, 'xml')} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />{t('common.download')} XML</button>
           </div>
         </div>
       )}
@@ -974,7 +976,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl max-w-md w-full p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Export SBOM</h3>
+            <h3 className="text-lg font-semibold">{t('common.export')} SBOM</h3>
             <button onClick={() => setShowExportModal(false)} className="p-1 text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
           </div>
           <div className="space-y-4">
@@ -1008,9 +1010,9 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
             </div>
             <div className="flex items-center gap-2 pt-2">
               <button onClick={() => setShowExportModal(false)} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center justify-center gap-2">
-                <Download className="w-4 h-4" />Export
+                <Download className="w-4 h-4" />{t('common.export')}
               </button>
-              <button onClick={() => setShowExportModal(false)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setShowExportModal(false)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">{t('common.cancel')}</button>
             </div>
           </div>
         </div>
@@ -1088,7 +1090,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
         {isLoading && (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-500">Loading data...</span>
+            <span className="ml-3 text-gray-500">{t('common.loading')}...</span>
           </div>
         )}
         {loadError && (

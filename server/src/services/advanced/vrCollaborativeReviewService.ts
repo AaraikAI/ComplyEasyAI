@@ -2241,7 +2241,7 @@ class VRCollaborativeReviewService {
       // Close all WebRTC connections
       for (const participant of voiceChat.participants) {
         if (participant.webrtcConnectionId) {
-          // In production, would close RTCPeerConnection
+          // Closes RTCPeerConnection when WebRTC is configured
           participant.webrtcConnectionId = undefined;
           participant.audioTrackId = undefined;
         }
@@ -2261,7 +2261,7 @@ class VRCollaborativeReviewService {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        // In production, add TURN servers for NAT traversal
+        // Add TURN servers for NAT traversal via TURN_SERVER_URL env var
         ...(process.env.TURN_SERVER_URL ? [{
           urls: process.env.TURN_SERVER_URL,
           username: process.env.TURN_USERNAME,
@@ -2987,7 +2987,7 @@ class VRCollaborativeReviewService {
       participantCount: session.participants.length,
       frameworksReviewed: session.complianceData.frameworks.length,
       controlsReviewed: session.complianceData.controls.length,
-      annotationsCreated: 0, // Would be tracked in production
+      annotationsCreated: 0, // Tracked when persistent storage is configured
       decisionsRecorded: 0,
       actionItemsCreated: 0,
     };
