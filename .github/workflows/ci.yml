@@ -80,7 +80,7 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         with:
           directory: ./server/coverage
           flags: backend
