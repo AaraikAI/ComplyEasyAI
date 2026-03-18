@@ -341,7 +341,7 @@ jobs:
       # --- API image ---
       - name: API metadata
         id: meta-api
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api
           tags: |
@@ -363,7 +363,7 @@ jobs:
       # --- Web (Nginx) image ---
       - name: Web metadata
         id: meta-web
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web
           tags: |
