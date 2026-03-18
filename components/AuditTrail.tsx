@@ -399,3 +399,5 @@ export const AuditTrail: React.FC = () => {
     </div>
   );
 };
+
+export default AuditTrail;

@@ -43,6 +43,16 @@ jest.mock('bcryptjs', () => ({
   hash: mockBcryptHash,
 }));
 
+// Mock fipsPasswordHashing (service now uses this instead of bcrypt)
+const mockFipsVerifyPassword = jest.fn() as jest.Mock<any>;
+const mockFipsHashPassword = jest.fn() as jest.Mock<any>;
+jest.mock('../../../utils/fipsPasswordHashing', () => ({
+  __esModule: true,
+  verifyPassword: mockFipsVerifyPassword,
+  hashPassword: mockFipsHashPassword,
+  needsRehash: jest.fn().mockReturnValue(false),
+}));
+
 jest.mock('../../../config/logger', () => ({
   __esModule: true,
   default: {
@@ -72,6 +82,10 @@ describe('TwoFactorService', () => {
     mockToDataURL.mockResolvedValue('data:image/png;base64,test-qr-code');
     mockTotpVerify.mockReturnValue(true);
     mockTotpGenerate.mockReturnValue('123456');
+
+    // Re-establish fipsPasswordHashing mocks (cleared by resetMocks)
+    mockFipsVerifyPassword.mockResolvedValue(false);
+    mockFipsHashPassword.mockResolvedValue('hashed-code');
   });
 
   describe('setupTwoFactor()', () => {
@@ -264,8 +278,8 @@ describe('TwoFactorService', () => {
         } as any,
       ]);
       
-      // Mock bcrypt.compare
-      mockBcryptCompare.mockResolvedValue(true);
+      // Mock fipsPasswordHashing.verifyPassword (service uses fips instead of bcrypt)
+      mockFipsVerifyPassword.mockResolvedValue(true);
       
       prismaMock.twoFactorBackupCode.update.mockResolvedValue({} as any);
 

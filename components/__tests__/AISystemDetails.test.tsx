@@ -10,6 +10,10 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
+vi.mock('@/contexts/I18nContext', () => ({
+  useI18n: () => ({ t: (key: string) => key, locale: 'en', setLocale: vi.fn(), availableLocales: [], isLoading: false }),
+}));
+
 const { mockSystem } = vi.hoisted(() => {
   const mockSystem = {
   id: 'sys-1',
@@ -134,7 +138,7 @@ describe('AISystemDetails', () => {
     (api.aiRmf.getAISystemById as any).mockResolvedValueOnce(null);
     render(<AISystemDetails systemId="nonexistent" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('AI System not found')).toBeInTheDocument();
+      expect(screen.getByText('common.noResults')).toBeInTheDocument();
     });
   });
 
@@ -143,9 +147,9 @@ describe('AISystemDetails', () => {
     (api.aiRmf.getAISystemById as any).mockResolvedValueOnce(null);
     render(<AISystemDetails systemId="nonexistent" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Go Back')).toBeInTheDocument();
+      expect(screen.getByText('common.back')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText('Go Back'));
+    fireEvent.click(screen.getByText('common.back'));
     expect(mockOnBack).toHaveBeenCalled();
   });
 
@@ -197,7 +201,7 @@ describe('AISystemDetails', () => {
   it('displays all tab buttons', async () => {
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Overview')).toBeInTheDocument();
+      expect(screen.getByText('common.overview')).toBeInTheDocument();
       expect(screen.getByText('Core Functions')).toBeInTheDocument();
       expect(screen.getByText('Trustworthiness')).toBeInTheDocument();
       expect(screen.getByText('Lifecycle')).toBeInTheDocument();
@@ -219,9 +223,9 @@ describe('AISystemDetails', () => {
   it('shows all editable fields on overview tab', async () => {
     render(<AISystemDetails systemId="sys-1" onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText('Name')).toBeInTheDocument();
-      expect(screen.getByText('Description')).toBeInTheDocument();
-      expect(screen.getByText('System Type')).toBeInTheDocument();
+      expect(screen.getByText('common.name')).toBeInTheDocument();
+      expect(screen.getByText('common.description')).toBeInTheDocument();
+      expect(screen.getByText('common.type')).toBeInTheDocument();
       expect(screen.getByText('Use Case')).toBeInTheDocument();
     });
   });
@@ -394,8 +398,8 @@ describe('AISystemDetails', () => {
     const editIcons = screen.getAllByTestId('icon-Edit');
     fireEvent.click(editIcons[0]);
     // Should see Save and Cancel buttons
-    expect(screen.getByText('Save')).toBeInTheDocument();
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByText('common.save')).toBeInTheDocument();
+    expect(screen.getByText('common.cancel')).toBeInTheDocument();
   });
 
   // ---- Assessments Tab ----

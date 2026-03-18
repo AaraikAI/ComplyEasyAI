@@ -218,6 +218,7 @@ export const StatusPage: React.FC = () => {
   const [expandedIncident, setExpandedIncident] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [subscribedMaintenance, setSubscribedMaintenance] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (autoRefresh) {
@@ -522,8 +523,23 @@ export const StatusPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    <button className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap">
-                      Subscribe to Updates
+                    <button
+                      onClick={() => setSubscribedMaintenance((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(maintenance.id)) {
+                          next.delete(maintenance.id);
+                        } else {
+                          next.add(maintenance.id);
+                        }
+                        return next;
+                      })}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                        subscribedMaintenance.has(maintenance.id)
+                          ? 'bg-green-500/20 hover:bg-green-500/30 text-green-400'
+                          : 'bg-blue-500/20 hover:bg-blue-500/30 text-blue-400'
+                      }`}
+                    >
+                      {subscribedMaintenance.has(maintenance.id) ? 'Subscribed' : 'Subscribe to Updates'}
                     </button>
                   </div>
                 </div>
@@ -579,7 +595,13 @@ export const StatusPage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    <button className="text-slate-400 hover:text-white transition-colors">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedIncident(expandedIncident === incident.id ? null : incident.id);
+                      }}
+                      className="text-slate-400 hover:text-white transition-colors"
+                    >
                       {expandedIncident === incident.id ? <ChevronUp /> : <ChevronDown />}
                     </button>
                   </div>

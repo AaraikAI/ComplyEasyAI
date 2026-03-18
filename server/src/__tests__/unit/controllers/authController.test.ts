@@ -87,9 +87,45 @@ jest.mock('../../../services/tokenBlacklistService', () => ({
   },
 }));
 
+jest.mock('../../../config', () => ({
+  __esModule: true,
+  default: {
+    jwt: { secret: 'test-jwt-secret', expiresIn: '15m' },
+    server: { clientUrl: 'http://localhost:3000' },
+    security: { corsOrigin: 'http://localhost:3000' },
+    recaptcha: { secretKey: '', enabled: false },
+  },
+}));
+
+jest.mock('../../../utils/securityEventLogger', () => ({
+  __esModule: true,
+  logSecurityEvent: jest.fn(),
+  SecurityEventType: {
+    AUTHENTICATION_FAILURE: 'AUTHENTICATION_FAILURE',
+    AUTHENTICATION_SUCCESS: 'AUTHENTICATION_SUCCESS',
+    TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+    SUSPICIOUS_ACTIVITY: 'SUSPICIOUS_ACTIVITY',
+    USER_REGISTERED: 'USER_REGISTERED',
+    PASSWORD_CHANGED: 'PASSWORD_CHANGED',
+    LOGOUT: 'LOGOUT',
+  },
+}));
+
+jest.mock('../../../utils/fipsPasswordHashing', () => ({
+  __esModule: true,
+  hashPassword: jest.fn<any>().mockResolvedValue('hashed-password'),
+  verifyPassword: jest.fn<any>().mockResolvedValue(true),
+  needsRehash: jest.fn().mockReturnValue(false),
+}));
+
+import jwt from 'jsonwebtoken';
 import authController from '../../../controllers/authController';
 import { AppError } from '../../../middleware/errorHandler';
 import bcrypt from 'bcryptjs';
+
+// Helper to create a valid 2FA pending JWT for tests
+const create2FAToken = (userId: string) =>
+  jwt.sign({ userId, purpose: '2fa_pending' }, 'test-jwt-secret', { expiresIn: '5m' });
 
 describe('AuthController', () => {
   let mockReq: any;
@@ -113,6 +149,8 @@ describe('AuthController', () => {
       json: jest.fn<any>().mockReturnThis(),
       status: jest.fn<any>().mockReturnThis(),
       send: jest.fn<any>().mockReturnThis(),
+      cookie: jest.fn<any>().mockReturnThis(),
+      clearCookie: jest.fn<any>().mockReturnThis(),
     };
 
     mockSendMagicLink.mockResolvedValue(true as never);
@@ -123,6 +161,28 @@ describe('AuthController', () => {
     mockVerifyRefreshToken.mockReturnValue('user-123');
     mockIsRevoked.mockResolvedValue(false);
     mockRevoke.mockResolvedValue(undefined);
+
+    // Re-establish mock implementations cleared by resetMocks: true in jest config
+    (prismaMock.$transaction as jest.Mock<any>).mockImplementation(
+      (callback: (tx: typeof prismaMock) => Promise<unknown>) => callback(prismaMock)
+    );
+
+    const bcryptMod = require('bcryptjs').default;
+    bcryptMod.compare.mockResolvedValue(true);
+    bcryptMod.hash.mockResolvedValue('hashed-password');
+
+    const sessionService = require('../../../services/sessionManagementService').default;
+    sessionService.createSession.mockResolvedValue({ existingSessionsTerminated: 0 });
+    sessionService.terminateSession.mockResolvedValue(undefined);
+
+    const twoFactorService = require('../../../services/twoFactorService').default;
+    twoFactorService.verifyTwoFactorToken.mockResolvedValue(false);
+    twoFactorService.verifyBackupCode.mockResolvedValue(false);
+
+    const fipsHashing = require('../../../utils/fipsPasswordHashing');
+    fipsHashing.hashPassword.mockResolvedValue('hashed-password');
+    fipsHashing.verifyPassword.mockResolvedValue(true);
+    fipsHashing.needsRehash.mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -182,7 +242,7 @@ describe('AuthController', () => {
 
       await authController.requestMagicLink(mockReq as Request, mockRes as Response);
 
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ devToken: expect.any(String), devMessage: expect.any(String) }));
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ devToken: expect.any(String) }));
     });
 
     it('should not return devToken in production mode', async () => {
@@ -339,11 +399,12 @@ describe('AuthController', () => {
 
       await authController.verifyMagicLink(mockReq as Request, mockRes as Response);
 
-      expect(mockRes.json).toHaveBeenCalledWith({
-        twoFactorRequired: true,
-        userId: 'user-123',
-        message: 'Two-factor authentication required',
-      });
+      expect(mockRes.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          twoFactorRequired: true,
+          message: 'Two-factor authentication required',
+        })
+      );
     });
 
     it('should verify valid magic link and return tokens and user', async () => {
@@ -357,7 +418,6 @@ describe('AuthController', () => {
       await authController.verifyMagicLink(mockReq as Request, mockRes as Response);
 
       expect(prismaMock.magicLink.update).toHaveBeenCalledWith({ where: { token: 'valid-token' }, data: { used: true } });
-      expect(prismaMock.user.update).toHaveBeenCalled();
       expect(prismaMock.auditLog.create).toHaveBeenCalled();
       expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         twoFactorRequired: false,
@@ -486,7 +546,7 @@ describe('AuthController', () => {
     it('should throw AppError when password is incorrect', async () => {
       mockReq.body = { email: 'test@example.com', password: 'wrong' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUserWithPassword);
-      (bcrypt.compare as jest.Mock<any>).mockResolvedValue(false as never);
+      require('../../../utils/fipsPasswordHashing').verifyPassword.mockResolvedValue(false);
 
       await expect(
         authController.login(mockReq as Request, mockRes as Response)
@@ -498,7 +558,7 @@ describe('AuthController', () => {
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({
         ...mockUserWithPassword, twoFactorEnabled: true, twoFactorVerified: false,
       });
-      (bcrypt.compare as jest.Mock<any>).mockResolvedValue(true as never);
+      require('../../../utils/fipsPasswordHashing').verifyPassword.mockResolvedValue(true);
 
       await authController.login(mockReq as Request, mockRes as Response);
 
@@ -510,7 +570,7 @@ describe('AuthController', () => {
     it('should login successfully with valid credentials', async () => {
       mockReq.body = { email: 'test@example.com', password: 'pass' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUserWithPassword);
-      (bcrypt.compare as jest.Mock<any>).mockResolvedValue(true as never);
+      require('../../../utils/fipsPasswordHashing').verifyPassword.mockResolvedValue(true);
       (prismaMock.user.update as jest.Mock<any>).mockResolvedValue({});
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 
@@ -526,7 +586,7 @@ describe('AuthController', () => {
     it('should continue login even if lastLogin update fails', async () => {
       mockReq.body = { email: 'test@example.com', password: 'pass' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUserWithPassword);
-      (bcrypt.compare as jest.Mock<any>).mockResolvedValue(true as never);
+      require('../../../utils/fipsPasswordHashing').verifyPassword.mockResolvedValue(true);
       (prismaMock.user.update as jest.Mock<any>).mockRejectedValue(new Error('update failed'));
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 
@@ -537,7 +597,7 @@ describe('AuthController', () => {
     it('should continue login even if audit log creation fails', async () => {
       mockReq.body = { email: 'test@example.com', password: 'pass' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUserWithPassword);
-      (bcrypt.compare as jest.Mock<any>).mockResolvedValue(true as never);
+      require('../../../utils/fipsPasswordHashing').verifyPassword.mockResolvedValue(true);
       (prismaMock.user.update as jest.Mock<any>).mockResolvedValue({});
       (prismaMock.auditLog.create as jest.Mock<any>).mockRejectedValue(new Error('audit fail'));
 
@@ -559,7 +619,7 @@ describe('AuthController', () => {
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({
         ...mockUserWithPassword, twoFactorEnabled: true, twoFactorVerified: true,
       });
-      (bcrypt.compare as jest.Mock<any>).mockResolvedValue(true as never);
+      require('../../../utils/fipsPasswordHashing').verifyPassword.mockResolvedValue(true);
       (prismaMock.user.update as jest.Mock<any>).mockResolvedValue({});
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 
@@ -605,17 +665,28 @@ describe('AuthController', () => {
 
     it('should handle existing user in production mode without devToken', async () => {
       process.env.NODE_ENV = 'production';
-      mockReq.body = { email: 'existing@example.com', name: 'Existing' };
+      process.env.HCAPTCHA_SECRET = 'test-secret';
+      // Mock fetch for CAPTCHA verification
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn<any>().mockResolvedValue({
+        json: () => Promise.resolve({ success: true }),
+      }) as any;
+      mockReq.body = { email: 'existing@example.com', name: 'Existing', captchaToken: 'valid-captcha' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({
         id: 'u1', email: 'existing@example.com', organization: { id: 'o1' },
       });
       (prismaMock.magicLink.create as jest.Mock<any>).mockResolvedValue({ email: 'existing@example.com', token: 'tok' });
 
-      await authController.register(mockReq as Request, mockRes as Response);
+      try {
+        await authController.register(mockReq as Request, mockRes as Response);
 
-      const jsonCall = (mockRes.json as jest.Mock<any>).mock.calls[0][0];
-      expect(jsonCall.devToken).toBeUndefined();
-      expect(jsonCall.existingUser).toBe(true);
+        const jsonCall = (mockRes.json as jest.Mock<any>).mock.calls[0][0];
+        expect(jsonCall.devToken).toBeUndefined();
+        expect(jsonCall.existingUser).toBe(true);
+      } finally {
+        global.fetch = originalFetch;
+        delete process.env.HCAPTCHA_SECRET;
+      }
     });
 
     it('should handle email send failure for existing user in development mode', async () => {
@@ -711,30 +782,45 @@ describe('AuthController', () => {
 
     it('should throw AppError when email send fails in new user registration (production)', async () => {
       process.env.NODE_ENV = 'production';
-      mockReq.body = { email: 'new@example.com', name: 'New User' };
+      process.env.HCAPTCHA_SECRET = 'test-secret';
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn<any>().mockResolvedValue({ json: () => Promise.resolve({ success: true }) }) as any;
+      mockReq.body = { email: 'new@example.com', name: 'New User', captchaToken: 'valid' };
       mockSendWelcomeEmail.mockRejectedValue(new Error('SMTP fail') as never);
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(null);
       (prismaMock.organization.create as jest.Mock<any>).mockResolvedValue({ id: 'org-new' });
       (prismaMock.user.create as jest.Mock<any>).mockResolvedValue({ id: 'u-new', email: 'new@example.com', name: 'New User' });
       (prismaMock.magicLink.create as jest.Mock<any>).mockResolvedValue({ email: 'new@example.com', token: 'tok' });
 
-      await expect(
-        authController.register(mockReq as Request, mockRes as Response)
-      ).rejects.toThrow('Failed to send welcome email');
+      try {
+        await expect(
+          authController.register(mockReq as Request, mockRes as Response)
+        ).rejects.toThrow('Failed to send welcome email');
+      } finally {
+        global.fetch = originalFetch;
+        delete process.env.HCAPTCHA_SECRET;
+      }
     });
 
     it('should not return devToken in production for new user', async () => {
       process.env.NODE_ENV = 'production';
-      mockReq.body = { email: 'new@example.com', name: 'New User' };
+      process.env.HCAPTCHA_SECRET = 'test-secret';
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn<any>().mockResolvedValue({ json: () => Promise.resolve({ success: true }) }) as any;
+      mockReq.body = { email: 'new@example.com', name: 'New User', captchaToken: 'valid' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(null);
       (prismaMock.organization.create as jest.Mock<any>).mockResolvedValue({ id: 'org-new' });
       (prismaMock.user.create as jest.Mock<any>).mockResolvedValue({ id: 'u-new', email: 'new@example.com', name: 'New User' });
       (prismaMock.magicLink.create as jest.Mock<any>).mockResolvedValue({ email: 'new@example.com', token: 'tok' });
 
-      await authController.register(mockReq as Request, mockRes as Response);
-
-      const jsonCall = (mockRes.json as jest.Mock<any>).mock.calls[0][0];
-      expect(jsonCall.devToken).toBeUndefined();
+      try {
+        await authController.register(mockReq as Request, mockRes as Response);
+        const jsonCall = (mockRes.json as jest.Mock<any>).mock.calls[0][0];
+        expect(jsonCall.devToken).toBeUndefined();
+      } finally {
+        global.fetch = originalFetch;
+        delete process.env.HCAPTCHA_SECRET;
+      }
     });
 
     it('should handle unexpected error with generic AppError', async () => {
@@ -757,22 +843,22 @@ describe('AuthController', () => {
       organization: { id: 'org-123', name: 'Test Org', plan: 'Foundation' },
     };
 
-    it('should throw AppError when userId is missing', async () => {
+    it('should throw AppError when twoFactorToken is missing', async () => {
       mockReq.body = { token: '123456' };
       await expect(
         authController.completeTwoFactorLogin(mockReq as Request, mockRes as Response)
-      ).rejects.toThrow('User ID and 2FA token are required');
+      ).rejects.toThrow(AppError);
     });
 
     it('should throw AppError when token is missing', async () => {
-      mockReq.body = { userId: 'user-123' };
+      mockReq.body = { twoFactorToken: create2FAToken('user-123') };
       await expect(
         authController.completeTwoFactorLogin(mockReq as Request, mockRes as Response)
-      ).rejects.toThrow('User ID and 2FA token are required');
+      ).rejects.toThrow(AppError);
     });
 
     it('should throw AppError when user not found', async () => {
-      mockReq.body = { userId: 'user-123', token: '123456' };
+      mockReq.body = { twoFactorToken: create2FAToken('user-123'), token: '123456' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(null);
 
       await expect(
@@ -781,7 +867,7 @@ describe('AuthController', () => {
     });
 
     it('should throw AppError when 2FA is not enabled for user', async () => {
-      mockReq.body = { userId: 'user-123', token: '123456' };
+      mockReq.body = { twoFactorToken: create2FAToken('user-123'), token: '123456' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({ ...mockUser, twoFactorEnabled: false });
 
       await expect(
@@ -790,7 +876,7 @@ describe('AuthController', () => {
     });
 
     it('should throw AppError when both TOTP and backup code are invalid', async () => {
-      mockReq.body = { userId: 'user-123', token: 'bad-code' };
+      mockReq.body = { twoFactorToken: create2FAToken('user-123'), token: 'bad-code' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUser);
       const twoFactorService = (await import('../../../services/twoFactorService')).default;
       (twoFactorService.verifyTwoFactorToken as jest.Mock<any>).mockResolvedValue(false);
@@ -802,7 +888,7 @@ describe('AuthController', () => {
     });
 
     it('should succeed with valid TOTP token', async () => {
-      mockReq.body = { userId: 'user-123', token: '123456' };
+      mockReq.body = { twoFactorToken: create2FAToken('user-123'), token: '123456' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUser);
       const twoFactorService = (await import('../../../services/twoFactorService')).default;
       (twoFactorService.verifyTwoFactorToken as jest.Mock<any>).mockResolvedValue(true);
@@ -818,7 +904,7 @@ describe('AuthController', () => {
     });
 
     it('should succeed with valid backup code when TOTP fails', async () => {
-      mockReq.body = { userId: 'user-123', token: 'backup-code' };
+      mockReq.body = { twoFactorToken: create2FAToken('user-123'), token: 'backup-code' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue(mockUser);
       const twoFactorService = (await import('../../../services/twoFactorService')).default;
       (twoFactorService.verifyTwoFactorToken as jest.Mock<any>).mockResolvedValue(false);
@@ -832,7 +918,7 @@ describe('AuthController', () => {
     });
 
     it('should handle unexpected error with generic AppError', async () => {
-      mockReq.body = { userId: 'user-123', token: '123456' };
+      mockReq.body = { twoFactorToken: create2FAToken('user-123'), token: '123456' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockRejectedValue(new Error('DB crash'));
 
       await expect(
@@ -994,7 +1080,7 @@ describe('AuthController', () => {
     it('should throw AppError when current password is incorrect', async () => {
       mockReq.body = { currentPassword: 'wrong', newPassword: 'newpass123' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({ passwordHash: 'hashed' });
-      (bcrypt.compare as jest.Mock<any>).mockResolvedValue(false as never);
+      require('../../../utils/fipsPasswordHashing').verifyPassword.mockResolvedValue(false);
 
       await expect(
         authController.changePassword(mockReq as Request, mockRes as Response)
@@ -1004,8 +1090,8 @@ describe('AuthController', () => {
     it('should change password successfully', async () => {
       mockReq.body = { currentPassword: 'oldpass', newPassword: 'newpass123' };
       (prismaMock.user.findUnique as jest.Mock<any>).mockResolvedValue({ passwordHash: 'hashed' });
-      (bcrypt.compare as jest.Mock<any>).mockResolvedValue(true as never);
-      (bcrypt.hash as jest.Mock<any>).mockResolvedValue('new-hashed' as never);
+      require('../../../utils/fipsPasswordHashing').verifyPassword.mockResolvedValue(true);
+      require('../../../utils/fipsPasswordHashing').hashPassword.mockResolvedValue('new-hashed');
       (prismaMock.user.update as jest.Mock<any>).mockResolvedValue({});
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
 

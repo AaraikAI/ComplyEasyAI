@@ -486,8 +486,8 @@ describe('DSAService', () => {
         isVLOP: true,
         isVLOSE: false,
         contentModeration: [
-          { actionType: 'removal', automatedDecision: true, appealStatus: null },
-          { actionType: 'suspension', automatedDecision: false, appealStatus: 'approved' },
+          { actionType: 'removal', automatedDecision: true, appealStatus: null, createdAt: new Date('2025-06-01'), updatedAt: new Date('2025-06-02') },
+          { actionType: 'suspension', automatedDecision: false, appealStatus: 'approved', createdAt: new Date('2025-07-01'), updatedAt: new Date('2025-07-03') },
         ],
         illegalContentReports: [
           { isTrustedFlagger: true, status: 'action_taken', responseTime: 6 },

@@ -140,7 +140,11 @@ async function fetchAPI<T>(
       }
 
       const error = await response.json().catch(() => ({}));
-      const errorMessage = error.error || error.message || `HTTP ${response.status}: ${response.statusText}`;
+      // Backend may return { error: "string" } or { status: 'error', error: { code, message } }
+      const errorBody = error.error;
+      const errorMessage = typeof errorBody === 'string'
+        ? errorBody
+        : errorBody?.message || error.message || `HTTP ${response.status}: ${response.statusText}`;
       
       // For 501 (Not Implemented), include the full error object
       if (response.status === 501) {
@@ -346,8 +350,8 @@ export const api = {
     },
 
     changePassword: async (currentPassword: string, newPassword: string) => {
-      return fetchAPI<{ success: boolean; message: string }>('/auth/change-password', {
-        method: 'POST',
+      return fetchAPI<{ success: boolean; message: string }>('/auth/password', {
+        method: 'PATCH',
         body: JSON.stringify({ currentPassword, newPassword }),
       });
     },
@@ -812,7 +816,7 @@ export const api = {
     cancelSubscription: async (cancelImmediately = false) => {
       return fetchAPI<{ success: boolean; message: string }>('/billing/cancel', {
         method: 'POST',
-        body: JSON.stringify({ cancelImmediately }),
+        body: JSON.stringify({ atPeriodEnd: !cancelImmediately }),
       });
     },
 
@@ -1039,7 +1043,7 @@ export const api = {
         summary: { total: number; successful: number; failed: number };
       }>('/team/bulk-invite', {
         method: 'POST',
-        body: JSON.stringify({ invites }),
+        body: JSON.stringify({ invitations: invites }),
       });
     },
 
@@ -1367,7 +1371,7 @@ export const api = {
       addComment: async (id: string, content: string) => {
         return fetchAPI<any>(`/enterprise/issues/${encodeURIComponent(id)}/comments`, {
           method: 'POST',
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ comment: content }),
         });
       },
       getComments: async (id: string) => {
@@ -2999,13 +3003,23 @@ export const api = {
   vendorMonitoring: {
     list: async (params?: Record<string, any>) => {
       const query = params ? '?' + new URLSearchParams(params).toString() : '';
-      return fetchAPI<any>(`/vendor-monitoring${query}`);
+      const res = await fetchAPI<any>(`/vendor-monitoring${query}`);
+      return res?.data?.checks || (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
     },
     create: async (data: Record<string, any>) => fetchAPI<any>('/vendor-monitoring', { method: 'POST', body: JSON.stringify(data) }),
-    getForVendor: async (vendorId: string) => fetchAPI<any>(`/vendor-monitoring/vendor/${encodeURIComponent(vendorId)}`),
+    getForVendor: async (vendorId: string) => {
+      const res = await fetchAPI<any>(`/vendor-monitoring/vendor/${encodeURIComponent(vendorId)}`);
+      return res?.data?.checks || (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
+    },
     triggerCheck: async (vendorId: string) => fetchAPI<any>(`/vendor-monitoring/vendor/${encodeURIComponent(vendorId)}/check`, { method: 'POST' }),
-    getAlerts: async () => fetchAPI<any>('/vendor-monitoring/alerts'),
-    getStats: async () => fetchAPI<any>('/vendor-monitoring/stats'),
+    getAlerts: async () => {
+      const res = await fetchAPI<any>('/vendor-monitoring/alerts');
+      return res?.data?.alerts || (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
+    },
+    getStats: async () => {
+      const res = await fetchAPI<any>('/vendor-monitoring/stats');
+      return res?.data || res || {};
+    },
   },
 
   // --- CI/CD Compliance Gates ---

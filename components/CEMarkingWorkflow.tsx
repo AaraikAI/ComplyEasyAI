@@ -1404,3 +1404,5 @@ export const CEMarkingWorkflow: React.FC<CEMarkingWorkflowProps> = ({ onBack }) 
     </div>
   );
 };
+
+export default CEMarkingWorkflow;

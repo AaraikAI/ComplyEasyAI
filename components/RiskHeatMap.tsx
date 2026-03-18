@@ -69,20 +69,20 @@ const RiskHeatMap: React.FC = () => {
     setError(null);
     try {
       const response = await api.get('/risks?pageSize=100');
-      if (response?.status === 'success') {
-        const items = (response.data || []).map((r: any) => ({
-          id: r.id,
-          title: r.title,
-          severity: r.severity,
-          likelihood: r.likelihood || Math.ceil(Math.random() * 5),
-          impact: r.impact || Math.ceil(Math.random() * 5),
-          status: r.status,
-          category: r.category,
-          owner: r.owner,
-          trend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as 'up' | 'down' | 'stable',
-        }));
-        setRisks(items);
-      }
+      // Risks endpoint returns raw array or { status, data: [...] }
+      const rawItems = Array.isArray(response) ? response : (response?.data ?? []);
+      const items = rawItems.map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        severity: r.severity,
+        likelihood: r.likelihood || Math.ceil(Math.random() * 5),
+        impact: r.impact || Math.ceil(Math.random() * 5),
+        status: r.status,
+        category: r.category,
+        owner: r.owner,
+        trend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as 'up' | 'down' | 'stable',
+      }));
+      setRisks(items);
     } catch (err: any) {
       setError(err.message || 'Failed to load risks');
     } finally {

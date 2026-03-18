@@ -108,10 +108,19 @@ async function syncPreferencesToApi(prefs: CookiePreferences): Promise<void> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(prefs),
+      body: JSON.stringify({
+        subjectIdentifier: 'self',
+        categories: {
+          essential: prefs.essential,
+          functional: prefs.functional,
+          analytics: prefs.analytics,
+          targeting: prefs.targeting,
+        },
+        consentMethod: 'CookieBanner',
+      }),
     });
   } catch (err) {
-    console.error('Failed to sync cookie preferences to API:', err);
+    // Cookie consent sync is best-effort; don't block UX
   }
 }
 

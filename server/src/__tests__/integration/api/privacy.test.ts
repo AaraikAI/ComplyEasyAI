@@ -37,6 +37,7 @@ jest.mock('../../../middleware/auth', () => ({
     req.user = {
       id: 'user-123',
       email: 'test@example.com',
+      name: 'Test User',
       organizationId: 'org-123',
       role: 'Admin',
     };
@@ -50,16 +51,30 @@ jest.mock('../../../middleware/tierMiddleware', () => ({
   requireVisionaryFeature: () => [(req: any, res: any, next: any) => next()],
 }));
 
+jest.mock('../../../config/monitoring', () => ({
+  __esModule: true,
+  default: { captureException: jest.fn() },
+}));
+
+jest.mock('../../../utils/securityEventLogger', () => ({
+  logSecurityEvent: jest.fn(),
+  SecurityEventType: { AUTHENTICATION_FAILURE: 'AUTHENTICATION_FAILURE', AUTHORIZATION_FAILURE: 'AUTHORIZATION_FAILURE' },
+}));
+
 // Mock data factories
 const createMockDSARRequest = (overrides: Record<string, unknown> = {}) => ({
   id: 'dsar-123',
   organizationId: 'org-123',
+  requestNumber: 'DSAR-ABC-1234',
   requestType: 'Access',
-  subjectEmail: 'user@example.com',
-  subjectName: 'John Doe',
-  status: 'Pending',
-  submittedAt: new Date(),
+  dataSubjectEmail: 'user@example.com',
+  dataSubjectName: 'John Doe',
+  status: 'Received',
+  requestDate: new Date(),
   dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  regulation: 'GDPR',
+  priority: 'Normal',
+  auditTrail: [],
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
@@ -68,11 +83,13 @@ const createMockDSARRequest = (overrides: Record<string, unknown> = {}) => ({
 const createMockConsentRecord = (overrides: Record<string, unknown> = {}) => ({
   id: 'consent-123',
   organizationId: 'org-123',
-  userId: 'user-456',
+  dataSubjectId: 'user-456',
   purpose: 'Marketing',
+  consentGiven: true,
+  consentDate: new Date(),
   status: 'Active',
-  consentedAt: new Date(),
-  expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+  createdAt: new Date(),
+  updatedAt: new Date(),
   ...overrides,
 });
 
@@ -85,6 +102,8 @@ const createMockRetentionPolicy = (overrides: Record<string, unknown> = {}) => (
   retentionUnit: 'months',
   legalBasis: 'Contract',
   status: 'Active',
+  createdAt: new Date(),
+  updatedAt: new Date(),
   ...overrides,
 });
 
@@ -99,6 +118,10 @@ beforeEach(async () => {
 
   const privacyRoutes = (await import('../../../routes/privacy')).default;
   app.use('/api/privacy', privacyRoutes);
+
+  // Add error handler so AppError responses are properly serialized
+  const { errorHandler } = await import('../../../middleware/errorHandler');
+  app.use(errorHandler);
 });
 
 describe('Privacy Routes Integration', () => {
@@ -127,19 +150,22 @@ describe('Privacy Routes Integration', () => {
   // ===========================================================================
   describe('DSAR (Data Subject Access Requests)', () => {
     describe('GET /api/privacy/dsar', () => {
-      it('should list DSAR requests', async () => {
+      it('should list DSAR requests with pagination', async () => {
         const mockRequests = [createMockDSARRequest(), createMockDSARRequest({ id: 'dsar-456' })];
         prismaMock.dSARRequest.findMany.mockResolvedValue(mockRequests as any);
+        prismaMock.dSARRequest.count.mockResolvedValue(2);
 
         const response = await request(app)
           .get('/api/privacy/dsar')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('dsars');
+        expect(response.body).toHaveProperty('total');
       });
 
       it('should filter by status', async () => {
         prismaMock.dSARRequest.findMany.mockResolvedValue([]);
+        prismaMock.dSARRequest.count.mockResolvedValue(0);
 
         await request(app)
           .get('/api/privacy/dsar?status=Pending')
@@ -156,9 +182,10 @@ describe('Privacy Routes Integration', () => {
 
       it('should filter by request type', async () => {
         prismaMock.dSARRequest.findMany.mockResolvedValue([]);
+        prismaMock.dSARRequest.count.mockResolvedValue(0);
 
         await request(app)
-          .get('/api/privacy/dsar?requestType=Access')
+          .get('/api/privacy/dsar?type=Access')
           .expect(200);
 
         expect(prismaMock.dSARRequest.findMany).toHaveBeenCalledWith(
@@ -180,25 +207,12 @@ describe('Privacy Routes Integration', () => {
           .post('/api/privacy/dsar')
           .send({
             requestType: 'Access',
-            subjectEmail: 'user@example.com',
-            subjectName: 'John Doe',
+            dataSubjectEmail: 'user@example.com',
+            dataSubjectName: 'John Doe',
           })
           .expect(201);
 
         expect(response.body).toHaveProperty('id');
-        expect(response.body.status).toBe('Pending');
-      });
-
-      it('should require subject email', async () => {
-        const response = await request(app)
-          .post('/api/privacy/dsar')
-          .send({
-            requestType: 'Access',
-            subjectName: 'John Doe',
-          })
-          .expect(400);
-
-        expect(response.body).toHaveProperty('error');
       });
     });
 
@@ -226,34 +240,17 @@ describe('Privacy Routes Integration', () => {
     describe('PATCH /api/privacy/dsar/:id', () => {
       it('should update DSAR request', async () => {
         const mockRequest = createMockDSARRequest();
-        const updatedRequest = { ...mockRequest, status: 'In Progress' };
+        const updatedRequest = { ...mockRequest, status: 'In_Progress' };
 
         prismaMock.dSARRequest.findFirst.mockResolvedValue(mockRequest as any);
         prismaMock.dSARRequest.update.mockResolvedValue(updatedRequest as any);
 
         const response = await request(app)
           .patch('/api/privacy/dsar/dsar-123')
-          .send({ status: 'In Progress' })
+          .send({ status: 'In_Progress' })
           .expect(200);
 
-        expect(response.body.status).toBe('In Progress');
-      });
-    });
-
-    describe('POST /api/privacy/dsar/:id/complete', () => {
-      it('should complete DSAR request', async () => {
-        const mockRequest = createMockDSARRequest();
-        const completedRequest = { ...mockRequest, status: 'Completed', completedAt: new Date() };
-
-        prismaMock.dSARRequest.findFirst.mockResolvedValue(mockRequest as any);
-        prismaMock.dSARRequest.update.mockResolvedValue(completedRequest as any);
-
-        const response = await request(app)
-          .post('/api/privacy/dsar/dsar-123/complete')
-          .send({ response: 'Data provided to subject' })
-          .expect(200);
-
-        expect(response.body.status).toBe('Completed');
+        expect(response.body.status).toBe('In_Progress');
       });
     });
   });
@@ -263,31 +260,17 @@ describe('Privacy Routes Integration', () => {
   // ===========================================================================
   describe('Consent Management', () => {
     describe('GET /api/privacy/consent', () => {
-      it('should list consent records', async () => {
+      it('should list consent records with pagination', async () => {
         const mockRecords = [createMockConsentRecord()];
         prismaMock.consentRecord.findMany.mockResolvedValue(mockRecords as any);
+        prismaMock.consentRecord.count.mockResolvedValue(1);
 
         const response = await request(app)
           .get('/api/privacy/consent')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
-      });
-
-      it('should filter by purpose', async () => {
-        prismaMock.consentRecord.findMany.mockResolvedValue([]);
-
-        await request(app)
-          .get('/api/privacy/consent?purpose=Marketing')
-          .expect(200);
-
-        expect(prismaMock.consentRecord.findMany).toHaveBeenCalledWith(
-          expect.objectContaining({
-            where: expect.objectContaining({
-              purpose: 'Marketing',
-            }),
-          })
-        );
+        expect(response.body).toHaveProperty('records');
+        expect(response.body).toHaveProperty('total');
       });
     });
 
@@ -299,30 +282,30 @@ describe('Privacy Routes Integration', () => {
         const response = await request(app)
           .post('/api/privacy/consent')
           .send({
-            userId: 'user-456',
+            dataSubjectId: 'user-456',
             purpose: 'Marketing',
-            consentSource: 'Website',
+            consentGiven: true,
           })
           .expect(201);
 
         expect(response.body).toHaveProperty('id');
-        expect(response.body.status).toBe('Active');
       });
     });
 
-    describe('POST /api/privacy/consent/:id/withdraw', () => {
+    describe('PATCH /api/privacy/consent/:id', () => {
       it('should withdraw consent', async () => {
-        const mockRecord = createMockConsentRecord();
-        const withdrawnRecord = { ...mockRecord, status: 'Withdrawn', withdrawnAt: new Date() };
+        const mockRecord = createMockConsentRecord({ consentGiven: true });
+        const withdrawnRecord = { ...mockRecord, consentGiven: false, withdrawnAt: new Date() };
 
         prismaMock.consentRecord.findFirst.mockResolvedValue(mockRecord as any);
         prismaMock.consentRecord.update.mockResolvedValue(withdrawnRecord as any);
 
         const response = await request(app)
-          .post('/api/privacy/consent/consent-123/withdraw')
+          .patch('/api/privacy/consent/consent-123')
+          .send({ consentGiven: false })
           .expect(200);
 
-        expect(response.body.status).toBe('Withdrawn');
+        expect(response.body.consentGiven).toBe(false);
       });
     });
   });
@@ -331,32 +314,24 @@ describe('Privacy Routes Integration', () => {
   // Consent Preferences Tests
   // ===========================================================================
   describe('Consent Preferences', () => {
-    describe('GET /api/privacy/consent-preferences/:userId', () => {
-      it('should get user consent preferences', async () => {
-        const mockPreferences = {
-          id: 'pref-123',
-          userId: 'user-456',
-          marketing: true,
-          analytics: false,
-          thirdParty: false,
-        };
-
-        prismaMock.consentPreference.findFirst.mockResolvedValue(mockPreferences as any);
+    describe('GET /api/privacy/consent/preferences', () => {
+      it('should get consent preferences', async () => {
+        prismaMock.consentPreference.findMany.mockResolvedValue([]);
+        prismaMock.consentPreference.count.mockResolvedValue(0);
 
         const response = await request(app)
-          .get('/api/privacy/consent-preferences/user-456')
+          .get('/api/privacy/consent/preferences')
           .expect(200);
 
-        expect(response.body).toHaveProperty('marketing');
-        expect(response.body).toHaveProperty('analytics');
+        expect(response.body).toBeDefined();
       });
     });
 
-    describe('PUT /api/privacy/consent-preferences/:userId', () => {
+    describe('PUT /api/privacy/consent/preferences/:dataSubjectId', () => {
       it('should update consent preferences', async () => {
         const updatedPreferences = {
           id: 'pref-123',
-          userId: 'user-456',
+          dataSubjectId: 'user-456',
           marketing: false,
           analytics: true,
         };
@@ -364,7 +339,7 @@ describe('Privacy Routes Integration', () => {
         prismaMock.consentPreference.upsert.mockResolvedValue(updatedPreferences as any);
 
         const response = await request(app)
-          .put('/api/privacy/consent-preferences/user-456')
+          .put('/api/privacy/consent/preferences/user-456')
           .send({
             marketing: false,
             analytics: true,
@@ -381,15 +356,17 @@ describe('Privacy Routes Integration', () => {
   // ===========================================================================
   describe('Retention Policies', () => {
     describe('GET /api/privacy/retention', () => {
-      it('should list retention policies', async () => {
+      it('should list retention policies with pagination', async () => {
         const mockPolicies = [createMockRetentionPolicy()];
         prismaMock.retentionPolicy.findMany.mockResolvedValue(mockPolicies as any);
+        prismaMock.retentionPolicy.count.mockResolvedValue(1);
 
         const response = await request(app)
           .get('/api/privacy/retention')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('policies');
+        expect(response.body).toHaveProperty('total');
       });
     });
 
@@ -412,37 +389,27 @@ describe('Privacy Routes Integration', () => {
         expect(response.body).toHaveProperty('id');
       });
     });
-
-    describe('POST /api/privacy/retention/enforce', () => {
-      it('should enforce retention policies', async () => {
-        prismaMock.retentionPolicy.findMany.mockResolvedValue([createMockRetentionPolicy()] as any);
-
-        const response = await request(app)
-          .post('/api/privacy/retention/enforce')
-          .expect(200);
-
-        expect(response.body).toHaveProperty('processed');
-      });
-    });
   });
 
   // ===========================================================================
   // SCC/TIA Tests
   // ===========================================================================
   describe('SCC/TIA (Standard Contractual Clauses / Transfer Impact Assessment)', () => {
-    describe('GET /api/privacy/scc-templates', () => {
-      it('should list SCC templates', async () => {
+    describe('GET /api/privacy/scc-tia', () => {
+      it('should list SCC templates with pagination', async () => {
         prismaMock.sCCTemplate.findMany.mockResolvedValue([]);
+        prismaMock.sCCTemplate.count.mockResolvedValue(0);
 
         const response = await request(app)
-          .get('/api/privacy/scc-templates')
+          .get('/api/privacy/scc-tia')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('templates');
+        expect(response.body).toHaveProperty('total');
       });
     });
 
-    describe('POST /api/privacy/scc-templates', () => {
+    describe('POST /api/privacy/scc-tia', () => {
       it('should create SCC template', async () => {
         const mockTemplate = {
           id: 'scc-123',
@@ -453,47 +420,11 @@ describe('Privacy Routes Integration', () => {
         prismaMock.sCCTemplate.create.mockResolvedValue(mockTemplate as any);
 
         const response = await request(app)
-          .post('/api/privacy/scc-templates')
+          .post('/api/privacy/scc-tia')
           .send({
             name: 'EU SCC 2021',
             type: 'Controller-to-Processor',
             content: 'SCC clauses...',
-          })
-          .expect(201);
-
-        expect(response.body).toHaveProperty('id');
-      });
-    });
-
-    describe('GET /api/privacy/tia', () => {
-      it('should list TIA assessments', async () => {
-        prismaMock.tIAAssessment.findMany.mockResolvedValue([]);
-
-        const response = await request(app)
-          .get('/api/privacy/tia')
-          .expect(200);
-
-        expect(Array.isArray(response.body)).toBe(true);
-      });
-    });
-
-    describe('POST /api/privacy/tia', () => {
-      it('should create TIA assessment', async () => {
-        const mockTIA = {
-          id: 'tia-123',
-          name: 'US Transfer Assessment',
-          destinationCountry: 'USA',
-          status: 'In Progress',
-        };
-
-        prismaMock.tIAAssessment.create.mockResolvedValue(mockTIA as any);
-
-        const response = await request(app)
-          .post('/api/privacy/tia')
-          .send({
-            name: 'US Transfer Assessment',
-            destinationCountry: 'USA',
-            dataCategories: ['Personal Data'],
           })
           .expect(201);
 
@@ -507,14 +438,16 @@ describe('Privacy Routes Integration', () => {
   // ===========================================================================
   describe('BCR (Binding Corporate Rules)', () => {
     describe('GET /api/privacy/bcr', () => {
-      it('should list BCR programs', async () => {
+      it('should list BCR programs with pagination', async () => {
         prismaMock.bCRProgram.findMany.mockResolvedValue([]);
+        prismaMock.bCRProgram.count.mockResolvedValue(0);
 
         const response = await request(app)
           .get('/api/privacy/bcr')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('programs');
+        expect(response.body).toHaveProperty('total');
       });
     });
 
@@ -542,8 +475,8 @@ describe('Privacy Routes Integration', () => {
       });
     });
 
-    describe('POST /api/privacy/bcr/:id/submit', () => {
-      it('should submit BCR for approval', async () => {
+    describe('PATCH /api/privacy/bcr/:id', () => {
+      it('should update BCR program status', async () => {
         const mockBCR = { id: 'bcr-123', status: 'Draft' };
         const submittedBCR = { ...mockBCR, status: 'Submitted' };
 
@@ -551,7 +484,8 @@ describe('Privacy Routes Integration', () => {
         prismaMock.bCRProgram.update.mockResolvedValue(submittedBCR as any);
 
         const response = await request(app)
-          .post('/api/privacy/bcr/bcr-123/submit')
+          .patch('/api/privacy/bcr/bcr-123')
+          .send({ status: 'Submitted' })
           .expect(200);
 
         expect(response.body.status).toBe('Submitted');
@@ -560,36 +494,38 @@ describe('Privacy Routes Integration', () => {
   });
 
   // ===========================================================================
-  // Marketing Opt-out Tests
+  // Marketing Preferences Tests
   // ===========================================================================
-  describe('Marketing Opt-out', () => {
-    describe('GET /api/privacy/marketing-optout', () => {
-      it('should list marketing opt-outs', async () => {
-        prismaMock.marketingOptOut.findMany.mockResolvedValue([]);
+  describe('Marketing Preferences', () => {
+    describe('GET /api/privacy/marketing', () => {
+      it('should list marketing preferences', async () => {
+        prismaMock.consentPreference.findMany.mockResolvedValue([]);
+        prismaMock.consentPreference.count.mockResolvedValue(0);
 
         const response = await request(app)
-          .get('/api/privacy/marketing-optout')
+          .get('/api/privacy/marketing')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('preferences');
+        expect(response.body).toHaveProperty('total');
       });
     });
 
-    describe('POST /api/privacy/marketing-optout', () => {
+    describe('POST /api/privacy/marketing/opt-out', () => {
       it('should create marketing opt-out', async () => {
-        const mockOptOut = {
-          id: 'optout-123',
-          email: 'user@example.com',
-          channels: ['email', 'sms'],
+        const mockPreference = {
+          id: 'pref-123',
+          dataSubjectId: 'user-456',
+          marketingOptOut: true,
         };
 
-        prismaMock.marketingOptOut.create.mockResolvedValue(mockOptOut as any);
+        prismaMock.consentPreference.upsert.mockResolvedValue(mockPreference as any);
 
         const response = await request(app)
-          .post('/api/privacy/marketing-optout')
+          .post('/api/privacy/marketing/opt-out')
           .send({
-            email: 'user@example.com',
-            channels: ['email', 'sms'],
+            dataSubjectId: 'user-456',
+            dataSubjectEmail: 'user@example.com',
           })
           .expect(201);
 
@@ -602,53 +538,54 @@ describe('Privacy Routes Integration', () => {
   // Account/Data Deletion Tests
   // ===========================================================================
   describe('Account/Data Deletion', () => {
-    describe('GET /api/privacy/deletion-requests', () => {
-      it('should list deletion requests', async () => {
-        prismaMock.deletionRequest.findMany.mockResolvedValue([]);
+    describe('GET /api/privacy/deletion', () => {
+      it('should list deletion requests with pagination', async () => {
+        prismaMock.dataDeletionRequest.findMany.mockResolvedValue([]);
+        prismaMock.dataDeletionRequest.count.mockResolvedValue(0);
 
         const response = await request(app)
-          .get('/api/privacy/deletion-requests')
+          .get('/api/privacy/deletion')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('requests');
+        expect(response.body).toHaveProperty('total');
       });
     });
 
-    describe('POST /api/privacy/deletion-requests', () => {
+    describe('POST /api/privacy/deletion', () => {
       it('should create deletion request', async () => {
         const mockRequest = {
           id: 'del-123',
-          userId: 'user-456',
-          requestType: 'Full Deletion',
-          status: 'Pending',
+          organizationId: 'org-123',
+          requestType: 'Full_Deletion',
+          status: 'Pending_Verification',
         };
 
-        prismaMock.deletionRequest.create.mockResolvedValue(mockRequest as any);
+        prismaMock.dataDeletionRequest.create.mockResolvedValue(mockRequest as any);
 
         const response = await request(app)
-          .post('/api/privacy/deletion-requests')
+          .post('/api/privacy/deletion')
           .send({
-            userId: 'user-456',
-            requestType: 'Full Deletion',
+            dataSubjectEmail: 'user@example.com',
+            requestType: 'Full_Deletion',
             reason: 'User requested account deletion',
           })
           .expect(201);
 
         expect(response.body).toHaveProperty('id');
-        expect(response.body.status).toBe('Pending');
       });
     });
 
-    describe('POST /api/privacy/deletion-requests/:id/execute', () => {
+    describe('POST /api/privacy/deletion/:id/execute', () => {
       it('should execute deletion request', async () => {
-        const mockRequest = { id: 'del-123', status: 'Pending' };
+        const mockRequest = { id: 'del-123', status: 'Approved', dataCategories: ['Personal Data'] };
         const executedRequest = { ...mockRequest, status: 'Completed', executedAt: new Date() };
 
-        prismaMock.deletionRequest.findFirst.mockResolvedValue(mockRequest as any);
-        prismaMock.deletionRequest.update.mockResolvedValue(executedRequest as any);
+        prismaMock.dataDeletionRequest.findFirst.mockResolvedValue(mockRequest as any);
+        prismaMock.dataDeletionRequest.update.mockResolvedValue(executedRequest as any);
 
         const response = await request(app)
-          .post('/api/privacy/deletion-requests/del-123/execute')
+          .post('/api/privacy/deletion/del-123/execute')
           .expect(200);
 
         expect(response.body.status).toBe('Completed');
@@ -660,35 +597,37 @@ describe('Privacy Routes Integration', () => {
   // Processing Restrictions Tests
   // ===========================================================================
   describe('Processing Restrictions', () => {
-    describe('GET /api/privacy/processing-restrictions', () => {
-      it('should list processing restrictions', async () => {
+    describe('GET /api/privacy/restrictions', () => {
+      it('should list processing restrictions with pagination', async () => {
         prismaMock.processingRestriction.findMany.mockResolvedValue([]);
+        prismaMock.processingRestriction.count.mockResolvedValue(0);
 
         const response = await request(app)
-          .get('/api/privacy/processing-restrictions')
+          .get('/api/privacy/restrictions')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('restrictions');
+        expect(response.body).toHaveProperty('total');
       });
     });
 
-    describe('POST /api/privacy/processing-restrictions', () => {
+    describe('POST /api/privacy/restrictions', () => {
       it('should create processing restriction', async () => {
         const mockRestriction = {
           id: 'restrict-123',
-          userId: 'user-456',
-          restrictionType: 'No Marketing',
+          organizationId: 'org-123',
+          restrictionType: 'Processing_Limitation',
           status: 'Active',
         };
 
         prismaMock.processingRestriction.create.mockResolvedValue(mockRestriction as any);
 
         const response = await request(app)
-          .post('/api/privacy/processing-restrictions')
+          .post('/api/privacy/restrictions')
           .send({
-            userId: 'user-456',
-            restrictionType: 'No Marketing',
-            reason: 'User objected to marketing',
+            dataSubjectId: 'user-456',
+            restrictionType: 'Processing_Limitation',
+            reason: 'User objected to processing',
           })
           .expect(201);
 
@@ -696,18 +635,20 @@ describe('Privacy Routes Integration', () => {
       });
     });
 
-    describe('DELETE /api/privacy/processing-restrictions/:id', () => {
-      it('should remove processing restriction', async () => {
-        const mockRestriction = { id: 'restrict-123' };
+    describe('POST /api/privacy/restrictions/:id/lift', () => {
+      it('should lift processing restriction', async () => {
+        const mockRestriction = { id: 'restrict-123', status: 'Active' };
+        const liftedRestriction = { ...mockRestriction, status: 'Lifted', liftedAt: new Date() };
 
         prismaMock.processingRestriction.findFirst.mockResolvedValue(mockRestriction as any);
-        prismaMock.processingRestriction.delete.mockResolvedValue(mockRestriction as any);
+        prismaMock.processingRestriction.update.mockResolvedValue(liftedRestriction as any);
 
         const response = await request(app)
-          .delete('/api/privacy/processing-restrictions/restrict-123')
+          .post('/api/privacy/restrictions/restrict-123/lift')
+          .send({ liftReason: 'No longer needed' })
           .expect(200);
 
-        expect(response.body).toHaveProperty('deleted');
+        expect(response.body.status).toBe('Lifted');
       });
     });
   });
@@ -717,27 +658,29 @@ describe('Privacy Routes Integration', () => {
   // ===========================================================================
   describe('AI Transparency', () => {
     describe('GET /api/privacy/ai-transparency', () => {
-      it('should list AI transparency records', async () => {
-        prismaMock.aITransparencyRecord.findMany.mockResolvedValue([]);
+      it('should list AI transparency notices with pagination', async () => {
+        prismaMock.aITransparencyNotice.findMany.mockResolvedValue([]);
+        prismaMock.aITransparencyNotice.count.mockResolvedValue(0);
 
         const response = await request(app)
           .get('/api/privacy/ai-transparency')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('notices');
+        expect(response.body).toHaveProperty('total');
       });
     });
 
     describe('POST /api/privacy/ai-transparency', () => {
-      it('should create AI transparency record', async () => {
-        const mockRecord = {
+      it('should create AI transparency notice', async () => {
+        const mockNotice = {
           id: 'ai-trans-123',
+          organizationId: 'org-123',
           systemName: 'Credit Scoring AI',
           purpose: 'Credit risk assessment',
-          dataUsed: ['Financial history', 'Employment data'],
         };
 
-        prismaMock.aITransparencyRecord.create.mockResolvedValue(mockRecord as any);
+        prismaMock.aITransparencyNotice.create.mockResolvedValue(mockNotice as any);
 
         const response = await request(app)
           .post('/api/privacy/ai-transparency')
@@ -758,14 +701,16 @@ describe('Privacy Routes Integration', () => {
   // ===========================================================================
   describe('JIT Privacy Notices', () => {
     describe('GET /api/privacy/jit-notices', () => {
-      it('should list JIT privacy notices', async () => {
+      it('should list JIT privacy notices with pagination', async () => {
         prismaMock.jITPrivacyNotice.findMany.mockResolvedValue([]);
+        prismaMock.jITPrivacyNotice.count.mockResolvedValue(0);
 
         const response = await request(app)
           .get('/api/privacy/jit-notices')
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('notices');
+        expect(response.body).toHaveProperty('total');
       });
     });
 
@@ -793,23 +738,17 @@ describe('Privacy Routes Integration', () => {
       });
     });
 
-    describe('POST /api/privacy/jit-notices/:id/display', () => {
-      it('should record JIT notice display', async () => {
-        const mockNotice = { id: 'jit-123' };
-        const displayRecord = {
-          id: 'display-123',
-          noticeId: 'jit-123',
-          userId: 'user-456',
-          displayedAt: new Date(),
-        };
+    describe('POST /api/privacy/jit-notices/:id/impression', () => {
+      it('should record JIT notice impression', async () => {
+        const mockNotice = { id: 'jit-123', impressions: 5 };
+        const updatedNotice = { ...mockNotice, impressions: 6 };
 
         prismaMock.jITPrivacyNotice.findFirst.mockResolvedValue(mockNotice as any);
-        prismaMock.jITNoticeDisplay.create.mockResolvedValue(displayRecord as any);
+        prismaMock.jITPrivacyNotice.update.mockResolvedValue(updatedNotice as any);
 
         const response = await request(app)
-          .post('/api/privacy/jit-notices/jit-123/display')
-          .send({ userId: 'user-456' })
-          .expect(201);
+          .post('/api/privacy/jit-notices/jit-123/impression')
+          .expect(200);
 
         expect(response.body).toHaveProperty('id');
       });

@@ -1,12 +1,14 @@
 
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
-import { AuthProvider, useAuth } from '../AuthContext';
-import { api } from '../../services/api';
-
-
 
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+
+// Override the global AuthContext mock from setupTests to use real implementation
+vi.mock('@/contexts/AuthContext', async () => {
+  const actual = await vi.importActual<typeof import('@/contexts/AuthContext')>('@/contexts/AuthContext');
+  return actual;
+});
 
 vi.mock('../../services/api', () => ({
   api: {
@@ -16,9 +18,15 @@ vi.mock('../../services/api', () => ({
       register: vi.fn(),
       refreshToken: vi.fn(),
       logout: vi.fn()
-    }
+    },
+    organization: {
+      get: vi.fn().mockResolvedValue({ id: 'org-1', name: 'Test Org', plan: 'Growth' }),
+    },
   }
 }));
+
+import { AuthProvider, useAuth } from '../AuthContext';
+import { api } from '../../services/api';
 
 const TestComp = () => {
   const { user, loginWithMagicLink, logout } = useAuth();
@@ -32,6 +40,11 @@ const TestComp = () => {
 };
 
 describe('AuthContext', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
   it('login flow', async () => {
     // Mock the magic link request - this just sends the email
     (api.auth.requestMagicLink as any).mockResolvedValue({ message: 'Magic link sent' });

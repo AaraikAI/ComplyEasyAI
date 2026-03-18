@@ -228,7 +228,6 @@ export default function MonitoringDashboard() {
     setIsSaving(true);
     try {
       await api.enterprise.monitoring.create({
-        organizationId: user?.organizationId,
         ...monitorForm,
         configuration: monitorForm.configuration,
       });
@@ -409,7 +408,6 @@ export default function MonitoringDashboard() {
     }
     try {
       await api.enterprise.monitoring.create({
-        organizationId: user?.organizationId,
         name: suggestion.name,
         monitorType: suggestion.monitorType,
         frequency: suggestion.frequency,

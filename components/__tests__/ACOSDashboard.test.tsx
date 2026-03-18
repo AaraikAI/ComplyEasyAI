@@ -96,31 +96,36 @@ describe('ACOSDashboard', () => {
   it('renders without crashing', async () => {
     render(<ACOSDashboard onBack={mockOnBack} onNavigate={mockOnNavigate} />);
     await waitFor(() => {
-      expect(screen.getByText(/aCOS/i)).toBeInTheDocument();
+      expect(screen.getByText(/Autonomous Compliance Operating System/i)).toBeInTheDocument();
     });
   });
 
   it('displays the overview tab by default', async () => {
     render(<ACOSDashboard onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText(/Overview/i)).toBeInTheDocument();
+      // "Overview" appears in both the heading and as a tab label
+      expect(screen.getAllByText(/Overview/i).length).toBeGreaterThan(0);
     });
   });
 
   it('shows goals tab when clicked', async () => {
     render(<ACOSDashboard onBack={mockOnBack} />);
     await waitFor(() => {
-      const goalsTab = screen.getByText('Goals');
-      fireEvent.click(goalsTab);
-      expect(goalsTab).toBeInTheDocument();
+      expect(screen.getByText('Goals')).toBeInTheDocument();
     });
+    const goalsTab = screen.getByText('Goals');
+    fireEvent.click(goalsTab);
+    expect(goalsTab).toBeInTheDocument();
   });
 
   it('calls onBack when back button area is used', async () => {
     render(<ACOSDashboard onBack={mockOnBack} />);
     await waitFor(() => {
-      expect(screen.getByText(/aCOS/i)).toBeInTheDocument();
+      expect(screen.getByText(/Autonomous Compliance Operating System/i)).toBeInTheDocument();
     });
+    const backBtn = screen.getByText('Back');
+    fireEvent.click(backBtn);
+    expect(mockOnBack).toHaveBeenCalled();
   });
 
   it('loads data on mount', async () => {

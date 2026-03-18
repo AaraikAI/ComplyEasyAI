@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { api } from '../../services/api';
 import {
   ArrowLeft,
@@ -621,6 +621,41 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
 
+  // State for evidence upload, task creation, remediation, and scheduling
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTarget, setUploadTarget] = useState<{ gapId: string; evidenceIdx: number } | null>(null);
+  const [uploadedEvidence, setUploadedEvidence] = useState<Set<string>>(new Set());
+  const [createdTasks, setCreatedTasks] = useState<Set<string>>(new Set());
+  const [createdRemediations, setCreatedRemediations] = useState<Set<string>>(new Set());
+  const [scheduledRecs, setScheduledRecs] = useState<Set<string>>(new Set());
+
+  const handleEvidenceUploadClick = useCallback((gapId: string, evidenceIdx: number) => {
+    setUploadTarget({ gapId, evidenceIdx });
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileSelected = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0 && uploadTarget) {
+      const key = `${uploadTarget.gapId}-${uploadTarget.evidenceIdx}`;
+      setUploadedEvidence(prev => new Set(prev).add(key));
+      setUploadTarget(null);
+    }
+    // Reset the input so the same file can be re-selected if needed
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [uploadTarget]);
+
+  const handleCreateTask = useCallback((gapId: string) => {
+    setCreatedTasks(prev => new Set(prev).add(gapId));
+  }, []);
+
+  const handleCreateRemediation = useCallback((recId: string) => {
+    setCreatedRemediations(prev => new Set(prev).add(recId));
+  }, []);
+
+  const handleScheduleRec = useCallback((recId: string) => {
+    setScheduledRecs(prev => new Set(prev).add(recId));
+  }, []);
+
   const handleScan = useCallback(async () => {
     setIsScanning(true);
     setScanComplete(false);
@@ -687,6 +722,15 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
 
   return (
     <div className="h-full flex flex-col space-y-6">
+      {/* Hidden file input for evidence uploads */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelected}
+        className="hidden"
+        accept=".pdf,.doc,.docx,.xlsx,.csv,.png,.jpg,.txt"
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -1145,9 +1189,25 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                             <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
                               <FolderOpen size={12} className="text-gray-400 flex-shrink-0" />
                               <span className="text-sm text-gray-700">{ev}</span>
-                              <button className="ml-auto text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
-                                <Upload size={10} />
-                                Upload
+                              <button
+                                onClick={() => handleEvidenceUploadClick(gap.id, idx)}
+                                className={`ml-auto text-xs font-medium flex items-center gap-1 ${
+                                  uploadedEvidence.has(`${gap.id}-${idx}`)
+                                    ? 'text-green-600 hover:text-green-700'
+                                    : 'text-brand-600 hover:text-brand-700'
+                                }`}
+                              >
+                                {uploadedEvidence.has(`${gap.id}-${idx}`) ? (
+                                  <>
+                                    <CheckCircle2 size={10} />
+                                    Uploaded
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload size={10} />
+                                    Upload
+                                  </>
+                                )}
                               </button>
                             </div>
                           ))}
@@ -1159,9 +1219,26 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                           <span className="flex items-center gap-1"><Clock size={10} />Est. {gap.estimatedEffort}</span>
                           <span className="flex items-center gap-1"><Target size={10} />Owner: {gap.controlOwner}</span>
                         </div>
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors">
-                          <Zap size={12} />
-                          Create Task
+                        <button
+                          onClick={() => handleCreateTask(gap.id)}
+                          disabled={createdTasks.has(gap.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                            createdTasks.has(gap.id)
+                              ? 'bg-green-100 text-green-700 cursor-default'
+                              : 'bg-brand-600 text-white hover:bg-brand-700'
+                          }`}
+                        >
+                          {createdTasks.has(gap.id) ? (
+                            <>
+                              <CheckCircle2 size={12} />
+                              Task Created
+                            </>
+                          ) : (
+                            <>
+                              <Zap size={12} />
+                              Create Task
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -1228,13 +1305,47 @@ export const EvidenceCompletenessChecker: React.FC<{ onBack: () => void }> = ({ 
                       </ol>
                     </div>
                     <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors">
-                        <Zap size={12} />
-                        Create Remediation Tasks
+                      <button
+                        onClick={() => handleCreateRemediation(rec.id)}
+                        disabled={createdRemediations.has(rec.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          createdRemediations.has(rec.id)
+                            ? 'bg-green-100 text-green-700 cursor-default'
+                            : 'bg-brand-600 text-white hover:bg-brand-700'
+                        }`}
+                      >
+                        {createdRemediations.has(rec.id) ? (
+                          <>
+                            <CheckCircle2 size={12} />
+                            Remediation Tasks Created
+                          </>
+                        ) : (
+                          <>
+                            <Zap size={12} />
+                            Create Remediation Tasks
+                          </>
+                        )}
                       </button>
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                        <Calendar size={12} />
-                        Schedule
+                      <button
+                        onClick={() => handleScheduleRec(rec.id)}
+                        disabled={scheduledRecs.has(rec.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                          scheduledRecs.has(rec.id)
+                            ? 'bg-blue-100 text-blue-700 border border-blue-200 cursor-default'
+                            : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {scheduledRecs.has(rec.id) ? (
+                          <>
+                            <CheckCircle2 size={12} />
+                            Scheduled
+                          </>
+                        ) : (
+                          <>
+                            <Calendar size={12} />
+                            Schedule
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>

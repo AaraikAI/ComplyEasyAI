@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
 import { 
-  ArrowLeft, Filter, CheckSquare, Loader2, Play, CheckCircle, X, SortAsc, SortDesc, BrainCircuit, ListFilter, Plus, Grid3x3, Table
+  ArrowLeft, Filter, CheckSquare, Loader2, Play, CheckCircle, X, SortAsc, SortDesc, BrainCircuit, ListFilter, Plus
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
@@ -34,8 +34,6 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortField, setSortField] = useState<SortField>('severity');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'heatmap'>('table');
-  const [selectedHeatMapCell, setSelectedHeatMapCell] = useState<{likelihood: number, impact: number} | null>(null);
   
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -186,12 +184,14 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
     const prioritizedData = await prioritizeRisks(risks);
     
     if (prioritizedData.length > 0) {
-      // Update local state and persist
+      // Update local state and persist only valid schema fields
       const updatedRisks = risks.map(risk => {
         const aiData = prioritizedData.find((p: any) => p.id === risk.id);
         if (aiData) {
           const updated = { ...risk, aiPriorityScore: aiData.score, aiRationale: aiData.rationale };
-          api.risks.update(updated.id, updated); // Sync to DB
+          // Only send schema-valid fields to the update endpoint
+          const { title, description, category, severity, likelihood, impact, status, owner, assignedToId, targetDate, riskScore, mitigationPlan, frameworkId } = updated as any;
+          api.risks.update(updated.id, { title, description, category, severity, likelihood, impact, status, owner, assignedToId, targetDate, riskScore, mitigationPlan, frameworkId });
           return updated;
         }
         return risk;
@@ -234,20 +234,20 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         // Find the user by ID if assigneeId is provided
         const assignee = assigneeId ? teamMembers.find(u => u.id === assigneeId) : null;
         
-        // Prepare update data - backend expects assignedToId (user ID), not assignedTo (name)
+        // Prepare update data
         const updateData: any = {
           status: newStatus,
           mitigationPlan: remediationPlan === null || remediationPlan === '' ? null : remediationPlan,
         };
-        
-        // Only include assignedToId if a user is selected
+
+        // Include assignedToId
         if (assigneeId) {
           updateData.assignedToId = assigneeId;
         } else {
           updateData.assignedToId = null;
         }
 
-        // Include targetDate if it was updated
+        // Include targetDate if it was set
         if (selectedRisk.targetDate) {
           updateData.targetDate = selectedRisk.targetDate;
         }
@@ -471,26 +471,6 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
             </div>
           </div>
           <div className="flex gap-3">
-            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors flex items-center ${
-                  viewMode === 'table' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Table size={16} className="mr-1.5" />
-                Table
-              </button>
-              <button
-                onClick={() => setViewMode('heatmap')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors flex items-center ${
-                  viewMode === 'heatmap' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Grid3x3 size={16} className="mr-1.5" />
-                {t('risks.heatMap')}
-              </button>
-            </div>
             {(user?.role === 'admin' || user?.role === 'editor') && (
               <button 
                 onClick={() => !issuesLimitReached && setShowAddRiskModal(true)} 
@@ -514,184 +494,8 @@ export const RiskManagement: React.FC<RiskManagementProps> = ({ onBack }) => {
         </div>
       </div>
       
-      {/* Risk Heat Map View */}
-      {viewMode === 'heatmap' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('risks.heatMap')}</h3>
-            <p className="text-sm text-gray-600">Click on a cell to view risks in that likelihood × impact range</p>
-          </div>
-          
-          {(() => {
-            // Build heat map data: 5x5 matrix (likelihood 1-5, impact 1-5)
-            const heatMapData: {[key: string]: RiskItem[]} = {};
-            risks.forEach(risk => {
-              const likelihood = risk.likelihood || 3;
-              const impact = risk.impact || 3;
-              const key = `${likelihood}-${impact}`;
-              if (!heatMapData[key]) {
-                heatMapData[key] = [];
-              }
-              heatMapData[key].push(risk);
-            });
-
-            // Get risks for selected cell
-            const selectedRisks = selectedHeatMapCell 
-              ? (heatMapData[`${selectedHeatMapCell.likelihood}-${selectedHeatMapCell.impact}`] || [])
-              : [];
-
-            // Calculate color intensity based on risk score
-            const getCellColor = (likelihood: number, impact: number) => {
-              const score = likelihood * impact;
-              if (score >= 20) return 'bg-red-600'; // Very High (5x4, 5x5, 4x5)
-              if (score >= 15) return 'bg-red-400'; // High (5x3, 4x4, 3x5)
-              if (score >= 10) return 'bg-yellow-400'; // Medium (4x3, 3x4, 5x2, 2x5)
-              if (score >= 6) return 'bg-yellow-200'; // Low-Medium (3x2, 2x3, 4x2, 2x4)
-              return 'bg-green-200'; // Low (1-5)
-            };
-
-            const getCellOpacity = (count: number) => {
-              if (count === 0) return 'opacity-30';
-              if (count <= 2) return 'opacity-60';
-              if (count <= 5) return 'opacity-80';
-              return 'opacity-100';
-            };
-
-            return (
-              <div className="space-y-6">
-                {/* Heat Map Grid */}
-                <div className="flex flex-col items-center">
-                  {/* Header row with Impact labels */}
-                  <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: 'auto 4rem 4rem 4rem 4rem 4rem' }}>
-                    <div className="w-12"></div>
-                    {[1, 2, 3, 4, 5].map(impact => (
-                      <div key={impact} className="text-xs font-medium text-gray-600 text-center flex items-center justify-center w-16">
-                        Impact {impact}
-                      </div>
-                    ))}
-                  </div>
-                  {/* Data rows */}
-                  {[5, 4, 3, 2, 1].map(likelihood => (
-                    <div key={likelihood} className="grid gap-1" style={{ gridTemplateColumns: 'auto 4rem 4rem 4rem 4rem 4rem' }}>
-                      <div className="text-xs font-medium text-gray-600 flex items-center justify-end pr-2 w-12">
-                        L{likelihood}
-                      </div>
-                      {[1, 2, 3, 4, 5].map(impact => {
-                        const key = `${likelihood}-${impact}`;
-                        const count = heatMapData[key]?.length || 0;
-                        const isSelected = selectedHeatMapCell?.likelihood === likelihood && selectedHeatMapCell?.impact === impact;
-                        return (
-                          <button
-                            key={impact}
-                            onClick={() => setSelectedHeatMapCell(isSelected ? null : { likelihood, impact })}
-                            className={`
-                              w-16 h-16 rounded border-2 transition-all cursor-pointer
-                              ${getCellColor(likelihood, impact)}
-                              ${getCellOpacity(count)}
-                              ${isSelected ? 'ring-4 ring-brand-500 ring-offset-2 border-brand-600' : 'border-gray-300 hover:border-gray-400'}
-                              flex flex-col items-center justify-center text-white font-bold text-xs
-                            `}
-                            title={`Likelihood: ${likelihood}, Impact: ${impact}, Risks: ${count}`}
-                          >
-                            <span className="text-lg">{count}</span>
-                            <span className="text-[10px] opacity-90">({likelihood}×{impact})</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Legend */}
-                <div className="flex items-center justify-center gap-4 text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-200 rounded"></div>
-                    <span>{t('risks.low')} (1-5)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-200 rounded"></div>
-                    <span>{t('risks.medium')} (6-9)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-400 rounded"></div>
-                    <span>{t('risks.high')} (10-14)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-400 rounded"></div>
-                    <span>{t('risks.high')} (15-19)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-600 rounded"></div>
-                    <span>{t('risks.critical')} (20-25)</span>
-                  </div>
-                </div>
-
-                {/* Selected Cell Risks */}
-                {selectedHeatMapCell && (
-                  <div className="mt-6 border-t border-gray-200 pt-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-md font-semibold text-gray-900">
-                        Risks in Cell: Likelihood {selectedHeatMapCell.likelihood} × Impact {selectedHeatMapCell.impact}
-                        <span className="ml-2 text-sm font-normal text-gray-500">
-                          ({selectedRisks.length} risk{selectedRisks.length !== 1 ? 's' : ''})
-                        </span>
-                      </h4>
-                      <button
-                        onClick={() => setSelectedHeatMapCell(null)}
-                        className="text-sm text-gray-600 hover:text-gray-900"
-                      >
-                        Clear Selection
-                      </button>
-                    </div>
-                    {selectedRisks.length > 0 ? (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {selectedRisks.map(risk => (
-                          <div
-                            key={risk.id}
-                            onClick={() => handleOpenRemediation(risk)}
-                            className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-brand-300 hover:bg-gray-100 cursor-pointer transition-colors"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{risk.title || risk.description}</p>
-                                <p className="text-xs text-gray-500 mt-1">{risk.category} • {risk.status}</p>
-                              </div>
-                              <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                                risk.severity === 'High' ? 'bg-red-100 text-red-800' : 
-                                risk.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {risk.severity}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-gray-400">
-                        <p>No risks in this cell</p>
-                        <p className="text-xs mt-1">Risks will appear here when they match this likelihood × impact combination</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Empty State */}
-                {risks.length === 0 && (
-                  <div className="text-center py-12 text-gray-400">
-                    <Grid3x3 size={48} className="mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">{t('common.noResults')}</p>
-                    <p className="text-sm mt-2">{t('risks.createRisk')}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
       {/* Table implementation */}
-      {viewMode === 'table' && (
+      {(
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">

@@ -251,12 +251,18 @@ export default function IssueManagement() {
     }
     setIsSaving(true);
     try {
+      const { assignedToId, ...createPayload } = issueForm;
       await api.enterprise.issues.create({
-        organizationId: user?.organizationId,
-        ...issueForm,
+        ...createPayload,
         dueDate: issueForm.dueDate ? new Date(issueForm.dueDate) : undefined,
         slaTarget: issueForm.slaTarget ? new Date(issueForm.slaTarget) : undefined,
       });
+      // Assign separately if an assignee was selected
+      if (assignedToId) {
+        const created = await api.enterprise.issues.list();
+        const newest = created[0];
+        if (newest) await api.enterprise.issues.assign(newest.id, assignedToId);
+      }
       await Promise.all([loadIssues(), loadDashboard()]);
       setViewMode('list');
       resetForm();
@@ -272,8 +278,9 @@ export default function IssueManagement() {
     if (!selectedIssue) return;
     setIsSaving(true);
     try {
+      const { assignedToId: _assignee, ...updatePayload } = issueForm;
       await api.enterprise.issues.update(selectedIssue.id, {
-        ...issueForm,
+        ...updatePayload,
         dueDate: issueForm.dueDate ? new Date(issueForm.dueDate) : undefined,
         slaTarget: issueForm.slaTarget ? new Date(issueForm.slaTarget) : undefined,
       });

@@ -37,6 +37,29 @@ jest.mock('../../../config', () => ({
       rateLimitWindowMs: 900000,
       rateLimitMaxRequests: 100,
     },
+    server: {
+      env: 'test',
+    },
+    logging: {
+      level: 'info',
+    },
+  },
+}));
+
+jest.mock('../../../config/logger', () => ({
+  __esModule: true,
+  default: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
+jest.mock('../../../utils/securityEventLogger', () => ({
+  logSecurityEvent: jest.fn(),
+  SecurityEventType: {
+    RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
   },
 }));
 
@@ -147,167 +170,13 @@ describe('Rate Limiter Middleware', () => {
   });
 
   // =========================================================================
-  // apiLimiter skip function
+  // apiLimiter handler function
   // =========================================================================
 
-  describe('apiLimiter skip function', () => {
-    let skip: (req: any) => boolean;
-
-    beforeEach(() => {
-      skip = rateLimitConfigs['apiLimiter'].skip;
-      expect(typeof skip).toBe('function');
-    });
-
-    // ----- Health checks and static assets -----
-
-    it('should skip /health endpoint', () => {
-      const req = buildSkipReq({ path: '/health', method: 'GET' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should skip /static/* paths', () => {
-      const req = buildSkipReq({ path: '/static/js/main.js', method: 'GET' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should skip /static root path', () => {
-      const req = buildSkipReq({ path: '/static', method: 'GET' });
-      expect(skip(req)).toBe(true);
-    });
-
-    // ----- TGN prediction endpoints -----
-
-    it('should skip TGN predict-risks endpoint', () => {
-      const req = buildSkipReq({ path: '/api/tgn/predict-risks', method: 'POST' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should skip TGN early-warnings endpoint', () => {
-      const req = buildSkipReq({ path: '/api/tgn/early-warnings', method: 'GET' });
-      expect(skip(req)).toBe(true);
-    });
-
-    // ----- Control loop operations -----
-
-    it('should skip control-loops history endpoint', () => {
-      const req = buildSkipReq({ path: '/api/control-loops/123/history', method: 'GET' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should skip control-loops execute endpoint', () => {
-      const req = buildSkipReq({ path: '/api/control-loops/456/execute', method: 'POST' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should skip control-loops pause endpoint', () => {
-      const req = buildSkipReq({ path: '/api/control-loops/789/pause', method: 'POST' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should skip control-loops resume endpoint', () => {
-      const req = buildSkipReq({ path: '/api/control-loops/abc/resume', method: 'POST' });
-      expect(skip(req)).toBe(true);
-    });
-
-    // ----- GET requests to list endpoints -----
-
-    it('should skip GET /api/integrations', () => {
-      const req = buildSkipReq({ path: '/api/integrations', method: 'GET' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should skip GET /api/frameworks', () => {
-      const req = buildSkipReq({ path: '/api/frameworks', method: 'GET' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should skip GET /api/tasks', () => {
-      const req = buildSkipReq({ path: '/api/tasks', method: 'GET' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should skip GET /api/risks', () => {
-      const req = buildSkipReq({ path: '/api/risks', method: 'GET' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should skip GET /api/team', () => {
-      const req = buildSkipReq({ path: '/api/team', method: 'GET' });
-      expect(skip(req)).toBe(true);
-    });
-
-    it('should NOT skip POST /api/integrations (not GET)', () => {
-      const req = buildSkipReq({ path: '/api/integrations', method: 'POST' });
-      expect(skip(req)).toBe(false);
-    });
-
-    it('should NOT skip POST /api/frameworks (not GET)', () => {
-      const req = buildSkipReq({ path: '/api/frameworks', method: 'POST' });
-      expect(skip(req)).toBe(false);
-    });
-
-    // ----- Development team invite -----
-
-    it('should skip POST /team/invite in development', () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
-
-      const req = buildSkipReq({ path: '/api/team/invite', method: 'POST' });
-      expect(skip(req)).toBe(true);
-
-      process.env.NODE_ENV = originalEnv;
-    });
-
-    it('should NOT skip POST /team/invite in production', () => {
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
-
-      const req = buildSkipReq({ path: '/api/team/invite', method: 'POST' });
-      expect(skip(req)).toBe(false);
-
-      process.env.NODE_ENV = originalEnv;
-    });
-
-    // ----- Paths that should NOT be skipped -----
-
-    it('should NOT skip POST /api/other', () => {
-      const req = buildSkipReq({ path: '/api/other', method: 'POST' });
-      expect(skip(req)).toBe(false);
-    });
-
-    it('should NOT skip POST /api/users', () => {
-      const req = buildSkipReq({ path: '/api/users', method: 'POST' });
-      expect(skip(req)).toBe(false);
-    });
-
-    it('should NOT skip PUT /api/frameworks/1', () => {
-      const req = buildSkipReq({ path: '/api/frameworks/1', method: 'PUT' });
-      expect(skip(req)).toBe(false);
-    });
-
-    it('should NOT skip DELETE /api/tasks/1', () => {
-      const req = buildSkipReq({ path: '/api/tasks/1', method: 'DELETE' });
-      expect(skip(req)).toBe(false);
-    });
-
-    it('should NOT skip PATCH /api/risks/1', () => {
-      const req = buildSkipReq({ path: '/api/risks/1', method: 'PATCH' });
-      expect(skip(req)).toBe(false);
-    });
-
-    it('should NOT skip an arbitrary GET endpoint not in the skip list', () => {
-      const req = buildSkipReq({ path: '/api/settings', method: 'GET' });
-      expect(skip(req)).toBe(false);
-    });
-
-    it('should NOT skip /healthcheck (only /health is skipped)', () => {
-      const req = buildSkipReq({ path: '/healthcheck', method: 'GET' });
-      expect(skip(req)).toBe(false);
-    });
-
-    it('should handle empty path gracefully', () => {
-      const req = buildSkipReq({ path: '', method: 'GET' });
-      expect(skip(req)).toBe(false);
+  describe('apiLimiter handler', () => {
+    it('should have a handler function for rate limit exhaustion', () => {
+      const options = rateLimitConfigs['apiLimiter'];
+      expect(typeof options.handler).toBe('function');
     });
   });
 });

@@ -113,13 +113,13 @@ describe('RiskManagement', () => {
   it('shows loading state initially', () => {
     risksList.mockReturnValue(new Promise(() => {}));
     render(<RiskManagement onBack={mockOnBack} />);
-    expect(screen.getByText(/Loading risks data/)).toBeInTheDocument();
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('renders title and subtitle after loading', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Risk Management')).toBeInTheDocument());
-    expect(screen.getByText(/Monitor threats, assign tasks/)).toBeInTheDocument();
+    expect(screen.getByText('Risk Indicators')).toBeInTheDocument();
   });
 
   it('calls onBack when back button is clicked', async () => {
@@ -171,71 +171,15 @@ describe('RiskManagement', () => {
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
   });
 
-  it('sorts by AI Score column header click', async () => {
+  it('sorts by Risk Score column header click', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('AI SCORE')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('AI SCORE'));
+    await waitFor(() => expect(screen.getByText('RISK SCORE')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('RISK SCORE'));
     // Sorting triggers useEffect reload; wait for table to reappear
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
   });
 
-  // ---------------------------------------------------------------------------
-  // Heat Map View
-  // ---------------------------------------------------------------------------
-  it('toggles to heat map view', async () => {
-    render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Heat Map')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Heat Map'));
-    await waitFor(() => expect(screen.getByText('Risk Heat Map')).toBeInTheDocument());
-    expect(screen.getByText('Low Risk (1-5)')).toBeInTheDocument();
-    expect(screen.getByText('Critical Risk (20-25)')).toBeInTheDocument();
-  });
-
-  it('selects a heat map cell and shows risks', async () => {
-    render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Heat Map')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Heat Map'));
-    await waitFor(() => expect(screen.getByText('Risk Heat Map')).toBeInTheDocument());
-    // Click on cell (4,5) which should contain r1 (likelihood=4, impact=5)
-    const cell = screen.getByTitle('Likelihood: 4, Impact: 5, Risks: 1');
-    fireEvent.click(cell);
-    await waitFor(() => expect(screen.getByText(/Risks in Cell: Likelihood 4/)).toBeInTheDocument());
-    expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument();
-  });
-
-  it('deselects heat map cell on second click', async () => {
-    render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Heat Map')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Heat Map'));
-    await waitFor(() => expect(screen.getByText('Risk Heat Map')).toBeInTheDocument());
-    const cell = screen.getByTitle('Likelihood: 4, Impact: 5, Risks: 1');
-    fireEvent.click(cell);
-    await waitFor(() => expect(screen.getByText('Clear Selection')).toBeInTheDocument());
-    fireEvent.click(cell); // Deselect
-    await waitFor(() => expect(screen.queryByText('Clear Selection')).not.toBeInTheDocument());
-  });
-
-  it('clears heat map selection via Clear Selection button', async () => {
-    render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Heat Map')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Heat Map'));
-    await waitFor(() => expect(screen.getByText('Risk Heat Map')).toBeInTheDocument());
-    const cell = screen.getByTitle('Likelihood: 4, Impact: 5, Risks: 1');
-    fireEvent.click(cell);
-    await waitFor(() => expect(screen.getByText('Clear Selection')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Clear Selection'));
-    await waitFor(() => expect(screen.queryByText('Clear Selection')).not.toBeInTheDocument());
-  });
-
-  it('shows empty state in heat map cell with no risks', async () => {
-    render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Heat Map')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Heat Map'));
-    await waitFor(() => expect(screen.getByText('Risk Heat Map')).toBeInTheDocument());
-    const emptyCell = screen.getByTitle('Likelihood: 1, Impact: 1, Risks: 0');
-    fireEvent.click(emptyCell);
-    await waitFor(() => expect(screen.getByText('No risks in this cell')).toBeInTheDocument());
-  });
+  // Heat Map view was removed from the component; tests for it are no longer applicable.
 
   // ---------------------------------------------------------------------------
   // Remediation Modal
@@ -243,17 +187,17 @@ describe('RiskManagement', () => {
   it('opens remediation modal on Manage click', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[0]);
-    await waitFor(() => expect(screen.getByText('Remediation & Task')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Treatment Plan')).toBeInTheDocument());
     expect(screen.getByText('Target Risk')).toBeInTheDocument();
-    expect(screen.getByText('Technical Remediation Plan')).toBeInTheDocument();
+    expect(screen.getByText('Mitigation Plan')).toBeInTheDocument();
   });
 
   it('shows existing remediation plan when risk has one', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[0]);
     await waitFor(() => expect(screen.getByDisplayValue('Enable SSE-S3 encryption')).toBeInTheDocument());
   });
@@ -261,7 +205,7 @@ describe('RiskManagement', () => {
   it('generates remediation via API when risk has no plan', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Training Gap')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[1]); // r2 = Training Gap (no mitigation plan)
     await waitFor(() => expect(risksGenerateRemediation).toHaveBeenCalledWith('r2'));
   });
@@ -269,9 +213,9 @@ describe('RiskManagement', () => {
   it('changes status in remediation modal', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[0]);
-    await waitFor(() => expect(screen.getByText('Remediation & Task')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Treatment Plan')).toBeInTheDocument());
     const statusSelect = screen.getByDisplayValue('Open');
     fireEvent.change(statusSelect, { target: { value: 'In Progress' } });
     expect(statusSelect).toHaveValue('In Progress');
@@ -280,9 +224,9 @@ describe('RiskManagement', () => {
   it('changes assignee in remediation modal', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[0]);
-    await waitFor(() => expect(screen.getByText('Remediation & Task')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Treatment Plan')).toBeInTheDocument());
     const assigneeSelect = screen.getByDisplayValue('Sarah');
     fireEvent.change(assigneeSelect, { target: { value: 'u2' } });
     expect(assigneeSelect).toHaveValue('u2');
@@ -291,40 +235,40 @@ describe('RiskManagement', () => {
   it('saves changes in remediation modal', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[0]);
-    await waitFor(() => expect(screen.getByText('Save Changes')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Save Changes'));
+    await waitFor(() => expect(screen.getByText('Save')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(risksUpdate).toHaveBeenCalledWith('r1', expect.any(Object)));
   });
 
   it('closes remediation modal on Cancel', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[0]);
-    await waitFor(() => expect(screen.getByText('Remediation & Task')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Treatment Plan')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Cancel'));
-    await waitFor(() => expect(screen.queryByText('Remediation & Task')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Treatment Plan')).not.toBeInTheDocument());
   });
 
   it('closes remediation modal on X button', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[0]);
-    await waitFor(() => expect(screen.getByText('Remediation & Task')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Treatment Plan')).toBeInTheDocument());
     // The X button is at the header right side
-    const headerDiv = screen.getByText('Remediation & Task').closest('div');
+    const headerDiv = screen.getByText('Treatment Plan').closest('div');
     const xButton = headerDiv?.parentElement?.querySelector('button:last-child');
     fireEvent.click(xButton!);
-    await waitFor(() => expect(screen.queryByText('Remediation & Task')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Treatment Plan')).not.toBeInTheDocument());
   });
 
   it('shows AI priority score in remediation modal', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[0]);
     await waitFor(() => expect(screen.getByText('AI Priority: 95')).toBeInTheDocument());
     expect(screen.getByText(/Critical data exposure risk/)).toBeInTheDocument();
@@ -333,7 +277,7 @@ describe('RiskManagement', () => {
   it('shows overdue indication for past-due target date', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[0]);
     // "Due Date: " (with colon) is more specific than /Due Date/ which also matches label "Update Remediation Due Date"
     await waitFor(() => expect(screen.getByText('Due Date:')).toBeInTheDocument());
@@ -345,51 +289,53 @@ describe('RiskManagement', () => {
   // ---------------------------------------------------------------------------
   it('opens add risk modal', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Add Risk')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Add Risk'));
-    await waitFor(() => expect(screen.getByText('Create New Risk')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('Create Risk')[0]).toBeInTheDocument());
+    fireEvent.click(screen.getAllByText('Create Risk')[0]);
+    await waitFor(() => expect(screen.getAllByText('Create Risk').length).toBeGreaterThanOrEqual(2));
     expect(screen.getByText('Description *')).toBeInTheDocument();
-    expect(screen.getByText('Category *')).toBeInTheDocument();
+    expect(screen.getByText('Risk Category *')).toBeInTheDocument();
   });
 
   it('submits add risk form', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Add Risk')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Add Risk'));
-    await waitFor(() => expect(screen.getByText('Create New Risk')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('Create Risk')[0]).toBeInTheDocument());
+    fireEvent.click(screen.getAllByText('Create Risk')[0]);
+    await waitFor(() => expect(screen.getAllByText('Create Risk').length).toBeGreaterThanOrEqual(2));
     fireEvent.change(screen.getByPlaceholderText('Describe the risk...'), { target: { value: 'New critical risk' } });
-    fireEvent.change(screen.getByPlaceholderText(/Infrastructure, Personnel/), { target: { value: 'Network' } });
-    fireEvent.click(screen.getByText('Create Risk'));
+    fireEvent.change(screen.getByPlaceholderText(/Infrastructure, Personnel, Data Breach/), { target: { value: 'Network' } });
+    const createButtons = screen.getAllByText('Create Risk');
+    fireEvent.click(createButtons[createButtons.length - 1]); // Submit button is the last one
     await waitFor(() => expect(risksCreate).toHaveBeenCalled());
   });
 
   it('shows validation alert when description missing', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Add Risk')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Add Risk'));
-    await waitFor(() => expect(screen.getByText('Create New Risk')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('Create Risk')[0]).toBeInTheDocument());
+    fireEvent.click(screen.getAllByText('Create Risk')[0]);
+    await waitFor(() => expect(screen.getAllByText('Create Risk').length).toBeGreaterThanOrEqual(2));
     // Submit without filling description
-    fireEvent.change(screen.getByPlaceholderText(/Infrastructure, Personnel/), { target: { value: 'Net' } });
-    const form = screen.getByText('Create Risk').closest('form');
+    fireEvent.change(screen.getByPlaceholderText(/Infrastructure, Personnel, Data Breach/), { target: { value: 'Net' } });
+    const allCreateBtns = screen.getAllByText('Create Risk');
+    const form = allCreateBtns[allCreateBtns.length - 1].closest('form');
     fireEvent.submit(form!);
     // HTML5 required attribute should prevent submission; but if bypassed, alert is shown
   });
 
   it('closes add risk modal on cancel', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Add Risk')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Add Risk'));
-    await waitFor(() => expect(screen.getByText('Create New Risk')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('Create Risk')[0]).toBeInTheDocument());
+    fireEvent.click(screen.getAllByText('Create Risk')[0]);
+    await waitFor(() => expect(screen.getAllByText('Create Risk').length).toBeGreaterThanOrEqual(2));
     const cancelBtns = screen.getAllByText('Cancel');
     const modalCancel = cancelBtns[cancelBtns.length - 1];
     fireEvent.click(modalCancel);
-    await waitFor(() => expect(screen.queryByText('Create New Risk')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('Create Risk').length).toBe(1)); // Only the header button remains
   });
 
   it('shows risk score calculation in add risk form', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Add Risk')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Add Risk'));
+    await waitFor(() => expect(screen.getAllByText('Create Risk')[0]).toBeInTheDocument());
+    fireEvent.click(screen.getAllByText('Create Risk')[0]);
     await waitFor(() => expect(screen.getByText(/Risk Score:/)).toBeInTheDocument());
     // Default is 3 x 3 = 9; use getAllByText because '9' may appear in both the form and the table
     const nines = screen.getAllByText('9');
@@ -398,8 +344,8 @@ describe('RiskManagement', () => {
 
   it('updates likelihood and impact sliders', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Add Risk')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Add Risk'));
+    await waitFor(() => expect(screen.getAllByText('Create Risk')[0]).toBeInTheDocument());
+    fireEvent.click(screen.getAllByText('Create Risk')[0]);
     await waitFor(() => expect(screen.getByText(/Likelihood/)).toBeInTheDocument());
     // Both likelihood and impact inputs default to 3; pick the first (likelihood)
     const inputs = screen.getAllByDisplayValue('3');
@@ -433,21 +379,7 @@ describe('RiskManagement', () => {
     expect(risksScan).toHaveBeenCalled();
   });
 
-  // ---------------------------------------------------------------------------
-  // Remediation from heatmap
-  // ---------------------------------------------------------------------------
-  it('opens remediation from heat map cell risk click', async () => {
-    render(<RiskManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Heat Map')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Heat Map'));
-    await waitFor(() => expect(screen.getByText('Risk Heat Map')).toBeInTheDocument());
-    const cell = screen.getByTitle('Likelihood: 4, Impact: 5, Risks: 1');
-    fireEvent.click(cell);
-    await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    // Click the risk to open remediation
-    fireEvent.click(screen.getByText('Unencrypted S3 Bucket'));
-    await waitFor(() => expect(screen.getByText('Remediation & Task')).toBeInTheDocument());
-  });
+  // Heat map remediation test removed — no heat map view in current component.
 
   // ---------------------------------------------------------------------------
   // Editable remediation plan textarea
@@ -455,7 +387,7 @@ describe('RiskManagement', () => {
   it('allows editing the remediation plan text', async () => {
     render(<RiskManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Unencrypted S3 Bucket')).toBeInTheDocument());
-    const manageButtons = screen.getAllByText('Manage');
+    const manageButtons = screen.getAllByText('Edit');
     fireEvent.click(manageButtons[0]);
     await waitFor(() => expect(screen.getByDisplayValue('Enable SSE-S3 encryption')).toBeInTheDocument());
     fireEvent.change(screen.getByDisplayValue('Enable SSE-S3 encryption'), { target: { value: 'Updated plan' } });

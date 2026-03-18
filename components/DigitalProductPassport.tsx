@@ -1354,3 +1354,5 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
     </div>
   );
 };
+
+export default DigitalProductPassport;

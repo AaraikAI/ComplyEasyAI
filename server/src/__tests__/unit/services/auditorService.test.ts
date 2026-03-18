@@ -283,8 +283,8 @@ describe('AuditorService', () => {
           id: 'auditor-1',
           specializations: ['HIPAA'], // No match
           certification: ['PCI'],    // No match
-          rating: 5.0,
-          completedAudits: 50,
+          rating: 0,
+          completedAudits: 0,
         }),
       ];
 

@@ -41,7 +41,20 @@ async function analyzeFrameworkGaps(
   frameworkId: string,
   orgId: string
 ): Promise<{ framework: any; controls: any[]; gaps: GapItem[]; scores: { total: number; withEvidence: number; withCurrentEvidence: number; implemented: number } }> {
-  const framework = await prisma.complianceFramework.findFirst({
+  // Try matching by UUID id first, then fall back to name-based lookup
+  // (frontend may send short keys like 'soc2' instead of actual UUIDs)
+  const FRAMEWORK_NAME_MAP: Record<string, string> = {
+    soc2: 'SOC 2',
+    iso27001: 'ISO 27001',
+    gdpr: 'GDPR',
+    hipaa: 'HIPAA',
+    pci: 'PCI DSS',
+    nist: 'NIST',
+    ccpa: 'CCPA',
+    dora: 'DORA',
+  };
+
+  let framework = await prisma.complianceFramework.findFirst({
     where: { id: frameworkId, organizationId: orgId },
     include: {
       controls: {
@@ -54,6 +67,27 @@ async function analyzeFrameworkGaps(
       },
     },
   });
+
+  // Fallback: look up by name prefix if the id didn't match (short key sent by frontend)
+  if (!framework) {
+    const namePrefix = FRAMEWORK_NAME_MAP[frameworkId.toLowerCase()] || frameworkId;
+    framework = await prisma.complianceFramework.findFirst({
+      where: {
+        organizationId: orgId,
+        name: { startsWith: namePrefix, mode: 'insensitive' },
+      },
+      include: {
+        controls: {
+          include: {
+            evidenceVersions: {
+              orderBy: { uploadedAt: 'desc' },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+  }
 
   if (!framework) {
     throw new Error('FRAMEWORK_NOT_FOUND');
@@ -150,6 +184,103 @@ async function analyzeFrameworkGaps(
     },
   };
 }
+
+// ============================================================================
+// POST /analyze — Full readiness analysis for a framework
+// ============================================================================
+
+router.post(
+  '/analyze',
+  asyncHandler(async (req: Request, res: Response) => {
+    const orgId = (req as any).user.organizationId;
+    const frameworkId = req.body.framework as string;
+
+    if (!frameworkId) {
+      res.status(400).json({ error: 'framework is required' });
+      return;
+    }
+
+    try {
+      const { framework, controls, gaps, scores } = await analyzeFrameworkGaps(frameworkId, orgId);
+
+      const totalControls = scores.total;
+      const evidenceCoverage = totalControls > 0 ? (scores.withEvidence / totalControls) * 100 : 0;
+      const evidenceFreshness = scores.withEvidence > 0 ? (scores.withCurrentEvidence / scores.withEvidence) * 100 : 0;
+      const implementationRate = totalControls > 0 ? (scores.implemented / totalControls) * 100 : 0;
+      const readinessScore = Math.min(100, Math.round(implementationRate * 0.5 + evidenceCoverage * 0.3 + evidenceFreshness * 0.2));
+
+      // Group gaps by category/domain
+      const domainMap: Record<string, { controls: number; gaps: number; implemented: number }> = {};
+      for (const control of controls) {
+        const domain = control.category || 'General';
+        if (!domainMap[domain]) domainMap[domain] = { controls: 0, gaps: 0, implemented: 0 };
+        domainMap[domain].controls++;
+        if (control.status === 'Implemented' || control.status === 'Compliant') {
+          domainMap[domain].implemented++;
+        }
+      }
+      for (const gap of gaps) {
+        const domain = gap.category || 'General';
+        if (domainMap[domain]) domainMap[domain].gaps++;
+      }
+
+      const domains = Object.entries(domainMap).map(([name, data]) => ({
+        name,
+        totalControls: data.controls,
+        passingControls: data.implemented,
+        gapsCount: data.gaps,
+        score: data.controls > 0 ? Math.round((data.implemented / data.controls) * 100) : 0,
+      }));
+
+      const highGaps = gaps.filter(g => g.severity === 'high').length;
+      const estimatedDays = highGaps * 7 + gaps.filter(g => g.severity === 'medium').length * 4 + gaps.filter(g => g.severity === 'low').length * 2;
+
+      // Count evidence
+      let evidenceCount = 0;
+      let staleEvidenceCount = 0;
+      const staleThreshold = new Date();
+      staleThreshold.setDate(staleThreshold.getDate() - EVIDENCE_STALE_DAYS);
+      for (const control of controls) {
+        if ((control as any).evidenceVersions?.length > 0 || control.evidence) {
+          evidenceCount++;
+          const latest = (control as any).evidenceVersions?.[0];
+          if (latest && new Date(latest.uploadedAt) < staleThreshold) {
+            staleEvidenceCount++;
+          }
+        }
+      }
+
+      res.json({
+        status: 'success',
+        data: {
+          overallScore: readinessScore,
+          frameworkName: framework.name,
+          frameworkId: framework.id,
+          domains,
+          totalControls,
+          passingControls: scores.implemented,
+          gapsCount: gaps.length,
+          evidenceCount,
+          staleEvidenceCount,
+          estimatedDaysToReady: estimatedDays,
+          lastAnalyzedAt: new Date().toISOString(),
+          breakdown: {
+            evidenceCoverage: Math.round(evidenceCoverage * 100) / 100,
+            evidenceFreshness: Math.round(evidenceFreshness * 100) / 100,
+            implementationRate: Math.round(implementationRate * 100) / 100,
+          },
+        },
+      });
+    } catch (error: any) {
+      if (error.message === 'FRAMEWORK_NOT_FOUND') {
+        res.status(404).json({ error: 'Framework not found' });
+        return;
+      }
+      logger.error('Error running audit analysis:', error);
+      res.status(500).json({ error: 'Failed to run audit analysis' });
+    }
+  })
+);
 
 // ============================================================================
 // AUDIT READINESS SCORE
@@ -582,6 +713,119 @@ router.get(
       }
       logger.error('Error calculating remediation timeline:', error);
       res.status(500).json({ error: 'Failed to calculate remediation timeline' });
+    }
+  })
+);
+
+// ============================================================================
+// POST /executive-summary — Generate executive summary for audit
+// ============================================================================
+
+router.post(
+  '/executive-summary',
+  asyncHandler(async (req: Request, res: Response) => {
+    const orgId = (req as any).user.organizationId;
+    const frameworkId = req.body.framework as string;
+
+    if (!frameworkId) {
+      res.status(400).json({ error: 'framework is required' });
+      return;
+    }
+
+    try {
+      const { framework, gaps, scores } = await analyzeFrameworkGaps(frameworkId, orgId);
+      const totalControls = scores.total;
+      const implementationRate = totalControls > 0 ? Math.round((scores.implemented / totalControls) * 100) : 0;
+      const evidenceCoverage = totalControls > 0 ? Math.round((scores.withEvidence / totalControls) * 100) : 0;
+      const highGaps = gaps.filter(g => g.severity === 'high').length;
+      const mediumGaps = gaps.filter(g => g.severity === 'medium').length;
+
+      res.json({
+        status: 'success',
+        data: {
+          frameworkName: framework.name,
+          frameworkId: framework.id,
+          overallReadiness: Math.min(100, Math.round(implementationRate * 0.5 + evidenceCoverage * 0.3 + (scores.withCurrentEvidence / Math.max(scores.withEvidence, 1)) * 100 * 0.2)),
+          summary: `${framework.name} audit readiness assessment: ${scores.implemented} of ${totalControls} controls implemented (${implementationRate}%). ${highGaps} high-severity and ${mediumGaps} medium-severity gaps identified. Evidence coverage is at ${evidenceCoverage}%.`,
+          recommendations: [
+            highGaps > 0 ? `Address ${highGaps} high-severity gaps including missing implementations and evidence` : null,
+            mediumGaps > 0 ? `Refresh ${mediumGaps} stale evidence items within ${EVIDENCE_STALE_DAYS} days` : null,
+            implementationRate < 80 ? 'Accelerate control implementation to reach 80%+ coverage' : null,
+            'Schedule periodic evidence review cycles to maintain freshness',
+          ].filter(Boolean),
+          generatedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error: any) {
+      if (error.message === 'FRAMEWORK_NOT_FOUND') {
+        res.status(404).json({ error: 'Framework not found' });
+        return;
+      }
+      logger.error('Error generating executive summary:', error);
+      res.status(500).json({ error: 'Failed to generate executive summary' });
+    }
+  })
+);
+
+// ============================================================================
+// POST /export-evidence — Export evidence package data
+// ============================================================================
+
+router.post(
+  '/export-evidence',
+  asyncHandler(async (req: Request, res: Response) => {
+    const orgId = (req as any).user.organizationId;
+    const frameworkId = req.body.framework as string;
+    const evidenceIds = req.body.evidenceIds as string[] | undefined;
+
+    if (!frameworkId) {
+      res.status(400).json({ error: 'framework is required' });
+      return;
+    }
+
+    try {
+      const framework = await prisma.complianceFramework.findFirst({
+        where: { id: frameworkId, organizationId: orgId },
+        include: {
+          controls: {
+            include: {
+              evidenceVersions: {
+                orderBy: { uploadedAt: 'desc' },
+              },
+            },
+          },
+        },
+      });
+
+      if (!framework) {
+        res.status(404).json({ error: 'Framework not found' });
+        return;
+      }
+
+      const evidencePackage = framework.controls
+        .flatMap(c => c.evidenceVersions.map(ev => ({
+          controlId: c.id,
+          controlName: c.name,
+          fileName: ev.fileName,
+          fileUrl: ev.fileUrl,
+          uploadedAt: ev.uploadedAt,
+          versionNumber: ev.versionNumber,
+          isCurrent: ev.isCurrent,
+        })))
+        .filter(ev => !evidenceIds || evidenceIds.length === 0 || evidenceIds.includes(ev.controlId));
+
+      res.json({
+        status: 'success',
+        data: {
+          frameworkName: framework.name,
+          totalItems: evidencePackage.length,
+          items: evidencePackage,
+          exportedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      logger.error('Error exporting evidence:', error);
+      res.status(500).json({ error: 'Failed to export evidence' });
     }
   })
 );

@@ -725,7 +725,7 @@ describe('DORAService', () => {
         const result = await doraService.assessConcentrationRisk('org-123');
 
         expect(result.overallConcentrationRisk).toBe('low');
-        expect(result.recommendations).toContain(
+        expect(result.recommendations).toContainEqual(
           expect.stringContaining('No active ICT third-party providers')
         );
       });
@@ -1016,7 +1016,7 @@ describe('DORAService', () => {
 
         const result = await doraService.calculateDORAComplianceScore('org-123');
 
-        expect(result.pillarScores.resilienceTesting.details).toContain(
+        expect(result.pillarScores.resilienceTesting.details).toContainEqual(
           expect.stringContaining('No completed TLPT found')
         );
       });
@@ -1036,7 +1036,7 @@ describe('DORAService', () => {
 
         const result = await doraService.calculateDORAComplianceScore('org-123');
 
-        expect(result.pillarScores.incidentManagement.details).toContain(
+        expect(result.pillarScores.incidentManagement.details).toContainEqual(
           expect.stringContaining('not reported to authority')
         );
       });
@@ -1052,7 +1052,7 @@ describe('DORAService', () => {
 
         const result = await doraService.calculateDORAComplianceScore('org-123');
 
-        expect(result.pillarScores.thirdPartyRisk.details).toContain(
+        expect(result.pillarScores.thirdPartyRisk.details).toContainEqual(
           expect.stringContaining('lack exit strategies')
         );
       });

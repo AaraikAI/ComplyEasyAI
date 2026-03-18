@@ -7,60 +7,41 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { prismaMock } from '../../../mocks/prisma';
 import { EventEmitter } from 'events';
 
-// Mock Socket.io
-class MockSocket extends EventEmitter {
-  id = 'socket-123';
-  handshake = {
-    auth: { token: 'test-token', sessionId: 'session-123' },
-    query: { userId: 'user-123', organizationId: 'org-123' },
-  };
-  rooms = new Set<string>();
-  data: Record<string, any> = {};
-
-  join = jest.fn((room: string) => {
-    this.rooms.add(room);
-    return Promise.resolve();
-  });
-  leave = jest.fn((room: string) => {
-    this.rooms.delete(room);
-    return Promise.resolve();
-  });
-  to = jest.fn().mockReturnThis();
-  emit = jest.fn();
-  broadcast = {
-    to: jest.fn().mockReturnThis(),
-    emit: jest.fn(),
-  };
-  disconnect = jest.fn();
-}
-
-class MockServer extends EventEmitter {
-  sockets = {
-    sockets: new Map<string, MockSocket>(),
-    adapter: {
-      rooms: new Map<string, Set<string>>(),
-    },
-  };
-  to = jest.fn().mockReturnThis();
-  in = jest.fn().mockReturnThis();
-  emit = jest.fn();
+// Mock Socket.io namespace
+class MockNamespace extends EventEmitter {
   use = jest.fn();
-  on = jest.fn().mockImplementation((event: string, handler: (socket: MockSocket) => void) => {
+  on = jest.fn().mockImplementation((event: string, handler: (...args: any[]) => void) => {
     if (event === 'connection') {
-      // Store handler for testing
       (this as any).connectionHandler = handler;
     }
+    return this;
   });
+  emit = jest.fn();
+  to = jest.fn().mockReturnThis();
+  in = jest.fn().mockReturnThis();
+  disconnectSockets = jest.fn();
+  volatile = { to: jest.fn().mockReturnThis(), emit: jest.fn() };
+  except = jest.fn().mockReturnThis();
+}
+
+// Mock Socket.io server
+class MockServer {
+  private mockNamespace = new MockNamespace();
+  of = jest.fn().mockImplementation(() => this.mockNamespace);
   close = jest.fn();
 }
 
-const mockSocketIOServer = new MockServer();
+let mockServerInstance: MockServer;
+let mockNamespaceInstance: MockNamespace;
 
 jest.mock('socket.io', () => ({
-  Server: jest.fn().mockImplementation(() => mockSocketIOServer),
+  Server: jest.fn().mockImplementation(() => {
+    mockServerInstance = new MockServer();
+    mockNamespaceInstance = (mockServerInstance as any).mockNamespace;
+    return mockServerInstance;
+  }),
 }));
 
 // Mock HTTP server
@@ -69,44 +50,19 @@ const mockHttpServer = {
   close: jest.fn(),
 };
 
-// Extend prismaMock for WebRTC-specific models
-const webrtcPrismaMock = {
-  ...prismaMock,
-  vrSession: {
-    findUnique: jest.fn().mockResolvedValue({
-      id: 'session-123',
-      name: 'Test VR Session',
-      organizationId: 'org-123',
-      createdBy: 'user-123',
-      status: 'active',
-      maxParticipants: 10,
-      settings: JSON.stringify({ topology: 'mesh', recordingEnabled: true }),
-    }) as jest.Mock<any>,
-    findMany: jest.fn().mockResolvedValue([]) as jest.Mock<any>,
-    create: jest.fn() as jest.Mock<any>,
-    update: jest.fn() as jest.Mock<any>,
-    delete: jest.fn() as jest.Mock<any>,
+jest.mock('../../../../config', () => ({
+  __esModule: true,
+  default: {
+    security: {
+      corsOrigin: '*',
+      jwtSecret: 'test-secret',
+    },
   },
-  vrSessionParticipant: {
-    findMany: jest.fn().mockResolvedValue([
-      { id: 'part-1', sessionId: 'session-123', oderId: 'user-123', socketId: 'socket-123', joinedAt: new Date() },
-    ]) as jest.Mock<any>,
-    create: jest.fn() as jest.Mock<any>,
-    update: jest.fn() as jest.Mock<any>,
-    delete: jest.fn() as jest.Mock<any>,
-    deleteMany: jest.fn() as jest.Mock<any>,
-  },
-  iceServer: {
-    findMany: jest.fn().mockResolvedValue([
-      { url: 'stun:stun.example.com:19302', username: null, credential: null },
-      { url: 'turn:turn.example.com:3478', username: 'user', credential: 'pass' },
-    ]) as jest.Mock<any>,
-  },
-};
+}));
 
 jest.mock('../../../../config/database', () => ({
   __esModule: true,
-  default: webrtcPrismaMock,
+  default: {},
 }));
 
 jest.mock('../../../../config/logger', () => ({
@@ -132,371 +88,280 @@ import webrtcSignalingService from '../../../../services/advanced/webrtcSignalin
 
 describe('WebRTCSignalingService', () => {
   const orgId = 'org-123';
-  let mockSocket: MockSocket;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSocket = new MockSocket();
-    mockSocketIOServer.sockets.sockets.set('socket-123', mockSocket);
 
-    // Reset internal state
-    (webrtcSignalingService as any).isInitialized = false;
+    // Reset internal state of the singleton
+    (webrtcSignalingService as any).io = null;
+    (webrtcSignalingService as any).namespace = null;
     (webrtcSignalingService as any).sessions = new Map();
-    (webrtcSignalingService as any).socketToSession = new Map();
-    (webrtcSignalingService as any).peerConnections = new Map();
+    (webrtcSignalingService as any).peersBySocket = new Map();
+    (webrtcSignalingService as any).eventRateLimits = new Map();
+    (webrtcSignalingService as any).ipConnectionCounts = new Map();
+    (webrtcSignalingService as any).reconnectStates = new Map();
+    (webrtcSignalingService as any).qualityHistory = new Map();
+    (webrtcSignalingService as any).dtlsFingerprints = new Map();
+    (webrtcSignalingService as any).heartbeatTimer = null;
+    (webrtcSignalingService as any).qualityLogTimer = null;
+    (webrtcSignalingService as any).cleanupTimer = null;
+
+    // Re-establish socket.io mock
+    const { Server } = require('socket.io');
+    Server.mockImplementation(() => {
+      mockServerInstance = new MockServer();
+      mockNamespaceInstance = (mockServerInstance as any).mockNamespace;
+      return mockServerInstance;
+    });
+
+    // Re-establish JWT mock
+    const jwt = require('jsonwebtoken');
+    jwt.verify.mockReturnValue({ userId: 'user-123', organizationId: 'org-123' });
+    jwt.sign.mockReturnValue('signed-token');
   });
 
   // ===========================================================================
   // attachToServer
   // ===========================================================================
   describe('attachToServer', () => {
-    it('should attach to HTTP server', () => {
+    it('should attach to HTTP server and create Socket.IO server', () => {
       webrtcSignalingService.attachToServer(mockHttpServer as any);
 
       expect((webrtcSignalingService as any).io).toBeDefined();
+      expect((webrtcSignalingService as any).namespace).toBeDefined();
     });
 
-    it('should configure CORS options', () => {
-      const Server = require('socket.io').Server;
+    it('should create the /webrtc namespace', () => {
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
 
-      webrtcSignalingService.attachToServer(mockHttpServer as any, {
-        cors: {
-          origin: 'https://example.com',
-          credentials: true,
-        },
-      });
-
-      expect(Server).toHaveBeenCalledWith(
-        mockHttpServer,
-        expect.objectContaining({
-          cors: expect.objectContaining({
-            origin: 'https://example.com',
-          }),
-        })
-      );
+      expect(mockServerInstance.of).toHaveBeenCalledWith('/webrtc');
     });
 
     it('should set up authentication middleware', () => {
       webrtcSignalingService.attachToServer(mockHttpServer as any);
 
-      expect(mockSocketIOServer.use).toHaveBeenCalled();
+      expect(mockNamespaceInstance.use).toHaveBeenCalled();
     });
 
-    it('should register connection handler', () => {
+    it('should register connection handler on namespace', () => {
       webrtcSignalingService.attachToServer(mockHttpServer as any);
 
-      expect(mockSocketIOServer.on).toHaveBeenCalledWith('connection', expect.any(Function));
+      expect(mockNamespaceInstance.on).toHaveBeenCalledWith('connection', expect.any(Function));
+    });
+
+    it('should skip duplicate initialization', () => {
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
+      const firstIo = (webrtcSignalingService as any).io;
+
+      // Second call should be a no-op
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
+
+      expect((webrtcSignalingService as any).io).toBe(firstIo);
     });
   });
 
   // ===========================================================================
-  // Session Management
+  // Session Management — createSession
   // ===========================================================================
   describe('createSession', () => {
-    beforeEach(() => {
-      (webrtcSignalingService as any).io = mockSocketIOServer;
-      (webrtcSignalingService as any).isInitialized = true;
-    });
-
-    it('should create a new session', async () => {
-      const session = await webrtcSignalingService.createSession({
-        name: 'Test Session',
+    it('should create a new session and return config', () => {
+      const config = webrtcSignalingService.createSession({
+        sessionId: 'session-123',
         organizationId: orgId,
-        createdBy: 'user-123',
-        maxParticipants: 10,
+        hostUserId: 'user-123',
+        maxPeers: 10,
       });
 
-      expect(session).toHaveProperty('id');
-      expect(session).toHaveProperty('name', 'Test Session');
+      expect(config).toHaveProperty('sessionId', 'session-123');
+      expect(config).toHaveProperty('iceServers');
     });
 
-    it('should persist session to database', async () => {
-      await webrtcSignalingService.createSession({
-        name: 'Test Session',
+    it('should store session in memory', () => {
+      webrtcSignalingService.createSession({
+        sessionId: 'session-123',
         organizationId: orgId,
-        createdBy: 'user-123',
+        hostUserId: 'user-123',
       });
 
-      expect(webrtcPrismaMock.vrSession.create).toHaveBeenCalled();
-    });
-
-    it('should store session in memory', async () => {
-      const session = await webrtcSignalingService.createSession({
-        name: 'Test Session',
-        organizationId: orgId,
-        createdBy: 'user-123',
-      });
-
-      const stored = (webrtcSignalingService as any).sessions.get(session.id);
+      const stored = (webrtcSignalingService as any).sessions.get('session-123');
       expect(stored).toBeDefined();
+      expect(stored.organizationId).toBe(orgId);
     });
 
-    it('should set default topology to mesh', async () => {
-      const session = await webrtcSignalingService.createSession({
-        name: 'Test Session',
+    it('should use mesh topology by default for small groups', () => {
+      webrtcSignalingService.createSession({
+        sessionId: 'session-123',
         organizationId: orgId,
-        createdBy: 'user-123',
+        hostUserId: 'user-123',
+        maxPeers: 4,
       });
 
-      expect(session.settings.topology).toBe('mesh');
+      const stored = (webrtcSignalingService as any).sessions.get('session-123');
+      expect(stored.topology).toBe('mesh');
     });
 
-    it('should support SFU topology', async () => {
-      const session = await webrtcSignalingService.createSession({
-        name: 'Test Session',
+    it('should use sfu topology for larger groups', () => {
+      webrtcSignalingService.createSession({
+        sessionId: 'session-123',
         organizationId: orgId,
-        createdBy: 'user-123',
-        settings: { topology: 'sfu' },
+        hostUserId: 'user-123',
+        maxPeers: 10,
       });
 
-      expect(session.settings.topology).toBe('sfu');
+      const stored = (webrtcSignalingService as any).sessions.get('session-123');
+      expect(stored.topology).toBe('sfu');
+    });
+
+    it('should support explicit SFU topology', () => {
+      webrtcSignalingService.createSession({
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostUserId: 'user-123',
+        topology: 'sfu',
+      });
+
+      const stored = (webrtcSignalingService as any).sessions.get('session-123');
+      expect(stored.topology).toBe('sfu');
+    });
+
+    it('should return existing config for duplicate session ID', () => {
+      const config1 = webrtcSignalingService.createSession({
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostUserId: 'user-123',
+      });
+
+      const config2 = webrtcSignalingService.createSession({
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostUserId: 'user-456',
+      });
+
+      expect(config1.sessionId).toBe(config2.sessionId);
+    });
+
+    it('should include ICE servers in config', () => {
+      const config = webrtcSignalingService.createSession({
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostUserId: 'user-123',
+      });
+
+      expect(Array.isArray(config.iceServers)).toBe(true);
+      expect(config.iceServers.length).toBeGreaterThan(0);
+    });
+
+    it('should include data channel config', () => {
+      const config = webrtcSignalingService.createSession({
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostUserId: 'user-123',
+      });
+
+      expect(config).toHaveProperty('dataChannels');
+      expect(Array.isArray(config.dataChannels)).toBe(true);
     });
   });
 
+  // ===========================================================================
+  // Session Management — destroySession
+  // ===========================================================================
   describe('destroySession', () => {
     beforeEach(() => {
-      (webrtcSignalingService as any).io = mockSocketIOServer;
-      (webrtcSignalingService as any).isInitialized = true;
+      // Set up namespace mock for emitToPeer
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
+
+      // Create a session with peers
+      const peers = new Map();
+      peers.set('peer-1', {
+        peerId: 'peer-1',
+        userId: 'user-123',
+        sessionId: 'session-123',
+        socketId: 'socket-123',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: true, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 50, packetLoss: 0, jitter: 0.01, bandwidth: 5000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
+      });
+
       (webrtcSignalingService as any).sessions.set('session-123', {
-        id: 'session-123',
-        participants: new Map([['socket-123', { userId: 'user-123' }]]),
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostPeerId: 'peer-1',
+        peers,
+        topology: 'mesh',
+        maxPeers: 10,
+        sfuPeerId: null,
+        createdAt: new Date(),
+        lastActivityAt: new Date(),
+        recordingActive: false,
+        iceServers: [],
       });
     });
 
-    it('should destroy session and disconnect participants', async () => {
-      await webrtcSignalingService.destroySession('session-123');
+    it('should remove session from memory', () => {
+      webrtcSignalingService.destroySession('session-123');
 
       expect((webrtcSignalingService as any).sessions.has('session-123')).toBe(false);
     });
 
-    it('should notify participants of session end', async () => {
-      await webrtcSignalingService.destroySession('session-123');
-
-      expect(mockSocketIOServer.to).toHaveBeenCalledWith('session-123');
-      expect(mockSocketIOServer.emit).toHaveBeenCalledWith(
-        'session:ended',
-        expect.any(Object)
-      );
+    it('should handle non-existent session gracefully', () => {
+      expect(() => {
+        webrtcSignalingService.destroySession('non-existent');
+      }).not.toThrow();
     });
 
-    it('should update session status in database', async () => {
-      await webrtcSignalingService.destroySession('session-123');
+    it('should log a warning for non-existent session', () => {
+      const logger = require('../../../../config/logger').default;
 
-      expect(webrtcPrismaMock.vrSession.update).toHaveBeenCalledWith({
-        where: { id: 'session-123' },
-        data: expect.objectContaining({ status: 'ended' }),
-      });
-    });
+      webrtcSignalingService.destroySession('non-existent');
 
-    it('should handle non-existent session gracefully', async () => {
-      await expect(
-        webrtcSignalingService.destroySession('non-existent')
-      ).resolves.not.toThrow();
+      expect(logger.warn).toHaveBeenCalled();
     });
   });
 
   // ===========================================================================
-  // Peer Connection Handling
-  // ===========================================================================
-  describe('handlePeerConnection', () => {
-    beforeEach(() => {
-      (webrtcSignalingService as any).io = mockSocketIOServer;
-      (webrtcSignalingService as any).isInitialized = true;
-      (webrtcSignalingService as any).sessions.set('session-123', {
-        id: 'session-123',
-        participants: new Map(),
-        settings: { topology: 'mesh' },
-      });
-    });
-
-    it('should handle peer join', () => {
-      (webrtcSignalingService as any).handlePeerJoin(mockSocket, 'session-123');
-
-      expect(mockSocket.join).toHaveBeenCalledWith('session-123');
-    });
-
-    it('should notify existing peers of new participant', () => {
-      const existingSocket = new MockSocket();
-      existingSocket.id = 'existing-socket';
-      (webrtcSignalingService as any).sessions.get('session-123').participants.set(
-        'existing-socket',
-        { userId: 'user-456' }
-      );
-      mockSocketIOServer.sockets.sockets.set('existing-socket', existingSocket);
-
-      (webrtcSignalingService as any).handlePeerJoin(mockSocket, 'session-123');
-
-      expect(mockSocket.broadcast.to).toHaveBeenCalledWith('session-123');
-    });
-
-    it('should enforce max participants limit', async () => {
-      const session = (webrtcSignalingService as any).sessions.get('session-123');
-      session.maxParticipants = 2;
-      session.participants.set('socket-1', {});
-      session.participants.set('socket-2', {});
-
-      const result = await (webrtcSignalingService as any).handlePeerJoin(mockSocket, 'session-123');
-
-      expect(result.success).toBe(false);
-      expect(result.reason).toContain('full');
-    });
-
-    it('should handle peer leave', () => {
-      const session = (webrtcSignalingService as any).sessions.get('session-123');
-      session.participants.set('socket-123', { userId: 'user-123' });
-
-      (webrtcSignalingService as any).handlePeerLeave(mockSocket, 'session-123');
-
-      expect(session.participants.has('socket-123')).toBe(false);
-      expect(mockSocket.leave).toHaveBeenCalledWith('session-123');
-    });
-  });
-
-  // ===========================================================================
-  // Signaling Messages
-  // ===========================================================================
-  describe('Signaling Messages', () => {
-    beforeEach(() => {
-      (webrtcSignalingService as any).io = mockSocketIOServer;
-      (webrtcSignalingService as any).isInitialized = true;
-      (webrtcSignalingService as any).sessions.set('session-123', {
-        id: 'session-123',
-        participants: new Map([
-          ['socket-123', { userId: 'user-123' }],
-          ['socket-456', { userId: 'user-456' }],
-        ]),
-        settings: { topology: 'mesh' },
-      });
-      (webrtcSignalingService as any).socketToSession.set('socket-123', 'session-123');
-    });
-
-    it('should relay offer to target peer', () => {
-      const targetSocket = new MockSocket();
-      targetSocket.id = 'socket-456';
-      mockSocketIOServer.sockets.sockets.set('socket-456', targetSocket);
-
-      (webrtcSignalingService as any).handleOffer(mockSocket, {
-        targetId: 'socket-456',
-        sdp: 'offer-sdp',
-      });
-
-      expect(targetSocket.emit).toHaveBeenCalledWith(
-        'signal:offer',
-        expect.objectContaining({
-          fromId: 'socket-123',
-          sdp: 'offer-sdp',
-        })
-      );
-    });
-
-    it('should relay answer to target peer', () => {
-      const targetSocket = new MockSocket();
-      targetSocket.id = 'socket-456';
-      mockSocketIOServer.sockets.sockets.set('socket-456', targetSocket);
-
-      (webrtcSignalingService as any).handleAnswer(mockSocket, {
-        targetId: 'socket-456',
-        sdp: 'answer-sdp',
-      });
-
-      expect(targetSocket.emit).toHaveBeenCalledWith(
-        'signal:answer',
-        expect.objectContaining({
-          fromId: 'socket-123',
-          sdp: 'answer-sdp',
-        })
-      );
-    });
-
-    it('should relay ICE candidates', () => {
-      const targetSocket = new MockSocket();
-      targetSocket.id = 'socket-456';
-      mockSocketIOServer.sockets.sockets.set('socket-456', targetSocket);
-
-      const iceCandidate = {
-        candidate: 'candidate:...',
-        sdpMid: '0',
-        sdpMLineIndex: 0,
-      };
-
-      (webrtcSignalingService as any).handleIceCandidate(mockSocket, {
-        targetId: 'socket-456',
-        candidate: iceCandidate,
-      });
-
-      expect(targetSocket.emit).toHaveBeenCalledWith(
-        'signal:ice-candidate',
-        expect.objectContaining({
-          fromId: 'socket-123',
-          candidate: iceCandidate,
-        })
-      );
-    });
-
-    it('should handle missing target peer gracefully', () => {
-      (webrtcSignalingService as any).handleOffer(mockSocket, {
-        targetId: 'non-existent',
-        sdp: 'offer-sdp',
-      });
-
-      expect(mockSocket.emit).toHaveBeenCalledWith(
-        'signal:error',
-        expect.objectContaining({
-          reason: expect.stringContaining('not found'),
-        })
-      );
-    });
-  });
-
-  // ===========================================================================
-  // ICE Server Configuration
-  // ===========================================================================
-  describe('getICEServers', () => {
-    it('should return ICE server configuration', async () => {
-      const servers = await webrtcSignalingService.getICEServers(orgId);
-
-      expect(Array.isArray(servers)).toBe(true);
-      expect(servers.length).toBeGreaterThan(0);
-    });
-
-    it('should include STUN servers', async () => {
-      const servers = await webrtcSignalingService.getICEServers(orgId);
-
-      const stunServer = servers.find((s: any) => s.urls.includes('stun:'));
-      expect(stunServer).toBeDefined();
-    });
-
-    it('should include TURN servers with credentials', async () => {
-      const servers = await webrtcSignalingService.getICEServers(orgId);
-
-      const turnServer = servers.find((s: any) => s.urls.includes('turn:'));
-      expect(turnServer).toBeDefined();
-      expect(turnServer.username).toBeDefined();
-      expect(turnServer.credential).toBeDefined();
-    });
-
-    it('should generate time-limited TURN credentials', async () => {
-      const servers = await webrtcSignalingService.getICEServers(orgId, {
-        turnCredentialTTL: 3600,
-      });
-
-      const turnServer = servers.find((s: any) => s.urls.includes('turn:'));
-      expect(turnServer).toHaveProperty('username');
-      expect(turnServer).toHaveProperty('credential');
-    });
-  });
-
-  // ===========================================================================
-  // Session Participants
+  // getSessionPeers
   // ===========================================================================
   describe('getSessionPeers', () => {
     beforeEach(() => {
+      const peers = new Map();
+      peers.set('peer-1', {
+        peerId: 'peer-1',
+        userId: 'user-1',
+        sessionId: 'session-123',
+        socketId: 'socket-1',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: true, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 50, packetLoss: 0, jitter: 0.01, bandwidth: 5000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
+      });
+      peers.set('peer-2', {
+        peerId: 'peer-2',
+        userId: 'user-2',
+        sessionId: 'session-123',
+        socketId: 'socket-2',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: false, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 80, packetLoss: 1, jitter: 0.02, bandwidth: 3000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
+      });
+
       (webrtcSignalingService as any).sessions.set('session-123', {
-        id: 'session-123',
-        participants: new Map([
-          ['socket-1', { oderId: 'user-1', displayName: 'User 1', joinedAt: new Date() }],
-          ['socket-2', { oderId: 'user-2', displayName: 'User 2', joinedAt: new Date() }],
-        ]),
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostPeerId: 'peer-1',
+        peers,
+        topology: 'mesh',
+        maxPeers: 10,
+        sfuPeerId: null,
+        createdAt: new Date(),
+        lastActivityAt: new Date(),
+        recordingActive: false,
+        iceServers: [],
       });
     });
 
@@ -504,15 +369,8 @@ describe('WebRTCSignalingService', () => {
       const peers = webrtcSignalingService.getSessionPeers('session-123');
 
       expect(peers.length).toBe(2);
-      expect(peers[0]).toHaveProperty('socketId');
-      expect(peers[0]).toHaveProperty('oderId');
-    });
-
-    it('should exclude requesting peer when specified', () => {
-      const peers = webrtcSignalingService.getSessionPeers('session-123', 'socket-1');
-
-      expect(peers.length).toBe(1);
-      expect(peers[0].socketId).toBe('socket-2');
+      expect(peers[0]).toHaveProperty('peerId');
+      expect(peers[0]).toHaveProperty('userId');
     });
 
     it('should return empty array for non-existent session', () => {
@@ -523,321 +381,593 @@ describe('WebRTCSignalingService', () => {
   });
 
   // ===========================================================================
-  // VR Collaborative Features
+  // getICEServers
   // ===========================================================================
-  describe('VR Collaborative Features', () => {
+  describe('getICEServers', () => {
+    it('should return ICE server configuration', () => {
+      const servers = webrtcSignalingService.getICEServers();
+
+      expect(Array.isArray(servers)).toBe(true);
+      expect(servers.length).toBeGreaterThan(0);
+    });
+
+    it('should include STUN servers', () => {
+      const servers = webrtcSignalingService.getICEServers();
+
+      const stunServer = servers.find((s: any) =>
+        (Array.isArray(s.urls) ? s.urls : [s.urls]).some((u: string) => u.startsWith('stun:'))
+      );
+      expect(stunServer).toBeDefined();
+    });
+  });
+
+  // ===========================================================================
+  // getSessionConfig
+  // ===========================================================================
+  describe('getSessionConfig', () => {
     beforeEach(() => {
-      (webrtcSignalingService as any).io = mockSocketIOServer;
-      (webrtcSignalingService as any).sessions.set('session-123', {
-        id: 'session-123',
-        participants: new Map([['socket-123', { userId: 'user-123' }]]),
-        settings: { topology: 'mesh', vrEnabled: true },
-        sharedState: {},
-      });
-    });
-
-    it('should sync VR state across participants', () => {
-      const vrState = {
-        position: { x: 0, y: 1.6, z: 0 },
-        rotation: { x: 0, y: 0, z: 0, w: 1 },
-        controllerLeft: { position: { x: -0.3, y: 1.2, z: -0.3 } },
-        controllerRight: { position: { x: 0.3, y: 1.2, z: -0.3 } },
-      };
-
-      (webrtcSignalingService as any).handleVRStateUpdate(mockSocket, vrState);
-
-      expect(mockSocket.broadcast.to).toHaveBeenCalledWith('session-123');
-    });
-
-    it('should broadcast annotations', () => {
-      const annotation = {
-        type: 'highlight',
-        position: { x: 1, y: 1.5, z: -2 },
-        color: '#ff0000',
-        authorId: 'user-123',
-      };
-
-      (webrtcSignalingService as any).handleAnnotation(mockSocket, 'session-123', annotation);
-
-      expect(mockSocketIOServer.to).toHaveBeenCalledWith('session-123');
-    });
-
-    it('should handle document pointer sharing', () => {
-      const pointer = {
-        documentId: 'doc-123',
-        page: 5,
-        position: { x: 0.5, y: 0.3 },
-      };
-
-      (webrtcSignalingService as any).handlePointerShare(mockSocket, pointer);
-
-      expect(mockSocket.broadcast.emit).toHaveBeenCalled();
-    });
-
-    it('should manage focus/attention indicators', () => {
-      (webrtcSignalingService as any).handleFocusUpdate(mockSocket, {
+      webrtcSignalingService.createSession({
         sessionId: 'session-123',
-        focusTarget: { type: 'document', id: 'doc-123', page: 3 },
+        organizationId: orgId,
+        hostUserId: 'user-123',
       });
+    });
 
-      // Should broadcast focus to other participants
-      expect(mockSocket.broadcast.to).toHaveBeenCalled();
+    it('should return config for existing session', () => {
+      const config = webrtcSignalingService.getSessionConfig('session-123');
+
+      expect(config).not.toBeNull();
+      expect(config!.sessionId).toBe('session-123');
+    });
+
+    it('should return null for non-existent session', () => {
+      const config = webrtcSignalingService.getSessionConfig('non-existent');
+
+      expect(config).toBeNull();
+    });
+
+    it('should include topology in config', () => {
+      const config = webrtcSignalingService.getSessionConfig('session-123');
+
+      expect(config).toHaveProperty('topology');
+      expect(['mesh', 'sfu']).toContain(config!.topology);
     });
   });
 
   // ===========================================================================
-  // Recording Integration
+  // toggleRecording
   // ===========================================================================
-  describe('Recording', () => {
+  describe('toggleRecording', () => {
     beforeEach(() => {
-      (webrtcSignalingService as any).io = mockSocketIOServer;
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
+
       (webrtcSignalingService as any).sessions.set('session-123', {
-        id: 'session-123',
-        participants: new Map(),
-        settings: { recordingEnabled: true },
-        recording: null,
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostPeerId: 'peer-1',
+        peers: new Map(),
+        topology: 'mesh',
+        maxPeers: 10,
+        sfuPeerId: null,
+        createdAt: new Date(),
+        lastActivityAt: new Date(),
+        recordingActive: false,
+        iceServers: [],
       });
     });
 
-    it('should start recording session', async () => {
-      const result = await webrtcSignalingService.startRecording('session-123');
-
-      expect(result).toHaveProperty('recordingId');
-      expect(result.status).toBe('recording');
-    });
-
-    it('should stop recording session', async () => {
-      const session = (webrtcSignalingService as any).sessions.get('session-123');
-      session.recording = { id: 'rec-123', startedAt: new Date() };
-
-      const result = await webrtcSignalingService.stopRecording('session-123');
-
-      expect(result.status).toBe('stopped');
-    });
-
-    it('should notify participants when recording starts', async () => {
-      await webrtcSignalingService.startRecording('session-123');
-
-      expect(mockSocketIOServer.to).toHaveBeenCalledWith('session-123');
-      expect(mockSocketIOServer.emit).toHaveBeenCalledWith(
-        'recording:started',
-        expect.any(Object)
-      );
-    });
-  });
-
-  // ===========================================================================
-  // Connection Quality Monitoring
-  // ===========================================================================
-  describe('Connection Quality', () => {
-    beforeEach(() => {
-      (webrtcSignalingService as any).io = mockSocketIOServer;
-      (webrtcSignalingService as any).connectionStats = new Map();
-    });
-
-    it('should track connection statistics', () => {
-      const stats = {
-        bytesReceived: 1000000,
-        bytesSent: 500000,
-        packetsLost: 10,
-        jitter: 0.02,
-        roundTripTime: 50,
-      };
-
-      (webrtcSignalingService as any).handleConnectionStats(mockSocket, stats);
-
-      const stored = (webrtcSignalingService as any).connectionStats.get('socket-123');
-      expect(stored).toBeDefined();
-      expect(stored.roundTripTime).toBe(50);
-    });
-
-    it('should detect poor connection quality', () => {
-      const poorStats = {
-        packetsLost: 100,
-        jitter: 0.2,
-        roundTripTime: 500,
-      };
-
-      const quality = (webrtcSignalingService as any).assessConnectionQuality(poorStats);
-
-      expect(quality).toBe('poor');
-    });
-
-    it('should suggest bandwidth reduction for poor connections', () => {
-      const poorStats = {
-        packetsLost: 100,
-        jitter: 0.2,
-        roundTripTime: 500,
-      };
-
-      (webrtcSignalingService as any).handleConnectionStats(mockSocket, poorStats);
-
-      expect(mockSocket.emit).toHaveBeenCalledWith(
-        'connection:quality-warning',
-        expect.objectContaining({
-          suggestion: expect.stringContaining('reduce'),
-        })
-      );
-    });
-  });
-
-  // ===========================================================================
-  // Authentication & Authorization
-  // ===========================================================================
-  describe('Authentication', () => {
-    it('should validate socket authentication token', async () => {
-      const jwt = require('jsonwebtoken');
-
-      const isValid = await (webrtcSignalingService as any).validateSocketAuth(mockSocket);
-
-      expect(jwt.verify).toHaveBeenCalledWith('test-token', expect.any(String));
-      expect(isValid).toBe(true);
-    });
-
-    it('should reject invalid tokens', async () => {
-      const jwt = require('jsonwebtoken');
-      jwt.verify.mockImplementationOnce(() => {
-        throw new Error('Invalid token');
-      });
-
-      const isValid = await (webrtcSignalingService as any).validateSocketAuth(mockSocket);
-
-      expect(isValid).toBe(false);
-    });
-
-    it('should verify session access permissions', async () => {
-      const hasAccess = await (webrtcSignalingService as any).checkSessionAccess(
-        'user-123',
-        'session-123',
-        orgId
-      );
-
-      expect(hasAccess).toBe(true);
-    });
-
-    it('should deny access to unauthorized users', async () => {
-      webrtcPrismaMock.vrSession.findUnique.mockResolvedValueOnce({
-        ...webrtcPrismaMock.vrSession.findUnique(),
-        organizationId: 'different-org',
-      });
-
-      const hasAccess = await (webrtcSignalingService as any).checkSessionAccess(
-        'user-123',
-        'session-123',
-        'wrong-org'
-      );
-
-      expect(hasAccess).toBe(false);
-    });
-  });
-
-  // ===========================================================================
-  // Error Handling & Cleanup
-  // ===========================================================================
-  describe('Error Handling', () => {
-    beforeEach(() => {
-      (webrtcSignalingService as any).io = mockSocketIOServer;
-      (webrtcSignalingService as any).sessions.set('session-123', {
-        id: 'session-123',
-        participants: new Map([['socket-123', { userId: 'user-123' }]]),
-      });
-      (webrtcSignalingService as any).socketToSession.set('socket-123', 'session-123');
-    });
-
-    it('should handle socket disconnect', () => {
-      (webrtcSignalingService as any).handleDisconnect(mockSocket);
+    it('should activate recording', () => {
+      webrtcSignalingService.toggleRecording('session-123', true);
 
       const session = (webrtcSignalingService as any).sessions.get('session-123');
-      expect(session.participants.has('socket-123')).toBe(false);
+      expect(session.recordingActive).toBe(true);
     });
 
-    it('should notify other participants on disconnect', () => {
-      (webrtcSignalingService as any).handleDisconnect(mockSocket);
+    it('should deactivate recording', () => {
+      const session = (webrtcSignalingService as any).sessions.get('session-123');
+      session.recordingActive = true;
 
-      expect(mockSocketIOServer.to).toHaveBeenCalledWith('session-123');
-      expect(mockSocketIOServer.emit).toHaveBeenCalledWith(
-        'peer:left',
-        expect.objectContaining({
-          socketId: 'socket-123',
-        })
-      );
+      webrtcSignalingService.toggleRecording('session-123', false);
+
+      expect(session.recordingActive).toBe(false);
     });
 
-    it('should handle errors in message handlers', () => {
-      const badHandler = () => {
-        throw new Error('Handler error');
-      };
-
-      // Should not throw, but log error
+    it('should handle non-existent session gracefully', () => {
       expect(() => {
-        (webrtcSignalingService as any).safeHandler(badHandler)();
+        webrtcSignalingService.toggleRecording('non-existent', true);
+      }).not.toThrow();
+    });
+  });
+
+  // ===========================================================================
+  // triggerICERestart
+  // ===========================================================================
+  describe('triggerICERestart', () => {
+    beforeEach(() => {
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
+
+      const peers = new Map();
+      peers.set('peer-1', {
+        peerId: 'peer-1',
+        userId: 'user-1',
+        sessionId: 'session-123',
+        socketId: 'socket-1',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: true, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 50, packetLoss: 0, jitter: 0.01, bandwidth: 5000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
+      });
+      peers.set('peer-2', {
+        peerId: 'peer-2',
+        userId: 'user-2',
+        sessionId: 'session-123',
+        socketId: 'socket-2',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: true, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 80, packetLoss: 1, jitter: 0.02, bandwidth: 3000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
+      });
+
+      (webrtcSignalingService as any).sessions.set('session-123', {
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostPeerId: 'peer-1',
+        peers,
+        topology: 'mesh',
+        maxPeers: 10,
+        sfuPeerId: null,
+        createdAt: new Date(),
+        lastActivityAt: new Date(),
+        recordingActive: false,
+        iceServers: [],
+      });
+    });
+
+    it('should trigger ICE restart between two peers', () => {
+      webrtcSignalingService.triggerICERestart('session-123', 'peer-1', 'peer-2');
+
+      const session = (webrtcSignalingService as any).sessions.get('session-123');
+      expect(session.iceServers.length).toBeGreaterThan(0);
+    });
+
+    it('should handle non-existent session gracefully', () => {
+      expect(() => {
+        webrtcSignalingService.triggerICERestart('non-existent', 'peer-1', 'peer-2');
       }).not.toThrow();
     });
 
-    it('should clean up orphaned sessions', async () => {
-      const orphanedSession = {
-        id: 'orphaned-session',
-        participants: new Map(),
-        createdAt: new Date(Date.now() - 3600000), // 1 hour ago
-      };
-      (webrtcSignalingService as any).sessions.set('orphaned-session', orphanedSession);
-
-      await (webrtcSignalingService as any).cleanupOrphanedSessions();
-
-      expect((webrtcSignalingService as any).sessions.has('orphaned-session')).toBe(false);
+    it('should handle non-existent peer gracefully', () => {
+      expect(() => {
+        webrtcSignalingService.triggerICERestart('session-123', 'peer-1', 'non-existent');
+      }).not.toThrow();
     });
   });
 
   // ===========================================================================
-  // Topology Support
+  // getSessionQualityMetrics
   // ===========================================================================
-  describe('Topology Support', () => {
-    it('should support mesh topology for small groups', () => {
-      const topology = (webrtcSignalingService as any).selectTopology(4);
+  describe('getSessionQualityMetrics', () => {
+    it('should return empty peers for non-existent session', () => {
+      const metrics = webrtcSignalingService.getSessionQualityMetrics('non-existent');
 
-      expect(topology).toBe('mesh');
+      expect(metrics).toEqual({ peers: {} });
     });
 
-    it('should suggest SFU for larger groups', () => {
-      const topology = (webrtcSignalingService as any).selectTopology(10);
-
-      expect(topology).toBe('sfu');
-    });
-
-    it('should configure mesh connections correctly', () => {
-      const participants = ['socket-1', 'socket-2', 'socket-3'];
-      const connections = (webrtcSignalingService as any).getMeshConnections(participants);
-
-      // Each participant should connect to all others
-      expect(connections.length).toBe(3); // 3 unique pairs
-    });
-  });
-
-  // ===========================================================================
-  // Shutdown
-  // ===========================================================================
-  describe('shutdown', () => {
-    it('should gracefully close all connections', async () => {
-      (webrtcSignalingService as any).io = mockSocketIOServer;
-      (webrtcSignalingService as any).sessions.set('session-123', {
-        id: 'session-123',
-        participants: new Map([['socket-123', {}]]),
+    it('should return quality metrics for session peers', () => {
+      const peers = new Map();
+      peers.set('peer-1', {
+        peerId: 'peer-1',
+        userId: 'user-1',
+        sessionId: 'session-123',
+        socketId: 'socket-1',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: true, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 50, packetLoss: 0, jitter: 0.01, bandwidth: 5000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
       });
 
-      await webrtcSignalingService.shutdown();
+      (webrtcSignalingService as any).sessions.set('session-123', {
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostPeerId: 'peer-1',
+        peers,
+        topology: 'mesh',
+        maxPeers: 10,
+        sfuPeerId: null,
+        createdAt: new Date(),
+        lastActivityAt: new Date(),
+        recordingActive: false,
+        iceServers: [],
+      });
 
-      expect(mockSocketIOServer.close).toHaveBeenCalled();
+      const metrics = webrtcSignalingService.getSessionQualityMetrics('session-123');
+
+      expect(metrics.peers).toHaveProperty('peer-1');
+    });
+  });
+
+  // ===========================================================================
+  // getTopologyData
+  // ===========================================================================
+  describe('getTopologyData', () => {
+    it('should return null for non-existent session', () => {
+      const data = webrtcSignalingService.getTopologyData('non-existent');
+
+      expect(data).toBeNull();
     });
 
-    it('should notify all participants of shutdown', async () => {
-      (webrtcSignalingService as any).io = mockSocketIOServer;
+    it('should return topology data for mesh session', () => {
+      const peers = new Map();
+      peers.set('peer-1', {
+        peerId: 'peer-1',
+        userId: 'user-1',
+        sessionId: 'session-123',
+        socketId: 'socket-1',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: true, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 50, packetLoss: 0, jitter: 0.01, bandwidth: 5000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
+      });
+      peers.set('peer-2', {
+        peerId: 'peer-2',
+        userId: 'user-2',
+        sessionId: 'session-123',
+        socketId: 'socket-2',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: true, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 80, packetLoss: 1, jitter: 0.02, bandwidth: 3000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
+      });
 
-      await webrtcSignalingService.shutdown();
+      (webrtcSignalingService as any).sessions.set('session-123', {
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostPeerId: 'peer-1',
+        peers,
+        topology: 'mesh',
+        maxPeers: 10,
+        sfuPeerId: null,
+        createdAt: new Date(),
+        lastActivityAt: new Date(),
+        recordingActive: false,
+        iceServers: [],
+      });
 
-      expect(mockSocketIOServer.emit).toHaveBeenCalledWith(
-        'server:shutdown',
-        expect.any(Object)
+      const data = webrtcSignalingService.getTopologyData('session-123');
+
+      expect(data).not.toBeNull();
+      expect(data!.topology).toBe('mesh');
+      expect(data!.nodes.length).toBe(2);
+      expect(data!.edges.length).toBe(1); // 1 unique pair in mesh
+    });
+
+    it('should return topology data for SFU session', () => {
+      const peers = new Map();
+      peers.set('peer-1', {
+        peerId: 'peer-1',
+        userId: 'user-1',
+        sessionId: 'session-123',
+        socketId: 'socket-1',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: true, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 50, packetLoss: 0, jitter: 0.01, bandwidth: 5000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
+      });
+      peers.set('peer-2', {
+        peerId: 'peer-2',
+        userId: 'user-2',
+        sessionId: 'session-123',
+        socketId: 'socket-2',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: true, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 80, packetLoss: 1, jitter: 0.02, bandwidth: 3000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
+      });
+
+      (webrtcSignalingService as any).sessions.set('session-123', {
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostPeerId: 'peer-1',
+        peers,
+        topology: 'sfu',
+        maxPeers: 20,
+        sfuPeerId: 'peer-1',
+        createdAt: new Date(),
+        lastActivityAt: new Date(),
+        recordingActive: false,
+        iceServers: [],
+      });
+
+      const data = webrtcSignalingService.getTopologyData('session-123');
+
+      expect(data).not.toBeNull();
+      expect(data!.topology).toBe('sfu');
+      expect(data!.nodes.length).toBe(2);
+      // In SFU, edges go from SFU to each non-SFU peer
+      expect(data!.edges.length).toBe(1);
+    });
+  });
+
+  // ===========================================================================
+  // Private: buildICEServers
+  // ===========================================================================
+  describe('buildICEServers (private)', () => {
+    it('should include default Google STUN servers', () => {
+      const servers = (webrtcSignalingService as any).buildICEServers();
+
+      expect(Array.isArray(servers)).toBe(true);
+      const hasStun = servers.some((s: any) =>
+        (Array.isArray(s.urls) ? s.urls : [s.urls]).some((u: string) => u.startsWith('stun:'))
       );
+      expect(hasStun).toBe(true);
+    });
+  });
+
+  // ===========================================================================
+  // Private: generateTURNCredentials
+  // ===========================================================================
+  describe('generateTURNCredentials (private)', () => {
+    it('should generate username and credential', () => {
+      const creds = (webrtcSignalingService as any).generateTURNCredentials();
+
+      expect(creds).toHaveProperty('username');
+      expect(creds).toHaveProperty('credential');
+      expect(typeof creds.username).toBe('string');
+      expect(typeof creds.credential).toBe('string');
+    });
+  });
+
+  // ===========================================================================
+  // Private: computeEdgeQuality
+  // ===========================================================================
+  describe('computeEdgeQuality (private)', () => {
+    it('should return a score between 0 and 1 for healthy peers', () => {
+      const peerA = {
+        connectionState: 'connected',
+        quality: { rtt: 50, packetLoss: 0, jitter: 0.01, bandwidth: 5000 },
+      };
+      const peerB = {
+        connectionState: 'connected',
+        quality: { rtt: 60, packetLoss: 1, jitter: 0.02, bandwidth: 4000 },
+      };
+
+      const score = (webrtcSignalingService as any).computeEdgeQuality(peerA, peerB);
+
+      expect(score).toBeGreaterThan(0);
+      expect(score).toBeLessThanOrEqual(1);
+    });
+
+    it('should reduce score for high RTT', () => {
+      const peerA = {
+        connectionState: 'connected',
+        quality: { rtt: 500, packetLoss: 0, jitter: 0, bandwidth: 5000 },
+      };
+      const peerB = {
+        connectionState: 'connected',
+        quality: { rtt: 500, packetLoss: 0, jitter: 0, bandwidth: 5000 },
+      };
+
+      const score = (webrtcSignalingService as any).computeEdgeQuality(peerA, peerB);
+
+      expect(score).toBeLessThan(1);
+    });
+
+    it('should reduce score for disconnected peers', () => {
+      const peerA = {
+        connectionState: 'disconnected',
+        quality: { rtt: 50, packetLoss: 0, jitter: 0, bandwidth: 5000 },
+      };
+      const peerB = {
+        connectionState: 'connected',
+        quality: { rtt: 50, packetLoss: 0, jitter: 0, bandwidth: 5000 },
+      };
+
+      const score = (webrtcSignalingService as any).computeEdgeQuality(peerA, peerB);
+
+      expect(score).toBeLessThan(0.5);
+    });
+  });
+
+  // ===========================================================================
+  // Private: generatePeerId
+  // ===========================================================================
+  describe('generatePeerId (private)', () => {
+    it('should generate a unique peer ID based on userId', () => {
+      const peerId1 = (webrtcSignalingService as any).generatePeerId('user-1');
+      const peerId2 = (webrtcSignalingService as any).generatePeerId('user-2');
+
+      expect(typeof peerId1).toBe('string');
+      expect(peerId1.length).toBeGreaterThan(0);
+      expect(peerId1).not.toBe(peerId2);
+    });
+  });
+
+  // ===========================================================================
+  // Private: checkRateLimit
+  // ===========================================================================
+  describe('checkRateLimit (private)', () => {
+    it('should allow requests under the limit', () => {
+      const mockSocket = { id: 'socket-123' };
+
+      const allowed = (webrtcSignalingService as any).checkRateLimit(mockSocket);
+
+      expect(allowed).toBe(true);
+    });
+  });
+
+  // ===========================================================================
+  // Private: evaluateTopology
+  // ===========================================================================
+  describe('evaluateTopology (private)', () => {
+    it('should keep mesh topology for small peer counts', () => {
+      const room = {
+        topology: 'mesh',
+        peers: new Map([['peer-1', {}], ['peer-2', {}], ['peer-3', {}]]),
+        hostPeerId: 'peer-1',
+        sfuPeerId: null,
+      };
+
+      (webrtcSignalingService as any).evaluateTopology(room);
+
+      expect(room.topology).toBe('mesh');
+    });
+
+    it('should switch to SFU for large peer counts', () => {
+      const peers = new Map();
+      for (let i = 0; i < 8; i++) {
+        peers.set(`peer-${i}`, { userId: `user-${i}` });
+      }
+      const room = {
+        topology: 'mesh' as string,
+        peers,
+        hostPeerId: 'peer-0',
+        sfuPeerId: null as string | null,
+      };
+
+      (webrtcSignalingService as any).evaluateTopology(room);
+
+      expect(room.topology).toBe('sfu');
+    });
+  });
+
+  // ===========================================================================
+  // shutdown
+  // ===========================================================================
+  describe('shutdown', () => {
+    it('should clear all sessions', () => {
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
+
+      // Add a session with no peers so destroySession doesn't iterate
+      (webrtcSignalingService as any).sessions.set('session-123', {
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostPeerId: 'peer-1',
+        peers: new Map(),
+        topology: 'mesh',
+        maxPeers: 10,
+        sfuPeerId: null,
+        createdAt: new Date(),
+        lastActivityAt: new Date(),
+        recordingActive: false,
+        iceServers: [],
+      });
+
+      webrtcSignalingService.shutdown();
+
+      expect((webrtcSignalingService as any).sessions.size).toBe(0);
+    });
+
+    it('should set io to null after shutdown', () => {
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
+
+      webrtcSignalingService.shutdown();
+
+      expect((webrtcSignalingService as any).io).toBeNull();
+    });
+
+    it('should set namespace to null after shutdown', () => {
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
+
+      webrtcSignalingService.shutdown();
+
+      expect((webrtcSignalingService as any).namespace).toBeNull();
+    });
+
+    it('should disconnect sockets on namespace', () => {
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
+
+      webrtcSignalingService.shutdown();
+
+      expect(mockNamespaceInstance.disconnectSockets).toHaveBeenCalledWith(true);
+    });
+  });
+
+  // ===========================================================================
+  // Private: removePeerFromSession
+  // ===========================================================================
+  describe('removePeerFromSession (private)', () => {
+    it('should remove peer from session', () => {
+      webrtcSignalingService.attachToServer(mockHttpServer as any);
+
+      const peers = new Map();
+      peers.set('peer-1', {
+        peerId: 'peer-1',
+        userId: 'user-1',
+        sessionId: 'session-123',
+        socketId: 'socket-1',
+        connectionState: 'connected',
+        mediaState: { audioEnabled: true, videoEnabled: true, screenSharing: false, dataChannelOpen: false },
+        quality: { rtt: 50, packetLoss: 0, jitter: 0.01, bandwidth: 5000 },
+        joinedAt: new Date(),
+        lastHeartbeat: new Date(),
+      });
+
+      (webrtcSignalingService as any).sessions.set('session-123', {
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostPeerId: 'peer-1',
+        peers,
+        topology: 'mesh',
+        maxPeers: 10,
+        sfuPeerId: null,
+        createdAt: new Date(),
+        lastActivityAt: new Date(),
+        recordingActive: false,
+        iceServers: [],
+      });
+
+      (webrtcSignalingService as any).removePeerFromSession('peer-1', 'session-123', 'test');
+
+      expect(peers.has('peer-1')).toBe(false);
+    });
+
+    it('should handle non-existent session gracefully', () => {
+      expect(() => {
+        (webrtcSignalingService as any).removePeerFromSession('peer-1', 'non-existent', 'test');
+      }).not.toThrow();
+    });
+  });
+
+  // ===========================================================================
+  // Private: buildSessionConfig
+  // ===========================================================================
+  describe('buildSessionConfig (private)', () => {
+    it('should build config from session room', () => {
+      (webrtcSignalingService as any).sessions.set('session-123', {
+        sessionId: 'session-123',
+        organizationId: orgId,
+        hostPeerId: 'peer-1',
+        peers: new Map(),
+        topology: 'mesh',
+        maxPeers: 10,
+        sfuPeerId: null,
+        createdAt: new Date(),
+        lastActivityAt: new Date(),
+        recordingActive: false,
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      });
+
+      const config = (webrtcSignalingService as any).buildSessionConfig('session-123');
+
+      expect(config).toHaveProperty('sessionId', 'session-123');
+      expect(config).toHaveProperty('topology', 'mesh');
+      expect(config).toHaveProperty('iceServers');
+      expect(config).toHaveProperty('maxPeers', 10);
+    });
+
+    it('should return safe defaults for non-existent session', () => {
+      const config = (webrtcSignalingService as any).buildSessionConfig('non-existent');
+
+      expect(config).toHaveProperty('sessionId', 'non-existent');
+      expect(config).toHaveProperty('topology', 'mesh');
+      expect(config).toHaveProperty('maxPeers', 12);
     });
   });
 });

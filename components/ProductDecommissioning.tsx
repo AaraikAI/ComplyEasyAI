@@ -891,3 +891,5 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
     </div>
   );
 };
+
+export default ProductDecommissioning;

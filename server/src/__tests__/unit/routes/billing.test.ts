@@ -6,6 +6,22 @@ jest.mock('../../../middleware/auth', () => ({
   authorize: jest.fn((..._roles: string[]) => (req: any, res: any, next: any) => next()),
 }));
 
+jest.mock('../../../types/express', () => ({
+  asyncHandler: jest.fn((fn: any) => fn),
+}));
+
+jest.mock('../../../middleware/validate', () => ({
+  validateBody: jest.fn(() => (req: any, res: any, next: any) => next()),
+}));
+
+jest.mock('../../../validators/billingSchemas', () => ({
+  checkoutSchema: {},
+  changeTierSchema: {},
+  cancelSubscriptionSchema: {},
+  addAddonSchema: {},
+  requestQuoteSchema: {},
+}));
+
 jest.mock('../../../controllers/billingController', () => ({
   __esModule: true,
   default: {
@@ -20,6 +36,7 @@ jest.mock('../../../controllers/billingController', () => ({
     changeTier: jest.fn(),
     cancelSubscription: jest.fn(),
     reactivateSubscription: jest.fn(),
+    processRefund: jest.fn(),
     addAddOn: jest.fn(),
     removeAddOn: jest.fn(),
     requestQuote: jest.fn(),

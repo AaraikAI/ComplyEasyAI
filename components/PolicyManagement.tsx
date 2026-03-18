@@ -247,7 +247,6 @@ const PolicyManagement: React.FC<PolicyManagementProps> = ({ onBack }) => {
     try {
       await api.enterprise.policies.create({
         ...policyForm,
-        organizationId: user?.organizationId,
       });
       await Promise.all([loadPolicies(), loadMetrics()]);
       setPolicyForm(emptyPolicyForm());

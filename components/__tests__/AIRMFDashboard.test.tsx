@@ -92,6 +92,10 @@ vi.mock('@/contexts/OnboardingContext', () => ({
   useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true, showCelebration: false }),
 }));
 
+vi.mock('@/contexts/I18nContext', () => ({
+  useI18n: () => ({ t: (key: string) => key, locale: 'en', setLocale: vi.fn(), availableLocales: [], isLoading: false }),
+}));
+
 import { AIRMFDashboard } from '@/components/AIRMFDashboard';
 
 describe('AIRMFDashboard', () => {
@@ -104,14 +108,14 @@ describe('AIRMFDashboard', () => {
   it('renders without crashing', async () => {
     render(<AIRMFDashboard onNavigate={mockOnNavigate} />);
     await waitFor(() => {
-      expect(screen.getByText(/NIST AI RMF Dashboard/i)).toBeInTheDocument();
+      expect(screen.getByText('ai.title')).toBeInTheDocument();
     });
   });
 
   it('displays stat cards after loading', async () => {
     render(<AIRMFDashboard onNavigate={mockOnNavigate} />);
     await waitFor(() => {
-      expect(screen.getByText('Total AI Systems')).toBeInTheDocument();
+      expect(screen.getByText(/common\.total.*AI Systems/)).toBeInTheDocument();
       expect(screen.getByText('Avg Trustworthiness')).toBeInTheDocument();
     });
   });

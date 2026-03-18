@@ -6,11 +6,17 @@ jest.mock('../../../middleware/auth', () => ({
   authorize: jest.fn((..._roles: string[]) => (req: any, res: any, next: any) => next()),
 }));
 
+jest.mock('../../../types/express', () => ({
+  asyncHandler: jest.fn((fn: any) => fn),
+}));
+
 jest.mock('../../../controllers/auditController', () => ({
   __esModule: true,
   default: {
     list: jest.fn(),
     log: jest.fn(),
+    exportLogs: jest.fn(),
+    archiveLogs: jest.fn(),
   },
 }));
 
@@ -52,8 +58,8 @@ describe('Audit Routes', () => {
     expect(routes.find((r: any) => r.path === '/' && r.methods.includes('post'))).toBeDefined();
   });
 
-  it('should have exactly 2 routes', () => {
+  it('should have exactly 4 routes', () => {
     const routes = router.stack.filter((layer: any) => layer.route);
-    expect(routes.length).toBe(2);
+    expect(routes.length).toBe(4);
   });
 });

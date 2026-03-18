@@ -116,6 +116,7 @@ export const RFPResponder: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handleEdit = (index: number) => {
+    if (!answers[index]) return;
     setEditingIndex(index);
     setEditText(answers[index].answer);
   };

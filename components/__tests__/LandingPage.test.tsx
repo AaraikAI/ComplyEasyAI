@@ -62,7 +62,7 @@ describe('LandingPage', () => {
 
   it('renders "Sign In / SSO" button', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('Sign In / SSO')).toBeInTheDocument();
+    expect(screen.getByText('Log In')).toBeInTheDocument();
   });
 
   it('scrolls to top when brand logo is clicked', () => {
@@ -136,30 +136,33 @@ describe('LandingPage', () => {
 
   it('renders feature cards with titles', () => {
     renderWithRouter(<LandingPage />);
+    // Default active tab is 'core'
     expect(screen.getByText('AI Automation')).toBeInTheDocument();
-    expect(screen.getByText('Zero Trust Security')).toBeInTheDocument();
     expect(screen.getByText('Global Frameworks')).toBeInTheDocument();
     expect(screen.getByText('Real-time Analytics')).toBeInTheDocument();
     expect(screen.getByText('Vendor Management')).toBeInTheDocument();
     expect(screen.getByText('100+ Integrations')).toBeInTheDocument();
   });
 
-  it('renders aCOS feature cards', () => {
+  it('renders aCOS feature cards on AI tab', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getAllByText(/Autonomous Compliance Operating System/).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/Agentic AI with Rollback/).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/Temporal Graph Networks/).length).toBeGreaterThanOrEqual(1);
+    // Switch to AI & Automation tab
+    fireEvent.click(screen.getByText('AI & Automation'));
+    expect(screen.getByText('Agentic AI with Rollback')).toBeInTheDocument();
+    expect(screen.getByText('Temporal Graph Networks')).toBeInTheDocument();
   });
 
-  it('renders security features', () => {
+  it('renders security features on security tab', () => {
     renderWithRouter(<LandingPage />);
+    fireEvent.click(screen.getByText('Enterprise Security'));
     expect(screen.getByText('Zero-Knowledge Proofs')).toBeInTheDocument();
     expect(screen.getByText('BYOK Encryption')).toBeInTheDocument();
     expect(screen.getByText('Homomorphic AI')).toBeInTheDocument();
   });
 
-  it('renders EU regulation features', () => {
+  it('renders EU regulation features on regulatory tab', () => {
     renderWithRouter(<LandingPage />);
+    fireEvent.click(screen.getByText('Regulatory'));
     expect(screen.getByText('EU AI Act Compliance')).toBeInTheDocument();
     expect(screen.getByText('Digital Markets Act (DMA)')).toBeInTheDocument();
     expect(screen.getByText('Digital Services Act (DSA)')).toBeInTheDocument();
@@ -219,10 +222,11 @@ describe('LandingPage', () => {
 
   it('renders compliance badges', () => {
     renderWithRouter(<LandingPage />);
-    expect(screen.getByText('SOC 2 Type II')).toBeInTheDocument();
-    expect(screen.getByText('ISO 27001')).toBeInTheDocument();
-    expect(screen.getByText('GDPR Compliant')).toBeInTheDocument();
-    expect(screen.getByText('HIPAA Ready')).toBeInTheDocument();
+    // Badges appear in both hero section and footer
+    expect(screen.getAllByText('SOC 2 Type II').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('ISO 27001').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('GDPR Compliant').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('HIPAA Ready').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders copyright notice', () => {
@@ -239,20 +243,21 @@ describe('LandingPage', () => {
 
   it('opens auth modal when "Sign In / SSO" is clicked', () => {
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     expect(screen.getByText('Welcome Back')).toBeInTheDocument();
   });
 
   it('shows email input in magic link mode by default', () => {
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     expect(screen.getByPlaceholderText('name@company.com')).toBeInTheDocument();
-    expect(screen.getByText('Send Magic Link')).toBeInTheDocument();
+    // Tab + submit button both show "Send Magic Link"
+    expect(screen.getAllByText('Send Magic Link').length).toBeGreaterThanOrEqual(1);
   });
 
   it('closes auth modal when X is clicked', () => {
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     expect(screen.getByText('Welcome Back')).toBeInTheDocument();
     // Click the close button (X icon)
     const closeButtons = screen.getAllByTestId('icon-X');
@@ -273,10 +278,10 @@ describe('LandingPage', () => {
       logout: vi.fn(),
     });
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'test@example.com' } });
     await act(async () => {
-      fireEvent.click(screen.getByText('Send Magic Link'));
+      { const btns = screen.getAllByText('Send Magic Link'); fireEvent.click(btns[btns.length - 1]); }
     });
     await waitFor(() => {
       expect(loginWithMagicLink).toHaveBeenCalledWith('test@example.com');
@@ -294,10 +299,10 @@ describe('LandingPage', () => {
       logout: vi.fn(),
     });
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'user@example.com' } });
     await act(async () => {
-      fireEvent.click(screen.getByText('Send Magic Link'));
+      { const btns = screen.getAllByText('Send Magic Link'); fireEvent.click(btns[btns.length - 1]); }
     });
     await waitFor(() => {
       expect(screen.getByText('Check your email')).toBeInTheDocument();
@@ -316,13 +321,13 @@ describe('LandingPage', () => {
       logout: vi.fn(),
     });
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'user@example.com' } });
     await act(async () => {
-      fireEvent.click(screen.getByText('Send Magic Link'));
+      { const btns = screen.getAllByText('Send Magic Link'); fireEvent.click(btns[btns.length - 1]); }
     });
     await waitFor(() => {
-      expect(screen.getByText('(Simulate Clicking Link from Email)')).toBeInTheDocument();
+      expect(screen.getByText('Sign In Now (Dev Mode)')).toBeInTheDocument();
     });
   });
 
@@ -338,14 +343,14 @@ describe('LandingPage', () => {
       logout: vi.fn(),
     });
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'user@example.com' } });
     await act(async () => {
-      fireEvent.click(screen.getByText('Send Magic Link'));
+      { const btns = screen.getAllByText('Send Magic Link'); fireEvent.click(btns[btns.length - 1]); }
     });
-    await waitFor(() => screen.getByText('(Simulate Clicking Link from Email)'));
+    await waitFor(() => screen.getByText('Sign In Now (Dev Mode)'));
     await act(async () => {
-      fireEvent.click(screen.getByText('(Simulate Clicking Link from Email)'));
+      fireEvent.click(screen.getByText('Sign In Now (Dev Mode)'));
     });
     await waitFor(() => {
       expect(verifyMagicLink).toHaveBeenCalledWith('mock-token');
@@ -356,27 +361,33 @@ describe('LandingPage', () => {
 
   it('switches to password login mode', () => {
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     fireEvent.click(screen.getByText('Password'));
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
-    expect(screen.getByText('Sign In')).toBeInTheDocument();
+    // Password mode submit button also uses t('auth.login') = "Log In"
+    expect(screen.getAllByText('Log In').length).toBeGreaterThanOrEqual(2);
   });
 
   it('shows Forgot password link in password mode', () => {
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     fireEvent.click(screen.getByText('Password'));
-    expect(screen.getByText('Forgot password?')).toBeInTheDocument();
+    expect(screen.getByText('Forgot Password?')).toBeInTheDocument();
   });
 
   it('switches between magic link and password modes', () => {
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
-    expect(screen.getByText('Send Magic Link')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Log In'));
+    // Magic link mode: tab + submit button both say "Send Magic Link"
+    expect(screen.getAllByText('Send Magic Link').length).toBeGreaterThanOrEqual(1);
     fireEvent.click(screen.getByText('Password'));
-    expect(screen.getByText('Sign In')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Magic Link'));
-    expect(screen.getByText('Send Magic Link')).toBeInTheDocument();
+    // Password mode: submit button uses t('auth.login') = "Log In"
+    expect(screen.getAllByText('Log In').length).toBeGreaterThanOrEqual(2);
+    // Switch back to magic link mode via the tab
+    const sendMagicLinks = screen.getAllByText('Send Magic Link');
+    fireEvent.click(sendMagicLinks[0]); // the tab
+    // Now both tab + submit show "Send Magic Link"
+    expect(screen.getAllByText('Send Magic Link').length).toBeGreaterThanOrEqual(2);
   });
 
   // ---- Auth Modal - Registration ----
@@ -432,8 +443,8 @@ describe('LandingPage', () => {
     });
   });
 
-  it('shows error alert on registration network failure', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  it('shows error toast on registration network failure', async () => {
+    const { toast } = await import('sonner');
     const { api } = await import('@/services/api');
     (api.auth.register as any).mockRejectedValueOnce(new Error('Network error: Failed to fetch'));
     renderWithRouter(<LandingPage />);
@@ -444,9 +455,8 @@ describe('LandingPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
     });
     await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Cannot connect to server'));
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Cannot connect to server'));
     });
-    alertSpy.mockRestore();
   });
 
   // ---- Signup Modal (auto-show) ----
@@ -486,7 +496,10 @@ describe('LandingPage', () => {
     sessionStorage.removeItem('hasSeenSignupModal');
     renderWithRouter(<LandingPage />);
     expect(screen.getByText('Start Your Free Trial')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Sign In'));
+    // The signup modal's sign-in link uses t('auth.login') = "Log In"
+    const logInButtons = screen.getAllByText('Log In');
+    // Click the one in the signup modal (not the navbar one)
+    fireEvent.click(logInButtons[logInButtons.length - 1]);
     expect(screen.getByText('Welcome Back')).toBeInTheDocument();
     // Signup modal should be closed
     expect(screen.queryByText('Start Your Free Trial')).not.toBeInTheDocument();
@@ -500,8 +513,8 @@ describe('LandingPage', () => {
 
   // ---- Login Error Handling ----
 
-  it('shows network error alert on login failure', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  it('shows network error toast on login failure', async () => {
+    const { toast } = await import('sonner');
     const { useAuth } = await import('@/contexts/AuthContext');
     (useAuth as any).mockReturnValue({
       user: null,
@@ -512,19 +525,19 @@ describe('LandingPage', () => {
       logout: vi.fn(),
     });
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'test@test.com' } });
     await act(async () => {
-      fireEvent.click(screen.getByText('Send Magic Link'));
+      const sendBtns = screen.getAllByText('Send Magic Link');
+      fireEvent.click(sendBtns[sendBtns.length - 1]);
     });
     await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Cannot connect to server'));
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Cannot connect to server'));
     });
-    alertSpy.mockRestore();
   });
 
-  it('shows generic error alert on login failure', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  it('shows generic error toast on login failure', async () => {
+    const { toast } = await import('sonner');
     const { useAuth } = await import('@/contexts/AuthContext');
     (useAuth as any).mockReturnValue({
       user: null,
@@ -535,14 +548,14 @@ describe('LandingPage', () => {
       logout: vi.fn(),
     });
     renderWithRouter(<LandingPage />);
-    fireEvent.click(screen.getByText('Sign In / SSO'));
+    fireEvent.click(screen.getByText('Log In'));
     fireEvent.change(screen.getByPlaceholderText('name@company.com'), { target: { value: 'test@test.com' } });
     await act(async () => {
-      fireEvent.click(screen.getByText('Send Magic Link'));
+      const sendBtns = screen.getAllByText('Send Magic Link');
+      fireEvent.click(sendBtns[sendBtns.length - 1]);
     });
     await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to send magic link'));
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Failed to send magic link'));
     });
-    alertSpy.mockRestore();
   });
 });

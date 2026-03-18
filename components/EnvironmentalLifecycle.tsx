@@ -1091,3 +1091,5 @@ export const EnvironmentalLifecycle: React.FC<EnvironmentalLifecycleProps> = ({ 
     </div>
   );
 };
+
+export default EnvironmentalLifecycle;

@@ -22,13 +22,15 @@ const mockDisconnect = jest.fn();
 const mockOn = jest.fn();
 const mockUse = jest.fn();
 
+const MockPrismaClient = jest.fn();
+
 jest.mock('@prisma/client', () => ({
-  PrismaClient: jest.fn().mockImplementation(() => ({
-    $queryRaw: mockQueryRaw,
-    $disconnect: mockDisconnect,
-    $on: mockOn,
-    $use: mockUse,
-  })),
+  PrismaClient: MockPrismaClient,
+}));
+
+// The actual database module imports from generated/prisma/client
+jest.mock('../../../generated/prisma/client', () => ({
+  PrismaClient: MockPrismaClient,
 }));
 
 describe('Database Configuration', () => {
@@ -37,6 +39,24 @@ describe('Database Configuration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetModules();
+
+    // Re-establish mock implementations cleared by resetMocks: true
+    mockQueryRaw.mockResolvedValue([{ '?column?': 1 }]);
+    mockDisconnect.mockResolvedValue(undefined);
+    mockOn.mockReturnValue(undefined);
+    mockUse.mockReturnValue(undefined);
+
+    const mockInstance = {
+      $queryRaw: mockQueryRaw,
+      $disconnect: mockDisconnect,
+      $on: mockOn,
+      $use: mockUse,
+      $extends: jest.fn().mockImplementation(function(this: any) { return this; }),
+    };
+    // $extends should return the same mock instance
+    mockInstance.$extends.mockReturnValue(mockInstance);
+    MockPrismaClient.mockImplementation(() => mockInstance);
+
     // Re-import logger mock after reset
     logger = require('../../../config/logger').default;
   });
@@ -50,18 +70,15 @@ describe('Database Configuration', () => {
     });
 
     it('should configure PrismaClient with DATABASE_URL from environment', () => {
-      const { PrismaClient } = require('@prisma/client');
+      const originalUrl = process.env.DATABASE_URL;
       require('../../../config/database');
 
-      expect(PrismaClient).toHaveBeenCalledWith(
-        expect.objectContaining({
-          datasources: {
-            db: {
-              url: process.env.DATABASE_URL,
-            },
-          },
-        })
-      );
+      // The module sets process.env.DATABASE_URL with pool params before constructing PrismaClient
+      expect(process.env.DATABASE_URL).toContain('connection_limit');
+      expect(process.env.DATABASE_URL).toContain('pool_timeout');
+
+      // Restore
+      process.env.DATABASE_URL = originalUrl;
     });
 
     it('should configure PrismaClient with logging options', () => {

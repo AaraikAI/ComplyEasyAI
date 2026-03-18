@@ -403,9 +403,17 @@ class RisksController {
 
       res.json({ plan });
       logger.info(`Remediation plan generated for risk: ${id}`);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Generate remediation error', error);
-      throw new AppError('Failed to generate remediation plan', 500);
+      if (error instanceof AppError) throw error;
+      const msg = error?.message || 'Unknown error';
+      if (msg.includes('Rate limit')) {
+        throw new AppError('AI rate limit exceeded. Please try again in a moment.', 429);
+      }
+      if (msg.includes('API key') || msg.includes('authentication') || msg.includes('GEMINI_API_KEY')) {
+        throw new AppError('AI service not configured. Please check GEMINI_API_KEY.', 503);
+      }
+      throw new AppError(`Failed to generate remediation plan: ${msg}`, 500);
     }
   };
 

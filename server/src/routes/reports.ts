@@ -461,7 +461,7 @@ router.post(
                 if (sectionFilters.status) {
                   incidentWhere.status = sectionFilters.status;
                 }
-                const incidents = await prisma.incident.findMany({
+                const incidents = await prisma.grcIncident.findMany({
                   where: incidentWhere,
                   orderBy: { detectedAt: 'desc' },
                   take: 100,
@@ -469,7 +469,7 @@ router.post(
                 sectionData.data = {
                   ...(sectionData.data || {}),
                   incidents,
-                  totalCount: await prisma.incident.count({ where: { organizationId: orgId } }),
+                  totalCount: await prisma.grcIncident.count({ where: { organizationId: orgId } }),
                 };
                 break;
               }

@@ -280,8 +280,11 @@ router.patch(
         return;
       }
 
-      // Prevent updating immutable fields
-      const { id, organizationId, createdAt, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'title', 'description', 'type', 'dueDate', 'frameworkId', 'controlId',
+        'assignedTo', 'status', 'reminderDays', 'recurrence', 'completedAt',
+      ]);
 
       // Convert date strings
       if (updateData.dueDate) {

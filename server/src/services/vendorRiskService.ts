@@ -1,6 +1,7 @@
 import { VendorRiskLevel, VendorStatus, Vendor, Prisma, MonitorStatus } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 
 /**
@@ -25,6 +26,11 @@ export class VendorRiskService {
     annualSpend?: number;
     hasDataAccess?: boolean;
     dataTypes?: Prisma.InputJsonValue;
+    securityContact?: string;
+    soc2Report?: boolean;
+    iso27001Certified?: boolean;
+    gdprCompliant?: boolean;
+    hipaaBaa?: boolean;
     userId: string;
   }) {
     const vendor = await prisma.vendor.create({
@@ -42,6 +48,11 @@ export class VendorRiskService {
         annualSpend: data.annualSpend,
         hasDataAccess: data.hasDataAccess || false,
         dataTypes: data.dataTypes,
+        securityContact: data.securityContact,
+        soc2Report: data.soc2Report ?? false,
+        iso27001Certified: data.iso27001Certified ?? false,
+        gdprCompliant: data.gdprCompliant ?? false,
+        hipaaBaa: data.hipaaBaa ?? false,
         status: 'Onboarding',
         riskLevel: 'Medium',
         riskScore: 0,
@@ -333,7 +344,7 @@ export class VendorRiskService {
     });
 
     if (!vendor) {
-      throw new Error('Vendor not found');
+      throw new AppError('Vendor not found', 404);
     }
 
     // Calculate scorecard metrics
@@ -505,7 +516,7 @@ export class VendorRiskService {
         monitors: true,
       },
     });
-    if (!vendor) throw new Error('Vendor not found');
+    if (!vendor) throw new AppError('Vendor not found', 404);
     return vendor;
   }
 
@@ -543,21 +554,25 @@ export class VendorRiskService {
     const existing = await prisma.vendor.findFirst({
       where: { id: vendorId, organizationId },
     });
-    if (!existing) throw new Error('Vendor not found');
+    if (!existing) throw new AppError('Vendor not found', 404);
 
     const vendor = await prisma.vendor.update({
       where: { id: vendorId },
       data,
     });
 
-    await AuditLogger.log({
-      userId,
-      organizationId,
-      action: 'vendor.updated',
-      resourceType: 'Vendor',
-      resourceId: vendorId,
-      metadata: { vendorName: vendor.name, updatedFields: Object.keys(data) },
-    });
+    try {
+      await AuditLogger.log({
+        userId,
+        organizationId,
+        action: 'vendor.updated',
+        resourceType: 'Vendor',
+        resourceId: vendorId,
+        metadata: { vendorName: vendor.name, updatedFields: Object.keys(data) },
+      });
+    } catch (auditErr) {
+      // Audit logging should not block vendor updates
+    }
 
     return vendor;
   }
@@ -569,7 +584,7 @@ export class VendorRiskService {
     const existing = await prisma.vendor.findFirst({
       where: { id: vendorId, organizationId },
     });
-    if (!existing) throw new Error('Vendor not found');
+    if (!existing) throw new AppError('Vendor not found', 404);
 
     const vendor = await prisma.vendor.update({
       where: { id: vendorId },

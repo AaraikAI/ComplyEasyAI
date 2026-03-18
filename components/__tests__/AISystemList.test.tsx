@@ -83,6 +83,10 @@ vi.mock('@/contexts/OnboardingContext', () => ({
   useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true, showCelebration: false }),
 }));
 
+vi.mock('@/contexts/I18nContext', () => ({
+  useI18n: () => ({ t: (key: string) => key, locale: 'en', setLocale: vi.fn(), availableLocales: [], isLoading: false }),
+}));
+
 import { AISystemList } from '@/components/AISystemList';
 
 describe('AISystemList', () => {
@@ -103,7 +107,7 @@ describe('AISystemList', () => {
   it('displays search input and filter controls', async () => {
     render(<AISystemList onSelectSystem={mockOnSelectSystem} onCreateNew={mockOnCreateNew} />);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Search systems/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/common\.search/i)).toBeInTheDocument();
     });
   });
 

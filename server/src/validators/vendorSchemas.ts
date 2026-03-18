@@ -20,6 +20,11 @@ export const createVendorSchema = Joi.object({
   annualSpend: Joi.number().min(0).allow(null).optional(),
   hasDataAccess: Joi.boolean().optional(),
   dataTypes: Joi.alternatives().try(Joi.array(), Joi.object()).allow(null).optional(),
+  securityContact: Joi.string().max(200).allow('', null).optional(),
+  soc2Report: Joi.boolean().optional(),
+  iso27001Certified: Joi.boolean().optional(),
+  gdprCompliant: Joi.boolean().optional(),
+  hipaaBaa: Joi.boolean().optional(),
 })
   .min(1)
   .unknown(false);

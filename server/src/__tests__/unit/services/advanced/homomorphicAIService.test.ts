@@ -33,7 +33,7 @@ const mockPlaintext = {
 
 // Mock node-seal as a function
 const nodeSealFn = jest.fn() as jest.Mock<any>;
-jest.mock('node-seal', () => nodeSealFn);
+jest.mock('node-seal', () => nodeSealFn, { virtual: true });
 
 jest.mock('../../../../config/logger', () => ({
   __esModule: true,

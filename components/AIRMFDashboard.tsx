@@ -289,3 +289,4 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
   );
 };
 
+export default AIRMFDashboard;

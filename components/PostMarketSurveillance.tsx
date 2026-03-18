@@ -1450,3 +1450,5 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
     </div>
   );
 };
+
+export default PostMarketSurveillance;

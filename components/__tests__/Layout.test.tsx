@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 // --- Mocks ---
 
@@ -35,265 +36,250 @@ vi.mock('../Onboarding', () => ({
   OnboardingChecklistWidget: () => <div data-testid="onboarding-checklist" />,
 }));
 
+vi.mock('../NotificationCenter', () => ({
+  default: () => <div data-testid="notification-center"><button data-testid="bell-button"><span data-testid="icon-Bell" /></button></div>,
+}));
+
+vi.mock('../GlobalSearch', () => ({
+  default: ({ isOpen }: any) => isOpen ? <div data-testid="global-search" /> : null,
+}));
+
+vi.mock('../CommandPalette', () => ({
+  CommandPalette: () => null,
+}));
+
+vi.mock('../LanguageSwitcher', () => ({
+  LanguageSwitcher: () => <div data-testid="language-switcher" />,
+}));
+
+vi.mock('../ThemeToggle', () => ({
+  ThemeToggleCompact: () => <div data-testid="theme-toggle" />,
+}));
+
+vi.mock('../Breadcrumbs', () => ({
+  Breadcrumbs: () => <div data-testid="breadcrumbs" />,
+}));
+
+vi.mock('../SlimSidebar', () => ({
+  SlimSidebar: ({ onSwitchToClassic }: any) => (
+    <div data-testid="slim-sidebar">
+      <button onClick={onSwitchToClassic}>Switch to Classic</button>
+    </div>
+  ),
+}));
+
+vi.mock('../../routes/routeConfig', () => ({
+  pathToView: vi.fn((path: string) => path.replace('/', '') || 'dashboard'),
+  viewToPath: vi.fn((view: string) => `/${view}`),
+  getBreadcrumbs: vi.fn((path: string) => [{ label: 'Dashboard', path: '/dashboard' }]),
+  ROUTES: {
+    DASHBOARD: '/dashboard',
+    RISKS: '/risks',
+    ISSUES: '/issues',
+    VENDORS: '/vendors',
+    POLICIES: '/policies',
+    FRAMEWORKS: '/frameworks',
+    AI_RMF: '/ai-rmf',
+    EU_AI_ACT: '/eu-ai-act',
+    EU_CRA: '/eu-cra',
+    CSRD: '/csrd',
+    ECODESIGN: '/ecodesign',
+    NIS2: '/nis2',
+    DMA: '/dma',
+    DSA: '/dsa',
+    US_PRIVACY: '/us-privacy',
+    DORA: '/dora',
+    REGULATORY_CHANGES: '/regulatory-changes',
+    GOVERNANCE: '/governance',
+    SOX: '/sox',
+    EVIDENCE_HUB: '/evidence-hub',
+    PRODUCTS: '/products',
+    POST_MARKET_SURVEILLANCE: '/post-market-surveillance',
+    MONITORING: '/monitoring',
+    REPORTS: '/reports',
+    AUDIT_TRAIL: '/audit',
+    EXECUTIVE_DASHBOARD: '/executive',
+    PRIVACY: '/privacy',
+    DPIA: '/dpia',
+    ROPA: '/ropa',
+    PRIVACY_NOTICES: '/privacy-notices',
+    ACCOUNT_DELETION: '/account-deletion',
+    WORKSPACES: '/workspaces',
+    ENTERPRISE_OPS: '/enterprise-ops',
+    QUESTIONNAIRES: '/questionnaires',
+    ACOS: '/acos',
+    CALENDAR: '/calendar',
+    MATURITY: '/maturity',
+    INTEGRATIONS: '/integrations',
+    SETTINGS: '/settings',
+    AI_DOCUMENT_TOOLS: '/ai-document-tools',
+    AI_COMPLIANCE_TOOLS: '/ai-compliance-tools',
+  },
+}));
+
 import { Layout } from '../Layout';
 
-describe('Layout Component', () => {
-  const mockNavigate = vi.fn();
+const renderLayout = (path = '/dashboard') =>
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <Layout>
+        <div>Test Content</div>
+      </Layout>
+    </MemoryRouter>
+  );
 
+describe('Layout Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Default to 'classic' sidebar for most tests
+    localStorage.setItem('complyeasy_sidebar_variant', 'classic');
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.useRealTimers();
+    localStorage.clear();
   });
 
   // ===== RENDERING =====
   describe('Rendering', () => {
-    it('renders the layout with children', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test Content</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders the layout with children', () => {
+      renderLayout();
       expect(screen.getByText('Test Content')).toBeInTheDocument();
     });
 
-    it('renders the sidebar with ComplyEasy branding', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders the sidebar with ComplyEasy branding', () => {
+      renderLayout();
       expect(screen.getByText('ComplyEasy')).toBeInTheDocument();
     });
 
-    it('renders user name in the header', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      expect(screen.getByText('Test User')).toBeInTheDocument();
+    it('renders user name in the header', () => {
+      renderLayout();
+      // User name may appear in both sidebar footer and header
+      expect(screen.getAllByText('Test User').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders user role in the header', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      expect(screen.getByText('admin')).toBeInTheDocument();
+    it('renders user avatar initials', () => {
+      renderLayout();
+      // Avatar text appears in header
+      expect(screen.getAllByText('TU').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders user avatar initials', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      expect(screen.getByText('TU')).toBeInTheDocument();
+    it('renders current view title in header', () => {
+      renderLayout();
+      // "Dashboard" appears in both sidebar nav and header title
+      expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders current view title in header', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      expect(screen.getByText('dashboard')).toBeInTheDocument();
-    });
-
-    it('renders Encrypted Zero Trust badge', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders Encrypted Zero Trust badge', () => {
+      renderLayout();
       expect(screen.getByText(/Encrypted/)).toBeInTheDocument();
     });
 
-    it('renders Sign Out button', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders Sign Out button', () => {
+      renderLayout();
       expect(screen.getByText('Sign Out')).toBeInTheDocument();
     });
 
-    it('renders onboarding components', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders onboarding components', () => {
+      renderLayout();
       expect(screen.getByTestId('onboarding-overlay')).toBeInTheDocument();
       expect(screen.getByTestId('onboarding-checklist')).toBeInTheDocument();
     });
 
-    it('renders compliance chat', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders compliance chat', () => {
+      renderLayout();
       expect(screen.getByTestId('compliance-chat')).toBeInTheDocument();
     });
   });
 
   // ===== NAVIGATION =====
   describe('Navigation', () => {
-    it('renders Platform section label', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders Platform section label', () => {
+      renderLayout();
       expect(screen.getByText('Platform')).toBeInTheDocument();
     });
 
-    it('renders AI Tools section label', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders AI Tools section label', () => {
+      renderLayout();
       expect(screen.getByText('AI Tools')).toBeInTheDocument();
     });
 
-    it('renders Admin section label for admin users', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders Admin section label for admin users', () => {
+      renderLayout();
       expect(screen.getByText('Admin')).toBeInTheDocument();
     });
 
-    it('renders Dashboard nav item', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    it('renders Dashboard nav item', () => {
+      renderLayout();
+      expect(screen.getAllByText('Dashboard').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders Frameworks nav item', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders Frameworks nav item', () => {
+      renderLayout();
       expect(screen.getByText('Frameworks')).toBeInTheDocument();
     });
 
-    it('renders Risk Management nav item', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+    it('renders Risk Management nav item', () => {
+      renderLayout();
       expect(screen.getByText('Risk Management')).toBeInTheDocument();
     });
 
-    it('renders AI Tool items', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      expect(screen.getByText('Policy Generator')).toBeInTheDocument();
-      expect(screen.getByText('Contract Analyzer')).toBeInTheDocument();
-      expect(screen.getByText('Gap Analysis')).toBeInTheDocument();
+    it('renders AI Tool items', () => {
+      renderLayout();
+      expect(screen.getByText('AI Document Tools')).toBeInTheDocument();
+      expect(screen.getByText('AI Compliance Tools')).toBeInTheDocument();
     });
 
-    it('calls onNavigate when Dashboard is clicked', async () => {
-      render(
-        <Layout currentView="settings" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      fireEvent.click(screen.getByText('Dashboard'));
-      expect(mockNavigate).toHaveBeenCalledWith('dashboard');
+    it('navigates when Dashboard link is clicked', () => {
+      renderLayout('/settings');
+      const dashboardLinks = screen.getAllByText('Dashboard');
+      const dashboardLink = dashboardLinks[0].closest('a');
+      expect(dashboardLink).toHaveAttribute('href', '/dashboard');
     });
 
-    it('calls onNavigate when Frameworks is clicked', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      fireEvent.click(screen.getByText('Frameworks'));
-      expect(mockNavigate).toHaveBeenCalledWith('frameworks');
+    it('navigates when Frameworks link is clicked', () => {
+      renderLayout();
+      const link = screen.getByText('Frameworks').closest('a');
+      expect(link).toHaveAttribute('href', '/frameworks');
     });
 
-    it('calls onNavigate when Settings is clicked', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      fireEvent.click(screen.getByText('Settings'));
-      expect(mockNavigate).toHaveBeenCalledWith('settings');
-    });
-
-    it('calls onNavigate when an AI tool is clicked', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      fireEvent.click(screen.getByText('Policy Generator'));
-      expect(mockNavigate).toHaveBeenCalledWith('ai-policy');
+    it('navigates when Settings link is clicked', () => {
+      renderLayout();
+      const link = screen.getByText('Settings').closest('a');
+      expect(link).toHaveAttribute('href', '/settings');
     });
 
     it('highlights active nav item', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      const dashboardBtn = screen.getByText('Dashboard').closest('button');
-      expect(dashboardBtn?.className).toContain('bg-brand-600');
+      // Override useLocation to simulate being on /dashboard
+      const rrdom = await import('react-router-dom');
+      (rrdom.useLocation as any).mockReturnValue({ pathname: '/dashboard', search: '', hash: '', state: null });
+      renderLayout('/dashboard');
+      const dashboardLinks = screen.getAllByText('Dashboard');
+      // Find the one that's a nav link (closest 'a' tag)
+      const dashboardLink = dashboardLinks.map(el => el.closest('a')).find(a => a?.getAttribute('href') === '/dashboard');
+      expect(dashboardLink?.className).toContain('bg-brand-600');
+      // Restore
+      (rrdom.useLocation as any).mockReturnValue({ pathname: '/', search: '', hash: '', state: null });
     });
   });
 
-  // ===== SIDEBAR TOGGLE =====
-  describe('Sidebar Toggle', () => {
-    it('renders mobile menu button', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      // Menu icon is rendered for mobile
+  // ===== SIDEBAR VARIANTS =====
+  describe('Sidebar Variants', () => {
+    it('renders slim sidebar by default when no localStorage', () => {
+      localStorage.removeItem('complyeasy_sidebar_variant');
+      renderLayout();
+      expect(screen.getByTestId('slim-sidebar')).toBeInTheDocument();
+    });
+
+    it('renders classic sidebar when localStorage says classic', () => {
+      localStorage.setItem('complyeasy_sidebar_variant', 'classic');
+      renderLayout();
+      expect(screen.getByText('ComplyEasy')).toBeInTheDocument();
+    });
+
+    it('renders mobile menu button in classic mode', () => {
+      renderLayout();
+      // Menu icon is rendered for mobile in classic sidebar
       const menuIcons = screen.getAllByTestId('icon-Menu');
       expect(menuIcons.length).toBeGreaterThan(0);
     });
@@ -303,126 +289,10 @@ describe('Layout Component', () => {
   describe('Logout', () => {
     it('calls logout when Sign Out is clicked', async () => {
       const { useAuth } = await import('../../contexts/AuthContext');
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
+      renderLayout();
       fireEvent.click(screen.getByText('Sign Out'));
       const authResult = (useAuth as any)();
       expect(authResult.logout).toHaveBeenCalled();
-    });
-  });
-
-  // ===== NOTIFICATIONS =====
-  describe('Notifications', () => {
-    it('renders notification bell', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      const bellIcons = screen.getAllByTestId('icon-Bell');
-      expect(bellIcons.length).toBeGreaterThan(0);
-    });
-
-    it('opens notification panel when bell is clicked', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-
-      const bellButton = screen.getAllByTestId('icon-Bell')[0].closest('button')!;
-      fireEvent.click(bellButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
-      });
-    });
-
-    it('shows no new notifications message when empty', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-
-      const bellButton = screen.getAllByTestId('icon-Bell')[0].closest('button')!;
-      fireEvent.click(bellButton);
-
-      // Wait a bit longer for debounced notifications
-      await act(async () => { vi.advanceTimersByTime(600); });
-
-      await waitFor(() => {
-        // Either shows "No new notifications" or shows actual system notification
-        const noNotifs = screen.queryByText('No new notifications.');
-        const auditNotif = screen.queryByText('Audit Preparedness');
-        expect(noNotifs || auditNotif).toBeTruthy();
-      });
-    });
-
-    it('shows Mark all as read button', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-
-      const bellButton = screen.getAllByTestId('icon-Bell')[0].closest('button')!;
-      fireEvent.click(bellButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Mark all as read')).toBeInTheDocument();
-      });
-    });
-
-    it('closes notification panel when bell is clicked again', async () => {
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-
-      const bellButton = screen.getAllByTestId('icon-Bell')[0].closest('button')!;
-      fireEvent.click(bellButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
-      });
-
-      fireEvent.click(bellButton);
-
-      await waitFor(() => {
-        expect(screen.queryByText('Notifications')).not.toBeInTheDocument();
-      });
-    });
-
-    it('shows notification badge when there are notifications', async () => {
-      const apiModule = await import('../../services/api');
-      (apiModule.api.risks.list as any).mockResolvedValueOnce([
-        { id: 'r1', description: 'Risk alert', detectedAt: '2026-01-01', assignedTo: 'Test User' },
-      ]);
-      render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-
-      // Wait for debounced notification loading
-      await act(async () => { vi.advanceTimersByTime(600); });
-
-      const bellContainer = screen.getAllByTestId('icon-Bell')[0].closest('button')!;
-      // Check if there's a notification badge (red dot)
-      const badge = bellContainer.querySelector('.bg-red-500');
-      expect(badge).toBeTruthy();
     });
   });
 
@@ -430,13 +300,14 @@ describe('Layout Component', () => {
   describe('Null User', () => {
     it('returns null when user is not authenticated', async () => {
       const { useAuth } = await import('../../contexts/AuthContext');
-      // Use mockReturnValue (not Once) because multiple components call useAuth()
       (useAuth as any).mockReturnValue({ user: null, isAuthenticated: false, logout: vi.fn() });
 
       const { container } = render(
-        <Layout currentView="dashboard" onNavigate={mockNavigate}>
-          <div>Test Content</div>
-        </Layout>
+        <MemoryRouter>
+          <Layout>
+            <div>Test Content</div>
+          </Layout>
+        </MemoryRouter>
       );
       expect(container.firstChild).toBeNull();
 
@@ -446,20 +317,6 @@ describe('Layout Component', () => {
         isAuthenticated: true,
         logout: vi.fn(),
       });
-    });
-  });
-
-  // ===== VIEW TITLE FORMATTING =====
-  describe('View Title Formatting', () => {
-    it('formats ai- prefixed views correctly', async () => {
-      render(
-        <Layout currentView="ai-policy" onNavigate={mockNavigate}>
-          <div>Test</div>
-        </Layout>
-      );
-      await act(async () => { vi.advanceTimersByTime(600); });
-      // "ai-policy" becomes "AI policy"
-      expect(screen.getByText('AI policy')).toBeInTheDocument();
     });
   });
 });

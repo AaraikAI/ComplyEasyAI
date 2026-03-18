@@ -53,7 +53,7 @@ describe('SignupPage', () => {
   describe('Step 1: Account Credentials', () => {
     it('renders step 1 by default', () => {
       render(<SignupPage />);
-      expect(screen.getByText('Create Your Account')).toBeInTheDocument();
+      expect(screen.getByText('Create Account')).toBeInTheDocument();
       expect(screen.getByText(/Start your 3-day free trial/)).toBeInTheDocument();
     });
 
@@ -149,7 +149,7 @@ describe('SignupPage', () => {
 
     it('renders Sign In link', () => {
       render(<SignupPage />);
-      expect(screen.getByText('Sign In')).toBeInTheDocument();
+      expect(screen.getByText('Log In')).toBeInTheDocument();
     });
 
     it('renders ComplyEasy AI header', () => {
@@ -159,8 +159,8 @@ describe('SignupPage', () => {
 
     it('renders Terms of Service and Privacy Policy links', () => {
       render(<SignupPage />);
-      expect(screen.getAllByText('Terms of Service').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Privacy Policy').length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Terms of Service/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Privacy Policy/).length).toBeGreaterThan(0);
     });
 
     it('allows typing into email field', () => {
@@ -211,7 +211,7 @@ describe('SignupPage', () => {
     it('goes back to step 1 when Back button is clicked', () => {
       goToStep2();
       fireEvent.click(screen.getByText('Back'));
-      expect(screen.getByText('Create Your Account')).toBeInTheDocument();
+      expect(screen.getByText('Create Account')).toBeInTheDocument();
     });
 
     it('moves to step 3 on valid submission', () => {

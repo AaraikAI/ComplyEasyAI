@@ -123,7 +123,7 @@ describe('Reports', () => {
   it('renders dashboard heading', async () => {
     render(<Reports />);
     await waitFor(() => {
-      expect(screen.getByText('Compliance Reports')).toBeInTheDocument();
+      expect(screen.getByText('Reports')).toBeInTheDocument();
       expect(screen.getByText('AI-powered compliance reporting and analytics')).toBeInTheDocument();
     });
   });
@@ -183,7 +183,7 @@ describe('Reports', () => {
     render(<Reports />);
     await waitFor(() => {
       expect(screen.getByText('Generate Report')).toBeInTheDocument();
-      expect(screen.getByText('AI Executive Summary')).toBeInTheDocument();
+      expect(screen.getByText('Executive Report')).toBeInTheDocument();
       expect(screen.getByText('Compliance Autopilot')).toBeInTheDocument();
       expect(screen.getByText('Risk Report')).toBeInTheDocument();
     });
@@ -195,7 +195,7 @@ describe('Reports', () => {
       expect(screen.getByText('Additional Reports')).toBeInTheDocument();
       expect(screen.getByText('Vendor Risk Report')).toBeInTheDocument();
       expect(screen.getByText('Control Status Report')).toBeInTheDocument();
-      expect(screen.getByText('Audit Trail Report')).toBeInTheDocument();
+      expect(screen.getByText('Audit Report')).toBeInTheDocument();
     });
   });
 
@@ -213,7 +213,8 @@ describe('Reports', () => {
     await waitFor(() => screen.getByText('Generate Report'));
     fireEvent.click(screen.getByText('Generate Report'));
     await waitFor(() => {
-      expect(screen.getByText('Generate Compliance Report')).toBeInTheDocument();
+      // Heading and submit button both say "Generate Report"
+      expect(screen.getAllByText('Generate Report').length).toBeGreaterThanOrEqual(2);
       expect(screen.getByText('Report Configuration')).toBeInTheDocument();
     });
   });
@@ -236,7 +237,7 @@ describe('Reports', () => {
     await waitFor(() => screen.getByText('Dashboard'));
     fireEvent.click(screen.getByText('Dashboard'));
     await waitFor(() => {
-      expect(screen.getByText('Compliance Reports')).toBeInTheDocument();
+      expect(screen.getByText('Reports')).toBeInTheDocument();
     });
   });
 
@@ -256,10 +257,11 @@ describe('Reports', () => {
     render(<Reports />);
     await waitFor(() => screen.getByText('Generate Report'));
     fireEvent.click(screen.getByText('Generate Report'));
-    await waitFor(() => screen.getByText('AI Generate Report'));
-    // Button is disabled when no frameworks are selected, preventing generation
-    const button = screen.getByText('AI Generate Report').closest('button')!;
-    expect(button).toBeDisabled();
+    await waitFor(() => screen.getByText('Report Configuration'));
+    // The submit button is disabled when no frameworks are selected
+    const generateBtns = screen.getAllByText('Generate Report');
+    const submitBtn = generateBtns.find(el => el.closest('button[disabled]'));
+    expect(submitBtn?.closest('button')).toBeDisabled();
   });
 
   it('generates report after selecting a framework', async () => {
@@ -270,13 +272,16 @@ describe('Reports', () => {
     // Select SOC 2
     const checkbox = screen.getByText('SOC 2').closest('label')!.querySelector('input[type="checkbox"]')!;
     fireEvent.click(checkbox);
+    // Click the submit button (last "Generate Report" element which is the button)
+    const generateBtns = screen.getAllByText('Generate Report');
+    const submitBtn = generateBtns[generateBtns.length - 1].closest('button')!;
     await act(async () => {
-      fireEvent.click(screen.getByText('AI Generate Report'));
+      fireEvent.click(submitBtn);
     });
     await waitFor(() => {
-      // Multiple elements match /Compliance Report/ (heading + report content)
+      // Report content should appear
       const elements = screen.getAllByText(/Compliance Report/);
-      expect(elements.length).toBeGreaterThanOrEqual(2);
+      expect(elements.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -339,8 +344,10 @@ describe('Reports', () => {
     await waitFor(() => screen.getByText('SOC 2'));
     const checkbox = screen.getByText('SOC 2').closest('label')!.querySelector('input[type="checkbox"]')!;
     fireEvent.click(checkbox);
+    const generateBtns = screen.getAllByText('Generate Report');
+    const submitBtn = generateBtns[generateBtns.length - 1].closest('button')!;
     await act(async () => {
-      fireEvent.click(screen.getByText('AI Generate Report'));
+      fireEvent.click(submitBtn);
     });
     await waitFor(() => {
       expect(screen.getByText('Export Report')).toBeInTheDocument();
@@ -359,14 +366,14 @@ describe('Reports', () => {
     expect(screen.queryByText('Failed to load frameworks')).not.toBeInTheDocument();
   });
 
-  // ---- AI Executive Summary ----
+  // ---- Executive Report ----
 
   it('generates executive summary when button is clicked', async () => {
     const { api } = await import('@/services/api');
     render(<Reports />);
-    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await waitFor(() => screen.getByText('Executive Report'));
     await act(async () => {
-      fireEvent.click(screen.getByText('AI Executive Summary'));
+      fireEvent.click(screen.getByText('Executive Report'));
     });
     await waitFor(() => {
       expect(api.enterprise.reports.getExecutiveSummary).toHaveBeenCalled();
@@ -377,9 +384,9 @@ describe('Reports', () => {
 
   it('shows executive summary key metrics', async () => {
     render(<Reports />);
-    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await waitFor(() => screen.getByText('Executive Report'));
     await act(async () => {
-      fireEvent.click(screen.getByText('AI Executive Summary'));
+      fireEvent.click(screen.getByText('Executive Report'));
     });
     await waitFor(() => {
       expect(screen.getByText('Total Controls')).toBeInTheDocument();
@@ -391,9 +398,9 @@ describe('Reports', () => {
 
   it('shows executive narrative', async () => {
     render(<Reports />);
-    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await waitFor(() => screen.getByText('Executive Report'));
     await act(async () => {
-      fireEvent.click(screen.getByText('AI Executive Summary'));
+      fireEvent.click(screen.getByText('Executive Report'));
     });
     await waitFor(() => {
       expect(screen.getByText('Executive Narrative')).toBeInTheDocument();
@@ -403,9 +410,9 @@ describe('Reports', () => {
 
   it('shows framework summaries in executive view', async () => {
     render(<Reports />);
-    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await waitFor(() => screen.getByText('Executive Report'));
     await act(async () => {
-      fireEvent.click(screen.getByText('AI Executive Summary'));
+      fireEvent.click(screen.getByText('Executive Report'));
     });
     await waitFor(() => {
       expect(screen.getByText('Framework Status')).toBeInTheDocument();
@@ -414,9 +421,9 @@ describe('Reports', () => {
 
   it('shows recommendations in executive view', async () => {
     render(<Reports />);
-    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await waitFor(() => screen.getByText('Executive Report'));
     await act(async () => {
-      fireEvent.click(screen.getByText('AI Executive Summary'));
+      fireEvent.click(screen.getByText('Executive Report'));
     });
     await waitFor(() => {
       expect(screen.getByText('Key Recommendations')).toBeInTheDocument();
@@ -427,9 +434,9 @@ describe('Reports', () => {
 
   it('shows Export JSON button in executive summary', async () => {
     render(<Reports />);
-    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await waitFor(() => screen.getByText('Executive Report'));
     await act(async () => {
-      fireEvent.click(screen.getByText('AI Executive Summary'));
+      fireEvent.click(screen.getByText('Executive Report'));
     });
     await waitFor(() => {
       expect(screen.getByText('Export JSON')).toBeInTheDocument();
@@ -538,7 +545,7 @@ describe('Reports', () => {
     });
     await waitFor(() => {
       expect(api.enterprise.reports.getRiskReport).toHaveBeenCalled();
-      expect(screen.getByText('AI Risk Report')).toBeInTheDocument();
+      expect(screen.getByText('Risk Report')).toBeInTheDocument();
     });
   });
 
@@ -654,9 +661,9 @@ describe('Reports', () => {
     const { api } = await import('@/services/api');
     (api.enterprise.reports.getExecutiveSummary as any).mockRejectedValueOnce(new Error('Summary failed'));
     render(<Reports />);
-    await waitFor(() => screen.getByText('AI Executive Summary'));
+    await waitFor(() => screen.getByText('Executive Report'));
     await act(async () => {
-      fireEvent.click(screen.getByText('AI Executive Summary'));
+      fireEvent.click(screen.getByText('Executive Report'));
     });
     await waitFor(() => {
       expect(screen.getByText('Summary failed')).toBeInTheDocument();

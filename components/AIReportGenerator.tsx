@@ -172,3 +172,5 @@ export const AIReportGenerator: React.FC = () => {
     </div>
   );
 };
+
+export default AIReportGenerator;

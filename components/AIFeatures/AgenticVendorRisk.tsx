@@ -406,6 +406,15 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [isRunningAgent, setIsRunningAgent] = useState(false);
+  const [vendorAssessmentRunning, setVendorAssessmentRunning] = useState<Record<string, boolean>>({});
+  const [vendorAssessmentComplete, setVendorAssessmentComplete] = useState<Record<string, boolean>>({});
+  const [alertThresholdVendor, setAlertThresholdVendor] = useState<string | null>(null);
+  const [socReportRequested, setSocReportRequested] = useState<Record<string, boolean>>({});
+  const [assessmentDetailView, setAssessmentDetailView] = useState<string | null>(null);
+  const [pausedAgents, setPausedAgents] = useState<Record<string, boolean>>({});
+  const [generatingReports, setGeneratingReports] = useState<Record<number, boolean>>({});
+  const [generatedReports, setGeneratedReports] = useState<Record<number, boolean>>({});
+  const [scheduleReportIdx, setScheduleReportIdx] = useState<number | null>(null);
 
   // Stats
   const criticalVendors = VENDORS.filter(v => v.tier === 'critical').length;
@@ -828,18 +837,74 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     )}
 
                     {/* Actions */}
+                    {/* Alert Threshold Modal */}
+                    {alertThresholdVendor === vendor.id && (
+                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <h5 className="text-xs font-semibold text-yellow-900 flex items-center gap-1">
+                            <Bell size={12} />
+                            Alert Threshold Settings for {vendor.name}
+                          </h5>
+                          <button onClick={() => setAlertThresholdVendor(null)} className="text-yellow-600 hover:text-yellow-800">
+                            <X size={14} />
+                          </button>
+                        </div>
+                        <p className="text-xs text-yellow-700">
+                          Current threshold: Alert when risk score drops by {vendor.tier === 'critical' ? 5 : vendor.tier === 'high' ? 10 : vendor.tier === 'medium' ? 15 : 20} points.
+                          Tier-based thresholds are active for this vendor.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors">
-                        <Cpu size={12} />
-                        Run AI Assessment
+                      <button
+                        onClick={() => {
+                          if (vendorAssessmentRunning[vendor.id]) return;
+                          setVendorAssessmentRunning(prev => ({ ...prev, [vendor.id]: true }));
+                          setVendorAssessmentComplete(prev => ({ ...prev, [vendor.id]: false }));
+                          setTimeout(() => {
+                            setVendorAssessmentRunning(prev => ({ ...prev, [vendor.id]: false }));
+                            setVendorAssessmentComplete(prev => ({ ...prev, [vendor.id]: true }));
+                          }, 2000);
+                        }}
+                        disabled={vendorAssessmentRunning[vendor.id]}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                      >
+                        {vendorAssessmentRunning[vendor.id] ? (
+                          <><Loader2 size={12} className="animate-spin" />Running...</>
+                        ) : vendorAssessmentComplete[vendor.id] ? (
+                          <><CheckCircle2 size={12} />Assessment Complete</>
+                        ) : (
+                          <><Cpu size={12} />Run AI Assessment</>
+                        )}
                       </button>
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                      <button
+                        onClick={() => setAlertThresholdVendor(alertThresholdVendor === vendor.id ? null : vendor.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium rounded-lg transition-colors ${
+                          alertThresholdVendor === vendor.id
+                            ? 'border-yellow-300 bg-yellow-50 text-yellow-700'
+                            : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
                         <Bell size={12} />
                         Set Alert Threshold
                       </button>
-                      <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                        <FileText size={12} />
-                        Request SOC 2 Report
+                      <button
+                        onClick={() => {
+                          setSocReportRequested(prev => ({ ...prev, [vendor.id]: true }));
+                        }}
+                        disabled={socReportRequested[vendor.id]}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium rounded-lg transition-colors ${
+                          socReportRequested[vendor.id]
+                            ? 'border-green-200 bg-green-50 text-green-700'
+                            : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {socReportRequested[vendor.id] ? (
+                          <><CheckCircle2 size={12} />SOC 2 Request Sent</>
+                        ) : (
+                          <><FileText size={12} />Request SOC 2 Report</>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -929,12 +994,38 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
                 {assessment.status !== 'completed' && assessment.status !== 'queued' && (
                   <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-100">
-                    <button className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors">
-                      <Eye size={10} />View Details
+                    <button
+                      onClick={() => setAssessmentDetailView(assessmentDetailView === assessment.id ? null : assessment.id)}
+                      className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                        assessmentDetailView === assessment.id ? 'text-brand-700 bg-brand-50' : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Eye size={10} />{assessmentDetailView === assessment.id ? 'Hide Details' : 'View Details'}
                     </button>
-                    <button className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors">
-                      <Pause size={10} />Pause Agent
+                    <button
+                      onClick={() => setPausedAgents(prev => ({ ...prev, [assessment.id]: !prev[assessment.id] }))}
+                      className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                        pausedAgents[assessment.id] ? 'text-green-700 bg-green-50' : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {pausedAgents[assessment.id] ? (
+                        <><Play size={10} />Resume Agent</>
+                      ) : (
+                        <><Pause size={10} />Pause Agent</>
+                      )}
                     </button>
+                  </div>
+                )}
+                {assessmentDetailView === assessment.id && (
+                  <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700 space-y-1">
+                    <p><span className="font-semibold">Assessment ID:</span> {assessment.id}</p>
+                    <p><span className="font-semibold">Vendor:</span> {assessment.vendorName} ({assessment.vendorId})</p>
+                    <p><span className="font-semibold">Type:</span> {assessment.assessmentType}</p>
+                    <p><span className="font-semibold">Agent:</span> {assessment.aiAgent}</p>
+                    <p><span className="font-semibold">Status:</span> {pausedAgents[assessment.id] ? 'Paused' : assessment.status}</p>
+                    <p><span className="font-semibold">Progress:</span> {assessment.progress}%</p>
+                    {assessment.startedAt && <p><span className="font-semibold">Started:</span> {new Date(assessment.startedAt).toLocaleString()}</p>}
+                    {assessment.estimatedCompletion && <p><span className="font-semibold">Est. Completion:</span> {new Date(assessment.estimatedCompletion).toLocaleString()}</p>}
                   </div>
                 )}
               </div>
@@ -1077,15 +1168,47 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
                       <h4 className="text-sm font-semibold text-gray-900">{report.title}</h4>
                       <p className="text-xs text-gray-500 mt-0.5">{report.desc}</p>
                       <div className="flex items-center gap-2 mt-3">
-                        <button className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors">
-                          <Download size={12} />
-                          Generate {report.type}
+                        <button
+                          onClick={() => {
+                            if (generatingReports[idx]) return;
+                            setGeneratingReports(prev => ({ ...prev, [idx]: true }));
+                            setGeneratedReports(prev => ({ ...prev, [idx]: false }));
+                            setTimeout(() => {
+                              setGeneratingReports(prev => ({ ...prev, [idx]: false }));
+                              setGeneratedReports(prev => ({ ...prev, [idx]: true }));
+                            }, 2000);
+                          }}
+                          disabled={generatingReports[idx]}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                        >
+                          {generatingReports[idx] ? (
+                            <><Loader2 size={12} className="animate-spin" />Generating...</>
+                          ) : generatedReports[idx] ? (
+                            <><CheckCircle2 size={12} />{report.type} Ready</>
+                          ) : (
+                            <><Download size={12} />Generate {report.type}</>
+                          )}
                         </button>
-                        <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                        <button
+                          onClick={() => setScheduleReportIdx(scheduleReportIdx === idx ? null : idx)}
+                          className={`flex items-center gap-1 px-3 py-1.5 border text-xs font-medium rounded-lg transition-colors ${
+                            scheduleReportIdx === idx
+                              ? 'border-brand-300 bg-brand-50 text-brand-700'
+                              : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
                           <Calendar size={12} />
-                          Schedule
+                          {scheduleReportIdx === idx ? 'Scheduled' : 'Schedule'}
                         </button>
                       </div>
+                      {scheduleReportIdx === idx && (
+                        <div className="mt-2 p-2 bg-brand-50 border border-brand-200 rounded-lg">
+                          <p className="text-xs text-brand-700 flex items-center gap-1">
+                            <CheckCircle2 size={10} />
+                            Report scheduled for automatic weekly generation every Monday at 9:00 AM.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1112,7 +1235,21 @@ export const AgenticVendorRisk: React.FC<{ onBack: () => void }> = ({ onBack }) 
                         <p className="text-xs text-gray-400">{new Date(report.date).toLocaleDateString()} | {report.type} | {report.size}</p>
                       </div>
                     </div>
-                    <button className="flex items-center gap-1 px-2 py-1 text-xs text-brand-600 hover:text-brand-700 font-medium hover:bg-brand-50 rounded transition-colors">
+                    <button
+                      onClick={() => {
+                        const blob = new Blob(
+                          [`${report.name}\n\nGenerated: ${report.date}\nType: ${report.type}\nSize: ${report.size}\n\nThis is a placeholder report document.`],
+                          { type: report.type === 'CSV' ? 'text/csv' : 'application/pdf' }
+                        );
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${report.name.replace(/\s+/g, '_')}.${report.type.toLowerCase()}`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="flex items-center gap-1 px-2 py-1 text-xs text-brand-600 hover:text-brand-700 font-medium hover:bg-brand-50 rounded transition-colors"
+                    >
                       <Download size={12} />
                       Download
                     </button>

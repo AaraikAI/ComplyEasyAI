@@ -233,3 +233,4 @@ export const AISystemCreate: React.FC<AISystemCreateProps> = ({ onBack, onSucces
   );
 };
 
+export default AISystemCreate;

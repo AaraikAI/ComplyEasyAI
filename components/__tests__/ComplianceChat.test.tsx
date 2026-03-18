@@ -6,6 +6,13 @@ vi.mock('@/services/geminiService', () => ({
   chatWithComplianceBot: vi.fn().mockResolvedValue('AI response about compliance'),
 }));
 
+vi.mock('@/constants/tierFeatures', () => ({
+  canAccessView: vi.fn().mockReturnValue(true),
+  normalizePlan: vi.fn().mockReturnValue('Growth'),
+  hasFeature: vi.fn().mockReturnValue(true),
+  VIEW_TO_FEATURE: {},
+}));
+
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: vi.fn().mockReturnValue({
     user: { id: '1', name: 'Test User', email: 'test@test.com', role: 'admin', organizationId: 'org-1', organization: { plan: 'Growth', name: 'Test Org' } },

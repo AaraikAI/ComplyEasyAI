@@ -242,8 +242,14 @@ router.patch(
         return;
       }
 
-      // Prevent updating immutable fields
-      const { id, organizationId, createdAt, createdBy, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData = pick(req.body, [
+        'title', 'description', 'processingActivity', 'dataCategories', 'specialCategories',
+        'dataSubjects', 'necessity', 'proportionality', 'lawfulBasis', 'screeningResult',
+        'status', 'overallRiskLevel', 'riskMitigations', 'dpoConsulted', 'dpoConsultationDate',
+        'dpoOpinion', 'dpoName', 'supervisoryAuthority', 'approvedBy', 'approvedAt',
+        'nextReviewDate',
+      ]);
 
       const dpia = await prisma.dataProtectionImpactAssessment.update({
         where: { id: req.params.id },
@@ -511,7 +517,11 @@ router.patch(
         return;
       }
 
-      const { id, dpiaId, createdAt, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'riskCategory', 'riskDescription', 'likelihood', 'impact', 'riskLevel',
+        'existingControls', 'proposedMitigations', 'residualRisk', 'status',
+      ]);
 
       // Recalculate risk level if likelihood or impact changed
       if (updateData.likelihood || updateData.impact) {

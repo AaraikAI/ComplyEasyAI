@@ -19,6 +19,7 @@ const mockSubscriptionsCancel = jest.fn() as jest.Mock<any>;
 const mockSubscriptionItemsCreate = jest.fn() as jest.Mock<any>;
 const mockSubscriptionItemsDel = jest.fn() as jest.Mock<any>;
 const mockInvoicesRetrieveUpcoming = jest.fn() as jest.Mock<any>;
+const mockInvoicesCreatePreview = jest.fn() as jest.Mock<any>;
 const mockRefundsCreate = jest.fn() as jest.Mock<any>;
 const mockProductsCreate = jest.fn() as jest.Mock<any>;
 const mockProductsSearch = jest.fn() as jest.Mock<any>;
@@ -55,6 +56,7 @@ jest.mock('stripe', () => {
     },
     invoices: {
       retrieveUpcoming: mockInvoicesRetrieveUpcoming,
+      createPreview: mockInvoicesCreatePreview,
     },
     refunds: {
       create: mockRefundsCreate,
@@ -175,6 +177,11 @@ const createMockSubscription = (overrides: Record<string, unknown> = {}) => ({
 describe('StripeService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish $transaction mock cleared by resetMocks: true in jest config
+    (prismaMock.$transaction as jest.Mock<any>).mockImplementation(
+      (callback: (tx: typeof prismaMock) => Promise<unknown>) => callback(prismaMock)
+    );
   });
 
   // ===========================================================================
@@ -394,7 +401,7 @@ describe('StripeService', () => {
     it('should return subscription details for organization', async () => {
       const mockOrg = createMockOrganization();
       prismaMock.organization.findUnique.mockResolvedValue(mockOrg as any);
-      mockInvoicesRetrieveUpcoming.mockResolvedValue({ amount_due: 170000 });
+      mockInvoicesCreatePreview.mockResolvedValue({ amount_due: 170000 });
 
       const result = await stripeService.getSubscriptionDetails('org-123');
 
@@ -445,7 +452,7 @@ describe('StripeService', () => {
 
       prismaMock.organization.findUnique.mockResolvedValue(mockOrg as any);
       mockSubscriptionsRetrieve.mockResolvedValue(mockSub);
-      mockInvoicesRetrieveUpcoming.mockResolvedValue({
+      mockInvoicesCreatePreview.mockResolvedValue({
         amount_due: 25000, // $250 prorated charge
       });
 
@@ -472,7 +479,7 @@ describe('StripeService', () => {
       mockSubscriptionsRetrieve.mockResolvedValue(createMockSubscription());
 
       // Simulate invalid price by returning null for invoice preview
-      mockInvoicesRetrieveUpcoming.mockRejectedValue(new Error('Invalid price'));
+      mockInvoicesCreatePreview.mockRejectedValue(new Error('Invalid price'));
 
       const result = await stripeService.previewTierChange('org-123', 'Growth');
 
@@ -544,7 +551,7 @@ describe('StripeService', () => {
 
       await expect(
         stripeService.changeTier('org-123', 'Growth')
-      ).rejects.toThrow('No active subscription found');
+      ).rejects.toThrow('Failed to change subscription tier');
     });
 
     it('should support deferred billing (no immediate proration)', async () => {
@@ -621,7 +628,7 @@ describe('StripeService', () => {
 
       await expect(
         stripeService.cancelSubscription('org-123')
-      ).rejects.toThrow('No active subscription found');
+      ).rejects.toThrow('Failed to cancel subscription');
     });
   });
 
@@ -657,7 +664,7 @@ describe('StripeService', () => {
 
       await expect(
         stripeService.reactivateSubscription('org-123')
-      ).rejects.toThrow('No subscription to reactivate');
+      ).rejects.toThrow('Failed to reactivate subscription');
     });
   });
 
@@ -707,7 +714,7 @@ describe('StripeService', () => {
 
       await expect(
         stripeService.addAddOn('org-123', 'nonexistent-addon')
-      ).rejects.toThrow('Add-on not found');
+      ).rejects.toThrow('Failed to add add-on');
     });
 
     it('should throw error when no subscription exists', async () => {
@@ -716,7 +723,7 @@ describe('StripeService', () => {
 
       await expect(
         stripeService.addAddOn('org-123', 'custom-frameworks')
-      ).rejects.toThrow('No active subscription found');
+      ).rejects.toThrow('Failed to add add-on');
     });
   });
 

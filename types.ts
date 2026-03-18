@@ -379,16 +379,19 @@ export interface RiskItem {
   category: string;
   detectedAt: string;
   status: 'Open' | 'In Progress' | 'Resolved' | 'Ignored';
-  assignedTo?: string; // User Name
+  assignedTo?: string | { id: string; name: string }; // User name or object from backend
+  assignedToId?: string;
   assignedAvatar?: string;
   aiPriorityScore?: number; // 0-100
   aiRationale?: string;
   mitigationPlan?: string;
+  owner?: string;
   organizationId?: string;
   riskScore?: number;
   likelihood?: number;
   impact?: number;
   targetDate?: string;
+  frameworkId?: string;
 }
 
 // Database Schema: Framework

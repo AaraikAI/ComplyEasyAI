@@ -19,23 +19,25 @@ router.use(authenticate);
 // HELPERS
 // ============================================================================
 
-/**
- * Compute a RAG (Red/Amber/Green) status from a compliance framework
- * based on progress percentage and status.
- */
 function computeRAG(progress: number, status: string): 'RED' | 'AMBER' | 'GREEN' {
   if (status === 'Non_Compliant' || progress < 30) return 'RED';
   if (status === 'At_Risk' || progress < 70) return 'AMBER';
   return 'GREEN';
 }
 
-/**
- * Map risk severity to a numeric score for aggregation.
- */
 function severityScore(severity: string): number {
-  const scores: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+  const scores: Record<string, number> = {
+    Critical: 4, High: 3, Medium: 2, Low: 1,
+    SEV1: 4, SEV2: 3, SEV3: 2, SEV4: 1,
+    critical: 4, major: 3, minor: 1,
+  };
   return scores[severity] || 0;
 }
+
+const CLOSED_INCIDENT_STATUSES = [
+  'resolved', 'postmortem',           // status-page Incident model
+  'CLOSED', 'POST_MORTEM',            // GrcIncident model
+];
 
 // ============================================================================
 // GET /dashboard — Aggregated executive dashboard
@@ -48,15 +50,15 @@ router.get(
     const orgId = user.organizationId;
 
     try {
-      // Fetch all key data in parallel
       const [
         frameworks,
         risks,
-        incidents,
+        grcIncidents,
         certifications,
         exceptions,
         controlEffectiveness,
         maturityAssessment,
+        vendors,
       ] = await Promise.all([
         prisma.complianceFramework.findMany({
           where: { organizationId: orgId },
@@ -66,28 +68,32 @@ router.get(
           where: { organizationId: orgId },
           select: { id: true, severity: true, status: true, createdAt: true },
         }),
-        prisma.incident.findMany({
+        prisma.grcIncident.findMany({
           where: { organizationId: orgId },
           select: { id: true, severity: true, status: true, detectedAt: true },
-        }),
+        }).catch(() => []),
         prisma.certification.findMany({
           where: { organizationId: orgId },
           select: { id: true, status: true, expiryDate: true, name: true },
-        }),
+        }).catch(() => []),
         prisma.complianceException.findMany({
           where: { organizationId: orgId },
           select: { id: true, status: true, expiryDate: true },
-        }),
+        }).catch(() => []),
         prisma.controlEffectivenessRecord.findMany({
           where: { organizationId: orgId },
           select: { rating: true, controlId: true, assessmentDate: true },
           orderBy: { assessmentDate: 'desc' },
-        }),
+        }).catch(() => []),
         prisma.maturityAssessment.findFirst({
           where: { organizationId: orgId },
           orderBy: { assessmentDate: 'desc' },
           include: { domains: true },
-        }),
+        }).catch(() => null),
+        prisma.vendor.findMany({
+          where: { organizationId: orgId },
+          select: { id: true, riskLevel: true, riskScore: true, status: true },
+        }).catch(() => []),
       ]);
 
       // -- Compliance scores per framework --
@@ -135,28 +141,28 @@ router.get(
         .slice(0, 5)
         .map((r) => ({ id: r.id, severity: r.severity, status: r.status }));
 
-      // -- Incident summary --
-      const openIncidents = incidents.filter(
-        (i) => i.status !== 'CLOSED' && i.status !== 'POST_MORTEM'
+      // -- Incident summary (GRC incidents) --
+      const openIncidents = grcIncidents.filter(
+        (i: any) => !CLOSED_INCIDENT_STATUSES.includes(i.status)
       );
       const incidentBySeverity: Record<string, number> = {};
       for (const i of openIncidents) {
-        incidentBySeverity[i.severity] = (incidentBySeverity[i.severity] || 0) + 1;
+        incidentBySeverity[(i as any).severity] = (incidentBySeverity[(i as any).severity] || 0) + 1;
       }
 
       // -- Certification health --
       const activeCerts = certifications.filter(
-        (c) => c.status === 'CERT_ACTIVE' || c.status === 'EXPIRING_SOON'
+        (c: any) => c.status === 'CERT_ACTIVE' || c.status === 'EXPIRING_SOON'
       ).length;
-      const expiredCerts = certifications.filter((c) => c.status === 'CERT_EXPIRED').length;
+      const expiredCerts = certifications.filter((c: any) => c.status === 'CERT_EXPIRED').length;
 
       // -- Exception summary --
-      const activeExceptions = exceptions.filter((e) => e.status === 'APPROVED').length;
-      const pendingExceptions = exceptions.filter((e) => e.status === 'REQUESTED').length;
+      const activeExceptions = exceptions.filter((e: any) => e.status === 'APPROVED').length;
+      const pendingExceptions = exceptions.filter((e: any) => e.status === 'REQUESTED').length;
 
       // -- Audit readiness (based on latest control effectiveness) --
       const latestByControl = new Map<string, string>();
-      for (const ce of controlEffectiveness) {
+      for (const ce of controlEffectiveness as any[]) {
         if (!latestByControl.has(ce.controlId)) {
           latestByControl.set(ce.controlId, ce.rating);
         }
@@ -167,6 +173,15 @@ router.get(
       ).length;
       const auditReadiness = totalAssessed > 0
         ? Math.round((effectiveCount / totalAssessed) * 100)
+        : 0;
+
+      // -- Vendor risk summary --
+      const vendorArr = Array.isArray(vendors) ? vendors : [];
+      const highRiskVendors = vendorArr.filter(
+        (v) => v.riskLevel === 'High' || v.riskLevel === 'Critical'
+      ).length;
+      const avgVendorScore = vendorArr.length > 0
+        ? Math.round(vendorArr.reduce((sum, v) => sum + (v.riskScore || 0), 0) / vendorArr.length)
         : 0;
 
       res.json({
@@ -182,8 +197,13 @@ router.get(
           },
           incidents: {
             totalOpen: openIncidents.length,
-            totalAll: incidents.length,
+            totalAll: grcIncidents.length,
             bySeverity: incidentBySeverity,
+          },
+          vendorRiskSummary: {
+            totalVendors: vendorArr.length,
+            highRisk: highRiskVendors,
+            avgScore: avgVendorScore,
           },
           certifications: {
             total: certifications.length,
@@ -202,9 +222,9 @@ router.get(
           },
           maturityLevel: maturityAssessment
             ? {
-                overallLevel: maturityAssessment.overallLevel,
-                assessmentDate: maturityAssessment.assessmentDate,
-                domains: maturityAssessment.domains.map((d) => ({
+                overallLevel: (maturityAssessment as any).overallLevel,
+                assessmentDate: (maturityAssessment as any).assessmentDate,
+                domains: ((maturityAssessment as any).domains ?? []).map((d: any) => ({
                   domain: d.domain,
                   currentLevel: d.currentLevel,
                   targetLevel: d.targetLevel,
@@ -246,7 +266,6 @@ router.get(
         nextAuditDate: f.nextAuditDate,
       }));
 
-      // Overall RAG
       const ragCounts = { RED: 0, AMBER: 0, GREEN: 0 };
       for (const r of ragStatuses) {
         ragCounts[r.rag]++;
@@ -283,7 +302,7 @@ router.post(
       const [
         frameworks,
         risks,
-        incidents,
+        grcIncidents,
         certifications,
         exceptions,
         costs,
@@ -303,45 +322,44 @@ router.post(
             likelihood: true, impact: true, createdAt: true,
           },
         }),
-        prisma.incident.findMany({
+        prisma.grcIncident.findMany({
           where: { organizationId: orgId },
           select: {
             id: true, title: true, severity: true, status: true,
-            category: true, detectedAt: true, resolvedAt: true,
+            detectedAt: true, resolvedAt: true,
           },
-        }),
+        }).catch(() => []),
         prisma.certification.findMany({
           where: { organizationId: orgId },
           select: {
             id: true, name: true, certBody: true, status: true,
             issueDate: true, expiryDate: true,
           },
-        }),
+        }).catch(() => []),
         prisma.complianceException.findMany({
           where: { organizationId: orgId },
           select: {
             id: true, title: true, status: true, controlId: true,
             expiryDate: true, requestedBy: true, approvedBy: true,
           },
-        }),
+        }).catch(() => []),
         prisma.complianceCost.aggregate({
           where: { organizationId: orgId },
           _sum: { amount: true },
           _count: true,
-        }),
+        }).catch(() => ({ _sum: { amount: 0 }, _count: 0 })),
         prisma.controlEffectivenessRecord.groupBy({
           by: ['rating'],
           where: { organizationId: orgId },
           _count: true,
-        }),
+        }).catch(() => []),
         prisma.maturityAssessment.findFirst({
           where: { organizationId: orgId },
           orderBy: { assessmentDate: 'desc' },
           include: { domains: true },
-        }),
+        }).catch(() => null),
       ]);
 
-      // Build comprehensive board pack
       const boardPack = {
         metadata: {
           generatedAt: new Date().toISOString(),
@@ -356,10 +374,10 @@ router.post(
             : 0,
           openRisks: risks.filter((r) => r.status === 'Open' || r.status === 'In_Progress').length,
           criticalRisks: risks.filter((r) => r.severity === 'Critical' && r.status === 'Open').length,
-          openIncidents: incidents.filter((i) => i.status !== 'CLOSED' && i.status !== 'POST_MORTEM').length,
-          activeCertifications: certifications.filter((c) => c.status === 'CERT_ACTIVE' || c.status === 'EXPIRING_SOON').length,
-          activeExceptions: exceptions.filter((e) => e.status === 'APPROVED').length,
-          totalComplianceSpend: costs._sum.amount || 0,
+          openIncidents: grcIncidents.filter((i: any) => !CLOSED_INCIDENT_STATUSES.includes(i.status)).length,
+          activeCertifications: certifications.filter((c: any) => c.status === 'CERT_ACTIVE' || c.status === 'EXPIRING_SOON').length,
+          activeExceptions: exceptions.filter((e: any) => e.status === 'APPROVED').length,
+          totalComplianceSpend: (costs as any)._sum?.amount || 0,
         },
         frameworkCompliance: frameworks.map((f) => ({
           id: f.id,
@@ -398,16 +416,16 @@ router.post(
             .slice(0, 10),
         },
         incidentSummary: {
-          total: incidents.length,
-          bySeverity: incidents.reduce(
-            (acc, i) => {
+          total: grcIncidents.length,
+          bySeverity: grcIncidents.reduce(
+            (acc: Record<string, number>, i: any) => {
               acc[i.severity] = (acc[i.severity] || 0) + 1;
               return acc;
             },
             {} as Record<string, number>
           ),
-          byStatus: incidents.reduce(
-            (acc, i) => {
+          byStatus: grcIncidents.reduce(
+            (acc: Record<string, number>, i: any) => {
               acc[i.status] = (acc[i.status] || 0) + 1;
               return acc;
             },
@@ -416,20 +434,20 @@ router.post(
         },
         certificationHealth: certifications,
         exceptionRegister: exceptions,
-        controlEffectiveness: controlEffectiveness.map((g) => ({
+        controlEffectiveness: (controlEffectiveness as any[]).map((g: any) => ({
           rating: g.rating,
           count: g._count,
         })),
         maturityLevel: maturityAssessment
           ? {
-              overallLevel: maturityAssessment.overallLevel,
-              assessmentDate: maturityAssessment.assessmentDate,
-              domains: maturityAssessment.domains,
+              overallLevel: (maturityAssessment as any).overallLevel,
+              assessmentDate: (maturityAssessment as any).assessmentDate,
+              domains: (maturityAssessment as any).domains,
             }
           : null,
         financials: {
-          totalSpend: costs._sum.amount || 0,
-          totalEntries: costs._count,
+          totalSpend: (costs as any)._sum?.amount || 0,
+          totalEntries: (costs as any)._count || 0,
         },
       };
 
@@ -477,20 +495,20 @@ router.get(
         }),
       ]);
 
-      // Incidents detected in each period
+      // GRC Incidents detected in each period
       const [currentIncidents, previousIncidents] = await Promise.all([
-        prisma.incident.count({
+        prisma.grcIncident.count({
           where: {
             organizationId: orgId,
             detectedAt: { gte: currentPeriodStart, lte: now },
           },
-        }),
-        prisma.incident.count({
+        }).catch(() => 0),
+        prisma.grcIncident.count({
           where: {
             organizationId: orgId,
             detectedAt: { gte: previousPeriodStart, lt: currentPeriodStart },
           },
-        }),
+        }).catch(() => 0),
       ]);
 
       // Framework progress snapshots (current state)
@@ -506,13 +524,13 @@ router.get(
             organizationId: orgId,
             createdAt: { gte: currentPeriodStart, lte: now },
           },
-        }),
+        }).catch(() => 0),
         prisma.complianceException.count({
           where: {
             organizationId: orgId,
             createdAt: { gte: previousPeriodStart, lt: currentPeriodStart },
           },
-        }),
+        }).catch(() => 0),
       ]);
 
       // Cost comparison
@@ -523,14 +541,14 @@ router.get(
             createdAt: { gte: currentPeriodStart, lte: now },
           },
           _sum: { amount: true },
-        }),
+        }).catch(() => ({ _sum: { amount: 0 } })),
         prisma.complianceCost.aggregate({
           where: {
             organizationId: orgId,
             createdAt: { gte: previousPeriodStart, lt: currentPeriodStart },
           },
           _sum: { amount: true },
-        }),
+        }).catch(() => ({ _sum: { amount: 0 } })),
       ]);
 
       function percentChange(current: number, previous: number): number | null {

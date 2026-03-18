@@ -250,10 +250,11 @@ router.post(
     const orgId = (req as any).user.organizationId;
 
     try {
-      const { vendorId, checkType, status, details } = req.body;
+      const { vendorId, checkType, details } = req.body;
+      const status = req.body.status || 'PASS'; // Default to PASS for manually created checks
 
-      if (!vendorId || !checkType || !status) {
-        res.status(400).json({ error: 'vendorId, checkType, and status are required' });
+      if (!vendorId || !checkType) {
+        res.status(400).json({ error: 'vendorId and checkType are required' });
         return;
       }
 

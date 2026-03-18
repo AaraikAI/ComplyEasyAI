@@ -88,6 +88,10 @@ vi.mock('@/contexts/OnboardingContext', () => ({
   useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true, showCelebration: false }),
 }));
 
+vi.mock('@/contexts/I18nContext', () => ({
+  useI18n: () => ({ t: (key: string) => key, locale: 'en', setLocale: vi.fn(), availableLocales: [], isLoading: false }),
+}));
+
 import { AuditTrail } from '@/components/AuditTrail';
 
 describe('AuditTrail', () => {
@@ -98,14 +102,14 @@ describe('AuditTrail', () => {
   it('renders without crashing', async () => {
     render(<AuditTrail />);
     await waitFor(() => {
-      expect(screen.getByText(/Immutable Audit Logs/i)).toBeInTheDocument();
+      expect(screen.getByText('audit.title')).toBeInTheDocument();
     });
   });
 
   it('loads and displays audit logs', async () => {
     render(<AuditTrail />);
     await waitFor(() => {
-      expect(screen.getByText(/Immutable Audit Logs/i)).toBeInTheDocument();
+      expect(screen.getByText('audit.title')).toBeInTheDocument();
     });
   });
 

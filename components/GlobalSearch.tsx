@@ -21,12 +21,13 @@ import {
   Search, X, Loader2, FileText, Shield, AlertTriangle, CheckCircle,
   Building2, AlertCircle, Monitor, Clock, ArrowRight, Hash,
   ChevronRight, Command, CornerDownLeft, ArrowUp, ArrowDown,
-  Bookmark, FolderOpen, Eye, Trash2, Filter,
+  Bookmark, FolderOpen, Eye, Trash2, Filter, LayoutGrid,
 } from 'lucide-react';
+import { FEATURE_CATALOG } from '../constants/featureCatalog';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
 
-type ResourceType = 'policy' | 'control' | 'risk' | 'evidence' | 'vendor' | 'incident' | 'asset';
+type ResourceType = 'policy' | 'control' | 'risk' | 'evidence' | 'vendor' | 'incident' | 'asset' | 'feature';
 
 interface SearchResult {
   id: string;
@@ -68,9 +69,10 @@ const RESOURCE_CONFIG: Record<ResourceType, { label: string; icon: React.ReactNo
   vendor: { label: 'Vendors', icon: <Building2 className="w-4 h-4" />, color: 'text-teal-600 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/30' },
   incident: { label: 'Incidents', icon: <AlertCircle className="w-4 h-4" />, color: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30' },
   asset: { label: 'Assets', icon: <Monitor className="w-4 h-4" />, color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30' },
+  feature: { label: 'Features & Pages', icon: <LayoutGrid className="w-4 h-4" />, color: 'text-brand-600 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/30' },
 };
 
-const ALL_TYPES: ResourceType[] = ['policy', 'control', 'risk', 'evidence', 'vendor', 'incident', 'asset'];
+const ALL_TYPES: ResourceType[] = ['policy', 'control', 'risk', 'evidence', 'vendor', 'incident', 'asset', 'feature'];
 
 const FRAMEWORKS = ['SOC 2', 'GDPR', 'ISO 27001', 'HIPAA', 'PCI DSS', 'NIST CSF', 'CCPA'];
 
@@ -164,24 +166,87 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onC
     };
   }, [query, filters]);
 
+  // Map backend resourceType to a URL path for navigation
+  const resourceUrl = (resourceType: string, resourceId: string): string => {
+    const urlMap: Record<string, string> = {
+      policy: `/policies?id=${resourceId}`,
+      control: `/frameworks?control=${resourceId}`,
+      risk: `/risks?id=${resourceId}`,
+      evidence: `/evidence?id=${resourceId}`,
+      vendor: `/vendors?id=${resourceId}`,
+      incident: `/issues?id=${resourceId}`,
+      asset: `/assets?id=${resourceId}`,
+    };
+    return urlMap[resourceType] || `/dashboard`;
+  };
+
+  // Client-side search across feature catalog (instant, no API needed)
+  const searchFeatures = (searchQuery: string): SearchResult[] => {
+    const q = searchQuery.toLowerCase();
+    return FEATURE_CATALOG
+      .filter(f =>
+        f.name.toLowerCase().includes(q) ||
+        f.description.toLowerCase().includes(q) ||
+        f.category.toLowerCase().includes(q) ||
+        f.tags.some(t => t.toLowerCase().includes(q))
+      )
+      .slice(0, 8)
+      .map(f => ({
+        id: `feature-${f.id}`,
+        type: 'feature' as ResourceType,
+        title: f.name,
+        description: f.description,
+        matchedField: f.category,
+        score: f.name.toLowerCase().includes(q) ? 2 : 1,
+        updatedAt: '',
+        url: f.path,
+      }));
+  };
+
   const performSearch = async (searchQuery: string) => {
     setLoading(true);
     setSelectedIndex(-1);
+
+    // Instant client-side results from feature catalog
+    const featureResults = searchFeatures(searchQuery);
+
     try {
       const params: any = { q: searchQuery };
-      if (filters.types.length > 0) params.types = filters.types.join(',');
-      if (filters.frameworks.length > 0) params.frameworks = filters.frameworks.join(',');
-      if (filters.statuses.length > 0) params.statuses = filters.statuses.join(',');
+      if (filters.types.length > 0) params.type = filters.types[0]; // backend accepts single type
+      if (filters.frameworks.length > 0) params.framework = filters.frameworks[0];
+      if (filters.statuses.length > 0) params.status = filters.statuses[0];
 
       const qs = new URLSearchParams(params as Record<string, string>).toString();
-      const data: SearchResponse = await api.get(`/search?${qs}`) || { results: [], total: 0, query: searchQuery, took: 0 };
-      setResults(data.results || []);
-      setTotalResults(data.total || 0);
-      setSearchTime(data.took || 0);
+      const raw: any = await api.get(`/search?${qs}`);
+
+      // Backend wraps response in { status, data: { results, total, query } }
+      const envelope = raw?.data ?? raw ?? {};
+      const backendResults = envelope.results || [];
+
+      // Map backend shape → frontend SearchResult shape
+      const mapped: SearchResult[] = backendResults.map((r: any) => ({
+        id: r.id || r.resourceId,
+        type: (r.resourceType || r.resourcetype || 'policy') as ResourceType,
+        title: r.title || '',
+        description: r.excerpt || r.description || '',
+        matchedField: r.metadata?.framework || r.resourceType || 'title',
+        framework: r.metadata?.framework,
+        status: r.metadata?.status,
+        score: r.relevanceScore ?? r.score ?? 0,
+        updatedAt: r.updatedAt || r.updatedat || '',
+        url: resourceUrl(r.resourceType || r.resourcetype, r.resourceId || r.resourceid || r.id),
+      }));
+
+      // Combine: API results first, then feature catalog results
+      const combined = [...mapped, ...featureResults];
+      setResults(combined);
+      setTotalResults((envelope.total ?? mapped.length) + featureResults.length);
+      setSearchTime(envelope.took ?? 0);
     } catch (err) {
+      // If API fails, still show feature catalog results
       console.error('Search failed:', err);
-      setResults([]);
-      setTotalResults(0);
+      setResults(featureResults);
+      setTotalResults(featureResults.length);
     } finally {
       setLoading(false);
     }
@@ -256,7 +321,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen: controlledOpen, onC
 
   const groupedResults = useMemo(() => {
     const groups: Record<ResourceType, SearchResult[]> = {
-      policy: [], control: [], risk: [], evidence: [], vendor: [], incident: [], asset: [],
+      policy: [], control: [], risk: [], evidence: [], vendor: [], incident: [], asset: [], feature: [],
     };
     results.forEach(r => {
       if (groups[r.type]) groups[r.type].push(r);
