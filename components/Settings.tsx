@@ -294,7 +294,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
     }
   }, [activeTab]);
 
-  const handleInvite = async (e: React.FormEvent) => {
+  const handleInvite = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     
     // Email validation
@@ -1681,7 +1681,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
                      <option value="viewer">Viewer</option>
                   </select>
                </div>
-               <button className="w-full bg-brand-600 text-white p-3 rounded-lg font-bold hover:bg-brand-700 transition-colors">Send Invitation</button>
+               <button type="button" onClick={handleInvite} className="w-full bg-brand-600 text-white p-3 rounded-lg font-bold hover:bg-brand-700 transition-colors">Send Invitation</button>
              </form>
            </div>
          </div>

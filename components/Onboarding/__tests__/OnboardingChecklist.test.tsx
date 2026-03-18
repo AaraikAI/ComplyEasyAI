@@ -101,8 +101,25 @@ vi.mock('@/contexts/OnboardingContext', () => ({
 import { OnboardingChecklistWidget } from '@/components/Onboarding/OnboardingChecklist';
 
 describe('OnboardingChecklistWidget', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    localStorage.removeItem('onboarding-checklist-dismissed');
+    // Re-set mock return values after clearAllMocks
+    const { useOnboardingChecklist } = await import('@/hooks/useOnboarding');
+    (useOnboardingChecklist as any).mockReturnValue({
+      items: [
+        { key: 'profile', label: 'Complete profile', done: true },
+        { key: 'framework', label: 'Add framework', done: false },
+        { key: 'evidence', label: 'Upload evidence', done: false },
+      ],
+      completedCount: 1,
+      totalCount: 3,
+      percentage: 33,
+      isComplete: false,
+      startFlowForItem: mockStartFlowForItem,
+    });
+    const { useOnboardingContext } = await import('@/contexts/OnboardingContext');
+    (useOnboardingContext as any).mockReturnValue({ isOnboarding: false, currentFlow: null, currentStep: 0, isLoaded: true, showCelebration: false });
   });
 
   it('renders the checklist widget', () => {
@@ -117,21 +134,17 @@ describe('OnboardingChecklistWidget', () => {
 
   it('expands when clicked', () => {
     render(<OnboardingChecklistWidget />);
-    // Click the widget button to expand
-    const button = screen.getByRole('complementary').querySelector('button');
-    if (button) {
-      fireEvent.click(button);
-      expect(screen.getByText('Setup Checklist')).toBeInTheDocument();
-    }
+    // Click the expandable widget (div with role="button"), not the dismiss button
+    const expandButton = screen.getByRole('button', { name: /setup checklist/i });
+    fireEvent.click(expandButton);
+    expect(screen.getByText('Setup Checklist')).toBeInTheDocument();
   });
 
   it('shows checklist items when expanded', () => {
     render(<OnboardingChecklistWidget />);
-    const button = screen.getByRole('complementary').querySelector('button');
-    if (button) {
-      fireEvent.click(button);
-      expect(screen.getByText('Add framework')).toBeInTheDocument();
-      expect(screen.getByText('Upload evidence')).toBeInTheDocument();
-    }
+    const expandButton = screen.getByRole('button', { name: /setup checklist/i });
+    fireEvent.click(expandButton);
+    expect(screen.getByText('Add framework')).toBeInTheDocument();
+    expect(screen.getByText('Upload evidence')).toBeInTheDocument();
   });
 });

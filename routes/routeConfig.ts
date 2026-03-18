@@ -25,13 +25,13 @@ export const ROUTES = {
   FRAMEWORK_DETAILS: '/frameworks/:id',
   SETTINGS: '/settings',
 
-  // Reports & Audit
+  // Reports & Audit (hub routes)
   REPORTS: '/reports',
   AUDIT_TRAIL: '/audit',
   MONITORING: '/monitoring',
   ANALYTICS: '/analytics',
 
-  // AI Features
+  // AI Features (kept for backward compat / redirects)
   AI_POLICY: '/ai/policy-generator',
   AI_CONTRACT: '/ai/contract-analyzer',
   AI_GAP: '/ai/gap-analysis',
@@ -46,7 +46,12 @@ export const ROUTES = {
   AI_AGENTIC_VENDOR: '/ai/agentic-vendor-risk',
   AI_AUDIT_SIMULATOR: '/ai/audit-simulator',
   AI_NL_QUERY: '/ai/compliance-query',
+  AI_REPORT_GENERATOR: '/ai/report-generator',
   COMPLIANCE_FORECASTING: '/ai/compliance-forecasting',
+
+  // AI Hubs (consolidated)
+  AI_DOCUMENT_TOOLS: '/ai/document-tools',
+  AI_COMPLIANCE_TOOLS: '/ai/compliance-tools',
 
   // AI Governance
   AI_RMF: '/ai-rmf',
@@ -72,7 +77,8 @@ export const ROUTES = {
   SOD: '/governance/sod',
   WORKFLOW_BUILDER: '/governance/workflow-builder',
 
-  // Products & Lifecycle
+  // Products & Lifecycle (hub route)
+  PRODUCTS: '/products',
   CE_MARKING: '/products/ce-marking',
   DIGITAL_PRODUCT_PASSPORT: '/products/digital-passport',
   PRODUCT_LIFECYCLE: '/products/lifecycle',
@@ -103,6 +109,15 @@ export const ROUTES = {
   MDM: '/enterprise/mdm',
   DORA: '/enterprise/dora',
   AUDITOR: '/enterprise/auditor',
+  ENTERPRISE_OPS: '/enterprise/security-ops',
+
+  // Evidence & Exceptions hub
+  EVIDENCE_HUB: '/evidence',
+
+  // Home OS views
+  FEATURE_LIBRARY: '/feature-library',
+  RISK_CANVAS: '/risk-canvas',
+  DASHBOARD_CLASSIC: '/dashboard-classic',
 
   // New Enhancement Modules
   INCIDENTS: '/incidents',
@@ -141,7 +156,7 @@ export const ROUTES = {
  */
 export const VIEW_TO_ROUTE: Record<string, string> = {
   'dashboard': ROUTES.DASHBOARD,
-  'my-tasks': ROUTES.MY_TASKS,
+  'my-tasks': ROUTES.RISKS + '?tab=tasks',
   'risks': ROUTES.RISKS,
   'issues': ROUTES.ISSUES,
   'vendors': ROUTES.VENDORS,
@@ -153,22 +168,23 @@ export const VIEW_TO_ROUTE: Record<string, string> = {
   'reports': ROUTES.REPORTS,
   'audit': ROUTES.AUDIT_TRAIL,
   'monitoring': ROUTES.MONITORING,
-  'analytics': ROUTES.ANALYTICS,
-  'ai-policy': ROUTES.AI_POLICY,
-  'ai-contract': ROUTES.AI_CONTRACT,
-  'ai-gap': ROUTES.AI_GAP,
-  'ai-rfp': ROUTES.AI_RFP,
-  'ai-phishing': ROUTES.AI_PHISHING,
-  'ai-vendor': ROUTES.AI_VENDOR,
-  'ai-data-map': ROUTES.AI_DATA_MAP,
-  'ai-bcp': ROUTES.AI_BCP,
-  'ai-cross-mapper': ROUTES.AI_CROSS_MAPPER,
-  'ai-auto-remediation': ROUTES.AI_AUTO_REMEDIATION,
-  'ai-evidence-checker': ROUTES.AI_EVIDENCE_CHECKER,
-  'ai-agentic-vendor': ROUTES.AI_AGENTIC_VENDOR,
-  'ai-audit-simulator': ROUTES.AI_AUDIT_SIMULATOR,
-  'ai-nl-query': ROUTES.AI_NL_QUERY,
-  'compliance-forecasting': ROUTES.COMPLIANCE_FORECASTING,
+  'analytics': ROUTES.MONITORING + '?tab=analytics',
+  'ai-policy': ROUTES.POLICIES + '?tab=ai-generator',
+  'ai-contract': ROUTES.VENDORS + '?tab=contract-analyzer',
+  'ai-gap': ROUTES.AI_DOCUMENT_TOOLS + '?tab=gap',
+  'ai-rfp': ROUTES.AI_DOCUMENT_TOOLS + '?tab=rfp',
+  'ai-phishing': ROUTES.AI_COMPLIANCE_TOOLS + '?tab=phishing',
+  'ai-vendor': ROUTES.VENDORS + '?tab=risk-assessment',
+  'ai-data-map': ROUTES.AI_COMPLIANCE_TOOLS + '?tab=data-mapper',
+  'ai-bcp': ROUTES.AI_DOCUMENT_TOOLS + '?tab=bcp',
+  'ai-cross-mapper': ROUTES.AI_COMPLIANCE_TOOLS + '?tab=cross-mapper',
+  'ai-auto-remediation': ROUTES.AI_COMPLIANCE_TOOLS + '?tab=remediation',
+  'ai-evidence-checker': ROUTES.EVIDENCE_HUB + '?tab=checker',
+  'ai-agentic-vendor': ROUTES.VENDORS + '?tab=agentic-risk',
+  'ai-audit-simulator': ROUTES.AUDIT_TRAIL + '?tab=simulator',
+  'ai-nl-query': ROUTES.AI_COMPLIANCE_TOOLS + '?tab=query',
+  'ai-report-generator': ROUTES.REPORTS + '?tab=ai-generator',
+  'compliance-forecasting': ROUTES.MONITORING + '?tab=forecasting',
   'ai-rmf': ROUTES.AI_RMF,
   'ai-rmf-systems': ROUTES.AI_RMF_SYSTEMS,
   'ai-rmf-create': ROUTES.AI_RMF_CREATE,
@@ -183,52 +199,52 @@ export const VIEW_TO_ROUTE: Record<string, string> = {
   'nis2': ROUTES.NIS2,
   'us-privacy': ROUTES.US_PRIVACY,
   'governance': ROUTES.GOVERNANCE,
-  'process-mapper': ROUTES.PROCESS_MAPPER,
+  'process-mapper': ROUTES.GOVERNANCE + '?tab=process-mapper',
   'sox': ROUTES.SOX,
-  'sod': ROUTES.SOD,
-  'workflow-builder': ROUTES.WORKFLOW_BUILDER,
-  'ce-marking': ROUTES.CE_MARKING,
-  'digital-product-passport': ROUTES.DIGITAL_PRODUCT_PASSPORT,
-  'product-lifecycle': ROUTES.PRODUCT_LIFECYCLE,
-  'sbom-manager': ROUTES.SBOM_MANAGER,
-  'product-decommissioning': ROUTES.PRODUCT_DECOMMISSIONING,
-  'environmental-lifecycle': ROUTES.ENVIRONMENTAL_LIFECYCLE,
-  'esg-reporting': ROUTES.ESG_REPORTING,
+  'sod': ROUTES.GOVERNANCE + '?tab=sod',
+  'workflow-builder': ROUTES.GOVERNANCE + '?tab=workflow-builder',
+  'ce-marking': ROUTES.PRODUCTS + '?tab=ce-marking',
+  'digital-product-passport': ROUTES.PRODUCTS + '?tab=digital-passport',
+  'product-lifecycle': ROUTES.PRODUCTS + '?tab=lifecycle',
+  'sbom-manager': ROUTES.PRODUCTS + '?tab=sbom',
+  'product-decommissioning': ROUTES.PRODUCTS + '?tab=decommissioning',
+  'environmental-lifecycle': ROUTES.PRODUCTS + '?tab=environmental',
+  'esg-reporting': ROUTES.REPORTS + '?tab=esg',
   'post-market-surveillance': ROUTES.POST_MARKET_SURVEILLANCE,
-  'breach-wizard': ROUTES.BREACH_WIZARD,
+  'breach-wizard': ROUTES.ISSUES + '?tab=breach',
   'privacy': ROUTES.PRIVACY,
   'account-deletion': ROUTES.ACCOUNT_DELETION,
   'dpia': ROUTES.DPIA,
   'ropa': ROUTES.ROPA,
   'privacy-notices': ROUTES.PRIVACY_NOTICES,
-  'security-training': ROUTES.SECURITY_TRAINING,
+  'security-training': ROUTES.ENTERPRISE_OPS + '?tab=training',
   'workspaces': ROUTES.WORKSPACES,
   'questionnaires': ROUTES.QUESTIONNAIRES,
-  'security': ROUTES.SECURITY,
+  'security': ROUTES.ENTERPRISE_OPS + '?tab=security',
   'acos': ROUTES.ACOS,
-  'mdm': ROUTES.MDM,
+  'mdm': ROUTES.ENTERPRISE_OPS + '?tab=mdm',
   'dora': ROUTES.DORA,
-  'auditor': ROUTES.AUDITOR,
-  // New modules
-  'incidents': ROUTES.INCIDENTS,
-  'assets': ROUTES.ASSETS,
+  'auditor': ROUTES.AUDIT_TRAIL + '?tab=auditor',
+  // New modules (now mapped to hubs)
+  'incidents': ROUTES.ISSUES + '?tab=incidents',
+  'assets': ROUTES.ENTERPRISE_OPS + '?tab=assets',
   'calendar': ROUTES.CALENDAR,
   'maturity': ROUTES.MATURITY,
-  'bia': ROUTES.BIA,
-  'exceptions': ROUTES.EXCEPTIONS,
-  'certifications': ROUTES.CERTIFICATIONS,
-  'cost-analytics': ROUTES.COST_ANALYTICS,
+  'bia': ROUTES.ENTERPRISE_OPS + '?tab=bia',
+  'exceptions': ROUTES.EVIDENCE_HUB + '?tab=exceptions',
+  'certifications': ROUTES.PRODUCTS + '?tab=certifications',
+  'cost-analytics': ROUTES.MONITORING + '?tab=costs',
   'executive': ROUTES.EXECUTIVE_DASHBOARD,
-  'report-builder': ROUTES.REPORT_BUILDER,
+  'report-builder': ROUTES.REPORTS + '?tab=builder',
   'regulatory-changes': ROUTES.REGULATORY_CHANGES,
-  'evidence-collection': ROUTES.EVIDENCE_COLLECTION,
-  'audit-prep': ROUTES.AUDIT_PREP,
-  'control-testing': ROUTES.CONTROL_TESTING,
-  'vendor-monitoring': ROUTES.VENDOR_MONITORING,
-  'cicd-gates': ROUTES.CICD_GATES,
-  'risk-heatmap': ROUTES.RISK_HEATMAP,
+  'evidence-collection': ROUTES.EVIDENCE_HUB + '?tab=collection',
+  'audit-prep': ROUTES.AUDIT_TRAIL + '?tab=preparation',
+  'control-testing': ROUTES.AUDIT_TRAIL + '?tab=testing',
+  'vendor-monitoring': ROUTES.VENDORS + '?tab=monitoring',
+  'cicd-gates': ROUTES.ENTERPRISE_OPS + '?tab=cicd',
+  'risk-heatmap': ROUTES.RISKS + '?tab=heatmap',
   'notification-center': ROUTES.NOTIFICATIONS,
-  'workflow-automation': ROUTES.WORKFLOW_AUTOMATION,
+  'workflow-automation': ROUTES.GOVERNANCE + '?tab=automation',
   'ticketing': ROUTES.TICKETING,
   'accessibility-settings': ROUTES.ACCESSIBILITY_SETTINGS,
   'global-search': ROUTES.GLOBAL_SEARCH,
@@ -269,8 +285,8 @@ export function pathToView(path: string): string {
   if (path.startsWith('/frameworks/') && path !== '/frameworks/') return 'framework-details';
   if (path.startsWith('/ai-rmf/systems/new')) return 'ai-rmf-create';
   if (path.startsWith('/ai-rmf/systems/') && path !== '/ai-rmf/systems/') return 'ai-rmf-details';
-  if (path.startsWith('/incidents/') && path !== '/incidents/') return 'incidents-detail';
-  if (path.startsWith('/assets/') && path !== '/assets/') return 'assets-detail';
+  if (path.startsWith('/incidents/') && path !== '/incidents/') return 'incidents';
+  if (path.startsWith('/assets/') && path !== '/assets/') return 'assets';
 
   return 'dashboard';
 }
@@ -288,7 +304,19 @@ export function getBreadcrumbs(path: string): BreadcrumbItem[] {
 
   if (path === ROUTES.DASHBOARD) return crumbs;
 
-  // AI features
+  // AI tools hubs
+  if (path === ROUTES.AI_DOCUMENT_TOOLS) {
+    crumbs.push({ label: 'AI Tools' });
+    crumbs.push({ label: 'Document Tools' });
+    return crumbs;
+  }
+  if (path === ROUTES.AI_COMPLIANCE_TOOLS) {
+    crumbs.push({ label: 'AI Tools' });
+    crumbs.push({ label: 'Compliance Tools' });
+    return crumbs;
+  }
+
+  // AI features (redirect targets, kept for direct access)
   if (path.startsWith('/ai/')) {
     crumbs.push({ label: 'AI Tools' });
     const labels: Record<string, string> = {
@@ -306,7 +334,10 @@ export function getBreadcrumbs(path: string): BreadcrumbItem[] {
       '/ai/agentic-vendor-risk': 'Agentic Vendor Risk',
       '/ai/audit-simulator': 'Audit Simulator',
       '/ai/compliance-query': 'Compliance Query',
+      '/ai/report-generator': 'AI Report Generator',
       '/ai/compliance-forecasting': 'Compliance Forecasting',
+      '/ai/document-tools': 'Document Tools',
+      '/ai/compliance-tools': 'Compliance Tools',
     };
     if (labels[path]) crumbs.push({ label: labels[path] });
     return crumbs;
@@ -340,27 +371,15 @@ export function getBreadcrumbs(path: string): BreadcrumbItem[] {
   if (path.startsWith('/governance')) {
     crumbs.push({ label: 'Governance', path: ROUTES.GOVERNANCE });
     const labels: Record<string, string> = {
-      '/governance/process-mapper': 'Process Mapper',
       '/governance/sox': 'SOX Compliance',
-      '/governance/sod': 'SoD Analysis',
-      '/governance/workflow-builder': 'Workflow Builder',
     };
     if (labels[path]) crumbs.push({ label: labels[path] });
     return crumbs;
   }
 
   // Products
-  if (path.startsWith('/products/')) {
-    crumbs.push({ label: 'Products & Lifecycle' });
-    const labels: Record<string, string> = {
-      '/products/ce-marking': 'CE Marking',
-      '/products/digital-passport': 'Digital Product Passport',
-      '/products/lifecycle': 'Product Lifecycle',
-      '/products/sbom': 'SBOM Manager',
-      '/products/decommissioning': 'Decommissioning',
-      '/products/environmental-lifecycle': 'Environmental Lifecycle',
-    };
-    if (labels[path]) crumbs.push({ label: labels[path] });
+  if (path.startsWith('/products')) {
+    crumbs.push({ label: 'Products & Compliance' });
     return crumbs;
   }
 
@@ -370,11 +389,9 @@ export function getBreadcrumbs(path: string): BreadcrumbItem[] {
     const labels: Record<string, string> = {
       '/enterprise/workspaces': 'Workspaces',
       '/enterprise/questionnaires': 'Questionnaires',
-      '/enterprise/security': 'Security Features',
+      '/enterprise/security-ops': 'IT & Security Ops',
       '/enterprise/acos': 'aCOS',
-      '/enterprise/mdm': 'MDM',
       '/enterprise/dora': 'DORA',
-      '/enterprise/auditor': 'Auditor Hub',
     };
     if (labels[path]) crumbs.push({ label: labels[path] });
     return crumbs;
@@ -396,46 +413,32 @@ export function getBreadcrumbs(path: string): BreadcrumbItem[] {
 
   // Simple pages
   const simpleLabels: Record<string, string> = {
-    [ROUTES.MY_TASKS]: 'My Tasks',
     [ROUTES.RISKS]: 'Risk Management',
-    [ROUTES.ISSUES]: 'Issue Management',
+    [ROUTES.ISSUES]: 'Issues & Incidents',
     [ROUTES.VENDORS]: 'Vendor Management',
     [ROUTES.POLICIES]: 'Policy Management',
     [ROUTES.INTEGRATIONS]: 'Integrations',
     [ROUTES.REPORTS]: 'Reports',
-    [ROUTES.AUDIT_TRAIL]: 'Audit Trail',
-    [ROUTES.MONITORING]: 'Monitoring',
-    [ROUTES.ANALYTICS]: 'Real-time Analytics',
-    [ROUTES.ESG_REPORTING]: 'ESG Reporting',
+    [ROUTES.AUDIT_TRAIL]: 'Audit Center',
+    [ROUTES.MONITORING]: 'Analytics & Monitoring',
     [ROUTES.POST_MARKET_SURVEILLANCE]: 'Surveillance',
-    [ROUTES.BREACH_WIZARD]: 'Breach Notification',
     [ROUTES.PRIVACY]: 'Privacy Platform',
     [ROUTES.ACCOUNT_DELETION]: 'Data Deletion',
     [ROUTES.DPIA]: 'DPIA Workflow',
     [ROUTES.ROPA]: 'Records of Processing',
     [ROUTES.PRIVACY_NOTICES]: 'Privacy Notices',
-    [ROUTES.SECURITY_TRAINING]: 'Security Training',
-    [ROUTES.INCIDENTS]: 'Incidents',
-    [ROUTES.ASSETS]: 'Assets',
     [ROUTES.CALENDAR]: 'Compliance Calendar',
     [ROUTES.MATURITY]: 'GRC Maturity',
-    [ROUTES.BIA]: 'Business Impact Analysis',
-    [ROUTES.EXCEPTIONS]: 'Exceptions',
-    [ROUTES.CERTIFICATIONS]: 'Certifications',
-    [ROUTES.COST_ANALYTICS]: 'Cost Analytics',
     [ROUTES.EXECUTIVE_DASHBOARD]: 'Executive Dashboard',
-    [ROUTES.REPORT_BUILDER]: 'Report Builder',
     [ROUTES.REGULATORY_CHANGES]: 'Regulatory Changes',
-    [ROUTES.EVIDENCE_COLLECTION]: 'Evidence Collection',
-    [ROUTES.AUDIT_PREP]: 'Audit Prep',
-    [ROUTES.CONTROL_TESTING]: 'Control Testing',
-    [ROUTES.VENDOR_MONITORING]: 'Vendor Monitoring',
-    [ROUTES.CICD_GATES]: 'CI/CD Gates',
-    [ROUTES.RISK_HEATMAP]: 'Risk Heat Map',
     [ROUTES.NOTIFICATIONS]: 'Notifications',
-    [ROUTES.WORKFLOW_AUTOMATION]: 'Workflow Automation',
     [ROUTES.TICKETING]: 'Ticketing Integrations',
     [ROUTES.GLOBAL_SEARCH]: 'Search',
+    [ROUTES.EVIDENCE_HUB]: 'Evidence & Exceptions',
+    [ROUTES.ENTERPRISE_OPS]: 'IT & Security Ops',
+    [ROUTES.FEATURE_LIBRARY]: 'Feature Library',
+    [ROUTES.RISK_CANVAS]: 'Risk Canvas',
+    [ROUTES.DASHBOARD_CLASSIC]: 'Dashboard (Classic)',
   };
 
   if (simpleLabels[path]) crumbs.push({ label: simpleLabels[path] });

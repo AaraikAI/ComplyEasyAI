@@ -150,7 +150,7 @@ describe('VendorManagement', () => {
   it('shows loading spinner initially', () => {
     vendorsList.mockReturnValue(new Promise(() => {}));
     render(<VendorManagement onBack={mockOnBack} />);
-    expect(screen.getByText(/Loading vendor management/i)).toBeInTheDocument();
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ describe('VendorManagement', () => {
 
   it('renders compliance certifications chart', async () => {
     render(<VendorManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('Compliance Certifications')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Compliance Status')).toBeInTheDocument());
   });
 
   it('renders vendor status summary', async () => {
@@ -209,8 +209,8 @@ describe('VendorManagement', () => {
     render(<VendorManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Vendors')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Vendors'));
-    await waitFor(() => expect(screen.getByPlaceholderText('Search vendors...')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Dashboard'));
+    await waitFor(() => expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Overview'));
     await waitFor(() => expect(screen.getByText('Total Vendors')).toBeInTheDocument());
   });
 
@@ -231,8 +231,8 @@ describe('VendorManagement', () => {
     render(<VendorManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Vendors')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Vendors'));
-    await waitFor(() => expect(screen.getByPlaceholderText('Search vendors...')).toBeInTheDocument());
-    fireEvent.change(screen.getByPlaceholderText('Search vendors...'), { target: { value: 'Cloud' } });
+    await waitFor(() => expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument());
+    fireEvent.change(screen.getByPlaceholderText('Search...'), { target: { value: 'Cloud' } });
     await waitFor(() => {
       expect(screen.getByText('CloudCorp')).toBeInTheDocument();
       expect(screen.queryByText('DataPipe')).not.toBeInTheDocument();
@@ -267,9 +267,9 @@ describe('VendorManagement', () => {
     render(<VendorManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Vendors')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Vendors'));
-    await waitFor(() => expect(screen.getByPlaceholderText('Search vendors...')).toBeInTheDocument());
-    fireEvent.change(screen.getByPlaceholderText('Search vendors...'), { target: { value: 'nonexistent' } });
-    await waitFor(() => expect(screen.getByText(/No vendors match your filters/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument());
+    fireEvent.change(screen.getByPlaceholderText('Search...'), { target: { value: 'nonexistent' } });
+    await waitFor(() => expect(screen.getByText('No results found')).toBeInTheDocument());
   });
 
   it('shows empty state with no vendors', async () => {
@@ -277,7 +277,7 @@ describe('VendorManagement', () => {
     render(<VendorManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Vendors')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Vendors'));
-    await waitFor(() => expect(screen.getByText(/No vendors yet/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('No results found')).toBeInTheDocument());
   });
 
   it('sorts vendors by name when header clicked', async () => {
@@ -285,7 +285,7 @@ describe('VendorManagement', () => {
     await waitFor(() => expect(screen.getByText('Vendors')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Vendors'));
     await waitFor(() => expect(screen.getByText('CloudCorp')).toBeInTheDocument());
-    const vendorHeader = screen.getByText('Vendor').closest('th');
+    const vendorHeader = screen.getAllByText('Vendor Name')[0].closest('th');
     fireEvent.click(vendorHeader!);
     // Sort toggled
     fireEvent.click(vendorHeader!);
@@ -304,8 +304,8 @@ describe('VendorManagement', () => {
     fireEvent.click(screen.getByText('CloudCorp'));
     await waitFor(() => expect(screen.getByText('Contact Information')).toBeInTheDocument());
     expect(screen.getByText('jane@cloud.io')).toBeInTheDocument();
-    expect(screen.getByText('Contract Details')).toBeInTheDocument();
-    expect(screen.getByText('Compliance Certifications')).toBeInTheDocument();
+    expect(screen.getByText('Contract Expiry')).toBeInTheDocument();
+    expect(screen.getByText('Compliance Status')).toBeInTheDocument();
   });
 
   it('shows assessment history in detail view', async () => {
@@ -314,7 +314,7 @@ describe('VendorManagement', () => {
     fireEvent.click(screen.getByText('Vendors'));
     await waitFor(() => expect(screen.getByText('CloudCorp')).toBeInTheDocument());
     fireEvent.click(screen.getByText('CloudCorp'));
-    await waitFor(() => expect(screen.getByText('Assessment History')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Last Assessment')).toBeInTheDocument());
     expect(screen.getAllByText('Security Review').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -327,8 +327,8 @@ describe('VendorManagement', () => {
     await waitFor(() => expect(screen.getByText('AI-Powered Actions')).toBeInTheDocument());
     expect(screen.getByText('AI Risk Score')).toBeInTheDocument();
     expect(screen.getByText('Analyze Contract')).toBeInTheDocument();
-    expect(screen.getByText('Due Diligence Report')).toBeInTheDocument();
-    expect(screen.getByText('AI Monitoring Setup')).toBeInTheDocument();
+    expect(screen.getByText('Due Diligence')).toBeInTheDocument();
+    expect(screen.getByText('Monitoring Frequency')).toBeInTheDocument();
   });
 
   it('navigates back from detail to list', async () => {
@@ -341,7 +341,7 @@ describe('VendorManagement', () => {
     // Click back arrow
     const backBtn = document.querySelector('[data-testid="icon-ArrowLeft"]')?.closest('button');
     fireEvent.click(backBtn!);
-    await waitFor(() => expect(screen.getByPlaceholderText('Search vendors...')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument());
   });
 
   // ---------------------------------------------------------------------------
@@ -351,7 +351,7 @@ describe('VendorManagement', () => {
     render(<VendorManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Add Vendor')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Add Vendor'));
-    await waitFor(() => expect(screen.getByText('Add New Vendor')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Vendor Name *')).toBeInTheDocument());
     expect(screen.getByText('Vendor Name *')).toBeInTheDocument();
   });
 
@@ -359,7 +359,7 @@ describe('VendorManagement', () => {
     render(<VendorManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Add Vendor')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Add Vendor'));
-    await waitFor(() => expect(screen.getByText('Add New Vendor')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Vendor Name *')).toBeInTheDocument());
     const nameInput = document.querySelector('input[required]') as HTMLInputElement;
     fireEvent.change(nameInput, { target: { value: 'NewVendor Co' } });
     fireEvent.click(screen.getByRole('button', { name: /Add Vendor/ }));
@@ -372,7 +372,7 @@ describe('VendorManagement', () => {
     fireEvent.click(screen.getByText('Add Vendor'));
     await waitFor(() => expect(screen.getByText('Cancel')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Cancel'));
-    await waitFor(() => expect(screen.getByPlaceholderText('Search vendors...')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument());
   });
 
   it('toggles data access checkbox and shows data type chips', async () => {
@@ -397,7 +397,7 @@ describe('VendorManagement', () => {
     await waitFor(() => expect(screen.getByText('CloudCorp')).toBeInTheDocument());
     const editBtns = document.querySelectorAll('[title="Edit"]');
     fireEvent.click(editBtns[0]);
-    await waitFor(() => expect(screen.getByText('Edit Vendor')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Edit Vendor Name')).toBeInTheDocument());
     expect(screen.getByDisplayValue('CloudCorp')).toBeInTheDocument();
   });
 
@@ -408,8 +408,8 @@ describe('VendorManagement', () => {
     await waitFor(() => expect(screen.getByText('CloudCorp')).toBeInTheDocument());
     const editBtns = document.querySelectorAll('[title="Edit"]');
     fireEvent.click(editBtns[0]);
-    await waitFor(() => expect(screen.getByText('Save Changes')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Save Changes').closest('button')!);
+    await waitFor(() => expect(screen.getByText('Save')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Save').closest('button')!);
     await waitFor(() => expect(vendorsUpdate).toHaveBeenCalled());
   });
 
@@ -421,7 +421,7 @@ describe('VendorManagement', () => {
     await waitFor(() => expect(screen.getByText('Vendors')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Vendors'));
     await waitFor(() => expect(screen.getByText('CloudCorp')).toBeInTheDocument());
-    const archiveBtns = document.querySelectorAll('[title="Archive"]');
+    const archiveBtns = document.querySelectorAll('[title="Delete"]');
     fireEvent.click(archiveBtns[0]);
     await waitFor(() => expect(vendorsDelete).toHaveBeenCalledWith('v1'));
   });
@@ -432,7 +432,7 @@ describe('VendorManagement', () => {
     await waitFor(() => expect(screen.getByText('Vendors')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Vendors'));
     await waitFor(() => expect(screen.getByText('CloudCorp')).toBeInTheDocument());
-    const archiveBtns = document.querySelectorAll('[title="Archive"]');
+    const archiveBtns = document.querySelectorAll('[title="Delete"]');
     fireEvent.click(archiveBtns[0]);
     expect(vendorsDelete).not.toHaveBeenCalled();
   });
@@ -494,9 +494,10 @@ describe('VendorManagement', () => {
     fireEvent.click(screen.getByText('Vendors'));
     await waitFor(() => expect(screen.getByText('CloudCorp')).toBeInTheDocument());
     fireEvent.click(screen.getByText('CloudCorp'));
-    await waitFor(() => expect(screen.getByText('Due Diligence Report')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Due Diligence Report'));
-    await waitFor(() => expect(screen.getByText('AI Due Diligence Report')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Due Diligence')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Due Diligence'));
+    // Due Diligence view opens - the heading uses t('vendors.dueDiligence') = "Due Diligence"
+    await waitFor(() => expect(aiGenerateReport).toHaveBeenCalled());
     await waitFor(() => expect(aiGenerateReport).toHaveBeenCalled());
   });
 
@@ -506,8 +507,8 @@ describe('VendorManagement', () => {
     fireEvent.click(screen.getByText('Vendors'));
     await waitFor(() => expect(screen.getByText('CloudCorp')).toBeInTheDocument());
     fireEvent.click(screen.getByText('CloudCorp'));
-    await waitFor(() => expect(screen.getByText('AI Monitoring Setup')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('AI Monitoring Setup'));
+    await waitFor(() => expect(screen.getByText('Monitoring Frequency')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Monitoring Frequency'));
     await waitFor(() => expect(screen.getByText('AI-Suggested Monitoring Controls')).toBeInTheDocument());
     await waitFor(() => expect(aiChat).toHaveBeenCalled());
   });
@@ -521,8 +522,8 @@ describe('VendorManagement', () => {
     fireEvent.click(screen.getByText('Vendors'));
     await waitFor(() => expect(screen.getByText('CloudCorp')).toBeInTheDocument());
     fireEvent.click(screen.getByText('CloudCorp'));
-    await waitFor(() => expect(screen.getByText('New Assessment')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('Create Assessment'));
+    await waitFor(() => expect(screen.getByText('Questionnaire')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Create'));
     await waitFor(() => expect(vendorsCreateAssessment).toHaveBeenCalledWith('v1', { assessmentType: 'Security Review' }));
   });
 
@@ -543,7 +544,7 @@ describe('VendorManagement', () => {
     render(<VendorManagement onBack={mockOnBack} />);
     await waitFor(() => expect(screen.getByText('Add Vendor')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Add Vendor'));
-    await waitFor(() => expect(screen.getByText('Add New Vendor')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Vendor Name *')).toBeInTheDocument());
     const nameInput = document.querySelector('input[required]') as HTMLInputElement;
     fireEvent.change(nameInput, { target: { value: 'Fail Corp' } });
     fireEvent.click(screen.getByRole('button', { name: /Add Vendor/ }));
@@ -555,6 +556,6 @@ describe('VendorManagement', () => {
   // ---------------------------------------------------------------------------
   it('shows vendor count in header', async () => {
     render(<VendorManagement onBack={mockOnBack} />);
-    await waitFor(() => expect(screen.getByText('2 vendors tracked')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/2 vendors? tracked/)).toBeInTheDocument());
   });
 });

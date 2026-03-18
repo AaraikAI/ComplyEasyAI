@@ -167,7 +167,7 @@ router.get(
           select: { id: true, title: true, severity: true, status: true },
           take: 20,
         }),
-        prisma.incident.findMany({
+        prisma.grcIncident.findMany({
           where: {
             organizationId: user.organizationId,
             affectedSystems: { has: asset.name },
@@ -286,8 +286,13 @@ router.patch(
         return;
       }
 
-      // Prevent updating immutable fields
-      const { id, organizationId, createdAt, ...updateData } = req.body;
+      // Whitelist updatable fields only
+      const { pick } = await import('../utils/pick');
+      const updateData = pick(req.body, [
+        'name', 'type', 'category', 'owner', 'department', 'location',
+        'classification', 'status', 'ipAddress', 'hostname', 'serialNumber',
+        'vendor', 'purchaseDate', 'endOfLife', 'metadata',
+      ]);
 
       // Validate type if provided
       if (updateData.type) {

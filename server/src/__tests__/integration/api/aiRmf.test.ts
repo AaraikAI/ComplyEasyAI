@@ -4,7 +4,7 @@
  * Tests for NIST AI Risk Management Framework implementation.
  */
 
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express, { Express } from 'express';
 import { prismaMock } from '../../mocks/prisma';
@@ -47,6 +47,10 @@ jest.mock('../../../middleware/auth', () => ({
 
 jest.mock('../../../middleware/tierMiddleware', () => ({
   requireVisionaryFeature: () => [(req: any, res: any, next: any) => next()],
+}));
+
+jest.mock('../../../middleware/validate', () => ({
+  validateBody: () => (req: any, res: any, next: any) => next(),
 }));
 
 // Mock AI RMF controller
@@ -234,17 +238,83 @@ jest.mock('../../../controllers/aiRmfController', () => ({
   },
 }));
 
-// Setup app
+// Setup app once (controller is fully mocked, no need to re-import per test)
 let app: Express;
 
-beforeEach(async () => {
-  jest.clearAllMocks();
-
+beforeAll(async () => {
   app = express();
   app.use(express.json());
 
   const aiRmfRoutes = (await import('../../../routes/aiRmf')).default;
   app.use('/api/ai-rmf', aiRmfRoutes);
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
+
+  // Re-setup controller mocks after clearAllMocks
+  const controller = require('../../../controllers/aiRmfController').default;
+  controller.createAISystem.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'ai-rmf-system-123', name: req.body.name, description: req.body.description, purpose: req.body.purpose, status: 'Active', organizationId: 'org-123' });
+  });
+  controller.getAISystems.mockImplementation((_req: any, res: any) => {
+    res.json([{ id: 'sys-1', name: 'ML Model A', purpose: 'Classification', status: 'Active' }, { id: 'sys-2', name: 'ML Model B', purpose: 'Prediction', status: 'Development' }]);
+  });
+  controller.getAISystemById.mockImplementation((req: any, res: any) => {
+    if (req.params.id === 'nonexistent') return res.status(404).json({ error: 'AI System not found' });
+    res.json({ id: req.params.id, name: 'AI System', purpose: 'Risk Analysis', status: 'Active', coreFunctions: [], trustworthinessCharacteristics: [], lifecycleStages: [], actors: [] });
+  });
+  controller.updateAISystem.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.id, ...req.body, updated: true });
+  });
+  controller.deleteAISystem.mockImplementation((req: any, res: any) => {
+    res.json({ deleted: true, id: req.params.id });
+  });
+  controller.updateCoreFunction.mockImplementation((req: any, res: any) => {
+    res.json({ aiSystemId: req.params.aiSystemId, functionName: req.params.functionName, status: req.body.status, updated: true });
+  });
+  controller.updateCategory.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.categoryId, ...req.body, updated: true });
+  });
+  controller.updateSubcategory.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.subcategoryId, ...req.body, updated: true });
+  });
+  controller.updateTrustworthinessCharacteristic.mockImplementation((req: any, res: any) => {
+    res.json({ aiSystemId: req.params.aiSystemId, characteristic: req.params.characteristic, score: req.body.score, evidence: req.body.evidence, updated: true });
+  });
+  controller.updateLifecycleStage.mockImplementation((req: any, res: any) => {
+    res.json({ aiSystemId: req.params.aiSystemId, stage: req.params.stage, status: req.body.status, updated: true });
+  });
+  controller.addActor.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'actor-123', aiSystemId: req.params.aiSystemId, name: req.body.name, role: req.body.role, responsibilities: req.body.responsibilities });
+  });
+  controller.removeActor.mockImplementation((req: any, res: any) => {
+    res.json({ deleted: true, actorId: req.params.actorId });
+  });
+  controller.createAssessment.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'assessment-123', aiSystemId: req.params.aiSystemId, assessmentType: req.body.assessmentType, status: 'In Progress', createdAt: new Date().toISOString() });
+  });
+  controller.getAssessments.mockImplementation((req: any, res: any) => {
+    res.json([{ id: 'assess-1', aiSystemId: req.params.aiSystemId, type: 'Impact', status: 'Completed' }, { id: 'assess-2', aiSystemId: req.params.aiSystemId, type: 'Bias', status: 'In Progress' }]);
+  });
+  controller.deleteAssessment.mockImplementation((req: any, res: any) => {
+    res.json({ deleted: true, assessmentId: req.params.assessmentId });
+  });
+  controller.createProfile.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'profile-123', aiSystemId: req.params.aiSystemId, profileType: req.body.profileType, targetState: req.body.targetState, createdAt: new Date().toISOString() });
+  });
+  controller.createRiskActivity.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'risk-activity-123', aiSystemId: req.params.aiSystemId, activityType: req.body.activityType, description: req.body.description, status: 'Pending' });
+  });
+  controller.updateRiskActivity.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.riskActivityId, ...req.body, updated: true });
+  });
+  controller.calculateTrustworthinessScore.mockImplementation((req: any, res: any) => {
+    res.json({ aiSystemId: req.params.aiSystemId, overallScore: 78, dimensions: { validity: 85, reliability: 80, safety: 75, security: 82, accountability: 70, transparency: 78, explainability: 72, privacy: 80, fairness: 76 }, calculatedAt: new Date().toISOString() });
+  });
+  controller.getDashboardData.mockImplementation((_req: any, res: any) => {
+    res.json({ totalSystems: 5, systemsByStatus: { Active: 3, Development: 1, Archived: 1 }, averageTrustworthiness: 76, pendingAssessments: 2, recentActivities: [], riskDistribution: { High: 1, Medium: 2, Low: 2 } });
+  });
 });
 
 describe('AI RMF Routes Integration', () => {

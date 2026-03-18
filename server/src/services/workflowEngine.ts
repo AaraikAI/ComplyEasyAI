@@ -375,7 +375,7 @@ export class WorkflowEngineService {
           const description = (config.description as string) || '';
           const severity = (config.severity as string) || 'medium';
 
-          await prisma.incident.create({
+          await prisma.grcIncident.create({
             data: {
               organizationId,
               title: incidentTitle,

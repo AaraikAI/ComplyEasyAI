@@ -4,7 +4,7 @@
  * Tests for webhook management, API key management, Zapier integration, and event handling.
  */
 
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express, { Express } from 'express';
 import { prismaMock } from '../../mocks/prisma';
@@ -191,17 +191,79 @@ jest.mock('../../../controllers/webhookController', () => ({
   },
 }));
 
-// Setup app
+// Setup app once (controller is fully mocked, no need to re-import per test)
 let app: Express;
 
-beforeEach(async () => {
-  jest.clearAllMocks();
-
+beforeAll(async () => {
   app = express();
   app.use(express.json());
 
   const webhookRoutes = (await import('../../../routes/webhooks')).default;
   app.use('/api/webhooks', webhookRoutes);
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
+
+  // Ensure apiKey.update returns a thenable (used as fire-and-forget in authenticateApiKey)
+  prismaMock.apiKey.update.mockResolvedValue({} as any);
+
+  // Re-setup controller mocks after clearAllMocks
+  const controller = require('../../../controllers/webhookController').default;
+  controller.getEventTypes.mockImplementation((_req: any, res: any) => {
+    res.json({ eventTypes: [{ name: 'policy.created', description: 'Policy was created' }, { name: 'policy.updated', description: 'Policy was updated' }, { name: 'incident.created', description: 'Incident was created' }, { name: 'risk.identified', description: 'Risk was identified' }] });
+  });
+  controller.getWebhooks.mockImplementation((_req: any, res: any) => {
+    res.json([{ id: 'webhook-123', url: 'https://example.com/webhook', events: ['policy.created', 'incident.created'], active: true }]);
+  });
+  controller.getWebhook.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.webhookId, url: 'https://example.com/webhook', events: ['policy.created'], active: true });
+  });
+  controller.createWebhook.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'webhook-new', url: req.body.url, events: req.body.events, active: true, secret: 'whsec_test_secret' });
+  });
+  controller.updateWebhook.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.webhookId, ...req.body, updated: true });
+  });
+  controller.deleteWebhook.mockImplementation((req: any, res: any) => {
+    res.json({ deleted: true, id: req.params.webhookId });
+  });
+  controller.testWebhook.mockImplementation((req: any, res: any) => {
+    res.json({ success: true, webhookId: req.params.webhookId, response: { status: 200, body: 'OK' } });
+  });
+  controller.regenerateSecret.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.webhookId, newSecret: 'whsec_new_secret' });
+  });
+  controller.getEventHistory.mockImplementation((_req: any, res: any) => {
+    res.json([{ id: 'event-1', webhookId: 'webhook-123', eventType: 'policy.created', status: 'delivered', deliveredAt: new Date().toISOString() }, { id: 'event-2', webhookId: 'webhook-123', eventType: 'incident.created', status: 'failed', attempts: 3 }]);
+  });
+  controller.retryEvent.mockImplementation((req: any, res: any) => {
+    res.json({ eventId: req.params.eventId, retried: true, status: 'pending' });
+  });
+  controller.getApiKeys.mockImplementation((_req: any, res: any) => {
+    res.json([{ id: 'key-123', name: 'Production API Key', prefix: 'cea_prod_', scopes: ['*'], createdAt: new Date().toISOString(), lastUsedAt: new Date().toISOString() }]);
+  });
+  controller.createApiKey.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'key-new', name: req.body.name, key: 'cea_test_fullkey_abc123', scopes: req.body.scopes, expiresAt: req.body.expiresAt });
+  });
+  controller.revokeApiKey.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.keyId, revoked: true, revokedAt: new Date().toISOString() });
+  });
+  controller.zapierAuthTest.mockImplementation((req: any, res: any) => {
+    res.json({ authenticated: true, organizationId: req.user.organizationId, organizationName: 'Test Org' });
+  });
+  controller.zapierSubscribe.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'sub-123', hookUrl: req.body.hookUrl, event: req.body.event });
+  });
+  controller.zapierUnsubscribe.mockImplementation((req: any, res: any) => {
+    res.json({ unsubscribed: true, id: req.params.id });
+  });
+  controller.zapierSampleData.mockImplementation((req: any, res: any) => {
+    res.json([{ id: 'sample-1', type: req.params.event, data: { sample: true } }]);
+  });
+  controller.receiveIncomingWebhook.mockImplementation((req: any, res: any) => {
+    res.json({ received: true, action: req.params.action });
+  });
 });
 
 describe('Webhook Routes Integration', () => {

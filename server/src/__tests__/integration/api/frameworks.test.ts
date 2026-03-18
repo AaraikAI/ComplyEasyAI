@@ -59,6 +59,21 @@ jest.mock('../../../middleware/tierMiddleware', () => ({
   enforceLimit: () => (req: any, res: any, next: any) => next(),
 }));
 
+// Mock framework template service
+const mockTemplateService = {
+  getAvailableTemplates: jest.fn(),
+  getTemplatesForFramework: jest.fn(),
+  getTemplateCategories: jest.fn(),
+  hasTemplate: jest.fn(),
+  applyTemplateToFramework: jest.fn(),
+  regenerateControlMappings: jest.fn(),
+};
+
+jest.mock('../../../services/frameworkTemplateService', () => ({
+  __esModule: true,
+  default: mockTemplateService,
+}));
+
 import frameworksRoutes from '../../../routes/frameworks';
 import { errorHandler } from '../../../middleware/errorHandler';
 
@@ -81,6 +96,34 @@ app.use('/api/frameworks', frameworksRoutes);
 app.use(errorHandler);
 
 describe('Frameworks API', () => {
+  beforeEach(() => {
+    // Setup default mock returns for methods used internally by the controller
+    // (e.g., recalculateFrameworkProgress calls findMany + update)
+    prismaMock.frameworkControl.findMany.mockResolvedValue([]);
+    prismaMock.complianceFramework.update.mockResolvedValue({} as any);
+    prismaMock.auditLog.create.mockResolvedValue({} as any);
+    prismaMock.auditLog.upsert.mockResolvedValue({} as any);
+    prismaMock.auditLog.findMany.mockResolvedValue([]);
+    prismaMock.complianceFramework.findMany.mockResolvedValue([]);
+    prismaMock.frameworkControl.updateMany.mockResolvedValue({ count: 0 } as any);
+    prismaMock.aISuggestion.findMany.mockResolvedValue([]);
+    prismaMock.aISuggestion.findFirst.mockResolvedValue(null);
+    prismaMock.aISuggestion.update.mockResolvedValue({} as any);
+
+    // Re-setup template service mocks (resetMocks clears them between tests)
+    mockTemplateService.getAvailableTemplates.mockReturnValue([
+      { type: 'SOC2', name: 'SOC 2', controlCount: 50 },
+      { type: 'ISO27001', name: 'ISO 27001', controlCount: 93 },
+    ]);
+    mockTemplateService.getTemplatesForFramework.mockReturnValue([
+      { name: 'Control 1', controlId: 'CC1.1', category: 'Security' },
+    ]);
+    mockTemplateService.getTemplateCategories.mockReturnValue(['Security', 'Availability']);
+    mockTemplateService.hasTemplate.mockReturnValue(true);
+    mockTemplateService.applyTemplateToFramework.mockResolvedValue({ applied: 10, skipped: 0 });
+    mockTemplateService.regenerateControlMappings.mockResolvedValue({ created: 5, deleted: 2 });
+  });
+
   // ===========================================================================
   // Framework CRUD Tests
   // ===========================================================================
@@ -247,15 +290,16 @@ describe('Frameworks API', () => {
         id: 'ctrl-1',
         frameworkId: 'fw-1',
         status: 'Implemented',
+        ownerId: null,
+        evidenceRequired: false,
       };
 
       prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework);
-      prismaMock.frameworkControl.findFirst.mockResolvedValue(mockControl);
+      prismaMock.frameworkControl.findUnique.mockResolvedValue(mockControl);
       prismaMock.frameworkControl.update.mockResolvedValue({
         ...mockControl,
         status: 'Implemented',
       });
-      prismaMock.auditLog.create.mockResolvedValue({} as any);
 
       const response = await request(app)
         .patch('/api/frameworks/fw-1/controls/ctrl-1')
@@ -268,22 +312,25 @@ describe('Frameworks API', () => {
     it('should bulk update controls', async () => {
       const mockFramework = {
         id: 'fw-1',
+        name: 'SOC2',
         organizationId: 'org-123',
       };
 
       prismaMock.complianceFramework.findFirst.mockResolvedValue(mockFramework);
-      prismaMock.frameworkControl.updateMany.mockResolvedValue({ count: 3 });
-      prismaMock.auditLog.create.mockResolvedValue({} as any);
+      prismaMock.frameworkControl.update.mockResolvedValue({
+        id: 'ctrl-1',
+        status: 'Implemented',
+      } as any);
 
       const response = await request(app)
         .post('/api/frameworks/fw-1/controls/bulk-update')
         .send({
           controlIds: ['ctrl-1', 'ctrl-2', 'ctrl-3'],
-          update: { status: 'Implemented' },
+          status: 'Implemented',
         })
         .expect(200);
 
-      expect(response.body).toHaveProperty('updated');
+      expect(response.body).toHaveProperty('message');
     });
 
     it('should delete control', async () => {
@@ -403,45 +450,67 @@ describe('Frameworks API', () => {
         .get('/api/frameworks/fw-1/suggestions')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body).toHaveProperty('suggestions');
+      expect(Array.isArray(response.body.suggestions)).toBe(true);
     });
 
     it('should accept suggestion', async () => {
       prismaMock.aISuggestion.findFirst.mockResolvedValue({
         id: 'sug-1',
-        status: 'Pending',
+        status: 'pending',
         organizationId: 'org-123',
+        frameworkId: 'fw-1',
+        suggestedName: 'New Control',
+        suggestedDescription: 'Description',
+        fileName: 'evidence.pdf',
+      } as any);
+      prismaMock.complianceFramework.findFirst.mockResolvedValue({
+        id: 'fw-1',
+        name: 'SOC2',
+        organizationId: 'org-123',
+      } as any);
+      prismaMock.frameworkControl.create.mockResolvedValue({
+        id: 'ctrl-new',
+        name: 'New Control',
+        frameworkId: 'fw-1',
       } as any);
       prismaMock.aISuggestion.update.mockResolvedValue({
         id: 'sug-1',
         status: 'Accepted',
       } as any);
-      prismaMock.auditLog.create.mockResolvedValue({} as any);
 
       const response = await request(app)
         .post('/api/frameworks/suggestions/sug-1/accept')
         .expect(200);
 
-      expect(response.body).toHaveProperty('status', 'Accepted');
+      expect(response.body).toHaveProperty('control');
     });
 
     it('should reject suggestion', async () => {
       prismaMock.aISuggestion.findFirst.mockResolvedValue({
         id: 'sug-1',
-        status: 'Pending',
+        status: 'pending',
         organizationId: 'org-123',
+        frameworkId: 'fw-1',
+        classification: 'Access Control',
+        fileName: 'evidence.pdf',
       } as any);
       prismaMock.aISuggestion.update.mockResolvedValue({
         id: 'sug-1',
-        status: 'Rejected',
+        status: 'rejected',
       } as any);
       prismaMock.auditLog.create.mockResolvedValue({} as any);
 
+      // Also make sure frameworkControl.findMany is mocked for recalculate
+      prismaMock.frameworkControl.findMany.mockResolvedValue([]);
+      prismaMock.complianceFramework.update.mockResolvedValue({} as any);
+
       const response = await request(app)
         .post('/api/frameworks/suggestions/sug-1/reject')
+        .send({ feedback: 'Not applicable' })
         .expect(200);
 
-      expect(response.body).toHaveProperty('status', 'Rejected');
+      expect(response.body).toHaveProperty('message');
     });
   });
 });

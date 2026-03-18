@@ -393,7 +393,17 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, createdBy, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'activityName', 'activityDescription', 'controllerName', 'controllerContact',
+        'processorName', 'processorContact', 'dpoContact', 'purposes', 'lawfulBasis',
+        'legitimateInterestDetails', 'dataCategories', 'specialCategories',
+        'dataSubjectCategories', 'recipients', 'internationalTransfers',
+        'transferCountries', 'transferSafeguards', 'retentionPeriod',
+        'retentionJustification', 'technicalMeasures', 'organizationalMeasures',
+        'automatedDecisionMaking', 'automatedDecisionDetails', 'dpiaRequired',
+        'dpiaReference', 'status', 'nextReviewDate',
+      ]);
 
       // Automatically update lastReviewDate on any edit
       updateData.lastReviewDate = new Date();

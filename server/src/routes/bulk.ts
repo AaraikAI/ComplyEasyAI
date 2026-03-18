@@ -103,7 +103,7 @@ function getModelConfig(resourceType: ResourceType) {
       };
     case 'incidents':
       return {
-        model: prisma.incident,
+        model: prisma.grcIncident,
         statusField: 'status',
         assigneeField: 'assignedTo',
         selectFields: { id: true, title: true, status: true, severity: true, assignedTo: true, organizationId: true, updatedAt: true },

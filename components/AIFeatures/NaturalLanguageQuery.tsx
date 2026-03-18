@@ -131,10 +131,11 @@ const SourceIcon: React.FC<{ type: string }> = ({ type }) => {
 };
 
 const MetricCard: React.FC<{ data: any }> = ({ data }) => {
-  const color = data.value >= 80 ? 'text-green-600' : data.value >= 60 ? 'text-yellow-600' : 'text-red-600';
-  const ringColor = data.value >= 80 ? 'stroke-green-500' : data.value >= 60 ? 'stroke-yellow-500' : 'stroke-red-500';
+  const val = typeof data?.value === 'number' ? data.value : 0;
+  const color = val >= 80 ? 'text-green-600' : val >= 60 ? 'text-yellow-600' : 'text-red-600';
+  const ringColor = val >= 80 ? 'stroke-green-500' : val >= 60 ? 'stroke-yellow-500' : 'stroke-red-500';
   const circumference = 2 * Math.PI * 34;
-  const offset = circumference - (data.value / 100) * circumference;
+  const offset = circumference - (val / 100) * circumference;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4">
@@ -144,7 +145,7 @@ const MetricCard: React.FC<{ data: any }> = ({ data }) => {
           <circle cx="40" cy="40" r="34" fill="none" className={ringColor} strokeWidth="6" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={`text-lg font-bold ${color}`}>{data.value}{data.unit}</span>
+          <span className={`text-lg font-bold ${color}`}>{val}{data?.unit || ''}</span>
         </div>
       </div>
       <div>
@@ -167,7 +168,7 @@ const ListCard: React.FC<{ title: string; data: any }> = ({ title, data }) => {
         <h5 className="text-xs font-semibold text-gray-500 uppercase">{title}</h5>
       </div>
       <div className="divide-y divide-gray-100">
-        {data.items.map((item: any, idx: number) => (
+        {(data?.items || []).map((item: any, idx: number) => (
           <div key={idx} className="flex items-center justify-between px-4 py-2">
             <span className="text-sm text-gray-700">{item.label}</span>
             <div className="flex items-center gap-2">
@@ -196,7 +197,7 @@ const TimelineCard: React.FC<{ title: string; data: any }> = ({ title, data }) =
         <h5 className="text-xs font-semibold text-gray-500 uppercase">{title}</h5>
       </div>
       <div className="p-4 space-y-3">
-        {data.items.map((item: any, idx: number) => (
+        {(data?.items || []).map((item: any, idx: number) => (
           <div key={idx} className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
               item.status === 'good' ? 'bg-green-100' :

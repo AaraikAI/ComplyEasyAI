@@ -38,12 +38,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return;
     }
 
-    const token = localStorage.getItem('auth_token');
     const wsUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || window.location.origin;
 
     const socket = io(wsUrl, {
       path: '/ws',
-      auth: { token },
+      withCredentials: true,
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 10,

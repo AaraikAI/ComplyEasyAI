@@ -34,7 +34,7 @@ router.get(
     const user = (req as AuthRequest).user!;
     const orgId = user.organizationId;
     try {
-      const incidents = await prisma.incident.findMany({
+      const incidents = await prisma.grcIncident.findMany({
         where: { organizationId: orgId },
         select: {
           severity: true,
@@ -136,7 +136,7 @@ router.get(
       }
 
       const [incidents, total] = await Promise.all([
-        prisma.incident.findMany({
+        prisma.grcIncident.findMany({
           where,
           orderBy: { createdAt: 'desc' },
           skip,
@@ -145,7 +145,7 @@ router.get(
             _count: { select: { timeline: true, tasks: true } },
           },
         }),
-        prisma.incident.count({ where }),
+        prisma.grcIncident.count({ where }),
       ]);
 
       res.json({
@@ -174,7 +174,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
-      const incident = await prisma.incident.findFirst({
+      const incident = await prisma.grcIncident.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
         include: {
           timeline: { orderBy: { timestamp: 'desc' } },
@@ -237,7 +237,7 @@ router.post(
         return;
       }
 
-      const incident = await prisma.incident.create({
+      const incident = await prisma.grcIncident.create({
         data: {
           organizationId: user.organizationId,
           title,
@@ -286,7 +286,7 @@ router.patch(
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
-      const existing = await prisma.incident.findFirst({
+      const existing = await prisma.grcIncident.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
       });
 
@@ -295,8 +295,12 @@ router.patch(
         return;
       }
 
-      // Prevent updating immutable fields
-      const { id, organizationId, createdAt, reportedBy, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'title', 'description', 'severity', 'status', 'category', 'assignedTo',
+        'detectedAt', 'containedAt', 'resolvedAt', 'closedAt', 'rootCause',
+        'impact', 'lessonsLearned', 'affectedSystems', 'affectedControls',
+      ]);
 
       // Auto-set timestamp fields based on status transitions
       if (updateData.status) {
@@ -312,7 +316,7 @@ router.patch(
         }
       }
 
-      const incident = await prisma.incident.update({
+      const incident = await prisma.grcIncident.update({
         where: { id: req.params.id },
         data: updateData,
         include: {
@@ -351,7 +355,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
-      const existing = await prisma.incident.findFirst({
+      const existing = await prisma.grcIncident.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
       });
 
@@ -361,7 +365,7 @@ router.delete(
       }
 
       // Soft delete by setting status to CLOSED with a note
-      const incident = await prisma.incident.update({
+      const incident = await prisma.grcIncident.update({
         where: { id: req.params.id },
         data: {
           status: 'CLOSED',
@@ -398,7 +402,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
-      const incident = await prisma.incident.findFirst({
+      const incident = await prisma.grcIncident.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
         select: { id: true },
       });
@@ -430,7 +434,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
-      const incident = await prisma.incident.findFirst({
+      const incident = await prisma.grcIncident.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
         select: { id: true },
       });
@@ -473,7 +477,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
-      const incident = await prisma.incident.findFirst({
+      const incident = await prisma.grcIncident.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
         select: { id: true },
       });
@@ -518,7 +522,7 @@ router.patch(
     const user = (req as AuthRequest).user!;
     try {
       // Verify incident belongs to org
-      const incident = await prisma.incident.findFirst({
+      const incident = await prisma.grcIncident.findFirst({
         where: { id: req.params.id, organizationId: user.organizationId },
         select: { id: true },
       });

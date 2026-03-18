@@ -4,7 +4,7 @@
  * Tests for EU AI Act, DMA, and DSA compliance routes.
  */
 
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express, { Express } from 'express';
 import { prismaMock } from '../../mocks/prisma';
@@ -278,17 +278,148 @@ jest.mock('../../../controllers/euRegulationsController', () => ({
   },
 }));
 
-// Setup app
+// Setup app once (controller is fully mocked, no need to re-import per test)
 let app: Express;
 
-beforeEach(async () => {
-  jest.clearAllMocks();
-
+beforeAll(async () => {
   app = express();
   app.use(express.json());
 
   const euRegulationsRoutes = (await import('../../../routes/euRegulations')).default;
   app.use('/api/eu-regulations', euRegulationsRoutes);
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
+
+  // Re-setup controller mocks after clearAllMocks
+  const controller = require('../../../controllers/euRegulationsController').default;
+
+  // EU AI Act
+  controller.registerAISystem.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'ai-system-123', name: req.body.name, riskCategory: req.body.riskCategory, status: 'Registered' });
+  });
+  controller.getAISystems.mockImplementation((_req: any, res: any) => {
+    res.json([{ id: 'ai-system-1', name: 'Fraud Detection', riskCategory: 'High' }, { id: 'ai-system-2', name: 'Customer Service Bot', riskCategory: 'Limited' }]);
+  });
+  controller.getAISystem.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.id, name: 'AI System', riskCategory: 'High', provider: 'Internal', deploymentDate: new Date().toISOString() });
+  });
+  controller.updateAISystem.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.id, ...req.body, updated: true });
+  });
+  controller.deleteAISystem.mockImplementation((req: any, res: any) => {
+    res.json({ deleted: true, id: req.params.id });
+  });
+  controller.getRiskAssessments.mockImplementation((req: any, res: any) => {
+    res.json([{ id: 'assessment-1', systemId: req.params.id, riskLevel: 'High', date: new Date() }]);
+  });
+  controller.getLatestRiskAssessment.mockImplementation((req: any, res: any) => {
+    res.json({ id: 'assessment-latest', systemId: req.params.id, riskLevel: 'High' });
+  });
+  controller.conductRiskAssessment.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'assessment-new', systemId: req.params.id, riskLevel: 'High', findings: [] });
+  });
+  controller.generateTransparencyReport.mockImplementation((_req: any, res: any) => {
+    res.status(201).json({ id: 'report-123', reportType: 'Transparency', generatedAt: new Date().toISOString() });
+  });
+  controller.getTransparencyReports.mockImplementation((_req: any, res: any) => {
+    res.json([{ id: 'report-1', reportType: 'Transparency', generatedAt: new Date() }]);
+  });
+
+  // DMA
+  controller.registerGatekeeper.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'gatekeeper-123', name: req.body.name, coreServices: req.body.coreServices, status: 'Registered' });
+  });
+  controller.getGatekeepers.mockImplementation((_req: any, res: any) => {
+    res.json([{ id: 'gk-1', name: 'Platform A', coreServices: ['Search', 'Advertising'] }]);
+  });
+  controller.getGatekeeper.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.id, name: 'Platform', coreServices: ['Search'] });
+  });
+  controller.updateGatekeeper.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.id, ...req.body, updated: true });
+  });
+  controller.deleteGatekeeper.mockImplementation((req: any, res: any) => {
+    res.json({ deleted: true, id: req.params.id });
+  });
+  controller.getObligations.mockImplementation((_req: any, res: any) => {
+    res.json([{ type: 'interoperability', status: 'Compliant' }, { type: 'data_portability', status: 'In Progress' }]);
+  });
+  controller.updateObligationCompliance.mockImplementation((req: any, res: any) => {
+    res.json({ gatekeeperId: req.params.id, obligationType: req.params.obligationType, status: req.body.status });
+  });
+  controller.getComplianceReports.mockImplementation((req: any, res: any) => {
+    res.json([{ id: 'report-1', gatekeeperId: req.params.id, date: new Date() }]);
+  });
+  controller.getLatestComplianceReport.mockImplementation((req: any, res: any) => {
+    res.json({ id: 'report-latest', gatekeeperId: req.params.id, score: 85 });
+  });
+  controller.generateComplianceReport.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'report-new', gatekeeperId: req.params.id, generatedAt: new Date().toISOString() });
+  });
+
+  // DSA
+  controller.registerPlatform.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'platform-123', name: req.body.name, type: req.body.type, status: 'Registered' });
+  });
+  controller.getPlatforms.mockImplementation((_req: any, res: any) => {
+    res.json([{ id: 'platform-1', name: 'Social Media', type: 'VLOP', userCount: 50000000 }]);
+  });
+  controller.getPlatform.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.id, name: 'Platform', type: 'VLOP' });
+  });
+  controller.updatePlatform.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.id, ...req.body, updated: true });
+  });
+  controller.deletePlatform.mockImplementation((req: any, res: any) => {
+    res.json({ deleted: true, id: req.params.id });
+  });
+  controller.getContentModerationHistory.mockImplementation((_req: any, res: any) => {
+    res.json([{ id: 'mod-1', action: 'removed', contentType: 'post', reason: 'Hate speech' }]);
+  });
+  controller.recordContentModeration.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'mod-new', action: req.body.action, contentType: req.body.contentType });
+  });
+  controller.reportIllegalContent.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'report-123', contentUrl: req.body.contentUrl, status: 'Pending Review' });
+  });
+  controller.processIllegalContentReport.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.id, status: req.body.status, processedAt: new Date().toISOString() });
+  });
+  controller.addAdToRepository.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'ad-123', adId: req.body.adId, advertiser: req.body.advertiser });
+  });
+  controller.getAdsFromRepository.mockImplementation((_req: any, res: any) => {
+    res.json([{ id: 'ad-1', adId: 'ext-ad-1', advertiser: 'Company A', targetingInfo: {} }]);
+  });
+  controller.getDSATransparencyReports.mockImplementation((req: any, res: any) => {
+    res.json([{ id: 'tr-1', platformId: req.params.id, period: 'Q1 2024' }]);
+  });
+  controller.generateDSATransparencyReport.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'tr-new', platformId: req.params.id, period: req.body.period });
+  });
+  controller.conductDSARiskAssessment.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ id: 'dsa-risk-123', platformId: req.params.id, riskAreas: req.body.riskAreas });
+  });
+  controller.getDSARiskAssessments.mockImplementation((req: any, res: any) => {
+    res.json([{ id: 'dsa-risk-1', platformId: req.params.id, date: new Date() }]);
+  });
+  controller.getLatestDSARiskAssessment.mockImplementation((req: any, res: any) => {
+    res.json({ id: 'dsa-risk-latest', platformId: req.params.id });
+  });
+  controller.updateDSARiskAssessment.mockImplementation((req: any, res: any) => {
+    res.json({ id: req.params.id, ...req.body, updated: true });
+  });
+  controller.configureNonPersonalizedFeed.mockImplementation((req: any, res: any) => {
+    res.status(201).json({ platformId: req.params.id, feedType: req.body.feedType, enabled: true });
+  });
+  controller.getNonPersonalizedFeed.mockImplementation((req: any, res: any) => {
+    res.json({ platformId: req.params.id, feedType: 'chronological', enabled: true });
+  });
+  controller.updateNonPersonalizedFeedStatus.mockImplementation((req: any, res: any) => {
+    res.json({ platformId: req.params.id, enabled: req.body.enabled });
+  });
 });
 
 describe('EU Regulations Routes Integration', () => {

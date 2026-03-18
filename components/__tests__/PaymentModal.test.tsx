@@ -33,14 +33,14 @@ describe('PaymentModal Component', () => {
       <PaymentModal plan="Pro" price="$99" onClose={mockClose} onSuccess={mockSuccess} />
     );
     expect(screen.getByText('Secure Checkout')).toBeInTheDocument();
-    expect(screen.getByText('$99/mo')).toBeInTheDocument();
+    expect(screen.getByText('$99/per month')).toBeInTheDocument();
   });
 
   it('displays plan and price information', () => {
     render(
       <PaymentModal plan="Enterprise" price="$299" onClose={mockClose} onSuccess={mockSuccess} />
     );
-    expect(screen.getByText('$299/mo')).toBeInTheDocument();
+    expect(screen.getByText('$299/per month')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Continue to Secure Checkout/i })).toBeInTheDocument();
   });
 

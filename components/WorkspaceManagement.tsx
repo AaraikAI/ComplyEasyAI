@@ -157,7 +157,8 @@ export default function WorkspaceManagement() {
     }
     setIsSaving(true);
     try {
-      await api.enterprise.workspaces.createChild(childForm);
+      const { plan: _plan, ...childPayload } = childForm;
+      await api.enterprise.workspaces.createChild(childPayload);
       await Promise.all([loadHierarchy(), loadMetrics()]);
       setChildForm({ name: '', plan: '' });
       setViewMode('dashboard');

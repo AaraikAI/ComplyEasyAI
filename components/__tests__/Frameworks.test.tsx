@@ -221,7 +221,7 @@ describe('Frameworks Component', () => {
       fireEvent.click(addButtons[0]);
 
       await waitFor(() => {
-        expect(screen.getByText('Add Compliance Framework')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(/search standards/i)).toBeInTheDocument();
       });
     });
 
@@ -245,7 +245,7 @@ describe('Frameworks Component', () => {
       });
     });
 
-    it('shows "No matching frameworks found" when search has no results', async () => {
+    it('shows "No results found" when search has no results', async () => {
       render(<Frameworks activeFrameworks={[]} onAddFramework={mockAdd} onSelectFramework={mockSelect} />);
       fireEvent.click(screen.getAllByText('Add Framework')[0]);
 
@@ -253,7 +253,7 @@ describe('Frameworks Component', () => {
       fireEvent.change(searchInput, { target: { value: 'NonExistentFramework12345' } });
 
       await waitFor(() => {
-        expect(screen.getByText('No matching frameworks found.')).toBeInTheDocument();
+        expect(screen.getByText('No results found')).toBeInTheDocument();
       });
     });
 
@@ -272,7 +272,7 @@ describe('Frameworks Component', () => {
       fireEvent.click(screen.getAllByText('Add Framework')[0]);
 
       await waitFor(() => {
-        expect(screen.getByText('Add Compliance Framework')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(/search standards/i)).toBeInTheDocument();
       });
 
       // Find the close button (X icon) in the modal header
@@ -280,7 +280,7 @@ describe('Frameworks Component', () => {
       fireEvent.click(closeButtons[0].closest('button')!);
 
       await waitFor(() => {
-        expect(screen.queryByText('Add Compliance Framework')).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText(/search standards/i)).not.toBeInTheDocument();
       });
     });
 
@@ -299,7 +299,7 @@ describe('Frameworks Component', () => {
 
       // HIPAA should not appear in the list because it is already active
       await waitFor(() => {
-        expect(screen.queryByText('No matching frameworks found.')).toBeInTheDocument();
+        expect(screen.queryByText('No results found')).toBeInTheDocument();
       });
     });
   });

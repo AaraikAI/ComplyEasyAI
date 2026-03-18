@@ -202,6 +202,20 @@ describe('FeatureService', () => {
       const map: Record<string, number> = { Foundation: 0, Essentials: 1, Growth: 2, Visionary: 3 };
       return map[tier] ?? 0;
     });
+
+    // Re-establish Stripe constructor mock (cleared by resetMocks)
+    const Stripe = require('stripe').default;
+    Stripe.mockImplementation(() => ({
+      subscriptions: mockStripeSubscriptions,
+      products: mockStripeProducts,
+      prices: mockStripePrices,
+      subscriptionItems: mockStripeSubscriptionItems,
+    }));
+
+    // Re-establish $transaction mock (cleared by resetMocks)
+    (prismaMock.$transaction as jest.Mock<any>).mockImplementation(
+      (callback: (tx: typeof prismaMock) => Promise<unknown>) => callback(prismaMock)
+    );
   });
 
   // ======================================================================

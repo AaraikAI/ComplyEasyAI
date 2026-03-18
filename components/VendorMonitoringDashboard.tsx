@@ -79,16 +79,16 @@ const VendorMonitoringDashboard: React.FC = () => {
     setError(null);
     try {
       const [checksRes, alertsRes, statsRes, vendorsRes] = await Promise.all([
-        api.vendorMonitoring.list({ pageSize: '100' }).catch(() => ({ data: [] })),
-        api.vendorMonitoring.getAlerts().catch(() => ({ data: [] })),
-        api.vendorMonitoring.getStats().catch(() => ({ data: null })),
-        api.get('/vendors?pageSize=100').catch(() => ({ data: [] })),
+        api.vendorMonitoring.list({ pageSize: '100' }).catch(() => []),
+        api.vendorMonitoring.getAlerts().catch(() => []),
+        api.vendorMonitoring.getStats().catch(() => null),
+        api.vendors.list({ pageSize: '100' }).catch(() => []),
       ]);
 
-      setChecks(checksRes?.data || []);
-      setAlerts(alertsRes?.data || []);
-      setStats(statsRes?.data || null);
-      setVendors(vendorsRes?.data || []);
+      setChecks(Array.isArray(checksRes) ? checksRes : []);
+      setAlerts(Array.isArray(alertsRes) ? alertsRes : []);
+      setStats(statsRes || null);
+      setVendors(Array.isArray(vendorsRes) ? vendorsRes : []);
     } catch (err: any) {
       setError(err.message || 'Failed to load monitoring data');
     } finally {
@@ -112,7 +112,7 @@ const VendorMonitoringDashboard: React.FC = () => {
     if (vendorHistory[vendorId]) return;
     try {
       const res = await api.vendorMonitoring.getForVendor(vendorId);
-      setVendorHistory(prev => ({ ...prev, [vendorId]: res?.data || [] }));
+      setVendorHistory(prev => ({ ...prev, [vendorId]: Array.isArray(res) ? res : [] }));
     } catch {}
   };
 

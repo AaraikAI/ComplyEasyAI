@@ -83,6 +83,10 @@ vi.mock('@/contexts/OnboardingContext', () => ({
   useOnboardingContext: vi.fn().mockReturnValue({ isOnboarding: false, currentFlow: null, isLoaded: true, showCelebration: false }),
 }));
 
+vi.mock('@/contexts/I18nContext', () => ({
+  useI18n: () => ({ t: (key: string) => key, locale: 'en', setLocale: vi.fn(), availableLocales: [], isLoading: false }),
+}));
+
 import { AISystemCreate } from '@/components/AISystemCreate';
 
 describe('AISystemCreate', () => {
@@ -95,7 +99,7 @@ describe('AISystemCreate', () => {
 
   it('renders form without crashing', () => {
     render(<AISystemCreate onBack={mockOnBack} onSuccess={mockOnSuccess} />);
-    expect(screen.getAllByText('Create AI System')[0]).toBeInTheDocument();
+    expect(screen.getByText(/common\.create.*AI System/)).toBeInTheDocument();
   });
 
   it('displays required form fields', () => {
@@ -105,8 +109,8 @@ describe('AISystemCreate', () => {
 
   it('shows validation errors for empty name on submit', async () => {
     render(<AISystemCreate onBack={mockOnBack} onSuccess={mockOnSuccess} />);
-    const form = screen.getAllByText('Create AI System')[0].closest('div')!;
-    const submitButton = screen.getAllByText(/Create AI System/i).pop()!;
+    // Submit button text is t('common.save') = 'common.save'
+    const submitButton = screen.getByText('common.save').closest('button')!;
     fireEvent.click(submitButton);
     await waitFor(() => {
       expect(screen.getByText('Name is required')).toBeInTheDocument();

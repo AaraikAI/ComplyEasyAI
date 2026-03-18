@@ -45,75 +45,22 @@ jest.mock('../../../middleware/auth', () => ({
   AuthRequest: {},
 }));
 
-// Mock onboarding controller
+// Mock onboarding controller - named export, method names must match route usage
+const mockOnboardingController = {
+  getProgress: jest.fn(),
+  updateProgress: jest.fn(),
+  trackEvent: jest.fn(),
+  completeMilestone: jest.fn(),
+  updatePreferences: jest.fn(),
+  skipFlow: jest.fn(),
+  resetProgress: jest.fn(),
+  getChecklist: jest.fn(),
+  updateChecklist: jest.fn(),
+};
+
 jest.mock('../../../controllers/onboardingController', () => ({
   __esModule: true,
-  default: {
-    getOnboardingProgress: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        currentStep: 2,
-        totalSteps: 5,
-        completedSteps: ['welcome', 'profile'],
-        nextStep: 'team',
-        percentComplete: 40,
-      });
-    }),
-    updateOnboardingProgress: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        currentStep: req.body.currentStep,
-        updated: true,
-      });
-    }),
-    recordOnboardingEvent: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        eventId: 'event-123',
-        eventType: req.body.eventType,
-        recorded: true,
-      });
-    }),
-    completeMilestone: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        milestone: req.body.milestone,
-        completed: true,
-        completedAt: new Date().toISOString(),
-      });
-    }),
-    updatePreferences: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        preferences: req.body,
-        updated: true,
-      });
-    }),
-    skipOnboarding: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        skipped: true,
-        skipReason: req.body.reason,
-      });
-    }),
-    resetOnboarding: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        reset: true,
-        currentStep: 1,
-      });
-    }),
-    getChecklist: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        items: [
-          { id: 'item-1', title: 'Create account', completed: true },
-          { id: 'item-2', title: 'Set up profile', completed: true },
-          { id: 'item-3', title: 'Invite team', completed: false },
-          { id: 'item-4', title: 'Connect integrations', completed: false },
-          { id: 'item-5', title: 'Review compliance', completed: false },
-        ],
-      });
-    }),
-    updateChecklist: jest.fn().mockImplementation((req, res) => {
-      res.json({
-        items: req.body.items,
-        updated: true,
-      });
-    }),
-  },
+  onboardingController: mockOnboardingController,
 }));
 
 // Setup app
@@ -121,6 +68,49 @@ let app: Express;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+
+  // Re-setup mock implementations (resetMocks: true clears them between tests)
+  mockOnboardingController.getProgress.mockImplementation((req: any, res: any) => {
+    res.json({
+      currentStep: 2,
+      totalSteps: 5,
+      completedSteps: ['welcome', 'profile'],
+      nextStep: 'team',
+      percentComplete: 40,
+    });
+  });
+  mockOnboardingController.updateProgress.mockImplementation((req: any, res: any) => {
+    res.json({ currentStep: req.body.currentStep, updated: true });
+  });
+  mockOnboardingController.trackEvent.mockImplementation((req: any, res: any) => {
+    res.json({ eventId: 'event-123', eventType: req.body.eventType, recorded: true });
+  });
+  mockOnboardingController.completeMilestone.mockImplementation((req: any, res: any) => {
+    res.json({ milestone: req.body.milestone, completed: true, completedAt: new Date().toISOString() });
+  });
+  mockOnboardingController.updatePreferences.mockImplementation((req: any, res: any) => {
+    res.json({ preferences: req.body, updated: true });
+  });
+  mockOnboardingController.skipFlow.mockImplementation((req: any, res: any) => {
+    res.json({ skipped: true, skipReason: req.body.reason });
+  });
+  mockOnboardingController.resetProgress.mockImplementation((req: any, res: any) => {
+    res.json({ reset: true, currentStep: 1 });
+  });
+  mockOnboardingController.getChecklist.mockImplementation((req: any, res: any) => {
+    res.json({
+      items: [
+        { id: 'item-1', title: 'Create account', completed: true },
+        { id: 'item-2', title: 'Set up profile', completed: true },
+        { id: 'item-3', title: 'Invite team', completed: false },
+        { id: 'item-4', title: 'Connect integrations', completed: false },
+        { id: 'item-5', title: 'Review compliance', completed: false },
+      ],
+    });
+  });
+  mockOnboardingController.updateChecklist.mockImplementation((req: any, res: any) => {
+    res.json({ items: req.body.items, updated: true });
+  });
 
   app = express();
   app.use(express.json());

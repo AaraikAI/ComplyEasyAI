@@ -395,6 +395,58 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
   const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
   const [evaluationResults, setEvaluationResults] = useState<Record<string, { score: number; feedback: string; suggestions: string[] }>>({});
 
+  // Simulation control state
+  const [pausedSims, setPausedSims] = useState<Set<string>>(new Set());
+  const [stoppedSims, setStoppedSims] = useState<Set<string>>(new Set());
+  const [viewingLiveSim, setViewingLiveSim] = useState<string | null>(null);
+
+  // Remediation state
+  const [remediatedFindings, setRemediatedFindings] = useState<Set<string>>(new Set());
+  const [remediationPlanned, setRemediationPlanned] = useState<Set<string>>(new Set());
+
+  // Practice answer & bookmark state for question bank
+  const [practicingQuestion, setPracticingQuestion] = useState<string | null>(null);
+  const [practiceAnswerText, setPracticeAnswerText] = useState<Record<string, string>>({});
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(new Set());
+
+  const handlePauseSim = (simId: string) => {
+    setPausedSims(prev => {
+      const next = new Set(prev);
+      if (next.has(simId)) {
+        next.delete(simId);
+      } else {
+        next.add(simId);
+      }
+      return next;
+    });
+  };
+
+  const handleStopSim = (simId: string) => {
+    setStoppedSims(prev => new Set(prev).add(simId));
+    setPausedSims(prev => { const n = new Set(prev); n.delete(simId); return n; });
+  };
+
+  const handleViewLive = (simId: string) => {
+    setViewingLiveSim(viewingLiveSim === simId ? null : simId);
+    setSelectedSimForResults(simId);
+    setActiveTab('results');
+  };
+
+  const handleCreateRemediationTask = (findingId: string) => {
+    setRemediationPlanned(prev => new Set(prev).add(findingId));
+  };
+
+  const handleMarkRemediated = (findingId: string) => {
+    setRemediatedFindings(prev => new Set(prev).add(findingId));
+    setRemediationPlanned(prev => { const n = new Set(prev); n.delete(findingId); return n; });
+  };
+
+  const handleRerunSim = (simId: string) => {
+    setStoppedSims(prev => { const n = new Set(prev); n.delete(simId); return n; });
+    setPausedSims(prev => { const n = new Set(prev); n.delete(simId); return n; });
+    setActiveTab('active');
+  };
+
   // Fetch AI-generated interview questions on mount
   useEffect(() => {
     let cancelled = false;
@@ -809,11 +861,11 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                             )}
                           </div>
                           <p className="text-sm text-gray-700">{evaluationResults[iq.id].feedback}</p>
-                          {evaluationResults[iq.id].suggestions.length > 0 && (
+                          {(evaluationResults[iq.id].suggestions?.length ?? 0) > 0 && (
                             <div className="mt-2 pt-2 border-t border-brand-100">
                               <p className="text-xs text-brand-600 font-medium mb-1">Suggestions for improvement:</p>
                               <ul className="space-y-0.5">
-                                {evaluationResults[iq.id].suggestions.map((s, idx) => (
+                                {(evaluationResults[iq.id].suggestions || []).map((s, idx) => (
                                   <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
                                     <Lightbulb size={10} className="flex-shrink-0 mt-0.5 text-yellow-500" />
                                     {s}
@@ -910,18 +962,37 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-                  <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                    <Pause size={12} />
-                    Pause
-                  </button>
-                  <button className="flex items-center gap-1.5 px-3 py-1.5 border border-red-200 text-red-700 text-xs font-medium rounded-lg hover:bg-red-50 transition-colors">
-                    <StopCircle size={12} />
-                    Stop
-                  </button>
-                  <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                    <Eye size={12} />
-                    View Live
-                  </button>
+                  {stoppedSims.has(sim.id) ? (
+                    <span className="text-xs text-red-600 font-medium px-3 py-1.5">Stopped</span>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handlePauseSim(sim.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium rounded-lg transition-colors ${
+                          pausedSims.has(sim.id)
+                            ? 'border-green-200 text-green-700 hover:bg-green-50'
+                            : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pausedSims.has(sim.id) ? <Play size={12} /> : <Pause size={12} />}
+                        {pausedSims.has(sim.id) ? 'Resume' : 'Pause'}
+                      </button>
+                      <button
+                        onClick={() => handleStopSim(sim.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 border border-red-200 text-red-700 text-xs font-medium rounded-lg hover:bg-red-50 transition-colors"
+                      >
+                        <StopCircle size={12} />
+                        Stop
+                      </button>
+                      <button
+                        onClick={() => handleViewLive(sim.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <Eye size={12} />
+                        View Live
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -966,7 +1037,10 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                           <Download size={12} />
                           Export
                         </button>
-                        <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                        <button
+                          onClick={() => handleRerunSim(sim.id)}
+                          className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                        >
                           <RotateCcw size={12} />
                           Re-run
                         </button>
@@ -1114,12 +1188,38 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                         <span className="text-xs text-gray-500 flex items-center gap-1"><Clock size={10} />Est. Effort: {finding.estimatedEffort}</span>
                         <div className="flex items-center gap-2">
-                          <button className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors">
-                            <Zap size={12} />Create Remediation Task
-                          </button>
-                          <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                            <CheckSquare size={12} />Mark Remediated
-                          </button>
+                          {remediatedFindings.has(finding.id) ? (
+                            <span className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 text-xs font-medium rounded-lg">
+                              <CheckCircle2 size={12} />Remediated
+                            </span>
+                          ) : remediationPlanned.has(finding.id) ? (
+                            <>
+                              <span className="flex items-center gap-1 px-3 py-1.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-lg">
+                                <Clock size={12} />Task Created
+                              </span>
+                              <button
+                                onClick={() => handleMarkRemediated(finding.id)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors"
+                              >
+                                <CheckSquare size={12} />Mark Remediated
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleCreateRemediationTask(finding.id)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors"
+                              >
+                                <Zap size={12} />Create Remediation Task
+                              </button>
+                              <button
+                                onClick={() => handleMarkRemediated(finding.id)}
+                                className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                              >
+                                <CheckSquare size={12} />Mark Remediated
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1207,15 +1307,37 @@ export const AuditSimulator: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                         </div>
                       </div>
                       <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors">
+                        <button
+                          onClick={() => setPracticingQuestion(prev => prev === question.id ? null : question.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${practicingQuestion === question.id ? 'bg-brand-700 text-white' : 'bg-brand-600 text-white hover:bg-brand-700'}`}
+                        >
                           <MessageSquare size={12} />
-                          Practice Answer
+                          {practicingQuestion === question.id ? 'Hide Practice' : 'Practice Answer'}
                         </button>
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                          <Star size={12} />
-                          Bookmark
+                        <button
+                          onClick={() => setBookmarkedQuestions(prev => {
+                            const next = new Set(prev);
+                            if (next.has(question.id)) { next.delete(question.id); } else { next.add(question.id); }
+                            return next;
+                          })}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium rounded-lg transition-colors ${bookmarkedQuestions.has(question.id) ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                        >
+                          <Star size={12} className={bookmarkedQuestions.has(question.id) ? 'fill-yellow-400' : ''} />
+                          {bookmarkedQuestions.has(question.id) ? 'Bookmarked' : 'Bookmark'}
                         </button>
                       </div>
+                      {practicingQuestion === question.id && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <label className="block text-xs font-semibold text-gray-600 mb-1.5">Your Practice Answer</label>
+                          <textarea
+                            value={practiceAnswerText[question.id] || ''}
+                            onChange={e => setPracticeAnswerText(prev => ({ ...prev, [question.id]: e.target.value }))}
+                            placeholder="Type your answer to practice..."
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -153,16 +153,17 @@ router.post(
   validateBody(bulkInviteSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
-    const { invites } = req.body; // Array of { email, name, role }
+    const { invitations } = req.body; // Array of { email, name, role }
+    const invites = invitations; // Alias for backward compat within handler
     const organizationId = authReq.user!.organizationId;
 
     if (!Array.isArray(invites) || invites.length === 0) {
-      res.status(400).json({ error: 'Invites array is required and must not be empty' });
+      res.status(400).json({ error: 'Invitations array is required and must not be empty' });
       return;
     }
 
     if (invites.length > 100) {
-      res.status(400).json({ error: 'Maximum 100 invites per batch' });
+      res.status(400).json({ error: 'Maximum 100 invitations per batch' });
       return;
     }
 

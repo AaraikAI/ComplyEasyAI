@@ -1421,3 +1421,4 @@ const CreateAssessmentModal: React.FC<any> = ({ systemId, system, onClose }) => 
   );
 };
 
+export default AISystemDetails;

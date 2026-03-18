@@ -31,16 +31,16 @@ export default defineConfig({
         'vite.config.ts',
       ],
       thresholds: {
-        lines: 60,
-        functions: 60,
-        branches: 60,
-        statements: 60,
+        lines: 100,
+        functions: 100,
+        branches: 100,
+        statements: 100,
       },
     },
     // Include patterns
     include: ['**/*.{test,spec}.{ts,tsx}'],
     // Exclude patterns
-    exclude: ['node_modules', 'dist', 'server', 'mobile', '.git', '.next', 'e2e'],
+    exclude: ['node_modules', 'dist', 'server', 'mobile', '.git', '.next', 'e2e', '.claude'],
   },
   resolve: {
     alias: {

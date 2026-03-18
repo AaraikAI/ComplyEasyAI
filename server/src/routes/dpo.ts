@@ -118,7 +118,11 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, tasks, activityLog, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'name', 'email', 'phone', 'certifications', 'appointmentDate',
+        'registeredWithDPA', 'dpaRegistrationRef',
+      ]);
 
       // Handle appointmentDate conversion
       if (updateData.appointmentDate) {

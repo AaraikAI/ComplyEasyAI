@@ -6,10 +6,12 @@ import { OnboardingFlowConfig, OnboardingFlowName, TierName } from '../types';
  * target selectors, positions, and actions.
  */
 
+export type ViewVariant = 'slim' | 'classic';
+
 // ============================================================================
 // WELCOME FLOW — All Tiers
 // ============================================================================
-export const welcomeFlow: OnboardingFlowConfig = {
+export const welcomeFlow = (variant: ViewVariant = 'slim'): OnboardingFlowConfig => ({
   id: 'welcome',
   name: 'Welcome to ComplyEasy',
   description: 'Get introduced to the platform and understand your compliance journey.',
@@ -24,24 +26,44 @@ export const welcomeFlow: OnboardingFlowConfig = {
       position: 'center',
       action: 'observe',
     },
-    {
-      id: 'welcome-org-overview',
-      title: 'Your Organization Dashboard',
-      description:
-        'This is your central command center. From here, you can monitor your compliance posture across all frameworks, track risks, and manage your team. Everything is updated in real-time so you always have the latest picture.',
-      targetSelector: '[data-onboarding="dashboard-header"]',
-      position: 'bottom',
-      action: 'observe',
-    },
-    {
-      id: 'welcome-nav-tour',
-      title: 'Navigation Sidebar',
-      description:
-        'The sidebar gives you quick access to all platform features. You will find your frameworks, risk management, AI tools, integrations, and admin settings organized here for easy navigation.',
-      targetSelector: '[data-onboarding="sidebar-nav"]',
-      position: 'right',
-      action: 'observe',
-    },
+    variant === 'slim'
+      ? {
+          id: 'welcome-org-overview',
+          title: 'Your Compliance Gauge',
+          description:
+            'This gauge shows your real-time overall compliance score across all active frameworks. As you pass controls and upload evidence, your score updates automatically — giving you instant visibility into your compliance posture.',
+          targetSelector: '[data-onboarding="compliance-gauge"]',
+          position: 'bottom' as const,
+          action: 'observe' as const,
+        }
+      : {
+          id: 'welcome-org-overview',
+          title: 'Your Organization Dashboard',
+          description:
+            'This is your central command center. From here, you can monitor your compliance posture across all frameworks, track risks, and manage your team. Everything is updated in real-time so you always have the latest picture.',
+          targetSelector: '[data-onboarding="dashboard-header"]',
+          position: 'bottom' as const,
+          action: 'observe' as const,
+        },
+    variant === 'slim'
+      ? {
+          id: 'welcome-nav-tour',
+          title: 'Navigation Pillars',
+          description:
+            'The slim sidebar organizes the platform into 7 navigation pillars: Home, Risk, Comply, Govern, Audits, Vendors, and Library. Each pillar gives you one-click access to its dedicated workspace.',
+          targetSelector: '[data-onboarding="sidebar-nav"]',
+          position: 'right' as const,
+          action: 'observe' as const,
+        }
+      : {
+          id: 'welcome-nav-tour',
+          title: 'Navigation Sidebar',
+          description:
+            'The sidebar gives you quick access to all platform features. You will find your frameworks, risk management, AI tools, integrations, and admin settings organized here for easy navigation.',
+          targetSelector: '[data-onboarding="sidebar-nav"]',
+          position: 'right' as const,
+          action: 'observe' as const,
+        },
     {
       id: 'welcome-settings',
       title: 'Quick Settings Access',
@@ -69,19 +91,21 @@ export const welcomeFlow: OnboardingFlowConfig = {
       showConfetti: true,
     },
   ],
-};
+});
 
 // ============================================================================
 // TIER TOUR FLOWS — Segmented by Tier
 // ============================================================================
 
-export const foundationTourSteps = [
+export const foundationTourSteps = (variant: ViewVariant = 'slim') => [
   {
     id: 'tour-dashboard',
     title: 'Your Compliance Dashboard',
     description:
       'The dashboard provides a real-time overview of your compliance posture. You can see your overall compliance score, active frameworks, open risks, and upcoming audit dates all in one place.',
-    targetSelector: '[data-onboarding="dashboard-content"]',
+    targetSelector: variant === 'slim'
+      ? '[data-onboarding="stat-cards"]'
+      : '[data-onboarding="dashboard-content"]',
     position: 'bottom' as const,
     action: 'observe' as const,
   },
@@ -90,7 +114,9 @@ export const foundationTourSteps = [
     title: 'Compliance Score',
     description:
       'Your compliance score is calculated based on the status of controls across all your active frameworks. As you pass more controls and upload evidence, your score increases automatically.',
-    targetSelector: '[data-onboarding="compliance-score"]',
+    targetSelector: variant === 'slim'
+      ? '[data-onboarding="compliance-gauge"]'
+      : '[data-onboarding="compliance-score"]',
     position: 'bottom' as const,
     action: 'observe' as const,
   },
@@ -99,7 +125,9 @@ export const foundationTourSteps = [
     title: 'Compliance Frameworks',
     description:
       'Frameworks like SOC 2, GDPR, HIPAA, and ISO 27001 organize compliance requirements into controls. On your Foundation plan, you can manage up to 3 frameworks simultaneously.',
-    targetSelector: '[data-onboarding="frameworks-nav"]',
+    targetSelector: variant === 'slim'
+      ? '[data-onboarding="comply-nav"]'
+      : '[data-onboarding="frameworks-nav"]',
     position: 'right' as const,
     action: 'observe' as const,
   },
@@ -108,7 +136,9 @@ export const foundationTourSteps = [
     title: 'Risk Management',
     description:
       'Track and manage compliance risks with AI-powered priority scoring. Risks are automatically categorized by severity, and the AI engine suggests mitigation strategies based on your industry.',
-    targetSelector: '[data-onboarding="risks-nav"]',
+    targetSelector: variant === 'slim'
+      ? '[data-onboarding="risk-nav"]'
+      : '[data-onboarding="risks-nav"]',
     position: 'right' as const,
     action: 'observe' as const,
   },
@@ -126,7 +156,9 @@ export const foundationTourSteps = [
     title: 'Continuous Monitoring',
     description:
       'Keep your compliance posture up to date with automated monitoring. Receive alerts when controls drift out of compliance or when new risks are detected by the platform.',
-    targetSelector: '[data-onboarding="dashboard-content"]',
+    targetSelector: variant === 'slim'
+      ? '[data-onboarding="stat-cards"]'
+      : '[data-onboarding="dashboard-content"]',
     position: 'bottom' as const,
     action: 'observe' as const,
   },
@@ -283,8 +315,8 @@ export const growthTourExtraSteps = [
   },
 ];
 
-export const tierTourFlow = (tier: TierName): OnboardingFlowConfig => {
-  let steps = [...foundationTourSteps];
+export const tierTourFlow = (tier: TierName, variant: ViewVariant = 'slim'): OnboardingFlowConfig => {
+  let steps = [...foundationTourSteps(variant)];
 
   if (tier === 'Essentials' || tier === 'Growth' || tier === 'Visionary') {
     steps = [...steps, ...essentialsTourExtraSteps];
@@ -1145,13 +1177,14 @@ export const workflowAutomationFlow: OnboardingFlowConfig = {
 
 export const getFlowConfig = (
   flowName: OnboardingFlowName,
-  tier: TierName
+  tier: TierName,
+  variant: ViewVariant = 'slim'
 ): OnboardingFlowConfig | null => {
   switch (flowName) {
     case 'welcome':
-      return welcomeFlow;
+      return welcomeFlow(variant);
     case 'tier_tour':
-      return tierTourFlow(tier);
+      return tierTourFlow(tier, variant);
     case 'first_framework':
       return firstFrameworkFlow;
     case 'first_evidence':

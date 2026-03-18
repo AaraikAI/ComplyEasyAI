@@ -270,8 +270,11 @@ router.patch(
         return;
       }
 
-      // Strip immutable fields
-      const { id, organizationId, createdAt, requestedBy, approvedBy, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'controlId', 'title', 'justification', 'riskAcceptance', 'compensatingControls',
+        'status', 'expiryDate', 'reviewDate',
+      ]);
 
       // Convert date strings to Date objects if provided
       if (updateData.expiryDate) updateData.expiryDate = new Date(updateData.expiryDate);

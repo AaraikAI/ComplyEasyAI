@@ -73,6 +73,7 @@ export const createPolicySchema = Joi.object({
   framework: Joi.string().max(100).allow('', null).optional(),
   content: Joi.string().required().min(1).max(500000),
   summary: Joi.string().max(2000).allow('', null).optional(),
+  owner: Joi.string().max(200).allow('', null).optional(),
   tags: Joi.alternatives().try(Joi.array(), Joi.object()).allow(null).optional(),
 })
   .min(1)
@@ -86,6 +87,8 @@ export const updatePolicySchema = Joi.object({
   framework: Joi.string().max(100).allow('', null).optional(),
   content: Joi.string().min(1).max(500000).optional(),
   summary: Joi.string().max(2000).allow('', null).optional(),
+  owner: Joi.string().max(200).allow('', null).optional(),
+  status: Joi.string().max(50).allow('', null).optional(),
   tags: Joi.alternatives().try(Joi.array(), Joi.object()).allow(null).optional(),
 })
   .min(1)

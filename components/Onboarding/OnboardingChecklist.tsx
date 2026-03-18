@@ -136,10 +136,13 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
         </div>
       )}
 
-      {/* Collapsed widget button */}
-      <button
+      {/* Collapsed widget */}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`relative flex items-center gap-3 px-4 py-3 bg-slate-800/95 backdrop-blur border border-slate-700 rounded-2xl shadow-2xl hover:border-brand-500/30 transition-all ${
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); } }}
+        className={`relative flex items-center gap-3 px-4 py-3 pr-16 bg-slate-800/95 backdrop-blur border border-slate-700 rounded-2xl shadow-2xl hover:border-brand-500/30 transition-all cursor-pointer ${
           reducedMotion ? '' : hasNewItems ? 'animate-pulse' : ''
         }`}
         aria-expanded={isExpanded}
@@ -180,15 +183,6 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
           </p>
         </div>
 
-        {/* Dismiss button */}
-        <button
-          onClick={handleDismiss}
-          className="p-1 rounded hover:bg-slate-600 text-slate-400 hover:text-white transition-colors ml-1"
-          aria-label="Dismiss setup progress"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
-
         {/* Expand/collapse icon */}
         {isExpanded ? (
           <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -202,7 +196,16 @@ export const OnboardingChecklistWidget: React.FC<OnboardingChecklistWidgetProps>
             {totalCount - completedCount}
           </span>
         )}
-      </button>
+
+        {/* Dismiss button */}
+        <button
+          onClick={handleDismiss}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-slate-600 text-slate-400 hover:text-white transition-colors z-10"
+          aria-label="Dismiss setup progress"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 };

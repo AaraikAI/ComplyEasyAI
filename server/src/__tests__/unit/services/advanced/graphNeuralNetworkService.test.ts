@@ -9,15 +9,30 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { prismaMock } from '../../../mocks/prisma';
 
 // Mock TensorFlow.js
-const mockTensor = {
+const mockTensor: any = {
   dataSync: jest.fn().mockReturnValue(new Float32Array([0.5, 0.3, 0.15, 0.05])),
   data: jest.fn().mockResolvedValue(new Float32Array([0.5, 0.3, 0.15, 0.05])),
   array: jest.fn().mockResolvedValue([[0.5, 0.3, 0.15, 0.05]]),
+  arraySync: jest.fn().mockReturnValue([[0.5, 0.3, 0.15, 0.05]]),
   dispose: jest.fn(),
   shape: [1, 64],
+  slice: jest.fn(),
+  gather: jest.fn(),
+  argMax: jest.fn(),
+  equal: jest.fn(),
+  cast: jest.fn(),
+  mean: jest.fn(),
 };
+// Self-referencing: methods that return tensors should return mockTensor
+mockTensor.slice.mockReturnValue(mockTensor);
+mockTensor.gather.mockReturnValue(mockTensor);
+mockTensor.argMax.mockReturnValue(mockTensor);
+mockTensor.equal.mockReturnValue(mockTensor);
+mockTensor.cast.mockReturnValue(mockTensor);
+mockTensor.mean.mockReturnValue(mockTensor);
 
 const mockTfOps = {
+  tensor: jest.fn().mockReturnValue(mockTensor),
   tensor1d: jest.fn().mockReturnValue(mockTensor),
   tensor2d: jest.fn().mockReturnValue(mockTensor),
   matMul: jest.fn().mockReturnValue(mockTensor),
@@ -28,6 +43,7 @@ const mockTfOps = {
   relu: jest.fn().mockReturnValue(mockTensor),
   softmax: jest.fn().mockReturnValue(mockTensor),
   mean: jest.fn().mockReturnValue(mockTensor),
+  sum: jest.fn().mockReturnValue(mockTensor),
   norm: jest.fn().mockReturnValue({ dataSync: () => [1.0] }),
   dropout: jest.fn().mockReturnValue(mockTensor),
   where: jest.fn().mockReturnValue(mockTensor),
@@ -35,6 +51,10 @@ const mockTfOps = {
   eye: jest.fn().mockReturnValue(mockTensor),
   zeros: jest.fn().mockReturnValue(mockTensor),
   randomUniform: jest.fn().mockReturnValue(mockTensor),
+  diag: jest.fn().mockReturnValue(mockTensor),
+  log: jest.fn().mockReturnValue(mockTensor),
+  neg: jest.fn().mockReturnValue(mockTensor),
+  oneHot: jest.fn().mockReturnValue(mockTensor),
   tidy: jest.fn((fn: () => any) => fn()),
   variable: jest.fn().mockReturnValue({
     dataSync: () => new Float32Array(64).fill(0.1),
@@ -44,6 +64,15 @@ const mockTfOps = {
   ready: jest.fn().mockResolvedValue(undefined),
   setBackend: jest.fn().mockResolvedValue(undefined),
   engine: jest.fn().mockReturnValue({ registryFactory: { cpu: true } }),
+  losses: {
+    softmaxCrossEntropy: jest.fn().mockReturnValue(mockTensor),
+  },
+  train: {
+    adam: jest.fn().mockReturnValue({
+      minimize: jest.fn().mockReturnValue(mockTensor),
+      dispose: jest.fn(),
+    }),
+  },
 };
 
 jest.mock('@tensorflow/tfjs', () => mockTfOps);
@@ -59,6 +88,10 @@ const mockGraph = {
   hasEdge: jest.fn().mockReturnValue(true),
   getNodeAttribute: jest.fn().mockReturnValue({ type: 'risk' }),
   setNodeAttribute: jest.fn(),
+  degree: jest.fn().mockReturnValue(2),
+  source: jest.fn().mockReturnValue('node-1'),
+  target: jest.fn().mockReturnValue('node-2'),
+  getEdgeAttribute: jest.fn().mockReturnValue(1.0),
   order: 3,
   size: 2,
 };
@@ -129,6 +162,112 @@ describe('GraphNeuralNetworkService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-establish mock implementations cleared by resetMocks: true
+    // TensorFlow mocks
+    mockTfOps.tensor.mockReturnValue(mockTensor);
+    mockTfOps.tensor1d.mockReturnValue(mockTensor);
+    mockTfOps.tensor2d.mockReturnValue(mockTensor);
+    mockTfOps.matMul.mockReturnValue(mockTensor);
+    mockTfOps.add.mockReturnValue(mockTensor);
+    mockTfOps.sub.mockReturnValue(mockTensor);
+    mockTfOps.mul.mockReturnValue(mockTensor);
+    mockTfOps.div.mockReturnValue(mockTensor);
+    mockTfOps.relu.mockReturnValue(mockTensor);
+    mockTfOps.softmax.mockReturnValue(mockTensor);
+    mockTfOps.mean.mockReturnValue(mockTensor);
+    mockTfOps.sum.mockReturnValue(mockTensor);
+    mockTfOps.norm.mockReturnValue({ dataSync: () => [1.0] });
+    mockTfOps.dropout.mockReturnValue(mockTensor);
+    mockTfOps.where.mockReturnValue(mockTensor);
+    mockTfOps.greater.mockReturnValue(mockTensor);
+    mockTfOps.eye.mockReturnValue(mockTensor);
+    mockTfOps.zeros.mockReturnValue(mockTensor);
+    mockTfOps.randomUniform.mockReturnValue(mockTensor);
+    mockTfOps.diag.mockReturnValue(mockTensor);
+    mockTfOps.log.mockReturnValue(mockTensor);
+    mockTfOps.neg.mockReturnValue(mockTensor);
+    mockTfOps.oneHot.mockReturnValue(mockTensor);
+    mockTfOps.tidy.mockImplementation((fn: () => any) => fn());
+    mockTfOps.variable.mockReturnValue({
+      dataSync: () => new Float32Array(64).fill(0.1),
+      dispose: jest.fn(),
+      assign: jest.fn(),
+    });
+    mockTfOps.ready.mockResolvedValue(undefined);
+    mockTfOps.setBackend.mockResolvedValue(undefined);
+    mockTfOps.engine.mockReturnValue({ registryFactory: { cpu: true } });
+    mockTfOps.losses.softmaxCrossEntropy.mockReturnValue(mockTensor);
+    mockTfOps.train.adam.mockReturnValue({
+      minimize: jest.fn().mockReturnValue(mockTensor),
+      dispose: jest.fn(),
+    });
+
+    // mockTensor methods
+    mockTensor.dataSync.mockReturnValue(new Float32Array([0.5, 0.3, 0.15, 0.05]));
+    mockTensor.data.mockResolvedValue(new Float32Array([0.5, 0.3, 0.15, 0.05]));
+    mockTensor.array.mockResolvedValue([[0.5, 0.3, 0.15, 0.05]]);
+    mockTensor.arraySync.mockReturnValue([[0.5, 0.3, 0.15, 0.05]]);
+    mockTensor.dispose.mockReturnValue(undefined);
+    mockTensor.slice.mockReturnValue(mockTensor);
+    mockTensor.gather.mockReturnValue(mockTensor);
+    mockTensor.argMax.mockReturnValue(mockTensor);
+    mockTensor.equal.mockReturnValue(mockTensor);
+    mockTensor.cast.mockReturnValue(mockTensor);
+    mockTensor.mean.mockReturnValue(mockTensor);
+
+    // Graphology mocks
+    mockGraph.nodes.mockReturnValue(['node-1', 'node-2', 'node-3']);
+    mockGraph.edges.mockReturnValue(['edge-1', 'edge-2']);
+    mockGraph.neighbors.mockReturnValue(['node-2']);
+    mockGraph.addNode.mockReturnValue(undefined);
+    mockGraph.addEdge.mockReturnValue(undefined);
+    mockGraph.hasNode.mockReturnValue(true);
+    mockGraph.hasEdge.mockReturnValue(true);
+    mockGraph.getNodeAttribute.mockReturnValue({ type: 'risk' });
+    mockGraph.setNodeAttribute.mockReturnValue(undefined);
+    mockGraph.degree.mockReturnValue(2);
+    mockGraph.source.mockReturnValue('node-1');
+    mockGraph.target.mockReturnValue('node-2');
+    mockGraph.getEdgeAttribute.mockReturnValue(1.0);
+
+    // Graphology constructor
+    const Graph = require('graphology').default;
+    Graph.mockImplementation(() => mockGraph);
+
+    // Prisma mocks for GNN
+    // Use correct Prisma model names matching the service
+    (gnnPrismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValue([
+      { id: 'risk-1', title: 'Risk 1', severity: 'High', status: 'Open', category: 'Security', detectedAt: new Date(), organizationId: 'org-123' },
+      { id: 'risk-2', title: 'Risk 2', severity: 'Medium', status: 'Mitigated', category: 'Compliance', detectedAt: new Date(), organizationId: 'org-123' },
+    ] as never);
+    (gnnPrismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValue([
+      { id: 'fw-1', name: 'SOC 2', progress: 75, status: 'In_Progress', organizationId: 'org-123', updatedAt: new Date(), controls: [{ id: 'ctrl-1', name: 'CC1.1', status: 'Implemented' }] },
+    ] as never);
+    (gnnPrismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValue([
+      { id: 'ctrl-1', name: 'Control 1', status: 'Implemented', frameworkId: 'fw-1' },
+    ] as never);
+    gnnPrismaMock.risk.findMany.mockResolvedValue([
+      { id: 'risk-1', title: 'Risk 1', severity: 'High', status: 'Open', organizationId: 'org-123' },
+      { id: 'risk-2', title: 'Risk 2', severity: 'Medium', status: 'Mitigated', organizationId: 'org-123' },
+    ] as never);
+    gnnPrismaMock.control.findMany.mockResolvedValue([
+      { id: 'ctrl-1', name: 'Control 1', status: 'Active', riskId: 'risk-1', organizationId: 'org-123' },
+    ] as never);
+    gnnPrismaMock.framework.findMany.mockResolvedValue([
+      { id: 'fw-1', name: 'SOC 2', progress: 75, organizationId: 'org-123' },
+    ] as never);
+    gnnPrismaMock.controlMapping.findMany.mockResolvedValue([
+      { controlId: 'ctrl-1', requirementId: 'req-1' },
+    ] as never);
+
+    // fs mocks
+    const fs = require('fs');
+    fs.existsSync.mockReturnValue(false);
+    fs.mkdirSync.mockReturnValue(undefined);
+    fs.writeFileSync.mockReturnValue(undefined);
+    fs.readFileSync.mockReturnValue(JSON.stringify({}));
+
     // Reset internal state
     (graphNeuralNetworkService as any).isInitialized = false;
     (graphNeuralNetworkService as any).gcnWeights = [];
@@ -168,7 +307,10 @@ describe('GraphNeuralNetworkService', () => {
     });
 
     it('should handle initialization errors', async () => {
-      mockTfOps.ready.mockRejectedValueOnce(new Error('GPU not available'));
+      // Both initial and fallback ready() must fail for the error to propagate
+      mockTfOps.ready
+        .mockRejectedValueOnce(new Error('GPU not available'))
+        .mockRejectedValueOnce(new Error('CPU not available'));
       (graphNeuralNetworkService as any).isInitialized = false;
 
       await expect(graphNeuralNetworkService.initialize()).rejects.toThrow();
@@ -478,8 +620,19 @@ describe('GraphNeuralNetworkService', () => {
     });
 
     it('should handle organization with no data', async () => {
-      gnnPrismaMock.risk.findMany.mockResolvedValueOnce([]);
-      gnnPrismaMock.control.findMany.mockResolvedValueOnce([]);
+      (gnnPrismaMock.riskItem.findMany as jest.Mock<any>).mockResolvedValueOnce([] as never);
+      (gnnPrismaMock.complianceFramework.findMany as jest.Mock<any>).mockResolvedValueOnce([] as never);
+      (gnnPrismaMock.frameworkControl.findMany as jest.Mock<any>).mockResolvedValueOnce([] as never);
+      // When no data, the graph should be empty - override nodes() to always return empty
+      const emptyGraph = {
+        ...mockGraph,
+        nodes: jest.fn().mockReturnValue([]),
+        edges: jest.fn().mockReturnValue([]),
+        order: 0,
+        size: 0,
+      };
+      const Graph = require('graphology').default;
+      Graph.mockImplementationOnce(() => emptyGraph);
 
       const predictions = await graphNeuralNetworkService.predictRisks('empty-org');
 

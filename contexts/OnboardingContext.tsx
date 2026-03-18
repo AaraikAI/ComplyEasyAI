@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { OnboardingProgress, OnboardingChecklist, OnboardingFlowName, OnboardingFlowConfig, TierName } from '../types';
 import { useAuth } from './AuthContext';
 import { api } from '../services/api';
-import { getFlowConfig, getFlowsForTier } from '../constants/onboardingFlows';
+import { getFlowConfig, getFlowsForTier, ViewVariant } from '../constants/onboardingFlows';
 
 interface OnboardingContextType {
   // State
@@ -59,6 +59,9 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const getViewVariant = (): ViewVariant =>
+    (localStorage.getItem('complyeasy_sidebar_variant') as ViewVariant) || 'slim';
+
   const isOnboarding = currentFlow !== null;
   const tierFlows = getFlowsForTier(organizationPlan);
 
@@ -95,7 +98,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
           !progressRes.progress.completedAt &&
           !(progressRes.progress.skippedFlows as string[]).includes('welcome')
         ) {
-          const welcomeConfig = getFlowConfig('welcome', progressRes.organizationPlan as TierName);
+          const welcomeConfig = getFlowConfig('welcome', progressRes.organizationPlan as TierName, getViewVariant());
           if (welcomeConfig) {
             setCurrentFlow(welcomeConfig);
             setCurrentStep(0);
@@ -157,7 +160,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
           setChecklist(defaultChecklist);
           setOrganizationPlan('Foundation');
           setOrganizationName('');
-          const welcomeConfig = getFlowConfig('welcome', 'Foundation');
+          const welcomeConfig = getFlowConfig('welcome', 'Foundation', getViewVariant());
           if (welcomeConfig) {
             setCurrentFlow(welcomeConfig);
             setCurrentStep(0);
@@ -194,7 +197,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
     (flowName: OnboardingFlowName) => {
       if (!progress) return;
 
-      const config = getFlowConfig(flowName, organizationPlan);
+      const config = getFlowConfig(flowName, organizationPlan, getViewVariant());
       if (!config) return;
 
       // Check if tier is sufficient
@@ -279,7 +282,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
     // Auto-advance: if welcome was skipped, start tier tour
     if (flowName === 'welcome' && progress && !progress.tierTourCompleted) {
       setTimeout(() => {
-        const tourConfig = getFlowConfig('tier_tour', organizationPlan);
+        const tourConfig = getFlowConfig('tier_tour', organizationPlan, getViewVariant());
         if (tourConfig) {
           setCurrentFlow(tourConfig);
           setCurrentStep(0);
@@ -396,7 +399,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode; onNavigat
       if ((progress.skippedFlows as string[]).includes(flowName)) return false;
 
       // Check tier requirements
-      const config = getFlowConfig(flowName, organizationPlan);
+      const config = getFlowConfig(flowName, organizationPlan, getViewVariant());
       if (config?.requiredTier && !config.requiredTier.includes(organizationPlan)) {
         return false;
       }

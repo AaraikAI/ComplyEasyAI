@@ -25,8 +25,11 @@ export const useNotifications = () => {
     const fetchNotifications = async () => {
       try {
         const response = await api.get('/notifications?limit=50');
-        if (response.data?.status === 'success') {
-          setNotifications(response.data.data || []);
+        // fetchAPI returns parsed JSON: { status, data: { notifications, ... } }
+        const envelope = response?.data ?? response ?? {};
+        const items = envelope.notifications ?? envelope.data ?? [];
+        if (Array.isArray(items)) {
+          setNotifications(items);
         }
       } catch (error) {
         console.warn('Failed to fetch notifications:', error);
@@ -38,11 +41,12 @@ export const useNotifications = () => {
     const fetchUnreadCount = async () => {
       try {
         const response = await api.get('/notifications/unread-count');
-        if (response.data?.status === 'success') {
-          setUnreadCount(response.data.data?.count || 0);
-        }
+        // fetchAPI returns parsed JSON: { status, data: { unreadCount } }
+        const envelope = response?.data ?? response ?? {};
+        const count = envelope.unreadCount ?? envelope.data?.unreadCount ?? 0;
+        setUnreadCount(count);
       } catch {
-        // Silently fail for count
+        // Silently fail — expected if not authenticated
       }
     };
 

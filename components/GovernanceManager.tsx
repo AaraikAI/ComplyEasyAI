@@ -1164,3 +1164,5 @@ export const GovernanceManager: React.FC<{ onBack: () => void }> = ({ onBack }) 
     </div>
   );
 };
+
+export default GovernanceManager;

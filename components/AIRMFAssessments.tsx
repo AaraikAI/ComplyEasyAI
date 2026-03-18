@@ -879,3 +879,4 @@ const CreateAssessmentModal: React.FC<any> = ({ systems, onClose, onSystemSelect
   );
 };
 
+export default AIRMFAssessments;

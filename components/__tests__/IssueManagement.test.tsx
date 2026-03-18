@@ -210,7 +210,7 @@ describe('IssueManagement', () => {
     render(<IssueManagement />);
     await waitFor(() => expect(screen.getByText(/View All Issues/)).toBeInTheDocument());
     fireEvent.click(screen.getByText(/View All Issues/));
-    await waitFor(() => expect(screen.getByPlaceholderText('Search issues...')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument());
   });
 
   it('renders the "New Issue" button on dashboard', async () => {
@@ -240,8 +240,8 @@ describe('IssueManagement', () => {
     render(<IssueManagement />);
     await waitFor(() => expect(screen.getByText(/View All Issues/)).toBeInTheDocument());
     fireEvent.click(screen.getByText(/View All Issues/));
-    await waitFor(() => expect(screen.getByPlaceholderText('Search issues...')).toBeInTheDocument());
-    fireEvent.change(screen.getByPlaceholderText('Search issues...'), { target: { value: 'Encryption' } });
+    await waitFor(() => expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument());
+    fireEvent.change(screen.getByPlaceholderText('Search...'), { target: { value: 'Encryption' } });
     await waitFor(() => {
       expect(screen.getByText('Missing Encryption Policy')).toBeInTheDocument();
       expect(screen.queryByText('Audit Finding on Access Control')).not.toBeInTheDocument();
@@ -264,8 +264,8 @@ describe('IssueManagement', () => {
     render(<IssueManagement />);
     await waitFor(() => expect(screen.getByText(/View All Issues/)).toBeInTheDocument());
     fireEvent.click(screen.getByText(/View All Issues/));
-    await waitFor(() => expect(screen.getByDisplayValue('All Priorities')).toBeInTheDocument());
-    fireEvent.change(screen.getByDisplayValue('All Priorities'), { target: { value: 'Critical' } });
+    await waitFor(() => expect(screen.getByDisplayValue('All Priority')).toBeInTheDocument());
+    fireEvent.change(screen.getByDisplayValue('All Priority'), { target: { value: 'Critical' } });
     await waitFor(() => {
       expect(screen.getByText('Missing Encryption Policy')).toBeInTheDocument();
       expect(screen.queryByText('Audit Finding on Access Control')).not.toBeInTheDocument();
@@ -284,13 +284,13 @@ describe('IssueManagement', () => {
     });
   });
 
-  it('shows "No issues found" when filter matches nothing', async () => {
+  it('shows "No results found" when filter matches nothing', async () => {
     render(<IssueManagement />);
     await waitFor(() => expect(screen.getByText(/View All Issues/)).toBeInTheDocument());
     fireEvent.click(screen.getByText(/View All Issues/));
-    await waitFor(() => expect(screen.getByPlaceholderText('Search issues...')).toBeInTheDocument());
-    fireEvent.change(screen.getByPlaceholderText('Search issues...'), { target: { value: 'zzzzzznotfound' } });
-    await waitFor(() => expect(screen.getByText('No issues found')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument());
+    fireEvent.change(screen.getByPlaceholderText('Search...'), { target: { value: 'zzzzzznotfound' } });
+    await waitFor(() => expect(screen.getByText('No results found')).toBeInTheDocument());
   });
 
   it('navigates back to dashboard from list view', async () => {
@@ -313,8 +313,8 @@ describe('IssueManagement', () => {
     // Click on the issue title area
     fireEvent.click(screen.getByText('Missing Encryption Policy'));
     await waitFor(() => expect(screen.getByText('Back to List')).toBeInTheDocument());
-    expect(screen.getByText('Update Status')).toBeInTheDocument();
-    expect(screen.getByText('Assign Issue')).toBeInTheDocument();
+    expect(screen.getByText('Status')).toBeInTheDocument();
+    expect(screen.getByText('Assignee')).toBeInTheDocument();
   });
 
   it('shows remediation plan in detail view', async () => {
@@ -365,7 +365,7 @@ describe('IssueManagement', () => {
     fireEvent.click(screen.getByText(/View All Issues/));
     await waitFor(() => expect(screen.getByText('Missing Encryption Policy')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Missing Encryption Policy'));
-    await waitFor(() => expect(screen.getByText('Update Status')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Status')).toBeInTheDocument());
     // Click In Progress button
     const inProgressBtn = screen.getByRole('button', { name: /In Progress/i });
     fireEvent.click(inProgressBtn);
@@ -378,7 +378,7 @@ describe('IssueManagement', () => {
     fireEvent.click(screen.getByText(/View All Issues/));
     await waitFor(() => expect(screen.getByText('Missing Encryption Policy')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Missing Encryption Policy'));
-    await waitFor(() => expect(screen.getByText('Assign Issue')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Assignee')).toBeInTheDocument());
     // Find the correct select in the assign section
     const selectElements = document.querySelectorAll('select');
     const assignSelectEl = selectElements[selectElements.length - 1]; // last select is the assign one
@@ -428,7 +428,7 @@ describe('IssueManagement', () => {
     await waitFor(() => expect(screen.getByText('Cancel')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Cancel'));
     // Should go back to list view - which shows the search input
-    await waitFor(() => expect(screen.getByPlaceholderText('Search issues...')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument());
   });
 
   it('shows AI Classify Issue button when description is filled', async () => {

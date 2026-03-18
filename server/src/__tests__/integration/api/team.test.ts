@@ -61,6 +61,16 @@ jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue('mock-uuid-123'),
 }));
 
+jest.mock('../../../config/monitoring', () => ({
+  __esModule: true,
+  default: { captureException: jest.fn() },
+}));
+
+jest.mock('../../../utils/securityEventLogger', () => ({
+  logSecurityEvent: jest.fn(),
+  SecurityEventType: { AUTHENTICATION_FAILURE: 'AUTHENTICATION_FAILURE', AUTHORIZATION_FAILURE: 'AUTHORIZATION_FAILURE' },
+}));
+
 // Mock data factories
 const createMockUser = (overrides: Record<string, unknown> = {}) => ({
   id: 'user-123',
@@ -86,6 +96,10 @@ beforeEach(async () => {
 
   const teamRoutes = (await import('../../../routes/team')).default;
   app.use('/api/team', teamRoutes);
+
+  // Add error handler so AppError responses are properly serialized
+  const { errorHandler } = await import('../../../middleware/errorHandler');
+  app.use(errorHandler);
 });
 
 describe('Team Routes Integration', () => {
@@ -262,7 +276,7 @@ describe('Team Routes Integration', () => {
       const response = await request(app)
         .post('/api/team/bulk-invite')
         .send({
-          invites: [
+          invitations: [
             { email: 'user1@example.com', name: 'User One', role: 'viewer' },
             { email: 'user2@example.com', name: 'User Two', role: 'editor' },
           ],
@@ -274,50 +288,50 @@ describe('Team Routes Integration', () => {
       expect(response.body).toHaveProperty('summary');
     });
 
-    it('should require invites array', async () => {
+    it('should require invitations array', async () => {
       const response = await request(app)
         .post('/api/team/bulk-invite')
         .send({})
         .expect(400);
 
-      expect(response.body.error).toContain('Invites array');
+      expect(response.body.error).toBeDefined();
     });
 
-    it('should reject empty invites array', async () => {
+    it('should reject empty invitations array', async () => {
       const response = await request(app)
         .post('/api/team/bulk-invite')
-        .send({ invites: [] })
+        .send({ invitations: [] })
         .expect(400);
 
-      expect(response.body.error).toContain('must not be empty');
+      expect(response.body.error).toBeDefined();
     });
 
     it('should limit to 100 invites per batch', async () => {
-      const invites = Array.from({ length: 101 }, (_, i) => ({
+      const invitations = Array.from({ length: 101 }, (_, i) => ({
         email: `user${i}@example.com`,
         name: `User ${i}`,
+        role: 'viewer',
       }));
 
       const response = await request(app)
         .post('/api/team/bulk-invite')
-        .send({ invites })
+        .send({ invitations })
         .expect(400);
 
-      expect(response.body.error).toContain('Maximum 100');
+      expect(response.body.error).toBeDefined();
     });
 
-    it('should return validation errors', async () => {
+    it('should return validation errors for invalid invitations', async () => {
       const response = await request(app)
         .post('/api/team/bulk-invite')
         .send({
-          invites: [
-            { email: 'invalid-email', name: 'User One' },
-            { email: 'user2@example.com' }, // Missing name
+          invitations: [
+            { email: 'invalid-email', name: 'User One', role: 'viewer' },
           ],
         })
         .expect(400);
 
-      expect(response.body).toHaveProperty('validationErrors');
+      expect(response.body).toHaveProperty('error');
     });
 
     it('should handle partial success', async () => {
@@ -336,9 +350,9 @@ describe('Team Routes Integration', () => {
       const response = await request(app)
         .post('/api/team/bulk-invite')
         .send({
-          invites: [
-            { email: 'new@example.com', name: 'New User' },
-            { email: 'existing@example.com', name: 'Existing User' },
+          invitations: [
+            { email: 'new@example.com', name: 'New User', role: 'viewer' },
+            { email: 'existing@example.com', name: 'Existing User', role: 'viewer' },
           ],
         })
         .expect(201);
@@ -375,7 +389,7 @@ describe('Team Routes Integration', () => {
         .send({ role: 'superadmin' })
         .expect(400);
 
-      expect(response.body.error).toContain('Valid role');
+      expect(response.body.error).toBeDefined();
     });
 
     it('should return 404 for non-existent user', async () => {

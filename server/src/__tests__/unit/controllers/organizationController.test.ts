@@ -177,12 +177,12 @@ describe('OrganizationController', () => {
     });
 
     it('should update organization plan', async () => {
-      mockReq.body = { plan: 'Enterprise' };
+      mockReq.body = { plan: 'Growth' };
 
       const updatedOrg = {
         id: 'org-1',
         name: 'Test Org',
-        plan: 'Enterprise',
+        plan: 'Growth',
       };
 
       (prismaMock.organization.update as jest.Mock<any>).mockResolvedValue(updatedOrg);
@@ -192,18 +192,18 @@ describe('OrganizationController', () => {
 
       expect(prismaMock.organization.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { plan: 'Enterprise' },
+          data: { plan: 'Growth' },
         })
       );
     });
 
     it('should update both name and plan simultaneously', async () => {
-      mockReq.body = { name: 'New Name', plan: 'Pro' };
+      mockReq.body = { name: 'New Name', plan: 'Essentials' };
 
       const updatedOrg = {
         id: 'org-1',
         name: 'New Name',
-        plan: 'Pro',
+        plan: 'Essentials',
       };
 
       (prismaMock.organization.update as jest.Mock<any>).mockResolvedValue(updatedOrg);
@@ -213,7 +213,7 @@ describe('OrganizationController', () => {
 
       expect(prismaMock.organization.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { name: 'New Name', plan: 'Pro' },
+          data: { name: 'New Name', plan: 'Essentials' },
         })
       );
     });
@@ -277,13 +277,13 @@ describe('OrganizationController', () => {
 
       await expect(
         organizationController.update(mockReq, mockRes, mockNext)
-      ).rejects.toThrow('Invalid plan. Must be one of: Basic, Pro, Enterprise');
+      ).rejects.toThrow('Invalid plan. Must be one of: Foundation, Essentials, Growth, Visionary');
     });
 
-    it('should accept valid plan "Basic"', async () => {
-      mockReq.body = { plan: 'Basic' };
+    it('should accept valid plan "Foundation"', async () => {
+      mockReq.body = { plan: 'Foundation' };
 
-      const updatedOrg = { id: 'org-1', plan: 'Basic' };
+      const updatedOrg = { id: 'org-1', plan: 'Foundation' };
 
       (prismaMock.organization.update as jest.Mock<any>).mockResolvedValue(updatedOrg);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
@@ -292,15 +292,15 @@ describe('OrganizationController', () => {
 
       expect(prismaMock.organization.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { plan: 'Basic' },
+          data: { plan: 'Foundation' },
         })
       );
     });
 
-    it('should accept valid plan "Pro"', async () => {
-      mockReq.body = { plan: 'Pro' };
+    it('should accept valid plan "Essentials"', async () => {
+      mockReq.body = { plan: 'Essentials' };
 
-      const updatedOrg = { id: 'org-1', plan: 'Pro' };
+      const updatedOrg = { id: 'org-1', plan: 'Essentials' };
 
       (prismaMock.organization.update as jest.Mock<any>).mockResolvedValue(updatedOrg);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
@@ -310,10 +310,10 @@ describe('OrganizationController', () => {
       expect(prismaMock.organization.update).toHaveBeenCalled();
     });
 
-    it('should accept valid plan "Enterprise"', async () => {
-      mockReq.body = { plan: 'Enterprise' };
+    it('should accept valid plan "Visionary"', async () => {
+      mockReq.body = { plan: 'Visionary' };
 
-      const updatedOrg = { id: 'org-1', plan: 'Enterprise' };
+      const updatedOrg = { id: 'org-1', plan: 'Visionary' };
 
       (prismaMock.organization.update as jest.Mock<any>).mockResolvedValue(updatedOrg);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
@@ -368,9 +368,9 @@ describe('OrganizationController', () => {
     });
 
     it('should not include name in update data when not provided', async () => {
-      mockReq.body = { plan: 'Pro' };
+      mockReq.body = { plan: 'Essentials' };
 
-      const updatedOrg = { id: 'org-1', plan: 'Pro' };
+      const updatedOrg = { id: 'org-1', plan: 'Essentials' };
 
       (prismaMock.organization.update as jest.Mock<any>).mockResolvedValue(updatedOrg);
       (prismaMock.auditLog.create as jest.Mock<any>).mockResolvedValue({});
@@ -379,7 +379,7 @@ describe('OrganizationController', () => {
 
       const updateCall = (prismaMock.organization.update as jest.Mock<any>).mock.calls[0][0];
       expect(updateCall.data.name).toBeUndefined();
-      expect(updateCall.data.plan).toBe('Pro');
+      expect(updateCall.data.plan).toBe('Essentials');
     });
 
     it('should not include plan in update data when not provided', async () => {

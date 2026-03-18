@@ -81,151 +81,28 @@ const mockIcon = (name: string) => {
   return Icon;
 };
 
-// Mock lucide-react globally to prevent slow module loading and Proxy-based mock hangs
-vi.mock('lucide-react', () => ({
-  // All icons used across the codebase
-  Activity: mockIcon('Activity'),
-  AlertCircle: mockIcon('AlertCircle'),
-  AlertTriangle: mockIcon('AlertTriangle'),
-  ArrowLeft: mockIcon('ArrowLeft'),
-  ArrowRight: mockIcon('ArrowRight'),
-  ArrowRightLeft: mockIcon('ArrowRightLeft'),
-  ArrowUpDown: mockIcon('ArrowUpDown'),
-  Award: mockIcon('Award'),
-  Ban: mockIcon('Ban'),
-  BarChart: mockIcon('BarChart'),
-  BarChart3: mockIcon('BarChart3'),
-  Bell: mockIcon('Bell'),
-  Bookmark: mockIcon('Bookmark'),
-  BookOpen: mockIcon('BookOpen'),
-  Bot: mockIcon('Bot'),
-  Brain: mockIcon('Brain'),
-  BrainCircuit: mockIcon('BrainCircuit'),
-  Briefcase: mockIcon('Briefcase'),
-  Building: mockIcon('Building'),
-  Building2: mockIcon('Building2'),
-  Calendar: mockIcon('Calendar'),
-  Check: mockIcon('Check'),
-  CheckCircle: mockIcon('CheckCircle'),
-  CheckCircle2: mockIcon('CheckCircle2'),
-  CheckSquare: mockIcon('CheckSquare'),
-  ChevronDown: mockIcon('ChevronDown'),
-  ChevronLeft: mockIcon('ChevronLeft'),
-  ChevronRight: mockIcon('ChevronRight'),
-  ChevronUp: mockIcon('ChevronUp'),
-  Circle: mockIcon('Circle'),
-  ClipboardCheck: mockIcon('ClipboardCheck'),
-  ClipboardList: mockIcon('ClipboardList'),
-  Clock: mockIcon('Clock'),
-  Cloud: mockIcon('Cloud'),
-  Code: mockIcon('Code'),
-  Copy: mockIcon('Copy'),
-  Cpu: mockIcon('Cpu'),
-  CreditCard: mockIcon('CreditCard'),
-  Crown: mockIcon('Crown'),
-  Database: mockIcon('Database'),
-  DollarSign: mockIcon('DollarSign'),
-  Download: mockIcon('Download'),
-  Edit: mockIcon('Edit'),
-  Edit2: mockIcon('Edit2'),
-  Edit3: mockIcon('Edit3'),
-  ExternalLink: mockIcon('ExternalLink'),
-  Eye: mockIcon('Eye'),
-  EyeOff: mockIcon('EyeOff'),
-  Factory: mockIcon('Factory'),
-  FileCheck: mockIcon('FileCheck'),
-  FileCode: mockIcon('FileCode'),
-  FileText: mockIcon('FileText'),
-  FileWarning: mockIcon('FileWarning'),
-  Filter: mockIcon('Filter'),
-  Fingerprint: mockIcon('Fingerprint'),
-  Folder: mockIcon('Folder'),
-  FolderOpen: mockIcon('FolderOpen'),
-  GitBranch: mockIcon('GitBranch'),
-  GitGraph: mockIcon('GitGraph'),
-  GitMerge: mockIcon('GitMerge'),
-  Globe: mockIcon('Globe'),
-  GraduationCap: mockIcon('GraduationCap'),
-  Grid3x3: mockIcon('Grid3x3'),
-  HardDrive: mockIcon('HardDrive'),
-  Hash: mockIcon('Hash'),
-  Heart: mockIcon('Heart'),
-  HelpCircle: mockIcon('HelpCircle'),
-  Info: mockIcon('Info'),
-  Key: mockIcon('Key'),
-  Landmark: mockIcon('Landmark'),
-  Layout: mockIcon('Layout'),
-  LayoutDashboard: mockIcon('LayoutDashboard'),
-  Layers: mockIcon('Layers'),
-  LifeBuoy: mockIcon('LifeBuoy'),
-  Lightbulb: mockIcon('Lightbulb'),
-  Link2: mockIcon('Link2'),
-  ListChecks: mockIcon('ListChecks'),
-  ListFilter: mockIcon('ListFilter'),
-  Loader: mockIcon('Loader'),
-  Loader2: mockIcon('Loader2'),
-  Lock: mockIcon('Lock'),
-  LogOut: mockIcon('LogOut'),
-  Mail: mockIcon('Mail'),
-  Megaphone: mockIcon('Megaphone'),
-  Menu: mockIcon('Menu'),
-  MessageCircle: mockIcon('MessageCircle'),
-  MessageSquare: mockIcon('MessageSquare'),
-  Mic: mockIcon('Mic'),
-  Minus: mockIcon('Minus'),
-  Monitor: mockIcon('Monitor'),
-  Network: mockIcon('Network'),
-  Paperclip: mockIcon('Paperclip'),
-  Pause: mockIcon('Pause'),
-  Phone: mockIcon('Phone'),
-  PieChart: mockIcon('PieChart'),
-  Plane: mockIcon('Plane'),
-  Play: mockIcon('Play'),
-  Plus: mockIcon('Plus'),
-  Power: mockIcon('Power'),
-  PowerOff: mockIcon('PowerOff'),
-  Radio: mockIcon('Radio'),
-  RefreshCw: mockIcon('RefreshCw'),
-  Rocket: mockIcon('Rocket'),
-  RotateCw: mockIcon('RotateCw'),
-  Save: mockIcon('Save'),
-  Search: mockIcon('Search'),
-  Send: mockIcon('Send'),
-  Server: mockIcon('Server'),
-  Settings: mockIcon('Settings'),
-  Share2: mockIcon('Share2'),
-  Shield: mockIcon('Shield'),
-  ShieldAlert: mockIcon('ShieldAlert'),
-  ShieldCheck: mockIcon('ShieldCheck'),
-  ShoppingCart: mockIcon('ShoppingCart'),
-  Slack: mockIcon('Slack'),
-  SortAsc: mockIcon('SortAsc'),
-  SortDesc: mockIcon('SortDesc'),
-  Sparkles: mockIcon('Sparkles'),
-  Star: mockIcon('Star'),
-  Table: mockIcon('Table'),
-  Tag: mockIcon('Tag'),
-  Target: mockIcon('Target'),
-  Terminal: mockIcon('Terminal'),
-  ThumbsUp: mockIcon('ThumbsUp'),
-  Timer: mockIcon('Timer'),
-  Trash2: mockIcon('Trash2'),
-  TrendingDown: mockIcon('TrendingDown'),
-  TrendingUp: mockIcon('TrendingUp'),
-  Trophy: mockIcon('Trophy'),
-  Unlock: mockIcon('Unlock'),
-  Upload: mockIcon('Upload'),
-  User: mockIcon('User'),
-  UserPlus: mockIcon('UserPlus'),
-  Users: mockIcon('Users'),
-  Video: mockIcon('Video'),
-  Webhook: mockIcon('Webhook'),
-  Wifi: mockIcon('Wifi'),
-  Workflow: mockIcon('Workflow'),
-  X: mockIcon('X'),
-  XCircle: mockIcon('XCircle'),
-  Zap: mockIcon('Zap'),
-}));
+// Cache for Proxy-generated mock icons so the same reference is returned each time
+const _iconCache: Record<string, any> = {};
+
+// Mock lucide-react globally using a Proxy so ANY icon export is auto-generated.
+// This prevents tests from failing when new icons are added to components.
+vi.mock('lucide-react', () => {
+  return new Proxy({}, {
+    get(_target, prop: string) {
+      // Special Proxy traps that should not return an icon
+      if (prop === '__esModule') return true;
+      if (prop === 'default') return undefined;
+      if (typeof prop === 'symbol') return undefined;
+      if (!_iconCache[prop]) {
+        _iconCache[prop] = mockIcon(prop);
+      }
+      return _iconCache[prop];
+    },
+    has() {
+      return true;
+    },
+  });
+});
 
 // Mock react-markdown globally
 vi.mock('react-markdown', () => ({
@@ -235,6 +112,125 @@ vi.mock('react-markdown', () => ({
 // Mock dompurify globally
 vi.mock('dompurify', () => ({
   default: { sanitize: (s: string) => s },
+}));
+
+// Mock sonner globally to prevent toast errors
+vi.mock('sonner', () => ({
+  toast: Object.assign(vi.fn(), {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    loading: vi.fn(),
+    dismiss: vi.fn(),
+    promise: vi.fn(),
+    custom: vi.fn(),
+    message: vi.fn(),
+  }),
+  Toaster: () => null,
+}));
+
+// Load English translations for the I18n mock so that t() returns real English text
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+import _enTranslations from './i18n/locales/en.json';
+const _enDict: Record<string, unknown> = _enTranslations as any;
+
+function _resolveI18nKey(dict: Record<string, unknown>, key: string): string | undefined {
+  const parts = key.split('.');
+  let current: unknown = dict;
+  for (const part of parts) {
+    if (current === null || current === undefined || typeof current !== 'object') return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return typeof current === 'string' ? current : undefined;
+}
+
+function _mockT(key: string, vars?: Record<string, string | number>): string {
+  const resolved = _resolveI18nKey(_enDict, key) || key;
+  if (!vars) return resolved;
+  return resolved.replace(/\{\{(\w+)\}\}/g, (_, varName: string) => {
+    const value = vars[varName];
+    return value !== undefined ? String(value) : `{{${varName}}}`;
+  });
+}
+
+// Mock I18nContext globally so components using useI18n don't crash
+vi.mock('@/contexts/I18nContext', () => ({
+  I18nProvider: ({ children }: any) => children,
+  useI18n: vi.fn().mockReturnValue({
+    t: _mockT,
+    locale: 'en',
+    setLocale: vi.fn().mockResolvedValue(undefined),
+    availableLocales: [{ code: 'en', name: 'English', nativeName: 'English', dir: 'ltr' }],
+    isLoading: false,
+  }),
+  I18nContext: {
+    Provider: ({ children }: any) => children,
+    Consumer: ({ children }: any) => children({}),
+  },
+}));
+
+// Mock AuthContext globally so components using useAuth don't crash
+vi.mock('@/contexts/AuthContext', () => ({
+  AuthProvider: ({ children }: any) => children,
+  useAuth: vi.fn().mockReturnValue({
+    user: {
+      id: 'test-user-1',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'admin',
+      organizationId: 'org-1',
+      organization: { id: 'org-1', name: 'Test Org', plan: 'Growth' },
+    },
+    isAuthenticated: true,
+    isLoading: false,
+    loginWithMagicLink: vi.fn().mockResolvedValue({ message: 'ok', email: 'test@example.com' }),
+    verifyMagicLink: vi.fn().mockResolvedValue(undefined),
+    logout: vi.fn(),
+    register: vi.fn().mockResolvedValue({}),
+  }),
+}));
+
+// Mock react-router-dom globally so components using Link, useNavigate etc. don't crash
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: vi.fn().mockReturnValue(vi.fn()),
+    useLocation: vi.fn().mockReturnValue({ pathname: '/', search: '', hash: '', state: null }),
+    useParams: vi.fn().mockReturnValue({}),
+    useSearchParams: vi.fn().mockReturnValue([new URLSearchParams(), vi.fn()]),
+    Link: ({ children, to, ...props }: any) => React.createElement('a', { href: to, ...props }, children),
+    NavLink: ({ children, to, ...props }: any) => React.createElement('a', { href: to, ...props }, children),
+    BrowserRouter: ({ children }: any) => children,
+    MemoryRouter: ({ children }: any) => children,
+    Routes: ({ children }: any) => children,
+    Route: () => null,
+    Outlet: () => null,
+  };
+});
+
+// Mock ThemeContext globally so components using useTheme don't crash
+vi.mock('@/contexts/ThemeContext', () => ({
+  ThemeProvider: ({ children }: any) => children,
+  useTheme: vi.fn().mockReturnValue({
+    theme: 'light',
+    resolvedTheme: 'light',
+    setTheme: vi.fn(),
+    toggleTheme: vi.fn(),
+  }),
+}));
+
+// Mock WebSocketContext globally so components using useWebSocket don't crash
+vi.mock('@/contexts/WebSocketContext', () => ({
+  WebSocketProvider: ({ children }: any) => children,
+  useWebSocket: vi.fn().mockReturnValue({
+    isConnected: false,
+    lastMessage: null,
+    sendMessage: vi.fn(),
+    subscribe: vi.fn().mockReturnValue(vi.fn()),
+    connectionState: 'disconnected',
+  }),
 }));
 
 // Mock OnboardingContext globally so components don't crash without provider

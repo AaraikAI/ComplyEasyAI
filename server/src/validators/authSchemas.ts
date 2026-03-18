@@ -16,6 +16,10 @@ export const registerSchema = Joi.object({
   password: Joi.string().min(8).max(128).required(),
   name: Joi.string().min(1).max(200).trim().required(),
   organizationName: Joi.string().min(1).max(100).trim().optional(),
+  industry: Joi.string().max(100).allow('', null).optional(),
+  companySize: Joi.string().max(50).allow('', null).optional(),
+  primaryComplianceGoal: Joi.string().max(200).allow('', null).optional(),
+  howDidYouHear: Joi.string().max(200).allow('', null).optional(),
   captchaToken: Joi.string().allow('', null).optional(),
 }).unknown(false);
 

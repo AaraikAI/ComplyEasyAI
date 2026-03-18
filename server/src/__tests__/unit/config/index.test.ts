@@ -185,9 +185,9 @@ describe('Config Index', () => {
       expect(config.server.clientUrl).toBe('http://localhost:3000');
     });
 
-    it('should default JWT expiresIn to "7d"', () => {
+    it('should default JWT expiresIn to "15m"', () => {
       const config = require('../../../config/index').default;
-      expect(config.jwt.expiresIn).toBe('7d');
+      expect(config.jwt.expiresIn).toBe('15m');
     });
 
     it('should default JWT refresh expiresIn to "30d"', () => {
@@ -222,9 +222,9 @@ describe('Config Index', () => {
       expect(config.security.rateLimitMaxRequests).toBe(100);
     });
 
-    it('should default CORS origin to localhost:3000', () => {
+    it('should default CORS origin to empty array when CORS_ORIGIN not set', () => {
       const config = require('../../../config/index').default;
-      expect(config.security.corsOrigin).toBe('http://localhost:3000');
+      expect(config.security.corsOrigin).toEqual([]);
     });
 
     it('should default logging level to "info"', () => {
@@ -659,6 +659,7 @@ describe('Config Index', () => {
       process.env.SENDGRID_API_KEY = 'SG.testkey';
       process.env.SENDGRID_FROM_EMAIL = 'test@example.com';
       process.env.CORS_ORIGIN = 'http://localhost:3000';
+      process.env.REDIS_URL = 'redis://localhost:6379';
       delete process.env.STRIPE_SECRET_KEY;
       process.env.NODE_ENV = 'production';
       jest.resetModules();

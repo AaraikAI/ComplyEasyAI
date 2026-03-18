@@ -1208,3 +1208,5 @@ export const ESGReportingModule: React.FC<ESGReportingModuleProps> = ({ onBack }
     </div>
   );
 };
+
+export default ESGReportingModule;

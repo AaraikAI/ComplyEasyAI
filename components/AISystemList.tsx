@@ -284,3 +284,4 @@ export const AISystemList: React.FC<AISystemListProps> = ({ onSelectSystem, onCr
   );
 };
 
+export default AISystemList;

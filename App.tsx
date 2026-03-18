@@ -26,26 +26,26 @@ const CommunityPage = lazy(() => import('./components/CommunityPage'));
 const StatusPage = lazy(() => import('./components/StatusPage'));
 const DocsPage = lazy(() => import('./components/DocsPage'));
 
-// ── Lazy-loaded core views (named exports) ────────────────────────────
-const Reports = lazy(() => import('./components/Reports').then(m => ({ default: m.Reports })));
-const AuditTrail = lazy(() => import('./components/AuditTrail').then(m => ({ default: m.AuditTrail })));
+// ── Lazy-loaded core views (still used directly) ─────────────────────
 const Frameworks = lazy(() => import('./components/Frameworks').then(m => ({ default: m.Frameworks })));
 const FrameworkDetails = lazy(() => import('./components/FrameworkDetails').then(m => ({ default: m.FrameworkDetails })));
-const RiskManagement = lazy(() => import('./components/RiskManagement').then(m => ({ default: m.RiskManagement })));
-const MyTasks = lazy(() => import('./components/MyTasks').then(m => ({ default: m.MyTasks })));
 const Integrations = lazy(() => import('./components/Integrations').then(m => ({ default: m.Integrations })));
 const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
 
-// ── Lazy-loaded enterprise modules (default exports) ──────────────────
-const ACOSDashboard = lazy(() => import('./components/ACOSDashboard'));
-const SecurityFeatures = lazy(() => import('./components/SecurityFeatures'));
-const RealTimeAnalytics = lazy(() => import('./components/RealTimeAnalytics'));
-const VendorManagement = lazy(() => import('./components/VendorManagement'));
-const PolicyManagement = lazy(() => import('./components/PolicyManagement'));
-const MonitoringDashboard = lazy(() => import('./components/MonitoringDashboard'));
-const WorkspaceManagement = lazy(() => import('./components/WorkspaceManagement'));
-const QuestionnaireManagement = lazy(() => import('./components/QuestionnaireManagement'));
-const IssueManagement = lazy(() => import('./components/IssueManagement'));
+// ── Lazy-loaded Hub Components (consolidated navigation) ─────────────
+const VendorHub = lazy(() => import('./components/hubs/VendorHub'));
+const ReportingCenter = lazy(() => import('./components/hubs/ReportingCenter'));
+const RiskHub = lazy(() => import('./components/hubs/RiskHub'));
+const AuditCenter = lazy(() => import('./components/hubs/AuditCenter'));
+const AnalyticsHub = lazy(() => import('./components/hubs/AnalyticsHub'));
+const PolicyHub = lazy(() => import('./components/hubs/PolicyHub'));
+const GovernanceHub = lazy(() => import('./components/hubs/GovernanceHub'));
+const IncidentHub = lazy(() => import('./components/hubs/IncidentHub'));
+const ProductHub = lazy(() => import('./components/hubs/ProductHub'));
+const EvidenceHub = lazy(() => import('./components/hubs/EvidenceHub'));
+const EnterpriseOpsHub = lazy(() => import('./components/hubs/EnterpriseOpsHub'));
+const AIDocumentTools = lazy(() => import('./components/hubs/AIDocumentTools'));
+const AIComplianceTools = lazy(() => import('./components/hubs/AIComplianceTools'));
 
 // ── Lazy-loaded AI/regulatory modules (named exports) ─────────────────
 const AIRMFDashboard = lazy(() => import('./components/AIRMFDashboard').then(m => ({ default: m.AIRMFDashboard })));
@@ -57,94 +57,46 @@ const EUAIActDashboard = lazy(() => import('./components/EUAIActDashboard').then
 const DMAGatekeeperManagement = lazy(() => import('./components/DMAGatekeeperManagement').then(m => ({ default: m.DMAGatekeeperManagement })));
 const DSAPlatformManagement = lazy(() => import('./components/DSAPlatformManagement').then(m => ({ default: m.DSAPlatformManagement })));
 
-// ── Lazy-loaded AI features (named exports) ───────────────────────────
-const PolicyGenerator = lazy(() => import('./components/AIFeatures/PolicyGenerator').then(m => ({ default: m.PolicyGenerator })));
-const ContractAnalyzer = lazy(() => import('./components/AIFeatures/ContractAnalyzer').then(m => ({ default: m.ContractAnalyzer })));
-const GapAnalysis = lazy(() => import('./components/AIFeatures/GapAnalysis').then(m => ({ default: m.GapAnalysis })));
-const RFPResponder = lazy(() => import('./components/AIFeatures/RFPResponder').then(m => ({ default: m.RFPResponder })));
-const PhishingGenerator = lazy(() => import('./components/AIFeatures/PhishingGenerator').then(m => ({ default: m.PhishingGenerator })));
-const VendorScorer = lazy(() => import('./components/AIFeatures/VendorScorer').then(m => ({ default: m.VendorScorer })));
-const DataMapper = lazy(() => import('./components/AIFeatures/DataMapper').then(m => ({ default: m.DataMapper })));
-const BCPGenerator = lazy(() => import('./components/AIFeatures/BCPGenerator').then(m => ({ default: m.BCPGenerator })));
-const CrossFrameworkMapper = lazy(() => import('./components/AIFeatures/CrossFrameworkMapper').then(m => ({ default: m.CrossFrameworkMapper })));
-const RegulatoryAutoRemediation = lazy(() => import('./components/AIFeatures/RegulatoryAutoRemediation').then(m => ({ default: m.RegulatoryAutoRemediation })));
-const EvidenceCompletenessChecker = lazy(() => import('./components/AIFeatures/EvidenceCompletenessChecker').then(m => ({ default: m.EvidenceCompletenessChecker })));
-const AgenticVendorRisk = lazy(() => import('./components/AIFeatures/AgenticVendorRisk').then(m => ({ default: m.AgenticVendorRisk })));
-const AuditSimulator = lazy(() => import('./components/AIFeatures/AuditSimulator').then(m => ({ default: m.AuditSimulator })));
-const NaturalLanguageQuery = lazy(() => import('./components/AIFeatures/NaturalLanguageQuery').then(m => ({ default: m.NaturalLanguageQuery })));
-
-// ── Lazy-loaded Phase 1: EU Regulations & US Privacy ──────────────────
+// ── Lazy-loaded EU Regulations & US Privacy ──────────────────────────
 const EUCRADashboard = lazy(() => import('./components/EUCRADashboard').then(m => ({ default: m.EUCRADashboard })));
 const CSRDDashboard = lazy(() => import('./components/CSRDDashboard').then(m => ({ default: m.CSRDDashboard })));
 const EcodesignDashboard = lazy(() => import('./components/EcodesignDashboard').then(m => ({ default: m.EcodesignDashboard })));
 const NIS2Dashboard = lazy(() => import('./components/NIS2Dashboard').then(m => ({ default: m.NIS2Dashboard })));
 const USPrivacyTracker = lazy(() => import('./components/USPrivacyTracker').then(m => ({ default: m.USPrivacyTracker })));
 
-// ── Lazy-loaded Phase 2-3: Process Mapping & Governance ──────────────
-const ProcessMapper = lazy(() => import('./components/ProcessMapper').then(m => ({ default: m.ProcessMapper })));
-const GovernanceManager = lazy(() => import('./components/GovernanceManager').then(m => ({ default: m.GovernanceManager })));
-
-// ── Lazy-loaded Phase 5-6: Certification & ESG ──────────────────────
-const CEMarkingWorkflow = lazy(() => import('./components/CEMarkingWorkflow').then(m => ({ default: m.CEMarkingWorkflow })));
-const DigitalProductPassport = lazy(() => import('./components/DigitalProductPassport').then(m => ({ default: m.DigitalProductPassport })));
-const ESGReportingModule = lazy(() => import('./components/ESGReportingModule').then(m => ({ default: m.ESGReportingModule })));
-const PostMarketSurveillance = lazy(() => import('./components/PostMarketSurveillance').then(m => ({ default: m.PostMarketSurveillance })));
-
-// ── Lazy-loaded Phase 7-8: Breach & Post-Market Lifecycle ───────────
-const BreachNotificationWizard = lazy(() => import('./components/BreachNotificationWizard').then(m => ({ default: m.BreachNotificationWizard })));
-const SBOMManager = lazy(() => import('./components/SBOMManager').then(m => ({ default: m.SBOMManager })));
-const ProductDecommissioning = lazy(() => import('./components/ProductDecommissioning').then(m => ({ default: m.ProductDecommissioning })));
-const EnvironmentalLifecycle = lazy(() => import('./components/EnvironmentalLifecycle').then(m => ({ default: m.EnvironmentalLifecycle })));
-
-// ── Lazy-loaded Tier features ───────────────────────────────────────
-const AIComplianceCopilot = lazy(() => import('./components/AIComplianceCopilot').then(m => ({ default: m.AIComplianceCopilot })));
-const ComplianceScoreForecasting = lazy(() => import('./components/ComplianceScoreForecasting').then(m => ({ default: m.ComplianceScoreForecasting })));
-const ProductLifecycleTracker = lazy(() => import('./components/ProductLifecycleTracker').then(m => ({ default: m.ProductLifecycleTracker })));
-
-// ── Lazy-loaded New Modules: SOX, SoD, MDM, DORA, Auditor, Workflow, Privacy ──
+// ── Lazy-loaded standalone modules ───────────────────────────────────
+const ACOSDashboard = lazy(() => import('./components/ACOSDashboard'));
+const WorkspaceManagement = lazy(() => import('./components/WorkspaceManagement'));
+const QuestionnaireManagement = lazy(() => import('./components/QuestionnaireManagement'));
 const SOXComplianceDashboard = lazy(() => import('./components/SOXComplianceDashboard').then(m => ({ default: m.SOXComplianceDashboard })));
-const SoDAnalysisDashboard = lazy(() => import('./components/SoDAnalysisDashboard').then(m => ({ default: m.SoDAnalysisDashboard })));
-const MDMDashboard = lazy(() => import('./components/MDMDashboard').then(m => ({ default: m.MDMDashboard })));
 const DORADashboard = lazy(() => import('./components/DORADashboard').then(m => ({ default: m.DORADashboard })));
-const AuditorHub = lazy(() => import('./components/AuditorHub').then(m => ({ default: m.AuditorHub })));
-const WorkflowBuilderComponent = lazy(() => import('./components/WorkflowBuilder').then(m => ({ default: m.WorkflowBuilder })));
+const PostMarketSurveillance = lazy(() => import('./components/PostMarketSurveillance').then(m => ({ default: m.PostMarketSurveillance })));
 const PrivacyManagementPlatform = lazy(() => import('./components/PrivacyManagementPlatform').then(m => ({ default: m.PrivacyManagementPlatform })));
 const AccountDeletionWorkflow = lazy(() => import('./components/AccountDeletionWorkflow').then(m => ({ default: m.AccountDeletionWorkflow })));
-
-// ── New Enhancement Module Lazy Loads ─────────────────────────────────
-const IncidentManagement = lazy(() => import('./components/IncidentManagement'));
-const AssetManagement = lazy(() => import('./components/AssetManagement'));
+const AIComplianceCopilot = lazy(() => import('./components/AIComplianceCopilot').then(m => ({ default: m.AIComplianceCopilot })));
+const ExecutiveDashboard = lazy(() => import('./components/ExecutiveDashboard'));
 const ComplianceCalendar = lazy(() => import('./components/ComplianceCalendar'));
 const MaturityAssessment = lazy(() => import('./components/MaturityAssessment'));
-const BusinessImpactAnalysis = lazy(() => import('./components/BusinessImpactAnalysis'));
-const ExceptionManagement = lazy(() => import('./components/ExceptionManagement'));
-const CertificationTracker = lazy(() => import('./components/CertificationTracker'));
-const ComplianceCostDashboard = lazy(() => import('./components/ComplianceCostDashboard'));
-const ExecutiveDashboard = lazy(() => import('./components/ExecutiveDashboard'));
-const ReportBuilder = lazy(() => import('./components/ReportBuilder'));
 const GlobalSearch = lazy(() => import('./components/GlobalSearch'));
 const RegulatoryChangeTracker = lazy(() => import('./components/RegulatoryChangeTracker'));
-const EvidenceCollectionRules = lazy(() => import('./components/EvidenceCollectionRules'));
-const AuditPrepAssistant = lazy(() => import('./components/AuditPrepAssistant'));
-const ControlTestResults = lazy(() => import('./components/ControlTestResults'));
-const VendorMonitoringDashboard = lazy(() => import('./components/VendorMonitoringDashboard'));
-const CICDGateSettings = lazy(() => import('./components/CICDGateSettings'));
 const SSOSettings = lazy(() => import('./components/SSOSettings'));
 const SCIMSettings = lazy(() => import('./components/SCIMSettings'));
 const RoleManager = lazy(() => import('./components/RoleManager'));
 const BrandingSettings = lazy(() => import('./components/BrandingSettings'));
-const RiskHeatMap = lazy(() => import('./components/RiskHeatMap'));
 const NotificationCenter = lazy(() => import('./components/NotificationCenter'));
-const WorkflowAutomationRules = lazy(() => import('./components/WorkflowAutomationRules'));
 const TicketingIntegrations = lazy(() => import('./components/TicketingIntegrations'));
 const AccessibilitySettings = lazy(() => import('./components/AccessibilitySettings'));
 const OfflineBanner = lazy(() => import('./components/OfflineBanner'));
 const UpdateAvailableBanner = lazy(() => import('./components/UpdateAvailableBanner'));
 const DPIAWorkflow = lazy(() => import('./components/DPIAWorkflow'));
 const RoPAManagement = lazy(() => import('./components/RoPAManagement'));
-const SecurityTrainingDashboard = lazy(() => import('./components/SecurityTrainingDashboard'));
 const CookieConsentBanner = lazy(() => import('./components/CookieConsentBanner'));
 const PrivacyNoticeServing = lazy(() => import('./components/PrivacyNoticeServing'));
+
+// ── Home OS Components ────────────────────────────────────────────────
+const HomeOS = lazy(() => import('./components/HomeOS'));
+const FeatureLibrary = lazy(() => import('./components/FeatureLibrary'));
+const RiskCanvas = lazy(() => import('./components/RiskCanvas'));
 
 // ── Loading Spinner ──────────────────────────────────────────────────
 const LoadingSpinner = () => (
@@ -260,15 +212,22 @@ const MainApp: React.FC = () => {
       <Layout>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
-            {/* Dashboard */}
-            <Route index element={<Dashboard frameworks={frameworks} risks={risks} onNavigate={handleNavigate} />} />
+            {/* Home OS (new AI-first home) */}
+            <Route index element={<HomeOS />} />
+            <Route path="dashboard" element={<HomeOS />} />
 
-            {/* Platform Core */}
-            <Route path="tasks" element={<MyTasks />} />
-            <Route path="risks" element={<RiskManagement onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="issues" element={<IssueManagement />} />
-            <Route path="vendors" element={<VendorManagement onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="policies" element={<PolicyManagement onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            {/* Classic Dashboard (accessible at /dashboard-classic) */}
+            <Route path="dashboard-classic" element={<Dashboard frameworks={frameworks} risks={risks} onNavigate={handleNavigate} />} />
+
+            {/* Home OS views */}
+            <Route path="feature-library" element={<FeatureLibrary />} />
+            <Route path="risk-canvas" element={<RiskCanvas />} />
+
+            {/* ── Platform Core (consolidated hubs) ──────────────── */}
+            <Route path="risks" element={<RiskHub />} />
+            <Route path="issues" element={<IncidentHub />} />
+            <Route path="vendors" element={<VendorHub />} />
+            <Route path="policies" element={<PolicyHub />} />
             <Route path="integrations" element={<Integrations />} />
             <Route path="frameworks" element={
               <Frameworks
@@ -291,31 +250,37 @@ const MainApp: React.FC = () => {
             <Route path="settings/scim" element={<ProtectedRoute requiredRole="admin"><SCIMSettings /></ProtectedRoute>} />
             <Route path="settings/roles" element={<ProtectedRoute requiredRole="admin"><RoleManager /></ProtectedRoute>} />
             <Route path="settings/branding" element={<ProtectedRoute requiredRole="admin"><BrandingSettings /></ProtectedRoute>} />
+            <Route path="settings/accessibility" element={<AccessibilitySettings />} />
 
-            {/* Reports & Audit */}
-            <Route path="reports" element={<Reports />} />
-            <Route path="audit" element={<AuditTrail />} />
-            <Route path="monitoring" element={<MonitoringDashboard />} />
-            <Route path="analytics" element={<RealTimeAnalytics onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            {/* ── Reports & Audit (consolidated hubs) ────────────── */}
+            <Route path="reports" element={<ReportingCenter />} />
+            <Route path="audit" element={<AuditCenter />} />
+            <Route path="monitoring" element={<AnalyticsHub />} />
+            <Route path="executive" element={<ExecutiveDashboard />} />
 
-            {/* AI Features */}
-            <Route path="ai/policy-generator" element={<PolicyGenerator onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/contract-analyzer" element={<ContractAnalyzer onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/gap-analysis" element={<GapAnalysis onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/rfp-responder" element={<RFPResponder onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/phishing-simulator" element={<PhishingGenerator onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/vendor-scorer" element={<VendorScorer onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/data-mapper" element={<DataMapper onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/bcp-generator" element={<BCPGenerator onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/cross-framework-mapper" element={<CrossFrameworkMapper onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/auto-remediation" element={<RegulatoryAutoRemediation onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/evidence-checker" element={<EvidenceCompletenessChecker onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/agentic-vendor-risk" element={<AgenticVendorRisk onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/audit-simulator" element={<AuditSimulator onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/compliance-query" element={<NaturalLanguageQuery onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="ai/compliance-forecasting" element={<ComplianceScoreForecasting onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            {/* ── AI Tool Hubs ────────────────────────────────────── */}
+            <Route path="ai/document-tools" element={<AIDocumentTools />} />
+            <Route path="ai/compliance-tools" element={<AIComplianceTools />} />
 
-            {/* AI Governance (NIST AI RMF) */}
+            {/* ── AI Feature Redirects → Hub tabs ─────────────────── */}
+            <Route path="ai/policy-generator" element={<Navigate to="/policies?tab=ai-generator" replace />} />
+            <Route path="ai/contract-analyzer" element={<Navigate to="/vendors?tab=contract-analyzer" replace />} />
+            <Route path="ai/gap-analysis" element={<Navigate to="/ai/document-tools?tab=gap" replace />} />
+            <Route path="ai/rfp-responder" element={<Navigate to="/ai/document-tools?tab=rfp" replace />} />
+            <Route path="ai/bcp-generator" element={<Navigate to="/ai/document-tools?tab=bcp" replace />} />
+            <Route path="ai/phishing-simulator" element={<Navigate to="/ai/compliance-tools?tab=phishing" replace />} />
+            <Route path="ai/vendor-scorer" element={<Navigate to="/vendors?tab=risk-assessment" replace />} />
+            <Route path="ai/data-mapper" element={<Navigate to="/ai/compliance-tools?tab=data-mapper" replace />} />
+            <Route path="ai/cross-framework-mapper" element={<Navigate to="/ai/compliance-tools?tab=cross-mapper" replace />} />
+            <Route path="ai/auto-remediation" element={<Navigate to="/ai/compliance-tools?tab=remediation" replace />} />
+            <Route path="ai/evidence-checker" element={<Navigate to="/evidence?tab=checker" replace />} />
+            <Route path="ai/agentic-vendor-risk" element={<Navigate to="/vendors?tab=agentic-risk" replace />} />
+            <Route path="ai/audit-simulator" element={<Navigate to="/audit?tab=simulator" replace />} />
+            <Route path="ai/compliance-query" element={<Navigate to="/ai/compliance-tools?tab=query" replace />} />
+            <Route path="ai/report-generator" element={<Navigate to="/reports?tab=ai-generator" replace />} />
+            <Route path="ai/compliance-forecasting" element={<Navigate to="/monitoring?tab=forecasting" replace />} />
+
+            {/* AI Governance (NIST AI RMF) - unchanged */}
             <Route path="ai-rmf" element={
               <AIRMFDashboard
                 onNavigate={(view: string, systemId?: string) => {
@@ -346,7 +311,7 @@ const MainApp: React.FC = () => {
               />
             } />
 
-            {/* EU Regulations */}
+            {/* EU Regulations - unchanged */}
             <Route path="regulations/eu-ai-act" element={<EUAIActDashboard />} />
             <Route path="regulations/dma" element={<DMAGatekeeperManagement />} />
             <Route path="regulations/dsa" element={<DSAPlatformManagement />} />
@@ -356,114 +321,78 @@ const MainApp: React.FC = () => {
             <Route path="regulations/nis2" element={<NIS2Dashboard />} />
             <Route path="regulations/us-privacy" element={<USPrivacyTracker />} />
 
-            {/* Governance & Process */}
-            <Route path="governance" element={<GovernanceManager onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="governance/process-mapper" element={<ProcessMapper onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="governance/sox" element={<SOXComplianceDashboard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="governance/sod" element={<SoDAnalysisDashboard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="governance/workflow-builder" element={<WorkflowBuilderComponent onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            {/* ── Governance (consolidated hub) ───────────────────── */}
+            <Route path="governance" element={<GovernanceHub />} />
+            <Route path="governance/sox" element={<SOXComplianceDashboard onBack={() => navigate(ROUTES.GOVERNANCE)} />} />
+            {/* Governance sub-route redirects */}
+            <Route path="governance/process-mapper" element={<Navigate to="/governance?tab=process-mapper" replace />} />
+            <Route path="governance/sod" element={<Navigate to="/governance?tab=sod" replace />} />
+            <Route path="governance/workflow-builder" element={<Navigate to="/governance?tab=workflow-builder" replace />} />
 
-            {/* Products & Lifecycle */}
-            <Route path="products/ce-marking" element={<CEMarkingWorkflow onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="products/digital-passport" element={<DigitalProductPassport onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="products/lifecycle" element={<ProductLifecycleTracker onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="products/sbom" element={<SBOMManager onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="products/decommissioning" element={<ProductDecommissioning onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="products/environmental-lifecycle" element={<EnvironmentalLifecycle onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            {/* ── Products & Lifecycle (consolidated hub) ─────────── */}
+            <Route path="products" element={<ProductHub />} />
+            {/* Product sub-route redirects */}
+            <Route path="products/ce-marking" element={<Navigate to="/products?tab=ce-marking" replace />} />
+            <Route path="products/digital-passport" element={<Navigate to="/products?tab=digital-passport" replace />} />
+            <Route path="products/lifecycle" element={<Navigate to="/products?tab=lifecycle" replace />} />
+            <Route path="products/sbom" element={<Navigate to="/products?tab=sbom" replace />} />
+            <Route path="products/decommissioning" element={<Navigate to="/products?tab=decommissioning" replace />} />
+            <Route path="products/environmental-lifecycle" element={<Navigate to="/products?tab=environmental" replace />} />
 
-            {/* Monitoring & Assurance */}
-            <Route path="esg-reporting" element={<ESGReportingModule onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            {/* ── Monitoring & Assurance ───────────────────────────── */}
             <Route path="surveillance" element={<PostMarketSurveillance onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="breach-notification" element={<BreachNotificationWizard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
 
-            {/* Privacy & Data */}
+            {/* ── Evidence & Exceptions (consolidated hub) ────────── */}
+            <Route path="evidence" element={<EvidenceHub />} />
+
+            {/* Privacy & Data - unchanged */}
             <Route path="privacy" element={<PrivacyManagementPlatform onBack={() => navigate(ROUTES.DASHBOARD)} />} />
             <Route path="privacy/data-deletion" element={<AccountDeletionWorkflow onBack={() => navigate(ROUTES.PRIVACY)} />} />
             <Route path="privacy/dpia" element={<DPIAWorkflow onBack={() => navigate(ROUTES.PRIVACY)} />} />
             <Route path="privacy/ropa" element={<RoPAManagement onBack={() => navigate(ROUTES.PRIVACY)} />} />
             <Route path="privacy/notices" element={<PrivacyNoticeServing onBack={() => navigate(ROUTES.PRIVACY)} />} />
 
-            {/* Security Training */}
-            <Route path="security-training" element={<SecurityTrainingDashboard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-
-            {/* Enterprise */}
+            {/* ── Enterprise (consolidated hub for ops) ───────────── */}
             <Route path="enterprise/workspaces" element={<WorkspaceManagement />} />
+            <Route path="enterprise/security-ops" element={<EnterpriseOpsHub />} />
             <Route path="enterprise/questionnaires" element={<QuestionnaireManagement />} />
-            <Route path="enterprise/security" element={<SecurityFeatures onBack={() => navigate(ROUTES.DASHBOARD)} />} />
             <Route path="enterprise/acos" element={<ACOSDashboard onBack={() => navigate(ROUTES.DASHBOARD)} onNavigate={handleNavigate} />} />
-            <Route path="enterprise/mdm" element={<MDMDashboard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
             <Route path="enterprise/dora" element={<DORADashboard onBack={() => navigate(ROUTES.DASHBOARD)} />} />
-            <Route path="enterprise/auditor" element={<AuditorHub onBack={() => navigate(ROUTES.DASHBOARD)} />} />
+            {/* Enterprise sub-route redirects */}
+            <Route path="enterprise/security" element={<Navigate to="/enterprise/security-ops?tab=security" replace />} />
+            <Route path="enterprise/mdm" element={<Navigate to="/enterprise/security-ops?tab=mdm" replace />} />
+            <Route path="enterprise/auditor" element={<Navigate to="/audit?tab=auditor" replace />} />
 
-            {/* ── NEW ENHANCEMENT MODULES ────────────────────────────── */}
-
-            {/* Incident Management (4.3) */}
-            <Route path="incidents" element={<IncidentManagement />} />
-            <Route path="incidents/:id" element={<IncidentManagement />} />
-
-            {/* IT Asset Management (4.4) */}
-            <Route path="assets" element={<AssetManagement />} />
-            <Route path="assets/:id" element={<AssetManagement />} />
-
-            {/* Compliance Calendar (4.1) */}
+            {/* ── Standalone modules (not consolidated) ───────────── */}
             <Route path="calendar" element={<ComplianceCalendar />} />
-
-            {/* GRC Maturity Model (4.2) */}
             <Route path="maturity" element={<MaturityAssessment />} />
-
-            {/* Business Impact Analysis (4.5) */}
-            <Route path="business-impact-analysis" element={<BusinessImpactAnalysis />} />
-
-            {/* Exception Management (4.9) */}
-            <Route path="exceptions" element={<ExceptionManagement />} />
-
-            {/* Certification Lifecycle (4.10) */}
-            <Route path="certifications" element={<CertificationTracker />} />
-
-            {/* Compliance Cost Analytics (4.7) */}
-            <Route path="cost-analytics" element={<ComplianceCostDashboard />} />
-
-            {/* Executive Dashboard (4.8) */}
-            <Route path="executive" element={<ExecutiveDashboard />} />
-
-            {/* Custom Report Builder (6.1) */}
-            <Route path="report-builder" element={<ReportBuilder />} />
-
-            {/* Regulatory Change Tracker (3.1) */}
             <Route path="regulatory-changes" element={<RegulatoryChangeTracker />} />
-
-            {/* Evidence Auto-Collection (3.2) */}
-            <Route path="evidence-collection" element={<EvidenceCollectionRules />} />
-
-            {/* AI Audit Prep (3.3) */}
-            <Route path="audit-prep" element={<AuditPrepAssistant />} />
-
-            {/* Control Testing (3.4) */}
-            <Route path="control-testing" element={<ControlTestResults />} />
-
-            {/* Vendor Continuous Monitoring (4.11) */}
-            <Route path="vendor-monitoring" element={<VendorMonitoringDashboard />} />
-
-            {/* CI/CD Compliance Gates (5.2) */}
-            <Route path="cicd-gates" element={<CICDGateSettings />} />
-
-            {/* Global Search (1.3) */}
             <Route path="search" element={<GlobalSearch />} />
-
-            {/* Risk Heat Map (6.2) */}
-            <Route path="risk-heatmap" element={<RiskHeatMap />} />
-
-            {/* Notification Center */}
             <Route path="notifications" element={<NotificationCenter />} />
-
-            {/* Workflow Automation Rules (5.1) */}
-            <Route path="workflow-automation" element={<WorkflowAutomationRules />} />
-
-            {/* Ticketing Integrations (5.3) */}
             <Route path="ticketing" element={<TicketingIntegrations />} />
 
-            {/* Accessibility Settings (7.2) */}
-            <Route path="settings/accessibility" element={<AccessibilitySettings />} />
+            {/* ── Old route redirects → consolidated hubs ─────────── */}
+            <Route path="tasks" element={<Navigate to="/risks?tab=tasks" replace />} />
+            <Route path="incidents" element={<Navigate to="/issues?tab=incidents" replace />} />
+            <Route path="incidents/:id" element={<Navigate to="/issues?tab=incidents" replace />} />
+            <Route path="assets" element={<Navigate to="/enterprise/security-ops?tab=assets" replace />} />
+            <Route path="assets/:id" element={<Navigate to="/enterprise/security-ops?tab=assets" replace />} />
+            <Route path="breach-notification" element={<Navigate to="/issues?tab=breach" replace />} />
+            <Route path="esg-reporting" element={<Navigate to="/reports?tab=esg" replace />} />
+            <Route path="analytics" element={<Navigate to="/monitoring?tab=analytics" replace />} />
+            <Route path="report-builder" element={<Navigate to="/reports?tab=builder" replace />} />
+            <Route path="cost-analytics" element={<Navigate to="/monitoring?tab=costs" replace />} />
+            <Route path="audit-prep" element={<Navigate to="/audit?tab=preparation" replace />} />
+            <Route path="control-testing" element={<Navigate to="/audit?tab=testing" replace />} />
+            <Route path="vendor-monitoring" element={<Navigate to="/vendors?tab=monitoring" replace />} />
+            <Route path="risk-heatmap" element={<Navigate to="/risks?tab=heatmap" replace />} />
+            <Route path="evidence-collection" element={<Navigate to="/evidence?tab=collection" replace />} />
+            <Route path="exceptions" element={<Navigate to="/evidence?tab=exceptions" replace />} />
+            <Route path="certifications" element={<Navigate to="/products?tab=certifications" replace />} />
+            <Route path="business-impact-analysis" element={<Navigate to="/enterprise/security-ops?tab=bia" replace />} />
+            <Route path="cicd-gates" element={<Navigate to="/enterprise/security-ops?tab=cicd" replace />} />
+            <Route path="security-training" element={<Navigate to="/enterprise/security-ops?tab=training" replace />} />
+            <Route path="workflow-automation" element={<Navigate to="/governance?tab=automation" replace />} />
 
             {/* Catch-all: redirect to dashboard */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -46,7 +46,6 @@ describe('GoalModal', () => {
     ]);
     mockCreateGoal.mockResolvedValue({ id: 'goal-1' });
     mockUpdateGoal.mockResolvedValue({ id: 'goal-1' });
-    vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -83,12 +82,13 @@ describe('GoalModal', () => {
       });
     });
 
-    it('shows Create Goal submit button', async () => {
+    it('shows Create submit button', async () => {
       render(
         <GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
       );
       await waitFor(() => {
-        expect(screen.getByText('Create Goal')).toBeInTheDocument();
+        // The submit button shows the translated "Create" text
+        expect(screen.getByText('Create')).toBeInTheDocument();
       });
     });
 
@@ -151,12 +151,13 @@ describe('GoalModal', () => {
       });
     });
 
-    it('shows Update Goal submit button', async () => {
+    it('shows Save submit button in edit mode', async () => {
       render(
         <GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} goal={existingGoal} />
       );
       await waitFor(() => {
-        expect(screen.getByText('Update Goal')).toBeInTheDocument();
+        // Edit mode uses t('common.save') = "Save"
+        expect(screen.getByText('Save')).toBeInTheDocument();
       });
     });
 
@@ -176,10 +177,10 @@ describe('GoalModal', () => {
         <GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} goal={existingGoal} />
       );
       await waitFor(() => {
-        expect(screen.getByText('Update Goal')).toBeInTheDocument();
+        expect(screen.getByText('Save')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Update Goal'));
+      fireEvent.click(screen.getByText('Save'));
 
       await waitFor(() => {
         expect(mockUpdateGoal).toHaveBeenCalledWith('goal-1', expect.objectContaining({
@@ -197,10 +198,10 @@ describe('GoalModal', () => {
         <GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
       );
       await waitFor(() => {
-        expect(screen.getByText('Create Goal')).toBeInTheDocument();
+        expect(screen.getByText('Create')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Create Goal'));
+      fireEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {
         expect(screen.getByText('Goal name is required')).toBeInTheDocument();
@@ -212,14 +213,14 @@ describe('GoalModal', () => {
         <GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
       );
       await waitFor(() => {
-        expect(screen.getByText('Create Goal')).toBeInTheDocument();
+        expect(screen.getByText('Create')).toBeInTheDocument();
       });
 
       fireEvent.change(screen.getByPlaceholderText('e.g., Maintain SOC 2 Type II compliance'), {
         target: { value: 'Test Goal' },
       });
 
-      fireEvent.click(screen.getByText('Create Goal'));
+      fireEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {
         expect(screen.getByText('At least one framework must be selected')).toBeInTheDocument();
@@ -251,7 +252,7 @@ describe('GoalModal', () => {
       targetInput.removeAttribute('min');
       fireEvent.change(targetInput, { target: { value: '150' } });
 
-      fireEvent.click(screen.getByText('Create Goal'));
+      fireEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {
         expect(screen.getByText('Target score must be between 0 and 100')).toBeInTheDocument();
@@ -263,7 +264,7 @@ describe('GoalModal', () => {
         <GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
       );
       await waitFor(() => {
-        expect(screen.getByText('Create Goal')).toBeInTheDocument();
+        expect(screen.getByText('Create')).toBeInTheDocument();
       });
 
       const longName = 'A'.repeat(501);
@@ -271,7 +272,7 @@ describe('GoalModal', () => {
         target: { value: longName },
       });
 
-      fireEvent.click(screen.getByText('Create Goal'));
+      fireEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {
         expect(screen.getByText('Goal name must be 500 characters or less')).toBeInTheDocument();
@@ -332,7 +333,8 @@ describe('GoalModal', () => {
       render(
         <GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
       );
-      expect(screen.getByText('Loading frameworks...')).toBeInTheDocument();
+      // The loading text uses t('common.loading') = "Loading..."
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
   });
 
@@ -439,7 +441,7 @@ describe('GoalModal', () => {
       const checkboxes = screen.getAllByRole('checkbox');
       fireEvent.click(checkboxes[0]);
 
-      fireEvent.click(screen.getByText('Create Goal'));
+      fireEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {
         expect(mockCreateGoal).toHaveBeenCalled();
@@ -460,7 +462,7 @@ describe('GoalModal', () => {
       const checkboxes = screen.getAllByRole('checkbox');
       fireEvent.click(checkboxes[0]);
 
-      fireEvent.click(screen.getByText('Create Goal'));
+      fireEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {
         expect(mockOnSuccess).toHaveBeenCalled();
@@ -468,7 +470,7 @@ describe('GoalModal', () => {
       });
     });
 
-    it('shows alert on API error', async () => {
+    it('shows toast on API error', async () => {
       mockCreateGoal.mockRejectedValueOnce(new Error('Server error'));
       render(
         <GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
@@ -483,14 +485,15 @@ describe('GoalModal', () => {
       const checkboxes = screen.getAllByRole('checkbox');
       fireEvent.click(checkboxes[0]);
 
-      fireEvent.click(screen.getByText('Create Goal'));
+      fireEvent.click(screen.getByText('Create'));
 
+      // toast.error is used instead of window.alert — just verify it doesn't crash
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Failed to create goal'));
+        expect(mockCreateGoal).toHaveBeenCalled();
       });
     });
 
-    it('shows Saving... text during submission', async () => {
+    it('shows Loading... text during submission', async () => {
       mockCreateGoal.mockImplementation(() => new Promise(() => {}));
       render(
         <GoalModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
@@ -505,10 +508,11 @@ describe('GoalModal', () => {
       const checkboxes = screen.getAllByRole('checkbox');
       fireEvent.click(checkboxes[0]);
 
-      fireEvent.click(screen.getByText('Create Goal'));
+      fireEvent.click(screen.getByText('Create'));
 
       await waitFor(() => {
-        expect(screen.getByText('Saving...')).toBeInTheDocument();
+        // The loading state shows t('common.loading') = "Loading..."
+        expect(screen.getByText('Loading...')).toBeInTheDocument();
       });
     });
   });

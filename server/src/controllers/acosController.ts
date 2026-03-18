@@ -57,7 +57,7 @@ class ACOSController {
   getGoal: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { goalId } = req.params;
+      const { goalId } = req.params as Record<string, string>;
       const goal = await acosService.getComplianceGoalById(goalId, authReq.user!.organizationId);
       res.json(goal);
     } catch (error) {
@@ -69,7 +69,7 @@ class ACOSController {
   updateGoal: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { goalId } = req.params;
+      const { goalId } = req.params as Record<string, string>;
       const goal = await acosService.updateComplianceGoal(
         goalId,
         authReq.user!.organizationId,
@@ -86,7 +86,7 @@ class ACOSController {
   deleteGoal: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { goalId } = req.params;
+      const { goalId } = req.params as Record<string, string>;
       await acosService.deleteComplianceGoal(goalId, authReq.user!.organizationId, authReq.user!.id);
       res.json({ success: true });
     } catch (error: any) {
@@ -98,7 +98,7 @@ class ACOSController {
   restoreGoal: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { goalId } = req.params;
+      const { goalId } = req.params as Record<string, string>;
       const goal = await acosService.restoreComplianceGoal(goalId, authReq.user!.organizationId, authReq.user!.id);
       res.json(goal);
     } catch (error: any) {
@@ -142,7 +142,7 @@ class ACOSController {
   executeControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { loopId } = req.params;
+      const { loopId } = req.params as Record<string, string>;
       const result = await acosService.executeControlLoop(
         loopId,
         authReq.user!.organizationId
@@ -159,7 +159,7 @@ class ACOSController {
   getControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { loopId } = req.params;
+      const { loopId } = req.params as Record<string, string>;
       const loop = await acosService.getControlLoopById(loopId, authReq.user!.organizationId);
       res.json(loop);
     } catch (error: any) {
@@ -171,7 +171,7 @@ class ACOSController {
   getControlLoopHistory: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { loopId } = req.params;
+      const { loopId } = req.params as Record<string, string>;
       const history = await acosService.getControlLoopHistory(loopId, authReq.user!.organizationId);
       res.json(history);
     } catch (error: any) {
@@ -183,7 +183,7 @@ class ACOSController {
   pauseControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { loopId } = req.params;
+      const { loopId } = req.params as Record<string, string>;
       const loop = await acosService.pauseControlLoop(loopId, authReq.user!.organizationId, authReq.user!.id);
       res.json(loop);
     } catch (error: any) {
@@ -195,7 +195,7 @@ class ACOSController {
   resumeControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { loopId } = req.params;
+      const { loopId } = req.params as Record<string, string>;
       const loop = await acosService.resumeControlLoop(loopId, authReq.user!.organizationId, authReq.user!.id);
       res.json(loop);
     } catch (error: any) {
@@ -207,7 +207,7 @@ class ACOSController {
   updateControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { loopId } = req.params;
+      const { loopId } = req.params as Record<string, string>;
       const loop = await acosService.updateControlLoop(loopId, authReq.user!.organizationId, req.body, authReq.user!.id);
       res.json(loop);
     } catch (error: any) {
@@ -219,7 +219,7 @@ class ACOSController {
   deleteControlLoop: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { loopId } = req.params;
+      const { loopId } = req.params as Record<string, string>;
       await acosService.deleteControlLoop(loopId, authReq.user!.organizationId, authReq.user!.id);
       res.json({ success: true });
     } catch (error: any) {
@@ -262,7 +262,7 @@ class ACOSController {
   rollbackAction: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { actionId } = req.params;
+      const { actionId } = req.params as Record<string, string>;
       const result = await agenticAIService.rollbackAction(
         actionId,
         authReq.user!.organizationId,
@@ -298,7 +298,7 @@ class ACOSController {
   analyzeEvidence: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { evidenceId } = req.params;
+      const { evidenceId } = req.params as Record<string, string>;
       const file = req.file;
       
       const analysis = await evidenceTruthLayerService.analyzeEvidence(
@@ -321,7 +321,7 @@ class ACOSController {
   getEvidenceAnalysis: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { evidenceId } = req.params;
+      const { evidenceId } = req.params as Record<string, string>;
       const analysis = await evidenceTruthLayerService.getEvidenceAnalysis(
         evidenceId,
         authReq.user!.organizationId
@@ -340,7 +340,7 @@ class ACOSController {
   reanalyzeEvidence: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { evidenceId } = req.params;
+      const { evidenceId } = req.params as Record<string, string>;
       const file = req.file;
       
       const analysis = await evidenceTruthLayerService.reanalyzeEvidence(
@@ -363,7 +363,7 @@ class ACOSController {
   getAnalysisHistory: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { evidenceId } = req.params;
+      const { evidenceId } = req.params as Record<string, string>;
       const history = await evidenceTruthLayerService.getAnalysisHistory(
         evidenceId,
         authReq.user!.organizationId
@@ -399,7 +399,7 @@ class ACOSController {
   exportAnalysisReport: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { evidenceId } = req.params;
+      const { evidenceId } = req.params as Record<string, string>;
       const { format } = req.query;
       
       const report = await evidenceTruthLayerService.exportAnalysisReport(
@@ -690,7 +690,7 @@ class ACOSController {
   removeFeed: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { feedId } = req.params;
+      const { feedId } = req.params as Record<string, string>;
       await regulatoryIntelligenceFabricService.removeFeed(
         feedId,
         authReq.user!.organizationId,
@@ -719,7 +719,7 @@ class ACOSController {
   autoUpdateControls: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { regulatoryChangeId } = req.params;
+      const { regulatoryChangeId } = req.params as Record<string, string>;
       const result = await regulatoryIntelligenceFabricService.autoUpdateControls(
         regulatoryChangeId,
         authReq.user!.organizationId,
@@ -784,7 +784,7 @@ class ACOSController {
   predictComplianceTrajectory: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { frameworkId } = req.params;
+      const { frameworkId } = req.params as Record<string, string>;
       const timeHorizonMonths = parseInt(req.query.months as string) || 6;
       const { withInterventions, compareScenarios } = req.query;
       
@@ -818,7 +818,7 @@ class ACOSController {
   recalculateTrajectory: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { frameworkId } = req.params;
+      const { frameworkId } = req.params as Record<string, string>;
       const timeHorizonMonths = parseInt(req.query.months as string) || 6;
       const trajectory = await temporalGraphNetworkService.recalculateTrajectory(
         frameworkId,
@@ -856,7 +856,7 @@ class ACOSController {
   acknowledgeWarning: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { warningId } = req.params;
+      const { warningId } = req.params as Record<string, string>;
       const { falsePositive } = req.body;
       const success = await temporalGraphNetworkService.acknowledgeWarning(
         warningId,
@@ -956,7 +956,7 @@ class ACOSController {
   saveSimulationState: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { scenarioId } = req.params;
+      const { scenarioId } = req.params as Record<string, string>;
       const { state } = req.body;
       const success = await complianceDigitalTwinService.saveSimulationState(
         scenarioId,
@@ -974,7 +974,7 @@ class ACOSController {
   loadSimulationState: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { scenarioId } = req.params;
+      const { scenarioId } = req.params as Record<string, string>;
       const state = await complianceDigitalTwinService.loadSimulationState(
         scenarioId,
         authReq.user!.organizationId
@@ -989,7 +989,7 @@ class ACOSController {
   rollbackSimulation: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { scenarioId } = req.params;
+      const { scenarioId } = req.params as Record<string, string>;
       const success = await complianceDigitalTwinService.rollbackSimulation(
         scenarioId,
         authReq.user!.organizationId,
@@ -1291,7 +1291,7 @@ class ACOSController {
   getFrameworkInsights: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { frameworkId } = req.params;
+      const { frameworkId } = req.params as Record<string, string>;
       const insights = await federatedSwarmService.getFrameworkInsights(
         authReq.user!.organizationId,
         frameworkId
@@ -1453,7 +1453,7 @@ class ACOSController {
   performEdgeComplianceCheck: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { deviceId } = req.params;
+      const { deviceId } = req.params as Record<string, string>;
       const result = await physicalAIService.performEdgeComplianceCheck(
         deviceId,
         authReq.user!.organizationId
@@ -1484,7 +1484,7 @@ class ACOSController {
   deregisterDevice: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { deviceId } = req.params;
+      const { deviceId } = req.params as Record<string, string>;
       await physicalAIService.deregisterDevice(
         deviceId,
         authReq.user!.organizationId,
@@ -1501,7 +1501,7 @@ class ACOSController {
   monitorDeviceHeartbeat: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { deviceId } = req.params;
+      const { deviceId } = req.params as Record<string, string>;
       const heartbeat = await physicalAIService.monitorDeviceHeartbeat(
         deviceId,
         authReq.user!.organizationId
@@ -1529,7 +1529,7 @@ class ACOSController {
   monitorBatteryLevel: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { deviceId } = req.params;
+      const { deviceId } = req.params as Record<string, string>;
       const battery = await physicalAIService.monitorBatteryLevel(
         deviceId,
         authReq.user!.organizationId
@@ -1544,7 +1544,7 @@ class ACOSController {
   monitorConnectivity: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { deviceId } = req.params;
+      const { deviceId } = req.params as Record<string, string>;
       const connectivity = await physicalAIService.monitorConnectivity(
         deviceId,
         authReq.user!.organizationId
@@ -1559,7 +1559,7 @@ class ACOSController {
   trackFirmwareVersion: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { deviceId } = req.params;
+      const { deviceId } = req.params as Record<string, string>;
       const firmware = await physicalAIService.trackFirmwareVersion(
         deviceId,
         authReq.user!.organizationId
@@ -1587,7 +1587,7 @@ class ACOSController {
   getHealthHistory: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { deviceId } = req.params;
+      const { deviceId } = req.params as Record<string, string>;
       const days = parseInt(req.query.days as string) || 30;
       const history = await physicalAIService.getHealthHistory(
         deviceId,
@@ -1604,7 +1604,7 @@ class ACOSController {
   performPredictiveMaintenance: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { deviceId } = req.params;
+      const { deviceId } = req.params as Record<string, string>;
       const maintenance = await physicalAIService.performPredictiveMaintenance(
         deviceId,
         authReq.user!.organizationId
@@ -1659,7 +1659,7 @@ class ACOSController {
   joinVRSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const role = req.body.role || 'reviewer';
       const result = await vrCollaborativeReviewService.joinSession(
         sessionId,
@@ -1689,7 +1689,7 @@ class ACOSController {
   startVRSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const session = await vrCollaborativeReviewService.startSession(
         sessionId,
         authReq.user!.id
@@ -1704,7 +1704,7 @@ class ACOSController {
   endVRSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const result = await vrCollaborativeReviewService.endSession(
         sessionId,
         authReq.user!.id
@@ -1719,7 +1719,7 @@ class ACOSController {
   leaveVRSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       await vrCollaborativeReviewService.leaveSession(
         sessionId,
         authReq.user!.id
@@ -1734,7 +1734,7 @@ class ACOSController {
 
   getVRSessionDetails: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const session = await vrCollaborativeReviewService.getSessionDetails(sessionId);
       if (!session) {
         throw new AppError('Session not found', 404);
@@ -1749,7 +1749,7 @@ class ACOSController {
   addVRAnnotation: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const annotation = await vrCollaborativeReviewService.addAnnotation(
         sessionId,
         authReq.user!.id,
@@ -1765,7 +1765,7 @@ class ACOSController {
   addVRVoiceAnnotation: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const annotation = await vrCollaborativeReviewService.addVoiceAnnotation(
         sessionId,
         authReq.user!.id,
@@ -1781,7 +1781,7 @@ class ACOSController {
   editVRAnnotation: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId, annotationId } = req.params;
+      const { sessionId, annotationId } = req.params as Record<string, string>;
       const annotation = await vrCollaborativeReviewService.editAnnotation(
         sessionId,
         annotationId,
@@ -1799,7 +1799,7 @@ class ACOSController {
   deleteVRAnnotation: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId, annotationId } = req.params;
+      const { sessionId, annotationId } = req.params as Record<string, string>;
       await vrCollaborativeReviewService.deleteAnnotation(
         sessionId,
         annotationId,
@@ -1815,7 +1815,7 @@ class ACOSController {
 
   getVRAnnotationHistory: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { sessionId, annotationId } = req.params;
+      const { sessionId, annotationId } = req.params as Record<string, string>;
       const history = await vrCollaborativeReviewService.getAnnotationHistory(
         sessionId,
         annotationId
@@ -1829,7 +1829,7 @@ class ACOSController {
 
   exportVRAnnotations: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const { format, filters } = req.query;
       const exportData = await vrCollaborativeReviewService.exportAnnotations(
         sessionId,
@@ -1858,7 +1858,7 @@ class ACOSController {
 
   checkVRSessionHealth: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const healthCheck = await vrCollaborativeReviewService.healthCheck(sessionId);
       res.json(healthCheck);
     } catch (error: any) {
@@ -1885,7 +1885,7 @@ class ACOSController {
   startVRTraining: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { scenarioId } = req.params;
+      const { scenarioId } = req.params as Record<string, string>;
       const result = await vrCollaborativeReviewService.startTrainingSession(
         scenarioId,
         authReq.user!.organizationId,
@@ -1901,7 +1901,7 @@ class ACOSController {
   trackVRTrainingProgress: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const { taskId, completed } = req.body;
       const progress = await vrCollaborativeReviewService.trackTrainingProgress(
         sessionId,
@@ -1919,7 +1919,7 @@ class ACOSController {
   evaluateVRTraining: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const evaluation = await vrCollaborativeReviewService.evaluateTrainingPerformance(
         sessionId,
         authReq.user!.id
@@ -1934,7 +1934,7 @@ class ACOSController {
   completeVRTraining: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const certificate = await vrCollaborativeReviewService.completeTraining(
         sessionId,
         authReq.user!.id
@@ -1963,7 +1963,7 @@ class ACOSController {
   sendVRChatMessage: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const { message } = req.body;
       const chatMessage = await vrCollaborativeReviewService.sendChatMessage(
         sessionId,
@@ -1979,7 +1979,7 @@ class ACOSController {
 
   getVRChatHistory: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const limit = parseInt(req.query.limit as string) || 100;
       const history = await vrCollaborativeReviewService.getChatHistory(sessionId, limit);
       res.json(history);
@@ -1992,7 +1992,7 @@ class ACOSController {
   toggleVRVoiceChat: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const { enabled } = req.body;
       const voiceChat = await vrCollaborativeReviewService.toggleVoiceChat(
         sessionId,
@@ -2010,7 +2010,7 @@ class ACOSController {
   muteVRParticipant: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId, userId } = req.params;
+      const { sessionId, userId } = req.params as Record<string, string>;
       const { muted } = req.body;
       await vrCollaborativeReviewService.muteParticipant(
         sessionId,
@@ -2029,7 +2029,7 @@ class ACOSController {
   updateVRPointer: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const { position } = req.body;
       await vrCollaborativeReviewService.updatePointer(
         sessionId,
@@ -2046,7 +2046,7 @@ class ACOSController {
   enableVRScreenSharing: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const { sharedView } = req.body;
       await vrCollaborativeReviewService.enableScreenSharing(
         sessionId,
@@ -2063,7 +2063,7 @@ class ACOSController {
   disableVRScreenSharing: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       await vrCollaborativeReviewService.disableScreenSharing(
         sessionId,
         authReq.user!.id
@@ -2078,7 +2078,7 @@ class ACOSController {
   enableVRFollowMode: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId, targetUserId } = req.params;
+      const { sessionId, targetUserId } = req.params as Record<string, string>;
       await vrCollaborativeReviewService.enableFollowMode(
         sessionId,
         authReq.user!.id,
@@ -2095,7 +2095,7 @@ class ACOSController {
   disableVRFollowMode: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       await vrCollaborativeReviewService.disableFollowMode(
         sessionId,
         authReq.user!.id
@@ -2110,7 +2110,7 @@ class ACOSController {
   enableVRPresenterMode: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       await vrCollaborativeReviewService.enablePresenterMode(
         sessionId,
         authReq.user!.id
@@ -2126,7 +2126,7 @@ class ACOSController {
   updateVREnvironment: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const environment = await vrCollaborativeReviewService.updateEnvironment(
         sessionId,
         authReq.user!.organizationId
@@ -2141,7 +2141,7 @@ class ACOSController {
 
   setVREnvironmentTheme: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const { theme } = req.body;
       await vrCollaborativeReviewService.setEnvironmentTheme(sessionId, theme);
       res.json({ success: true });
@@ -2184,7 +2184,7 @@ class ACOSController {
 
   getSwarmTaskStatus: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { taskId } = req.params;
+      const { taskId } = req.params as Record<string, string>;
       const task = swarmTaskAllocationService.getTaskStatus(taskId);
       if (!task) {
         throw new AppError('Task not found', 404);
@@ -2211,7 +2211,7 @@ class ACOSController {
   cancelSwarmTask: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { taskId } = req.params;
+      const { taskId } = req.params as Record<string, string>;
       const task = await swarmTaskAllocationService.cancelTask(
         taskId,
         req.body.reason || 'Cancelled by user',
@@ -2253,7 +2253,7 @@ class ACOSController {
 
   reportSwarmTaskProgress: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { taskId, agentId } = req.params;
+      const { taskId, agentId } = req.params as Record<string, string>;
       const { progress } = req.body;
       await swarmTaskAllocationService.reportProgress(taskId, agentId, progress);
       res.json({ success: true });
@@ -2267,7 +2267,7 @@ class ACOSController {
   completeSwarmTask: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { taskId, agentId } = req.params;
+      const { taskId, agentId } = req.params as Record<string, string>;
       const { result } = req.body;
       const task = await swarmTaskAllocationService.completeTask(
         taskId,
@@ -2328,7 +2328,7 @@ class ACOSController {
   resolveSwarmMetricAlert: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { alertId } = req.params;
+      const { alertId } = req.params as Record<string, string>;
       await swarmTaskAllocationService.resolveMetricAlert(
         authReq.user!.organizationId,
         alertId,
@@ -2381,7 +2381,7 @@ class ACOSController {
 
   getSwarmAgentById: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { agentId } = req.params;
+      const { agentId } = req.params as Record<string, string>;
       const agent = swarmTaskAllocationService.getAgentById(agentId);
       if (!agent) {
         throw new AppError('Agent not found', 404);
@@ -2396,7 +2396,7 @@ class ACOSController {
   updateSwarmAgentStatus: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { agentId } = req.params;
+      const { agentId } = req.params as Record<string, string>;
       const { status } = req.body;
       const agent = await swarmTaskAllocationService.updateAgentStatus(
         agentId,
@@ -2414,7 +2414,7 @@ class ACOSController {
   deactivateSwarmAgent: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { agentId } = req.params;
+      const { agentId } = req.params as Record<string, string>;
       const agent = await swarmTaskAllocationService.deactivateAgent(
         agentId,
         authReq.user!.organizationId
@@ -2430,7 +2430,7 @@ class ACOSController {
   reactivateSwarmAgent: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { agentId } = req.params;
+      const { agentId } = req.params as Record<string, string>;
       const agent = await swarmTaskAllocationService.reactivateAgent(
         agentId,
         authReq.user!.organizationId
@@ -2445,7 +2445,7 @@ class ACOSController {
 
   getSwarmAgentWorkload: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { agentId } = req.params;
+      const { agentId } = req.params as Record<string, string>;
       const workload = swarmTaskAllocationService.getAgentWorkload(agentId);
       res.json(workload);
     } catch (error: any) {
@@ -2581,7 +2581,7 @@ class ACOSController {
   resolveComplianceDebt: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { debtId } = req.params;
+      const { debtId } = req.params as Record<string, string>;
       const result = await acosService.resolveComplianceDebt(
         debtId,
         authReq.user!.organizationId,
@@ -2641,7 +2641,7 @@ class ACOSController {
   resolveChangeImpact: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { impactId } = req.params;
+      const { impactId } = req.params as Record<string, string>;
       const success = await acosService.resolveChangeImpact(
         impactId,
         authReq.user!.organizationId,
@@ -2730,7 +2730,7 @@ class ACOSController {
   validateInferredRule: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { inferenceId } = req.params;
+      const { inferenceId } = req.params as Record<string, string>;
       const validated = req.body.validated === true;
       const rule = await neuroSymbolicAIService.validateInferredRule(
         inferenceId,
@@ -2793,7 +2793,7 @@ class ACOSController {
   revokeJITSession: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { sessionId } = req.params;
+      const { sessionId } = req.params as Record<string, string>;
       const { reason } = req.body;
       
       await jitAccessService.revokeSession(sessionId, reason || 'Manual revocation');
@@ -2807,7 +2807,7 @@ class ACOSController {
   cancelJITAccessRequest: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { requestId } = req.params;
+      const { requestId } = req.params as Record<string, string>;
       
       await jitAccessService.cancelAccessRequest(requestId, authReq.user!.id);
       res.json({ success: true });
@@ -2894,7 +2894,7 @@ class ACOSController {
   approveJITAccessRequest: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { requestId } = req.params;
+      const { requestId } = req.params as Record<string, string>;
       
       // Only admins can approve requests
       if (authReq.user!.role !== 'admin') {
@@ -2917,7 +2917,7 @@ class ACOSController {
   denyJITAccessRequest: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const { requestId } = req.params;
+      const { requestId } = req.params as Record<string, string>;
       const { reason } = req.body;
       
       // Only admins can deny requests

@@ -1211,3 +1211,5 @@ export const PrivacyManagementPlatform: React.FC<{ onBack: () => void }> = ({ on
     </div>
   );
 };
+
+export default PrivacyManagementPlatform;

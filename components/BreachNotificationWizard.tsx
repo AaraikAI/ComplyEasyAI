@@ -1454,3 +1454,5 @@ export const BreachNotificationWizard: React.FC<BreachNotificationWizardProps> =
     </div>
   );
 };
+
+export default BreachNotificationWizard;

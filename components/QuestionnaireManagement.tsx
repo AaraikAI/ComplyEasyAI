@@ -223,7 +223,6 @@ export default function QuestionnaireManagement() {
     setIsSaving(true);
     try {
       await api.enterprise.questionnaires.create({
-        organizationId: user?.organizationId,
         ...qForm,
         dueDate: qForm.dueDate || undefined,
       });
@@ -266,7 +265,10 @@ export default function QuestionnaireManagement() {
     if (!selected) return;
     setIsSaving(true);
     try {
-      await api.enterprise.questionnaires.update(selected.id, qForm);
+      await api.enterprise.questionnaires.update(selected.id, {
+        ...qForm,
+        dueDate: qForm.dueDate || undefined,
+      });
       await loadQuestionnaires();
       setViewMode('detail');
     } catch (err: any) {

@@ -303,8 +303,12 @@ router.patch(
         return;
       }
 
-      // Prevent updating immutable fields
-      const { id, organizationId, createdAt, ...updateData } = req.body;
+      // Whitelist updatable fields only
+      const { pick } = await import('../utils/pick');
+      const updateData = pick(req.body, [
+        'name', 'description', 'owner', 'department', 'criticality',
+        'rto', 'rpo', 'mtpd', 'impactAnalysis', 'assets',
+      ]);
 
       // Validate criticality if provided
       if (updateData.criticality) {

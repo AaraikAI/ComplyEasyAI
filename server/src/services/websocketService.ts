@@ -57,7 +57,13 @@ class WebSocketService {
     next: (err?: Error) => void
   ): Promise<void> {
     try {
-      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+      let token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+
+      // Fall back to httpOnly cookie (same as REST auth middleware)
+      if (!token && socket.handshake.headers.cookie) {
+        const match = socket.handshake.headers.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
+        if (match) token = match[1];
+      }
 
       if (!token) {
         return next(new Error('Authentication token required'));

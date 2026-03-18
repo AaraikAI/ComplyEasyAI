@@ -210,7 +210,8 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData = pick(req.body, ['name', 'description', 'rules', 'isActive']);
 
       const policy = await prisma.cICDGatePolicy.update({
         where: { id: req.params.id },

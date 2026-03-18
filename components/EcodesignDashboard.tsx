@@ -299,6 +299,7 @@ export const EcodesignDashboard: React.FC = () => {
 
   const [showProductModal, setShowProductModal] = useState(false);
   const [showPassportModal, setShowPassportModal] = useState(false);
+  const [selectedPassport, setSelectedPassport] = useState<DigitalProductPassport | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showLCAModal, setShowLCAModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<EcoProduct | null>(null);
@@ -672,7 +673,7 @@ export const EcodesignDashboard: React.FC = () => {
                   </div>
                   <p className="text-sm text-gray-600">Created: {formatDate(passport.createdDate)} | Updated: {formatDate(passport.lastUpdated)} | Access: {passport.accessLevel}</p>
                 </div>
-                <button className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm flex items-center gap-1"><Eye className="w-4 h-4" /> View DPP</button>
+                <button onClick={() => { setSelectedPassport(passport); setShowPassportModal(true); }} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm flex items-center gap-1"><Eye className="w-4 h-4" /> View DPP</button>
               </div>
               <div className="mb-3">
                 <div className="flex justify-between text-sm mb-1"><span className="text-gray-600">Data Completeness</span><span className="font-medium">{completedCats}/{catEntries.length} categories</span></div>
@@ -924,6 +925,44 @@ export const EcodesignDashboard: React.FC = () => {
                 <button type="button" onClick={() => setShowProductModal(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── DPP Detail Modal ── */}
+      {showPassportModal && selectedPassport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <QrCode className="w-6 h-6 text-purple-600" />
+                <h3 className="text-xl font-semibold text-gray-900">Digital Product Passport — {selectedPassport.productName}</h3>
+              </div>
+              <button onClick={() => { setShowPassportModal(false); setSelectedPassport(null); }} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6 space-y-5">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><label className="font-medium text-gray-700">Passport ID</label><p className="text-gray-900">{selectedPassport.id}</p></div>
+                <div><label className="font-medium text-gray-700">Product ID</label><p className="text-gray-900">{selectedPassport.productId}</p></div>
+                <div><label className="font-medium text-gray-700">Status</label><p><span className={`px-2 py-0.5 rounded text-xs font-medium ${selectedPassport.status === 'active' ? 'bg-green-100 text-green-800' : selectedPassport.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'}`}>{selectedPassport.status.toUpperCase()}</span></p></div>
+                <div><label className="font-medium text-gray-700">Version</label><p className="text-gray-900">v{selectedPassport.version}</p></div>
+                <div><label className="font-medium text-gray-700">Created</label><p className="text-gray-900">{formatDate(selectedPassport.createdDate)}</p></div>
+                <div><label className="font-medium text-gray-700">Last Updated</label><p className="text-gray-900">{formatDate(selectedPassport.lastUpdated)}</p></div>
+                <div><label className="font-medium text-gray-700">Access Level</label><p className="text-gray-900 capitalize">{selectedPassport.accessLevel}</p></div>
+                <div><label className="font-medium text-gray-700">QR Code URL</label><p className="text-gray-900 text-xs break-all">{selectedPassport.qrCodeUrl}</p></div>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-700 mb-3">Data Categories</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(selectedPassport.dataCategories).map(([key, val]) => (
+                    <div key={key} className={`flex items-center gap-2 p-2 rounded-lg text-sm ${val ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-400 border border-gray-200'}`}>
+                      {val ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

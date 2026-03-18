@@ -228,6 +228,34 @@ if (config.server.env === 'development') {
   }
 }
 
+// CORS configuration — must be before helmet so cross-origin responses include proper headers
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (server-to-server, curl, mobile apps)
+    if (!origin) {
+      return callback(null, true);
+    }
+    const allowed = config.security.corsOrigin;
+    if (allowed.length === 0 || allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn(`CORS blocked request from origin: ${origin} (allowed: ${allowed.join(', ')})`);
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-API-Version', 'X-CSRF-Token', 'X-Webhook-Signature', 'X-Webhook-Timestamp', 'X-Webhook-Event'],
+  exposedHeaders: ['X-Total-Count', 'X-Page-Count', 'X-Page', 'X-Page-Size', 'X-Total-Pages', 'X-Has-Next-Page', 'X-Has-Previous-Page', 'X-API-Version', 'Deprecation', 'Sunset'],
+  maxAge: 86400, // 24 hours
+};
+
+// CORS middleware — handles both preflight (OPTIONS) and actual requests
+app.use(cors(corsOptions));
+
+// Log CORS origins on startup
+logger.info(`CORS allowed origins: ${config.security.corsOrigin.join(', ') || '(none — all blocked)'}`);
+
 // Security middleware with enhanced headers and CSP nonces
 // Generate nonce per request for stricter CSP (replaces 'unsafe-inline')
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -273,6 +301,9 @@ app.use(helmet({
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
     },
   },
+  // Disable cross-origin policies that block cross-origin API responses
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false,
   hsts: {
     maxAge: 31536000, // 1 year
     includeSubDomains: true,
@@ -286,15 +317,6 @@ app.use(helmet({
   referrerPolicy: {
     policy: 'strict-origin-when-cross-origin',
   },
-}));
-
-app.use(cors({
-  origin: config.security.corsOrigin,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-API-Version', 'X-CSRF-Token', 'X-Webhook-Signature', 'X-Webhook-Timestamp', 'X-Webhook-Event'],
-  exposedHeaders: ['X-Total-Count', 'X-Page-Count', 'X-Page', 'X-Page-Size', 'X-Total-Pages', 'X-Has-Next-Page', 'X-Has-Previous-Page', 'X-API-Version', 'Deprecation', 'Sunset'],
-  maxAge: 86400, // 24 hours
 }));
 
 // Body parsing middleware

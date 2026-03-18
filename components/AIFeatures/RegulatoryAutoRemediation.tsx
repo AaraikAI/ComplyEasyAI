@@ -563,6 +563,16 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
   const [impactTypeFilter, setImpactTypeFilter] = useState<string>('all');
   const [logTypeFilter, setLogTypeFilter] = useState<string>('all');
   const [taskStatusFilter, setTaskStatusFilter] = useState<string>('all');
+  const [startedTasks, setStartedTasks] = useState<Set<string>>(new Set());
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [reassigningTaskId, setReassigningTaskId] = useState<string | null>(null);
+  const [reassignValue, setReassignValue] = useState('');
+
+  // Helper to get effective task status (accounting for locally started tasks)
+  const getEffectiveTaskStatus = (task: RemediationTask) => {
+    if (startedTasks.has(task.id) && task.status === 'pending') return 'in-progress';
+    return task.status;
+  };
 
   // Summary stats
   const pendingCount = REGULATORY_CHANGES.filter(c => c.status === 'pending').length;
@@ -1017,7 +1027,7 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         <span className="text-xs font-mono text-gray-400">{task.id}</span>
                         <SeverityBadge severity={task.priority} />
-                        <StatusBadge status={task.status} />
+                        <StatusBadge status={getEffectiveTaskStatus(task)} />
                         <TaskTypeBadge type={task.type} />
                         {task.aiGenerated && (
                           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 flex items-center gap-1">
@@ -1052,23 +1062,118 @@ export const RegulatoryAutoRemediation: React.FC<{ onBack: () => void }> = ({ on
                       </div>
                     )}
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-                      {task.status !== 'completed' && (
+                      {getEffectiveTaskStatus(task) !== 'completed' && (
                         <>
-                          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-xs font-medium rounded-lg hover:bg-brand-700 transition-colors">
-                            <Play size={12} />
-                            Start Task
+                          <button
+                            onClick={() => {
+                              setStartedTasks(prev => {
+                                const next = new Set(prev);
+                                next.add(task.id);
+                                return next;
+                              });
+                            }}
+                            disabled={startedTasks.has(task.id) || task.status === 'in-progress'}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                              startedTasks.has(task.id) || task.status === 'in-progress'
+                                ? 'bg-green-100 text-green-700 cursor-default'
+                                : 'bg-brand-600 text-white hover:bg-brand-700'
+                            }`}
+                          >
+                            {startedTasks.has(task.id) || task.status === 'in-progress' ? (
+                              <><CheckCircle2 size={12} /> In Progress</>
+                            ) : (
+                              <><Play size={12} /> Start Task</>
+                            )}
                           </button>
-                          <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                          <button
+                            onClick={() => setEditingTaskId(editingTaskId === task.id ? null : task.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium rounded-lg transition-colors ${
+                              editingTaskId === task.id
+                                ? 'border-brand-300 bg-brand-50 text-brand-700'
+                                : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
                             <Edit3 size={12} />
-                            Edit
+                            {editingTaskId === task.id ? 'Done Editing' : 'Edit'}
                           </button>
-                          <button className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                          <button
+                            onClick={() => {
+                              if (reassigningTaskId === task.id) {
+                                setReassigningTaskId(null);
+                                setReassignValue('');
+                              } else {
+                                setReassigningTaskId(task.id);
+                                setReassignValue(task.assignee);
+                              }
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium rounded-lg transition-colors ${
+                              reassigningTaskId === task.id
+                                ? 'border-brand-300 bg-brand-50 text-brand-700'
+                                : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
                             <Users size={12} />
-                            Reassign
+                            {reassigningTaskId === task.id ? 'Cancel' : 'Reassign'}
                           </button>
                         </>
                       )}
                     </div>
+
+                    {/* Edit mode inline UI */}
+                    {editingTaskId === task.id && (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-xs font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
+                          <Edit3 size={12} />
+                          Edit Task Details
+                        </p>
+                        <div className="space-y-2">
+                          <div>
+                            <label className="text-xs text-blue-700 font-medium">Title</label>
+                            <input
+                              type="text"
+                              defaultValue={task.title}
+                              className="mt-0.5 w-full text-sm border border-blue-200 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-blue-700 font-medium">Description</label>
+                            <textarea
+                              defaultValue={task.description}
+                              rows={2}
+                              className="mt-0.5 w-full text-sm border border-blue-200 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reassign inline UI */}
+                    {reassigningTaskId === task.id && (
+                      <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                        <p className="text-xs font-semibold text-orange-800 mb-2 flex items-center gap-1.5">
+                          <Users size={12} />
+                          Reassign Task
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={reassignValue}
+                            onChange={e => setReassignValue(e.target.value)}
+                            placeholder="Enter new assignee name"
+                            className="flex-1 text-sm border border-orange-200 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          />
+                          <button
+                            onClick={() => {
+                              setReassigningTaskId(null);
+                              setReassignValue('');
+                            }}
+                            className="px-3 py-1 bg-brand-600 text-white text-xs font-medium rounded-md hover:bg-brand-700 transition-colors"
+                          >
+                            Confirm
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

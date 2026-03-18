@@ -251,7 +251,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
     setIsSaving(true);
     setError(null);
     try {
-      const payload: any = { ...vendorForm, organizationId: user?.organizationId };
+      const payload: any = { ...vendorForm };
       if (payload.contractStart) payload.contractStart = new Date(payload.contractStart).toISOString();
       if (payload.contractEnd) payload.contractEnd = new Date(payload.contractEnd).toISOString();
       await api.vendors.create(payload);
@@ -275,6 +275,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
       const payload: any = { ...vendorForm };
       if (payload.contractStart) payload.contractStart = new Date(payload.contractStart).toISOString();
       if (payload.contractEnd) payload.contractEnd = new Date(payload.contractEnd).toISOString();
+      // Remove fields not accepted by the update schema
       delete payload.id;
       delete payload.organizationId;
       delete payload.createdAt;
@@ -282,6 +283,8 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
       delete payload.assessments;
       delete payload.reviews;
       delete payload.monitors;
+      delete payload.lastSecurityReview;
+      delete payload.nextSecurityReview;
       const updated = await api.vendors.update(selectedVendor.id, payload);
       setSelectedVendor(updated);
       await loadVendors();
@@ -327,7 +330,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
         vendor.serviceDescription || vendor.category || 'General Service',
         dataAccess
       ) as any;
-      const text = typeof result === 'string' ? result : result?.analysis || result?.result || JSON.stringify(result);
+      const text = typeof result === 'string' ? result : result?.score || result?.analysis || result?.result || JSON.stringify(result);
       setAiScoreResults(prev => ({ ...prev, [vendor.id]: text }));
 
       // Extract numeric score if possible and save to vendor

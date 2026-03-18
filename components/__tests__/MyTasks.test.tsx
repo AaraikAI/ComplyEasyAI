@@ -84,7 +84,7 @@ describe('MyTasks Component', () => {
     await screen.findByText('High Severity Task');
 
     // Click action button (should open modal)
-    const actionBtns = screen.getAllByText('Action');
+    const actionBtns = screen.getAllByText('Actions');
     expect(actionBtns.length).toBeGreaterThan(0);
     fireEvent.click(actionBtns[0]);
 

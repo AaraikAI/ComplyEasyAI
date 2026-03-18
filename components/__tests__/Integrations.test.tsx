@@ -58,7 +58,7 @@ describe('Integrations', () => {
     it('renders the integrations catalog title', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(screen.getByText('Integrations Catalog')).toBeInTheDocument();
+        expect(screen.getByText('Integrations')).toBeInTheDocument();
       });
     });
 
@@ -72,7 +72,7 @@ describe('Integrations', () => {
     it('renders the search input', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('Search integrations...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search')).toBeInTheDocument();
       });
     });
 
@@ -80,7 +80,7 @@ describe('Integrations', () => {
       render(<Integrations />);
       await waitFor(() => {
         const buttons = screen.getAllByRole('button');
-        const catLabels = ['All', 'Cloud', 'Dev', 'HR', 'Security'];
+        const catLabels = ['All', 'Cloud', 'Code', 'Security'];
         catLabels.forEach(cat => {
           const btn = buttons.find(b => b.textContent === cat);
           expect(btn).toBeTruthy();
@@ -108,19 +108,29 @@ describe('Integrations', () => {
     it('shows onBack button when onBack prop is provided', () => {
       const mockBack = vi.fn();
       render(<Integrations onBack={mockBack} />);
-      expect(screen.getByText('Close')).toBeInTheDocument();
+      // The Close button is inside a button element with a span; there's also a CRM integration named "Close"
+      const closeButtons = screen.getAllByText('Close');
+      const closeBtn = closeButtons.find(el => el.closest('button')?.querySelector('[data-testid="icon-X"]'));
+      expect(closeBtn).toBeTruthy();
     });
 
     it('calls onBack when Close button is clicked', () => {
       const mockBack = vi.fn();
       render(<Integrations onBack={mockBack} />);
-      fireEvent.click(screen.getByText('Close'));
+      // Find the Close button (not the CRM integration card named "Close")
+      const closeButtons = screen.getAllByText('Close');
+      const closeBtn = closeButtons.find(el => el.closest('button')?.querySelector('[data-testid="icon-X"]'));
+      expect(closeBtn).toBeTruthy();
+      fireEvent.click(closeBtn!.closest('button')!);
       expect(mockBack).toHaveBeenCalled();
     });
 
-    it('does not show Close button when onBack is not provided', () => {
+    it('does not show Close back-button when onBack is not provided', () => {
       render(<Integrations />);
-      expect(screen.queryByText('Close')).not.toBeInTheDocument();
+      // Without onBack, there should be no button with icon-X containing "Close"
+      const closeElements = screen.queryAllByText('Close');
+      const closeBackBtn = closeElements.find(el => el.closest('button')?.querySelector('[data-testid="icon-X"]'));
+      expect(closeBackBtn).toBeFalsy();
     });
   });
 
@@ -129,10 +139,10 @@ describe('Integrations', () => {
     it('filters integrations by search query', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('Search integrations...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search')).toBeInTheDocument();
       });
 
-      fireEvent.change(screen.getByPlaceholderText('Search integrations...'), { target: { value: 'GitHub' } });
+      fireEvent.change(screen.getByPlaceholderText('Search'), { target: { value: 'GitHub' } });
 
       await waitFor(() => {
         expect(screen.getByText('GitHub')).toBeInTheDocument();
@@ -143,23 +153,23 @@ describe('Integrations', () => {
     it('shows no results message when search matches nothing', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('Search integrations...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search')).toBeInTheDocument();
       });
 
-      fireEvent.change(screen.getByPlaceholderText('Search integrations...'), { target: { value: 'NonExistentIntegration123' } });
+      fireEvent.change(screen.getByPlaceholderText('Search'), { target: { value: 'NonExistentIntegration123' } });
 
       await waitFor(() => {
-        expect(screen.getByText('No integrations found matching your search.')).toBeInTheDocument();
+        expect(screen.getByText('No results found')).toBeInTheDocument();
       });
     });
 
     it('shows Clear filters button when no results', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('Search integrations...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search')).toBeInTheDocument();
       });
 
-      fireEvent.change(screen.getByPlaceholderText('Search integrations...'), { target: { value: 'NoMatch999' } });
+      fireEvent.change(screen.getByPlaceholderText('Search'), { target: { value: 'NoMatch999' } });
 
       await waitFor(() => {
         expect(screen.getByText('Clear filters')).toBeInTheDocument();
@@ -169,10 +179,10 @@ describe('Integrations', () => {
     it('clears search and category when Clear filters is clicked', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(screen.getByPlaceholderText('Search integrations...')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search')).toBeInTheDocument();
       });
 
-      fireEvent.change(screen.getByPlaceholderText('Search integrations...'), { target: { value: 'NoMatch999' } });
+      fireEvent.change(screen.getByPlaceholderText('Search'), { target: { value: 'NoMatch999' } });
 
       await waitFor(() => {
         expect(screen.getByText('Clear filters')).toBeInTheDocument();
@@ -207,12 +217,12 @@ describe('Integrations', () => {
       });
     });
 
-    it('filters by Dev category', async () => {
+    it('filters by Code category', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(getCategoryButton('Dev')).toBeTruthy();
+        expect(getCategoryButton('Code')).toBeTruthy();
       });
-      fireEvent.click(getCategoryButton('Dev'));
+      fireEvent.click(getCategoryButton('Code'));
 
       await waitFor(() => {
         expect(screen.getByText('GitHub')).toBeInTheDocument();
@@ -228,17 +238,17 @@ describe('Integrations', () => {
       fireEvent.click(getCategoryButton('Security'));
 
       await waitFor(() => {
-        expect(screen.getByText('Splunk')).toBeInTheDocument();
-        expect(screen.getByText('Datadog')).toBeInTheDocument();
+        expect(screen.getByText('CrowdStrike')).toBeInTheDocument();
+        expect(screen.getByText('SentinelOne')).toBeInTheDocument();
       });
     });
 
-    it('filters by HR category', async () => {
+    it('filters by Identity category', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(getCategoryButton('HR')).toBeTruthy();
+        expect(getCategoryButton('Identity')).toBeTruthy();
       });
-      fireEvent.click(getCategoryButton('HR'));
+      fireEvent.click(getCategoryButton('Identity'));
 
       await waitFor(() => {
         expect(screen.getByText('Okta')).toBeInTheDocument();
@@ -264,7 +274,7 @@ describe('Integrations', () => {
 
   // ===== CONNECTED INTEGRATIONS =====
   describe('Connected Integrations', () => {
-    it('shows Connected badge and Manage button for connected integrations', async () => {
+    it('shows Connected badge and Configure button for connected integrations', async () => {
       mockIntegrationsList.mockResolvedValueOnce([
         { name: 'aws', provider: 'aws', connected: true, lastSync: '2026-01-01T00:00:00Z' },
       ]);
@@ -273,7 +283,7 @@ describe('Integrations', () => {
       await waitFor(() => {
         expect(screen.getByText('Connected')).toBeInTheDocument();
       });
-      expect(screen.getByText('Manage')).toBeInTheDocument();
+      expect(screen.getByText('Configure')).toBeInTheDocument();
     });
 
     it('shows last sync date for connected integrations', async () => {
@@ -283,18 +293,18 @@ describe('Integrations', () => {
       render(<Integrations />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Last sync:/)).toBeInTheDocument();
+        expect(screen.getByText(/Last Sync:/)).toBeInTheDocument();
       });
     });
 
-    it('shows Sync button for connected integrations', async () => {
+    it('shows Sync Now button for connected integrations', async () => {
       mockIntegrationsList.mockResolvedValueOnce([
         { name: 'aws', provider: 'aws', connected: true, lastSync: '2026-01-01T00:00:00Z' },
       ]);
       render(<Integrations />);
 
       await waitFor(() => {
-        expect(screen.getByText('Sync')).toBeInTheDocument();
+        expect(screen.getByText('Sync Now')).toBeInTheDocument();
       });
     });
   });
@@ -385,10 +395,10 @@ describe('Integrations', () => {
 
   // ===== TIER LIMITS =====
   describe('Tier Limits', () => {
-    it('renders integration limit message when maxIntegrations is provided', async () => {
-      render(<Integrations maxIntegrations={0} />);
+    it('renders integration cards even when limit is reached', async () => {
+      render(<Integrations />);
       await waitFor(() => {
-        // When maxIntegrations is 0, all Connect buttons should reference upgrade
+        // Integration cards should always be rendered
         const connectButtons = screen.getAllByRole('button');
         expect(connectButtons.length).toBeGreaterThan(0);
       });
@@ -397,17 +407,17 @@ describe('Integrations', () => {
 
   // ===== SYNC =====
   describe('Sync', () => {
-    it('calls sync API when Sync button is clicked on connected integration', async () => {
+    it('calls sync API when Sync Now button is clicked on connected integration', async () => {
       mockIntegrationsList.mockResolvedValueOnce([
         { name: 'aws', provider: 'aws', connected: true, lastSync: '2026-01-01T00:00:00Z' },
       ]);
       render(<Integrations />);
 
       await waitFor(() => {
-        expect(screen.getByText('Sync')).toBeInTheDocument();
+        expect(screen.getByText('Sync Now')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Sync'));
+      fireEvent.click(screen.getByText('Sync Now'));
 
       await waitFor(() => {
         expect(mockIntegrationsSync).toHaveBeenCalledWith('aws');

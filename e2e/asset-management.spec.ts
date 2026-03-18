@@ -1,0 +1,236 @@
+/**
+ * E2E Tests: Asset Management
+ * Tests asset CRUD, classification, and lifecycle management
+ */
+
+import { test, expect } from '@playwright/test';
+
+test.describe('Asset Management', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/assets');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(1500);
+  });
+
+  test.describe('Page Load & Structure', () => {
+    test('assets page loads successfully', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const heading = page.locator('h1, h2').first();
+      await expect(heading).toBeVisible({ timeout: 10000 });
+    });
+
+    test('asset list or grid is displayed', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const list = page.locator('table, .asset-list, .asset-grid, [data-testid="assets"]').first();
+      if (await list.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(list).toBeVisible();
+      }
+    });
+  });
+
+  test.describe('Asset CRUD', () => {
+    test('can create a new asset', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const addBtn = page.getByRole('button', { name: /add|create|new/i }).first();
+      if (await addBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await addBtn.click();
+        await page.waitForTimeout(500);
+
+        const nameInput = page.locator('[name="name"], [name="title"], input[type="text"]').first();
+        if (await nameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await nameInput.fill('E2E Asset - Production Database Server');
+        }
+
+        const typeSelect = page.locator('select[name="type"], select[name="category"]');
+        if (await typeSelect.isVisible().catch(() => false)) {
+          const options = await typeSelect.locator('option').all();
+          if (options.length > 1) await typeSelect.selectOption({ index: 1 });
+        }
+
+        const descInput = page.locator('[name="description"], textarea').first();
+        if (await descInput.isVisible()) {
+          await descInput.fill('Primary production database hosting customer data');
+        }
+
+        const saveBtn = page.getByRole('button', { name: /save|create|submit/i }).first();
+        if (await saveBtn.isVisible()) {
+          await saveBtn.click();
+          await page.waitForTimeout(1000);
+        }
+      }
+    });
+
+    test('can view asset details', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const assetRow = page.locator('table tbody tr, [data-testid="asset-row"], .asset-item').first();
+      if (await assetRow.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await assetRow.click();
+        await page.waitForTimeout(500);
+
+        // Should show detail view
+        const detail = page.locator('[data-testid="asset-detail"], .detail-panel, [role="dialog"], h2, h3').first();
+        if (await detail.isVisible({ timeout: 5000 }).catch(() => false)) {
+          await expect(detail).toBeVisible();
+        }
+      }
+    });
+
+    test('can edit an existing asset', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const assetRow = page.locator('table tbody tr, [data-testid="asset-row"], .asset-item').first();
+      if (await assetRow.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await assetRow.click();
+        await page.waitForTimeout(500);
+
+        const editBtn = page.getByRole('button', { name: /edit|update/i }).first();
+        if (await editBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await editBtn.click();
+          await page.waitForTimeout(500);
+
+          const nameInput = page.locator('[name="name"], [name="title"], input[type="text"]').first();
+          if (await nameInput.isVisible()) {
+            await nameInput.clear();
+            await nameInput.fill('E2E Asset - Updated Name');
+          }
+
+          const saveBtn = page.getByRole('button', { name: /save|update/i }).first();
+          if (await saveBtn.isVisible()) {
+            await saveBtn.click();
+            await page.waitForTimeout(1000);
+          }
+        }
+      }
+    });
+
+    test('can delete an asset with confirmation', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const assetRow = page.locator('table tbody tr, [data-testid="asset-row"], .asset-item').first();
+      if (await assetRow.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await assetRow.click();
+        await page.waitForTimeout(500);
+
+        const deleteBtn = page.getByRole('button', { name: /delete|remove/i }).first();
+        if (await deleteBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await deleteBtn.click();
+          await page.waitForTimeout(500);
+
+          // Should show confirmation dialog
+          const confirm = page.locator('[role="dialog"], [role="alertdialog"]');
+          if (await confirm.isVisible({ timeout: 3000 }).catch(() => false)) {
+            const cancelBtn = page.getByRole('button', { name: /cancel/i });
+            if (await cancelBtn.isVisible()) {
+              await cancelBtn.click(); // Don't actually delete
+            }
+          }
+        }
+      }
+    });
+  });
+
+  test.describe('Asset Classification', () => {
+    test('asset classification options are available', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const classificationContent = page.locator(
+        ':text("Classification"), :text("Critical"), :text("High"), :text("Medium"), :text("Low"), :text("Confidential"), :text("Public")'
+      ).first();
+      if (await classificationContent.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(classificationContent).toBeVisible();
+      }
+    });
+
+    test('can filter assets by classification', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const filterSelect = page.locator('select[name="classification"], select[name="category"], [data-testid="filter"]').first();
+      if (await filterSelect.isVisible({ timeout: 5000 }).catch(() => false)) {
+        const options = await filterSelect.locator('option').all();
+        if (options.length > 1) {
+          await filterSelect.selectOption({ index: 1 });
+          await page.waitForTimeout(500);
+        }
+      }
+    });
+  });
+
+  test.describe('Asset Lifecycle', () => {
+    test('lifecycle stages are visible', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const lifecycle = page.locator(
+        ':text("Lifecycle"), :text("Active"), :text("Retired"), :text("Decommissioned"), :text("Deployed")'
+      ).first();
+      if (await lifecycle.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(lifecycle).toBeVisible();
+      }
+    });
+
+    test('asset owner can be assigned', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const ownerField = page.locator(
+        'select[name="owner"], [name="owner"], [data-testid="asset-owner"], :text("Owner")'
+      ).first();
+      if (await ownerField.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(ownerField).toBeVisible();
+      }
+    });
+  });
+
+  test.describe('Network & Security', () => {
+    test('asset API responses have correct structure', async ({ page }) => {
+      const apiResponses: Array<{ url: string; status: number }> = [];
+
+      page.on('response', (res) => {
+        if (res.url().includes('/api/') && res.url().includes('asset')) {
+          apiResponses.push({ url: res.url(), status: res.status() });
+        }
+      });
+
+      await page.goto('/assets');
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await page.waitForTimeout(2000);
+
+      for (const res of apiResponses) {
+        expect(res.status).toBeLessThan(500);
+      }
+    });
+
+    test('asset mutations include CSRF', async ({ page }) => {
+      let hasCsrf = true;
+
+      page.on('request', (req) => {
+        if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method()) && req.url().includes('/api/')) {
+          if (!req.headers()['x-csrf-token']) hasCsrf = false;
+        }
+      });
+
+      await page.goto('/assets');
+      await page.waitForLoadState('networkidle').catch(() => {});
+
+      const addBtn = page.getByRole('button', { name: /add|create/i }).first();
+      if (await addBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await addBtn.click();
+        await page.waitForTimeout(2000);
+      }
+
+      expect(hasCsrf).toBeTruthy();
+    });
+  });
+});

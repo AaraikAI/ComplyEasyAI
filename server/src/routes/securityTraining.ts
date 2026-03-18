@@ -407,7 +407,11 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, createdBy, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData = pick(req.body, [
+        'title', 'description', 'category', 'content', 'contentType', 'duration',
+        'passingScore', 'maxAttempts', 'isRequired', 'recurrence', 'validityPeriod', 'status',
+      ]);
 
       const training = await prisma.securityTraining.update({
         where: { id: req.params.id },
@@ -637,7 +641,11 @@ router.patch(
         updateData.status = passed ? 'Completed' : 'Failed';
       } else {
         // Generic update — allow setting status, notes, etc.
-        const { id, organizationId, trainingId, userId, createdAt, ...safeData } = req.body;
+        const { pick } = await import('../utils/pick');
+        const safeData = pick(req.body, [
+          'status', 'assignedAt', 'startedAt', 'completedAt', 'expiresAt',
+          'score', 'attempts', 'certificateUrl', 'notes',
+        ]);
         Object.assign(updateData, safeData);
       }
 

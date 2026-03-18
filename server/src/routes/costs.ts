@@ -393,7 +393,11 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, createdBy, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'category', 'description', 'amount', 'currency', 'frameworkId',
+        'controlId', 'vendorId', 'periodStart', 'periodEnd',
+      ]);
 
       if (updateData.periodStart) updateData.periodStart = new Date(updateData.periodStart);
       if (updateData.periodEnd) updateData.periodEnd = new Date(updateData.periodEnd);

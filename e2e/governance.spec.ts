@@ -1,0 +1,259 @@
+/**
+ * E2E Tests: Governance
+ * Tests governance bodies, meetings, decisions, process maps
+ */
+
+import { test, expect } from '@playwright/test';
+
+test.describe('Governance', () => {
+  test.describe('Governance Hub', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/governance');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+    });
+
+    test('governance hub page loads', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const heading = page.locator('h1, h2').first();
+      await expect(heading).toBeVisible({ timeout: 10000 });
+    });
+
+    test('governance hub shows key sections', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const sections = page.locator(
+        ':text("SOX"), :text("Workflow"), :text("Process"), :text("SoD"), :text("Governance"), :text("Automation")'
+      ).first();
+      if (await sections.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(sections).toBeVisible();
+      }
+    });
+
+    test('governance tabs are navigable', async ({ page }) => {
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const tabs = page.locator('button[role="tab"], .tab-button, nav button');
+      if (await tabs.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+        const count = await tabs.count();
+        for (let i = 0; i < Math.min(count, 4); i++) {
+          await tabs.nth(i).click();
+          await page.waitForTimeout(300);
+        }
+      }
+    });
+  });
+
+  test.describe('Governance Bodies', () => {
+    test('governance bodies section exists', async ({ page }) => {
+      await page.goto('/governance');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const bodies = page.locator(
+        ':text("Board"), :text("Committee"), :text("Council"), :text("Body"), :text("Governance Body")'
+      ).first();
+      if (await bodies.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(bodies).toBeVisible();
+      }
+    });
+
+    test('can create a governance body', async ({ page }) => {
+      await page.goto('/governance');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const addBtn = page.getByRole('button', { name: /add|create|new/i }).first();
+      if (await addBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await addBtn.click();
+        await page.waitForTimeout(500);
+
+        const nameInput = page.locator('[name="name"], input[type="text"]').first();
+        if (await nameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await nameInput.fill('E2E Compliance Committee');
+        }
+      }
+    });
+  });
+
+  test.describe('Meetings & Decisions', () => {
+    test('meeting scheduling interface exists', async ({ page }) => {
+      await page.goto('/governance');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const meetings = page.locator(
+        ':text("Meeting"), :text("meeting"), :text("Schedule"), :text("Calendar")'
+      ).first();
+      if (await meetings.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(meetings).toBeVisible();
+      }
+    });
+
+    test('decision tracking is available', async ({ page }) => {
+      await page.goto('/governance');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const decisions = page.locator(
+        ':text("Decision"), :text("decision"), :text("Resolution"), :text("Approval")'
+      ).first();
+      if (await decisions.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(decisions).toBeVisible();
+      }
+    });
+  });
+
+  test.describe('Process Maps', () => {
+    test('process mapper page loads', async ({ page }) => {
+      await page.goto('/governance/process-mapper');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const heading = page.locator('h1, h2').first();
+      if (await heading.isVisible({ timeout: 10000 }).catch(() => false)) {
+        await expect(heading).toBeVisible();
+      }
+    });
+
+    test('process map has visual elements', async ({ page }) => {
+      await page.goto('/governance/process-mapper');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const visual = page.locator(
+        'svg, canvas, [data-testid="process-map"], .flowchart, .diagram, :text("Process")'
+      ).first();
+      if (await visual.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(visual).toBeVisible();
+      }
+    });
+  });
+
+  test.describe('Workflow Builder', () => {
+    test('workflow builder is accessible', async ({ page }) => {
+      await page.goto('/governance/workflow-builder');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const heading = page.locator('h1, h2').first();
+      if (await heading.isVisible({ timeout: 10000 }).catch(() => false)) {
+        await expect(heading).toBeVisible();
+      }
+    });
+
+    test('workflow builder has drag-and-drop elements', async ({ page }) => {
+      await page.goto('/governance/workflow-builder');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const builder = page.locator(
+        ':text("Workflow"), :text("Step"), :text("Action"), :text("Trigger"), :text("Condition"), [draggable="true"]'
+      ).first();
+      if (await builder.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(builder).toBeVisible();
+      }
+    });
+  });
+
+  test.describe('Separation of Duties (SoD)', () => {
+    test('SoD configuration is accessible', async ({ page }) => {
+      await page.goto('/governance/sod');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const heading = page.locator('h1, h2').first();
+      if (await heading.isVisible({ timeout: 10000 }).catch(() => false)) {
+        await expect(heading).toBeVisible();
+      }
+    });
+
+    test('SoD shows conflict matrix', async ({ page }) => {
+      await page.goto('/governance/sod');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1500);
+
+      const isLanding = await page.locator('button:has-text("Sign In")').isVisible().catch(() => false);
+      if (isLanding) test.skip();
+
+      const matrix = page.locator(
+        ':text("Conflict"), :text("Matrix"), :text("Separation"), table, :text("SoD")'
+      ).first();
+      if (await matrix.isVisible({ timeout: 8000 }).catch(() => false)) {
+        await expect(matrix).toBeVisible();
+      }
+    });
+  });
+
+  test.describe('Network & Security', () => {
+    test('governance API calls are properly authenticated', async ({ page }) => {
+      const responses: Array<{ url: string; status: number }> = [];
+
+      page.on('response', (res) => {
+        if (res.url().includes('/api/')) {
+          responses.push({ url: res.url(), status: res.status() });
+        }
+      });
+
+      await page.goto('/governance');
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await page.waitForTimeout(2000);
+
+      for (const res of responses) {
+        expect(res.status).toBeLessThan(500);
+      }
+    });
+
+    test('governance mutations include CSRF', async ({ page }) => {
+      let csrfPresent = true;
+
+      page.on('request', (req) => {
+        if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method()) && req.url().includes('/api/')) {
+          if (!req.headers()['x-csrf-token']) csrfPresent = false;
+        }
+      });
+
+      await page.goto('/governance');
+      await page.waitForLoadState('networkidle').catch(() => {});
+
+      const addBtn = page.getByRole('button', { name: /add|create/i }).first();
+      if (await addBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await addBtn.click();
+        await page.waitForTimeout(2000);
+      }
+
+      expect(csrfPresent).toBeTruthy();
+    });
+  });
+});

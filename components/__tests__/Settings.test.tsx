@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Settings } from '../Settings';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { toast } from 'sonner';
 
 // --- Mocks ---
 
@@ -43,7 +44,12 @@ const mockAuthUploadAvatar = vi.fn().mockResolvedValue({ user: { id: 'user-1', a
 
 vi.mock('../../services/api', () => ({
   api: {
-    auth: { register: vi.fn(), uploadAvatar: (...args: any[]) => mockAuthUploadAvatar(...args) },
+    auth: {
+      register: vi.fn(),
+      uploadAvatar: (...args: any[]) => mockAuthUploadAvatar(...args),
+      updateProfile: (...args: any[]) => mockUserUpdateProfile(...args),
+      changePassword: (...args: any[]) => mockUserChangePassword(...args),
+    },
     billing: {
       createCheckout: (...args: any[]) => mockBillingCreateCheckout(...args),
       getSubscription: () => mockBillingGetSubscription(),
@@ -129,7 +135,7 @@ describe('Settings Component', () => {
     it('renders profile tab by default with user info', async () => {
       render(<Settings />);
       await waitFor(() => {
-        expect(screen.getByText('My Profile')).toBeInTheDocument();
+        expect(screen.getAllByText('Profile').length).toBeGreaterThanOrEqual(1);
       });
       expect(screen.getByDisplayValue('Sarah Connor')).toBeInTheDocument();
       expect(screen.getByDisplayValue('sarah@test.com')).toBeInTheDocument();
@@ -138,7 +144,7 @@ describe('Settings Component', () => {
     it('renders avatar initials when no http avatar', async () => {
       render(<Settings />);
       await waitFor(() => {
-        expect(screen.getByText('My Profile')).toBeInTheDocument();
+        expect(screen.getAllByText('Profile').length).toBeGreaterThanOrEqual(1);
       });
       // The initials "SA" should show (first 2 chars of profileName)
       expect(screen.getByText('SA')).toBeInTheDocument();
@@ -162,10 +168,10 @@ describe('Settings Component', () => {
     it('saves profile when save button is clicked', async () => {
       render(<Settings />);
       await waitFor(() => {
-        expect(screen.getByText('My Profile')).toBeInTheDocument();
+        expect(screen.getAllByText('Profile').length).toBeGreaterThanOrEqual(1);
       });
 
-      const saveBtn = screen.getByText('Save Changes');
+      const saveBtn = screen.getByText('Save');
       fireEvent.click(saveBtn);
 
       await waitFor(() => {
@@ -185,11 +191,11 @@ describe('Settings Component', () => {
       const nameInput = screen.getByDisplayValue('Sarah Connor');
       fireEvent.change(nameInput, { target: { value: '' } });
 
-      const saveBtn = screen.getByText('Save Changes');
+      const saveBtn = screen.getByText('Save');
       fireEvent.click(saveBtn);
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('Name is required');
+        expect(toast.warning).toHaveBeenCalledWith('Name is required');
       });
     });
 
@@ -202,11 +208,11 @@ describe('Settings Component', () => {
       const emailInput = screen.getByDisplayValue('sarah@test.com');
       fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
 
-      const saveBtn = screen.getByText('Save Changes');
+      const saveBtn = screen.getByText('Save');
       fireEvent.click(saveBtn);
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('Please enter a valid email address');
+        expect(toast.warning).toHaveBeenCalledWith('Please enter a valid email address');
       });
     });
 
@@ -214,14 +220,14 @@ describe('Settings Component', () => {
       mockUserUpdateProfile.mockRejectedValueOnce(new Error('Server error'));
       render(<Settings />);
       await waitFor(() => {
-        expect(screen.getByText('My Profile')).toBeInTheDocument();
+        expect(screen.getAllByText('Profile').length).toBeGreaterThanOrEqual(1);
       });
 
-      const saveBtn = screen.getByText('Save Changes');
+      const saveBtn = screen.getByText('Save');
       fireEvent.click(saveBtn);
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('Failed to update profile: Server error');
+        expect(toast.error).toHaveBeenCalledWith('Failed to update profile: Server error');
       });
     });
 
@@ -238,21 +244,21 @@ describe('Settings Component', () => {
     it('renders all navigation tabs for admin user', async () => {
       render(<Settings />);
       await waitFor(() => {
-        expect(screen.getByText('Profile')).toBeInTheDocument();
+        expect(screen.getAllByText('Profile').length).toBeGreaterThanOrEqual(1);
       });
-      expect(screen.getByText('Security')).toBeInTheDocument();
-      expect(screen.getByText('Organization')).toBeInTheDocument();
+      expect(screen.getAllByText('Security').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Organization').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('Team Members')).toBeInTheDocument();
-      expect(screen.getByText('Integrations')).toBeInTheDocument();
-      expect(screen.getByText('Billing & Plan')).toBeInTheDocument();
+      expect(screen.getByText('General')).toBeInTheDocument();
+      expect(screen.getAllByText('Billing').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('Feature Marketplace')).toBeInTheDocument();
     });
 
     it('switches to Security tab', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Security'));
+      fireEvent.click(screen.getAllByText('Security')[0]);
       await waitFor(() => {
-        expect(screen.getByText('Security Settings')).toBeInTheDocument();
+        expect(screen.getAllByText('Security').length).toBeGreaterThanOrEqual(2); // tab + heading
       });
     });
 
@@ -261,23 +267,23 @@ describe('Settings Component', () => {
       const teamTab = screen.getAllByText('Team Members')[0];
       fireEvent.click(teamTab);
       await waitFor(() => {
-        expect(screen.getByText('Invite Member')).toBeInTheDocument();
+        expect(screen.getByText('Invite Team Member')).toBeInTheDocument();
       });
     });
 
     it('switches to Billing tab', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Billing & Plan'));
+      fireEvent.click(screen.getAllByText('Billing')[0]);
       await waitFor(() => {
-        expect(screen.getByText('Plan & Billing')).toBeInTheDocument();
+        expect(screen.getAllByText('Billing').length).toBeGreaterThanOrEqual(2); // tab + heading
       });
     });
 
     it('switches to Organization tab', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Organization'));
+      fireEvent.click(screen.getAllByText('Organization')[0]);
       await waitFor(() => {
-        expect(screen.getByText('Organization Settings')).toBeInTheDocument();
+        expect(screen.getAllByText('Organization').length).toBeGreaterThanOrEqual(2); // tab + heading
       });
     });
 
@@ -294,7 +300,7 @@ describe('Settings Component', () => {
   describe('Security Tab', () => {
     it('shows 2FA as Disabled when not enabled', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Security'));
+      fireEvent.click(screen.getAllByText('Security')[0]);
       await waitFor(() => {
         expect(screen.getByText('Disabled')).toBeInTheDocument();
       });
@@ -303,7 +309,7 @@ describe('Settings Component', () => {
     it('shows 2FA as Enabled when enabled', async () => {
       mockTwoFactorGetStatus.mockResolvedValueOnce({ enabled: true, verified: true });
       render(<Settings />);
-      fireEvent.click(screen.getByText('Security'));
+      fireEvent.click(screen.getAllByText('Security')[0]);
       await waitFor(() => {
         expect(screen.getByText('Enabled')).toBeInTheDocument();
       });
@@ -311,20 +317,20 @@ describe('Settings Component', () => {
 
     it('shows Enable Two-Factor Authentication button when 2FA disabled', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Security'));
+      fireEvent.click(screen.getAllByText('Security')[0]);
       await waitFor(() => {
-        expect(screen.getByText('Enable Two-Factor Authentication')).toBeInTheDocument();
+        expect(screen.getByText('Enable 2FA')).toBeInTheDocument();
       });
     });
 
     it('starts 2FA setup when Enable button is clicked', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Security'));
+      fireEvent.click(screen.getAllByText('Security')[0]);
       await waitFor(() => {
-        expect(screen.getByText('Enable Two-Factor Authentication')).toBeInTheDocument();
+        expect(screen.getByText('Enable 2FA')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Enable Two-Factor Authentication'));
+      fireEvent.click(screen.getByText('Enable 2FA'));
       await waitFor(() => {
         expect(mockTwoFactorSetup).toHaveBeenCalled();
       });
@@ -332,7 +338,7 @@ describe('Settings Component', () => {
 
     it('renders change password section on Security tab', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Security'));
+      fireEvent.click(screen.getAllByText('Security')[0]);
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Enter current password')).toBeInTheDocument();
       });
@@ -342,7 +348,7 @@ describe('Settings Component', () => {
 
     it('validates all password fields are required', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Security'));
+      fireEvent.click(screen.getAllByText('Security')[0]);
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Enter current password')).toBeInTheDocument();
       });
@@ -355,7 +361,7 @@ describe('Settings Component', () => {
 
     it('validates new password minimum length', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Security'));
+      fireEvent.click(screen.getAllByText('Security')[0]);
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Enter current password')).toBeInTheDocument();
       });
@@ -374,7 +380,7 @@ describe('Settings Component', () => {
 
     it('validates password mismatch', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Security'));
+      fireEvent.click(screen.getAllByText('Security')[0]);
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Enter current password')).toBeInTheDocument();
       });
@@ -412,7 +418,7 @@ describe('Settings Component', () => {
       fireEvent.click(teamTab);
 
       await waitFor(() => {
-        expect(screen.getByText('Loading team members...')).toBeInTheDocument();
+        expect(screen.getByText('Loading...')).toBeInTheDocument();
       });
     });
 
@@ -422,7 +428,7 @@ describe('Settings Component', () => {
       fireEvent.click(teamTab);
 
       await waitFor(() => {
-        expect(screen.getByText('Invite Member')).toBeInTheDocument();
+        expect(screen.getByText('Invite Team Member')).toBeInTheDocument();
       });
     });
 
@@ -452,7 +458,7 @@ describe('Settings Component', () => {
   describe('Billing Tab', () => {
     it('displays current subscription info', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Billing & Plan'));
+      fireEvent.click(screen.getAllByText('Billing')[0]);
 
       await waitFor(() => {
         expect(screen.getByText('Growth')).toBeInTheDocument();
@@ -461,7 +467,7 @@ describe('Settings Component', () => {
 
     it('shows Active subscription status', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Billing & Plan'));
+      fireEvent.click(screen.getAllByText('Billing')[0]);
 
       await waitFor(() => {
         expect(screen.getByText('Active')).toBeInTheDocument();
@@ -470,7 +476,7 @@ describe('Settings Component', () => {
 
     it('shows billing cycle as Annual', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Billing & Plan'));
+      fireEvent.click(screen.getAllByText('Billing')[0]);
 
       await waitFor(() => {
         expect(screen.getByText('Annual billing')).toBeInTheDocument();
@@ -479,7 +485,7 @@ describe('Settings Component', () => {
 
     it('shows usage metrics when available', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Billing & Plan'));
+      fireEvent.click(screen.getAllByText('Billing')[0]);
 
       await waitFor(() => {
         expect(screen.getByText('5')).toBeInTheDocument(); // users
@@ -491,7 +497,7 @@ describe('Settings Component', () => {
 
     it('shows pricing section', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Billing & Plan'));
+      fireEvent.click(screen.getAllByText('Billing')[0]);
 
       await waitFor(() => {
         expect(screen.getByTestId('pricing-section')).toBeInTheDocument();
@@ -501,7 +507,7 @@ describe('Settings Component', () => {
     it('handles billing error gracefully', async () => {
       mockBillingGetSubscription.mockRejectedValueOnce(new Error('Payment gateway down'));
       render(<Settings />);
-      fireEvent.click(screen.getByText('Billing & Plan'));
+      fireEvent.click(screen.getAllByText('Billing')[0]);
 
       await waitFor(() => {
         expect(screen.getByText('Error loading billing information')).toBeInTheDocument();
@@ -510,7 +516,7 @@ describe('Settings Component', () => {
 
     it('opens payment modal when tier is selected', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Billing & Plan'));
+      fireEvent.click(screen.getAllByText('Billing')[0]);
 
       await waitFor(() => {
         expect(screen.getByTestId('pricing-section')).toBeInTheDocument();
@@ -526,7 +532,7 @@ describe('Settings Component', () => {
     it('opens contact sales for Visionary tier', async () => {
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
       render(<Settings />);
-      fireEvent.click(screen.getByText('Billing & Plan'));
+      fireEvent.click(screen.getAllByText('Billing')[0]);
 
       await waitFor(() => {
         expect(screen.getByTestId('pricing-section')).toBeInTheDocument();
@@ -548,7 +554,7 @@ describe('Settings Component', () => {
         totalMonthlyCost: 16.58,
       });
       render(<Settings />);
-      fireEvent.click(screen.getByText('Billing & Plan'));
+      fireEvent.click(screen.getAllByText('Billing')[0]);
 
       await waitFor(() => {
         expect(screen.getByText('Custom Reports')).toBeInTheDocument();
@@ -561,16 +567,16 @@ describe('Settings Component', () => {
   describe('Organization Tab', () => {
     it('renders organization settings for admin users', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Organization'));
+      fireEvent.click(screen.getAllByText('Organization')[0]);
 
       await waitFor(() => {
-        expect(screen.getByText('Organization Settings')).toBeInTheDocument();
+        expect(screen.getAllByText('Organization').length).toBeGreaterThanOrEqual(2);
       });
     });
 
     it('loads organization name from API', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Organization'));
+      fireEvent.click(screen.getAllByText('Organization')[0]);
 
       await waitFor(() => {
         expect(mockOrganizationGet).toHaveBeenCalled();
@@ -579,7 +585,7 @@ describe('Settings Component', () => {
 
     it('shows current plan in organization tab', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Organization'));
+      fireEvent.click(screen.getAllByText('Organization')[0]);
 
       await waitFor(() => {
         expect(screen.getByText('Current Plan')).toBeInTheDocument();
@@ -588,7 +594,7 @@ describe('Settings Component', () => {
 
     it('allows editing organization name', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Organization'));
+      fireEvent.click(screen.getAllByText('Organization')[0]);
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Enter organization name')).toBeInTheDocument();
@@ -603,7 +609,7 @@ describe('Settings Component', () => {
   describe('Integrations Tab', () => {
     it('loads integrations when tab is selected', async () => {
       render(<Settings />);
-      fireEvent.click(screen.getByText('Integrations'));
+      fireEvent.click(screen.getByText('General'));
 
       await waitFor(() => {
         expect(mockIntegrationsList).toHaveBeenCalled();

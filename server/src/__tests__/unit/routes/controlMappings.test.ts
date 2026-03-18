@@ -6,11 +6,16 @@ jest.mock('../../../middleware/auth', () => ({
   authorize: jest.fn((..._roles: string[]) => (req: any, res: any, next: any) => next()),
 }));
 
+jest.mock('../../../types/express', () => ({
+  asyncHandler: jest.fn((fn: any) => fn),
+}));
+
 jest.mock('../../../controllers/controlMappingsController', () => ({
   __esModule: true,
   default: {
     createMapping: jest.fn(),
     getMappings: jest.fn(),
+    updateMapping: jest.fn(),
     deleteMapping: jest.fn(),
     exportMappings: jest.fn(),
   },
@@ -74,8 +79,8 @@ describe('Control Mappings Routes', () => {
     expect(routes.find((r: any) => r.path === '/export/csv' && r.methods.includes('get'))).toBeDefined();
   });
 
-  it('should have exactly 4 routes', () => {
+  it('should have exactly 5 routes', () => {
     const routes = router.stack.filter((layer: any) => layer.route);
-    expect(routes.length).toBe(4);
+    expect(routes.length).toBe(5);
   });
 });

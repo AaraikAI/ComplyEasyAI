@@ -40,7 +40,7 @@ class OrganizationController {
     try {
       const authReq = req as AuthRequest;
       const organizationId = authReq.user!.organizationId;
-      const { name, plan } = req.body;
+      const { name, plan, industry, size } = req.body;
 
       // Validation
       if (name !== undefined) {
@@ -62,6 +62,8 @@ class OrganizationController {
       const updateData: any = {};
       if (name !== undefined) updateData.name = name.trim();
       if (plan !== undefined) updateData.plan = plan;
+      if (industry !== undefined) updateData.industry = industry;
+      if (size !== undefined) updateData.size = size;
 
       const organization = await prisma.organization.update({
         where: { id: organizationId },

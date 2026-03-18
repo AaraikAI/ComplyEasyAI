@@ -190,7 +190,7 @@ const AuditPrepAssistant: React.FC = () => {
   const loadGaps = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/audit-prep/gaps?framework=${selectedFramework}`);
+      const res = await api.get(`/audit-prep/gaps/${selectedFramework}`);
       setGaps(Array.isArray(res.data) ? res.data : (res.data?.gaps || []));
     } catch {
       setGaps([]);
@@ -202,7 +202,7 @@ const AuditPrepAssistant: React.FC = () => {
   const generateMockQA = async () => {
     setGenerating(true);
     try {
-      const res = await api.post('/audit-prep/mock-qa', { framework: selectedFramework });
+      const res = await api.post(`/audit-prep/mock-questions/${selectedFramework}`, {});
       setMockQuestions(Array.isArray(res.data) ? res.data : (res.data?.questions || []));
     } catch {
       toast.error('Failed to generate mock Q&A');
@@ -214,7 +214,7 @@ const AuditPrepAssistant: React.FC = () => {
   const loadEvidencePackage = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/audit-prep/evidence-package?framework=${selectedFramework}`);
+      const res = await api.post(`/audit-prep/evidence-package/${selectedFramework}`, {});
       const items = Array.isArray(res.data) ? res.data : (res.data?.items || []);
       setEvidenceItems(items.map((item: any) => ({ ...item, selected: item.status === 'included' })));
     } catch {
@@ -480,8 +480,8 @@ const AuditPrepAssistant: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {filteredGaps.map(gap => {
-                const gapTypeConfig = GAP_TYPE_CONFIG[gap.gapType];
-                const priorityConfig = PRIORITY_CONFIG[gap.priority];
+                const gapTypeConfig = GAP_TYPE_CONFIG[gap.gapType] || { label: gap.gapType || 'Unknown', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300', icon: <AlertCircle className="w-4 h-4" /> };
+                const priorityConfig = PRIORITY_CONFIG[gap.priority] || { label: gap.priority || 'Unknown', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' };
                 return (
                   <tr key={gap.id} className="hover:bg-gray-50 dark:hover:bg-surface-700/50">
                     <td className="px-4 py-3">

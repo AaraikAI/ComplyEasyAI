@@ -10,6 +10,42 @@ jest.mock('../../../middleware/rateLimiter', () => ({
   aiLimiter: jest.fn((req: any, res: any, next: any) => next()),
 }));
 
+jest.mock('../../../middleware/tierMiddleware', () => ({
+  requireFeature: jest.fn(() => [(req: any, res: any, next: any) => next()]),
+  enforceLimit: jest.fn(() => (req: any, res: any, next: any) => next()),
+  requireAiFeature: jest.fn(() => [(req: any, res: any, next: any) => next()]),
+}));
+
+jest.mock('../../../middleware/validate', () => ({
+  validateBody: jest.fn(() => (req: any, res: any, next: any) => next()),
+}));
+
+jest.mock('../../../validators/aiSchemas', () => ({
+  aiReportSchema: {},
+  aiPolicySchema: {},
+  aiGapAnalysisSchema: {},
+  aiChatSchema: {},
+  aiContractSchema: {},
+  aiRfpSchema: {},
+  aiPhishingSchema: {},
+  aiVendorScoreSchema: {},
+  aiDataMapSchema: {},
+  aiBcpSchema: {},
+  aiCrossFrameworkSchema: {},
+  aiAutoRemediationSchema: {},
+  aiEvidenceCompletenessSchema: {},
+  aiAgenticVendorRiskSchema: {},
+  aiAuditSimulationSchema: {},
+  aiNlQuerySchema: {},
+  aiCopilotSchema: {},
+  aiForecastSchema: {},
+  aiAnalyzeProcessSchema: {},
+}));
+
+jest.mock('../../../types/express', () => ({
+  asyncHandler: jest.fn((fn: any) => fn),
+}));
+
 jest.mock('../../../controllers/aiController', () => ({
   __esModule: true,
   default: {
@@ -23,6 +59,15 @@ jest.mock('../../../controllers/aiController', () => ({
     generateDataMap: jest.fn(),
     generateBCP: jest.fn(),
     chat: jest.fn(),
+    crossFrameworkMapping: jest.fn(),
+    regulatoryAutoRemediation: jest.fn(),
+    checkEvidenceCompleteness: jest.fn(),
+    agenticVendorRisk: jest.fn(),
+    simulateAudit: jest.fn(),
+    naturalLanguageQuery: jest.fn(),
+    complianceCopilot: jest.fn(),
+    forecastComplianceScore: jest.fn(),
+    analyzeProcess: jest.fn(),
   },
 }));
 
@@ -63,6 +108,15 @@ describe('AI Routes', () => {
       '/data-map',
       '/bcp',
       '/chat',
+      '/cross-framework-mapping',
+      '/auto-remediation',
+      '/evidence-completeness',
+      '/agentic-vendor-risk',
+      '/audit-simulation',
+      '/nl-query',
+      '/copilot',
+      '/forecast',
+      '/analyze-process',
     ];
 
     for (const path of expectedPaths) {
@@ -70,8 +124,8 @@ describe('AI Routes', () => {
     }
   });
 
-  it('should have exactly 10 routes', () => {
+  it('should have exactly 19 routes', () => {
     const routes = router.stack.filter((layer: any) => layer.route);
-    expect(routes.length).toBe(10);
+    expect(routes.length).toBe(19);
   });
 });

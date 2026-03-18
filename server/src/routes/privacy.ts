@@ -296,8 +296,15 @@ router.patch(
       const currentTrail = Array.isArray(existing.auditTrail) ? existing.auditTrail : [];
       const updatedTrail = [...(currentTrail as Prisma.JsonArray), auditEntry];
 
-      // Remove fields that shouldn't be set directly
-      const { id, organizationId, auditTrail, createdAt, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'requestType', 'dataSubjectName', 'dataSubjectEmail', 'dataSubjectPhone',
+        'identityVerified', 'identityVerifiedAt', 'identityVerifiedBy', 'verificationMethod',
+        'regulation', 'jurisdiction', 'acknowledgedDate', 'dueDate', 'completedDate',
+        'status', 'assignedTo', 'priority', 'dataCategories', 'systemsSearched',
+        'dataFound', 'responseMethod', 'responseDetails', 'responseAttachments',
+        'extensionApplied', 'extensionReason', 'extensionDueDate', 'rejectionReason', 'notes',
+      ]);
 
       const dsar = await prisma.dSARRequest.update({
         where: { id: existing.id },
@@ -497,7 +504,15 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'dataSubjectId', 'dataSubjectEmail', 'consentType', 'purpose', 'legalBasis',
+        'channel', 'consentGiven', 'consentDate', 'consentExpiry', 'withdrawnAt',
+        'withdrawalMethod', 'version', 'policyVersion', 'proofOfConsent', 'granularity',
+        'doubleOptIn', 'doubleOptInDate', 'source', 'metadata', 'dataSubjectAge',
+        'isMinor', 'parentalConsentGiven', 'parentalConsentDate', 'parentalConsentEmail',
+        'parentalConsentMethod', 'ageVerificationMethod',
+      ]);
 
       // If consent is being withdrawn, set withdrawnAt
       if (req.body.consentGiven === false && existing.consentGiven === true) {
@@ -802,7 +817,12 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, createdBy, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'name', 'description', 'dataCategory', 'retentionPeriod', 'legalBasis',
+        'regulation', 'autoDelete', 'autoDeleteWarningDays', 'reviewFrequency',
+        'lastReviewDate', 'nextReviewDate', 'status', 'appliedToSystems', 'exceptions',
+      ]);
 
       // Convert date strings if present
       if (updateData.nextReviewDate) updateData.nextReviewDate = new Date(updateData.nextReviewDate);
@@ -1020,7 +1040,13 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'name', 'templateType', 'version', 'moduleSelected', 'dataExporter', 'dataImporter',
+        'transferDescription', 'technicalMeasures', 'organizationalMeasures',
+        'supervisoryAuthority', 'governingLaw', 'annexes', 'status', 'executedDate',
+        'expiryDate', 'signedByExporter', 'signedByImporter', 'tiaCompleted',
+      ]);
       if (updateData.executedDate) updateData.executedDate = new Date(updateData.executedDate);
       if (updateData.expiryDate) updateData.expiryDate = new Date(updateData.expiryDate);
 
@@ -1221,7 +1247,14 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'name', 'bcrType', 'status', 'leadDPA', 'concernedDPAs', 'groupEntities',
+        'dataCategories', 'transferPurposes', 'bindingCommitments', 'dataProtectionPrinciples',
+        'rightsOfDataSubjects', 'securityMeasures', 'complianceAuditPlan', 'trainingProgram',
+        'complaintMechanism', 'cooperationWithDPAs', 'approvalDate', 'expiryDate',
+        'lastAuditDate', 'nextAuditDate', 'documentUrl',
+      ]);
       if (updateData.approvalDate) updateData.approvalDate = new Date(updateData.approvalDate);
       if (updateData.expiryDate) updateData.expiryDate = new Date(updateData.expiryDate);
       if (updateData.lastAuditDate) updateData.lastAuditDate = new Date(updateData.lastAuditDate);
@@ -1563,7 +1596,13 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, deletionLog, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'requestType', 'requestedBy', 'requestedByEmail', 'status', 'reason',
+        'dataCategories', 'systemsAffected', 'approvedBy', 'approvedAt',
+        'scheduledDate', 'completedDate', 'retentionOverride', 'legalHoldReason',
+        'verificationRequired', 'verifiedAt',
+      ]);
       if (updateData.scheduledDate) updateData.scheduledDate = new Date(updateData.scheduledDate);
       if (updateData.approvedAt) updateData.approvedAt = new Date(updateData.approvedAt);
       if (updateData.completedDate) updateData.completedDate = new Date(updateData.completedDate);
@@ -1754,7 +1793,12 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'dataSubjectId', 'dataSubjectEmail', 'restrictionType', 'reason',
+        'affectedSystems', 'affectedProcesses', 'startDate', 'endDate', 'status',
+        'liftedBy', 'liftedAt', 'liftReason', 'notifiedParties',
+      ]);
       if (updateData.startDate) updateData.startDate = new Date(updateData.startDate);
       if (updateData.endDate) updateData.endDate = new Date(updateData.endDate);
 
@@ -1890,7 +1934,13 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'name', 'aiSystemName', 'systemDescription', 'purpose', 'dataUsed',
+        'decisionTypes', 'humanOversight', 'logicExplanation', 'significance',
+        'rightToObjection', 'rightToHumanReview', 'contactInfo', 'publishedUrl',
+        'version', 'status', 'effectiveDate', 'lastReviewDate', 'nextReviewDate',
+      ]);
       if (updateData.effectiveDate) updateData.effectiveDate = new Date(updateData.effectiveDate);
       if (updateData.lastReviewDate) updateData.lastReviewDate = new Date(updateData.lastReviewDate);
       if (updateData.nextReviewDate) updateData.nextReviewDate = new Date(updateData.nextReviewDate);
@@ -2029,7 +2079,13 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, impressions, acceptances, dismissals, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData = pick(req.body, [
+        'name', 'triggerContext', 'noticeContent', 'shortNotice', 'dataCollected',
+        'purposes', 'legalBasis', 'retentionPeriod', 'thirdPartyRecipients',
+        'dataSubjectRights', 'contactInfo', 'displayType', 'position', 'requiresAction',
+        'version', 'language', 'translations', 'status',
+      ]);
 
       const notice = await prisma.jITPrivacyNotice.update({
         where: { id: req.params.id },

@@ -148,7 +148,7 @@ model Organization {
   sodRules                  SoDRule[]
   sodViolations             SoDViolation[]
   // Enhancement module relations
-  incidents                 Incident[]
+  grcIncidents              GrcIncident[]
   itAssets                  Asset[]
   complianceDeadlines       ComplianceDeadline[]
   maturityAssessments       MaturityAssessment[]
@@ -5719,30 +5719,30 @@ model SecurityTrainingRecord {
 // ============================================================================
 
 // ── 4.3 Incident Management ───────────────────────────────────────────
-model Incident {
-  id               String            @id @default(dbgenerated("(uuid_generate_v4())::text"))
+model GrcIncident {
+  id               String               @id @default(dbgenerated("(uuid_generate_v4())::text"))
   organizationId   String
   title            String
   description      String
-  severity         IncidentSeverity
-  status           IncidentStatus    @default(DETECTED)
+  severity         GrcIncidentSeverity
+  status           GrcIncidentStatus    @default(DETECTED)
   category         IncidentCategory
   reportedBy       String
   assignedTo       String?
-  detectedAt       DateTime          @default(now())
+  detectedAt       DateTime             @default(now())
   containedAt      DateTime?
   resolvedAt       DateTime?
   closedAt         DateTime?
   rootCause        String?
   impact           String?
   lessonsLearned   String?
-  affectedSystems  String[]          @default([])
-  affectedControls String[]          @default([])
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  affectedSystems  String[]             @default([])
+  affectedControls String[]             @default([])
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
   timeline         IncidentTimelineEntry[]
   tasks            IncidentTask[]
-  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([severity])
@@ -5751,32 +5751,45 @@ model Incident {
 }
 
 model IncidentTimelineEntry {
-  id          String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  id          String       @id @default(dbgenerated("(uuid_generate_v4())::text"))
   incidentId  String
   action      String
   details     String
   performedBy String
-  timestamp   DateTime @default(now())
-  incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  timestamp   DateTime      @default(now())
+  incident    GrcIncident   @relation(fields: [incidentId], references: [id], onDelete: Cascade)
 
   @@index([incidentId])
 }
 
 model IncidentTask {
-  id         String   @id @default(dbgenerated("(uuid_generate_v4())::text"))
-  incidentId String
-  title      String
-  assignee   String
-  status     String   @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED
-  dueDate    DateTime?
+  id          String      @id @default(dbgenerated("(uuid_generate_v4())::text"))
+  incidentId  String
+  title       String
+  assignee    String
+  status      String      @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED
+  dueDate     DateTime?
   completedAt DateTime?
-  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  incident    GrcIncident  @relation(fields: [incidentId], references: [id], onDelete: Cascade)
 
   @@index([incidentId])
 }
 
-enum IncidentSeverity { SEV1 SEV2 SEV3 SEV4 }
-enum IncidentStatus { DETECTED TRIAGED CONTAINED ERADICATED RECOVERED CLOSED POST_MORTEM }
+enum GrcIncidentSeverity {
+  SEV1
+  SEV2
+  SEV3
+  SEV4
+}
+enum GrcIncidentStatus {
+  DETECTED
+  TRIAGED
+  CONTAINED
+  ERADICATED
+  RECOVERED
+  CLOSED
+  POST_MORTEM
+}
 enum IncidentCategory {
   DATA_BREACH
   MALWARE
@@ -5819,9 +5832,27 @@ model Asset {
   @@index([status])
 }
 
-enum AssetType { HARDWARE SOFTWARE DATA NETWORK CLOUD_SERVICE PEOPLE FACILITY }
-enum DataClassification { PUBLIC INTERNAL CONFIDENTIAL RESTRICTED }
-enum AssetStatus { ACTIVE DECOMMISSIONED IN_MAINTENANCE PLANNED }
+enum AssetType {
+  HARDWARE
+  SOFTWARE
+  DATA
+  NETWORK
+  CLOUD_SERVICE
+  PEOPLE
+  FACILITY
+}
+enum DataClassification {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  RESTRICTED
+}
+enum AssetStatus {
+  ACTIVE
+  DECOMMISSIONED
+  IN_MAINTENANCE
+  PLANNED
+}
 
 // ── 4.1 Compliance Calendar ───────────────────────────────────────────
 model ComplianceDeadline {
@@ -5864,7 +5895,13 @@ enum DeadlineType {
   CUSTOM
 }
 
-enum DeadlineStatus { UPCOMING DUE_SOON OVERDUE COMPLETED CANCELLED }
+enum DeadlineStatus {
+  UPCOMING
+  DUE_SOON
+  OVERDUE
+  COMPLETED
+  CANCELLED
+}
 
 // ── 4.2 GRC Maturity Assessment ───────────────────────────────────────
 model MaturityAssessment {
@@ -5928,8 +5965,20 @@ model ProcessDependency {
   @@index([processId])
 }
 
-enum Criticality { MISSION_CRITICAL BUSINESS_CRITICAL IMPORTANT STANDARD LOW_PRIORITY }
-enum DependencyType { INTERNAL_PROCESS VENDOR_SERVICE TECHNOLOGY PERSONNEL FACILITY }
+enum Criticality {
+  MISSION_CRITICAL
+  BUSINESS_CRITICAL
+  IMPORTANT
+  STANDARD
+  LOW_PRIORITY
+}
+enum DependencyType {
+  INTERNAL_PROCESS
+  VENDOR_SERVICE
+  TECHNOLOGY
+  PERSONNEL
+  FACILITY
+}
 
 // ── 4.6 Control Effectiveness Tracking ────────────────────────────────
 model ControlEffectivenessRecord {
@@ -5950,7 +5999,12 @@ model ControlEffectivenessRecord {
   @@index([assessmentDate])
 }
 
-enum EffectivenessRating { EFFECTIVE PARTIALLY_EFFECTIVE INEFFECTIVE NOT_TESTED }
+enum EffectivenessRating {
+  EFFECTIVE
+  PARTIALLY_EFFECTIVE
+  INEFFECTIVE
+  NOT_TESTED
+}
 
 // ── 4.7 Compliance Cost Analytics ─────────────────────────────────────
 model ComplianceCost {
@@ -6011,7 +6065,13 @@ model ComplianceException {
   @@index([expiryDate])
 }
 
-enum ExceptionStatus { REQUESTED APPROVED REJECTED EXPIRED RENEWED }
+enum ExceptionStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  EXPIRED
+  RENEWED
+}
 
 // ── 4.10 Certification Lifecycle ──────────────────────────────────────
 model Certification {
@@ -6023,7 +6083,7 @@ model Certification {
   certNumber       String?
   issueDate        DateTime
   expiryDate       DateTime
-  status           CertStatus   @default(ACTIVE)
+  status           CertStatus   @default(CERT_ACTIVE)
   scope            String?
   documents        String[]     @default([])
   surveillanceAudits CertAudit[]
@@ -6050,8 +6110,20 @@ model CertAudit {
   @@index([certificationId])
 }
 
-enum CertStatus { CERT_ACTIVE EXPIRING_SOON CERT_EXPIRED SUSPENDED REVOKED PENDING }
-enum CertAuditType { INITIAL SURVEILLANCE_1 SURVEILLANCE_2 RECERTIFICATION }
+enum CertStatus {
+  CERT_ACTIVE
+  EXPIRING_SOON
+  CERT_EXPIRED
+  SUSPENDED
+  REVOKED
+  PENDING
+}
+enum CertAuditType {
+  INITIAL
+  SURVEILLANCE_1
+  SURVEILLANCE_2
+  RECERTIFICATION
+}
 
 // ── 3.1 Regulatory Change Detection ──────────────────────────────────
 model RegulatoryChangeDetection {
@@ -6088,8 +6160,20 @@ model RegulatoryChangeImpact {
   @@index([organizationId])
 }
 
-enum RegChangeType { NEW_REGULATION AMENDMENT GUIDANCE ENFORCEMENT REPEAL }
-enum RegChangeStatus { NEW REVIEWING IN_PROGRESS REG_RESOLVED DISMISSED }
+enum RegChangeType {
+  NEW_REGULATION
+  AMENDMENT
+  GUIDANCE
+  ENFORCEMENT
+  REPEAL
+}
+enum RegChangeStatus {
+  NEW
+  REVIEWING
+  IN_PROGRESS
+  REG_RESOLVED
+  DISMISSED
+}
 
 // ── 3.2 Evidence Auto-Collection ──────────────────────────────────────
 model EvidenceCollectionRule {
@@ -6170,7 +6254,13 @@ enum ControlTestType {
   NETWORK_SEGMENTATION_CHECK
 }
 
-enum TestResultStatus { PASS FAIL PARTIAL ERROR SKIPPED }
+enum TestResultStatus {
+  PASS
+  FAIL
+  PARTIAL
+  ERROR
+  SKIPPED
+}
 
 // ── 2.1 SSO Configuration ────────────────────────────────────────────
 model SSOConfiguration {
@@ -6191,7 +6281,15 @@ model SSOConfiguration {
   organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
-enum SSOProvider { SAML OIDC AZURE_AD OKTA GOOGLE_WORKSPACE ONELOGIN PING_IDENTITY }
+enum SSOProvider {
+  SAML
+  OIDC
+  AZURE_AD
+  OKTA
+  GOOGLE_WORKSPACE
+  ONELOGIN
+  PING_IDENTITY
+}
 
 // ── 2.2 SCIM Configuration ───────────────────────────────────────────
 model SCIMConfiguration {
@@ -6246,7 +6344,12 @@ model UserRole {
   @@index([roleId])
 }
 
-enum PermissionScope { OWN TEAM DEPARTMENT ORG }
+enum PermissionScope {
+  OWN
+  TEAM
+  DEPARTMENT
+  ORG
+}
 
 // ── 2.4 Branding / White-Labeling ────────────────────────────────────
 model BrandingConfig {

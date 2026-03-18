@@ -4,10 +4,18 @@
  * Uses Microsoft SEAL (node-seal) library for BFV and CKKS schemes
  */
 
-import SEAL from 'node-seal';
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+
+// Lazy-load node-seal (ESM-only package) to avoid crashing the CJS server at startup
+let _sealModule: any = null;
+async function loadSEAL() {
+  if (!_sealModule) {
+    _sealModule = (await import('node-seal')).default;
+  }
+  return _sealModule;
+}
 
 interface EncryptedData {
   ciphertext: string;
@@ -64,6 +72,7 @@ class HomomorphicAIService {
     if (this.initialized) return;
 
     try {
+      const SEAL = await loadSEAL();
       this.seal = await SEAL();
       this.initialized = true;
       logger.info('Homomorphic AI service initialized with Microsoft SEAL');

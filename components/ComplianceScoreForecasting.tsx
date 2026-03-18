@@ -1547,3 +1547,5 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
     </div>
   );
 };
+
+export default ComplianceScoreForecasting;

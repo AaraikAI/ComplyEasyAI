@@ -1371,3 +1371,5 @@ export const ProductLifecycleTracker: React.FC<ProductLifecycleTrackerProps> = (
     </div>
   );
 };
+
+export default ProductLifecycleTracker;

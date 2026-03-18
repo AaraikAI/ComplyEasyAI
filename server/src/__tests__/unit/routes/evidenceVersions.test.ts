@@ -6,10 +6,15 @@ jest.mock('../../../middleware/auth', () => ({
   authorize: jest.fn((..._roles: string[]) => (req: any, res: any, next: any) => next()),
 }));
 
+jest.mock('../../../types/express', () => ({
+  asyncHandler: jest.fn((fn: any) => fn),
+}));
+
 jest.mock('../../../controllers/evidenceVersioningController', () => ({
   __esModule: true,
   default: {
     getVersions: jest.fn(),
+    getVersion: jest.fn(),
     createVersion: jest.fn(),
     restoreVersion: jest.fn(),
     deleteVersion: jest.fn(),
@@ -71,8 +76,8 @@ describe('Evidence Versions Routes', () => {
     expect(routes.find((r: any) => r.path === '/control/:controlId/:versionId' && r.methods.includes('delete'))).toBeDefined();
   });
 
-  it('should have exactly 4 routes', () => {
+  it('should have exactly 5 routes', () => {
     const routes = router.stack.filter((layer: any) => layer.route);
-    expect(routes.length).toBe(4);
+    expect(routes.length).toBe(5);
   });
 });

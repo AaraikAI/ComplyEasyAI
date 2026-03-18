@@ -1110,3 +1110,5 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
     </div>
   );
 };
+
+export default SBOMManager;

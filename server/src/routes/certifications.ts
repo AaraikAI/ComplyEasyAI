@@ -250,7 +250,11 @@ router.patch(
         return;
       }
 
-      const { id, organizationId, createdAt, surveillanceAudits, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'frameworkId', 'name', 'certBody', 'certNumber', 'issueDate',
+        'expiryDate', 'status', 'scope', 'documents',
+      ]);
 
       if (updateData.issueDate) updateData.issueDate = new Date(updateData.issueDate);
       if (updateData.expiryDate) updateData.expiryDate = new Date(updateData.expiryDate);
@@ -384,7 +388,10 @@ router.patch(
         return;
       }
 
-      const { id, certificationId, ...updateData } = req.body;
+      const { pick } = await import('../utils/pick');
+      const updateData: Record<string, any> = pick(req.body, [
+        'type', 'scheduledDate', 'completedDate', 'auditorName', 'findings', 'result',
+      ]);
 
       if (updateData.scheduledDate) updateData.scheduledDate = new Date(updateData.scheduledDate);
       if (updateData.completedDate) updateData.completedDate = new Date(updateData.completedDate);
