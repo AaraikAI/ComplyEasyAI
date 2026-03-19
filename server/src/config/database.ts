@@ -1,4 +1,6 @@
 import { PrismaClient } from '../generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 import logger from './logger';
 import {
   encryptField,
@@ -72,7 +74,11 @@ if (databaseUrl) {
   process.env.DATABASE_URL = databaseUrl;
 }
 
+const pool = new pg.Pool({ connectionString: databaseUrl });
+const adapter = new PrismaPg(pool);
+
 const basePrisma = new PrismaClient({
+  adapter,
   log: [
     { level: 'query', emit: 'event' },
     { level: 'error', emit: 'stdout' },

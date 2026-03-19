@@ -349,7 +349,7 @@ export class SecurityTestEngine {
           'eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNTAwMDAwMDAwfQ.' +
           'invalid-signature';
 
-        const response = await this.request('GET', '/api/v1/auth/me', {
+        const response = await this.request('GET', '/api/v1/frameworks', {
           headers: { Authorization: `Bearer ${expiredToken}` },
         });
 
@@ -394,7 +394,7 @@ export class SecurityTestEngine {
         const failures: string[] = [];
 
         for (const token of malformedTokens) {
-          const response = await this.request('GET', '/api/v1/auth/me', {
+          const response = await this.request('GET', '/api/v1/frameworks', {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -437,10 +437,10 @@ export class SecurityTestEngine {
       owasp: 'A07:2021 - Identification and Authentication Failures',
       fn: async () => {
         const protectedEndpoints = [
-          '/api/v1/auth/me',
+          '/api/v1/frameworks',
           '/api/v1/frameworks',
           '/api/v1/risks',
-          '/api/v1/users',
+          '/api/v1/team',
         ];
 
         const failures: string[] = [];
@@ -674,7 +674,7 @@ export class SecurityTestEngine {
           'eyJzdWIiOiJyZXZva2VkLXVzZXIiLCJleHAiOjk5OTk5OTk5OTl9.' +
           'revoked-signature';
 
-        const response = await this.request('GET', '/api/v1/auth/me', {
+        const response = await this.request('GET', '/api/v1/frameworks', {
           headers: { Authorization: `Bearer ${revokedToken}` },
         });
 
@@ -713,7 +713,7 @@ export class SecurityTestEngine {
           'eyJzdWIiOiJmaXhlZC1zZXNzaW9uIiwiaWF0IjoxNjAwMDAwMDAwLCJleHAiOjk5OTk5OTk5OTl9.' +
           'fixed-session-signature';
 
-        const response = await this.request('GET', '/api/v1/auth/me', {
+        const response = await this.request('GET', '/api/v1/frameworks', {
           headers: { Authorization: `Bearer ${fixedToken}` },
         });
 
@@ -771,7 +771,7 @@ export class SecurityTestEngine {
         const endpoints = [
           `/api/v1/frameworks/${fakeResourceId}`,
           `/api/v1/risks/${fakeResourceId}`,
-          `/api/v1/organizations/${fakeOrgId}`,
+          `/api/v1/organization`,
         ];
 
         const failures: string[] = [];
@@ -888,9 +888,9 @@ export class SecurityTestEngine {
         const otherUserId = '00000000-0000-0000-0000-000000000002';
 
         const endpoints = [
-          `/api/v1/users/${otherUserId}/profile`,
-          `/api/v1/users/${otherUserId}/settings`,
-          `/api/v1/users/${otherUserId}/api-keys`,
+          `/api/v1/team`,
+          `/api/v1/organization`,
+          `/api/v1/audit`,
         ];
 
         const failures: string[] = [];
@@ -937,8 +937,8 @@ export class SecurityTestEngine {
         const dataEndpoints = [
           '/api/v1/frameworks',
           '/api/v1/risks',
-          '/api/v1/controls',
-          '/api/v1/evidence',
+          '/api/v1/control-mappings',
+          '/api/v1/evidence-versions/control/test-id',
         ];
 
         const failures: string[] = [];
@@ -1044,7 +1044,7 @@ export class SecurityTestEngine {
           { method: 'DELETE' as const, path: '/api/v1/risks/test-id' },
           {
             method: 'POST' as const,
-            path: '/api/v1/users',
+            path: '/api/v1/team',
             data: { email: 'hack@example.com', role: 'admin' },
           },
         ];
@@ -1289,7 +1289,7 @@ export class SecurityTestEngine {
         for (const payload of COMMAND_INJECTION_PAYLOADS) {
           const response = await this.request(
             'POST',
-            '/api/v1/evidence/upload',
+            '/api/v1/evidence-versions/control/test-id',
             {
               data: { fileName: payload, filePath: payload },
             }
@@ -1345,7 +1345,7 @@ export class SecurityTestEngine {
         for (const payload of ldapPayloads) {
           const response = await this.request(
             'GET',
-            `/api/v1/users?search=${encodeURIComponent(payload)}`
+            `/api/v1/team?search=${encodeURIComponent(payload)}`
           );
 
           if (response.status === 500) {
@@ -1454,7 +1454,7 @@ export class SecurityTestEngine {
         for (const payload of PATH_TRAVERSAL_PAYLOADS) {
           const response = await this.request(
             'GET',
-            `/api/v1/evidence/download/${encodeURIComponent(payload)}`
+            `/api/v1/evidence-versions/control/${encodeURIComponent(payload)}`
           );
 
           const responseBody =
@@ -2247,8 +2247,8 @@ export class SecurityTestEngine {
       owasp: 'A05:2021 - Security Misconfiguration',
       fn: async () => {
         const sensitiveEndpoints = [
-          '/api/v1/auth/me',
-          '/api/v1/users',
+          '/api/v1/frameworks',
+          '/api/v1/team',
         ];
 
         const failures: string[] = [];
@@ -2333,7 +2333,7 @@ export class SecurityTestEngine {
           // Try to make the server fetch a private IP via any URL-accepting endpoint
           const response = await this.request(
             'POST',
-            '/api/v1/integrations/webhook',
+            '/api/v1/webhooks',
             {
               data: { url: ip, callbackUrl: ip },
             }
@@ -2399,7 +2399,7 @@ export class SecurityTestEngine {
         for (const url of localhostVariants) {
           const response = await this.request(
             'POST',
-            '/api/v1/integrations/webhook',
+            '/api/v1/webhooks',
             {
               data: { url, callbackUrl: url },
             }
@@ -2462,7 +2462,7 @@ export class SecurityTestEngine {
         for (const url of metadataUrls) {
           const response = await this.request(
             'POST',
-            '/api/v1/integrations/webhook',
+            '/api/v1/webhooks',
             {
               data: { url, callbackUrl: url },
             }
@@ -2526,7 +2526,7 @@ export class SecurityTestEngine {
         for (const url of rebindingUrls) {
           const response = await this.request(
             'POST',
-            '/api/v1/integrations/webhook',
+            '/api/v1/webhooks',
             {
               data: { url },
             }
@@ -2668,8 +2668,8 @@ export class SecurityTestEngine {
         ];
 
         const endpoints = [
-          '/api/v1/auth/me',
-          '/api/v1/users',
+          '/api/v1/frameworks',
+          '/api/v1/team',
           '/api/health',
         ];
 
