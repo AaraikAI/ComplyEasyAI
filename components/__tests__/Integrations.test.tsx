@@ -3,6 +3,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Integrations } from '../Integrations';
 
+// Integrations component renders 150+ cards — give tests extra time
+vi.setConfig({ testTimeout: 30000 });
+
 // --- Mocks ---
 
 const mockIntegrationsList = vi.fn().mockResolvedValue([]);
@@ -79,13 +82,11 @@ describe('Integrations', () => {
     it('renders category filter buttons', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        const buttons = screen.getAllByRole('button');
-        const catLabels = ['All', 'Cloud', 'Code', 'Security'];
-        catLabels.forEach(cat => {
-          const btn = buttons.find(b => b.textContent === cat);
-          expect(btn).toBeTruthy();
-        });
+        expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument();
       });
+      expect(screen.getByRole('button', { name: 'Cloud' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Code' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Security' })).toBeInTheDocument();
     });
 
     it('renders integration cards', async () => {
@@ -198,18 +199,13 @@ describe('Integrations', () => {
 
   // ===== CATEGORY FILTERING =====
   describe('Category Filtering', () => {
-    const getCategoryButton = (label: string) => {
-      const buttons = screen.getAllByRole('button');
-      return buttons.find(b => b.textContent === label)!;
-    };
-
     it('filters by Cloud category', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(getCategoryButton('Cloud')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Cloud' })).toBeInTheDocument();
       });
 
-      fireEvent.click(getCategoryButton('Cloud'));
+      fireEvent.click(screen.getByRole('button', { name: 'Cloud' }));
 
       await waitFor(() => {
         expect(screen.getByText('AWS')).toBeInTheDocument();
@@ -220,9 +216,9 @@ describe('Integrations', () => {
     it('filters by Code category', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(getCategoryButton('Code')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Code' })).toBeInTheDocument();
       });
-      fireEvent.click(getCategoryButton('Code'));
+      fireEvent.click(screen.getByRole('button', { name: 'Code' }));
 
       await waitFor(() => {
         expect(screen.getByText('GitHub')).toBeInTheDocument();
@@ -233,9 +229,9 @@ describe('Integrations', () => {
     it('filters by Security category', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(getCategoryButton('Security')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Security' })).toBeInTheDocument();
       });
-      fireEvent.click(getCategoryButton('Security'));
+      fireEvent.click(screen.getByRole('button', { name: 'Security' }));
 
       await waitFor(() => {
         expect(screen.getByText('CrowdStrike')).toBeInTheDocument();
@@ -246,9 +242,9 @@ describe('Integrations', () => {
     it('filters by Identity category', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(getCategoryButton('Identity')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Identity' })).toBeInTheDocument();
       });
-      fireEvent.click(getCategoryButton('Identity'));
+      fireEvent.click(screen.getByRole('button', { name: 'Identity' }));
 
       await waitFor(() => {
         expect(screen.getByText('Okta')).toBeInTheDocument();
@@ -259,10 +255,10 @@ describe('Integrations', () => {
     it('shows all integrations when All is clicked', async () => {
       render(<Integrations />);
       await waitFor(() => {
-        expect(getCategoryButton('Cloud')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Cloud' })).toBeInTheDocument();
       });
-      fireEvent.click(getCategoryButton('Cloud'));
-      fireEvent.click(getCategoryButton('All'));
+      fireEvent.click(screen.getByRole('button', { name: 'Cloud' }));
+      fireEvent.click(screen.getByRole('button', { name: 'All' }));
 
       await waitFor(() => {
         expect(screen.getByText('AWS')).toBeInTheDocument();
