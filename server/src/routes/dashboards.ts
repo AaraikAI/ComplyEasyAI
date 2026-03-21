@@ -588,7 +588,7 @@ router.post(
             description: source.description,
             isShared: false,
             isDefault: false,
-            layout: source.layout,
+            layout: source.layout as any,
           },
         });
 
@@ -598,8 +598,8 @@ router.post(
               dashboardId: newDashboard.id,
               type: w.type,
               title: w.title,
-              config: w.config,
-              position: w.position,
+              config: w.config as any,
+              position: w.position as any,
             })),
           });
         }

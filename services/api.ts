@@ -176,7 +176,7 @@ async function fetchAPI<T>(
         timeoutMs,
         url: `${API_BASE_URL}${endpoint}`,
       });
-      throw new Error(`Request timeout after ${timeoutMs}ms. The server may be experiencing high load.`);
+      throw new Error(`Request timeout after ${timeoutMs}ms. The server may be experiencing high load.`, { cause: error });
     }
 
     // Handle network errors
@@ -186,7 +186,7 @@ async function fetchAPI<T>(
         url: `${API_BASE_URL}${endpoint}`,
         apiBaseUrl: API_BASE_URL,
       });
-      throw new Error(`Cannot connect to backend server. Please ensure the backend is running on ${API_BASE_URL.replace('/api', '')}`);
+      throw new Error(`Cannot connect to backend server. Please ensure the backend is running on ${API_BASE_URL.replace('/api', '')}`, { cause: error });
     }
     throw error;
   }

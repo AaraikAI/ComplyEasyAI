@@ -230,7 +230,7 @@ router.post(
       const now = new Date();
       const sevenDaysFromNow = new Date(now);
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-      let initialStatus = 'UPCOMING';
+      let initialStatus: 'UPCOMING' | 'DUE_SOON' | 'OVERDUE' | 'COMPLETED' | 'CANCELLED' = 'UPCOMING';
       if (parsedDueDate < now) {
         initialStatus = 'OVERDUE';
       } else if (parsedDueDate <= sevenDaysFromNow) {

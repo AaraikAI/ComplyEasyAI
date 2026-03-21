@@ -44,9 +44,9 @@ export const OnboardingTooltip: React.FC<OnboardingTooltipProps> = ({
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
 
-    let top = 0;
-    let left = 0;
-    let arrow: 'top' | 'bottom' | 'left' | 'right' = 'top';
+    let top: number;
+    let left: number;
+    let arrow: 'top' | 'bottom' | 'left' | 'right';
 
     // Calculate ideal position based on preference
     switch (position) {

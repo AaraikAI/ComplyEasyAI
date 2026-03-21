@@ -1281,6 +1281,82 @@ class AuthController {
       throw new AppError('Failed to logout', 500);
     }
   }
+  /**
+   * POST /forgot-password
+   * Generates a password reset token and sends email.
+   * Always returns 200 to prevent email enumeration.
+   */
+  async forgotPassword(req: Request, res: Response): Promise<void> {
+    const { email } = req.body;
+    if (!email) {
+      throw new AppError('Email is required', 400);
+    }
+
+    try {
+      const user = await prisma.user.findUnique({ where: { email } });
+
+      if (user && user.active) {
+        const crypto = await import('crypto');
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { resetToken, resetTokenExpiry },
+        });
+
+        await emailService.sendPasswordReset(email, resetToken);
+        logger.info(`[Auth] Password reset requested for ${email}`);
+      } else {
+        logger.info(`[Auth] Password reset requested for unknown/inactive email: ${email}`);
+      }
+    } catch (error) {
+      logger.error('[Auth] Error processing forgot password', error);
+    }
+
+    // Always return success to prevent email enumeration
+    res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+  }
+
+  /**
+   * POST /reset-password
+   * Resets password using token from email.
+   */
+  async resetPassword(req: Request, res: Response): Promise<void> {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      throw new AppError('Token and new password are required', 400);
+    }
+
+    if (password.length < 8) {
+      throw new AppError('Password must be at least 8 characters', 400);
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      throw new AppError('Invalid or expired reset token', 400);
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+
+    logger.info(`[Auth] Password reset completed for user ${user.email}`);
+    res.json({ message: 'Password has been reset successfully' });
+  }
 }
 
 export default new AuthController();

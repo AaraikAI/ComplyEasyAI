@@ -19,6 +19,22 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import axios from 'axios';
 
+// Allowlist of Prisma model table names that can be updated via workflow actions.
+// This prevents SQL injection through the `update_status` action's `model` parameter.
+const ALLOWED_STATUS_UPDATE_MODELS = new Set([
+  'RiskItem',
+  'FrameworkControl',
+  'GrcIncident',
+  'Vendor',
+  'Policy',
+  'ComplianceDeadline',
+  'GRCWorkflow',
+  'AuditEngagement',
+  'BreachIncident',
+  'VendorAssessment',
+  'VendorReview',
+]);
+
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
@@ -281,7 +297,9 @@ export class WorkflowEngineService {
                 type,
                 title,
                 message,
-                read: false,
+                status: 'unread',
+                category: 'workflow',
+                channels: ['in_app'],
               },
             });
           }
@@ -299,15 +317,33 @@ export class WorkflowEngineService {
           const subject = (config.subject as string) || '';
           const body = (config.body as string) || '';
 
-          // Placeholder: integrate with emailService for actual delivery
-          logger.info('Workflow email action (placeholder)', { to, subject, bodyLength: body.length });
+          if (!to || !subject) {
+            return {
+              actionType: action.type,
+              status: 'failure',
+              message: 'Email requires "to" and "subject" fields',
+              durationMs: Date.now() - startTime,
+            };
+          }
 
-          return {
-            actionType: action.type,
-            status: 'success',
-            message: `Email queued to ${to} with subject "${subject}"`,
-            durationMs: Date.now() - startTime,
-          };
+          try {
+            const emailService = (await import('./emailService')).default;
+            const sent = await emailService.sendEmail({ to, subject, html: body });
+            return {
+              actionType: action.type,
+              status: sent ? 'success' : 'failure',
+              message: sent ? `Email sent to ${to}` : `Email delivery failed for ${to}`,
+              durationMs: Date.now() - startTime,
+            };
+          } catch (emailError: any) {
+            logger.error('Workflow email action failed', { to, subject, error: emailError.message });
+            return {
+              actionType: action.type,
+              status: 'failure',
+              message: `Email failed: ${emailError.message}`,
+              durationMs: Date.now() - startTime,
+            };
+          }
         }
 
         case 'assign_task': {
@@ -334,7 +370,9 @@ export class WorkflowEngineService {
                 type: 'info',
                 title: 'New Task Assigned',
                 message: `${taskTitle}: ${taskDescription}`,
-                read: false,
+                status: 'unread',
+                category: 'workflow',
+                channels: ['in_app'],
               },
             });
           }
@@ -352,8 +390,17 @@ export class WorkflowEngineService {
           const recordId = (config.recordId as string) || (context.resourceId as string) || '';
           const newStatus = (config.newStatus as string) || '';
 
+          if (!ALLOWED_STATUS_UPDATE_MODELS.has(model)) {
+            return {
+              actionType: action.type,
+              status: 'failure',
+              message: `Model "${model}" is not allowed for status updates`,
+              error: `Invalid model. Allowed: ${[...ALLOWED_STATUS_UPDATE_MODELS].join(', ')}`,
+              durationMs: Date.now() - startTime,
+            };
+          }
+
           if (model && recordId && newStatus) {
-            // Dynamically update the record status via a raw query for flexibility
             await prisma.$executeRawUnsafe(
               `UPDATE "${model}" SET "status" = $1, "updatedAt" = NOW() WHERE "id" = $2 AND "organizationId" = $3`,
               newStatus,
@@ -380,10 +427,11 @@ export class WorkflowEngineService {
               organizationId,
               title: incidentTitle,
               description,
-              severity,
-              status: 'Open',
+              severity: severity.toUpperCase() === 'SEV1' ? 'SEV1' : severity.toUpperCase() === 'SEV2' ? 'SEV2' : severity.toUpperCase() === 'SEV3' ? 'SEV3' : 'SEV4',
+              status: 'DETECTED',
+              category: 'POLICY_VIOLATION',
               reportedBy: 'workflow-engine',
-              reportedAt: new Date(),
+              detectedAt: new Date(),
             },
           });
 
@@ -459,7 +507,9 @@ export class WorkflowEngineService {
                 type: 'warning',
                 title: `Escalation: ${priority.toUpperCase()}`,
                 message: reason,
-                read: false,
+                status: 'unread',
+                category: 'workflow',
+                channels: ['in_app'],
               },
             });
           }

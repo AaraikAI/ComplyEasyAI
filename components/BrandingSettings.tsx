@@ -13,7 +13,8 @@
  * - Reset to defaults
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
@@ -779,7 +780,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) => {
 
                 {/* Custom HTML Preview */}
                 {loginHtml && (
-                  <div className="mt-4 text-xs text-gray-600 dark:text-gray-400 text-center" dangerouslySetInnerHTML={{ __html: loginHtml }} />
+                  <div className="mt-4 text-xs text-gray-600 dark:text-gray-400 text-center" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(loginHtml) }} />
                 )}
               </div>
             </div>

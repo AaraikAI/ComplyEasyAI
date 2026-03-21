@@ -80,7 +80,7 @@ const tabOrder: FeatureTab[] = ['core', 'ai', 'security', 'regulatory'];
 // ---------------------------------------------------------------------------
 
 export const LandingPage: React.FC = () => {
-  const { verifyMagicLink, register, loginWithMagicLink } = useAuth();
+  const { login, verifyMagicLink, register, loginWithMagicLink } = useAuth();
   const { t } = useI18n();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
@@ -790,9 +790,7 @@ export const LandingPage: React.FC = () => {
                         e.preventDefault();
                         setLoading(true);
                         try {
-                          await api.auth.login(email, password);
-                          // Login successful - AuthContext will handle redirect
-                          window.location.reload();
+                          await login(email, password);
                         } catch (error: any) {
                           console.error('Login error:', error);
                           toast.error(error.message || 'Login failed. Please check your credentials.');

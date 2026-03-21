@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
 import {
   ArrowLeft, TrendingUp, TrendingDown, Minus, Target, Shield,
@@ -325,27 +325,50 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
   const [isExporting, setIsExporting] = useState(false);
   const [showBenchmarks, setShowBenchmarks] = useState(false);
   const [historyCategoryFilter, setHistoryCategoryFilter] = useState<'all' | 'technical' | 'administrative' | 'physical'>('all');
+  const [projections, setProjections] = useState<FrameworkProjection[]>(FRAMEWORK_PROJECTIONS);
+  const [historicalData, setHistoricalData] = useState<HistoricalEntry[]>(HISTORICAL_DATA);
+
+  // Fetch live projection data and history from API, fallback to hardcoded demo data
+  useEffect(() => {
+    fetch('/api/compliance/forecasting', { credentials: 'include' })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.projections && Array.isArray(data.projections) && data.projections.length > 0) {
+          setProjections(data.projections);
+        }
+      })
+      .catch(() => { /* keep fallback data */ });
+
+    fetch('/api/compliance/history', { credentials: 'include' })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          setHistoricalData(data.data);
+        }
+      })
+      .catch(() => { /* keep fallback data */ });
+  }, []);
 
   // Computed values
   const overallCurrentScore = useMemo(() => {
-    const sum = FRAMEWORK_PROJECTIONS.reduce((acc, fw) => acc + fw.currentScore, 0);
-    return Math.round(sum / FRAMEWORK_PROJECTIONS.length);
-  }, []);
+    const sum = projections.reduce((acc, fw) => acc + fw.currentScore, 0);
+    return Math.round(sum / projections.length);
+  }, [projections]);
 
   const overallProjected90 = useMemo(() => {
-    const sum = FRAMEWORK_PROJECTIONS.reduce((acc, fw) => acc + fw.projected90, 0);
-    return Math.round(sum / FRAMEWORK_PROJECTIONS.length);
+    const sum = projections.reduce((acc, fw) => acc + fw.projected90, 0);
+    return Math.round(sum / projections.length);
   }, []);
 
   const overallProjected180 = useMemo(() => {
-    const sum = FRAMEWORK_PROJECTIONS.reduce((acc, fw) => acc + fw.projected180, 0);
-    return Math.round(sum / FRAMEWORK_PROJECTIONS.length);
-  }, []);
+    const sum = projections.reduce((acc, fw) => acc + fw.projected180, 0);
+    return Math.round(sum / projections.length);
+  }, [projections]);
 
   const filteredProjections = useMemo(() => {
-    if (projectionFilter === 'all') return FRAMEWORK_PROJECTIONS;
-    return FRAMEWORK_PROJECTIONS.filter(fw => fw.trend === projectionFilter);
-  }, [projectionFilter]);
+    if (projectionFilter === 'all') return projections;
+    return projections.filter(fw => fw.trend === projectionFilter);
+  }, [projectionFilter, projections]);
 
   const filteredRecommendations = useMemo(() => {
     let recs = [...RECOMMENDATIONS];
@@ -386,7 +409,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
     setAiError(null);
 
     try {
-      const currentScores = FRAMEWORK_PROJECTIONS.map(fw => ({
+      const currentScores = projections.map(fw => ({
         framework: fw.name,
         score: fw.currentScore,
         trend: fw.trend === 'improving' ? 'up' as const : fw.trend === 'declining' ? 'down' as const : 'stable' as const,
@@ -395,7 +418,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
       const result = await api.ai.forecastComplianceScore(
         currentScores,
         ['EU AI Act enforcement deadline approaching', 'NIS2 compliance deadline', 'SOC 2 annual audit cycle'],
-        HISTORICAL_DATA.map(h => ({ date: h.month, framework: 'Overall', score: h.overall }))
+        historicalData.map(h => ({ date: h.month, framework: 'Overall', score: h.overall }))
       );
 
       setAiInsights({
@@ -617,7 +640,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {FRAMEWORK_PROJECTIONS.map(fw => {
+              {projections.map(fw => {
                 const benchmark = INDUSTRY_BENCHMARKS.find(b => b.framework === fw.name);
                 return (
                   <tr key={fw.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
@@ -1169,7 +1192,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
           </h3>
         </div>
         <div className="p-5">
-          {renderBarChart(HISTORICAL_DATA, historyCategoryFilter)}
+          {renderBarChart(historicalData, historyCategoryFilter)}
         </div>
         <div className="px-5 pb-4 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
           <span className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-green-500" /> 90+ Excellent</span>
@@ -1189,7 +1212,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
               </div>
               <div className="p-4">
                 <div className="flex items-end gap-1.5 h-32">
-                  {HISTORICAL_DATA.map((entry, idx) => {
+                  {historicalData.map((entry, idx) => {
                     const val = entry[cat];
                     const heightPct = (val / 100) * 100;
                     return (
@@ -1231,8 +1254,8 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {HISTORICAL_DATA.map((entry, idx) => {
-                const prevEntry = idx > 0 ? HISTORICAL_DATA[idx - 1] : null;
+              {historicalData.map((entry, idx) => {
+                const prevEntry = idx > 0 ? historicalData[idx - 1] : null;
                 const change = prevEntry ? entry.overall - prevEntry.overall : 0;
                 return (
                   <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">

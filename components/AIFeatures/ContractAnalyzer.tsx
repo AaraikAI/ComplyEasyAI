@@ -61,15 +61,25 @@ export const ContractAnalyzer: React.FC<{ onBack: () => void }> = ({ onBack }) =
       };
 
       // Handle different file types
-      if (file.type === 'application/pdf') {
-        // For PDF, we'll need to extract text (simplified - in production use pdf.js or similar)
-        reader.readAsArrayBuffer(file);
-        // Note: Full PDF text extraction requires a library like pdf.js
-        // For now, we'll show an error for PDFs
-        reject(new Error('PDF files require special processing. Please convert to text or use a PDF text extraction tool first.'));
-      } else if (file.type.includes('word') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
-        // Word documents also need special handling
-        reject(new Error('Word documents require special processing. Please convert to text or paste the content manually.'));
+      if (file.type === 'application/pdf' || file.type.includes('word') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+        // Send binary files to backend for text extraction
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+          const response = await fetch('/api/contracts/extract-text', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+          });
+          if (!response.ok) {
+            reject(new Error(`Failed to extract text from ${file.name}. Server returned ${response.status}.`));
+            return;
+          }
+          const data = await response.json();
+          resolve(data.text || '');
+        } catch (err) {
+          reject(new Error(`Failed to send ${file.name} to server for text extraction. Please paste the content manually.`));
+        }
       } else {
         // Text files
         reader.readAsText(file);

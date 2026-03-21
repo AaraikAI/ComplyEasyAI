@@ -323,23 +323,56 @@ async function setDatabasePassword(
   secret: Record<string, any>,
   metadata: SecretMetadata
 ): Promise<void> {
-  // For Supabase/PostgreSQL, we typically can't change passwords directly
-  // Instead, we update the application configuration
-  // In a full implementation, this would use pg_admin or Supabase Management API
-  console.log('Database password rotation requires manual Supabase configuration');
-  console.log('New password has been generated and stored in Secrets Manager');
+  const { Client } = await import('pg');
+  const adminClient = new Client({
+    host: secret.host || process.env.DB_HOST,
+    port: secret.port || parseInt(process.env.DB_PORT || '5432'),
+    database: secret.dbname || process.env.DB_NAME,
+    user: secret.adminUsername || process.env.DB_ADMIN_USER || 'postgres',
+    password: secret.adminPassword || process.env.DB_ADMIN_PASSWORD,
+    ssl: { rejectUnauthorized: false },
+  });
+
+  try {
+    await adminClient.connect();
+    const dbUser = secret.username || 'app_user';
+    // Use parameterized query — password is passed safely via SET PASSWORD
+    await adminClient.query(
+      `ALTER USER ${adminClient.escapeIdentifier(dbUser)} WITH PASSWORD $1`,
+      [secret.password]
+    );
+    console.log(`Database password rotated for user: ${dbUser}`);
+  } finally {
+    await adminClient.end();
+  }
 }
 
 async function testDatabaseConnection(
   secret: Record<string, any>,
   _metadata: SecretMetadata
 ): Promise<void> {
-  // In production, this would actually test the database connection
-  // For now, we validate the secret structure
   if (!secret.password || secret.password.length < 16) {
     throw new Error('Invalid database password');
   }
-  console.log('Database secret structure validated');
+
+  const { Client } = await import('pg');
+  const client = new Client({
+    host: secret.host || process.env.DB_HOST,
+    port: secret.port || parseInt(process.env.DB_PORT || '5432'),
+    database: secret.dbname || process.env.DB_NAME,
+    user: secret.username || 'app_user',
+    password: secret.password,
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 5000,
+  });
+
+  try {
+    await client.connect();
+    await client.query('SELECT 1');
+    console.log('Database connection test passed');
+  } finally {
+    await client.end();
+  }
 }
 
 function testJwtSecret(secret: Record<string, any>): void {

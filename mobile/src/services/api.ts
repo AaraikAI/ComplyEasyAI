@@ -31,8 +31,10 @@ const CERTIFICATE_PINS = {
       process.env.EXPO_PUBLIC_CERT_PIN_PRIMARY || '',
       process.env.EXPO_PUBLIC_CERT_PIN_BACKUP || '',
     ],
-    // Whether to enforce pinning (set false to monitor-only during rollout)
-    enforce: process.env.EXPO_PUBLIC_CERT_PIN_ENFORCE === 'true',
+    // Whether to enforce pinning. MUST be true in production builds.
+    // Set EXPO_PUBLIC_CERT_PIN_ENFORCE=true in production .env
+    enforce: process.env.EXPO_PUBLIC_CERT_PIN_ENFORCE === 'true' ||
+      process.env.NODE_ENV === 'production',
   },
 };
 
