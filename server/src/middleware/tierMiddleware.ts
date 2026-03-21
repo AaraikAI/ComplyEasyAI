@@ -198,8 +198,10 @@ export function attachTierInfo(): RequestHandler {
 
       next();
     } catch (error) {
-      // Don't fail the request if tier info can't be loaded
-      logger.error('Failed to attach tier info', error);
+      // Don't fail the request if tier info can't be loaded — default to free tier
+      logger.error('Failed to attach tier info, defaulting to free tier', error);
+      (req as any).tier = 'free';
+      (req as any).tierInfo = { name: 'free', features: {}, limits: {} };
       next();
     }
   };

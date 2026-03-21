@@ -12,8 +12,10 @@ router.post('/verify', authLimiter, asyncHandler(authController.verifyMagicLink.
 router.post('/login', authLimiter, validateBody(loginSchema), asyncHandler(authController.login.bind(authController)));
 router.post('/2fa/complete', authLimiter, validateBody(completeTwoFactorSchema), asyncHandler(authController.completeTwoFactorLogin.bind(authController)));
 router.post('/register', authLimiter, validateBody(registerSchema), asyncHandler(authController.register.bind(authController)));
-router.post('/refresh', asyncHandler(authController.refreshToken.bind(authController)));
+router.post('/refresh', authLimiter, asyncHandler(authController.refreshToken.bind(authController)));
 router.post('/logout', asyncHandler(authController.logout.bind(authController)));
+router.post('/forgot-password', authLimiter, asyncHandler(authController.forgotPassword.bind(authController)));
+router.post('/reset-password', authLimiter, asyncHandler(authController.resetPassword.bind(authController)));
 
 // User profile update (requires authentication)
 import { authenticate } from '../middleware/auth';

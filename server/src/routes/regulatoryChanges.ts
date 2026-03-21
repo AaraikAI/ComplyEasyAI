@@ -224,14 +224,15 @@ router.post(
         },
       });
 
-      // Create a placeholder impact record to associate with the org
+      // Create impact record using controlId from request or a placeholder
+      const controlId = req.body.controlId || 'pending-review';
       await prisma.regulatoryChangeImpact.create({
         data: {
           regulatoryChangeId: change.id,
-          controlId: 'pending-review',
+          controlId,
           organizationId: orgId,
-          impactLevel: 'Medium',
-          requiredAction: 'Review and assess impact on existing controls',
+          impactLevel: req.body.impactLevel || 'Medium',
+          requiredAction: req.body.requiredAction || 'Review and assess impact on existing controls',
           status: 'NEW',
         },
       });

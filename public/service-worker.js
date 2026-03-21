@@ -1,3 +1,4 @@
+/* global self, caches, fetch, URL, Response, indexedDB, AbortController, setTimeout, clearTimeout, console */
 /**
  * ComplyEasyAI Service Worker
  *
@@ -151,7 +152,7 @@ async function cacheFirstStrategy(request) {
       await trimCache(CACHE_V1, MAX_STATIC_CACHE_ENTRIES);
     }
     return networkResponse;
-  } catch (error) {
+  } catch {
     return new Response('Network error', {
       status: 503,
       statusText: 'Service Unavailable',
@@ -171,7 +172,7 @@ async function networkFirstStrategy(request) {
       await trimCache(API_CACHE, MAX_API_CACHE_ENTRIES);
     }
     return networkResponse;
-  } catch (error) {
+  } catch {
     // Network failed, try cache
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
@@ -203,7 +204,7 @@ async function navigationStrategy(request) {
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
-  } catch (error) {
+  } catch {
     // Try serving from cache
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
@@ -264,7 +265,7 @@ async function replayOfflineRequests() {
         await deleteFromStore(db, entry.id);
         results.push({ id: entry.id, status: 'failed', error: response.status });
       }
-    } catch (networkError) {
+    } catch {
       // Network still down -- keep in queue
       results.push({ id: entry.id, status: 'retry' });
     }
@@ -295,7 +296,7 @@ self.addEventListener('push', (event) => {
       const parsed = event.data.json();
       data = { ...data, ...parsed };
     }
-  } catch (e) {
+  } catch {
     if (event.data) {
       data.body = event.data.text();
     }

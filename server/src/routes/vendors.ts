@@ -86,7 +86,7 @@ router.get(
 router.get(
   '/:id/scorecard',
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
-    const scorecard = await vendorRiskService.getVendorScorecard(req.params.id);
+    const scorecard = await vendorRiskService.getVendorScorecard(req.params.id, req.user.organizationId);
     res.json(scorecard);
   })
 );

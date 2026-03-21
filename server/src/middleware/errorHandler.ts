@@ -21,6 +21,18 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ): void => {
+  // Handle JSON parse errors from express.json() middleware
+  if ('type' in err && (err as any).type === 'entity.parse.failed') {
+    res.status(400).json({ error: 'Invalid JSON in request body' });
+    return;
+  }
+
+  // Handle payload too large from express.json() middleware
+  if ('type' in err && (err as any).type === 'entity.too.large') {
+    res.status(413).json({ error: 'Request body too large', message: 'Maximum payload size is 10MB' });
+    return;
+  }
+
   if (err instanceof AppError) {
     logger.error(`${err.statusCode} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
 

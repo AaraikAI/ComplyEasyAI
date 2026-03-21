@@ -74,8 +74,31 @@ if (databaseUrl) {
   process.env.DATABASE_URL = databaseUrl;
 }
 
-const pool = new pg.Pool({ connectionString: databaseUrl });
-const adapter = new PrismaPg(pool);
+// pg v8.20+ parses sslmode from the URL and treats 'require' as 'verify-full',
+// which fails with Supabase's self-signed certs. Also, pg doesn't understand
+// Prisma-specific params (connection_limit, pool_timeout) — they get misinterpreted
+// as part of the database name. Use proper URL parsing to strip both.
+function buildPoolUrl(url: string): { connectionString: string; ssl: pg.PoolConfig['ssl'] } {
+  const parsed = new URL(url);
+  const needsSsl = parsed.searchParams.get('sslmode') === 'require'
+    || parsed.searchParams.get('sslmode') === 'prefer';
+  // Remove params that pg doesn't understand
+  const prismaOnlyParams = ['sslmode', 'connection_limit', 'pool_timeout', 'pgbouncer', 'statement_cache_size'];
+  for (const param of prismaOnlyParams) {
+    parsed.searchParams.delete(param);
+  }
+  return {
+    connectionString: parsed.toString(),
+    ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
+  };
+}
+
+const { connectionString: poolUrl, ssl: poolSsl } = buildPoolUrl(databaseUrl);
+const pool = new pg.Pool({
+  connectionString: poolUrl,
+  ssl: poolSsl,
+});
+const adapter = new PrismaPg(pool as any);
 
 const basePrisma = new PrismaClient({
   adapter,

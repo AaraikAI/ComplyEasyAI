@@ -103,6 +103,9 @@ import securityTrainingRoutes from './routes/securityTraining';
 // Data Anonymization Routes (GDPR Recital 26)
 import anonymizationRoutes from './routes/anonymization';
 
+// Compliance History Routes
+import complianceRoutes from './routes/compliance';
+
 // Enhancement Module Routes
 import incidentRoutes from './routes/incidents';
 import assetRoutes from './routes/assets';
@@ -574,6 +577,7 @@ app.use('/api/dashboards', apiLimiter, dashboardRoutes);
 app.use('/api/reports', apiLimiter, reportRoutes);
 app.use('/api/bulk', apiLimiter, bulkRoutes);
 app.use('/api/ticketing', apiLimiter, ticketingRoutes);
+app.use('/api/compliance', apiLimiter, complianceRoutes);
 
 // GraphQL endpoint (authenticated + rate limited)
 app.post('/api/graphql', authenticate, apiLimiter, graphqlMiddleware());

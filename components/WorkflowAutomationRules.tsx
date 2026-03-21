@@ -353,7 +353,7 @@ const WorkflowAutomationRules: React.FC = () => {
     setShowModal(true);
   }, []);
 
-  const useTemplate = useCallback((template: WorkflowTemplate) => {
+  const applyTemplate = useCallback((template: WorkflowTemplate) => {
     setEditingId(null);
     setForm({
       name: template.name,
@@ -931,7 +931,7 @@ const WorkflowAutomationRules: React.FC = () => {
                 </span>
               </div>
               <button
-                onClick={() => useTemplate(tpl)}
+                onClick={() => applyTemplate(tpl)}
                 className="mt-3 flex items-center justify-center gap-2 w-full px-3 py-2 text-sm bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg transition-colors"
               >
                 <Copy className="w-3.5 h-3.5" /> Use Template

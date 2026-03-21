@@ -178,7 +178,7 @@ router.get(
         where: { id: req.params.id, organizationId: user.organizationId },
         include: {
           timeline: { orderBy: { timestamp: 'desc' } },
-          tasks: { orderBy: { createdAt: 'desc' } },
+          tasks: { orderBy: { dueDate: 'desc' } },
         },
       });
 

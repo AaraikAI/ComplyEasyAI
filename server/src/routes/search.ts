@@ -214,22 +214,20 @@ router.post(
       const startTime = Date.now();
       let indexed = 0;
 
-      // Index Risks
-      try {
-        const risks = await prisma.risk.findMany({
+      // Wrap all indexing operations in a transaction for consistency
+      await prisma.$transaction(async (tx) => {
+        // Index Risks (model: RiskItem)
+        const risks = await tx.riskItem.findMany({
           where: { organizationId: orgId },
-          select: { id: true, title: true, description: true, category: true, status: true, framework: true },
+          select: { id: true, title: true, description: true, category: true, status: true, severity: true },
         });
-
         for (const risk of risks) {
-          await prisma.searchIndex.upsert({
-            where: {
-              id: `risk-${risk.id}`,
-            },
+          await tx.searchIndex.upsert({
+            where: { id: `risk-${risk.id}` },
             update: {
               title: risk.title,
               content: `${risk.title} ${risk.description || ''} ${risk.category || ''}`,
-              metadata: { status: risk.status, category: risk.category, framework: risk.framework },
+              metadata: { status: risk.status, category: risk.category, severity: risk.severity },
             },
             create: {
               id: `risk-${risk.id}`,
@@ -238,96 +236,75 @@ router.post(
               resourceId: risk.id,
               title: risk.title,
               content: `${risk.title} ${risk.description || ''} ${risk.category || ''}`,
-              metadata: { status: risk.status, category: risk.category, framework: risk.framework },
+              metadata: { status: risk.status, category: risk.category, severity: risk.severity },
             },
           });
           indexed++;
         }
-      } catch (e) {
-        logger.warn('Error indexing risks:', e);
-      }
 
-      // Index Controls
-      try {
-        const controls = await prisma.control.findMany({
-          where: { organizationId: orgId },
-          select: { id: true, title: true, description: true, status: true, framework: true },
+        // Index Controls (model: FrameworkControl)
+        const controls = await tx.frameworkControl.findMany({
+          where: { frameworkId: { not: undefined } },
+          select: { id: true, name: true, description: true, status: true, frameworkId: true },
         });
-
         for (const control of controls) {
-          await prisma.searchIndex.upsert({
-            where: {
-              id: `control-${control.id}`,
-            },
+          await tx.searchIndex.upsert({
+            where: { id: `control-${control.id}` },
             update: {
-              title: control.title,
-              content: `${control.title} ${control.description || ''}`,
-              metadata: { status: control.status, framework: control.framework },
+              title: control.name,
+              content: `${control.name} ${control.description || ''}`,
+              metadata: { status: control.status, frameworkId: control.frameworkId },
             },
             create: {
               id: `control-${control.id}`,
               organizationId: orgId,
               resourceType: 'control',
               resourceId: control.id,
-              title: control.title,
-              content: `${control.title} ${control.description || ''}`,
-              metadata: { status: control.status, framework: control.framework },
+              title: control.name,
+              content: `${control.name} ${control.description || ''}`,
+              metadata: { status: control.status, frameworkId: control.frameworkId },
             },
           });
           indexed++;
         }
-      } catch (e) {
-        logger.warn('Error indexing controls:', e);
-      }
 
-      // Index Evidence
-      try {
-        const evidence = await prisma.evidence.findMany({
+        // Index Evidence (model: EvidenceAnalysis)
+        const evidence = await tx.evidenceAnalysis.findMany({
           where: { organizationId: orgId },
-          select: { id: true, title: true, description: true, status: true, framework: true },
+          select: { id: true, evidenceId: true, verificationStatus: true, overallConfidence: true },
         });
-
         for (const ev of evidence) {
-          await prisma.searchIndex.upsert({
-            where: {
-              id: `evidence-${ev.id}`,
-            },
+          await tx.searchIndex.upsert({
+            where: { id: `evidence-${ev.id}` },
             update: {
-              title: ev.title,
-              content: `${ev.title} ${ev.description || ''}`,
-              metadata: { status: ev.status, framework: ev.framework },
+              title: `Evidence ${ev.evidenceId}`,
+              content: `Evidence analysis ${ev.evidenceId} - ${ev.verificationStatus}`,
+              metadata: { verificationStatus: ev.verificationStatus, confidence: ev.overallConfidence },
             },
             create: {
               id: `evidence-${ev.id}`,
               organizationId: orgId,
               resourceType: 'evidence',
               resourceId: ev.id,
-              title: ev.title,
-              content: `${ev.title} ${ev.description || ''}`,
-              metadata: { status: ev.status, framework: ev.framework },
+              title: `Evidence ${ev.evidenceId}`,
+              content: `Evidence analysis ${ev.evidenceId} - ${ev.verificationStatus}`,
+              metadata: { verificationStatus: ev.verificationStatus, confidence: ev.overallConfidence },
             },
           });
           indexed++;
         }
-      } catch (e) {
-        logger.warn('Error indexing evidence:', e);
-      }
 
-      // Index Vendors
-      try {
-        const vendors = await prisma.vendor.findMany({
+        // Index Vendors
+        const vendors = await tx.vendor.findMany({
           where: { organizationId: orgId },
-          select: { id: true, name: true, description: true, riskLevel: true, status: true },
+          select: { id: true, name: true, serviceDescription: true, riskLevel: true, status: true },
         });
-
         for (const vendor of vendors) {
-          await prisma.searchIndex.upsert({
-            where: {
-              id: `vendor-${vendor.id}`,
-            },
+          await tx.searchIndex.upsert({
+            where: { id: `vendor-${vendor.id}` },
             update: {
               title: vendor.name,
-              content: `${vendor.name} ${vendor.description || ''}`,
+              content: `${vendor.name} ${vendor.serviceDescription || ''}`,
               metadata: { status: vendor.status, riskLevel: vendor.riskLevel },
             },
             create: {
@@ -336,28 +313,21 @@ router.post(
               resourceType: 'vendor',
               resourceId: vendor.id,
               title: vendor.name,
-              content: `${vendor.name} ${vendor.description || ''}`,
+              content: `${vendor.name} ${vendor.serviceDescription || ''}`,
               metadata: { status: vendor.status, riskLevel: vendor.riskLevel },
             },
           });
           indexed++;
         }
-      } catch (e) {
-        logger.warn('Error indexing vendors:', e);
-      }
 
-      // Index Policies
-      try {
-        const policies = await prisma.policy.findMany({
+        // Index Policies
+        const policies = await tx.policy.findMany({
           where: { organizationId: orgId },
           select: { id: true, title: true, content: true, status: true, framework: true },
         });
-
         for (const policy of policies) {
-          await prisma.searchIndex.upsert({
-            where: {
-              id: `policy-${policy.id}`,
-            },
+          await tx.searchIndex.upsert({
+            where: { id: `policy-${policy.id}` },
             update: {
               title: policy.title,
               content: `${policy.title} ${(policy.content || '').substring(0, 5000)}`,
@@ -375,9 +345,7 @@ router.post(
           });
           indexed++;
         }
-      } catch (e) {
-        logger.warn('Error indexing policies:', e);
-      }
+      });
 
       const elapsed = Date.now() - startTime;
 

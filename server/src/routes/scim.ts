@@ -322,7 +322,7 @@ router.post(
         data: {
           email,
           name: displayName || email,
-          password: '', // SCIM-provisioned users do not have passwords
+          passwordHash: null, // SCIM-provisioned users do not have passwords
           role: 'viewer',
           organizationId: orgId,
           emailVerified: true,

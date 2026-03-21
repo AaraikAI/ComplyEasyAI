@@ -567,10 +567,10 @@ router.get(
 
       res.json(purposes);
     } catch (error: any) {
-      // Return empty array if table doesn't exist yet (migration pending)
+      // Return 503 if table doesn't exist yet (migration pending)
       if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
-        logger.warn('Consent records table not yet available, returning empty data');
-        return res.json([]);
+        logger.warn('Consent records table not yet available');
+        return res.status(503).json({ error: 'Consent management tables not yet available. Please run database migrations.' });
       }
       logger.error('Error fetching consent purposes:', error);
       res.status(500).json({ error: 'Failed to fetch consent purposes' });

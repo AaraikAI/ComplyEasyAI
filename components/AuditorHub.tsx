@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import {
   ArrowLeft,
@@ -271,6 +271,62 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [workpaperStatusFilter, setWorkpaperStatusFilter] = useState<string>('all');
+  const [engagements, setEngagements] = useState<Engagement[]>(ENGAGEMENTS);
+  const [findings, setFindings] = useState<Finding[]>(FINDINGS);
+  const [evidenceRequests, setEvidenceRequests] = useState<EvidenceRequest[]>(EVIDENCE_REQUESTS);
+  const [workpapers, setWorkpapers] = useState<Workpaper[]>(WORKPAPERS);
+  const [auditorFirms, setAuditorFirms] = useState<AuditorFirm[]>(AUDITOR_FIRMS);
+
+  // Fetch live data from API; fall back to hardcoded demo data on error
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [engRes, findRes, wpRes, evRes, dirRes] = await Promise.all([
+          fetch('/api/auditor/engagements', { credentials: 'include' }),
+          fetch('/api/auditor/findings', { credentials: 'include' }),
+          fetch('/api/auditor/workpapers', { credentials: 'include' }),
+          fetch('/api/auditor/requests', { credentials: 'include' }),
+          fetch('/api/auditor/profiles', { credentials: 'include' }),
+        ]);
+        if (engRes.ok) {
+          const engData = await engRes.json();
+          if (Array.isArray(engData.data) && engData.data.length > 0) {
+            setEngagements(engData.data);
+          }
+        }
+        if (findRes.ok) {
+          const findData = await findRes.json();
+          if (Array.isArray(findData.data) && findData.data.length > 0) {
+            setFindings(findData.data);
+          }
+        }
+        if (wpRes.ok) {
+          const wpData = await wpRes.json();
+          if (Array.isArray(wpData.data) && wpData.data.length > 0) {
+            setWorkpapers(wpData.data);
+          }
+        }
+        if (evRes.ok) {
+          const evData = await evRes.json();
+          if (Array.isArray(evData.data) && evData.data.length > 0) {
+            setEvidenceRequests(evData.data);
+          }
+        }
+        if (dirRes.ok) {
+          const dirData = await dirRes.json();
+          if (Array.isArray(dirData.data) && dirData.data.length > 0) {
+            setAuditorFirms(dirData.data);
+          }
+        }
+      } catch {
+        // Keep hardcoded fallback data
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: t('common.overview'), icon: <BarChart3 size={16} /> },
@@ -282,7 +338,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
   ];
 
   const filteredFindings = useMemo(() => {
-    return FINDINGS.filter((f) => {
+    return findings.filter((f) => {
       const matchesSeverity = findingSeverityFilter === 'all' || f.severity === findingSeverityFilter;
       const matchesStatus = findingStatusFilter === 'all' || f.status === findingStatusFilter;
       const matchesSearch =
@@ -294,7 +350,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
   }, [findingSeverityFilter, findingStatusFilter, searchQuery]);
 
   const filteredEvidence = useMemo(() => {
-    return EVIDENCE_REQUESTS.filter((e) => {
+    return evidenceRequests.filter((e) => {
       const matchesStatus = evidenceStatusFilter === 'all' || e.status === evidenceStatusFilter;
       const matchesSearch =
         searchQuery === '' ||
@@ -302,10 +358,10 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
         e.id.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     });
-  }, [evidenceStatusFilter, searchQuery]);
+  }, [evidenceRequests, evidenceStatusFilter, searchQuery]);
 
   const filteredWorkpapers = useMemo(() => {
-    return WORKPAPERS.filter((w) => {
+    return workpapers.filter((w) => {
       const matchesStatus = workpaperStatusFilter === 'all' || w.status === workpaperStatusFilter;
       const matchesSearch =
         searchQuery === '' ||
@@ -313,17 +369,17 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
         w.id.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     });
-  }, [workpaperStatusFilter, searchQuery]);
+  }, [workpapers, workpaperStatusFilter, searchQuery]);
 
   const overviewStats = useMemo(() => {
-    const activeEngagements = ENGAGEMENTS.filter((e) => e.status !== 'completed').length;
-    const openFindings = FINDINGS.filter((f) => f.status === 'open' || f.status === 'in-progress').length;
-    const pendingRequests = EVIDENCE_REQUESTS.filter((e) => e.status === 'pending').length;
-    const overdueRequests = EVIDENCE_REQUESTS.filter((e) => e.isOverdue).length;
-    const criticalFindings = FINDINGS.filter((f) => f.severity === 'critical').length;
-    const remediatedFindings = FINDINGS.filter((f) => f.status === 'remediated' || f.status === 'closed').length;
+    const activeEngagements = engagements.filter((e) => e.status !== 'completed').length;
+    const openFindings = findings.filter((f) => f.status === 'open' || f.status === 'in-progress').length;
+    const pendingRequests = evidenceRequests.filter((e) => e.status === 'pending').length;
+    const overdueRequests = evidenceRequests.filter((e) => e.isOverdue).length;
+    const criticalFindings = findings.filter((f) => f.severity === 'critical').length;
+    const remediatedFindings = findings.filter((f) => f.status === 'remediated' || f.status === 'closed').length;
     return { activeEngagements, openFindings, pendingRequests, overdueRequests, criticalFindings, remediatedFindings };
-  }, []);
+  }, [engagements, findings, evidenceRequests]);
 
   const toggleFirmCompare = (firmId: string) => {
     setSelectedFirms((prev) =>
@@ -340,7 +396,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
             <Briefcase size={18} className="text-blue-400" />
           </div>
           <div className="text-3xl font-bold text-white">{overviewStats.activeEngagements}</div>
-          <div className="text-xs text-slate-500 mt-1">{ENGAGEMENTS.length} total engagements</div>
+          <div className="text-xs text-slate-500 mt-1">{engagements.length} total engagements</div>
         </div>
         <div className="bg-slate-800 rounded-lg border border-slate-700 p-5">
           <div className="flex items-center justify-between mb-3">
@@ -365,7 +421,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
           </div>
           <div className="text-3xl font-bold text-white">{overviewStats.remediatedFindings}</div>
           <div className="text-xs text-green-400 mt-1">
-            {Math.round((overviewStats.remediatedFindings / FINDINGS.length) * 100)}% closure rate
+            {Math.round((overviewStats.remediatedFindings / findings.length) * 100)}% closure rate
           </div>
         </div>
       </div>
@@ -377,7 +433,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
             Active Engagements
           </h3>
           <div className="space-y-3">
-            {ENGAGEMENTS.filter((e) => e.status !== 'completed').map((eng) => (
+            {engagements.filter((e) => e.status !== 'completed').map((eng) => (
               <div key={eng.id} className="bg-slate-700/50 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white text-sm font-medium">{eng.name}</span>
@@ -407,7 +463,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
             Recent Findings
           </h3>
           <div className="space-y-3">
-            {FINDINGS.slice(0, 5).map((finding) => (
+            {findings.slice(0, 5).map((finding) => (
               <div key={finding.id} className="flex items-center justify-between bg-slate-700/50 rounded-lg p-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -458,7 +514,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
   const renderEngagements = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-white font-semibold">Audit Engagements ({ENGAGEMENTS.length})</h3>
+        <h3 className="text-white font-semibold">Audit Engagements ({engagements.length})</h3>
         <button
           onClick={() => setShowCreateEngagement(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
@@ -469,7 +525,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {ENGAGEMENTS.map((eng) => (
+        {engagements.map((eng) => (
           <div key={eng.id} className="bg-slate-800 rounded-lg border border-slate-700 p-5">
             <div className="flex items-start justify-between mb-3">
               <div>
@@ -593,7 +649,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
                 <label className="block text-sm text-slate-300 mb-1">Auditor Firm</label>
                 <select className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500">
                   <option value="">Select firm</option>
-                  {AUDITOR_FIRMS.map((firm) => (
+                  {auditorFirms.map((firm) => (
                     <option key={firm.id}>{firm.name}</option>
                   ))}
                 </select>
@@ -647,7 +703,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h3 className="text-white font-semibold">
-          Audit Findings ({filteredFindings.length} of {FINDINGS.length})
+          Audit Findings ({filteredFindings.length} of {findings.length})
         </h3>
         <div className="flex items-center gap-2">
           <select
@@ -679,7 +735,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {(['critical', 'high', 'medium', 'low', 'informational'] as const).map((sev) => {
-          const count = FINDINGS.filter((f) => f.severity === sev).length;
+          const count = findings.filter((f) => f.severity === sev).length;
           return (
             <div key={sev} className={`rounded-lg border p-3 text-center ${severityColor[sev]}`}>
               <div className="text-2xl font-bold">{count}</div>
@@ -741,7 +797,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h3 className="text-white font-semibold">
-          Evidence Requests ({filteredEvidence.length} of {EVIDENCE_REQUESTS.length})
+          Evidence Requests ({filteredEvidence.length} of {evidenceRequests.length})
         </h3>
         <div className="flex items-center gap-2">
           <select
@@ -764,7 +820,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {(['pending', 'submitted', 'under-review', 'accepted', 'rejected'] as const).map((st) => {
-          const count = EVIDENCE_REQUESTS.filter((e) => e.status === st).length;
+          const count = evidenceRequests.filter((e) => e.status === st).length;
           return (
             <div key={st} className={`rounded-lg p-3 text-center ${statusColor[st]}`}>
               <div className="text-2xl font-bold">{count}</div>
@@ -842,7 +898,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
   const renderDirectory = () => (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h3 className="text-white font-semibold">Auditor Directory ({AUDITOR_FIRMS.length} Firms)</h3>
+        <h3 className="text-white font-semibold">Auditor Directory ({auditorFirms.length} Firms)</h3>
         {selectedFirms.length >= 2 && (
           <button className="flex items-center gap-2 px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors">
             <BarChart3 size={14} /> Compare Selected ({selectedFirms.length})
@@ -859,7 +915,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
                 <tr className="border-b border-slate-700">
                   <th className="text-left text-slate-400 pb-2 pr-4">Attribute</th>
                   {selectedFirms.map((id) => {
-                    const firm = AUDITOR_FIRMS.find((f) => f.id === id);
+                    const firm = auditorFirms.find((f) => f.id === id);
                     return (
                       <th key={id} className="text-left text-white pb-2 pr-4">{firm?.name}</th>
                     );
@@ -870,35 +926,35 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
                 <tr className="border-b border-slate-700/50">
                   <td className="py-2 text-slate-400">Rating</td>
                   {selectedFirms.map((id) => {
-                    const firm = AUDITOR_FIRMS.find((f) => f.id === id);
+                    const firm = auditorFirms.find((f) => f.id === id);
                     return <td key={id} className="py-2">{firm?.rating}/5.0 ({firm?.reviewCount} reviews)</td>;
                   })}
                 </tr>
                 <tr className="border-b border-slate-700/50">
                   <td className="py-2 text-slate-400">Experience</td>
                   {selectedFirms.map((id) => {
-                    const firm = AUDITOR_FIRMS.find((f) => f.id === id);
+                    const firm = auditorFirms.find((f) => f.id === id);
                     return <td key={id} className="py-2">{firm?.yearsExperience} years</td>;
                   })}
                 </tr>
                 <tr className="border-b border-slate-700/50">
                   <td className="py-2 text-slate-400">Clients</td>
                   {selectedFirms.map((id) => {
-                    const firm = AUDITOR_FIRMS.find((f) => f.id === id);
+                    const firm = auditorFirms.find((f) => f.id === id);
                     return <td key={id} className="py-2">{firm?.clientCount?.toLocaleString()}</td>;
                   })}
                 </tr>
                 <tr className="border-b border-slate-700/50">
                   <td className="py-2 text-slate-400">Price Range</td>
                   {selectedFirms.map((id) => {
-                    const firm = AUDITOR_FIRMS.find((f) => f.id === id);
+                    const firm = auditorFirms.find((f) => f.id === id);
                     return <td key={id} className="py-2">{firm?.priceRange}</td>;
                   })}
                 </tr>
                 <tr>
                   <td className="py-2 text-slate-400">Specializations</td>
                   {selectedFirms.map((id) => {
-                    const firm = AUDITOR_FIRMS.find((f) => f.id === id);
+                    const firm = auditorFirms.find((f) => f.id === id);
                     return <td key={id} className="py-2">{firm?.specializations.join(', ')}</td>;
                   })}
                 </tr>
@@ -909,7 +965,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {AUDITOR_FIRMS.map((firm) => (
+        {auditorFirms.map((firm) => (
           <div key={firm.id} className="bg-slate-800 rounded-lg border border-slate-700 p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -991,7 +1047,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h3 className="text-white font-semibold">
-          Workpapers ({filteredWorkpapers.length} of {WORKPAPERS.length})
+          Workpapers ({filteredWorkpapers.length} of {workpapers.length})
         </h3>
         <div className="flex items-center gap-2">
           <select
@@ -1013,7 +1069,7 @@ export const AuditorHub: React.FC<AuditorHubProps> = ({ onBack }) => {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {(['draft', 'in-review', 'approved', 'final'] as const).map((st) => {
-          const count = WORKPAPERS.filter((w) => w.status === st).length;
+          const count = workpapers.filter((w) => w.status === st).length;
           return (
             <div key={st} className={`rounded-lg p-3 text-center ${workpaperStatusColor[st]}`}>
               <div className="text-2xl font-bold">{count}</div>

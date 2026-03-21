@@ -222,9 +222,13 @@ router.post(
 
       try {
         const s3Service = await import('../services/s3Service');
-        const key = `branding/${user.organizationId}/logo-${Date.now()}.${req.file.mimetype.split('/')[1]}`;
-        const result = await s3Service.default.uploadBuffer(req.file.buffer, key, req.file.mimetype);
-        logoUrl = result.url || result.location || key;
+        const result = await s3Service.default.uploadFile({
+          file: req.file,
+          userId: user.id,
+          organizationId: user.organizationId,
+          folder: 'branding',
+        });
+        logoUrl = result.url;
       } catch {
         // Fallback: store as base64 data URI
         const base64 = req.file.buffer.toString('base64');
@@ -275,9 +279,13 @@ router.post(
 
       try {
         const s3Service = await import('../services/s3Service');
-        const key = `branding/${user.organizationId}/favicon-${Date.now()}.${req.file.mimetype.split('/')[1]}`;
-        const result = await s3Service.default.uploadBuffer(req.file.buffer, key, req.file.mimetype);
-        faviconUrl = result.url || result.location || key;
+        const result = await s3Service.default.uploadFile({
+          file: req.file,
+          userId: user.id,
+          organizationId: user.organizationId,
+          folder: 'branding',
+        });
+        faviconUrl = result.url;
       } catch {
         // Fallback: store as base64 data URI
         const base64 = req.file.buffer.toString('base64');

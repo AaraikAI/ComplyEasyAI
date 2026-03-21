@@ -2,6 +2,7 @@ import { VendorRiskLevel, VendorStatus, Vendor, Prisma, MonitorStatus } from '..
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
 import { AppError } from '../middleware/errorHandler';
+import logger from '../config/logger';
 
 
 /**
@@ -126,44 +127,46 @@ export class VendorRiskService {
     userId: string,
     organizationId: string
   ) {
-    const assessment = await prisma.vendorAssessment.update({
-      where: { id: assessmentId },
-      data: {
-        status: 'Completed',
-        assessedDate: new Date(),
-        findings: data.findings,
-        score: data.score,
-        riskLevel: data.riskLevel,
-        recommendations: data.recommendations,
-      },
-      include: {
-        vendor: true,
-      },
-    });
+    return prisma.$transaction(async (tx) => {
+      const assessment = await tx.vendorAssessment.update({
+        where: { id: assessmentId },
+        data: {
+          status: 'Completed',
+          assessedDate: new Date(),
+          findings: data.findings,
+          score: data.score,
+          riskLevel: data.riskLevel,
+          recommendations: data.recommendations,
+        },
+        include: {
+          vendor: true,
+        },
+      });
 
-    // Update vendor risk score
-    await prisma.vendor.update({
-      where: { id: assessment.vendorId },
-      data: {
-        riskScore: data.score,
-        riskLevel: data.riskLevel,
-        status: 'Active',
-      },
-    });
+      // Update vendor risk score
+      await tx.vendor.update({
+        where: { id: assessment.vendorId },
+        data: {
+          riskScore: data.score,
+          riskLevel: data.riskLevel,
+          status: 'Active',
+        },
+      });
 
-    await AuditLogger.log({
-      userId,
-      organizationId,
-      action: 'vendor.assessment.completed',
-      resourceType: 'VendorAssessment',
-      resourceId: assessmentId,
-      metadata: {
-        score: data.score,
-        riskLevel: data.riskLevel,
-      },
-    });
+      await AuditLogger.log({
+        userId,
+        organizationId,
+        action: 'vendor.assessment.completed',
+        resourceType: 'VendorAssessment',
+        resourceId: assessmentId,
+        metadata: {
+          score: data.score,
+          riskLevel: data.riskLevel,
+        },
+      });
 
-    return assessment;
+      return assessment;
+    });
   }
 
   /**
@@ -215,39 +218,41 @@ export class VendorRiskService {
     userId: string,
     organizationId: string
   ) {
-    const review = await prisma.vendorReview.update({
-      where: { id: reviewId },
-      data: {
-        findings: data.findings,
-        actionItems: data.actionItems,
-        nextReviewDate: data.nextReviewDate,
-      },
-      include: {
-        vendor: true,
-      },
-    });
+    return prisma.$transaction(async (tx) => {
+      const review = await tx.vendorReview.update({
+        where: { id: reviewId },
+        data: {
+          findings: data.findings,
+          actionItems: data.actionItems,
+          nextReviewDate: data.nextReviewDate,
+        },
+        include: {
+          vendor: true,
+        },
+      });
 
-    // Update vendor's last security review date
-    await prisma.vendor.update({
-      where: { id: review.vendorId },
-      data: {
-        lastSecurityReview: new Date(),
-        nextSecurityReview: data.nextReviewDate,
-      },
-    });
+      // Update vendor's last security review date
+      await tx.vendor.update({
+        where: { id: review.vendorId },
+        data: {
+          lastSecurityReview: new Date(),
+          nextSecurityReview: data.nextReviewDate,
+        },
+      });
 
-    await AuditLogger.log({
-      userId,
-      organizationId,
-      action: 'vendor.review.completed',
-      resourceType: 'VendorReview',
-      resourceId: reviewId,
-      metadata: {
-        passed: data.passed,
-      },
-    });
+      await AuditLogger.log({
+        userId,
+        organizationId,
+        action: 'vendor.review.completed',
+        resourceType: 'VendorReview',
+        resourceId: reviewId,
+        metadata: {
+          passed: data.passed,
+        },
+      });
 
-    return review;
+      return review;
+    });
   }
 
   /**
@@ -327,9 +332,9 @@ export class VendorRiskService {
   /**
    * Get vendor scorecard
    */
-  async getVendorScorecard(vendorId: string) {
-    const vendor = await prisma.vendor.findUnique({
-      where: { id: vendorId },
+  async getVendorScorecard(vendorId: string, organizationId: string) {
+    const vendor = await prisma.vendor.findFirst({
+      where: { id: vendorId, organizationId },
       include: {
         assessments: {
           orderBy: { assessedDate: 'desc' },
@@ -571,7 +576,7 @@ export class VendorRiskService {
         metadata: { vendorName: vendor.name, updatedFields: Object.keys(data) },
       });
     } catch (auditErr) {
-      // Audit logging should not block vendor updates
+      logger.error('Vendor audit log failed', { vendorId, error: auditErr });
     }
 
     return vendor;

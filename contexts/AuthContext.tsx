@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
   loginWithMagicLink: (email: string) => Promise<{ message: string; email: string; devToken?: string }>;
   verifyMagicLink: (token: string) => Promise<void>;
   logout: () => void;
@@ -75,6 +76,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(refreshInterval);
   }, [user]);
 
+  const login = async (email: string, password: string) => {
+    const user = await api.auth.login(email, password);
+    if (user) {
+      setUser(user);
+    }
+  };
+
   const loginWithMagicLink = async (email: string) => {
     // Call API to send magic link email
     const response = await api.auth.requestMagicLink(email);
@@ -121,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: unknown) {
       // Re-throw with additional context for error boundary handling
       const message = error instanceof Error ? error.message : 'Registration failed';
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   };
 
@@ -134,11 +142,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated: !!user, 
-      isLoading, 
-      loginWithMagicLink, 
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
+      isLoading,
+      login,
+      loginWithMagicLink,
       verifyMagicLink,
       logout,
       register

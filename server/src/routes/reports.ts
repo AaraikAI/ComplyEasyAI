@@ -528,7 +528,7 @@ router.post(
               case 'breachIncidents': {
                 const breaches = await prisma.breachIncident.findMany({
                   where: { organizationId: orgId },
-                  orderBy: { detectedAt: 'desc' },
+                  orderBy: { discoveryDate: 'desc' },
                   take: 50,
                 });
                 sectionData.data = {
@@ -592,11 +592,8 @@ router.post(
               }
 
               default:
-                // Unknown data source — include a placeholder
-                sectionData.data = {
-                  ...(sectionData.data || {}),
-                  [source]: { message: `Data source '${source}' not yet implemented` },
-                };
+                // Unknown data source — log warning and omit from output
+                logger.warn(`Report generation: unhandled data source '${source}' in section '${section.title}'`);
                 break;
             }
           }

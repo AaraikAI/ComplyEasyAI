@@ -1612,7 +1612,10 @@ class FederatedSwarmService {
         },
       });
     } catch (error) {
-      // Ignore tracking errors
+      logger.warn('Federated swarm convergence tracking failed', {
+        modelType,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

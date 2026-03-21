@@ -61,7 +61,9 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       document.documentElement.lang = initialLocale;
       const localeData = AVAILABLE_LOCALES.find((l) => l.code === initialLocale);
       if (localeData) document.documentElement.dir = localeData.dir;
-
+    }).catch((err) => {
+      console.error('Failed to initialize i18n:', err);
+    }).finally(() => {
       setIsLoading(false);
     });
   }, []);
