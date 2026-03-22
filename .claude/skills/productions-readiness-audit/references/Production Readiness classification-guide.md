@@ -128,3 +128,33 @@ For every PRODUCTION_GAP, the fix instruction must be **implementable without gu
 | **High** | Feature significantly broken, poor user experience, missing important validation | Mock data shown to users, missing error handling that causes silent failures, missing input validation |
 | **Medium** | Feature works but has issues, code quality problems, missing best practices | Console.log in production, missing rate limiting, hardcoded URLs with env fallback, missing indexes |
 | **Low** | Nice-to-have improvements, minor code quality | Outdated TODO comments, minor naming inconsistencies, missing optional optimizations |
+
+---
+
+## Fix-Code Exemption Patterns (v2 — Prevents Hydra Effect)
+
+These patterns commonly appear in CORRECTLY FIXED code. Classify as `FALSE_POSITIVE` unless additional evidence shows a real problem:
+
+| Scan Pattern Match | Why It Appears in Fixed Code | Correct Classification |
+|---|---|---|
+| G1 match on `logger.warn(...)` / `logger.error(...)` | Fix replaced empty catch with structured logging | FALSE_POSITIVE |
+| A4 match on comment containing "hardcoded" / "previously" | Comment documents what was changed | FALSE_POSITIVE |
+| E1/E3 match on new try/catch blocks | Fix added proper error handling | FALSE_POSITIVE if catch body has logger/throw/return |
+| B1 match on "TODO: verify in staging" | Post-fix verification note | FALSE_POSITIVE if implementation is complete |
+| C2 match on `throw new AppError(...)` | Fix uses proper error class | FALSE_POSITIVE |
+
+**Rule:** Keyword alone is NEVER sufficient for PRODUCTION_GAP classification.
+
+---
+
+## Mandatory Evidence Format for Classifications (v2)
+
+Every classification MUST cite specific file lines. Classifications without evidence are invalid.
+
+**PRODUCTION_GAP:** `File: [path]:[lines]. Function X returns static array. Searched for useEffect/useQuery/api.* — NONE found.`
+
+**FALSE_POSITIVE:** `File: [path]:[lines]. Line N has "mock" in comment. Lines N+5-N+12 show useEffect calling real API.`
+
+**INTENTIONAL_FEATURE:** `File: [path]. Static catalog component listed in .claude/CLAUDE.md.`
+
+**DEV_FALLBACK:** `File: [path]:[lines]. NODE_ENV check at line N. Dev: simulated. Prod: real service at line M.`

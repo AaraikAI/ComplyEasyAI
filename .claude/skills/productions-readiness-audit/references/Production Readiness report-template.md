@@ -1,6 +1,25 @@
-# Report Template (Visionary Edition)
+# Report Template (Visionary Edition v2)
 
 Save the final report as `PRODUCTION_READINESS_REPORT.md` in the project root. Use this exact structure. Every section is mandatory — if a section has no findings, explicitly state "No issues found."
+
+---
+
+## SECTION 0: DELTA SUMMARY (vs. Previous Audit) — MANDATORY for re-audits
+
+**Previous Audit Date:** [from .claude/audit-baseline/scan_date.txt, or "N/A — first audit"]
+**Previous Score:** [X]% → **Current Score:** [Y]%
+**Score Change:** [+/-Z]%
+
+### Findings Delta (from /tmp/audit_metrics.json)
+| Status | Count | Details |
+|--------|-------|---------|
+| New findings this audit | [N] | [list finding IDs] |
+| Resolved since last audit | [N] | [list] |
+| Persisted (still open) | [N] | [list] |
+
+### Score Change Explanation
+- If score **increased**: List resolved findings that contributed
+- If score **decreased**: MANDATORY — explain which NEW findings caused it. If net findings decreased but score still dropped, there is a classification error to resolve.
 
 ---
 
@@ -442,5 +461,8 @@ Before delivering the report, verify:
 - [ ] Every deployment hardening item has been checked
 - [ ] Chaos engineering results are included if simulations were run
 - [ ] The prioritized fix list is ordered correctly and includes patch availability
-- [ ] The scorecard percentages are calculated from actual findings
+- [ ] The scorecard percentages are calculated from DETERMINISTIC FORMULAS (see SKILL.md Phase 10 v2), not estimated
 - [ ] The self-verification question has been asked: "If all patches are applied, would a re-scan find zero new issues?"
+- [ ] Every classification includes file-read evidence (see classification-guide.md v2)
+- [ ] Delta summary (Section 0) is complete if this is a re-audit
+- [ ] Score formula calculations are shown with actual numbers so user can verify arithmetic

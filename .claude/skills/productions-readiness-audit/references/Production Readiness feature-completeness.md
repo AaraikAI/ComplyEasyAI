@@ -293,3 +293,35 @@ For each feature, assign completion percentages per layer:
 | 0% | Not started, file doesn't exist |
 
 A feature is **production ready** only when ALL present layers are at 100%.
+
+---
+
+## CRITICAL UPDATE (v2): Full-File Read Protocol for Component Classification
+
+**Do NOT use grep alone to determine if a component fetches data.** Grep misses:
+
+- **Custom hooks**: `useExecutiveDashboard()`, `useComplianceData()`, `useRisks()`
+- **Namespaced API calls**: `api.sox.getControls()`, `api.regulationData.getAll('csrd')`, `api.enterprise.monitoring.getDashboard()`
+- **React Query with custom keys**: `useQuery(['dashboard'], fetchDashboard)`
+- **Data passed via props** from a parent that fetches
+- **Context providers** that supply fetched data
+
+**REQUIRED PROTOCOL for every page-level component:**
+
+1. **Read the FULL component file** using the Read tool (not grep)
+2. **Check imports** (top of file): Look for imports from `services/api`, `hooks/`, `queries/`
+3. **Check all `useEffect` blocks**: Look for any data-fetching calls
+4. **Check custom hooks called**: If component calls `useExecutiveDashboard()`, trace that hook
+5. **Check props interface**: If component receives data props, check parent
+6. **Check conditional patterns**: `useState(INITIAL_DATA)` + `useEffect(() => { fetchReal().then(setData) })` = WIRED, not hardcoded
+
+**Classification rules (STRICT):**
+
+| Pattern Found | Classification |
+|---|---|
+| Zero fetch/hook patterns AND data from `const` arrays | `HARDCODED_ONLY` → PRODUCTION_GAP |
+| `const` array + useEffect/hook that replaces it | `WIRED_WITH_FALLBACK` → DEV_FALLBACK |
+| API calls via any mechanism, no static data | `FULLY_WIRED` → No issue |
+| Static reference page (in `.claude/CLAUDE.md`) | `INTENTIONAL_STATIC` → FALSE_POSITIVE |
+
+**This codebase had 37 components misclassified in a previous scan due to grep-only detection. Full-file reads are mandatory.**
