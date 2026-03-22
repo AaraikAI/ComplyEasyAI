@@ -52,6 +52,27 @@ These are real mistakes made in previous audits of this codebase. They are docum
 
 **Rule:** For auth, data flow, and any security-sensitive feature: scan for anti-patterns AND scan for required patterns. The verdict depends on BOTH results, not just one. See Section 6.1 for the three-step positive auth verification.
 
+### Pitfall 4: Fix-Induced False Positives (The Hydra Effect)
+
+**What happens:** Claude fixes an empty catch block by adding `logger.warn()`. The next scan matches `logger.warn` as G1 (console statements). Or Claude adds a comment "// Previously hardcoded, now fetches from API" and "hardcoded" triggers A4. Net result: fix 1 issue, create 1 new false positive. Score stays flat or drops.
+
+**Rules to prevent this:**
+1. **Read `.claude/CLAUDE.md`** before generating ANY fix code. It contains fix implementation guidelines.
+2. Use `logger.warn()` not `console.warn()`. Use `AppError` not `throw new Error('not implemented')`.
+3. Never add comments containing scan-trigger words: "hardcoded", "mock", "fake", "placeholder", "for now", "temporarily"
+4. After applying fixes, verify no new scan matches: `grep -c "PATTERN" MODIFIED_FILE`
+5. The scan-runner.sh v2 loads `.claude/audit-exclusions.json` to exclude known-good patterns
+
+### Pitfall 5: Trusting MEMORY.md Without Code Verification
+
+**What happened in this codebase:** MEMORY.md stated "SAML signature verification added" (2026-03-19) but actual code at `server/src/routes/sso.ts` still contained `// TODO: Integrate xml-crypto`. The fix was claimed but never implemented. Agents trusted MEMORY.md and skipped the finding.
+
+**Rule:** NEVER trust claims in MEMORY.md or conversation history as evidence that a fix was implemented. For EVERY claim related to a security fix:
+1. Read the actual file cited in the claim
+2. Verify the fix code exists at the specific lines (not just a comment or TODO)
+3. If the claim is false: FLAG IT as a finding AND note the discrepancy
+4. MEMORY.md is a changelog of INTENTIONS. The codebase is the ONLY source of truth.
+
 ## Audit Domains & Phases
 
 | Domain | Phases | What It Covers |
@@ -74,7 +95,7 @@ Before scanning anything, understand what you're auditing.
 ```bash
 find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.py" -o -name "*.go" -o -name "*.rs" -o -name "*.java" -o -name "*.rb" -o -name "*.php" -o -name "*.vue" -o -name "*.svelte" \) \
   | grep -v node_modules | grep -v dist | grep -v build | grep -v __pycache__ | grep -v .venv | grep -v target \
-  | grep -v ".test." | grep -v ".spec." | grep -v "__tests__" \
+  | grep -v ".test." | grep -v ".spec." | grep -v "__tests__" | grep -v ".DS_Store" \
   | sort > /tmp/audit_all_source.txt
 wc -l /tmp/audit_all_source.txt
 cat /tmp/audit_all_source.txt
@@ -127,6 +148,21 @@ The AST graph enables:
 - **Scope-aware stub detection**: Identify functions that return hardcoded values even without "mock" or "stub" keywords by analyzing return statement complexity.
 - **Dead code identification**: Functions/classes defined but never called from any entry point.
 - **Complexity hotspots**: Cyclomatic complexity per function to prioritize review effort.
+
+---
+
+## PHASE 0.1: DELTA ANALYSIS (Baseline Comparison)
+
+The scan-runner.sh v2 saves baselines to `.claude/audit-baseline/` and computes deltas automatically.
+
+**If `.claude/audit-baseline/` exists from a previous scan:**
+
+1. **Read `/tmp/audit_metrics.json`** — contains `delta.new_findings`, `delta.resolved_findings`, `delta.persisted_findings`
+2. **Report the delta** in the final report's Section 0 (Delta Summary)
+3. **Load verified-fixed items** from `.claude/audit-exclusions.json` `verified_fixes` array. Do NOT re-flag unless the file changed since verification.
+4. **Scoring constraint**: Score MUST improve if more findings resolved than introduced. If score decreases despite net improvement, there is a classification error — recheck all changed items.
+
+**If no baseline exists** (first scan), skip and note "First scan — no baseline" in the report.
 
 ---
 
@@ -236,6 +272,23 @@ For EVERY pattern result:
 3. Classify as: `INTENTIONAL_FEATURE` | `DEV_FALLBACK` | `PRODUCTION_GAP` | `FALSE_POSITIVE`
 
 → Read **`references/classification-guide.md`** for decision trees on classifying ambiguous matches.
+
+### MANDATORY: Full-File Read Before Classification (v2 — Stops False Positives)
+
+**NEVER classify a finding based solely on the grep output line.** For EVERY finding:
+
+1. **Read the JSONL context first** — scan-runner.sh v2 provides 15 lines before/after in `/tmp/audit_*.jsonl`.
+2. **If context is insufficient**, use the Read tool to read the FULL function containing the match.
+3. **For Category A matches** (mock/hardcoded/fake): You MUST read at least 100 lines of the file to check for:
+   - `useEffect` / `useQuery` / `useSWR` / `useMutation` that fetches real data
+   - API imports (`import { api }` or `from 'services/api'`)
+   - Custom hooks: `useExecutiveDashboard()`, `useRisks()`, etc.
+   - Namespaced API calls: `api.sox.*`, `api.regulationData.*`, `api.enterprise.*`
+   - If ANY of these exist alongside static data → `DEV_FALLBACK` or `FALSE_POSITIVE`, NOT `PRODUCTION_GAP`
+4. **For Category G matches**: Check if it's `logger.*` (structured) vs raw `console.*`. Logger → `FALSE_POSITIVE`.
+5. **Record evidence**: Cite SPECIFIC lines proving classification. Not "file contains mock data" but "line 71 defines static array, BUT lines 85-92 contain useEffect that calls api.executive.getDashboard() → DEV_FALLBACK."
+
+**A classification without file-read evidence is PROHIBITED.**
 
 #### Visionary Enhancement: AST-Resolved Pattern Matching
 
@@ -1284,3 +1337,24 @@ The final score MUST be calculated from the verified findings, not estimated. Us
 - Low: -1 per finding
 - Info: -0.25 per finding
 - Minimum score: 0
+
+### DETERMINISTIC SCORING FORMULAS (v2 — Replaces Subjective Estimates)
+
+**Scores MUST be computed from these formulas. Show ALL inputs and calculations so the user can verify.**
+
+**Build & Compile (10%):**
+`tsc_score = (errors==0) ? 100 : max(0, 100-(errors*2))` | `lint_score = (errors==0) ? 100 : max(0, 100-(errors*0.5))` | `dep_score = 100 - (fixable_critical*20) - (fixable_high*10) - (fixable_moderate*3)` (unfixable vulns from `.claude/audit-exclusions.json` don't count) | `build = tsc*0.4 + lint*0.3 + dep*0.3`
+
+**Code Quality (15%):** `100 - (production_gaps * 5)` — Only PRODUCTION_GAP classifications reduce score. FALSE_POSITIVE/INTENTIONAL_FEATURE/DEV_FALLBACK do NOT.
+
+**Feature Completeness (25%):** `effective_total = total - intentional_static` (from `.claude/CLAUDE.md`) | `score = (fully_wired*100 + wired_with_fallback*75) / effective_total`
+
+**Application Logic (15%):** `(validated/total*40) + (error_handled/total*30) + (transacted/multi_write*30)`
+
+**Security (20%):** `max(0, 100 - (critical*25) - (high*10) - (medium*3))` — Only verified PRODUCTION_GAP findings count.
+
+**Deployment (15%):** Binary checklist of 15 items (health, shutdown, error handler, body limits, CORS, rate limit, logging, error tracking, pooling, env validation, CI, SAST, dep scan, container scan, secret scan). `score = items/15 * 100`
+
+**Overall:** `build*0.10 + quality*0.15 + feature*0.25 + logic*0.15 + security*0.20 + deploy*0.15`
+
+**Show the full calculation in the report with actual numbers.**

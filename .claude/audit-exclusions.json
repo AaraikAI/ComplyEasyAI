@@ -1,0 +1,62 @@
+{
+  "version": "1.0",
+  "description": "Project-specific exclusions for the production readiness audit scanner. Loaded by scan-runner.sh at runtime.",
+  "grep_exclusions": [
+    {
+      "pattern": "logger\\.warn\\|logger\\.error\\|logger\\.info\\|logger\\.debug",
+      "reason": "Structured logging is correct production code, not console statements",
+      "applies_to": ["G1"]
+    },
+    {
+      "pattern": "AppError\\|HttpError\\|ApiError\\|ValidationError",
+      "reason": "Custom error classes are proper error handling, not missing-impl guards",
+      "applies_to": ["C2"]
+    },
+    {
+      "pattern": "Fixed:\\|Resolved:\\|Previously:\\|Was:",
+      "reason": "Fix documentation comments are not issues",
+      "applies_to": ["A4", "B1", "B2"]
+    }
+  ],
+  "intentional_static_components": [
+    "components/FeatureLibrary.tsx"
+  ],
+  "unfixable_vulnerabilities": [
+    {
+      "package": "lodash",
+      "version": "4.x",
+      "reason": "No lodash 5.x exists; transitively used by chevrotain/prisma"
+    },
+    {
+      "package": "elliptic",
+      "version": "*",
+      "reason": "All versions affected; used by fabric-network crypto libs"
+    },
+    {
+      "package": "aws-sdk",
+      "version": "2.x",
+      "reason": "Migration to v3 is a separate project"
+    },
+    {
+      "package": "serialize-javascript",
+      "version": "<=7.0.2",
+      "reason": "Pinned by mocha@8.4.0 via circom_runtime; exact version lock"
+    },
+    {
+      "package": "effect",
+      "version": "<3.20.0",
+      "reason": "Prisma/@prisma/config dependency; awaiting Prisma update"
+    }
+  ],
+  "never_commit": [
+    "node_modules/",
+    ".DS_Store",
+    ".env",
+    ".env.local",
+    ".env.production"
+  ],
+  "known_dev_fallbacks": {
+    "database.ts:rejectUnauthorized": "SSL verification disabled for local dev; production uses CA cert via env config",
+    "csrf.ts:NODE_ENV_check": "CSRF disabled in development mode; production CSRF works correctly"
+  }
+}

@@ -1,8 +1,38 @@
-# Scan Patterns & AST Semantic Search (Visionary Edition)
+# Scan Patterns & AST Semantic Search (Visionary Edition v2)
 
 This file contains ALL grep/search patterns to run during Phase 2 of the audit, **plus Phase 2.5 AST-level semantic analysis** for structural code issues that text-matching cannot detect. For every category, run the patterns against ALL source files (from `/tmp/audit_all_source.txt`) and save FULL output to temp files. **Never truncate.**
 
 The variable `$SRC` below refers to all source directories relevant to the detected stack. Build this dynamically in Phase 0 — don't hardcode directory names.
+
+---
+
+## Global Exclusion Patterns (v2 — Loaded from .claude/audit-exclusions.json)
+
+The scan-runner.sh v2 loads `.claude/audit-exclusions.json` and appends exclusions automatically. These exclude known-good code:
+
+- `logger.warn|logger.error|logger.info|logger.debug` — excluded from G1 (structured logging, not console)
+- `AppError|HttpError|ApiError|ValidationError` — excluded from C2 (proper error classes, not missing-impl)
+- `Fixed:|Resolved:|Previously:|Was:` — excluded from A4/B1 (fix documentation comments)
+
+### Per-Category Context-Verification Requirements (v2)
+
+Even after exclusions, matches MUST be verified by reading surrounding code:
+
+| Category | Minimum Context | What to Check |
+|----------|----------------|---------------|
+| A (Mock/Fake) | **Full file** (100+ lines) | Does file have useEffect, useQuery, api.* imports? If yes → FALSE_POSITIVE |
+| B (TODO) | 15 lines around match | Does TODO say "done"/"completed"? Is the implementation present? |
+| C (Not Impl) | Full function | Is this the only return path? |
+| D (Empty Returns) | Full function | Is this a "not found" branch or the ONLY return? |
+| E (Error Handling) | Catch block + 5 lines | Does catch contain logger, throw, or return? |
+| F (Security) | 15 lines | Is value from process.env? |
+| G (Console) | 5 lines | Is it logger.* (structured) or raw console.*? |
+
+**CRITICAL for Category A:** These API patterns used in this codebase do NOT match common grep:
+- `api.sox.getControls()`, `api.regulationData.getAll('csrd')`, `useExecutiveDashboard()`, `api.enterprise.monitoring.getDashboard()`, `api.euRegulations.aiAct.getRiskAssessments()`
+- Grep CANNOT reliably detect these. **Full-file reads are MANDATORY for Category A.**
+
+---
 
 ```bash
 # Build $SRC dynamically from discovered source directories

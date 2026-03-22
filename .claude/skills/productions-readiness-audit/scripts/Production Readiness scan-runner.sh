@@ -1,9 +1,16 @@
 #!/bin/bash
-# Production Readiness Audit — Visionary Autonomous Runner
+# Production Readiness Audit — Visionary Autonomous Runner v2
 # This script runs ALL scan patterns (Phase 2) and AST-level checks (Phase 2.5),
-# saves results to /tmp/audit_*.txt, prepares the local environment for Chaos & VLM
-# testing, and hands off to the Auto-Healing Engine for false-positive resolution.
+# saves results to /tmp/audit_*.txt and context-enriched /tmp/audit_*.jsonl,
+# supports baseline delta tracking, loads project-specific exclusions,
+# and hands off to the Auto-Healing Engine for false-positive resolution.
 # It NEVER truncates output. Every finding is captured.
+#
+# v2 CHANGES (fixing the fix→rescan→score-drop cycle):
+#   - Context-enriched JSONL output (15 lines before/after each match)
+#   - Loads .claude/audit-exclusions.json for project-specific grep exclusions
+#   - Baseline delta: saves scan results for comparison on next run
+#   - Deterministic metrics output to /tmp/audit_metrics.json
 #
 # Usage: bash scan-runner.sh [project_root]
 # Default project_root is current directory
@@ -14,15 +21,65 @@ PROJECT_ROOT="${1:-.}"
 cd "$PROJECT_ROOT"
 
 echo "============================================"
-echo "  PRODUCTION READINESS AUDIT — VISIONARY"
+echo "  PRODUCTION READINESS AUDIT — VISIONARY v2"
 echo "  Autonomous Scan + AST + Chaos + Healing"
+echo "  + Context-Enriched + Delta + Exclusions"
 echo "============================================"
 echo "Project: $(pwd)"
 echo "Started: $(date)"
 echo ""
 
 # Clean previous audit files
-rm -f /tmp/audit_*.txt
+rm -f /tmp/audit_*.txt /tmp/audit_*.jsonl
+
+# ─────────────────────────────────────
+# STEP 0: Load Previous Baseline & Project Exclusions
+# ─────────────────────────────────────
+
+echo "[0/9] Loading baseline & exclusions..."
+
+# 0A: Load previous baseline for delta comparison
+BASELINE_DIR="${PROJECT_ROOT}/.claude/audit-baseline"
+if [ -d "$BASELINE_DIR" ]; then
+  BASELINE_DATE=$(cat "${BASELINE_DIR}/scan_date.txt" 2>/dev/null || echo "unknown")
+  echo "  ✓ Previous audit baseline found (date: $BASELINE_DATE)"
+  echo "    Delta mode enabled — will compare NEW vs PERSISTED vs RESOLVED"
+  HAS_BASELINE=true
+else
+  echo "  ✗ No previous baseline — full scan mode (first run)"
+  HAS_BASELINE=false
+fi
+
+# 0B: Load project-specific exclusions from .claude/audit-exclusions.json
+EXCLUSION_FILE="${PROJECT_ROOT}/.claude/audit-exclusions.json"
+CUSTOM_EXCLUDES=""
+if [ -f "$EXCLUSION_FILE" ]; then
+  echo "  ✓ Loading project-specific exclusions from .claude/audit-exclusions.json"
+  # Extract grep exclusion patterns and build a pipe chain
+  if command -v python3 &>/dev/null; then
+    CUSTOM_EXCLUDES=$(python3 -c "
+import json, sys
+try:
+    data = json.load(open('$EXCLUSION_FILE'))
+    patterns = [exc.get('pattern', '') for exc in data.get('grep_exclusions', []) if exc.get('pattern')]
+    if patterns:
+        # Build a single grep -v with alternation
+        combined = '\\|'.join(patterns)
+        print(f' | grep -v \"{combined}\"')
+except Exception as e:
+    print('', file=sys.stderr)
+" 2>/dev/null || echo "")
+  fi
+  if [ -n "$CUSTOM_EXCLUDES" ]; then
+    echo "    Loaded $(echo "$CUSTOM_EXCLUDES" | grep -o '\\\\|' | wc -l | tr -d ' ') exclusion pattern(s)"
+  else
+    echo "    (no valid exclusion patterns found)"
+  fi
+else
+  echo "  ✗ No .claude/audit-exclusions.json — no custom exclusions"
+fi
+
+echo ""
 
 # ─────────────────────────────────────
 # STEP 1: Detect stack and build file list
@@ -48,7 +105,7 @@ fi
 # Build complete source file list
 find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.py" -o -name "*.go" -o -name "*.rs" -o -name "*.java" -o -name "*.rb" -o -name "*.php" -o -name "*.vue" -o -name "*.svelte" \) \
   | grep -v node_modules | grep -v dist | grep -v build | grep -v __pycache__ | grep -v .venv | grep -v target \
-  | grep -v ".test." | grep -v ".spec." | grep -v "__tests__" \
+  | grep -v ".test." | grep -v ".spec." | grep -v "__tests__" | grep -v ".DS_Store" \
   | sort > /tmp/audit_all_source.txt
 
 TOTAL_FILES=$(wc -l < /tmp/audit_all_source.txt)
@@ -100,10 +157,36 @@ run_pattern() {
   local name="$1"
   local desc="$2"
   shift 2
-  # Run the grep command, allow failures (grep returns 1 if no matches)
-  eval "$@" > "/tmp/audit_${name}.txt" 2>/dev/null || true
+  # Run the grep command with project-specific exclusions appended
+  eval "$@ $CUSTOM_EXCLUDES" > "/tmp/audit_${name}.txt" 2>/dev/null || true
   local count=$(wc -l < "/tmp/audit_${name}.txt")
   printf "  %-10s %-50s %d findings\n" "[$name]" "$desc" "$count"
+
+  # Generate context-enriched JSONL for AI classification
+  # Each record includes 15 lines before/after the match so the agent
+  # can classify WITHOUT needing a separate file read for every match
+  > "/tmp/audit_${name}.jsonl"
+  while IFS= read -r line; do
+    # Parse file:linenum:content from grep -n output
+    local filepath=$(echo "$line" | cut -d: -f1)
+    local linenum=$(echo "$line" | cut -d: -f2)
+    # Validate linenum is numeric
+    case "$linenum" in
+      ''|*[!0-9]*) continue ;;
+    esac
+    [ ! -f "$filepath" ] && continue
+    local start=$((linenum > 15 ? linenum - 15 : 1))
+    local end=$((linenum + 15))
+    local ctx_before=$(sed -n "${start},$((linenum-1))p" "$filepath" 2>/dev/null | head -15)
+    local ctx_after=$(sed -n "$((linenum+1)),${end}p" "$filepath" 2>/dev/null | head -15)
+    local match_line=$(sed -n "${linenum}p" "$filepath" 2>/dev/null)
+    # Write as tab-separated record (avoids JSON escaping complexity in bash)
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+      "$name" "$filepath" "$linenum" "$match_line" \
+      "$(echo "$ctx_before" | tr '\n' '§')" \
+      "$(echo "$ctx_after" | tr '\n' '§')" \
+      >> "/tmp/audit_${name}.jsonl" 2>/dev/null || true
+  done < "/tmp/audit_${name}.txt"
 }
 
 # Category A: Simulation / Mock / Fake
@@ -537,7 +620,7 @@ echo ""
 
 echo ""
 echo "============================================"
-echo "  VISIONARY SCAN COMPLETE — Summary"
+echo "  VISIONARY SCAN v2 COMPLETE — Summary"
 echo "============================================"
 echo ""
 echo "Total source files: $TOTAL_FILES"
@@ -546,11 +629,14 @@ echo "Phase 2 — Grep Findings by category:"
 echo "─────────────────────────────────────"
 
 TOTAL_FINDINGS=0
+METRICS_CATEGORIES=""
 for f in /tmp/audit_A*.txt /tmp/audit_B*.txt /tmp/audit_C*.txt /tmp/audit_D*.txt /tmp/audit_E*.txt /tmp/audit_F*.txt /tmp/audit_G*.txt /tmp/audit_H*.txt /tmp/audit_I*.txt /tmp/audit_J*.txt /tmp/audit_K*.txt /tmp/audit_L*.txt /tmp/audit_M*.txt /tmp/audit_N*.txt /tmp/audit_O*.txt /tmp/audit_P*.txt /tmp/audit_Q*.txt /tmp/audit_R*.txt /tmp/audit_S*.txt; do
   if [ -f "$f" ]; then
     count=$(wc -l < "$f")
     TOTAL_FINDINGS=$((TOTAL_FINDINGS + count))
-    printf "  %-40s %d\n" "$(basename $f .txt)" "$count"
+    catname=$(basename "$f" .txt | sed 's/audit_//')
+    printf "  %-40s %d\n" "$catname" "$count"
+    METRICS_CATEGORIES="${METRICS_CATEGORIES}    \"${catname}\": ${count},\n"
   fi
 done
 
@@ -570,13 +656,107 @@ done
 echo ""
 echo "TOTAL GREP FINDINGS TO REVIEW: $TOTAL_FINDINGS"
 echo "TOTAL AST CANDIDATE FILES:     $AST_TOTAL"
+
+# ─────────────────────────────────────
+# STEP 9A: Delta Comparison (if baseline exists)
+# ─────────────────────────────────────
+
+if [ "$HAS_BASELINE" = true ]; then
+  echo ""
+  echo "─────────────────────────────────"
+  echo "  DELTA vs Previous Baseline"
+  echo "─────────────────────────────────"
+
+  RESOLVED=0
+  PERSISTED=0
+  NEW_FINDINGS=0
+  for f in /tmp/audit_*[A-S]*.txt; do
+    catname=$(basename "$f" .txt | sed 's/audit_//')
+    baseline_file="${BASELINE_DIR}/audit_${catname}.txt"
+    if [ -f "$baseline_file" ]; then
+      # Lines only in current (new findings)
+      new_count=$(comm -23 <(sort "$f") <(sort "$baseline_file") | wc -l)
+      # Lines only in baseline (resolved)
+      resolved_count=$(comm -13 <(sort "$f") <(sort "$baseline_file") | wc -l)
+      # Lines in both (persisted)
+      persisted_count=$(comm -12 <(sort "$f") <(sort "$baseline_file") | wc -l)
+      NEW_FINDINGS=$((NEW_FINDINGS + new_count))
+      RESOLVED=$((RESOLVED + resolved_count))
+      PERSISTED=$((PERSISTED + persisted_count))
+    else
+      # All findings are new (no baseline for this category)
+      new_count=$(wc -l < "$f")
+      NEW_FINDINGS=$((NEW_FINDINGS + new_count))
+    fi
+  done
+
+  printf "  New findings:      %d\n" "$NEW_FINDINGS"
+  printf "  Resolved findings: %d\n" "$RESOLVED"
+  printf "  Persisted:         %d\n" "$PERSISTED"
+  echo ""
+  if [ "$RESOLVED" -gt "$NEW_FINDINGS" ]; then
+    echo "  ✓ NET IMPROVEMENT: More findings resolved than introduced"
+  elif [ "$RESOLVED" -eq "$NEW_FINDINGS" ]; then
+    echo "  ⚠ NET NEUTRAL: Same number resolved as introduced"
+  else
+    echo "  ✗ NET REGRESSION: More new findings than resolved"
+    echo "    → Check for false positives in new findings"
+    echo "    → Check if fixes introduced new scan pattern matches (hydra effect)"
+  fi
+fi
+
+# ─────────────────────────────────────
+# STEP 9B: Save Baseline for Next Run
+# ─────────────────────────────────────
+
 echo ""
-echo "All results saved to /tmp/audit_*.txt"
+echo "Saving current scan as baseline for next run..."
+mkdir -p "${PROJECT_ROOT}/.claude/audit-baseline"
+cp /tmp/audit_*[A-S]*.txt "${PROJECT_ROOT}/.claude/audit-baseline/" 2>/dev/null || true
+date -u +%Y-%m-%dT%H:%M:%SZ > "${PROJECT_ROOT}/.claude/audit-baseline/scan_date.txt"
+echo "  ✓ Baseline saved to .claude/audit-baseline/"
+
+# ─────────────────────────────────────
+# STEP 9C: Deterministic Metrics Output
+# ─────────────────────────────────────
+
+# Remove trailing comma from metrics categories
+METRICS_CATEGORIES_CLEAN=$(printf '%b' "$METRICS_CATEGORIES" | sed '$ s/,$//')
+
+cat > /tmp/audit_metrics.json << METRICS_EOF
+{
+  "scan_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "scanner_version": "2.0",
+  "total_source_files": $TOTAL_FILES,
+  "total_grep_findings": $TOTAL_FINDINGS,
+  "ast_candidate_files": $AST_TOTAL,
+  "has_baseline": $HAS_BASELINE,
+  "delta": {
+    "new_findings": ${NEW_FINDINGS:-0},
+    "resolved_findings": ${RESOLVED:-0},
+    "persisted_findings": ${PERSISTED:-0}
+  },
+  "findings_by_category": {
+$(printf '%b' "$METRICS_CATEGORIES_CLEAN")
+  }
+}
+METRICS_EOF
+
+echo ""
+echo "  ✓ Machine-readable metrics saved to /tmp/audit_metrics.json"
+
+echo ""
+echo "All results saved to:"
+echo "  - /tmp/audit_*.txt     (raw grep output)"
+echo "  - /tmp/audit_*.jsonl   (context-enriched for AI classification)"
+echo "  - /tmp/audit_metrics.json (deterministic scoring inputs)"
 echo ""
 echo "Next steps:"
-echo "  1. Claude Code: Run AST traversal on /tmp/audit_AST*_candidates.txt files"
-echo "  2. Claude Code: Cross-reference AST results with grep findings"
-echo "  3. Claude Code: Execute Chaos/VLM tests if environment available"
-echo "  4. Claude Code: Generate PRODUCTION_READINESS_REPORT.md with executable patches"
+echo "  1. Claude Code: Read .jsonl context for each finding BEFORE classifying"
+echo "  2. Claude Code: For Category A findings, READ THE FULL FILE — grep misses custom hooks/API patterns"
+echo "  3. Claude Code: Use /tmp/audit_metrics.json for DETERMINISTIC scoring (formulas, not estimates)"
+echo "  4. Claude Code: Cross-reference with .claude/audit-exclusions.json for known-good patterns"
+echo "  5. Claude Code: Run AST traversal on /tmp/audit_AST*_candidates.txt files"
+echo "  6. Claude Code: Generate PRODUCTION_READINESS_REPORT.md with executable patches"
 echo ""
 echo "Finished: $(date)"
