@@ -357,19 +357,26 @@ class WebhookService {
         data,
       };
 
-      // Create webhook events for each subscriber
-      for (const webhook of webhooks) {
-        const webhookEvent = await prisma.webhookEvent.create({
-          data: {
-            webhookId: webhook.id,
-            organizationId,
-            eventType,
-            payload: payload as any,
-            status: 'pending',
-          },
-        });
+      // Create all webhook events in a single transaction
+      const createdEvents = await prisma.$transaction(async (tx) => {
+        const events = [];
+        for (const webhook of webhooks) {
+          const webhookEvent = await tx.webhookEvent.create({
+            data: {
+              webhookId: webhook.id,
+              organizationId,
+              eventType,
+              payload: payload as any,
+              status: 'pending',
+            },
+          });
+          events.push(webhookEvent);
+        }
+        return events;
+      });
 
-        // Attempt immediate delivery
+      // Attempt immediate delivery for each event (outside transaction)
+      for (const webhookEvent of createdEvents) {
         this.processWebhookEvent(webhookEvent.id).catch(err => {
           logger.error(`Failed to process webhook event ${webhookEvent.id}`, err);
         });

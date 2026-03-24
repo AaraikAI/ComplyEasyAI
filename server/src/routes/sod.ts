@@ -5,6 +5,12 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createSoDRuleSchema, updateSoDRuleSchema, importSoDRulesSchema,
+  mitigateSoDViolationSchema, acceptSoDViolationSchema, remediateSoDViolationSchema,
+  createCompensatingControlSchema, updateCompensatingControlSchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import sodService from '../services/sodService';
 import logger from '../config/logger';
@@ -51,6 +57,7 @@ router.get(
 router.post(
   '/rules',
   authorize('admin', 'editor'),
+  validateBody(createSoDRuleSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const rule = await sodService.createSoDRule({
@@ -78,6 +85,7 @@ router.get(
 router.patch(
   '/rules/:id',
   authorize('admin', 'editor'),
+  validateBody(updateSoDRuleSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const rule = await sodService.updateSoDRule(req.params.id, user.id, user.organizationId, req.body);
@@ -98,6 +106,7 @@ router.delete(
 router.post(
   '/rules/import',
   authorize('admin'),
+  validateBody(importSoDRulesSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const result = await sodService.importSoDRules(user.organizationId, user.id, req.body.rules);
@@ -139,6 +148,7 @@ router.get(
 router.post(
   '/violations/:id/mitigate',
   authorize('admin', 'editor'),
+  validateBody(mitigateSoDViolationSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const result = await sodService.mitigateViolation(req.params.id, user.id, user.organizationId, req.body);
@@ -149,6 +159,7 @@ router.post(
 router.post(
   '/violations/:id/accept',
   authorize('admin'),
+  validateBody(acceptSoDViolationSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const result = await sodService.acceptViolation(req.params.id, user.id, user.organizationId, req.body);
@@ -159,6 +170,7 @@ router.post(
 router.post(
   '/violations/:id/remediate',
   authorize('admin', 'editor'),
+  validateBody(remediateSoDViolationSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const result = await sodService.remediateViolation(req.params.id, user.id, user.organizationId, req.body);
@@ -182,6 +194,7 @@ router.get(
 router.post(
   '/violations/:violationId/compensation',
   authorize('admin', 'editor'),
+  validateBody(createCompensatingControlSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const control = await sodService.addCompensatingControl(
@@ -197,6 +210,7 @@ router.post(
 router.patch(
   '/violations/:violationId/compensation/:controlId',
   authorize('admin', 'editor'),
+  validateBody(updateCompensatingControlSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const control = await sodService.updateCompensatingControl(

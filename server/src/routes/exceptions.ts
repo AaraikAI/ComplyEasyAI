@@ -7,6 +7,8 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import { createExceptionSchema, updateExceptionSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -206,6 +208,7 @@ router.get(
 
 router.post(
   '/',
+  validateBody(createExceptionSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -257,6 +260,7 @@ router.post(
 
 router.patch(
   '/:id',
+  validateBody(updateExceptionSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 

@@ -72,7 +72,10 @@ const NotificationCenter: React.FC = () => {
       if (response?.status === 'success') {
         setUnreadCount(response.data?.count || response.data?.unreadCount || 0);
       }
-    } catch {}
+    } catch (err) {
+      // Notification count fetch is non-critical; log and continue
+      console.warn('Failed to fetch unread count', err);
+    }
   };
 
   const fetchNotifications = async (pageNum: number) => {
@@ -92,7 +95,8 @@ const NotificationCenter: React.FC = () => {
         setHasMore(items.length === 20);
         setPage(pageNum);
       }
-    } catch {
+    } catch (err) {
+      console.warn('Failed to fetch notifications', err);
       if (pageNum === 0) setNotifications([]);
     } finally {
       setIsLoading(false);
@@ -104,7 +108,9 @@ const NotificationCenter: React.FC = () => {
       await api.patch(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to mark notification as read', err);
+    }
   };
 
   const markAllAsRead = async () => {
@@ -112,14 +118,18 @@ const NotificationCenter: React.FC = () => {
       await api.post('/notifications/mark-all-read');
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to mark all notifications as read', err);
+    }
   };
 
   const deleteNotification = async (id: string) => {
     try {
       await api.delete(`/notifications/${id}`);
       setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to delete notification', err);
+    }
   };
 
   const getTypeConfig = (type: string) => {

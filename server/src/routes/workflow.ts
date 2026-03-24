@@ -6,6 +6,11 @@
 
 import { Router, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createWorkflowSchema, updateWorkflowSchema,
+  createWorkflowRuleSchema, updateWorkflowRuleSchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler, AuthenticatedRequest } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -74,6 +79,7 @@ router.get(
 router.post(
   '/',
   authorize('admin', 'editor'),
+  validateBody(createWorkflowSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
     const { name, description, workflowType, trigger, nodes, edges, variables, status } = req.body;
@@ -124,6 +130,7 @@ router.get(
 router.patch(
   '/:id',
   authorize('admin', 'editor'),
+  validateBody(updateWorkflowSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
     const { name, description, workflowType, trigger, nodes, edges, variables, status } = req.body;
@@ -464,6 +471,7 @@ router.get(
 router.post(
   '/rules',
   authorize('admin', 'editor'),
+  validateBody(createWorkflowRuleSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
     const { name, description, trigger, conditions, actions } = req.body;
@@ -489,6 +497,7 @@ router.post(
 router.patch(
   '/rules/:id',
   authorize('admin', 'editor'),
+  validateBody(updateWorkflowRuleSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
 

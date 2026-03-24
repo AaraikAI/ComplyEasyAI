@@ -1448,7 +1448,10 @@ class WebRTCSignalingService {
    * The username encodes the expiry timestamp so the TURN server can validate independently.
    */
   private generateTURNCredentials(): { username: string; credential: string } {
-    const secret = process.env.WEBRTC_TURN_SECRET || process.env.JWT_SECRET || 'default-turn-secret';
+    const secret = process.env.WEBRTC_TURN_SECRET || process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('WEBRTC_TURN_SECRET or JWT_SECRET environment variable is required for TURN credential generation');
+    }
     const ttl = parseInt(process.env.WEBRTC_TURN_TTL || String(TURN_CREDENTIAL_TTL_S), 10);
     const expiry = Math.floor(Date.now() / 1000) + ttl;
     const username = `${expiry}:complyeasy-${crypto.randomBytes(4).toString('hex')}`;

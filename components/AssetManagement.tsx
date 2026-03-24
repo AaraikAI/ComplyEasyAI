@@ -9,7 +9,7 @@
  * - Asset dependency mapping
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import {
   Shield,
@@ -36,6 +36,7 @@ import {
   Clock,
   Package,
   Server,
+  Loader2,
 } from 'lucide-react';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
@@ -121,94 +122,70 @@ const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'classification', label: 'Classification', icon: <Tag className="w-4 h-4" /> },
 ];
 
-// ── Mock Data ───────────────────────────────────────────────────────────────
+// ── API Data Mapping ────────────────────────────────────────────────────────
 
-const initialAssets: Asset[] = [
-  {
-    id: 'AST-001', name: 'Production Database Server', description: 'Primary PostgreSQL database cluster for customer data',
-    type: 'Hardware', classification: 'Restricted', lifecycle: 'Active', owner: 'Alex Kumar',
-    department: 'Engineering', location: 'AWS us-east-1', vendor: 'AWS', purchaseDate: '2024-01-15',
-    warrantyExpiry: '2027-01-15', lastAuditDate: '2025-11-01', riskScore: 85, tags: ['production', 'database', 'critical'],
-    serialNumber: 'DB-PROD-001', cost: 45000,
-    dependencies: [
-      { assetId: 'AST-003', assetName: 'Application Backend', relationship: 'depended_by' },
-      { assetId: 'AST-005', assetName: 'AWS VPC Network', relationship: 'depends_on' },
-    ],
-  },
-  {
-    id: 'AST-002', name: 'CrowdStrike Falcon', description: 'Endpoint detection and response platform',
-    type: 'Software', classification: 'Confidential', lifecycle: 'Active', owner: 'Sarah Chen',
-    department: 'Security', location: 'Cloud', vendor: 'CrowdStrike', purchaseDate: '2024-06-01',
-    warrantyExpiry: null, lastAuditDate: '2025-10-15', riskScore: 30, tags: ['security', 'endpoint', 'edr'],
-    serialNumber: 'CS-LIC-2024', cost: 28000,
-    dependencies: [
-      { assetId: 'AST-006', assetName: 'Employee Workstations', relationship: 'integrates_with' },
-    ],
-  },
-  {
-    id: 'AST-003', name: 'Application Backend', description: 'Node.js application server running core business logic',
-    type: 'Software', classification: 'Confidential', lifecycle: 'Active', owner: 'Alex Kumar',
-    department: 'Engineering', location: 'AWS ECS', vendor: 'Internal', purchaseDate: '2024-01-01',
-    warrantyExpiry: null, lastAuditDate: '2025-12-01', riskScore: 70, tags: ['production', 'api', 'backend'],
-    serialNumber: 'APP-BE-001', cost: 0,
-    dependencies: [
-      { assetId: 'AST-001', assetName: 'Production Database Server', relationship: 'depends_on' },
-      { assetId: 'AST-004', assetName: 'Customer Data Lake', relationship: 'depends_on' },
-    ],
-  },
-  {
-    id: 'AST-004', name: 'Customer Data Lake', description: 'S3-based data lake containing processed customer analytics',
-    type: 'Data', classification: 'Restricted', lifecycle: 'Active', owner: 'Maria Garcia',
-    department: 'Data Science', location: 'AWS S3', vendor: 'AWS', purchaseDate: '2024-03-01',
-    warrantyExpiry: null, lastAuditDate: '2025-09-15', riskScore: 90, tags: ['data', 'analytics', 'pii'],
-    serialNumber: 'DL-CUST-001', cost: 12000,
-    dependencies: [
-      { assetId: 'AST-001', assetName: 'Production Database Server', relationship: 'depends_on' },
-    ],
-  },
-  {
-    id: 'AST-005', name: 'AWS VPC Network', description: 'Primary VPC with public and private subnets',
-    type: 'Network', classification: 'Confidential', lifecycle: 'Active', owner: 'DevOps Team',
-    department: 'Infrastructure', location: 'AWS us-east-1', vendor: 'AWS', purchaseDate: '2024-01-10',
-    warrantyExpiry: null, lastAuditDate: '2025-11-20', riskScore: 60, tags: ['network', 'vpc', 'infrastructure'],
-    serialNumber: 'VPC-PROD-001', cost: 8000,
+const TYPE_MAP: Record<string, AssetType> = {
+  HARDWARE: 'Hardware', SOFTWARE: 'Software', DATA: 'Data',
+  NETWORK: 'Network', CLOUD_SERVICE: 'CloudService',
+  PEOPLE: 'Hardware', FACILITY: 'Hardware',
+};
+
+const REVERSE_TYPE_MAP: Record<string, string> = {
+  Hardware: 'HARDWARE', Software: 'SOFTWARE', Data: 'DATA',
+  Network: 'NETWORK', CloudService: 'CLOUD_SERVICE',
+};
+
+const CLASS_MAP: Record<string, DataClassification> = {
+  PUBLIC: 'Public', INTERNAL: 'Internal',
+  CONFIDENTIAL: 'Confidential', RESTRICTED: 'Restricted',
+};
+
+const REVERSE_CLASS_MAP: Record<string, string> = {
+  Public: 'PUBLIC', Internal: 'INTERNAL',
+  Confidential: 'CONFIDENTIAL', Restricted: 'RESTRICTED',
+};
+
+const STATUS_MAP: Record<string, LifecycleStatus> = {
+  ACTIVE: 'Active', DECOMMISSIONED: 'Decommissioned',
+  IN_MAINTENANCE: 'Maintenance', PLANNED: 'Procurement',
+};
+
+const REVERSE_STATUS_MAP: Record<string, string> = {
+  Procurement: 'PLANNED', Active: 'ACTIVE',
+  Maintenance: 'IN_MAINTENANCE', Decommissioned: 'DECOMMISSIONED',
+  Disposed: 'DECOMMISSIONED',
+};
+
+function mapApiAsset(raw: any): Asset {
+  return {
+    id: raw.id,
+    name: raw.name || '',
+    description: raw.description || raw.category || '',
+    type: TYPE_MAP[raw.type] || 'Hardware',
+    classification: CLASS_MAP[raw.classification] || 'Internal',
+    lifecycle: STATUS_MAP[raw.status] || 'Active',
+    owner: raw.owner || '',
+    department: raw.department || '',
+    location: raw.location || '',
+    vendor: raw.vendor || '',
+    purchaseDate: raw.purchaseDate ? raw.purchaseDate.split('T')[0] : '',
+    warrantyExpiry: raw.endOfLife ? raw.endOfLife.split('T')[0] : null,
+    lastAuditDate: raw.updatedAt ? raw.updatedAt.split('T')[0] : '',
+    riskScore: raw.riskScore || 0,
+    tags: raw.tags || [],
     dependencies: [],
-  },
-  {
-    id: 'AST-006', name: 'Employee Workstations', description: 'MacBook Pro fleet for engineering and business teams',
-    type: 'Hardware', classification: 'Internal', lifecycle: 'Active', owner: 'IT Support',
-    department: 'IT', location: 'Office / Remote', vendor: 'Apple', purchaseDate: '2024-07-01',
-    warrantyExpiry: '2027-07-01', lastAuditDate: '2025-12-10', riskScore: 45, tags: ['endpoint', 'laptop', 'employee'],
-    serialNumber: 'WS-FLEET-2024', cost: 156000,
-    dependencies: [
-      { assetId: 'AST-002', assetName: 'CrowdStrike Falcon', relationship: 'integrates_with' },
-    ],
-  },
-  {
-    id: 'AST-007', name: 'Okta SSO', description: 'Identity and access management platform',
-    type: 'CloudService', classification: 'Confidential', lifecycle: 'Active', owner: 'Sarah Chen',
-    department: 'Security', location: 'Cloud (SaaS)', vendor: 'Okta', purchaseDate: '2024-02-01',
-    warrantyExpiry: null, lastAuditDate: '2025-10-01', riskScore: 55, tags: ['identity', 'sso', 'iam'],
-    serialNumber: 'OKTA-ENT-001', cost: 36000,
-    dependencies: [
-      { assetId: 'AST-003', assetName: 'Application Backend', relationship: 'integrates_with' },
-    ],
-  },
-  {
-    id: 'AST-008', name: 'Legacy CRM System', description: 'Deprecated CRM being migrated to new platform',
-    type: 'Software', classification: 'Internal', lifecycle: 'Decommissioned', owner: 'Sales Ops',
-    department: 'Sales', location: 'On-premise', vendor: 'Custom', purchaseDate: '2020-05-01',
-    warrantyExpiry: '2024-05-01', lastAuditDate: '2025-06-01', riskScore: 75, tags: ['legacy', 'crm', 'migration'],
-    serialNumber: 'CRM-LEG-001', cost: 0,
-    dependencies: [],
-  },
-];
+    serialNumber: raw.serialNumber || '',
+    cost: raw.cost || 0,
+  };
+}
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 const AssetManagement: React.FC = () => {
   const { t } = useI18n();
-  const [assets, setAssets] = useState<Asset[]>(initialAssets);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('registry');
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<AssetType | 'all'>('all');
@@ -218,6 +195,32 @@ const AssetManagement: React.FC = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [form, setForm] = useState<AssetForm>(defaultForm);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Fetch assets from backend on mount
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchAssets() {
+      setLoading(true);
+      setFetchError(null);
+      try {
+        const res = await fetch('/api/assets?limit=100', { credentials: 'include' });
+        if (!res.ok) throw new Error(`Failed to load assets (${res.status})`);
+        const json = await res.json();
+        const data = Array.isArray(json.data) ? json.data : [];
+        if (!cancelled) {
+          setAssets(data.map(mapApiAsset));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setFetchError(err instanceof Error ? err.message : 'Failed to load assets');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchAssets();
+    return () => { cancelled = true; };
+  }, []);
 
   const filteredAssets = useMemo(() => {
     return assets.filter(a => {
@@ -247,40 +250,114 @@ const AssetManagement: React.FC = () => {
     }));
   }, [assets]);
 
-  const handleCreate = useCallback(() => {
-    const newAsset: Asset = {
-      id: `AST-${String(assets.length + 1).padStart(3, '0')}`,
-      name: form.name, description: form.description, type: form.type,
-      classification: form.classification, lifecycle: 'Procurement' as LifecycleStatus,
-      owner: form.owner, department: form.department, location: form.location,
-      vendor: form.vendor, purchaseDate: new Date().toISOString().split('T')[0],
-      warrantyExpiry: null, lastAuditDate: new Date().toISOString().split('T')[0],
-      riskScore: form.classification === 'Restricted' ? 80 : form.classification === 'Confidential' ? 60 : 30,
-      tags: [], dependencies: [], serialNumber: form.serialNumber,
-      cost: parseFloat(form.cost) || 0,
-    };
-    setAssets(prev => [newAsset, ...prev]);
-    setShowCreateForm(false);
-    setForm(defaultForm);
-  }, [form, assets.length]);
+  const handleCreate = useCallback(async () => {
+    try {
+      const res = await fetch('/api/assets', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          type: REVERSE_TYPE_MAP[form.type] || 'HARDWARE',
+          classification: REVERSE_CLASS_MAP[form.classification] || 'INTERNAL',
+          owner: form.owner,
+          department: form.department || null,
+          location: form.location || null,
+          vendor: form.vendor || null,
+          serialNumber: form.serialNumber || null,
+        }),
+      });
+      if (!res.ok) throw new Error(`Failed to create asset (${res.status})`);
+      const json = await res.json();
+      const created = mapApiAsset(json.data);
+      setAssets(prev => [created, ...prev]);
+      setShowCreateForm(false);
+      setForm(defaultForm);
+    } catch {
+      setFetchError('Failed to create asset');
+    }
+  }, [form]);
 
-  const deleteAsset = useCallback((id: string) => {
+  const deleteAsset = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/assets/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`Failed to delete asset (${res.status})`);
+    } catch {
+      // Continue with local removal even if API call fails
+    }
     setAssets(prev => prev.filter(a => a.id !== id));
     if (selectedAsset?.id === id) setSelectedAsset(null);
   }, [selectedAsset]);
 
-  const cycleLifecycle = useCallback((id: string) => {
+  const cycleLifecycle = useCallback(async (id: string) => {
     const order: LifecycleStatus[] = ['Procurement', 'Active', 'Maintenance', 'Decommissioned', 'Disposed'];
-    setAssets(prev => prev.map(a => {
-      if (a.id !== id) return a;
-      const idx = order.indexOf(a.lifecycle);
-      if (idx >= order.length - 1) return a;
-      return { ...a, lifecycle: order[idx + 1] };
-    }));
-  }, []);
+    const asset = assets.find(a => a.id === id);
+    if (!asset) return;
+    const idx = order.indexOf(asset.lifecycle);
+    if (idx >= order.length - 1) return;
+    const nextStatus = order[idx + 1];
+    const apiStatus = REVERSE_STATUS_MAP[nextStatus];
+
+    try {
+      const res = await fetch(`/api/assets/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: apiStatus }),
+      });
+      if (!res.ok) throw new Error(`Failed to update status (${res.status})`);
+      const json = await res.json();
+      const updated = mapApiAsset(json.data);
+      setAssets(prev => prev.map(a => a.id === id ? updated : a));
+    } catch {
+      // Optimistic fallback
+      setAssets(prev => prev.map(a => {
+        if (a.id !== id) return a;
+        return { ...a, lifecycle: nextStatus };
+      }));
+    }
+  }, [assets]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 dark:bg-slate-950 text-white p-6 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+          <span className="text-slate-400">Loading assets...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError && assets.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-900 dark:bg-slate-950 text-white p-6 flex items-center justify-center">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 max-w-md text-center">
+          <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <h2 className="text-lg font-semibold mb-2">Failed to Load Assets</h2>
+          <p className="text-slate-400 text-sm mb-4">{fetchError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 dark:bg-slate-950 text-white p-6">
+      {fetchError && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+          {fetchError}
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">

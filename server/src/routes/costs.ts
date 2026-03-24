@@ -7,6 +7,8 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import { createCostSchema, updateCostSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -313,6 +315,7 @@ router.get(
 
 router.post(
   '/',
+  validateBody(createCostSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -380,6 +383,7 @@ router.post(
 
 router.patch(
   '/:id',
+  validateBody(updateCostSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 

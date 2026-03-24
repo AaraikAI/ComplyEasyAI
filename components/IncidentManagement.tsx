@@ -10,8 +10,9 @@
  * - Categories: DATA_BREACH, MALWARE, PHISHING, UNAUTHORIZED_ACCESS, DDOS, INSIDER_THREAT, SYSTEM_FAILURE, POLICY_VIOLATION
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useI18n } from '../contexts/I18nContext';
+import { useSubmitGuard } from '../hooks/useSubmitGuard';
 import {
   Shield,
   Plus,
@@ -35,6 +36,7 @@ import {
   MessageSquare,
   UserPlus,
   ArrowRight,
+  Loader2,
 } from 'lucide-react';
 
 // ── Type Definitions ────────────────────────────────────────────────────────
@@ -156,151 +158,57 @@ const defaultForm: IncidentForm = {
   affectedSystems: '',
 };
 
-// ── Mock Data ───────────────────────────────────────────────────────────────
+// ── API Data Mapping ────────────────────────────────────────────────────────
 
-const initialIncidents: Incident[] = [
-  {
-    id: 'INC-001',
-    title: 'Unauthorized API Access Detected',
-    description: 'Multiple failed authentication attempts detected from suspicious IP ranges targeting the customer API.',
-    severity: 'SEV2',
-    status: 'Contained',
-    category: 'UNAUTHORIZED_ACCESS',
-    detectedAt: '2025-12-15T08:30:00Z',
-    triagedAt: '2025-12-15T08:45:00Z',
-    containedAt: '2025-12-15T09:15:00Z',
-    eradicatedAt: null,
-    recoveredAt: null,
-    closedAt: null,
-    assignedTo: 'Sarah Chen',
-    reporter: 'SIEM Alert',
-    affectedSystems: ['Customer API', 'Auth Service'],
-    timeline: [
-      { id: 'e1', timestamp: '2025-12-15T08:30:00Z', action: 'Incident Detected', actor: 'SIEM', details: 'Anomalous authentication pattern detected' },
-      { id: 'e2', timestamp: '2025-12-15T08:45:00Z', action: 'Triaged', actor: 'Sarah Chen', details: 'Confirmed as SEV-2, assigned to security team' },
-      { id: 'e3', timestamp: '2025-12-15T09:15:00Z', action: 'Contained', actor: 'Sarah Chen', details: 'Blocked offending IP ranges at WAF level' },
-    ],
-    tasks: [
-      { id: 't1', title: 'Block IP ranges at WAF', assignee: 'Sarah Chen', status: 'Done', dueDate: '2025-12-15' },
-      { id: 't2', title: 'Review access logs for data exfiltration', assignee: 'Mike Johnson', status: 'InProgress', dueDate: '2025-12-16' },
-      { id: 't3', title: 'Rotate affected API keys', assignee: 'Sarah Chen', status: 'Pending', dueDate: '2025-12-16' },
-    ],
-  },
-  {
-    id: 'INC-002',
-    title: 'Phishing Campaign Targeting Employees',
-    description: 'Coordinated phishing campaign detected targeting finance department with credential harvesting links.',
-    severity: 'SEV1',
-    status: 'Triaged',
-    category: 'PHISHING',
-    detectedAt: '2025-12-18T14:00:00Z',
-    triagedAt: '2025-12-18T14:15:00Z',
-    containedAt: null,
-    eradicatedAt: null,
-    recoveredAt: null,
-    closedAt: null,
-    assignedTo: 'James Wilson',
-    reporter: 'Employee Report',
-    affectedSystems: ['Email Gateway', 'Active Directory'],
-    timeline: [
-      { id: 'e4', timestamp: '2025-12-18T14:00:00Z', action: 'Incident Detected', actor: 'Employee Report', details: 'Finance team member reported suspicious email' },
-      { id: 'e5', timestamp: '2025-12-18T14:15:00Z', action: 'Triaged', actor: 'James Wilson', details: 'Escalated to SEV-1, multiple employees affected' },
-    ],
-    tasks: [
-      { id: 't4', title: 'Quarantine phishing emails', assignee: 'James Wilson', status: 'InProgress', dueDate: '2025-12-18' },
-      { id: 't5', title: 'Reset credentials for affected users', assignee: 'Help Desk', status: 'Pending', dueDate: '2025-12-18' },
-    ],
-  },
-  {
-    id: 'INC-003',
-    title: 'Database Performance Degradation',
-    description: 'Primary database cluster experiencing severe performance degradation affecting customer-facing services.',
-    severity: 'SEV3',
-    status: 'Closed',
-    category: 'SYSTEM_FAILURE',
-    detectedAt: '2025-12-10T06:00:00Z',
-    triagedAt: '2025-12-10T06:20:00Z',
-    containedAt: '2025-12-10T07:00:00Z',
-    eradicatedAt: '2025-12-10T09:00:00Z',
-    recoveredAt: '2025-12-10T10:00:00Z',
-    closedAt: '2025-12-11T14:00:00Z',
-    assignedTo: 'Alex Kumar',
-    reporter: 'Monitoring Alert',
-    affectedSystems: ['PostgreSQL Cluster', 'Application Backend'],
-    timeline: [
-      { id: 'e6', timestamp: '2025-12-10T06:00:00Z', action: 'Incident Detected', actor: 'Datadog Alert', details: 'Query latency exceeded 5s threshold' },
-      { id: 'e7', timestamp: '2025-12-10T06:20:00Z', action: 'Triaged', actor: 'Alex Kumar', details: 'Root cause: runaway query from batch job' },
-      { id: 'e8', timestamp: '2025-12-10T07:00:00Z', action: 'Contained', actor: 'Alex Kumar', details: 'Killed runaway queries, throttled batch job' },
-      { id: 'e9', timestamp: '2025-12-10T09:00:00Z', action: 'Eradicated', actor: 'Alex Kumar', details: 'Fixed batch job query with proper indexes' },
-      { id: 'e10', timestamp: '2025-12-10T10:00:00Z', action: 'Recovered', actor: 'Alex Kumar', details: 'All services restored to normal' },
-      { id: 'e11', timestamp: '2025-12-11T14:00:00Z', action: 'Closed', actor: 'Alex Kumar', details: 'Post-incident review completed' },
-    ],
-    tasks: [
-      { id: 't6', title: 'Kill runaway queries', assignee: 'Alex Kumar', status: 'Done', dueDate: '2025-12-10' },
-      { id: 't7', title: 'Add missing indexes', assignee: 'Alex Kumar', status: 'Done', dueDate: '2025-12-10' },
-      { id: 't8', title: 'Write post-mortem', assignee: 'Alex Kumar', status: 'Done', dueDate: '2025-12-11' },
-    ],
-  },
-  {
-    id: 'INC-004',
-    title: 'Malware Detected on Engineering Workstation',
-    description: 'Endpoint protection flagged trojan on developer workstation with potential lateral movement.',
-    severity: 'SEV2',
-    status: 'Eradicated',
-    category: 'MALWARE',
-    detectedAt: '2025-12-19T10:30:00Z',
-    triagedAt: '2025-12-19T10:40:00Z',
-    containedAt: '2025-12-19T11:00:00Z',
-    eradicatedAt: '2025-12-19T14:00:00Z',
-    recoveredAt: null,
-    closedAt: null,
-    assignedTo: 'Sarah Chen',
-    reporter: 'CrowdStrike Alert',
-    affectedSystems: ['Dev Workstation W-1042', 'Internal Network'],
-    timeline: [
-      { id: 'e12', timestamp: '2025-12-19T10:30:00Z', action: 'Incident Detected', actor: 'CrowdStrike', details: 'Trojan.GenericKD detected on endpoint' },
-      { id: 'e13', timestamp: '2025-12-19T10:40:00Z', action: 'Triaged', actor: 'Sarah Chen', details: 'Isolated workstation from network' },
-      { id: 'e14', timestamp: '2025-12-19T11:00:00Z', action: 'Contained', actor: 'Sarah Chen', details: 'Network segment isolated, no lateral movement confirmed' },
-      { id: 'e15', timestamp: '2025-12-19T14:00:00Z', action: 'Eradicated', actor: 'Sarah Chen', details: 'Workstation reimaged, credentials rotated' },
-    ],
-    tasks: [
-      { id: 't9', title: 'Isolate workstation', assignee: 'Sarah Chen', status: 'Done', dueDate: '2025-12-19' },
-      { id: 't10', title: 'Scan adjacent systems', assignee: 'Mike Johnson', status: 'Done', dueDate: '2025-12-19' },
-      { id: 't11', title: 'Restore from clean image', assignee: 'IT Support', status: 'Done', dueDate: '2025-12-20' },
-      { id: 't12', title: 'Validate no data exfiltration', assignee: 'Sarah Chen', status: 'InProgress', dueDate: '2025-12-20' },
-    ],
-  },
-  {
-    id: 'INC-005',
-    title: 'Employee Data Leaked via Misconfigured S3 Bucket',
-    description: 'Public-facing S3 bucket found containing employee PII due to infrastructure misconfiguration.',
-    severity: 'SEV1',
-    status: 'Recovered',
-    category: 'DATA_BREACH',
-    detectedAt: '2025-12-05T16:00:00Z',
-    triagedAt: '2025-12-05T16:10:00Z',
-    containedAt: '2025-12-05T16:20:00Z',
-    eradicatedAt: '2025-12-05T17:00:00Z',
-    recoveredAt: '2025-12-06T10:00:00Z',
-    closedAt: null,
-    assignedTo: 'James Wilson',
-    reporter: 'Security Scanner',
-    affectedSystems: ['AWS S3', 'HR Portal'],
-    timeline: [
-      { id: 'e16', timestamp: '2025-12-05T16:00:00Z', action: 'Incident Detected', actor: 'CloudSploit', details: 'Public S3 bucket with employee data found' },
-      { id: 'e17', timestamp: '2025-12-05T16:10:00Z', action: 'Triaged', actor: 'James Wilson', details: 'Confirmed PII exposure, escalated to SEV-1' },
-      { id: 'e18', timestamp: '2025-12-05T16:20:00Z', action: 'Contained', actor: 'James Wilson', details: 'Bucket access set to private' },
-      { id: 'e19', timestamp: '2025-12-05T17:00:00Z', action: 'Eradicated', actor: 'DevOps', details: 'IaC templates corrected, bucket policies enforced' },
-      { id: 'e20', timestamp: '2025-12-06T10:00:00Z', action: 'Recovered', actor: 'James Wilson', details: 'All affected employees notified, monitoring enhanced' },
-    ],
-    tasks: [
-      { id: 't13', title: 'Lock down S3 bucket', assignee: 'James Wilson', status: 'Done', dueDate: '2025-12-05' },
-      { id: 't14', title: 'Audit all S3 bucket policies', assignee: 'DevOps', status: 'Done', dueDate: '2025-12-06' },
-      { id: 't15', title: 'Notify affected employees', assignee: 'HR', status: 'Done', dueDate: '2025-12-06' },
-      { id: 't16', title: 'File regulatory notification', assignee: 'Legal', status: 'InProgress', dueDate: '2025-12-08' },
-    ],
-  },
-];
+const STATUS_MAP: Record<string, IncidentStatus> = {
+  DETECTED: 'Detected', TRIAGED: 'Triaged', CONTAINED: 'Contained',
+  ERADICATED: 'Eradicated', RECOVERED: 'Recovered', CLOSED: 'Closed',
+  POST_MORTEM: 'Post-Mortem',
+};
+
+const REVERSE_STATUS_MAP: Record<string, string> = {
+  Detected: 'DETECTED', Triaged: 'TRIAGED', Contained: 'CONTAINED',
+  Eradicated: 'ERADICATED', Recovered: 'RECOVERED', Closed: 'CLOSED',
+  'Post-Mortem': 'POST_MORTEM',
+};
+
+function mapApiIncident(raw: any): Incident {
+  return {
+    id: raw.id,
+    title: raw.title || '',
+    description: raw.description || '',
+    severity: raw.severity as IncidentSeverity,
+    status: STATUS_MAP[raw.status] || raw.status || 'Detected',
+    category: raw.category as IncidentCategory,
+    detectedAt: raw.detectedAt || raw.createdAt || new Date().toISOString(),
+    triagedAt: raw.triagedAt || null,
+    containedAt: raw.containedAt || null,
+    eradicatedAt: raw.eradicatedAt || null,
+    recoveredAt: raw.resolvedAt || raw.recoveredAt || null,
+    closedAt: raw.closedAt || null,
+    assignedTo: raw.assignedTo || '',
+    reporter: raw.reportedBy || '',
+    affectedSystems: raw.affectedSystems || [],
+    timeline: Array.isArray(raw.timeline)
+      ? raw.timeline.map((e: any) => ({
+          id: e.id,
+          timestamp: e.timestamp || e.createdAt,
+          action: e.action || '',
+          actor: e.performedBy || '',
+          details: e.details || '',
+        }))
+      : [],
+    tasks: Array.isArray(raw.tasks)
+      ? raw.tasks.map((t: any) => ({
+          id: t.id,
+          title: t.title || '',
+          assignee: t.assignee || t.assignedTo || '',
+          status: t.status === 'DONE' ? 'Done' : t.status === 'IN_PROGRESS' ? 'InProgress' : 'Pending',
+          dueDate: t.dueDate || '',
+        }))
+      : [],
+  };
+}
 
 // ── Helper Functions ────────────────────────────────────────────────────────
 
@@ -319,7 +227,9 @@ function formatDate(dateStr: string): string {
 
 const IncidentManagement: React.FC = () => {
   const { t } = useI18n();
-  const [incidents, setIncidents] = useState<Incident[]>(initialIncidents);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('incidents');
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState<IncidentSeverity | 'all'>('all');
@@ -329,6 +239,33 @@ const IncidentManagement: React.FC = () => {
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [form, setForm] = useState<IncidentForm>(defaultForm);
   const [showFilters, setShowFilters] = useState(false);
+  const { isSubmitting, guard } = useSubmitGuard();
+
+  // Fetch incidents from backend on mount
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchIncidents() {
+      setLoading(true);
+      setFetchError(null);
+      try {
+        const res = await fetch('/api/incidents?limit=100', { credentials: 'include' });
+        if (!res.ok) throw new Error(`Failed to load incidents (${res.status})`);
+        const json = await res.json();
+        const data = Array.isArray(json.data) ? json.data : [];
+        if (!cancelled) {
+          setIncidents(data.map(mapApiIncident));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setFetchError(err instanceof Error ? err.message : 'Failed to load incidents');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchIncidents();
+    return () => { cancelled = true; };
+  }, []);
 
   const filteredIncidents = useMemo(() => {
     return incidents.filter(inc => {
@@ -373,43 +310,58 @@ const IncidentManagement: React.FC = () => {
     return { avgMTTD, avgMTTC, avgMTTR, bySeverity, byCategory, total: incidents.length, open: incidents.filter(i => i.status !== 'Closed' && i.status !== 'Post-Mortem').length };
   }, [incidents]);
 
-  const handleCreateIncident = useCallback(() => {
-    const newIncident: Incident = {
-      id: `INC-${String(incidents.length + 1).padStart(3, '0')}`,
-      title: form.title,
-      description: form.description,
-      severity: form.severity,
-      status: 'Detected',
-      category: form.category,
-      detectedAt: new Date().toISOString(),
-      triagedAt: null,
-      containedAt: null,
-      eradicatedAt: null,
-      recoveredAt: null,
-      closedAt: null,
-      assignedTo: form.assignedTo,
-      reporter: 'Manual Entry',
-      affectedSystems: form.affectedSystems.split(',').map(s => s.trim()).filter(Boolean),
-      timeline: [{
-        id: `e-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        action: 'Incident Created',
-        actor: 'Current User',
-        details: `Incident created with severity ${form.severity}`,
-      }],
-      tasks: [],
-    };
-    setIncidents(prev => [newIncident, ...prev]);
-    setShowCreateForm(false);
-    setForm(defaultForm);
-  }, [form, incidents.length]);
+  const handleCreateIncident = useCallback(async () => {
+    await guard(async () => {
+      try {
+        const res = await fetch('/api/incidents', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: form.title,
+            description: form.description,
+            severity: form.severity,
+            category: form.category,
+            assignedTo: form.assignedTo || null,
+            affectedSystems: form.affectedSystems.split(',').map(s => s.trim()).filter(Boolean),
+          }),
+        });
+        if (!res.ok) throw new Error(`Failed to create incident (${res.status})`);
+        const json = await res.json();
+        const created = mapApiIncident(json.data);
+        setIncidents(prev => [created, ...prev]);
+        setShowCreateForm(false);
+        setForm(defaultForm);
+      } catch {
+        setFetchError('Failed to create incident');
+      }
+    });
+  }, [form, guard]);
 
-  const advanceStatus = useCallback((incidentId: string) => {
-    setIncidents(prev => prev.map(inc => {
-      if (inc.id !== incidentId) return inc;
-      const currentIdx = statusOrder.indexOf(inc.status);
-      if (currentIdx >= statusOrder.length - 1) return inc;
-      const nextStatus = statusOrder[currentIdx + 1];
+  const advanceStatus = useCallback(async (incidentId: string) => {
+    const incident = incidents.find(i => i.id === incidentId);
+    if (!incident) return;
+    const currentIdx = statusOrder.indexOf(incident.status);
+    if (currentIdx >= statusOrder.length - 1) return;
+    const nextStatus = statusOrder[currentIdx + 1];
+    const apiStatus = REVERSE_STATUS_MAP[nextStatus] || nextStatus;
+
+    try {
+      const res = await fetch(`/api/incidents/${encodeURIComponent(incidentId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: apiStatus }),
+      });
+      if (!res.ok) throw new Error(`Failed to update status (${res.status})`);
+      const json = await res.json();
+      const updated = mapApiIncident(json.data);
+      setIncidents(prev => prev.map(inc => inc.id === incidentId ? updated : inc));
+      if (selectedIncident?.id === incidentId) {
+        setSelectedIncident(updated);
+      }
+    } catch {
+      // Optimistic fallback: update locally if API fails
       const now = new Date().toISOString();
       const updates: Partial<Incident> = { status: nextStatus };
       if (nextStatus === 'Triaged') updates.triagedAt = now;
@@ -422,41 +374,61 @@ const IncidentManagement: React.FC = () => {
         timestamp: now,
         action: `Status changed to ${nextStatus}`,
         actor: 'Current User',
-        details: `Incident advanced from ${inc.status} to ${nextStatus}`,
+        details: `Incident advanced from ${incident.status} to ${nextStatus}`,
       };
-      return { ...inc, ...updates, timeline: [...inc.timeline, newEvent] };
-    }));
-    if (selectedIncident) {
-      setSelectedIncident(prev => {
-        if (!prev) return prev;
-        const currentIdx = statusOrder.indexOf(prev.status);
-        if (currentIdx >= statusOrder.length - 1) return prev;
-        const nextStatus = statusOrder[currentIdx + 1];
-        const now = new Date().toISOString();
-        const updates: Partial<Incident> = { status: nextStatus };
-        if (nextStatus === 'Triaged') updates.triagedAt = now;
-        if (nextStatus === 'Contained') updates.containedAt = now;
-        if (nextStatus === 'Eradicated') updates.eradicatedAt = now;
-        if (nextStatus === 'Recovered') updates.recoveredAt = now;
-        if (nextStatus === 'Closed') updates.closedAt = now;
-        const newEvent: TimelineEvent = {
-          id: `e-${Date.now()}`,
-          timestamp: now,
-          action: `Status changed to ${nextStatus}`,
-          actor: 'Current User',
-          details: `Incident advanced from ${prev.status} to ${nextStatus}`,
-        };
-        return { ...prev, ...updates, timeline: [...prev.timeline, newEvent] };
-      });
+      setIncidents(prev => prev.map(inc =>
+        inc.id === incidentId ? { ...inc, ...updates, timeline: [...inc.timeline, newEvent] } : inc
+      ));
+      if (selectedIncident?.id === incidentId) {
+        setSelectedIncident(prev => prev ? { ...prev, ...updates, timeline: [...prev.timeline, newEvent] } : prev);
+      }
     }
-  }, [selectedIncident]);
+  }, [incidents, selectedIncident]);
 
-  const deleteIncident = useCallback((id: string) => {
+  const deleteIncident = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/incidents/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`Failed to delete incident (${res.status})`);
+    } catch {
+      // Continue with local removal even if API call fails
+    }
     setIncidents(prev => prev.filter(i => i.id !== id));
     if (selectedIncident?.id === id) setSelectedIncident(null);
   }, [selectedIncident]);
 
   // ── Render ──────────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 dark:bg-slate-950 text-white p-6 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-red-400 animate-spin" />
+          <span className="text-slate-400">Loading incidents...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError && incidents.length === 0) {
+    return (
+      <div className="min-h-screen bg-slate-900 dark:bg-slate-950 text-white p-6 flex items-center justify-center">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 max-w-md text-center">
+          <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <h2 className="text-lg font-semibold mb-2">Failed to Load Incidents</h2>
+          <p className="text-slate-400 text-sm mb-4">{fetchError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 dark:bg-slate-950 text-white p-6">
@@ -472,6 +444,12 @@ const IncidentManagement: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {fetchError && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+          {fetchError}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -966,10 +944,10 @@ const IncidentManagement: React.FC = () => {
               </button>
               <button
                 onClick={handleCreateIncident}
-                disabled={!form.title.trim()}
+                disabled={!form.title.trim() || isSubmitting}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
               >
-                <Plus className="w-4 h-4" /> {t('incidents.createIncident')}
+                <Plus className="w-4 h-4" /> {isSubmitting ? t('common.loading') : t('incidents.createIncident')}
               </button>
             </div>
           </div>

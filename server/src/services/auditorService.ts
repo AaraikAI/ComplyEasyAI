@@ -661,35 +661,39 @@ class AuditorService {
       throw new Error('Audit engagement not found');
     }
 
-    const engagement = await prisma.auditEngagement.update({
-      where: { id: engagementId },
-      data,
-      include: {
-        auditor: { select: { id: true, name: true, email: true, firm: true } },
-      },
-    });
-
-    // If status changed to Completed, increment auditor's completedAudits
-    if (data.status === 'Completed' && existing.status !== 'Completed') {
-      await prisma.auditorProfile.update({
-        where: { id: existing.auditorId },
-        data: {
-          completedAudits: { increment: 1 },
-          lastEngagement: new Date(),
+    const engagement = await prisma.$transaction(async (tx) => {
+      const updated = await tx.auditEngagement.update({
+        where: { id: engagementId },
+        data,
+        include: {
+          auditor: { select: { id: true, name: true, email: true, firm: true } },
         },
       });
-    }
+
+      // If status changed to Completed, increment auditor's completedAudits
+      if (data.status === 'Completed' && existing.status !== 'Completed') {
+        await tx.auditorProfile.update({
+          where: { id: existing.auditorId },
+          data: {
+            completedAudits: { increment: 1 },
+            lastEngagement: new Date(),
+          },
+        });
+      }
+
+      await AuditLogger.log({
+        userId: 'system',
+        organizationId,
+        action: 'audit_engagement.update',
+        resourceType: 'AuditEngagement',
+        resourceId: engagementId,
+        metadata: { updatedFields: Object.keys(data) },
+      });
+
+      return updated;
+    });
 
     logger.info(`Audit engagement updated: ${engagementId}`);
-
-    AuditLogger.log({
-      userId: 'system',
-      organizationId,
-      action: 'audit_engagement.update',
-      resourceType: 'AuditEngagement',
-      resourceId: engagementId,
-      metadata: { updatedFields: Object.keys(data) },
-    });
 
     return engagement;
   }

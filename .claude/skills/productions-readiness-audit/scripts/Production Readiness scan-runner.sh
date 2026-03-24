@@ -208,6 +208,13 @@ run_pattern "A5" "Placeholder content" \
 run_pattern "A7" "Math.random in business logic" \
   "grep -rn $EXTENSIONS 'Math\.random()\|random\.\|randint\|secrets\.' . | grep -v node_modules | grep -v test | grep -v seed | grep -v dist"
 
+# v3 additions: DEFAULT_/DEMO_ fallback constants (missed by keyword scans)
+run_pattern "A8" "DEFAULT_/DEMO_ fallback constants" \
+  "grep -rn $EXTENSIONS 'const DEFAULT_\|const DEMO_\|const INITIAL_\|const SAMPLE_' components/ 2>/dev/null | grep -v node_modules | grep -v __tests__ | grep -v dist"
+
+run_pattern "A9" "Large inline data arrays in components" \
+  "grep -rn $EXTENSIONS '^\s*const [A-Z_]*\s*[:=].*\[' components/ 2>/dev/null | grep -v node_modules | grep -v __tests__ | grep -v 'import\|type\|interface\|enum\|string\|number'"
+
 # Category B: Incomplete / Deferred
 run_pattern "B1" "TODO/FIXME/HACK markers" \
   "grep -rn $EXTENSIONS 'TODO\|FIXME\|HACK\|XXX\|@todo\|@fixme\|@hack' . | grep -v node_modules | grep -v '\.test\.'"
@@ -488,6 +495,83 @@ run_pattern "S7" "Canary/blue-green/rolling deploy" \
 
 run_pattern "S8" "Mobile secure storage" \
   "grep -rn $EXTENSIONS 'AsyncStorage\|SecureStore\|Keychain\|EncryptedStorage\|EncryptedSharedPreferences\|flutter_secure_storage' . | grep -v node_modules | grep -v test"
+
+# ─────────────────────────────────────
+# STEP 5.5: Component Wiring Audit (v3 addition)
+# ─────────────────────────────────────
+
+echo ""
+echo "[5.5/8] Running Component Wiring Audit..."
+echo "  (Enumerating ALL components — NOT sampling top N)"
+echo ""
+
+# Only run if components/ directory exists (React project)
+if [ -d "components/" ]; then
+  # Step 1: List ALL .tsx files in components/
+  find components/ -maxdepth 2 -name "*.tsx" \
+    | grep -v __tests__ | grep -v ".test." | grep -v ".spec." \
+    | sort > /tmp/audit_all_components.txt
+  COMP_TOTAL=$(wc -l < /tmp/audit_all_components.txt)
+  echo "  Total components found: $COMP_TOTAL"
+
+  # Step 2: Classify each by API wiring status
+  > /tmp/audit_static_components.txt
+  > /tmp/audit_wired_components.txt
+  > /tmp/audit_partially_wired.txt
+
+  while IFS= read -r file; do
+    HAS_API=$(grep -c "useEffect\|useQuery\|useSWR\|useMutation\|api\.\|fetch('/api\|fetch(\"/api\|fetch(\`/api" "$file" 2>/dev/null || echo 0)
+    HAS_DEFAULTS=$(grep -c "const DEFAULT_\|const DEMO_\|const INITIAL_\|const SAMPLE_" "$file" 2>/dev/null || echo 0)
+    if [ "$HAS_API" -gt 0 ] && [ "$HAS_DEFAULTS" -gt 0 ]; then
+      echo "$file (API:$HAS_API DEFAULTS:$HAS_DEFAULTS)" >> /tmp/audit_partially_wired.txt
+    elif [ "$HAS_API" -gt 0 ]; then
+      echo "$file ($HAS_API API patterns)" >> /tmp/audit_wired_components.txt
+    else
+      echo "$file" >> /tmp/audit_static_components.txt
+    fi
+  done < /tmp/audit_all_components.txt
+
+  WIRED=$(wc -l < /tmp/audit_wired_components.txt)
+  PARTIAL=$(wc -l < /tmp/audit_partially_wired.txt)
+  STATIC=$(wc -l < /tmp/audit_static_components.txt)
+
+  echo "  ✓ FULLY_WIRED:      $WIRED"
+  echo "  ⚠ PARTIALLY_WIRED:  $PARTIAL"
+  echo "  ✗ STATIC_ONLY:      $STATIC"
+  echo ""
+
+  if [ "$PARTIAL" -gt 0 ]; then
+    echo "  --- PARTIALLY_WIRED components (has API + DEFAULT_/DEMO_ data): ---"
+    cat /tmp/audit_partially_wired.txt
+    echo ""
+  fi
+
+  if [ "$STATIC" -gt 0 ]; then
+    echo "  --- STATIC_ONLY components (zero API calls — REVIEW EACH): ---"
+    cat /tmp/audit_static_components.txt
+    echo ""
+
+    # Step 3: Cross-reference with backend routes
+    echo "  --- Backend route cross-reference for STATIC_ONLY components: ---"
+    while IFS= read -r file; do
+      BASENAME=$(basename "$file" .tsx)
+      # Convert PascalCase to kebab-case for route matching
+      KEBAB=$(echo "$BASENAME" | sed 's/\([a-z]\)\([A-Z]\)/\1-\2/g' | tr '[:upper:]' '[:lower:]')
+      ROUTE_MATCH=$(find server/src/routes/ -name "*.ts" 2>/dev/null | xargs grep -l "$BASENAME\|$KEBAB" 2>/dev/null | head -1)
+      if [ -n "$ROUTE_MATCH" ]; then
+        echo "    GAP: $file → backend exists: $ROUTE_MATCH"
+      fi
+    done < /tmp/audit_static_components.txt
+    echo ""
+  fi
+
+  echo "  [AI ACTION]: Read EVERY file in /tmp/audit_static_components.txt and /tmp/audit_partially_wired.txt"
+  echo "  [AI ACTION]: Classify each per feature-completeness.md Step 7.5 rules"
+else
+  echo "  ✗ No components/ directory found — skipping component wiring audit"
+fi
+
+echo ""
 
 # ─────────────────────────────────────
 # STEP 6: Phase 2.5 — AST Semantic Search (VISIONARY)

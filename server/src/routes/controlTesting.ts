@@ -7,6 +7,8 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import { createControlTestSchema, updateControlTestSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -276,6 +278,7 @@ router.get(
 
 router.post(
   '/',
+  validateBody(createControlTestSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
 
@@ -319,6 +322,7 @@ router.post(
 
 router.patch(
   '/:id',
+  validateBody(updateControlTestSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
 

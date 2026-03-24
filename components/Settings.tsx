@@ -11,6 +11,7 @@ import FeatureMarketplace from './FeatureMarketplace';
 import { useOnboardingTrigger } from '../hooks/useOnboarding';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { toast } from 'sonner';
+import { useSubmitGuard } from '../hooks/useSubmitGuard';
 
 interface SettingsProps {
   onNavigateToIntegrations?: () => void;
@@ -69,6 +70,7 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
   const [profileName, setProfileName] = useState(currentUser?.name || '');
   const [profileEmail, setProfileEmail] = useState(currentUser?.email || '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const { isSubmitting, guard } = useSubmitGuard();
 
   // --- Integrations State ---
   const [integrations, setIntegrations] = useState<Integration[]>([]);
@@ -497,37 +499,38 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
       return;
     }
 
-    setIsSavingProfile(true);
-    try {
-      // Check for duplicate email (if changed)
-      if (profileEmail !== currentUser?.email) {
-        // In production, this would be checked on backend
-        // For now, we'll let the backend handle it
-      }
+    await guard(async () => {
+      setIsSavingProfile(true);
+      try {
+        // Check for duplicate email (if changed)
+        if (profileEmail !== currentUser?.email) {
+          // The backend handles duplicate detection
+        }
 
-      // Update user profile via API
-      const updatedUser = await api.auth.updateProfile({
-        name: profileName.trim(),
-        email: profileEmail.trim(),
-      });
+        // Update user profile via API
+        const updatedUser = await api.auth.updateProfile({
+          name: profileName.trim(),
+          email: profileEmail.trim(),
+        });
 
-      // Update local user data
-      if (updatedUser) {
-        localStorage.setItem('user_data', JSON.stringify(updatedUser));
-      }
+        // Update local user data
+        if (updatedUser) {
+          localStorage.setItem('user_data', JSON.stringify(updatedUser));
+        }
 
-      toast.success('Profile updated successfully!');
-    } catch (error: any) {
-      console.error('Failed to update profile:', error);
-      const errorMessage = error.message || 'Failed to update profile';
-      if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
-        toast.warning('This email is already in use. Please use a different email.');
-      } else {
-        toast.error(`Failed to update profile: ${errorMessage}`);
+        toast.success('Profile updated successfully!');
+      } catch (error: any) {
+        console.error('Failed to update profile:', error);
+        const errorMessage = error.message || 'Failed to update profile';
+        if (errorMessage.includes('duplicate') || errorMessage.includes('already exists')) {
+          toast.warning('This email is already in use. Please use a different email.');
+        } else {
+          toast.error(`Failed to update profile: ${errorMessage}`);
+        }
+      } finally {
+        setIsSavingProfile(false);
       }
-    } finally {
-      setIsSavingProfile(false);
-    }
+    });
   };
 
 
@@ -911,12 +914,13 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigateToIntegrations }) 
             </div>
 
             <div className="pt-4 border-t border-gray-100 flex justify-end">
-               <button 
+               <button
                  onClick={handleSaveProfile}
-                 className="flex items-center space-x-2 bg-brand-600 text-white px-6 py-2.5 rounded-lg hover:bg-brand-700 transition-colors shadow-sm"
+                 disabled={isSavingProfile || isSubmitting}
+                 className="flex items-center space-x-2 bg-brand-600 text-white px-6 py-2.5 rounded-lg hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50"
                >
-                 {isSavingProfile ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
-                 <span>{isSavingProfile ? `${t('common.loading')}` : t('common.save')}</span>
+                 {isSavingProfile || isSubmitting ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
+                 <span>{isSavingProfile || isSubmitting ? `${t('common.loading')}` : t('common.save')}</span>
                </button>
             </div>
           </div>

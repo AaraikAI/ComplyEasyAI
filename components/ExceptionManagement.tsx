@@ -10,7 +10,7 @@
  * - Auditor view
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import {
   AlertTriangle,
@@ -30,6 +30,7 @@ import {
   ChevronRight,
   Trash2,
   AlertOctagon,
+  Loader2,
 } from 'lucide-react';
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -98,77 +99,98 @@ const defaultForm: ExceptionForm = {
   riskLevel: 'Medium', justification: '', expiryDate: '', compensatingControl: '',
 };
 
-// ── Mock Data ───────────────────────────────────────────────────────────────
+// ── API Helper ──────────────────────────────────────────────────────────────
 
-const initialExceptions: ExceptionRecord[] = [
-  {
-    id: 'EXC-001', title: 'Legacy System MFA Exception', description: 'Legacy CRM system does not support modern MFA protocols. Requesting exception until migration completes.',
-    controlId: 'CC-6.1', controlName: 'Multi-Factor Authentication', framework: 'SOC 2', status: 'Approved',
-    riskLevel: 'High', requestedBy: 'Alex Kumar', requestedDate: '2025-10-01', reviewedBy: 'Sarah Chen', reviewedDate: '2025-10-05',
-    expiryDate: '2026-06-30', justification: 'Legacy CRM does not support SAML/OIDC. Migration to new platform scheduled for Q2 2026.',
-    compensatingControls: [
-      { id: 'cc1', description: 'IP allowlisting restricted to office and VPN ranges', owner: 'DevOps', status: 'Implemented' },
-      { id: 'cc2', description: 'Enhanced logging and monitoring on legacy system', owner: 'Security', status: 'Implemented' },
-      { id: 'cc3', description: 'Quarterly access reviews for all legacy system users', owner: 'IT Admin', status: 'Implemented' },
-    ],
-    approvalComments: 'Approved with compensating controls. Must migrate before expiry.',
-  },
-  {
-    id: 'EXC-002', title: 'Encryption at Rest Exception for Dev Environment', description: 'Development database does not use encryption at rest due to performance constraints.',
-    controlId: 'CC-6.7', controlName: 'Data Encryption at Rest', framework: 'SOC 2', status: 'Approved',
-    riskLevel: 'Medium', requestedBy: 'DevOps Team', requestedDate: '2025-11-15', reviewedBy: 'James Wilson', reviewedDate: '2025-11-18',
-    expiryDate: '2026-05-15', justification: 'Dev environment uses synthetic data only. Encryption causes 40% performance overhead affecting developer productivity.',
-    compensatingControls: [
-      { id: 'cc4', description: 'Dev environment contains only synthetic/anonymized data', owner: 'Data Team', status: 'Implemented' },
-      { id: 'cc5', description: 'Network segmentation isolating dev from production', owner: 'DevOps', status: 'Implemented' },
-    ],
-    approvalComments: 'Approved given synthetic data. Data masking must be validated quarterly.',
-  },
-  {
-    id: 'EXC-003', title: 'Vendor SOC 2 Report Delay', description: 'Critical vendor has not yet completed their SOC 2 Type II audit for current period.',
-    controlId: 'CC-9.2', controlName: 'Vendor Risk Management', framework: 'SOC 2', status: 'UnderReview',
-    riskLevel: 'High', requestedBy: 'Procurement', requestedDate: '2026-01-10', reviewedBy: null, reviewedDate: null,
-    expiryDate: '2026-04-30', justification: 'Vendor is undergoing audit; report expected by March 2026. Vendor has provided bridge letter.',
-    compensatingControls: [
-      { id: 'cc6', description: 'Bridge letter obtained from vendor', owner: 'Procurement', status: 'Implemented' },
-      { id: 'cc7', description: 'Enhanced monitoring of vendor data access', owner: 'Security', status: 'Planned' },
-    ],
-    approvalComments: '',
-  },
-  {
-    id: 'EXC-004', title: 'Password Length Exception for IoT Devices', description: 'IoT sensors cannot support 16-character minimum password requirement.',
-    controlId: 'CC-6.1', controlName: 'Authentication Controls', framework: 'ISO 27001', status: 'Pending',
-    riskLevel: 'Medium', requestedBy: 'IoT Team', requestedDate: '2026-02-20', reviewedBy: null, reviewedDate: null,
-    expiryDate: '2026-08-20', justification: 'Hardware limitation on IoT devices restricts password length to 12 characters. Device firmware update planned.',
-    compensatingControls: [
-      { id: 'cc8', description: 'Certificate-based authentication supplement', owner: 'IoT Team', status: 'Planned' },
-    ],
-    approvalComments: '',
-  },
-  {
-    id: 'EXC-005', title: 'Patch Management Delay for Production DB', description: 'Critical security patch deferred due to compatibility concerns.',
-    controlId: 'CC-7.1', controlName: 'System Patching', framework: 'SOC 2', status: 'Expired',
-    riskLevel: 'Critical', requestedBy: 'DBA Team', requestedDate: '2025-08-01', reviewedBy: 'Sarah Chen', reviewedDate: '2025-08-03',
-    expiryDate: '2025-11-30', justification: 'Patch causes compatibility issues with ORM layer. Requires application code changes first.',
-    compensatingControls: [
-      { id: 'cc9', description: 'WAF rules to mitigate known vulnerability', owner: 'Security', status: 'Implemented' },
-      { id: 'cc10', description: 'Network segmentation limiting DB exposure', owner: 'DevOps', status: 'Implemented' },
-    ],
-    approvalComments: 'Approved with 90-day window. Patch must be applied before expiry.',
-  },
-];
+const API_BASE = '/api/exceptions';
+
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, { credentials: 'include', ...options });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(body.message || `Request failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+// ── Backend Status Mapping ───────────────────────────────────────────────────
+
+function mapBackendStatus(status: string): ExceptionStatus {
+  switch (status) {
+    case 'REQUESTED': return 'Pending';
+    case 'APPROVED': return 'Approved';
+    case 'REJECTED': return 'Denied';
+    case 'EXPIRED': return 'Expired';
+    default: return 'Pending';
+  }
+}
+
+function mapRiskAcceptance(risk: string | null | undefined): RiskLevel {
+  if (!risk) return 'Medium';
+  const lower = risk.toLowerCase();
+  if (lower.includes('critical')) return 'Critical';
+  if (lower.includes('high')) return 'High';
+  if (lower.includes('low')) return 'Low';
+  return 'Medium';
+}
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 const ExceptionManagement: React.FC = () => {
   const { t } = useI18n();
-  const [exceptions, setExceptions] = useState<ExceptionRecord[]>(initialExceptions);
+  const [exceptions, setExceptions] = useState<ExceptionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('exceptions');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ExceptionStatus | 'all'>('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedExc, setSelectedExc] = useState<ExceptionRecord | null>(null);
   const [form, setForm] = useState<ExceptionForm>(defaultForm);
+
+  // Fetch exceptions from backend
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    apiFetch<{ status: string; data: { exceptions: any[] } }>(`${API_BASE}?limit=100`)
+      .then((res) => {
+        if (cancelled) return;
+        const mapped: ExceptionRecord[] = res.data.exceptions.map((e: any) => ({
+          id: e.id,
+          title: e.title || '',
+          description: e.justification || '',
+          controlId: e.controlId || '',
+          controlName: e.controlId || '',
+          framework: e.controlId?.startsWith('CC-') ? 'SOC 2' : 'General',
+          status: mapBackendStatus(e.status),
+          riskLevel: mapRiskAcceptance(e.riskAcceptance),
+          requestedBy: e.requestedBy || '',
+          requestedDate: e.createdAt ? new Date(e.createdAt).toISOString().split('T')[0] : '',
+          reviewedBy: e.approvedBy || null,
+          reviewedDate: e.updatedAt && e.approvedBy ? new Date(e.updatedAt).toISOString().split('T')[0] : null,
+          expiryDate: e.expiryDate ? new Date(e.expiryDate).toISOString().split('T')[0] : '',
+          justification: e.justification || '',
+          compensatingControls: e.compensatingControls
+            ? (typeof e.compensatingControls === 'string'
+              ? [{ id: `cc-${e.id}`, description: e.compensatingControls, owner: 'N/A', status: 'Implemented' as const }]
+              : [])
+            : [],
+          approvalComments: '',
+        }));
+        setExceptions(mapped);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn('Failed to fetch exceptions:', err);
+        setError(err.message || 'Failed to load exceptions');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = useMemo(() => {
     return exceptions.filter(e => {
@@ -195,26 +217,83 @@ const ExceptionManagement: React.FC = () => {
     byFramework: [...new Set(exceptions.map(e => e.framework))].map(f => ({ framework: f, count: exceptions.filter(e => e.framework === f).length })),
   }), [exceptions]);
 
-  const handleCreate = useCallback(() => {
-    const newExc: ExceptionRecord = {
-      id: `EXC-${String(exceptions.length + 1).padStart(3, '0')}`, title: form.title, description: form.description,
-      controlId: form.controlId, controlName: form.controlName, framework: form.framework, status: 'Pending',
-      riskLevel: form.riskLevel, requestedBy: 'Current User', requestedDate: new Date().toISOString().split('T')[0],
-      reviewedBy: null, reviewedDate: null, expiryDate: form.expiryDate, justification: form.justification,
-      compensatingControls: form.compensatingControl ? [{ id: `cc-${Date.now()}`, description: form.compensatingControl, owner: 'Current User', status: 'Planned' as const }] : [],
-      approvalComments: '',
-    };
-    setExceptions(prev => [newExc, ...prev]);
-    setShowCreateForm(false);
-    setForm(defaultForm);
-  }, [form, exceptions.length]);
+  const handleCreate = useCallback(async () => {
+    try {
+      const payload = {
+        controlId: form.controlId || 'GENERAL',
+        title: form.title,
+        justification: form.justification || form.description,
+        riskAcceptance: form.riskLevel,
+        compensatingControls: form.compensatingControl || null,
+        expiryDate: form.expiryDate || new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+        reviewDate: form.expiryDate || new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+      };
 
-  const updateStatus = useCallback((id: string, newStatus: ExceptionStatus) => {
-    setExceptions(prev => prev.map(e => e.id === id ? {
-      ...e, status: newStatus,
-      reviewedBy: newStatus === 'Approved' || newStatus === 'Denied' ? 'Current Reviewer' : e.reviewedBy,
-      reviewedDate: newStatus === 'Approved' || newStatus === 'Denied' ? new Date().toISOString().split('T')[0] : e.reviewedDate,
-    } : e));
+      const res = await apiFetch<{ status: string; data: any }>(API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const e = res.data;
+      const newExc: ExceptionRecord = {
+        id: e.id,
+        title: e.title || form.title,
+        description: form.description,
+        controlId: e.controlId || form.controlId,
+        controlName: form.controlName,
+        framework: form.framework,
+        status: 'Pending',
+        riskLevel: form.riskLevel,
+        requestedBy: 'Current User',
+        requestedDate: new Date().toISOString().split('T')[0],
+        reviewedBy: null,
+        reviewedDate: null,
+        expiryDate: e.expiryDate ? new Date(e.expiryDate).toISOString().split('T')[0] : form.expiryDate,
+        justification: form.justification,
+        compensatingControls: form.compensatingControl
+          ? [{ id: `cc-${Date.now()}`, description: form.compensatingControl, owner: 'Current User', status: 'Planned' as const }]
+          : [],
+        approvalComments: '',
+      };
+      setExceptions(prev => [newExc, ...prev]);
+      setShowCreateForm(false);
+      setForm(defaultForm);
+    } catch (err: any) {
+      console.warn('Failed to create exception:', err);
+      setError(err.message || 'Failed to create exception');
+    }
+  }, [form]);
+
+  const updateStatus = useCallback(async (id: string, newStatus: ExceptionStatus) => {
+    try {
+      let endpoint = `${API_BASE}/${id}`;
+      const method = 'PATCH';
+      let body: any = {};
+
+      if (newStatus === 'Approved') {
+        endpoint = `${API_BASE}/${id}/approve`;
+      } else if (newStatus === 'Denied') {
+        endpoint = `${API_BASE}/${id}/reject`;
+      } else {
+        body = { status: newStatus === 'UnderReview' ? 'REQUESTED' : newStatus.toUpperCase() };
+      }
+
+      await apiFetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+      });
+
+      setExceptions(prev => prev.map(e => e.id === id ? {
+        ...e, status: newStatus,
+        reviewedBy: newStatus === 'Approved' || newStatus === 'Denied' ? 'Current Reviewer' : e.reviewedBy,
+        reviewedDate: newStatus === 'Approved' || newStatus === 'Denied' ? new Date().toISOString().split('T')[0] : e.reviewedDate,
+      } : e));
+    } catch (err: any) {
+      console.warn('Failed to update exception status:', err);
+      setError(err.message || 'Failed to update status');
+    }
   }, []);
 
   const daysUntilExpiry = (date: string) => {
@@ -247,7 +326,21 @@ const ExceptionManagement: React.FC = () => {
         ))}
       </div>
 
-      {activeTab === 'exceptions' && !selectedExc && (
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+          <span className="ml-3 text-slate-400">Loading exceptions...</span>
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+          {error}
+          <button onClick={() => setError(null)} className="ml-3 underline text-red-300 hover:text-red-200">Dismiss</button>
+        </div>
+      )}
+
+      {!loading && activeTab === 'exceptions' && !selectedExc && (
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
             <div className="relative flex-1 w-full"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" /><input type="text" placeholder={t('common.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
@@ -284,7 +377,7 @@ const ExceptionManagement: React.FC = () => {
         </>
       )}
 
-      {activeTab === 'exceptions' && selectedExc && (
+      {!loading && activeTab === 'exceptions' && selectedExc && (
         <div className="space-y-6">
           <button onClick={() => setSelectedExc(null)} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm"><ChevronRight className="w-4 h-4 rotate-180" /> Back</button>
           <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
@@ -324,7 +417,7 @@ const ExceptionManagement: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'metrics' && (
+      {!loading && activeTab === 'metrics' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
@@ -365,7 +458,7 @@ const ExceptionManagement: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'auditor' && (
+      {!loading && activeTab === 'auditor' && (
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
           <h3 className="text-sm font-semibold mb-4">Auditor View - All Exceptions</h3>
           <div className="overflow-x-auto">

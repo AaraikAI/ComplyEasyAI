@@ -88,7 +88,7 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // The dependency on `locale` (and the force-update counter) ensures React
   // re-creates the callback reference after a locale switch, causing
   // consumers that call `t()` to re-render with the new translations.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const t = useCallback(
     (key: string, vars?: Record<string, string | number>) => coreT(key, vars),
     // eslint-disable-next-line react-hooks/exhaustive-deps

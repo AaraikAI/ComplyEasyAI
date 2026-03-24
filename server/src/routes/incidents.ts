@@ -7,7 +7,13 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createIncidentSchema, updateIncidentSchema,
+  createTimelineEntrySchema, createIncidentTaskSchema, updateIncidentTaskSchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -104,7 +110,7 @@ router.get(
       });
     } catch (error) {
       logger.error('Error fetching incident metrics:', error);
-      res.status(500).json({ error: 'Failed to fetch incident metrics' });
+      throw error instanceof AppError ? error : new AppError('Failed to fetch incident metrics', 500);
     }
   })
 );
@@ -160,7 +166,7 @@ router.get(
       });
     } catch (error) {
       logger.error('Error fetching incidents:', error);
-      res.status(500).json({ error: 'Failed to fetch incidents' });
+      throw error instanceof AppError ? error : new AppError('Failed to fetch incidents', 500);
     }
   })
 );
@@ -190,7 +196,7 @@ router.get(
       res.json({ status: 'success', data: incident });
     } catch (error) {
       logger.error('Error fetching incident:', error);
-      res.status(500).json({ error: 'Failed to fetch incident' });
+      throw error instanceof AppError ? error : new AppError('Failed to fetch incident', 500);
     }
   })
 );
@@ -202,6 +208,7 @@ router.get(
 router.post(
   '/',
   authorize('admin', 'editor'),
+  validateBody(createIncidentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -215,27 +222,6 @@ router.post(
         affectedControls,
         impact,
       } = req.body;
-
-      if (!title || !description || !severity || !category) {
-        res.status(400).json({ error: 'title, description, severity, and category are required' });
-        return;
-      }
-
-      const validSeverities = ['SEV1', 'SEV2', 'SEV3', 'SEV4'];
-      if (!validSeverities.includes(severity)) {
-        res.status(400).json({ error: `severity must be one of: ${validSeverities.join(', ')}` });
-        return;
-      }
-
-      const validCategories = [
-        'DATA_BREACH', 'MALWARE', 'PHISHING', 'UNAUTHORIZED_ACCESS',
-        'DDOS', 'INSIDER_THREAT', 'SYSTEM_FAILURE', 'POLICY_VIOLATION',
-        'PHYSICAL_SECURITY', 'OTHER',
-      ];
-      if (!validCategories.includes(category)) {
-        res.status(400).json({ error: `category must be one of: ${validCategories.join(', ')}` });
-        return;
-      }
 
       const incident = await prisma.grcIncident.create({
         data: {
@@ -271,7 +257,7 @@ router.post(
       res.status(201).json({ status: 'success', data: incident });
     } catch (error) {
       logger.error('Error creating incident:', error);
-      res.status(500).json({ error: 'Failed to create incident' });
+      throw error instanceof AppError ? error : new AppError('Failed to create incident', 500);
     }
   })
 );
@@ -283,6 +269,7 @@ router.post(
 router.patch(
   '/:id',
   authorize('admin', 'editor'),
+  validateBody(updateIncidentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -340,7 +327,7 @@ router.patch(
       res.json({ status: 'success', data: incident });
     } catch (error) {
       logger.error('Error updating incident:', error);
-      res.status(500).json({ error: 'Failed to update incident' });
+      throw error instanceof AppError ? error : new AppError('Failed to update incident', 500);
     }
   })
 );
@@ -388,7 +375,7 @@ router.delete(
       res.json({ status: 'success', data: { message: 'Incident archived', id: incident.id } });
     } catch (error) {
       logger.error('Error archiving incident:', error);
-      res.status(500).json({ error: 'Failed to archive incident' });
+      throw error instanceof AppError ? error : new AppError('Failed to archive incident', 500);
     }
   })
 );
@@ -420,7 +407,7 @@ router.get(
       res.json({ status: 'success', data: timeline });
     } catch (error) {
       logger.error('Error fetching incident timeline:', error);
-      res.status(500).json({ error: 'Failed to fetch timeline' });
+      throw error instanceof AppError ? error : new AppError('Failed to fetch timeline', 500);
     }
   })
 );
@@ -431,6 +418,7 @@ router.get(
 
 router.post(
   '/:id/timeline',
+  validateBody(createTimelineEntrySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -446,11 +434,6 @@ router.post(
 
       const { action, details } = req.body;
 
-      if (!action || !details) {
-        res.status(400).json({ error: 'action and details are required' });
-        return;
-      }
-
       const entry = await prisma.incidentTimelineEntry.create({
         data: {
           incidentId: req.params.id,
@@ -463,7 +446,7 @@ router.post(
       res.status(201).json({ status: 'success', data: entry });
     } catch (error) {
       logger.error('Error adding timeline entry:', error);
-      res.status(500).json({ error: 'Failed to add timeline entry' });
+      throw error instanceof AppError ? error : new AppError('Failed to add timeline entry', 500);
     }
   })
 );
@@ -474,6 +457,7 @@ router.post(
 
 router.post(
   '/:id/tasks',
+  validateBody(createIncidentTaskSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -489,11 +473,6 @@ router.post(
 
       const { title, assignee, dueDate } = req.body;
 
-      if (!title || !assignee) {
-        res.status(400).json({ error: 'title and assignee are required' });
-        return;
-      }
-
       const task = await prisma.incidentTask.create({
         data: {
           incidentId: req.params.id,
@@ -507,7 +486,7 @@ router.post(
       res.status(201).json({ status: 'success', data: task });
     } catch (error) {
       logger.error('Error creating incident task:', error);
-      res.status(500).json({ error: 'Failed to create incident task' });
+      throw error instanceof AppError ? error : new AppError('Failed to create incident task', 500);
     }
   })
 );
@@ -518,6 +497,7 @@ router.post(
 
 router.patch(
   '/:id/tasks/:taskId',
+  validateBody(updateIncidentTaskSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -545,11 +525,6 @@ router.patch(
       const updateData: any = {};
 
       if (status) {
-        const validStatuses = ['OPEN', 'IN_PROGRESS', 'COMPLETED'];
-        if (!validStatuses.includes(status)) {
-          res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}` });
-          return;
-        }
         updateData.status = status;
         if (status === 'COMPLETED') {
           updateData.completedAt = new Date();
@@ -567,7 +542,7 @@ router.patch(
       res.json({ status: 'success', data: task });
     } catch (error) {
       logger.error('Error updating incident task:', error);
-      res.status(500).json({ error: 'Failed to update incident task' });
+      throw error instanceof AppError ? error : new AppError('Failed to update incident task', 500);
     }
   })
 );

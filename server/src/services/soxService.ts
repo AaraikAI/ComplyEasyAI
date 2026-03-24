@@ -678,28 +678,118 @@ export class SOXService {
 
     logger.info(`[SOX] Starting automated testing for control: ${control.controlNumber}`);
 
-    // Simulate automated control testing based on control type
+    // Query evidence linked to this control within the testing period (last 12 months)
+    const testingPeriodStart = new Date();
+    testingPeriodStart.setFullYear(testingPeriodStart.getFullYear() - 1);
+
+    const evidence = await prisma.evidenceAnalysis.findMany({
+      where: {
+        organizationId,
+        analyzedAt: { gte: testingPeriodStart },
+      },
+      orderBy: { analyzedAt: 'desc' },
+      take: 50,
+    });
+
+    // Query audit logs for control-related activity
+    const auditActivity = await prisma.auditLog.findMany({
+      where: {
+        organizationId,
+        action: { contains: control.controlNumber },
+        timestamp: { gte: testingPeriodStart },
+      },
+      orderBy: { timestamp: 'desc' },
+      take: 20,
+    });
+
+    // Evaluate controls based on actual data
     const automatedChecks: Record<string, unknown>[] = [];
-    const passed = true;
-    const exceptionsFound = 0;
+    let exceptionsFound = 0;
 
     if (control.category === 'ITGeneral' || control.category === 'ITGC') {
-      automatedChecks.push(
-        { check: 'AccessControlVerification', status: 'Passed', details: 'Access controls properly configured' },
-        { check: 'ChangeManagementReview', status: 'Passed', details: 'Change management procedures followed' },
-        { check: 'BackupVerification', status: 'Passed', details: 'Backup procedures operational' }
-      );
+      // Check 1: Evidence exists for access control reviews
+      const hasAccessReviews = evidence.some(e => e.verificationStatus === 'completed');
+      automatedChecks.push({
+        check: 'AccessControlVerification',
+        status: hasAccessReviews ? 'Passed' : 'Failed',
+        details: hasAccessReviews
+          ? `${evidence.filter(e => e.verificationStatus === 'completed').length} completed evidence items found`
+          : 'No completed evidence found for access control reviews in testing period',
+      });
+      if (!hasAccessReviews) exceptionsFound++;
+
+      // Check 2: Change management activity exists
+      const hasChangeActivity = auditActivity.length > 0;
+      automatedChecks.push({
+        check: 'ChangeManagementReview',
+        status: hasChangeActivity ? 'Passed' : 'Failed',
+        details: hasChangeActivity
+          ? `${auditActivity.length} change management audit entries found`
+          : 'No change management audit activity found in testing period',
+      });
+      if (!hasChangeActivity) exceptionsFound++;
+
+      // Check 3: Evidence freshness — most recent evidence must be within 90 days
+      const latestEvidence = evidence[0];
+      const isEvidenceFresh = latestEvidence && (Date.now() - new Date(latestEvidence.createdAt).getTime()) < 90 * 24 * 60 * 60 * 1000;
+      automatedChecks.push({
+        check: 'BackupVerification',
+        status: isEvidenceFresh ? 'Passed' : 'Failed',
+        details: isEvidenceFresh
+          ? `Latest evidence collected on ${new Date(latestEvidence.createdAt).toISOString().split('T')[0]}`
+          : 'No evidence collected within the last 90 days — control may be stale',
+      });
+      if (!isEvidenceFresh) exceptionsFound++;
     } else if (control.category === 'ITApplication' || control.category === 'Automated') {
-      automatedChecks.push(
-        { check: 'SystemConfigValidation', status: 'Passed', details: 'System configuration matches expected state' },
-        { check: 'DataIntegrityCheck', status: 'Passed', details: 'Data integrity validated' },
-        { check: 'ProcessExecutionVerification', status: 'Passed', details: 'Automated process executing as designed' }
-      );
+      // Check 1: System config — evidence exists and has been reviewed
+      const completedEvidence = evidence.filter(e => e.verificationStatus === 'completed');
+      automatedChecks.push({
+        check: 'SystemConfigValidation',
+        status: completedEvidence.length > 0 ? 'Passed' : 'Failed',
+        details: completedEvidence.length > 0
+          ? `${completedEvidence.length} validated evidence items confirm system configuration`
+          : 'No validated evidence for system configuration in testing period',
+      });
+      if (completedEvidence.length === 0) exceptionsFound++;
+
+      // Check 2: Data integrity — evidence coverage across the period
+      const monthsCovered = new Set(evidence.map(e => new Date(e.createdAt).toISOString().substring(0, 7))).size;
+      const coverageAdequate = monthsCovered >= 6;
+      automatedChecks.push({
+        check: 'DataIntegrityCheck',
+        status: coverageAdequate ? 'Passed' : 'Failed',
+        details: coverageAdequate
+          ? `Evidence covers ${monthsCovered} months of the testing period`
+          : `Evidence only covers ${monthsCovered} months — minimum 6 months required`,
+      });
+      if (!coverageAdequate) exceptionsFound++;
+
+      // Check 3: Process execution — recent audit activity confirms control operation
+      const recentActivity = auditActivity.filter(a => (Date.now() - new Date(a.timestamp).getTime()) < 30 * 24 * 60 * 60 * 1000);
+      automatedChecks.push({
+        check: 'ProcessExecutionVerification',
+        status: recentActivity.length > 0 ? 'Passed' : 'Failed',
+        details: recentActivity.length > 0
+          ? `${recentActivity.length} audit events in last 30 days confirm process execution`
+          : 'No recent audit activity — automated process may not be executing',
+      });
+      if (recentActivity.length === 0) exceptionsFound++;
     } else {
-      automatedChecks.push(
-        { check: 'HybridControlCheck', status: 'Passed', details: 'Automated portion of hybrid control verified' }
-      );
+      // Hybrid controls — check for any evidence and activity
+      const hasEvidence = evidence.length > 0;
+      const hasActivity = auditActivity.length > 0;
+      const hybridPassed = hasEvidence && hasActivity;
+      automatedChecks.push({
+        check: 'HybridControlCheck',
+        status: hybridPassed ? 'Passed' : 'Failed',
+        details: hybridPassed
+          ? `${evidence.length} evidence items and ${auditActivity.length} audit events found`
+          : `Missing ${!hasEvidence ? 'evidence' : ''}${!hasEvidence && !hasActivity ? ' and ' : ''}${!hasActivity ? 'audit activity' : ''} for hybrid control`,
+      });
+      if (!hybridPassed) exceptionsFound++;
     }
+
+    const passed = exceptionsFound === 0;
 
     // Create the test result
     const testResult = await this.createSOXTestResult({

@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { isAtLimit, getUpgradeMessage } from '../constants/tierLimits';
 import { TierLimitBanner } from './TierLimitBanner';
+import { useSubmitGuard } from '../hooks/useSubmitGuard';
 import ReactMarkdown from 'react-markdown';
 import {
   ArrowLeft, Plus, Loader2, Search, Filter, X, ChevronDown, ChevronUp,
@@ -152,6 +153,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
   // Forms
   const [vendorForm, setVendorForm] = useState<Partial<Vendor>>(emptyVendorForm());
   const [isSaving, setIsSaving] = useState(false);
+  const { isSubmitting, guard } = useSubmitGuard();
 
   // AI States
   const [aiScoreLoading, setAiScoreLoading] = useState<string | null>(null);
@@ -248,53 +250,57 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
       toast.warning(getUpgradeMessage(plan, 'maxVendors', vendors.length) || 'Vendor limit reached. Upgrade in Settings → Billing.');
       return;
     }
-    setIsSaving(true);
-    setError(null);
-    try {
-      const payload: any = { ...vendorForm };
-      if (payload.contractStart) payload.contractStart = new Date(payload.contractStart).toISOString();
-      if (payload.contractEnd) payload.contractEnd = new Date(payload.contractEnd).toISOString();
-      await api.vendors.create(payload);
-      await loadVendors();
-      await loadDashboard();
-      setVendorForm(emptyVendorForm());
-      setViewMode('list');
-    } catch (err: any) {
-      setError(err.message || 'Failed to create vendor');
-    } finally {
-      setIsSaving(false);
-    }
+    await guard(async () => {
+      setIsSaving(true);
+      setError(null);
+      try {
+        const payload: any = { ...vendorForm };
+        if (payload.contractStart) payload.contractStart = new Date(payload.contractStart).toISOString();
+        if (payload.contractEnd) payload.contractEnd = new Date(payload.contractEnd).toISOString();
+        await api.vendors.create(payload);
+        await loadVendors();
+        await loadDashboard();
+        setVendorForm(emptyVendorForm());
+        setViewMode('list');
+      } catch (err: any) {
+        setError(err.message || 'Failed to create vendor');
+      } finally {
+        setIsSaving(false);
+      }
+    });
   };
 
   const handleUpdateVendor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVendor) return;
-    setIsSaving(true);
-    setError(null);
-    try {
-      const payload: any = { ...vendorForm };
-      if (payload.contractStart) payload.contractStart = new Date(payload.contractStart).toISOString();
-      if (payload.contractEnd) payload.contractEnd = new Date(payload.contractEnd).toISOString();
-      // Remove fields not accepted by the update schema
-      delete payload.id;
-      delete payload.organizationId;
-      delete payload.createdAt;
-      delete payload.updatedAt;
-      delete payload.assessments;
-      delete payload.reviews;
-      delete payload.monitors;
-      delete payload.lastSecurityReview;
-      delete payload.nextSecurityReview;
-      const updated = await api.vendors.update(selectedVendor.id, payload);
-      setSelectedVendor(updated);
-      await loadVendors();
-      await loadDashboard();
-      setViewMode('detail');
-    } catch (err: any) {
-      setError(err.message || 'Failed to update vendor');
-    } finally {
-      setIsSaving(false);
-    }
+    await guard(async () => {
+      setIsSaving(true);
+      setError(null);
+      try {
+        const payload: any = { ...vendorForm };
+        if (payload.contractStart) payload.contractStart = new Date(payload.contractStart).toISOString();
+        if (payload.contractEnd) payload.contractEnd = new Date(payload.contractEnd).toISOString();
+        // Remove fields not accepted by the update schema
+        delete payload.id;
+        delete payload.organizationId;
+        delete payload.createdAt;
+        delete payload.updatedAt;
+        delete payload.assessments;
+        delete payload.reviews;
+        delete payload.monitors;
+        delete payload.lastSecurityReview;
+        delete payload.nextSecurityReview;
+        const updated = await api.vendors.update(selectedVendor.id, payload);
+        setSelectedVendor(updated);
+        await loadVendors();
+        await loadDashboard();
+        setViewMode('detail');
+      } catch (err: any) {
+        setError(err.message || 'Failed to update vendor');
+      } finally {
+        setIsSaving(false);
+      }
+    });
   };
 
   const handleArchiveVendor = async (vendor: Vendor) => {
@@ -1029,7 +1035,7 @@ const VendorManagement: React.FC<VendorManagementProps> = ({ onBack }) => {
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
             {t('common.cancel')}
           </button>
-          <button type="submit" disabled={isSaving || !f.name}
+          <button type="submit" disabled={isSaving || isSubmitting || !f.name}
             className="px-6 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
             {isSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
             {isEdit ? t('common.save') : t('vendors.addVendor')}

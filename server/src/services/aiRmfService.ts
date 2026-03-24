@@ -28,52 +28,55 @@ class AIRMFService {
     metadata?: any;
   }, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
-      const aiSystem = await prisma.aISystem.create({
-        data: {
-          organizationId,
-          name: data.name,
-          description: data.description,
-          systemType: data.systemType,
-          useCase: data.useCase,
-          deploymentContext: data.deploymentContext,
-          lifecycleStage: data.lifecycleStage || 'Plan_and_Design',
-          autonomyLevel: data.autonomyLevel || 'Human_in_Loop',
-          metadata: data.metadata,
-        },
-      });
-
-      // Initialize core functions
-      await this.initializeCoreFunctions(aiSystem.id);
-
-      // Initialize trustworthiness characteristics
-      await this.initializeTrustworthinessCharacteristics(aiSystem.id);
-
-      // Initialize lifecycle stages
-      await this.initializeLifecycleStages(aiSystem.id);
-
-      // Log audit event
-      if (userId) {
-        await AuditLogger.log({
-          userId,
-          organizationId,
-          action: 'ai_rmf.system.create',
-          resourceType: 'AI_RMF_System',
-          resourceId: aiSystem.id,
-          metadata: {
-            systemName: aiSystem.name,
-            systemType: aiSystem.systemType,
-            lifecycleStage: aiSystem.lifecycleStage,
-            autonomyLevel: aiSystem.autonomyLevel,
-            useCase: aiSystem.useCase,
-            deploymentContext: aiSystem.deploymentContext,
+      return await prisma.$transaction(async (tx) => {
+        const aiSystem = await tx.aISystem.create({
+          data: {
+            organizationId,
+            name: data.name,
+            description: data.description,
+            systemType: data.systemType,
+            useCase: data.useCase,
+            deploymentContext: data.deploymentContext,
+            lifecycleStage: data.lifecycleStage || 'Plan_and_Design',
+            autonomyLevel: data.autonomyLevel || 'Human_in_Loop',
+            metadata: data.metadata,
           },
-          ipAddress,
-          userAgent,
         });
-      }
 
-      return aiSystem;
+        // Initialize core functions
+        await this.initializeCoreFunctions(aiSystem.id, tx);
+
+        // Initialize trustworthiness characteristics
+        await this.initializeTrustworthinessCharacteristics(aiSystem.id, tx);
+
+        // Initialize lifecycle stages
+        await this.initializeLifecycleStages(aiSystem.id, tx);
+
+        // Log audit event
+        if (userId) {
+          await AuditLogger.log({
+            userId,
+            organizationId,
+            action: 'ai_rmf.system.create',
+            resourceType: 'AI_RMF_System',
+            resourceId: aiSystem.id,
+            metadata: {
+              systemName: aiSystem.name,
+              systemType: aiSystem.systemType,
+              lifecycleStage: aiSystem.lifecycleStage,
+              autonomyLevel: aiSystem.autonomyLevel,
+              useCase: aiSystem.useCase,
+              deploymentContext: aiSystem.deploymentContext,
+            },
+            ipAddress,
+            userAgent,
+          });
+        }
+
+        return aiSystem;
+      });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating AI system:', error);
       throw new AppError(`Failed to create AI system: ${error.message}`, 500);
     }
@@ -311,11 +314,11 @@ class AIRMFService {
   /**
    * Initialize core functions for an AI system
    */
-  private async initializeCoreFunctions(aiSystemId: string) {
+  private async initializeCoreFunctions(aiSystemId: string, tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0] = prisma) {
     const coreFunctions = ['GOVERN', 'MAP', 'MEASURE', 'MANAGE'];
-    
+
     for (const functionName of coreFunctions) {
-      await prisma.aIRMFCoreFunction.create({
+      await tx.aIRMFCoreFunction.create({
         data: {
           aiSystemId,
           functionName,
@@ -324,7 +327,7 @@ class AIRMFService {
       });
 
       // Initialize categories for each function
-      await this.initializeCategories(aiSystemId, functionName);
+      await this.initializeCategories(aiSystemId, functionName, tx);
     }
   }
 
@@ -339,16 +342,16 @@ class AIRMFService {
   /**
    * Initialize categories for a core function
    */
-  private async initializeCategories(aiSystemId: string, functionName: string) {
+  private async initializeCategories(aiSystemId: string, functionName: string, tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0] = prisma) {
     const categories = this.getCategoriesForFunction(functionName);
-    const coreFunction = await prisma.aIRMFCoreFunction.findFirst({
+    const coreFunction = await tx.aIRMFCoreFunction.findFirst({
       where: { aiSystemId, functionName },
     });
 
     if (!coreFunction) return;
 
     for (const category of categories) {
-      await prisma.aIRMFCategory.create({
+      await tx.aIRMFCategory.create({
         data: {
           coreFunctionId: coreFunction.id,
           categoryId: category.id,
@@ -359,13 +362,13 @@ class AIRMFService {
 
       // Initialize subcategories
       if (category.subcategories) {
-        const createdCategory = await prisma.aIRMFCategory.findFirst({
+        const createdCategory = await tx.aIRMFCategory.findFirst({
           where: { coreFunctionId: coreFunction.id, categoryId: category.id },
         });
 
         if (createdCategory) {
           for (const subcategory of category.subcategories) {
-            await prisma.aIRMFSubcategory.create({
+            await tx.aIRMFSubcategory.create({
               data: {
                 categoryId: createdCategory.id,
                 subcategoryId: subcategory.id,
@@ -723,7 +726,7 @@ class AIRMFService {
   /**
    * Initialize trustworthiness characteristics
    */
-  private async initializeTrustworthinessCharacteristics(aiSystemId: string) {
+  private async initializeTrustworthinessCharacteristics(aiSystemId: string, tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0] = prisma) {
     const characteristics = [
       'Valid_and_Reliable',
       'Safe',
@@ -735,7 +738,7 @@ class AIRMFService {
     ];
 
     for (const characteristic of characteristics) {
-      await prisma.aIRMFTrustworthinessCharacteristic.create({
+      await tx.aIRMFTrustworthinessCharacteristic.create({
         data: {
           aiSystemId,
           characteristic,
@@ -844,7 +847,7 @@ class AIRMFService {
   /**
    * Initialize lifecycle stages
    */
-  private async initializeLifecycleStages(aiSystemId: string) {
+  private async initializeLifecycleStages(aiSystemId: string, tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0] = prisma) {
     const stages = [
       'Plan_and_Design',
       'Collect_and_Process',
@@ -854,7 +857,7 @@ class AIRMFService {
     ];
 
     for (const stage of stages) {
-      await prisma.aIRMFLifecycleStage.create({
+      await tx.aIRMFLifecycleStage.create({
         data: {
           aiSystemId,
           stage,

@@ -5,6 +5,11 @@
 
 import { Router, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  enrollDeviceSchema, updateDeviceSchema, reassignDeviceSchema,
+  createMdmPolicySchema, updateMdmPolicySchema, bulkDeviceActionSchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler, AuthenticatedRequest } from '../types/express';
 import mdmService from '../services/mdmService';
 import logger from '../config/logger';
@@ -51,6 +56,7 @@ router.get(
 router.post(
   '/devices',
   authorize('admin', 'editor'),
+  validateBody(enrollDeviceSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
     const device = await mdmService.enrollDevice({
@@ -78,6 +84,7 @@ router.get(
 router.patch(
   '/devices/:id',
   authorize('admin', 'editor'),
+  validateBody(updateDeviceSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
     const device = await mdmService.updateDevice(req.params.id, user.id, user.organizationId, req.body);
@@ -128,6 +135,7 @@ router.post(
 router.post(
   '/devices/:id/reassign',
   authorize('admin', 'editor'),
+  validateBody(reassignDeviceSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
     const { newUserId, newUserName, reason } = req.body;
@@ -169,6 +177,7 @@ router.get(
 router.post(
   '/policies',
   authorize('admin', 'editor'),
+  validateBody(createMdmPolicySchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
     const policy = await mdmService.createPolicy({
@@ -196,6 +205,7 @@ router.get(
 router.patch(
   '/policies/:id',
   authorize('admin', 'editor'),
+  validateBody(updateMdmPolicySchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
     const policy = await mdmService.updatePolicy(req.params.id, user.id, user.organizationId, req.body);
@@ -256,6 +266,7 @@ router.get(
 router.post(
   '/bulk-action',
   authorize('admin'),
+  validateBody(bulkDeviceActionSchema),
   asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const user = req.user;
     const result = await mdmService.bulkDeviceAction({

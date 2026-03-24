@@ -89,7 +89,10 @@ function buildPoolUrl(url: string): { connectionString: string; ssl: pg.PoolConf
   }
   return {
     connectionString: parsed.toString(),
-    ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
+    ssl: needsSsl ? {
+      rejectUnauthorized: process.env.NODE_ENV === 'production',
+      ca: process.env.DB_CA_CERT ? Buffer.from(process.env.DB_CA_CERT, 'base64').toString() : undefined,
+    } : undefined,
   };
 }
 

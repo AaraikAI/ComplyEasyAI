@@ -7,6 +7,10 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createMaturityAssessmentSchema, generateMaturityRecommendationsSchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -194,6 +198,7 @@ router.get(
 router.post(
   '/assessments',
   authorize('admin', 'editor'),
+  validateBody(createMaturityAssessmentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -267,6 +272,7 @@ router.post(
 router.post(
   '/assessments/:id/recommendations',
   authorize('admin', 'editor'),
+  validateBody(generateMaturityRecommendationsSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
