@@ -13,6 +13,8 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import config from '../config';
 import crypto from 'crypto';
+import { SignedXml } from 'xml-crypto';
+import { XMLParser } from 'fast-xml-parser';
 
 const router = Router();
 
@@ -41,44 +43,99 @@ function isSafeRedirect(url: string): boolean {
 }
 
 /**
- * Verify the XML signature on a SAML response using the IdP's certificate.
- * Returns true if valid, false if no signature found, throws on invalid signature.
+ * Verify the XML signature on a SAML response using the IdP's X.509 certificate.
+ * Uses xml-crypto for cryptographic verification (not just structural checks).
+ * Returns true if valid, throws on invalid or missing signature.
  */
 function verifySamlSignature(xml: string, certificate: string): boolean {
-  // Check if a Signature element exists
+  // Normalize the certificate to PEM format
+  let pemCert = certificate.trim();
+  if (!pemCert.startsWith('-----BEGIN CERTIFICATE-----')) {
+    pemCert = `-----BEGIN CERTIFICATE-----\n${pemCert}\n-----END CERTIFICATE-----`;
+  }
+
+  // Find the Signature element in the XML
   const sigMatch = xml.match(/<(?:ds:)?Signature[\s>]/);
   if (!sigMatch) {
-    return false; // No signature present
+    throw new Error('SAML response does not contain a Signature element');
   }
 
-  // Extract the SignatureValue and DigestValue for basic verification
-  const sigValueMatch = xml.match(/<(?:ds:)?SignatureValue[^>]*>([^<]+)<\/(?:ds:)?SignatureValue>/);
-  const digestMatch = xml.match(/<(?:ds:)?DigestValue[^>]*>([^<]+)<\/(?:ds:)?DigestValue>/);
+  // Use xml-crypto for full cryptographic verification
+  const sig = new SignedXml();
 
-  if (!sigValueMatch || !digestMatch) {
-    throw new Error('Malformed XML signature: missing SignatureValue or DigestValue');
+  // Set the key info provider to use our IdP certificate
+  sig.publicCert = pemCert;
+
+  // Load the signature from the XML
+  const signatureNode = xml.match(/<(?:ds:)?Signature[^]*?<\/(?:ds:)?Signature>/);
+  if (!signatureNode) {
+    throw new Error('Could not extract Signature element from SAML response');
+  }
+  sig.loadSignature(signatureNode[0]);
+
+  // Cryptographically verify the signature against the XML document
+  const isValid = sig.checkSignature(xml);
+  if (!isValid) {
+    const errors = (sig as any).validationErrors || [];
+    throw new Error(`SAML signature cryptographic verification failed: ${errors.join('; ')}`);
   }
 
-  // Verify the certificate matches what we have configured
-  const certClean = certificate.replace(/-----BEGIN CERTIFICATE-----|-----END CERTIFICATE-----|\s/g, '');
-  if (!certClean) {
-    throw new Error('SSO certificate not configured — cannot verify SAML signature');
-  }
+  logger.info('SAML signature cryptographic verification passed');
+  return true;
+}
 
-  // Basic structural validation: ensure the signature references a valid assertion
-  const refMatch = xml.match(/<(?:ds:)?Reference\s+URI="([^"]*)"/);
-  if (refMatch) {
-    const refUri = refMatch[1];
-    if (refUri && !refUri.startsWith('#')) {
-      throw new Error('Invalid signature reference URI');
+/**
+ * XML parser instance for SAML response parsing.
+ * Replaces regex-based extraction with proper XML parsing to prevent injection attacks.
+ */
+const samlXmlParser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: '@_',
+  removeNSPrefix: true,
+  isArray: (name: string) => ['Attribute', 'AttributeValue'].includes(name),
+});
+
+/**
+ * Extract SAML claims from a parsed XML response using proper XML parsing.
+ */
+function extractSamlClaims(samlResponseXml: string): {
+  issuer: string | null;
+  nameId: string | null;
+  attributes: Record<string, string>;
+} {
+  const parsed = samlXmlParser.parse(samlResponseXml);
+
+  // Navigate the SAML response structure (handles both saml: and saml2: prefixes via removeNSPrefix)
+  const response = parsed.Response || parsed.SAMLResponse || parsed;
+  const assertion = response?.Assertion;
+
+  // Extract Issuer
+  const issuer = response?.Issuer || assertion?.Issuer || null;
+  const issuerText = typeof issuer === 'string' ? issuer.trim() : (issuer?.['#text'] || '').trim() || null;
+
+  // Extract NameID from Subject
+  const subject = assertion?.Subject;
+  const nameIdElement = subject?.NameID;
+  const nameId = typeof nameIdElement === 'string'
+    ? nameIdElement.trim()
+    : (nameIdElement?.['#text'] || '').trim() || null;
+
+  // Extract Attributes from AttributeStatement
+  const attrStatement = assertion?.AttributeStatement;
+  const attributes: Record<string, string> = {};
+  if (attrStatement?.Attribute) {
+    const attrs = Array.isArray(attrStatement.Attribute) ? attrStatement.Attribute : [attrStatement.Attribute];
+    for (const attr of attrs) {
+      const name = attr['@_Name'];
+      if (name && attr.AttributeValue) {
+        const values = Array.isArray(attr.AttributeValue) ? attr.AttributeValue : [attr.AttributeValue];
+        const value = typeof values[0] === 'string' ? values[0] : (values[0]?.['#text'] || '');
+        if (value) attributes[name] = value;
+      }
     }
   }
 
-  // For full cryptographic verification, use xml-crypto or @node-saml/node-saml.
-  // This provides structural validation and certificate presence check.
-  // TODO: Integrate xml-crypto for full signature verification once added as dependency.
-  logger.info('SAML signature structural validation passed');
-  return true;
+  return { issuer: issuerText, nameId, attributes };
 }
 
 // ============================================================================
@@ -105,9 +162,9 @@ router.post(
       // Decode the base64-encoded SAML response
       const samlResponseXml = Buffer.from(SAMLResponse, 'base64').toString('utf-8');
 
-      // Extract issuer first to find the SSO config (needed for certificate)
-      const issuerMatch = samlResponseXml.match(/<(?:saml2?:)?Issuer[^>]*>([^<]+)<\/(?:saml2?:)?Issuer>/);
-      const issuer = issuerMatch ? issuerMatch[1].trim() : null;
+      // Parse SAML response using proper XML parser (not regex)
+      const samlClaims = extractSamlClaims(samlResponseXml);
+      const issuer = samlClaims.issuer;
 
       // Find SSO config matching the issuer
       const ssoConfig = await prisma.sSOConfiguration.findFirst({
@@ -124,37 +181,33 @@ router.post(
         return;
       }
 
-      // Verify SAML signature BEFORE extracting any claims
-      if (ssoConfig.certificate) {
-        try {
-          verifySamlSignature(samlResponseXml, ssoConfig.certificate);
-        } catch (sigError: any) {
-          logger.error('SSO ACS: SAML signature verification failed', { error: sigError.message });
-          res.status(401).json({ error: 'SAML signature verification failed' });
-          return;
-        }
-      } else {
-        logger.warn(`SSO ACS: No certificate configured for SSO config ${ssoConfig.id} — skipping signature verification`);
+      // Verify SAML signature BEFORE extracting any claims — certificate is REQUIRED
+      if (!ssoConfig.certificate) {
+        logger.error('SSO ACS: Certificate not configured — rejecting SAML response', {
+          organizationId: ssoConfig.organizationId,
+          ssoConfigId: ssoConfig.id,
+        });
+        res.status(401).json({ error: 'SSO configuration incomplete — certificate required for signature verification' });
+        return;
       }
 
-      // Extract NameID AFTER signature validation
-      const nameIdMatch = samlResponseXml.match(/<(?:saml2?:)?NameID[^>]*>([^<]+)<\/(?:saml2?:)?NameID>/);
+      try {
+        verifySamlSignature(samlResponseXml, ssoConfig.certificate);
+      } catch (sigError: any) {
+        logger.error('SSO ACS: SAML signature verification failed', { error: sigError.message });
+        res.status(401).json({ error: 'SAML signature verification failed' });
+        return;
+      }
 
-      if (!nameIdMatch) {
+      // Extract NameID from parsed SAML claims (already parsed above)
+      if (!samlClaims.nameId) {
         logger.warn('SSO ACS: Could not extract NameID from SAML response');
         res.status(400).json({ error: 'Invalid SAML response: NameID not found' });
         return;
       }
 
-      const email = nameIdMatch[1].trim();
-
-      // Extract SAML attributes
-      const attributes: Record<string, string> = {};
-      const attrRegex = /<(?:saml2?:)?Attribute\s+Name="([^"]+)"[^>]*>\s*<(?:saml2?:)?AttributeValue[^>]*>([^<]*)<\/(?:saml2?:)?AttributeValue>/g;
-      let match;
-      while ((match = attrRegex.exec(samlResponseXml)) !== null) {
-        attributes[match[1]] = match[2];
-      }
+      const email = samlClaims.nameId;
+      const attributes = samlClaims.attributes;
 
       // Map attributes using the SSO config's attribute mapping
       const mapping = (ssoConfig.attributeMapping as Record<string, string>) || {};
@@ -235,8 +288,6 @@ router.post(
       res.json({
         status: 'success',
         data: {
-          token,
-          refreshToken,
           user: {
             id: user.id,
             email: user.email,

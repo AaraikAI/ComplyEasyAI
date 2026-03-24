@@ -2268,7 +2268,7 @@ class VRCollaborativeReviewService {
           credential: process.env.TURN_CREDENTIAL,
         }] : []),
       ],
-      signalingServer: process.env.WEBRTC_SIGNALING_SERVER || 'wss://signaling.example.com',
+      signalingServer: process.env.WEBRTC_SIGNALING_SERVER || undefined,
     };
   }
 

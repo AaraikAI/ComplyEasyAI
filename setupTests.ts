@@ -131,7 +131,7 @@ vi.mock('sonner', () => ({
 }));
 
 // Load English translations for the I18n mock so that t() returns real English text
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+ 
 import _enTranslations from './i18n/locales/en.json';
 const _enDict: Record<string, unknown> = _enTranslations as any;
 

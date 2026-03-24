@@ -7,6 +7,11 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createCertificationSchema, updateCertificationSchema,
+  createCertAuditSchema, updateCertAuditSchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -185,6 +190,7 @@ router.get(
 
 router.post(
   '/',
+  validateBody(createCertificationSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -237,6 +243,7 @@ router.post(
 
 router.patch(
   '/:id',
+  validateBody(updateCertificationSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -310,6 +317,7 @@ router.delete(
 
 router.post(
   '/:id/audits',
+  validateBody(createCertAuditSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -365,6 +373,7 @@ router.post(
 
 router.patch(
   '/:id/audits/:auditId',
+  validateBody(updateCertAuditSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 

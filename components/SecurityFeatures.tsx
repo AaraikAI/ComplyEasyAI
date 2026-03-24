@@ -30,6 +30,7 @@ import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { toast } from 'sonner';
+import { useSubmitGuard } from '../hooks/useSubmitGuard';
 
 const SecurityFeatures: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { user } = useAuth();
@@ -146,6 +147,7 @@ const ZeroTrustTab: React.FC = () => {
   const [policies, setPolicies] = useState<any[]>([]);
   const [devices, setDevices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const { isSubmitting, guard } = useSubmitGuard();
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [deviceForm, setDeviceForm] = useState({
@@ -184,44 +186,48 @@ const ZeroTrustTab: React.FC = () => {
 
   const handleCreatePolicy = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      await api.security.createZeroTrustPolicy(policyForm);
-      setShowPolicyModal(false);
-      setPolicyForm({ name: '', description: '', enabled: true, priority: 0, rules: [] });
-      loadData();
-      toast.success('Zero Trust policy created successfully!');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create policy');
-    } finally {
-      setLoading(false);
-    }
+    await guard(async () => {
+      setLoading(true);
+      try {
+        await api.security.createZeroTrustPolicy(policyForm);
+        setShowPolicyModal(false);
+        setPolicyForm({ name: '', description: '', enabled: true, priority: 0, rules: [] });
+        loadData();
+        toast.success('Zero Trust policy created successfully!');
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to create policy');
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   const handleVerifyDevice = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      const result = await api.security.verifyDeviceTrust({
-        deviceId: deviceForm.deviceId || `device-${Date.now()}`,
-        deviceType: deviceForm.deviceType,
-        macAddress: deviceForm.macAddress,
-        ipAddress: deviceForm.ipAddress,
-      }) as any;
-      setShowDeviceModal(false);
-      setDeviceForm({ deviceId: '', deviceType: 'laptop', macAddress: '', ipAddress: '' });
-      // Optimistically add the device to the list
-      if (result && result.deviceId) {
-        setDevices([result, ...devices]);
+    await guard(async () => {
+      setLoading(true);
+      try {
+        const result = await api.security.verifyDeviceTrust({
+          deviceId: deviceForm.deviceId || `device-${Date.now()}`,
+          deviceType: deviceForm.deviceType,
+          macAddress: deviceForm.macAddress,
+          ipAddress: deviceForm.ipAddress,
+        }) as any;
+        setShowDeviceModal(false);
+        setDeviceForm({ deviceId: '', deviceType: 'laptop', macAddress: '', ipAddress: '' });
+        // Optimistically add the device to the list
+        if (result && result.deviceId) {
+          setDevices([result, ...devices]);
+        }
+        // Reload data to ensure consistency
+        await loadData();
+        toast.success(`Device verified successfully! Trust Score: ${result.trustScore}%`);
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to verify device');
+      } finally {
+        setLoading(false);
       }
-      // Reload data to ensure consistency
-      await loadData();
-      toast.success(`Device verified successfully! Trust Score: ${result.trustScore}%`);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to verify device');
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
@@ -367,10 +373,10 @@ const ZeroTrustTab: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || isSubmitting}
                   className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
                 >
-                  {loading ? 'Creating...' : t('common.create')}
+                  {loading || isSubmitting ? 'Creating...' : t('common.create')}
                 </button>
               </div>
             </form>
@@ -442,10 +448,10 @@ const ZeroTrustTab: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || isSubmitting}
                   className="flex-1 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
                 >
-                  {loading ? 'Verifying...' : 'Verify Device'}
+                  {loading || isSubmitting ? 'Verifying...' : 'Verify Device'}
                 </button>
               </div>
             </form>

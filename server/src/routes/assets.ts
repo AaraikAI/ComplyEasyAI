@@ -7,9 +7,12 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import { createAssetSchema, updateAssetSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 router.use(authenticate);
@@ -75,7 +78,7 @@ router.get(
       });
     } catch (error) {
       logger.error('Error fetching asset statistics:', error);
-      res.status(500).json({ error: 'Failed to fetch asset statistics' });
+      throw error instanceof AppError ? error : new AppError('Failed to fetch asset statistics', 500);
     }
   })
 );
@@ -132,7 +135,7 @@ router.get(
       });
     } catch (error) {
       logger.error('Error fetching assets:', error);
-      res.status(500).json({ error: 'Failed to fetch assets' });
+      throw error instanceof AppError ? error : new AppError('Failed to fetch assets', 500);
     }
   })
 );
@@ -187,7 +190,7 @@ router.get(
       });
     } catch (error) {
       logger.error('Error fetching asset:', error);
-      res.status(500).json({ error: 'Failed to fetch asset' });
+      throw error instanceof AppError ? error : new AppError('Failed to fetch asset', 500);
     }
   })
 );
@@ -199,6 +202,7 @@ router.get(
 router.post(
   '/',
   authorize('admin', 'editor'),
+  validateBody(createAssetSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -218,25 +222,6 @@ router.post(
         endOfLife,
         metadata,
       } = req.body;
-
-      if (!name || !type || !owner) {
-        res.status(400).json({ error: 'name, type, and owner are required' });
-        return;
-      }
-
-      const validTypes = ['HARDWARE', 'SOFTWARE', 'DATA', 'NETWORK', 'CLOUD_SERVICE', 'PEOPLE', 'FACILITY'];
-      if (!validTypes.includes(type)) {
-        res.status(400).json({ error: `type must be one of: ${validTypes.join(', ')}` });
-        return;
-      }
-
-      if (classification) {
-        const validClassifications = ['PUBLIC', 'INTERNAL', 'CONFIDENTIAL', 'RESTRICTED'];
-        if (!validClassifications.includes(classification)) {
-          res.status(400).json({ error: `classification must be one of: ${validClassifications.join(', ')}` });
-          return;
-        }
-      }
 
       const asset = await prisma.asset.create({
         data: {
@@ -262,7 +247,7 @@ router.post(
       res.status(201).json({ status: 'success', data: asset });
     } catch (error) {
       logger.error('Error creating asset:', error);
-      res.status(500).json({ error: 'Failed to create asset' });
+      throw error instanceof AppError ? error : new AppError('Failed to create asset', 500);
     }
   })
 );
@@ -274,6 +259,7 @@ router.post(
 router.patch(
   '/:id',
   authorize('admin', 'editor'),
+  validateBody(updateAssetSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -286,40 +272,9 @@ router.patch(
         return;
       }
 
-      // Whitelist updatable fields only
-      const { pick } = await import('../utils/pick');
-      const updateData = pick(req.body, [
-        'name', 'type', 'category', 'owner', 'department', 'location',
-        'classification', 'status', 'ipAddress', 'hostname', 'serialNumber',
-        'vendor', 'purchaseDate', 'endOfLife', 'metadata',
-      ]);
-
-      // Validate type if provided
-      if (updateData.type) {
-        const validTypes = ['HARDWARE', 'SOFTWARE', 'DATA', 'NETWORK', 'CLOUD_SERVICE', 'PEOPLE', 'FACILITY'];
-        if (!validTypes.includes(updateData.type)) {
-          res.status(400).json({ error: `type must be one of: ${validTypes.join(', ')}` });
-          return;
-        }
-      }
-
-      // Validate classification if provided
-      if (updateData.classification) {
-        const validClassifications = ['PUBLIC', 'INTERNAL', 'CONFIDENTIAL', 'RESTRICTED'];
-        if (!validClassifications.includes(updateData.classification)) {
-          res.status(400).json({ error: `classification must be one of: ${validClassifications.join(', ')}` });
-          return;
-        }
-      }
-
-      // Validate status if provided
-      if (updateData.status) {
-        const validStatuses = ['ACTIVE', 'DECOMMISSIONED', 'IN_MAINTENANCE', 'PLANNED'];
-        if (!validStatuses.includes(updateData.status)) {
-          res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}` });
-          return;
-        }
-      }
+      // Joi schema already validates types, classifications, and statuses via .valid()
+      // and strips unknown fields via .unknown(false)
+      const updateData = { ...req.body };
 
       // Convert date strings
       if (updateData.purchaseDate) updateData.purchaseDate = new Date(updateData.purchaseDate);
@@ -333,7 +288,7 @@ router.patch(
       res.json({ status: 'success', data: asset });
     } catch (error) {
       logger.error('Error updating asset:', error);
-      res.status(500).json({ error: 'Failed to update asset' });
+      throw error instanceof AppError ? error : new AppError('Failed to update asset', 500);
     }
   })
 );
@@ -365,7 +320,7 @@ router.delete(
       res.json({ status: 'success', data: { message: 'Asset decommissioned', id: asset.id } });
     } catch (error) {
       logger.error('Error decommissioning asset:', error);
-      res.status(500).json({ error: 'Failed to decommission asset' });
+      throw error instanceof AppError ? error : new AppError('Failed to decommission asset', 500);
     }
   })
 );

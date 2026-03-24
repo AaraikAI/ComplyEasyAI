@@ -280,6 +280,75 @@ For each screenshot captured:
 
 ---
 
+## Step 7.5: EXHAUSTIVE Component Wiring Audit (v3 — MANDATORY, NOT sampling)
+
+**CRITICAL: Do NOT check only "top N features." You MUST check EVERY component in the codebase.**
+
+Previous audits checked only the "top 15 features" and found all were wired. But the codebase had 100+ components. The remaining 85+ were never checked, and 26 of them (16 partially wired + 10 fully static) had real production gaps.
+
+### Step 7.5.1: Enumerate ALL page-level components
+```bash
+# List ALL .tsx files in components/ (excluding test files and utilities)
+find components/ -maxdepth 2 -name "*.tsx" | grep -v __tests__ | grep -v ".test." | grep -v ".spec." | sort > /tmp/audit_all_components.txt
+echo "Total components to check: $(wc -l < /tmp/audit_all_components.txt)"
+```
+
+### Step 7.5.2: Classify each component by API wiring status
+```bash
+# For each component, check for ANY API call pattern
+> /tmp/audit_static_components.txt
+> /tmp/audit_wired_components.txt
+> /tmp/audit_partially_wired_candidates.txt
+
+while IFS= read -r file; do
+  HAS_API=$(grep -c "useEffect\|useQuery\|useSWR\|useMutation\|api\.\|fetch('/api\|fetch(\"/api\|fetch(\`/api" "$file" 2>/dev/null || echo 0)
+  HAS_DEFAULTS=$(grep -c "const DEFAULT_\|const DEMO_\|const INITIAL_\|const SAMPLE_" "$file" 2>/dev/null || echo 0)
+  if [ "$HAS_API" -gt 0 ] && [ "$HAS_DEFAULTS" -gt 0 ]; then
+    echo "$file (API: $HAS_API, DEFAULTS: $HAS_DEFAULTS)" >> /tmp/audit_partially_wired_candidates.txt
+  elif [ "$HAS_API" -gt 0 ]; then
+    echo "$file ($HAS_API API patterns)" >> /tmp/audit_wired_components.txt
+  else
+    echo "$file" >> /tmp/audit_static_components.txt
+  fi
+done < /tmp/audit_all_components.txt
+```
+
+### Step 7.5.3: Cross-reference STATIC_ONLY with backend routes
+For each component in `/tmp/audit_static_components.txt`, check if a matching backend route exists:
+```bash
+# Extract component names and find matching routes
+while IFS= read -r file; do
+  COMPONENT=$(basename "$file" .tsx | sed 's/\([A-Z]\)/-\L\1/g' | sed 's/^-//')
+  ROUTE_MATCH=$(grep -rl "$COMPONENT\|$(basename "$file" .tsx)" server/src/routes/ 2>/dev/null | head -1)
+  if [ -n "$ROUTE_MATCH" ]; then
+    echo "GAP: $file has NO API calls but backend exists: $ROUTE_MATCH"
+  fi
+done < /tmp/audit_static_components.txt
+```
+
+### Step 7.5.4: For PARTIALLY_WIRED, document what's wired vs static
+For each component in `/tmp/audit_partially_wired_candidates.txt`:
+1. Read the full file
+2. List all API endpoints called
+3. List all `DEFAULT_*`/`DEMO_*` arrays
+4. Determine: Does the API data REPLACE the default arrays (DEV_FALLBACK) or do they COEXIST (PARTIALLY_WIRED)?
+
+### Output Tables
+
+**PARTIALLY_WIRED Components:**
+
+| # | Component | What's Wired | What's Static |
+|---|-----------|-------------|---------------|
+| 1 | [name] | [API endpoints called] | [DEFAULT_/DEMO_ arrays that persist] |
+
+**STATIC_ONLY Components:**
+
+| # | Component | What It Does | Backend Route Exists? | Should It Be Wired? |
+|---|-----------|-------------|----------------------|---------------------|
+| 1 | [name] | [description] | YES/NO | YES/NO (explain) |
+
+---
+
 ## Scoring
 
 For each feature, assign completion percentages per layer:
@@ -319,8 +388,9 @@ A feature is **production ready** only when ALL present layers are at 100%.
 
 | Pattern Found | Classification |
 |---|---|
-| Zero fetch/hook patterns AND data from `const` arrays | `HARDCODED_ONLY` → PRODUCTION_GAP |
-| `const` array + useEffect/hook that replaces it | `WIRED_WITH_FALLBACK` → DEV_FALLBACK |
+| Zero fetch/hook patterns AND data from `const` arrays | `HARDCODED_ONLY` (STATIC_ONLY) → PRODUCTION_GAP |
+| `const` array + useEffect/hook that replaces it on mount | `WIRED_WITH_FALLBACK` → DEV_FALLBACK |
+| SOME API calls present, BUT also has `DEFAULT_*`/`DEMO_*` arrays that are NOT replaced by API data | `PARTIALLY_WIRED` → Document what's wired vs static. Score 50-75%. |
 | API calls via any mechanism, no static data | `FULLY_WIRED` → No issue |
 | Static reference page (in `.claude/CLAUDE.md`) | `INTENTIONAL_STATIC` → FALSE_POSITIVE |
 

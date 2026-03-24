@@ -11,6 +11,7 @@ import logger from '../config/logger';
 import { AppError } from '../middleware/errorHandler';
 import tokenBlacklist from '../services/tokenBlacklistService';
 import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
+import DOMPurify from 'isomorphic-dompurify';
 
 // Cookie configuration for httpOnly secure token storage
 const COOKIE_OPTIONS = {
@@ -364,8 +365,6 @@ class AuthController {
 
       res.json({
         twoFactorRequired: false,
-        accessToken,
-        refreshToken,
         user: {
           id: user.id,
           email: user.email,
@@ -445,7 +444,7 @@ class AuthController {
       // Set httpOnly secure cookies for new tokens
       setAuthCookies(res, accessToken, newRefreshToken);
 
-      res.json({ accessToken, refreshToken: newRefreshToken });
+      res.json({ message: 'Token refreshed successfully' });
     } catch (error) {
       logger.error('Refresh token error', error);
       if (error instanceof AppError) throw error;
@@ -530,10 +529,15 @@ class AuthController {
 
       // Check if 2FA is enabled
       if (user.twoFactorEnabled && !user.twoFactorVerified) {
-        // Return user ID for 2FA verification
+        // Return a short-lived signed JWT for 2FA verification instead of raw userId
+        const twoFactorToken = jwt.sign(
+          { userId: user.id, purpose: '2fa_pending' },
+          config.jwt.secret,
+          { expiresIn: '5m' }
+        );
         res.json({
           requires2FA: true,
-          userId: user.id,
+          twoFactorToken,
           message: 'Two-factor authentication required',
         });
         return;
@@ -628,8 +632,6 @@ class AuthController {
       setAuthCookies(res, accessToken, refreshToken);
 
       res.json({
-        accessToken,
-        refreshToken,
         user: {
           id: user.id,
           email: user.email,
@@ -668,6 +670,12 @@ class AuthController {
 
       if (!email || !name) {
         throw new AppError('Email and name are required', 400);
+      }
+
+      // Sanitize user input to prevent stored XSS
+      const sanitizedName = DOMPurify.sanitize(name, { ALLOWED_TAGS: [] }).trim();
+      if (!sanitizedName) {
+        throw new AppError('Name contains invalid characters', 400);
       }
 
       // Verify CAPTCHA before allowing registration
@@ -751,7 +759,7 @@ class AuthController {
         // Create organization with signup details
         const organization = await tx.organization.create({
           data: {
-            name: organizationName || `${name}'s Organization`,
+            name: organizationName || `${sanitizedName}'s Organization`,
             plan: 'Foundation',
             industry: industry || null,
             companySize: companySize || null,
@@ -766,7 +774,7 @@ class AuthController {
         const newUser = await tx.user.create({
           data: {
             email,
-            name,
+            name: sanitizedName,
             role: 'admin',
             organizationId: organization.id,
             passwordHash,
@@ -926,8 +934,6 @@ class AuthController {
       setAuthCookies(res, accessToken, refreshToken);
 
       res.json({
-        accessToken,
-        refreshToken,
         user: {
           id: user.id,
           email: user.email,

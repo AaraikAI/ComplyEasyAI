@@ -158,8 +158,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem('token');
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+  return { 'Content-Type': 'application/json' };
 }
 
 function getDaysInMonth(y: number, m: number): number { return new Date(y, m + 1, 0).getDate(); }

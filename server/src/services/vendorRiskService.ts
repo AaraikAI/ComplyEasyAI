@@ -34,50 +34,54 @@ export class VendorRiskService {
     hipaaBaa?: boolean;
     userId: string;
   }) {
-    const vendor = await prisma.vendor.create({
-      data: {
-        name: data.name,
+    return prisma.$transaction(async (tx) => {
+      const vendor = await tx.vendor.create({
+        data: {
+          name: data.name,
+          organizationId: data.organizationId,
+          website: data.website,
+          contactName: data.contactName,
+          contactEmail: data.contactEmail,
+          contactPhone: data.contactPhone,
+          category: data.category,
+          serviceDescription: data.serviceDescription,
+          contractStart: data.contractStart,
+          contractEnd: data.contractEnd,
+          annualSpend: data.annualSpend,
+          hasDataAccess: data.hasDataAccess || false,
+          dataTypes: data.dataTypes,
+          securityContact: data.securityContact,
+          soc2Report: data.soc2Report ?? false,
+          iso27001Certified: data.iso27001Certified ?? false,
+          gdprCompliant: data.gdprCompliant ?? false,
+          hipaaBaa: data.hipaaBaa ?? false,
+          status: 'Onboarding',
+          riskLevel: 'Medium',
+          riskScore: 0,
+        },
+      });
+
+      // Create initial assessment within transaction
+      await tx.vendorAssessment.create({
+        data: {
+          vendorId: vendor.id,
+          assessmentType: 'Initial',
+          status: 'In_Progress',
+          assessedBy: data.userId,
+        },
+      });
+
+      await AuditLogger.log({
+        userId: data.userId,
         organizationId: data.organizationId,
-        website: data.website,
-        contactName: data.contactName,
-        contactEmail: data.contactEmail,
-        contactPhone: data.contactPhone,
-        category: data.category,
-        serviceDescription: data.serviceDescription,
-        contractStart: data.contractStart,
-        contractEnd: data.contractEnd,
-        annualSpend: data.annualSpend,
-        hasDataAccess: data.hasDataAccess || false,
-        dataTypes: data.dataTypes,
-        securityContact: data.securityContact,
-        soc2Report: data.soc2Report ?? false,
-        iso27001Certified: data.iso27001Certified ?? false,
-        gdprCompliant: data.gdprCompliant ?? false,
-        hipaaBaa: data.hipaaBaa ?? false,
-        status: 'Onboarding',
-        riskLevel: 'Medium',
-        riskScore: 0,
-      },
-    });
+        action: 'vendor.created',
+        resourceType: 'Vendor',
+        resourceId: vendor.id,
+        metadata: { vendorName: data.name },
+      });
 
-    // Create initial assessment
-    await this.createVendorAssessment({
-      vendorId: vendor.id,
-      assessmentType: 'Initial',
-      organizationId: data.organizationId,
-      userId: data.userId,
+      return vendor;
     });
-
-    await AuditLogger.log({
-      userId: data.userId,
-      organizationId: data.organizationId,
-      action: 'vendor.created',
-      resourceType: 'Vendor',
-      resourceId: vendor.id,
-      metadata: { vendorName: data.name },
-    });
-
-    return vendor;
   }
 
   /**

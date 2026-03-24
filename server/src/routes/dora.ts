@@ -12,6 +12,14 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createICTRiskAssessmentSchema, updateICTRiskAssessmentSchema,
+  createICTIncidentSchema, updateICTIncidentSchema, escalateIncidentSchema,
+  createThirdPartyProviderSchema, updateThirdPartyProviderSchema,
+  createResilienceTestSchema, updateResilienceTestSchema, executeResilienceTestSchema,
+  createInformationRegisterEntrySchema, updateInformationRegisterEntrySchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import * as doraService from '../services/doraService';
 
@@ -81,6 +89,7 @@ router.get(
 router.post(
   '/risk-assessments',
   authorize('admin', 'editor'),
+  validateBody(createICTRiskAssessmentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const assessment = await doraService.createICTRiskAssessment({
@@ -95,6 +104,7 @@ router.post(
 router.patch(
   '/risk-assessments/:id',
   authorize('admin', 'editor'),
+  validateBody(updateICTRiskAssessmentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const assessment = await doraService.updateICTRiskAssessment(
@@ -167,6 +177,7 @@ router.get(
 router.post(
   '/incidents',
   authorize('admin', 'editor'),
+  validateBody(createICTIncidentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const incident = await doraService.createICTIncident({
@@ -181,6 +192,7 @@ router.post(
 router.patch(
   '/incidents/:id',
   authorize('admin', 'editor'),
+  validateBody(updateICTIncidentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const incident = await doraService.updateICTIncident(
@@ -195,6 +207,7 @@ router.patch(
 router.post(
   '/incidents/:id/escalate',
   authorize('admin', 'editor'),
+  validateBody(escalateIncidentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const incident = await doraService.escalateIncident(
@@ -272,6 +285,7 @@ router.get(
 router.post(
   '/third-party-providers',
   authorize('admin', 'editor'),
+  validateBody(createThirdPartyProviderSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const provider = await doraService.createThirdPartyProvider({
@@ -285,6 +299,7 @@ router.post(
 router.patch(
   '/third-party-providers/:id',
   authorize('admin', 'editor'),
+  validateBody(updateThirdPartyProviderSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const provider = await doraService.updateThirdPartyProvider(
@@ -346,6 +361,7 @@ router.get(
 router.post(
   '/resilience-tests',
   authorize('admin', 'editor'),
+  validateBody(createResilienceTestSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const test = await doraService.createResilienceTest({
@@ -360,6 +376,7 @@ router.post(
 router.patch(
   '/resilience-tests/:id',
   authorize('admin', 'editor'),
+  validateBody(updateResilienceTestSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const test = await doraService.updateResilienceTest(
@@ -387,6 +404,7 @@ router.delete(
 router.post(
   '/resilience-tests/:id/execute',
   authorize('admin', 'editor'),
+  validateBody(executeResilienceTestSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const test = await doraService.executeResilienceTest(
@@ -441,6 +459,7 @@ router.get(
 router.post(
   '/information-register',
   authorize('admin', 'editor'),
+  validateBody(createInformationRegisterEntrySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const entry = await doraService.createInformationRegisterEntry({
@@ -454,6 +473,7 @@ router.post(
 router.patch(
   '/information-register/:id',
   authorize('admin', 'editor'),
+  validateBody(updateInformationRegisterEntrySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const entry = await doraService.updateInformationRegisterEntry(

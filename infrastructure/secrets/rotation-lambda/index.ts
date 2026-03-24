@@ -330,7 +330,10 @@ async function setDatabasePassword(
     database: secret.dbname || process.env.DB_NAME,
     user: secret.adminUsername || process.env.DB_ADMIN_USER || 'postgres',
     password: secret.adminPassword || process.env.DB_ADMIN_PASSWORD,
-    ssl: { rejectUnauthorized: false },
+    ssl: {
+      rejectUnauthorized: true,
+      ca: process.env.RDS_CA_CERT || undefined,
+    },
   });
 
   try {
@@ -362,7 +365,10 @@ async function testDatabaseConnection(
     database: secret.dbname || process.env.DB_NAME,
     user: secret.username || 'app_user',
     password: secret.password,
-    ssl: { rejectUnauthorized: false },
+    ssl: {
+      rejectUnauthorized: true,
+      ca: process.env.RDS_CA_CERT || undefined,
+    },
     connectionTimeoutMillis: 5000,
   });
 

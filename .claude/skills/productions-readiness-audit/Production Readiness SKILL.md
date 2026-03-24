@@ -73,6 +73,20 @@ These are real mistakes made in previous audits of this codebase. They are docum
 3. If the claim is false: FLAG IT as a finding AND note the discrepancy
 4. MEMORY.md is a changelog of INTENTIONS. The codebase is the ONLY source of truth.
 
+### Pitfall 6: Feature Checklist Sampling (Checking "Top N" Instead of Exhaustive) (v3 addition)
+
+**What happened:** The audit checked the "top 15 features" and found all were wired. But the codebase had 100+ components. The remaining 85+ were never checked, and 26 of them (16 partially wired + 10 fully static) had real production gaps.
+
+**Why it happened:** The prompt said "check top 15" because that's a reasonable-sounding scope. But "top 15" is a sample, not an exhaustive scan. The scan-runner found keyword matches only for components using words like "mock" or "hardcoded." Components using "DEFAULT_" or "DEMO_" naming conventions were invisible to keyword scans.
+
+**Rule:** Phase 4 MUST enumerate ALL components, not sample "top N." Use the scan-runner's Component Wiring Audit output (`/tmp/audit_static_components.txt` and `/tmp/audit_partially_wired.txt`) as the starting checklist. Every STATIC_ONLY and PARTIALLY_WIRED component must be individually investigated. See `references/feature-completeness.md` Step 7.5 for the detailed protocol.
+
+### Pitfall 7: ESLint/Dependency Version Regression (v3 addition)
+
+**What happened:** Commit `f41409f` fixed 791 ESLint errors to 0. Then Dependabot bumped `eslint` from 10.0.3 to 10.1.0, which reintroduced 1 error + 1258 warnings due to new/stricter rules.
+
+**Rule:** After running lint in Phase 1, check `git log` for any dependency bumps (Dependabot/Renovate) that occurred AFTER the last lint fix commit. If a lint tool was upgraded, the new rules may surface new warnings. Report this as a regression, not an original issue.
+
 ## Audit Domains & Phases
 
 | Domain | Phases | What It Covers |
@@ -385,6 +399,20 @@ cat /tmp/audit_backend_routes.txt
 grep -rn "^const [A-Z_]*:.*\[\]* = \[" components/ --include="*.tsx" --include="*.ts" | grep -v __tests__ | grep -v "node_modules"
 # For each match, check if a useState initializes from it AND a useEffect fetches replacement data
 ```
+
+**4B.5: EXHAUSTIVE Component Wiring Audit (v3 — MANDATORY, NOT sampling)**
+
+Do NOT check only "top N features." You MUST check EVERY component. Use the scan-runner's Component Wiring Audit output:
+- `/tmp/audit_static_components.txt` — Components with ZERO API calls. Read each fully and classify.
+- `/tmp/audit_partially_wired.txt` — Components with API calls AND DEFAULT_/DEMO_ arrays. Document what's wired vs static.
+- For each STATIC_ONLY component, check if a matching backend route exists in `server/src/routes/`.
+- For each PARTIALLY_WIRED component, determine if API data REPLACES the defaults (DEV_FALLBACK) or COEXISTS (PARTIALLY_WIRED).
+- See `references/feature-completeness.md` Step 7.5 for the detailed protocol and output table templates.
+
+**4B.6: Document PARTIALLY_WIRED components** — For each, list:
+- What API endpoints ARE called
+- Which DEFAULT_*/DEMO_* arrays persist as static data
+- Whether the static data is user-visible (affects compliance accuracy) or cosmetic
 
 **4C: Data flow integrity** — For each feature, trace data from UI form → API request → service → DB write → DB read → API response → UI render. Verify field names, types, and transformations are consistent across all layers.
 
@@ -1347,7 +1375,7 @@ The final score MUST be calculated from the verified findings, not estimated. Us
 
 **Code Quality (15%):** `100 - (production_gaps * 5)` — Only PRODUCTION_GAP classifications reduce score. FALSE_POSITIVE/INTENTIONAL_FEATURE/DEV_FALLBACK do NOT.
 
-**Feature Completeness (25%):** `effective_total = total - intentional_static` (from `.claude/CLAUDE.md`) | `score = (fully_wired*100 + wired_with_fallback*75) / effective_total`
+**Feature Completeness (25%):** `effective_total = total - intentional_static` (from `.claude/CLAUDE.md`) | `score = (fully_wired*100 + wired_with_fallback*75 + partially_wired*50) / effective_total` — v3: PARTIALLY_WIRED components now score 50% (components with API calls but persistent DEFAULT_/DEMO_ static data). STATIC_ONLY components score 0%.
 
 **Application Logic (15%):** `(validated/total*40) + (error_handled/total*30) + (transacted/multi_write*30)`
 

@@ -80,9 +80,36 @@ grep -rn $EXT "Math\.random()\|random\.\|randint\|secrets\." $SRC | grep -v node
 
 **Context verification for Category A:** For each match, check:
 - Is this in a simulation engine that IS the product feature? → INTENTIONAL_FEATURE
-- Is this behind a `NODE_ENV` or feature flag check? → DEV_FALLBACK  
+- Is this behind a `NODE_ENV` or feature flag check? → DEV_FALLBACK
 - Is this in a service/controller that should be hitting a real API/DB? → PRODUCTION_GAP
 - Is "mock" part of a word like "mockup" or a UI component name? → FALSE_POSITIVE
+
+### A8: DEFAULT_/DEMO_ Fallback Constants (v3 addition)
+
+**Why this exists:** Components that use `DEFAULT_*`, `DEMO_*`, `INITIAL_*`, or `SAMPLE_*` naming conventions for hardcoded data are **invisible to standard keyword scans** (mock/fake/hardcoded). These are the most common pattern for static fallback data that bypasses keyword-based detection.
+
+```bash
+# A8: DEFAULT_* and DEMO_* constants in components
+grep -rn $EXT 'const DEFAULT_\|const DEMO_\|const INITIAL_\|const SAMPLE_' components/ | grep -v node_modules | grep -v __tests__ | grep -v dist > /tmp/audit_A8.txt
+```
+
+**Context verification for A8:**
+- Does a `useEffect` call an API and replace the DEFAULT_/DEMO_ array with real data on mount? → `WIRED_WITH_FALLBACK` (DEV_FALLBACK)
+- Does the DEFAULT_/DEMO_ data persist as the ONLY data source with no API call? → `PRODUCTION_GAP`
+- Is this a catalog/reference/static page listed in `.claude/CLAUDE.md`? → INTENTIONAL_STATIC (FALSE_POSITIVE)
+
+### A9: Large Inline Data Arrays in Components (v3 addition)
+
+**Why this exists:** Some components use large inline arrays (3+ objects) without any `DEFAULT_` or `DEMO_` prefix. These are harder to detect but represent the same pattern — hardcoded data that should come from an API.
+
+```bash
+# A9: Large inline const arrays in components (potential hardcoded data)
+grep -rn $EXT '^\s*const [A-Z_]*\s*[:=].*\[' components/ | grep -v node_modules | grep -v __tests__ | grep -v 'import\|type\|interface\|enum\|string\|number' > /tmp/audit_A9.txt
+```
+
+**Context verification for A9:** Same as A8 — check for `useEffect` that replaces the data.
+
+**IMPORTANT: Neutral naming is a stronger signal.** Components using `DEFAULT_*` or `DEMO_*` instead of `mock*`/`fake*` are MORE likely to be production gaps because the naming was specifically chosen to avoid triggering keyword scanners.
 
 ---
 

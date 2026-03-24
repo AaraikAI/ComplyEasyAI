@@ -7,10 +7,13 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import { upsertBrandingSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import multer from 'multer';
+import DOMPurify from 'isomorphic-dompurify';
 
 const router = Router();
 router.use(authenticate);
@@ -92,6 +95,7 @@ router.get(
 router.post(
   '/',
   authorize('admin'),
+  validateBody(upsertBrandingSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -108,39 +112,36 @@ router.post(
         footerText,
       } = req.body;
 
-      // Validate color values if provided
-      if (primaryColor && !isValidHexColor(primaryColor)) {
-        res.status(400).json({ error: 'primaryColor must be a valid hex color (e.g., #3B82F6)' });
-        return;
-      }
-      if (secondaryColor && !isValidHexColor(secondaryColor)) {
-        res.status(400).json({ error: 'secondaryColor must be a valid hex color' });
-        return;
-      }
-      if (accentColor && !isValidHexColor(accentColor)) {
-        res.status(400).json({ error: 'accentColor must be a valid hex color' });
-        return;
-      }
-
-      // Validate custom domain format if provided
-      if (customDomain) {
-        const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
-        if (!domainRegex.test(customDomain)) {
-          res.status(400).json({ error: 'customDomain must be a valid domain name' });
-          return;
-        }
-      }
+      // Joi schema validates hex colors and domain format via regex patterns
+      // Sanitize HTML/CSS fields to prevent stored XSS
+      const sanitizeHtml = (input: string | null | undefined): string | null => {
+        if (input === undefined || input === null) return null;
+        return DOMPurify.sanitize(input, {
+          ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'strong', 'em', 'a', 'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'span', 'div', 'img', 'table', 'tr', 'td', 'th', 'thead', 'tbody'],
+          ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'style', 'target', 'rel'],
+          ALLOW_DATA_ATTR: false,
+        });
+      };
+      const sanitizeCss = (input: string | null | undefined): string | null => {
+        if (input === undefined || input === null) return null;
+        // Strip any HTML tags and JavaScript from CSS — only allow CSS declarations
+        return input.replace(/<[^>]*>/g, '').replace(/javascript:/gi, '').replace(/expression\s*\(/gi, '');
+      };
+      const sanitizeText = (input: string | null | undefined): string | null => {
+        if (input === undefined || input === null) return null;
+        return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] });
+      };
 
       const data: any = {};
       if (primaryColor !== undefined) data.primaryColor = primaryColor;
       if (secondaryColor !== undefined) data.secondaryColor = secondaryColor;
       if (accentColor !== undefined) data.accentColor = accentColor;
-      if (companyName !== undefined) data.companyName = companyName || null;
+      if (companyName !== undefined) data.companyName = sanitizeText(companyName);
       if (customDomain !== undefined) data.customDomain = customDomain || null;
-      if (customCSS !== undefined) data.customCSS = customCSS || null;
-      if (emailTemplate !== undefined) data.emailTemplate = emailTemplate || null;
-      if (loginPageHtml !== undefined) data.loginPageHtml = loginPageHtml || null;
-      if (footerText !== undefined) data.footerText = footerText || null;
+      if (customCSS !== undefined) data.customCSS = sanitizeCss(customCSS);
+      if (emailTemplate !== undefined) data.emailTemplate = sanitizeHtml(emailTemplate);
+      if (loginPageHtml !== undefined) data.loginPageHtml = sanitizeHtml(loginPageHtml);
+      if (footerText !== undefined) data.footerText = sanitizeHtml(footerText);
 
       const branding = await prisma.brandingConfig.upsert({
         where: { organizationId: user.organizationId },

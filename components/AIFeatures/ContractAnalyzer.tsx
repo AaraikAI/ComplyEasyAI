@@ -65,21 +65,24 @@ export const ContractAnalyzer: React.FC<{ onBack: () => void }> = ({ onBack }) =
         // Send binary files to backend for text extraction
         const formData = new FormData();
         formData.append('file', file);
-        try {
-          const response = await fetch('/api/contracts/extract-text', {
-            method: 'POST',
-            body: formData,
-            credentials: 'include',
+        fetch('/api/contracts/extract-text', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        })
+          .then(response => {
+            if (!response.ok) {
+              reject(new Error(`Failed to extract text from ${file.name}. Server returned ${response.status}.`));
+              return;
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (data) resolve(data.text || '');
+          })
+          .catch(() => {
+            reject(new Error(`Failed to send ${file.name} to server for text extraction. Please paste the content manually.`));
           });
-          if (!response.ok) {
-            reject(new Error(`Failed to extract text from ${file.name}. Server returned ${response.status}.`));
-            return;
-          }
-          const data = await response.json();
-          resolve(data.text || '');
-        } catch (err) {
-          reject(new Error(`Failed to send ${file.name} to server for text extraction. Please paste the content manually.`));
-        }
       } else {
         // Text files
         reader.readAsText(file);

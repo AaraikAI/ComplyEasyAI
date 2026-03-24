@@ -8,6 +8,7 @@ When reviewing scan findings, every single result must be classified. This guide
 |---|---|---|
 | `INTENTIONAL_FEATURE` | Code IS the product (e.g., a mock interview tool, simulation engine, red team tool, Monte Carlo, test generator, digital twin, phishing simulator, placeholder UI text that is the actual content). | No action. Note in report as confirmed intentional. |
 | `DEV_FALLBACK` | Has a production guard — `process.env.NODE_ENV`, feature flag, config switch, or conditional that disables it in prod. | Note in report. Verify the guard works. Low priority. |
+| `PARTIALLY_WIRED` | Component makes SOME API calls but also has significant hardcoded `DEFAULT_*`/`DEMO_*` data that is NOT replaced by API responses. The wired portions work; the static portions show fabricated data to users. | **Must document: (a) what IS wired, (b) what is STILL static, (c) whether static data persists alongside real data or is replaced on mount.** Score as 50-75% complete. |
 | `PRODUCTION_GAP` | Missing real implementation. Code that needs to change before production. | **Must be in the fix list with full instructions and a patch.** |
 | `FALSE_POSITIVE` | Grep matched but context shows it's fine. Keyword appears in a variable name, comment about completed work, documentation, etc. | Exclude from report. |
 
@@ -91,6 +92,19 @@ Is it generating UUIDs or session IDs? → PRODUCTION_GAP (use crypto.randomUUID
 Is it in a seed/faker file for test data? → FALSE_POSITIVE
 Is it in business logic that should use deterministic or crypto-secure randomness? → PRODUCTION_GAP
 ```
+
+### "DEFAULT_*" / "DEMO_*" constant found (v3 addition)
+```
+Does a useEffect/useQuery call an API and REPLACE this constant with real data? → WIRED_WITH_FALLBACK (DEV_FALLBACK)
+Does the DEFAULT_*/DEMO_* array persist as the ONLY data source (no API call)? → PRODUCTION_GAP
+Is the component listed in .claude/CLAUDE.md as intentionally static? → INTENTIONAL_STATIC (FALSE_POSITIVE)
+Does the component make SOME API calls but this specific array is never replaced? → PARTIALLY_WIRED (document what's wired vs static)
+Is this in a test file or utility? → FALSE_POSITIVE
+```
+
+**WARNING: Neutral naming is a stronger signal of real gaps.** Components using `DEFAULT_*`, `DEMO_*`, `INITIAL_*` instead of `mock*`/`fake*` are MORE likely to be production gaps because the naming was specifically chosen to avoid triggering keyword scanners. Always read the full file.
+
+---
 
 ## Writing Fix Instructions
 

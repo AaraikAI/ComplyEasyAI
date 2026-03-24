@@ -9,7 +9,7 @@
  * - Status dashboard
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import {
   Award,
@@ -30,6 +30,7 @@ import {
   Trash2,
   ChevronRight,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -83,77 +84,50 @@ const statusConfig: Record<CertStatus, { color: string; icon: React.ReactNode }>
   InProgress: { color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', icon: <RefreshCw className="w-3.5 h-3.5" /> },
 };
 
-const initialCerts: Certification[] = [
-  {
-    id: 'CERT-001', name: 'SOC 2 Type II', standard: 'AICPA SOC 2', scope: 'ComplyEasyAI SaaS Platform - Trust Services Criteria',
-    status: 'Active', certBody: 'Deloitte', issueDate: '2025-06-15', expiryDate: '2026-06-14',
-    lastAuditDate: '2025-05-01', nextAuditDate: '2026-04-01', owner: 'Sarah Chen', controlsInScope: 142, nonconformities: 0,
-    audits: [
-      { id: 'a1', type: 'Surveillance', date: '2025-11-15', auditor: 'Deloitte', status: 'Completed', findings: 2 },
-      { id: 'a2', type: 'Recertification', date: '2026-04-01', auditor: 'Deloitte', status: 'Scheduled', findings: 0 },
-    ],
-    documents: [
-      { id: 'd1', name: 'SOC 2 Type II Report 2025', type: 'Audit Report', uploadedDate: '2025-06-20', uploadedBy: 'Sarah Chen', size: '4.2 MB' },
-      { id: 'd2', name: 'SOC 2 Certificate', type: 'Certificate', uploadedDate: '2025-06-15', uploadedBy: 'Sarah Chen', size: '245 KB' },
-      { id: 'd3', name: 'Management Assertion Letter', type: 'Scope Statement', uploadedDate: '2025-06-15', uploadedBy: 'James Wilson', size: '128 KB' },
-    ],
-  },
-  {
-    id: 'CERT-002', name: 'ISO 27001:2022', standard: 'ISO/IEC 27001:2022', scope: 'Information Security Management System for cloud-based GRC platform',
-    status: 'Active', certBody: 'BSI Group', issueDate: '2025-03-01', expiryDate: '2028-02-28',
-    lastAuditDate: '2025-09-15', nextAuditDate: '2026-03-15', owner: 'James Wilson', controlsInScope: 93, nonconformities: 1,
-    audits: [
-      { id: 'a3', type: 'Surveillance', date: '2025-09-15', auditor: 'BSI Group', status: 'Completed', findings: 1 },
-      { id: 'a4', type: 'Surveillance', date: '2026-03-15', auditor: 'BSI Group', status: 'Scheduled', findings: 0 },
-      { id: 'a5', type: 'Recertification', date: '2028-01-15', auditor: 'BSI Group', status: 'Scheduled', findings: 0 },
-    ],
-    documents: [
-      { id: 'd4', name: 'ISO 27001 Certificate', type: 'Certificate', uploadedDate: '2025-03-05', uploadedBy: 'James Wilson', size: '312 KB' },
-      { id: 'd5', name: 'Stage 2 Audit Report', type: 'Audit Report', uploadedDate: '2025-03-01', uploadedBy: 'James Wilson', size: '8.1 MB' },
-      { id: 'd6', name: 'Statement of Applicability', type: 'Scope Statement', uploadedDate: '2025-02-15', uploadedBy: 'James Wilson', size: '1.4 MB' },
-    ],
-  },
-  {
-    id: 'CERT-003', name: 'ISO 27701', standard: 'ISO/IEC 27701:2019', scope: 'Privacy Information Management System extension',
-    status: 'InProgress', certBody: 'BSI Group', issueDate: '', expiryDate: '',
-    lastAuditDate: '', nextAuditDate: '2026-06-01', owner: 'Legal Team', controlsInScope: 49, nonconformities: 0,
-    audits: [
-      { id: 'a6', type: 'Recertification', date: '2026-06-01', auditor: 'BSI Group', status: 'Scheduled', findings: 0 },
-    ],
-    documents: [
-      { id: 'd7', name: 'Gap Assessment Report', type: 'Audit Report', uploadedDate: '2025-12-01', uploadedBy: 'Legal Team', size: '2.8 MB' },
-    ],
-  },
-  {
-    id: 'CERT-004', name: 'PCI DSS v4.0', standard: 'PCI DSS v4.0 SAQ-D', scope: 'Payment processing infrastructure',
-    status: 'Expiring', certBody: 'QSA - Coalfire', issueDate: '2025-01-15', expiryDate: '2026-04-14',
-    lastAuditDate: '2024-12-01', nextAuditDate: '2026-03-01', owner: 'Mike Johnson', controlsInScope: 264, nonconformities: 3,
-    audits: [
-      { id: 'a7', type: 'Recertification', date: '2026-03-01', auditor: 'Coalfire', status: 'Scheduled', findings: 0 },
-    ],
-    documents: [
-      { id: 'd8', name: 'PCI DSS AoC', type: 'Certificate', uploadedDate: '2025-01-20', uploadedBy: 'Mike Johnson', size: '156 KB' },
-      { id: 'd9', name: 'SAQ-D Report', type: 'Audit Report', uploadedDate: '2025-01-15', uploadedBy: 'Mike Johnson', size: '5.6 MB' },
-    ],
-  },
-  {
-    id: 'CERT-005', name: 'HIPAA Compliance', standard: 'HIPAA Security Rule', scope: 'Healthcare data handling processes',
-    status: 'Expired', certBody: 'Internal + KPMG', issueDate: '2024-06-01', expiryDate: '2025-06-01',
-    lastAuditDate: '2024-05-15', nextAuditDate: '2026-05-01', owner: 'Compliance Team', controlsInScope: 78, nonconformities: 5,
-    audits: [
-      { id: 'a8', type: 'Recertification', date: '2026-05-01', auditor: 'KPMG', status: 'Scheduled', findings: 0 },
-    ],
-    documents: [
-      { id: 'd10', name: 'HIPAA Risk Assessment 2024', type: 'Audit Report', uploadedDate: '2024-05-20', uploadedBy: 'Compliance Team', size: '3.2 MB' },
-    ],
-  },
-];
+// ── API Helper ──────────────────────────────────────────────────────────────
+
+const API_BASE = '/api/certifications';
+
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, { credentials: 'include', ...options });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(body.message || `Request failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+function mapBackendStatus(status: string): CertStatus {
+  switch (status) {
+    case 'CERT_ACTIVE': return 'Active';
+    case 'EXPIRING_SOON': return 'Expiring';
+    case 'CERT_EXPIRED': return 'Expired';
+    case 'SUSPENDED': return 'Suspended';
+    case 'IN_PROGRESS': return 'InProgress';
+    default: return 'Active';
+  }
+}
+
+function mapAuditType(type: string): SurveillanceAudit['type'] {
+  if (type.includes('SURVEILLANCE')) return 'Surveillance';
+  if (type === 'RECERTIFICATION') return 'Recertification';
+  if (type === 'INITIAL') return 'Internal';
+  return 'Surveillance';
+}
+
+function mapAuditStatus(audit: any): SurveillanceAudit['status'] {
+  if (audit.completedDate) return 'Completed';
+  if (audit.result === 'CANCELLED') return 'Cancelled';
+  return 'Scheduled';
+}
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 const CertificationTracker: React.FC = () => {
   const { t } = useI18n();
-  const [certs, setCerts] = useState<Certification[]>(initialCerts);
+  const [certs, setCerts] = useState<Certification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('registry');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<CertStatus | 'all'>('all');
@@ -165,6 +139,68 @@ const CertificationTracker: React.FC = () => {
   const [formBody, setFormBody] = useState('');
   const [formOwner, setFormOwner] = useState('');
   const [formExpiry, setFormExpiry] = useState('');
+
+  // Fetch certifications from backend
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    apiFetch<{ status: string; data: { certifications: any[] } }>(`${API_BASE}?limit=100`)
+      .then((res) => {
+        if (cancelled) return;
+        const mapped: Certification[] = res.data.certifications.map((c: any) => {
+          const audits: SurveillanceAudit[] = (c.surveillanceAudits || []).map((a: any) => ({
+            id: a.id,
+            type: mapAuditType(a.type),
+            date: a.scheduledDate ? new Date(a.scheduledDate).toISOString().split('T')[0] : '',
+            auditor: a.auditorName || '',
+            status: mapAuditStatus(a),
+            findings: a.findings || 0,
+          }));
+
+          const documents: CertDocument[] = Array.isArray(c.documents)
+            ? c.documents.map((d: any, idx: number) => ({
+                id: d.id || `doc-${idx}`,
+                name: d.name || 'Document',
+                type: d.type || 'Certificate',
+                uploadedDate: d.uploadedDate || '',
+                uploadedBy: d.uploadedBy || '',
+                size: d.size || '',
+              }))
+            : [];
+
+          return {
+            id: c.id,
+            name: c.name || '',
+            standard: c.frameworkId || '',
+            scope: c.scope || '',
+            status: mapBackendStatus(c.status),
+            certBody: c.certBody || '',
+            issueDate: c.issueDate ? new Date(c.issueDate).toISOString().split('T')[0] : '',
+            expiryDate: c.expiryDate ? new Date(c.expiryDate).toISOString().split('T')[0] : '',
+            lastAuditDate: '',
+            nextAuditDate: audits.find(a => a.status === 'Scheduled')?.date || '',
+            owner: '',
+            audits,
+            documents,
+            controlsInScope: 0,
+            nonconformities: 0,
+          };
+        });
+        setCerts(mapped);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn('Failed to fetch certifications:', err);
+        setError(err.message || 'Failed to load certifications');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = useMemo(() => certs.filter(c => {
     const matchSearch = searchQuery === '' || c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.standard.toLowerCase().includes(searchQuery.toLowerCase());
@@ -188,17 +224,49 @@ const CertificationTracker: React.FC = () => {
       .sort((a, b) => new Date(b.uploadedDate).getTime() - new Date(a.uploadedDate).getTime());
   }, [certs]);
 
-  const handleCreate = useCallback(() => {
-    const newCert: Certification = {
-      id: `CERT-${String(certs.length + 1).padStart(3, '0')}`, name: formName, standard: formStandard,
-      scope: formScope, status: 'InProgress', certBody: formBody, issueDate: '', expiryDate: formExpiry,
-      lastAuditDate: '', nextAuditDate: '', owner: formOwner, audits: [], documents: [],
-      controlsInScope: 0, nonconformities: 0,
-    };
-    setCerts(prev => [newCert, ...prev]);
-    setShowCreateForm(false);
-    setFormName(''); setFormStandard(''); setFormScope(''); setFormBody(''); setFormOwner(''); setFormExpiry('');
-  }, [certs.length, formName, formStandard, formScope, formBody, formOwner, formExpiry]);
+  const handleCreate = useCallback(async () => {
+    try {
+      const issueDate = new Date().toISOString().split('T')[0];
+      const payload = {
+        name: formName,
+        certBody: formBody,
+        issueDate,
+        expiryDate: formExpiry || new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
+        scope: formScope || null,
+      };
+
+      const res = await apiFetch<{ status: string; data: any }>(API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const c = res.data;
+      const newCert: Certification = {
+        id: c.id,
+        name: c.name || formName,
+        standard: formStandard,
+        scope: c.scope || formScope,
+        status: 'InProgress',
+        certBody: c.certBody || formBody,
+        issueDate: c.issueDate ? new Date(c.issueDate).toISOString().split('T')[0] : '',
+        expiryDate: c.expiryDate ? new Date(c.expiryDate).toISOString().split('T')[0] : formExpiry,
+        lastAuditDate: '',
+        nextAuditDate: '',
+        owner: formOwner,
+        audits: [],
+        documents: [],
+        controlsInScope: 0,
+        nonconformities: 0,
+      };
+      setCerts(prev => [newCert, ...prev]);
+      setShowCreateForm(false);
+      setFormName(''); setFormStandard(''); setFormScope(''); setFormBody(''); setFormOwner(''); setFormExpiry('');
+    } catch (err: any) {
+      console.warn('Failed to create certification:', err);
+      setError(err.message || 'Failed to create certification');
+    }
+  }, [formName, formStandard, formScope, formBody, formOwner, formExpiry]);
 
   const daysUntil = (date: string) => date ? Math.ceil((new Date(date).getTime() - Date.now()) / 86400000) : null;
 
@@ -225,7 +293,21 @@ const CertificationTracker: React.FC = () => {
         ))}
       </div>
 
-      {activeTab === 'registry' && !selectedCert && (
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+          <span className="ml-3 text-slate-400">Loading certifications...</span>
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+          {error}
+          <button onClick={() => setError(null)} className="ml-3 underline text-red-300 hover:text-red-200">Dismiss</button>
+        </div>
+      )}
+
+      {!loading && activeTab === 'registry' && !selectedCert && (
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
             <div className="relative flex-1 w-full"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" /><input type="text" placeholder={t('common.search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
@@ -262,7 +344,7 @@ const CertificationTracker: React.FC = () => {
         </>
       )}
 
-      {activeTab === 'registry' && selectedCert && (
+      {!loading && activeTab === 'registry' && selectedCert && (
         <div className="space-y-6">
           <button onClick={() => setSelectedCert(null)} className="flex items-center gap-2 text-slate-400 hover:text-white text-sm"><ChevronRight className="w-4 h-4 rotate-180" /> Back</button>
           <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
@@ -306,7 +388,7 @@ const CertificationTracker: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'schedule' && (
+      {!loading && activeTab === 'schedule' && (
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
           <h3 className="text-sm font-semibold mb-4">{t('calendar.upcoming')} Audit Schedule</h3>
           <div className="space-y-3">
@@ -330,7 +412,7 @@ const CertificationTracker: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'documents' && (
+      {!loading && activeTab === 'documents' && (
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
           <h3 className="text-sm font-semibold mb-4">All Documents</h3>
           <div className="overflow-x-auto">

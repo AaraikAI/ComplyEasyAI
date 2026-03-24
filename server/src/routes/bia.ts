@@ -7,6 +7,11 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createBusinessProcessSchema, updateBusinessProcessSchema,
+  createProcessDependencySchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -210,6 +215,7 @@ router.get(
 router.post(
   '/processes',
   authorize('admin', 'editor'),
+  validateBody(createBusinessProcessSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -291,6 +297,7 @@ router.post(
 router.patch(
   '/processes/:id',
   authorize('admin', 'editor'),
+  validateBody(updateBusinessProcessSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -404,6 +411,7 @@ router.delete(
 router.post(
   '/processes/:id/dependencies',
   authorize('admin', 'editor'),
+  validateBody(createProcessDependencySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {

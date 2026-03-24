@@ -7,6 +7,11 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createSecurityTrainingSchema, updateSecurityTrainingSchema,
+  assignTrainingSchema, assignAllTrainingSchema, updateTrainingRecordSchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -273,6 +278,7 @@ router.get(
 router.post(
   '/',
   authorize('admin'),
+  validateBody(createSecurityTrainingSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -395,6 +401,7 @@ router.get(
 router.patch(
   '/:id',
   authorize('admin'),
+  validateBody(updateSecurityTrainingSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -465,6 +472,7 @@ router.delete(
 router.post(
   '/:id/assign',
   authorize('admin', 'editor'),
+  validateBody(assignTrainingSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -545,6 +553,7 @@ router.post(
 router.post(
   '/:id/assign-all',
   authorize('admin'),
+  validateBody(assignAllTrainingSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -607,6 +616,7 @@ router.post(
 
 router.patch(
   '/records/:recordId',
+  validateBody(updateTrainingRecordSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {

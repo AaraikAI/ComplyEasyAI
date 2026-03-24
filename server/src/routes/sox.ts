@@ -5,6 +5,12 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createSOXControlSchema, updateSOXControlSchema,
+  createSOXTestResultSchema, updateSOXTestResultSchema,
+  createSOXAssessmentSchema, updateSOXAssessmentSchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import soxService from '../services/soxService';
 import logger from '../config/logger';
@@ -60,6 +66,7 @@ router.get(
 router.post(
   '/controls',
   authorize('admin', 'editor'),
+  validateBody(createSOXControlSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const control = await soxService.createSOXControl({
@@ -87,6 +94,7 @@ router.get(
 router.patch(
   '/controls/:id',
   authorize('admin', 'editor'),
+  validateBody(updateSOXControlSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const control = await soxService.updateSOXControl(req.params.id, user.id, user.organizationId, req.body);
@@ -125,6 +133,7 @@ router.get(
 router.post(
   '/test-results',
   authorize('admin', 'editor'),
+  validateBody(createSOXTestResultSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const test = await soxService.createSOXTestResult({
@@ -152,6 +161,7 @@ router.get(
 router.patch(
   '/test-results/:id',
   authorize('admin', 'editor'),
+  validateBody(updateSOXTestResultSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const test = await soxService.updateSOXTestResult(req.params.id, user.id, user.organizationId, req.body);
@@ -190,6 +200,7 @@ router.get(
 router.post(
   '/assessments',
   authorize('admin', 'editor'),
+  validateBody(createSOXAssessmentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const assessment = await soxService.createSOXAssessment({
@@ -217,6 +228,7 @@ router.get(
 router.patch(
   '/assessments/:id',
   authorize('admin', 'editor'),
+  validateBody(updateSOXAssessmentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const assessment = await soxService.updateSOXAssessment(req.params.id, user.id, user.organizationId, req.body);

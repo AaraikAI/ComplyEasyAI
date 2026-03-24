@@ -8,6 +8,10 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  bulkUpdateSchema, bulkExportSchema, bulkDeleteSchema, bulkAssignSchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -125,6 +129,7 @@ function getModelConfig(resourceType: ResourceType) {
 router.post(
   '/update',
   authorize('admin', 'editor'),
+  validateBody(bulkUpdateSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const parsed = validateBulkRequest(req, res);
     if (!parsed) return;
@@ -244,6 +249,7 @@ router.post(
 
 router.post(
   '/export',
+  validateBody(bulkExportSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const parsed = validateBulkRequest(req, res);
     if (!parsed) return;
@@ -306,6 +312,7 @@ router.post(
 router.post(
   '/delete',
   authorize('admin'),
+  validateBody(bulkDeleteSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const parsed = validateBulkRequest(req, res);
     if (!parsed) return;
@@ -380,6 +387,7 @@ router.post(
 router.post(
   '/assign',
   authorize('admin', 'editor'),
+  validateBody(bulkAssignSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const parsed = validateBulkRequest(req, res);
     if (!parsed) return;

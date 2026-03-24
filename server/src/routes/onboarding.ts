@@ -8,6 +8,12 @@
 import { Router } from 'express';
 import { onboardingController } from '../controllers/onboardingController';
 import { authenticate, authorize } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  updateOnboardingProgressSchema, trackOnboardingEventSchema,
+  completeMilestoneSchema, updateOnboardingPreferencesSchema,
+  skipFlowSchema, updateChecklistSchema,
+} from '../validators/coreModulesSchemas';
 import { authAsyncHandler } from '../types/express';
 
 const router = Router();
@@ -32,6 +38,7 @@ router.get(
  */
 router.put(
   '/progress',
+  validateBody(updateOnboardingProgressSchema),
   authAsyncHandler(onboardingController.updateProgress.bind(onboardingController) as any)
 );
 
@@ -42,6 +49,7 @@ router.put(
  */
 router.post(
   '/event',
+  validateBody(trackOnboardingEventSchema),
   authAsyncHandler(onboardingController.trackEvent.bind(onboardingController) as any)
 );
 
@@ -52,6 +60,7 @@ router.post(
  */
 router.post(
   '/complete-milestone',
+  validateBody(completeMilestoneSchema),
   authAsyncHandler(onboardingController.completeMilestone.bind(onboardingController) as any)
 );
 
@@ -62,6 +71,7 @@ router.post(
  */
 router.put(
   '/preferences',
+  validateBody(updateOnboardingPreferencesSchema),
   authAsyncHandler(onboardingController.updatePreferences.bind(onboardingController) as any)
 );
 
@@ -72,6 +82,7 @@ router.put(
  */
 router.post(
   '/skip-flow',
+  validateBody(skipFlowSchema),
   authAsyncHandler(onboardingController.skipFlow.bind(onboardingController) as any)
 );
 
@@ -103,6 +114,7 @@ router.get(
  */
 router.put(
   '/checklist',
+  validateBody(updateChecklistSchema),
   authAsyncHandler(onboardingController.updateChecklist.bind(onboardingController) as any)
 );
 

@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import personnelService from '../services/personnelService';
 import { authenticate } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createPersonnelSchema, updatePersonnelSchema,
+  startOffboardingSchema, createAccessReviewSchema, completeAccessReviewSchema,
+} from '../validators/coreModulesSchemas';
 import { authAsyncHandler, AuthenticatedRequest } from '../types/express';
 import { requireEnterpriseFeature } from '../middleware/tierMiddleware';
 
@@ -13,6 +18,7 @@ router.use(...requireEnterpriseFeature('personnelManagement'));
 // Create personnel record
 router.post(
   '/',
+  validateBody(createPersonnelSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const personnel = await personnelService.createPersonnel({
       ...req.body,
@@ -38,6 +44,7 @@ router.post(
 // Start offboarding
 router.post(
   '/:id/start-offboarding',
+  validateBody(startOffboardingSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const personnel = await personnelService.startOffboarding(
       req.params.id,
@@ -52,6 +59,7 @@ router.post(
 // Create access review
 router.post(
   '/access-reviews',
+  validateBody(createAccessReviewSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const review = await personnelService.createAccessReview({
       ...req.body,
@@ -65,6 +73,7 @@ router.post(
 // Complete access review
 router.post(
   '/access-reviews/:id/complete',
+  validateBody(completeAccessReviewSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const review = await personnelService.completeAccessReview(
       req.params.id,
@@ -129,6 +138,7 @@ router.get(
 // Update personnel record
 router.patch(
   '/:id',
+  validateBody(updatePersonnelSchema),
   authAsyncHandler(async (req: AuthenticatedRequest, res) => {
     const personnel = await personnelService.updatePersonnel(
       req.params.id,

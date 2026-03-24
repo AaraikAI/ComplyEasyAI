@@ -6,6 +6,13 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  createDSARSchema, updateDSARSchema,
+  createConsentRecordSchema, updateConsentRecordSchema,
+  upsertConsentPreferenceSchema,
+  createRetentionPolicySchema, updateRetentionPolicySchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import { Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
@@ -201,6 +208,7 @@ router.get(
 router.post(
   '/dsar',
   authorize('admin', 'editor'),
+  validateBody(createDSARSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -273,6 +281,7 @@ router.get(
 router.patch(
   '/dsar/:id',
   authorize('admin', 'editor'),
+  validateBody(updateDSARSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -455,6 +464,7 @@ router.get(
 router.post(
   '/consent',
   authorize('admin', 'editor'),
+  validateBody(createConsentRecordSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -492,6 +502,7 @@ router.post(
 router.patch(
   '/consent/:id',
   authorize('admin', 'editor'),
+  validateBody(updateConsentRecordSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -683,6 +694,7 @@ router.get(
 router.put(
   '/consent/preferences/:dataSubjectId',
   authorize('admin', 'editor'),
+  validateBody(upsertConsentPreferenceSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const { dataSubjectId } = req.params;
@@ -771,6 +783,7 @@ router.get(
 router.post(
   '/retention',
   authorize('admin', 'editor'),
+  validateBody(createRetentionPolicySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -805,6 +818,7 @@ router.post(
 router.patch(
   '/retention/:id',
   authorize('admin', 'editor'),
+  validateBody(updateRetentionPolicySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {

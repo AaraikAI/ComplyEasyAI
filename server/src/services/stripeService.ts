@@ -20,6 +20,7 @@ import Stripe from 'stripe';
 import config from '../config';
 import logger from '../config/logger';
 import prisma from '../config/database';
+import { AppError } from '../middleware/errorHandler';
 import { TierName, TIERS, getTier, getTierIndex, BillingCycle } from '../config/tiers';
 import type { Plan, SubscriptionStatus, SubscriptionChangeType } from '../generated/prisma/client';
 import notificationService from './notificationService';
@@ -218,7 +219,7 @@ class StripeService {
       return customer.id;
     } catch (error) {
       logger.error('Failed to create Stripe customer', error);
-      throw new Error('Failed to create customer');
+      throw new AppError('Failed to create customer', 502);
     }
   }
 
@@ -250,9 +251,9 @@ class StripeService {
       // Validate price ID
       if (!priceId || !priceId.startsWith('price_')) {
         if (!config.stripe.secretKey) {
-          throw new Error('Stripe is not configured. Please contact support to upgrade your plan.');
+          throw new AppError('Stripe is not configured. Please contact support to upgrade your plan.', 400);
         }
-        throw new Error(`Price ID for ${tierName} ${billingCycle} plan is not configured. Ensure STRIPE_${tierName.toUpperCase()}_${billingCycle.toUpperCase()}_PRICE_ID is set.`);
+        throw new AppError(`Price ID for ${tierName} ${billingCycle} plan is not configured. Ensure STRIPE_${tierName.toUpperCase()}_${billingCycle.toUpperCase()}_PRICE_ID is set.`, 400);
       }
 
       // Build line items
@@ -321,7 +322,7 @@ class StripeService {
       return session.url!;
     } catch (error) {
       logger.error('Failed to create checkout session', error);
-      throw new Error('Failed to create checkout session');
+      throw new AppError('Failed to create checkout session', 502);
     }
   }
 
@@ -338,7 +339,7 @@ class StripeService {
       return session.url;
     } catch (error) {
       logger.error('Failed to create portal session', error);
-      throw new Error('Failed to create billing portal session');
+      throw new AppError('Failed to create billing portal session', 502);
     }
   }
 
@@ -390,7 +391,7 @@ class StripeService {
       return details;
     } catch (error) {
       logger.error('Failed to get subscription details', error);
-      throw new Error('Failed to fetch subscription details');
+      throw new AppError('Failed to fetch subscription details', 500);
     }
   }
 
@@ -467,7 +468,7 @@ class StripeService {
       });
 
       if (!org?.stripeSubscriptionId) {
-        throw new Error('No active subscription found');
+        throw new AppError('No active subscription found', 404);
       }
 
       const currentTier = org.plan as TierName;
@@ -475,7 +476,7 @@ class StripeService {
       const newPriceId = PRICE_IDS[targetTier][billingCycle];
 
       if (!newPriceId) {
-        throw new Error(`Price not configured for ${targetTier} ${billingCycle}`);
+        throw new AppError(`Price not configured for ${targetTier} ${billingCycle}`, 400);
       }
 
       const isUpgrade = getTierIndex(targetTier) > getTierIndex(currentTier);
@@ -524,7 +525,7 @@ class StripeService {
       return true;
     } catch (error) {
       logger.error('Failed to change tier', error);
-      throw new Error('Failed to change subscription tier');
+      throw new AppError('Failed to change subscription tier', 502);
     }
   }
 
@@ -542,7 +543,7 @@ class StripeService {
       });
 
       if (!org?.stripeSubscriptionId) {
-        throw new Error('No active subscription found');
+        throw new AppError('No active subscription found', 404);
       }
 
       if (atPeriodEnd) {
@@ -605,7 +606,7 @@ class StripeService {
       return true;
     } catch (error) {
       logger.error('Failed to cancel subscription', error);
-      throw new Error('Failed to cancel subscription');
+      throw new AppError('Failed to cancel subscription', 502);
     }
   }
 
@@ -619,7 +620,7 @@ class StripeService {
       });
 
       if (!org?.stripeSubscriptionId) {
-        throw new Error('No subscription to reactivate');
+        throw new AppError('No subscription to reactivate', 404);
       }
 
       await stripe.subscriptions.update(org.stripeSubscriptionId, {
@@ -648,7 +649,7 @@ class StripeService {
       return true;
     } catch (error) {
       logger.error('Failed to reactivate subscription', error);
-      throw new Error('Failed to reactivate subscription');
+      throw new AppError('Failed to reactivate subscription', 502);
     }
   }
 
@@ -662,12 +663,12 @@ class StripeService {
       });
 
       if (!org?.stripeSubscriptionId) {
-        throw new Error('No active subscription found');
+        throw new AppError('No active subscription found', 404);
       }
 
       const addOnPriceId = ADDON_PRICE_IDS[addOnId];
       if (!addOnPriceId) {
-        throw new Error('Add-on not found');
+        throw new AppError('Add-on not found', 404);
       }
 
       // Add to Stripe subscription
@@ -706,7 +707,7 @@ class StripeService {
       return true;
     } catch (error) {
       logger.error('Failed to add add-on', error);
-      throw new Error('Failed to add add-on');
+      throw new AppError('Failed to add add-on', 502);
     }
   }
 
@@ -720,7 +721,7 @@ class StripeService {
       });
 
       if (!org?.stripeSubscriptionId) {
-        throw new Error('No active subscription found');
+        throw new AppError('No active subscription found', 404);
       }
 
       // Find and remove from Stripe subscription
@@ -759,7 +760,7 @@ class StripeService {
       return true;
     } catch (error) {
       logger.error('Failed to remove add-on', error);
-      throw new Error('Failed to remove add-on');
+      throw new AppError('Failed to remove add-on', 502);
     }
   }
 
@@ -780,7 +781,7 @@ class StripeService {
       );
     } catch (error) {
       logger.error('Webhook signature verification failed', error);
-      throw new Error('Invalid webhook signature');
+      throw new AppError('Invalid webhook signature', 401);
     }
 
     // Log the event
@@ -1397,7 +1398,7 @@ class StripeService {
       });
 
       if (!org?.stripeCustomerId) {
-        throw new Error('No Stripe customer found for organization');
+        throw new AppError('No Stripe customer found for organization', 404);
       }
 
       const refundParams: Stripe.RefundCreateParams = {
@@ -1410,7 +1411,7 @@ class StripeService {
       } else if (data.paymentIntentId) {
         refundParams.payment_intent = data.paymentIntentId;
       } else {
-        throw new Error('Either chargeId or paymentIntentId is required');
+        throw new AppError('Either chargeId or paymentIntentId is required', 400);
       }
 
       // Add partial refund amount if specified
@@ -1466,7 +1467,7 @@ class StripeService {
       });
 
       if (!org?.stripeCustomerId) {
-        throw new Error('Customer not found');
+        throw new AppError('Customer not found', 404);
       }
 
       // Calculate custom price in integer cents to avoid floating-point issues

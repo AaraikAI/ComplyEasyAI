@@ -126,8 +126,7 @@ const emptyForm: ProcessForm = {
 };
 
 function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem('token');
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+  return { 'Content-Type': 'application/json' };
 }
 
 function scoreColor(score: number): string {

@@ -127,9 +127,52 @@ router.get('/event-types', asyncHandler(webhookController.getEventTypes.bind(web
 // INCOMING WEBHOOKS (API Key authenticated)
 // ============================================================================
 
-// Receive webhook from external service
+// HMAC signature verification middleware for incoming webhooks
+async function verifyWebhookSignature(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const { organizationId } = req.params;
+  const signature = req.headers['x-webhook-signature'] as string;
+
+  if (!signature) {
+    logger.warn('Incoming webhook missing signature header', { organizationId });
+    res.status(401).json({ error: 'Missing webhook signature' });
+    return;
+  }
+
+  // Look up the webhook secret for this organization
+  const webhookConfig = await prisma.webhook.findFirst({
+    where: { organizationId, enabled: true },
+    select: { secret: true },
+  });
+
+  if (!webhookConfig?.secret) {
+    logger.warn('Incoming webhook has no configured secret', { organizationId });
+    res.status(401).json({ error: 'Webhook not configured for this organization' });
+    return;
+  }
+
+  // Compute HMAC-SHA256 of the raw request body
+  const rawBody = JSON.stringify(req.body);
+  const expectedSignature = crypto
+    .createHmac('sha256', webhookConfig.secret)
+    .update(rawBody)
+    .digest('hex');
+
+  // Timing-safe comparison to prevent timing attacks
+  const sigBuffer = Buffer.from(signature, 'hex');
+  const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+  if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
+    logger.warn('Incoming webhook signature mismatch', { organizationId });
+    res.status(401).json({ error: 'Invalid webhook signature' });
+    return;
+  }
+
+  next();
+}
+
+// Receive webhook from external service (HMAC-authenticated)
 router.post(
   '/incoming/:organizationId/:action',
+  asyncHandler(verifyWebhookSignature),
   asyncHandler(webhookController.receiveIncomingWebhook.bind(webhookController))
 );
 

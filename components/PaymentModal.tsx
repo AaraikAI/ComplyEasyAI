@@ -4,6 +4,7 @@ import { X, CreditCard, Lock, CheckCircle, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 import { toast } from 'sonner';
 import { useI18n } from '../contexts/I18nContext';
+import { useSubmitGuard } from '../hooks/useSubmitGuard';
 
 interface PaymentModalProps {
   plan: string;
@@ -20,29 +21,32 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billing
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvc, setCvc] = useState('');
+  const { isSubmitting, guard } = useSubmitGuard();
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setLoading(true);
-    setStep('processing');
+    await guard(async () => {
+      setLoading(true);
+      setStep('processing');
 
-    try {
-      const response: any = await api.billing.createCheckout(plan as import('../types').TierName, billingCycle);
-      if (response?.url) {
-        window.location.href = response.url;
-      } else {
-        throw new Error('No checkout URL received');
+      try {
+        const response: any = await api.billing.createCheckout(plan as import('../types').TierName, billingCycle);
+        if (response?.url) {
+          window.location.href = response.url;
+        } else {
+          throw new Error('No checkout URL received');
+        }
+      } catch (error: any) {
+        console.error('Payment failed:', error);
+        const msg = error?.message || 'Failed to create checkout session.';
+        const hint = msg.includes('not configured') || msg.includes('Stripe is not configured')
+          ? ' Add Stripe price IDs to server .env (see API_KEYS_SETUP.md) or contact support.'
+          : '';
+        toast.error(msg + hint);
+        setLoading(false);
+        setStep('form');
       }
-    } catch (error: any) {
-      console.error('Payment failed:', error);
-      const msg = error?.message || 'Failed to create checkout session.';
-      const hint = msg.includes('not configured') || msg.includes('Stripe is not configured')
-        ? ' Add Stripe price IDs to server .env (see API_KEYS_SETUP.md) or contact support.'
-        : '';
-      toast.error(msg + hint);
-      setLoading(false);
-      setStep('form');
-    }
+    });
   };
 
   // Basic formatting for visual realism
@@ -102,12 +106,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ plan, price, billing
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={handleSubmit}
-                  disabled={loading}
+                  disabled={loading || isSubmitting}
                   className="w-full bg-slate-900 text-white py-4 rounded-lg font-bold text-lg hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 flex items-center justify-center disabled:opacity-50"
                 >
-                  {loading ? (
+                  {loading || isSubmitting ? (
                     <>
                       <Loader2 className="animate-spin mr-2" size={20} />
                       {t('common.loading')}

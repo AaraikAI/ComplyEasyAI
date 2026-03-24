@@ -4,6 +4,7 @@
  */
 import crypto from 'crypto';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 interface AnonymizationResult {
   originalField: string;
@@ -21,7 +22,11 @@ class DataAnonymizationService {
   private pseudonymizationKey: string;
 
   constructor() {
-    this.pseudonymizationKey = process.env.ANONYMIZATION_KEY || process.env.ENCRYPTION_KEY || 'default-anonymization-key';
+    const key = process.env.ANONYMIZATION_KEY || process.env.ENCRYPTION_KEY;
+    if (!key) {
+      throw new AppError('ANONYMIZATION_KEY or ENCRYPTION_KEY environment variable is required for data anonymization', 500);
+    }
+    this.pseudonymizationKey = key;
   }
 
   // Pseudonymize using HMAC-SHA256 (FIPS-approved)

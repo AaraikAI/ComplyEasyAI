@@ -8,6 +8,12 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import {
+  saveTicketingConfigSchema, testTicketingConnectionSchema,
+  syncTicketingSchema, createTicketSchema, bulkTicketSyncSchema,
+  updateFieldMappingSchema,
+} from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -136,6 +142,7 @@ router.get(
 
 router.post(
   '/config',
+  validateBody(saveTicketingConfigSchema),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
@@ -306,6 +313,7 @@ router.delete(
 
 router.post(
   '/test',
+  validateBody(testTicketingConnectionSchema),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
@@ -358,6 +366,7 @@ router.post(
 
 router.post(
   '/sync',
+  validateBody(syncTicketingSchema),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
@@ -425,6 +434,7 @@ router.post(
 
 router.post(
   '/create-ticket',
+  validateBody(createTicketSchema),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
@@ -737,6 +747,7 @@ router.get(
 
 router.post(
   '/connections',
+  validateBody(saveTicketingConfigSchema),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
@@ -1122,6 +1133,7 @@ router.patch(
 
 router.post(
   '/tickets/bulk-sync',
+  validateBody(bulkTicketSyncSchema),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
@@ -1252,6 +1264,7 @@ router.get(
 
 router.put(
   '/field-mapping/:provider',
+  validateBody(updateFieldMappingSchema),
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {

@@ -171,8 +171,7 @@ const DEFAULT_QUESTIONS: Question[] = [
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem('token');
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+  return { 'Content-Type': 'application/json' };
 }
 
 // SVG Radar chart helpers

@@ -14,7 +14,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: production
+      target: backend-production
     container_name: complyeasy-api-prod
     restart: always
     environment:

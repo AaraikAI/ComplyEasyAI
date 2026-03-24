@@ -143,6 +143,36 @@ For each PRODUCTION_GAP finding from the pattern scan, AST parsing, and dependen
 | Sidebar "Reports" | /reports | ❌ Dead link | Page component doesn't exist |
 | Dashboard card | /analytics | ⚠️ Skeleton | Page exists but shows static data |
 
+### 3.5 PARTIALLY_WIRED Components (v3 addition)
+
+Components that make SOME API calls but also rely on hardcoded DEFAULT_/DEMO_ data for significant portions:
+
+| # | Component | What's Wired | What's Static |
+|---|-----------|-------------|---------------|
+| 1 | [ComponentName] | [api.endpoint.list(), fetch('/api/...')] | [DEFAULT_ITEMS (N items), DEMO_DATA arrays] |
+| 2 | [ComponentName] | [regulationData.getAll/save('key')] | [DEFAULT_ENTITIES, DEFAULT_MEASURES, DEFAULT_INCIDENTS] |
+
+Note: Components using the generic `regulationData` endpoint store data in key-value fashion. The API wiring works, but initial data comes from hardcoded DEFAULT_* constants rather than being created through the UI.
+
+### 3.6 STATIC_ONLY Components (No API Calls) (v3 addition)
+
+Components operating entirely on local state with zero backend connectivity:
+
+| # | Component | What It Does | Backend Route Exists? | Should It Be Wired? |
+|---|-----------|-------------|----------------------|---------------------|
+| 1 | [ComponentName] | [description] | YES — backend has /endpoint/* routes + Model | YES |
+| 2 | [ComponentName] | [description] | NO | NO — localStorage-only is appropriate |
+
+### 3.7 Component Wiring Summary (v3 addition)
+
+| Status | Count | % of Total |
+|--------|-------|-----------|
+| FULLY_WIRED | [N] | [%] |
+| PARTIALLY_WIRED | [N] | [%] |
+| STATIC_ONLY (should be wired) | [N] | [%] |
+| INTENTIONAL_STATIC | [N] | [%] |
+| **Total components** | **[N]** | **100%** |
+
 ---
 
 ## SECTION 4: APPLICATION LOGIC ISSUES

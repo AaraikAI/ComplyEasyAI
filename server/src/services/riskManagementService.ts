@@ -24,29 +24,31 @@ export class RiskManagementService {
     methodology?: string;
     userId: string;
   }) {
-    const assessment = await prisma.riskAssessment.create({
-      data: {
+    return prisma.$transaction(async (tx) => {
+      const assessment = await tx.riskAssessment.create({
+        data: {
+          organizationId: data.organizationId,
+          name: data.name,
+          description: data.description,
+          assessmentType: data.assessmentType,
+          status: 'In_Progress',
+          scope: data.scope,
+          methodology: data.methodology || 'ISO_31000',
+          startDate: new Date(),
+        },
+      });
+
+      await AuditLogger.log({
+        userId: data.userId,
         organizationId: data.organizationId,
-        name: data.name,
-        description: data.description,
-        assessmentType: data.assessmentType,
-        status: 'In_Progress',
-        scope: data.scope,
-        methodology: data.methodology || 'ISO_31000',
-        startDate: new Date(),
-      },
-    });
+        action: 'risk_assessment.created',
+        resourceType: 'RiskAssessment',
+        resourceId: assessment.id,
+        metadata: { assessmentType: data.assessmentType },
+      });
 
-    await AuditLogger.log({
-      userId: data.userId,
-      organizationId: data.organizationId,
-      action: 'risk_assessment.created',
-      resourceType: 'RiskAssessment',
-      resourceId: assessment.id,
-      metadata: { assessmentType: data.assessmentType },
+      return assessment;
     });
-
-    return assessment;
   }
 
   /**
@@ -68,35 +70,37 @@ export class RiskManagementService {
 
     const severity = this.calculateRiskSeverity(riskScore);
 
-    const risk = await prisma.riskItem.create({
-      data: {
-        title: riskData.title,
-        description: riskData.description,
-        category: riskData.category,
-        likelihood: riskData.likelihood,
-        impact: riskData.impact,
-        riskScore,
-        severity,
-        status: 'Open',
+    return prisma.$transaction(async (tx) => {
+      const risk = await tx.riskItem.create({
+        data: {
+          title: riskData.title,
+          description: riskData.description,
+          category: riskData.category,
+          likelihood: riskData.likelihood,
+          impact: riskData.impact,
+          riskScore,
+          severity,
+          status: 'Open',
+          organizationId: riskData.organizationId,
+          assessmentId,
+        },
+      });
+
+      await AuditLogger.log({
+        userId: riskData.userId,
         organizationId: riskData.organizationId,
-        assessmentId,
-      },
-    });
+        action: 'risk.added_to_assessment',
+        resourceType: 'RiskItem',
+        resourceId: risk.id,
+        metadata: {
+          assessmentId,
+          riskScore,
+          severity,
+        },
+      });
 
-    await AuditLogger.log({
-      userId: riskData.userId,
-      organizationId: riskData.organizationId,
-      action: 'risk.added_to_assessment',
-      resourceType: 'RiskItem',
-      resourceId: risk.id,
-      metadata: {
-        assessmentId,
-        riskScore,
-        severity,
-      },
+      return risk;
     });
-
-    return risk;
   }
 
   /**
@@ -110,31 +114,33 @@ export class RiskManagementService {
     userId: string,
     organizationId: string
   ) {
-    const assessment = await prisma.riskAssessment.update({
-      where: { id: assessmentId },
-      data: {
-        status: 'Completed',
-        completedDate: new Date(),
-        overallRiskScore: data.overallRiskScore,
-      },
-      include: {
-        risks: true,
-      },
-    });
+    return prisma.$transaction(async (tx) => {
+      const assessment = await tx.riskAssessment.update({
+        where: { id: assessmentId },
+        data: {
+          status: 'Completed',
+          completedDate: new Date(),
+          overallRiskScore: data.overallRiskScore,
+        },
+        include: {
+          risks: true,
+        },
+      });
 
-    await AuditLogger.log({
-      userId,
-      organizationId,
-      action: 'risk_assessment.completed',
-      resourceType: 'RiskAssessment',
-      resourceId: assessmentId,
-      metadata: {
-        overallRiskScore: data.overallRiskScore,
-        risksIdentified: assessment.risks.length,
-      },
-    });
+      await AuditLogger.log({
+        userId,
+        organizationId,
+        action: 'risk_assessment.completed',
+        resourceType: 'RiskAssessment',
+        resourceId: assessmentId,
+        metadata: {
+          overallRiskScore: data.overallRiskScore,
+          risksIdentified: assessment.risks.length,
+        },
+      });
 
-    return assessment;
+      return assessment;
+    });
   }
 
   /**
@@ -151,33 +157,35 @@ export class RiskManagementService {
     userId: string,
     organizationId: string
   ) {
-    const risk = await prisma.riskItem.update({
-      where: { id: riskId },
-      data: {
-        mitigationPlan: data.mitigationPlan,
-        remediationOwner: data.remediationOwner,
-        targetDate: data.targetDate,
-        assignedToId: data.assignedToId,
-        status: 'In_Progress',
-      },
-      include: {
-        assignedTo: true,
-      },
-    });
+    return prisma.$transaction(async (tx) => {
+      const risk = await tx.riskItem.update({
+        where: { id: riskId },
+        data: {
+          mitigationPlan: data.mitigationPlan,
+          remediationOwner: data.remediationOwner,
+          targetDate: data.targetDate,
+          assignedToId: data.assignedToId,
+          status: 'In_Progress',
+        },
+        include: {
+          assignedTo: true,
+        },
+      });
 
-    await AuditLogger.log({
-      userId,
-      organizationId,
-      action: 'risk.remediation_plan_updated',
-      resourceType: 'RiskItem',
-      resourceId: riskId,
-      metadata: {
-        remediationOwner: data.remediationOwner,
-        targetDate: data.targetDate,
-      },
-    });
+      await AuditLogger.log({
+        userId,
+        organizationId,
+        action: 'risk.remediation_plan_updated',
+        resourceType: 'RiskItem',
+        resourceId: riskId,
+        metadata: {
+          remediationOwner: data.remediationOwner,
+          targetDate: data.targetDate,
+        },
+      });
 
-    return risk;
+      return risk;
+    });
   }
 
   /**
@@ -197,32 +205,34 @@ export class RiskManagementService {
     const riskScore = data.likelihood * data.impact;
     const severity = this.calculateRiskSeverity(riskScore);
 
-    const risk = await prisma.riskItem.update({
-      where: { id: riskId },
-      data: {
-        likelihood: data.likelihood,
-        impact: data.impact,
-        riskScore,
-        severity,
-        aiPriorityScore: data.aiPriorityScore,
-        aiRationale: data.aiRationale,
-      },
-    });
+    return prisma.$transaction(async (tx) => {
+      const risk = await tx.riskItem.update({
+        where: { id: riskId },
+        data: {
+          likelihood: data.likelihood,
+          impact: data.impact,
+          riskScore,
+          severity,
+          aiPriorityScore: data.aiPriorityScore,
+          aiRationale: data.aiRationale,
+        },
+      });
 
-    await AuditLogger.log({
-      userId,
-      organizationId,
-      action: 'risk.score_updated',
-      resourceType: 'RiskItem',
-      resourceId: riskId,
-      metadata: {
-        oldScore: risk.riskScore,
-        newScore: riskScore,
-        severity,
-      },
-    });
+      await AuditLogger.log({
+        userId,
+        organizationId,
+        action: 'risk.score_updated',
+        resourceType: 'RiskItem',
+        resourceId: riskId,
+        metadata: {
+          oldScore: risk.riskScore,
+          newScore: riskScore,
+          severity,
+        },
+      });
 
-    return risk;
+      return risk;
+    });
   }
 
   /**
@@ -237,30 +247,32 @@ export class RiskManagementService {
     userId: string,
     organizationId: string
   ) {
-    const risk = await prisma.riskItem.update({
-      where: { id: riskId },
-      data: {
-        status: 'Resolved',
-        resolvedAt: new Date(),
-      },
-    });
+    return prisma.$transaction(async (tx) => {
+      const risk = await tx.riskItem.update({
+        where: { id: riskId },
+        data: {
+          status: 'Resolved',
+          resolvedAt: new Date(),
+        },
+      });
 
-    await AuditLogger.log({
-      userId,
-      organizationId,
-      action: 'risk.resolved',
-      resourceType: 'RiskItem',
-      resourceId: riskId,
-      metadata: {
-        resolution: data.resolution,
-        effectiveness: data.effectiveness,
-        resolutionTime: risk.resolvedAt
-          ? risk.resolvedAt.getTime() - risk.detectedAt.getTime()
-          : 0,
-      },
-    });
+      await AuditLogger.log({
+        userId,
+        organizationId,
+        action: 'risk.resolved',
+        resourceType: 'RiskItem',
+        resourceId: riskId,
+        metadata: {
+          resolution: data.resolution,
+          effectiveness: data.effectiveness,
+          resolutionTime: risk.resolvedAt
+            ? risk.resolvedAt.getTime() - risk.detectedAt.getTime()
+            : 0,
+        },
+      });
 
-    return risk;
+      return risk;
+    });
   }
 
   /**

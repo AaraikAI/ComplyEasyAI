@@ -7,6 +7,8 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validate';
+import { createDeadlineSchema, updateDeadlineSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -189,6 +191,7 @@ router.get(
 router.post(
   '/deadlines',
   authorize('admin', 'editor'),
+  validateBody(createDeadlineSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -204,27 +207,8 @@ router.post(
         recurrence,
       } = req.body;
 
-      if (!title || !type || !dueDate) {
-        res.status(400).json({ error: 'title, type, and dueDate are required' });
-        return;
-      }
-
-      const validTypes = [
-        'AUDIT_DATE', 'CERTIFICATION_RENEWAL', 'POLICY_REVIEW',
-        'RISK_REASSESSMENT', 'REGULATORY_FILING', 'TRAINING_DUE',
-        'EVIDENCE_REFRESH', 'VENDOR_REVIEW', 'BOARD_REPORT',
-        'INCIDENT_REPORT_DEADLINE', 'DSAR_RESPONSE',
-      ];
-      if (!validTypes.includes(type)) {
-        res.status(400).json({ error: `type must be one of: ${validTypes.join(', ')}` });
-        return;
-      }
-
+      // Joi schema validates required fields, type enum, and date format
       const parsedDueDate = new Date(dueDate);
-      if (isNaN(parsedDueDate.getTime())) {
-        res.status(400).json({ error: 'dueDate must be a valid date' });
-        return;
-      }
 
       // Determine initial status based on due date
       const now = new Date();
@@ -268,6 +252,7 @@ router.post(
 router.patch(
   '/deadlines/:id',
   authorize('admin', 'editor'),
+  validateBody(updateDeadlineSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -280,45 +265,14 @@ router.patch(
         return;
       }
 
-      const { pick } = await import('../utils/pick');
-      const updateData: Record<string, any> = pick(req.body, [
-        'title', 'description', 'type', 'dueDate', 'frameworkId', 'controlId',
-        'assignedTo', 'status', 'reminderDays', 'recurrence', 'completedAt',
-      ]);
+      // Joi schema validates type/status enums and date formats; stripUnknown removes extra fields
+      const updateData: Record<string, any> = { ...req.body };
 
-      // Convert date strings
+      // Convert date strings (Joi validates format but Prisma needs Date objects)
       if (updateData.dueDate) {
-        const parsedDate = new Date(updateData.dueDate);
-        if (isNaN(parsedDate.getTime())) {
-          res.status(400).json({ error: 'dueDate must be a valid date' });
-          return;
-        }
-        updateData.dueDate = parsedDate;
+        updateData.dueDate = new Date(updateData.dueDate);
       }
       if (updateData.completedAt) updateData.completedAt = new Date(updateData.completedAt);
-
-      // Validate type if provided
-      if (updateData.type) {
-        const validTypes = [
-          'AUDIT_DATE', 'CERTIFICATION_RENEWAL', 'POLICY_REVIEW',
-          'RISK_REASSESSMENT', 'REGULATORY_FILING', 'TRAINING_DUE',
-          'EVIDENCE_REFRESH', 'VENDOR_REVIEW', 'BOARD_REPORT',
-          'INCIDENT_REPORT_DEADLINE', 'DSAR_RESPONSE',
-        ];
-        if (!validTypes.includes(updateData.type)) {
-          res.status(400).json({ error: `type must be one of: ${validTypes.join(', ')}` });
-          return;
-        }
-      }
-
-      // Validate status if provided
-      if (updateData.status) {
-        const validStatuses = ['UPCOMING', 'DUE_SOON', 'OVERDUE', 'COMPLETED', 'CANCELLED'];
-        if (!validStatuses.includes(updateData.status)) {
-          res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}` });
-          return;
-        }
-      }
 
       const deadline = await prisma.complianceDeadline.update({
         where: { id: req.params.id },

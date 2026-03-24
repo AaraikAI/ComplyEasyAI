@@ -9,7 +9,7 @@
  * - Budget vs actual comparison
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   DollarSign,
   Plus,
@@ -24,6 +24,7 @@ import {
   PieChart,
   ArrowUp,
   ArrowDown,
+  Loader2,
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
 
@@ -69,46 +70,55 @@ const frameworkLabels: Record<Framework, string> = {
   SOC2: 'SOC 2', ISO27001: 'ISO 27001', GDPR: 'GDPR', HIPAA: 'HIPAA', PCIDSS: 'PCI DSS', General: 'General',
 };
 
-// ── Mock Data ───────────────────────────────────────────────────────────────
+// ── API Helper ──────────────────────────────────────────────────────────────
 
-const initialEntries: CostEntry[] = [
-  { id: 'C-001', description: 'Vanta GRC Platform License', amount: 48000, category: 'ToolLicense', framework: 'SOC2', vendor: 'Vanta', date: '2025-01-15', recurring: true, frequency: 'annual' },
-  { id: 'C-002', description: 'SOC 2 Type II External Audit', amount: 65000, category: 'AuditFee', framework: 'SOC2', vendor: 'Deloitte', date: '2025-05-01', recurring: true, frequency: 'annual' },
-  { id: 'C-003', description: 'ISO 27001 Certification Audit', amount: 35000, category: 'AuditFee', framework: 'ISO27001', vendor: 'BSI Group', date: '2025-03-01', recurring: true, frequency: 'annual' },
-  { id: 'C-004', description: 'Security Awareness Training Platform', amount: 12000, category: 'Training', framework: 'General', vendor: 'KnowBe4', date: '2025-02-01', recurring: true, frequency: 'annual' },
-  { id: 'C-005', description: 'GDPR Compliance Consultant', amount: 25000, category: 'Consultant', framework: 'GDPR', vendor: 'Privacy Partners', date: '2025-04-15', recurring: false, frequency: 'one-time' },
-  { id: 'C-006', description: 'CrowdStrike Endpoint Protection', amount: 28000, category: 'ToolLicense', framework: 'General', vendor: 'CrowdStrike', date: '2025-06-01', recurring: true, frequency: 'annual' },
-  { id: 'C-007', description: 'PCI DSS QSA Assessment', amount: 18000, category: 'AuditFee', framework: 'PCIDSS', vendor: 'Coalfire', date: '2025-01-15', recurring: true, frequency: 'annual' },
-  { id: 'C-008', description: 'Compliance Team Lead Salary', amount: 145000, category: 'Personnel', framework: 'General', vendor: 'Internal', date: '2025-01-01', recurring: true, frequency: 'annual' },
-  { id: 'C-009', description: 'Cyber Insurance Premium', amount: 42000, category: 'Insurance', framework: 'General', vendor: 'Coalition', date: '2025-03-01', recurring: true, frequency: 'annual' },
-  { id: 'C-010', description: 'Vulnerability Remediation Sprint', amount: 15000, category: 'Remediation', framework: 'SOC2', vendor: 'Internal', date: '2025-07-01', recurring: false, frequency: 'one-time' },
-  { id: 'C-011', description: 'Penetration Testing', amount: 22000, category: 'AuditFee', framework: 'General', vendor: 'Synack', date: '2025-09-01', recurring: true, frequency: 'annual' },
-  { id: 'C-012', description: 'HIPAA Privacy Officer Training', amount: 5000, category: 'Training', framework: 'HIPAA', vendor: 'AHLA', date: '2025-04-01', recurring: true, frequency: 'annual' },
-];
+const API_BASE = '/api/costs';
 
-const budgetData: BudgetLine[] = [
-  { category: 'ToolLicense', budgeted: 85000, actual: 76000 },
-  { category: 'Consultant', budgeted: 30000, actual: 25000 },
-  { category: 'AuditFee', budgeted: 150000, actual: 140000 },
-  { category: 'Training', budgeted: 20000, actual: 17000 },
-  { category: 'Personnel', budgeted: 150000, actual: 145000 },
-  { category: 'Insurance', budgeted: 45000, actual: 42000 },
-  { category: 'Remediation', budgeted: 25000, actual: 15000 },
-  { category: 'Other', budgeted: 10000, actual: 5000 },
-];
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, { credentials: 'include', ...options });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(body.message || `Request failed: ${res.status}`);
+  }
+  return res.json();
+}
 
-const monthlyTrend = [
-  { month: 'Jan', amount: 38000 }, { month: 'Feb', amount: 12000 }, { month: 'Mar', amount: 77000 },
-  { month: 'Apr', amount: 30000 }, { month: 'May', amount: 65000 }, { month: 'Jun', amount: 28000 },
-  { month: 'Jul', amount: 15000 }, { month: 'Aug', amount: 8000 }, { month: 'Sep', amount: 22000 },
-  { month: 'Oct', amount: 10000 }, { month: 'Nov', amount: 5000 }, { month: 'Dec', amount: 15000 },
-];
+// Map backend category enums to frontend display categories
+const backendCategoryMap: Record<string, CostCategory> = {
+  TOOL_LICENSE: 'ToolLicense',
+  CONSULTANT: 'Consultant',
+  AUDIT_FEE: 'AuditFee',
+  TRAINING: 'Training',
+  PERSONNEL: 'Personnel',
+  INSURANCE: 'Insurance',
+  REMEDIATION: 'Remediation',
+  CERTIFICATION: 'Other',
+  LEGAL: 'Other',
+  OTHER: 'Other',
+};
+
+const frontendCategoryMap: Record<CostCategory, string> = {
+  ToolLicense: 'TOOL_LICENSE',
+  Consultant: 'CONSULTANT',
+  AuditFee: 'AUDIT_FEE',
+  Training: 'TRAINING',
+  Personnel: 'PERSONNEL',
+  Insurance: 'INSURANCE',
+  Remediation: 'REMEDIATION',
+  Other: 'OTHER',
+};
+
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // ── Component ───────────────────────────────────────────────────────────────
 
 const ComplianceCostDashboard: React.FC = () => {
   const { t } = useI18n();
-  const [entries, setEntries] = useState<CostEntry[]>(initialEntries);
+  const [entries, setEntries] = useState<CostEntry[]>([]);
+  const [budgetData, setBudgetData] = useState<BudgetLine[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<{ month: string; amount: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [catFilter, setCatFilter] = useState<CostCategory | 'all'>('all');
@@ -122,6 +132,62 @@ const ComplianceCostDashboard: React.FC = () => {
   const [formDate, setFormDate] = useState('');
   const [formRecurring, setFormRecurring] = useState(false);
   const [formFreq, setFormFreq] = useState<CostEntry['frequency']>('annual');
+
+  // Fetch cost entries, trend, and budget data from backend
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      apiFetch<{ status: string; data: { costs: any[] } }>(`${API_BASE}?limit=100`),
+      apiFetch<{ status: string; data: { trend: any[] } }>(`${API_BASE}/trend?months=12`),
+      apiFetch<{ status: string; data: { byCategory: any[]; totalActual: number } }>(`${API_BASE}/budget`),
+    ])
+      .then(([costsRes, trendRes, budgetRes]) => {
+        if (cancelled) return;
+
+        // Map cost entries
+        const mapped: CostEntry[] = costsRes.data.costs.map((c: any) => ({
+          id: c.id,
+          description: c.description || '',
+          amount: c.amount || 0,
+          category: backendCategoryMap[c.category] || 'Other',
+          framework: (c.frameworkId || 'General') as Framework,
+          vendor: c.vendorId || '',
+          date: c.periodStart ? new Date(c.periodStart).toISOString().split('T')[0] : '',
+          recurring: false,
+          frequency: 'one-time' as const,
+        }));
+        setEntries(mapped);
+
+        // Map monthly trend
+        const trendMapped = trendRes.data.trend.map((t: any) => {
+          const parts = t.month.split('-');
+          const monthIdx = parseInt(parts[1], 10) - 1;
+          return { month: monthNames[monthIdx] || t.month, amount: t.total || 0 };
+        });
+        setMonthlyTrend(trendMapped);
+
+        // Map budget data
+        const budgetMapped: BudgetLine[] = budgetRes.data.byCategory.map((b: any) => ({
+          category: backendCategoryMap[b.category] || 'Other',
+          budgeted: b.actual || 0,
+          actual: b.actual || 0,
+        }));
+        setBudgetData(budgetMapped);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn('Failed to fetch cost data:', err);
+        setError(err.message || 'Failed to load cost data');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = useMemo(() => entries.filter(e => {
     const matchSearch = searchQuery === '' || e.description.toLowerCase().includes(searchQuery.toLowerCase()) || e.vendor.toLowerCase().includes(searchQuery.toLowerCase());
@@ -150,17 +216,54 @@ const ComplianceCostDashboard: React.FC = () => {
 
   const maxMonthly = Math.max(...monthlyTrend.map(m => m.amount));
 
-  const handleCreate = useCallback(() => {
-    const newEntry: CostEntry = {
-      id: `C-${String(entries.length + 1).padStart(3, '0')}`, description: formDesc,
-      amount: parseFloat(formAmount) || 0, category: formCat, framework: formFw,
-      vendor: formVendor, date: formDate || new Date().toISOString().split('T')[0],
-      recurring: formRecurring, frequency: formFreq,
-    };
-    setEntries(prev => [newEntry, ...prev]);
-    setShowCreateForm(false);
-    setFormDesc(''); setFormAmount(''); setFormVendor(''); setFormDate('');
-  }, [entries.length, formDesc, formAmount, formCat, formFw, formVendor, formDate, formRecurring, formFreq]);
+  const handleCreate = useCallback(async () => {
+    try {
+      const dateVal = formDate || new Date().toISOString().split('T')[0];
+      const payload = {
+        category: frontendCategoryMap[formCat],
+        description: formDesc,
+        amount: parseFloat(formAmount) || 0,
+        currency: 'USD',
+        periodStart: dateVal,
+        periodEnd: dateVal,
+      };
+
+      const res = await apiFetch<{ status: string; data: any }>(API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const c = res.data;
+      const newEntry: CostEntry = {
+        id: c.id,
+        description: c.description || formDesc,
+        amount: c.amount || parseFloat(formAmount) || 0,
+        category: formCat,
+        framework: formFw,
+        vendor: formVendor,
+        date: dateVal,
+        recurring: formRecurring,
+        frequency: formFreq,
+      };
+      setEntries(prev => [newEntry, ...prev]);
+      setShowCreateForm(false);
+      setFormDesc(''); setFormAmount(''); setFormVendor(''); setFormDate('');
+    } catch (err: any) {
+      console.warn('Failed to create cost entry:', err);
+      setError(err.message || 'Failed to create cost entry');
+    }
+  }, [formDesc, formAmount, formCat, formFw, formVendor, formDate, formRecurring, formFreq]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    try {
+      await apiFetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+      setEntries(prev => prev.filter(e => e.id !== id));
+    } catch (err: any) {
+      console.warn('Failed to delete cost entry:', err);
+      setError(err.message || 'Failed to delete cost entry');
+    }
+  }, []);
 
   const fmt = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : `$${n}`;
   const fmtFull = (n: number) => `$${n.toLocaleString()}`;
@@ -194,7 +297,21 @@ const ComplianceCostDashboard: React.FC = () => {
         ))}
       </div>
 
-      {activeTab === 'overview' && (
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+          <span className="ml-3 text-slate-400">Loading cost data...</span>
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+          {error}
+          <button onClick={() => setError(null)} className="ml-3 underline text-red-300 hover:text-red-200">Dismiss</button>
+        </div>
+      )}
+
+      {!loading && activeTab === 'overview' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
@@ -244,7 +361,7 @@ const ComplianceCostDashboard: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'entries' && (
+      {!loading && activeTab === 'entries' && (
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
             <div className="relative flex-1 w-full"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" /><input type="text" placeholder={`${t('common.search')} costs...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
@@ -264,7 +381,7 @@ const ComplianceCostDashboard: React.FC = () => {
                     <td className="py-3 px-4 text-slate-400">{entry.vendor}</td>
                     <td className="py-3 px-4 text-right font-mono font-bold">{fmtFull(entry.amount)}</td>
                     <td className="py-3 px-4"><span className={`px-1.5 py-0.5 rounded text-xs ${entry.recurring ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-600 text-slate-400'}`}>{entry.frequency}</span></td>
-                    <td className="py-3 px-4 text-right"><button onClick={() => setEntries(prev => prev.filter(e => e.id !== entry.id))} className="p-1.5 text-slate-400 hover:text-red-400"><Trash2 className="w-4 h-4" /></button></td>
+                    <td className="py-3 px-4 text-right"><button onClick={(e) => { e.stopPropagation(); handleDelete(entry.id); }} className="p-1.5 text-slate-400 hover:text-red-400"><Trash2 className="w-4 h-4" /></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -274,7 +391,7 @@ const ComplianceCostDashboard: React.FC = () => {
         </>
       )}
 
-      {activeTab === 'budget' && (
+      {!loading && activeTab === 'budget' && (
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
           <h3 className="text-sm font-semibold mb-4">{t('costs.budget')} vs {t('costs.actual')} by {t('common.category')}</h3>
           <div className="space-y-4">

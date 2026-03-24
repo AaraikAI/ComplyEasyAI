@@ -145,12 +145,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   ];
 
   const userPlan = normalizePlan(user?.organization?.plan);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const navItemsFiltered = useMemo(
     () => navItems.filter((item) => canAccessView(userPlan, item.id)),
     [userPlan, t]
   );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const aiToolsFiltered = useMemo(
     () => aiTools.filter((item) => canAccessView(userPlan, item.id)),
     [userPlan, t]
