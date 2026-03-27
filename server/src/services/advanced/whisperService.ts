@@ -13,15 +13,16 @@ import type { Uploadable } from 'openai/uploads';
 import type { TranscriptionVerbose, TranscriptionSegment } from 'openai/resources/audio/transcriptions';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 import { Prisma } from '../../generated/prisma/client';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface TranscriptionOptions {
   language?: string;
@@ -96,7 +97,7 @@ class WhisperService {
       // In production, require OpenAI API key
       if (!this.openai || !process.env.OPENAI_API_KEY) {
         if (process.env.NODE_ENV === 'production') {
-          throw new Error('OPENAI_API_KEY is required for audio transcription in production');
+          throw new AppError('OPENAI_API_KEY is required for audio transcription in production', 500);
         }
         return this.fallbackTranscription(audioBuffer, options);
       }
@@ -186,7 +187,7 @@ class WhisperService {
       logger.error('[Whisper] Error transcribing audio', error);
       // In production, throw error instead of fallback
       if (process.env.NODE_ENV === 'production') {
-        throw new Error(`Audio transcription failed: ${error.message}`);
+        throw new AppError(`Audio transcription failed: ${error.message}`, 500);
       }
       // Development fallback
       return this.fallbackTranscription(audioBuffer, options);
@@ -203,13 +204,14 @@ class WhisperService {
     try {
       // Use FFmpeg to extract audio: mono channel, 16kHz sample rate, PCM 16-bit
       // This format is optimal for Whisper API
-      await execAsync(
-        `ffmpeg -i "${videoPath}" -vn -acodec pcm_s16le -ar 16000 -ac 1 "${audioPath}" -y`,
+      await execFileAsync(
+        'ffmpeg',
+        ['-i', videoPath, '-vn', '-acodec', 'pcm_s16le', '-ar', '16000', '-ac', '1', audioPath, '-y'],
         { timeout: 120000 } // 2 minute timeout for large files
       );
 
       if (!fs.existsSync(audioPath)) {
-        throw new Error('FFmpeg audio extraction produced no output');
+        throw new AppError('FFmpeg audio extraction produced no output', 500);
       }
 
       logger.info(`[Whisper] Audio extracted from video: ${audioPath}`);
@@ -217,12 +219,13 @@ class WhisperService {
     } catch (error: any) {
       // Check if FFmpeg is installed
       if (error.message?.includes('not found') || error.message?.includes('ENOENT')) {
-        throw new Error(
+        throw new AppError(
           'FFmpeg is not installed. Install FFmpeg for video audio extraction: ' +
-          'apt-get install ffmpeg (Linux) or brew install ffmpeg (macOS)'
+          'apt-get install ffmpeg (Linux) or brew install ffmpeg (macOS)',
+          500
         );
       }
-      throw new Error(`FFmpeg audio extraction failed: ${error.message}`);
+      throw new AppError(`FFmpeg audio extraction failed: ${error.message}`, 500);
     }
   }
 
@@ -245,7 +248,7 @@ class WhisperService {
     try {
       if (!this.openai || !process.env.OPENAI_API_KEY) {
         if (process.env.NODE_ENV === 'production') {
-          throw new Error('OPENAI_API_KEY is required for video transcription in production');
+          throw new AppError('OPENAI_API_KEY is required for video transcription in production', 500);
         }
         return this.fallbackTranscription(videoBuffer, options);
       }
@@ -316,7 +319,7 @@ class WhisperService {
     } catch (error: any) {
       logger.error('[Whisper] Error transcribing video', error);
       if (process.env.NODE_ENV === 'production') {
-        throw new Error(`Video transcription failed: ${error.message}`);
+        throw new AppError(`Video transcription failed: ${error.message}`, 500);
       }
       return this.fallbackTranscription(videoBuffer, options);
     } finally {
@@ -335,7 +338,7 @@ class WhisperService {
     options: TranscriptionOptions
   ): TranscriptionResult {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('Whisper API not available. OPENAI_API_KEY must be configured for audio transcription in production.');
+      throw new AppError('Whisper API not available. OPENAI_API_KEY must be configured for audio transcription in production.', 500);
     }
 
     logger.warn('[Whisper] Using fallback transcription (API not available) - Development mode only');
@@ -657,7 +660,7 @@ class WhisperService {
       };
     } catch (error: any) {
       logger.error('[Whisper] Error in transcription with diarization', error);
-      throw new Error(`Transcription with diarization failed: ${error.message}`);
+      throw new AppError(`Transcription with diarization failed: ${error.message}`, 500);
     }
   }
 
@@ -772,7 +775,7 @@ class WhisperService {
       });
 
       if (!transcription) {
-        throw new Error('Transcription not found');
+        throw new AppError('Transcription not found', 404);
       }
 
       const segments = (transcription.segments as unknown as TranscriptionResult['segments']) || [];

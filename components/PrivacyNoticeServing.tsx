@@ -9,9 +9,10 @@
  * - Full CRUD with local state and demo data
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
+import { api } from '../services/api';
 import {
   ArrowLeft,
   Shield,
@@ -143,7 +144,7 @@ const LANGUAGES = [
   'Dutch', 'Japanese', 'Korean', 'Chinese (Simplified)',
 ];
 
-// ── Mock Data ───────────────────────────────────────────────────────────────
+// ── Default Data (used as fallback when API returns empty) ──────────────────
 
 const initialNotices: PrivacyNotice[] = [
   {
@@ -423,9 +424,11 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   // State
   const [activeTab, setActiveTab] = useState<TabId>('notices');
   const [notices, setNotices] = useState<PrivacyNotice[]>(initialNotices);
-  const [templates] = useState<NoticeTemplate[]>(initialTemplates);
+  const [templates, setTemplates] = useState<NoticeTemplate[]>(initialTemplates);
   const [versionHistory, setVersionHistory] = useState<VersionHistoryEntry[]>(initialVersionHistory);
-  const [consentAnalytics] = useState<ConsentAnalytics[]>(initialConsentAnalytics);
+  const [consentAnalytics, setConsentAnalytics] = useState<ConsentAnalytics[]>(initialConsentAnalytics);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<NoticeType | 'All'>('All');
@@ -438,6 +441,42 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<NoticeFormData>(emptyFormData());
+
+  // ── API Data Loading ──────────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [noticesRes, consentStats, templatesRes, versionsRes] = await Promise.all([
+          api.privacy.listNotices(),
+          api.privacy.getConsentStats(),
+          api.privacy.listNoticeTemplates().catch(() => null),
+          api.privacy.listNoticeVersionHistory().catch(() => null),
+        ]);
+        if (cancelled) return;
+        if (noticesRes?.notices && noticesRes.notices.length > 0) {
+          setNotices(noticesRes.notices);
+        }
+        if (consentStats && Array.isArray(consentStats) && consentStats.length > 0) {
+          setConsentAnalytics(consentStats);
+        }
+        if (templatesRes && Array.isArray(templatesRes) && templatesRes.length > 0) {
+          setTemplates(templatesRes);
+        }
+        if (versionsRes && Array.isArray(versionsRes) && versionsRes.length > 0) {
+          setVersionHistory(versionsRes);
+        }
+        setLoadError(null);
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setLoadError('Unable to connect to server. Displaying local data.');
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Tabs configuration
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
@@ -480,7 +519,7 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
-  const handleCreateNotice = useCallback(() => {
+  const handleCreateNotice = useCallback(async () => {
     const now = new Date().toISOString().split('T')[0];
     const newNotice: PrivacyNotice = {
       id: `PN-${String(notices.length + 1).padStart(3, '0')}`,
@@ -500,6 +539,19 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       acceptanceCount: 0,
       acceptanceRate: 0,
     };
+    try {
+      const created = await api.privacy.createNotice({
+        name: formData.title,
+        triggerContext: formData.type,
+        noticeContent: formData.content,
+        status: formData.status === 'Published' ? 'active' : 'draft',
+        language: formData.language,
+        version: '1.0',
+      });
+      if (created?.id) newNotice.id = created.id;
+    } catch (err: unknown) {
+      setLoadError('Failed to save notice to server. Changes saved locally.');
+    }
     setNotices(prev => [newNotice, ...prev]);
     const historyEntry: VersionHistoryEntry = {
       id: `VH-${String(versionHistory.length + 1).padStart(3, '0')}`,
@@ -516,11 +568,23 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setShowCreateModal(false);
   }, [formData, notices.length, user, versionHistory.length]);
 
-  const handleUpdateNotice = useCallback(() => {
+  const handleUpdateNotice = useCallback(async () => {
     if (!editingNotice) return;
     const now = new Date().toISOString().split('T')[0];
     const currentVersion = parseFloat(editingNotice.version) || 1.0;
     const newVersion = (currentVersion + 0.1).toFixed(1);
+    try {
+      await api.privacy.updateNotice(editingNotice.id, {
+        name: formData.title,
+        triggerContext: formData.type,
+        noticeContent: formData.content,
+        status: formData.status === 'Published' ? 'active' : 'draft',
+        language: formData.language,
+        version: newVersion,
+      });
+    } catch (err: unknown) {
+      setLoadError('Failed to update notice on server. Changes saved locally.');
+    }
     setNotices(prev => prev.map(n => {
       if (n.id !== editingNotice.id) return n;
       return {
@@ -553,7 +617,12 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setShowCreateModal(false);
   }, [editingNotice, formData, user, versionHistory.length]);
 
-  const handleDeleteNotice = useCallback((id: string) => {
+  const handleDeleteNotice = useCallback(async (id: string) => {
+    try {
+      await api.privacy.deleteNotice(id);
+    } catch (err: unknown) {
+      setLoadError('Failed to delete notice on server. Removed locally.');
+    }
     setNotices(prev => prev.filter(n => n.id !== id));
     setShowDeleteConfirm(null);
   }, []);
@@ -609,7 +678,12 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setShowCreateModal(true);
   }, []);
 
-  const handlePublishNotice = useCallback((id: string) => {
+  const handlePublishNotice = useCallback(async (id: string) => {
+    try {
+      await api.privacy.updateNotice(id, { status: 'active' });
+    } catch (err: unknown) {
+      setLoadError('Failed to publish notice on server. Updated locally.');
+    }
     const now = new Date().toISOString().split('T')[0];
     setNotices(prev => prev.map(n => {
       if (n.id !== id) return n;
@@ -617,7 +691,12 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }));
   }, []);
 
-  const handleArchiveNotice = useCallback((id: string) => {
+  const handleArchiveNotice = useCallback(async (id: string) => {
+    try {
+      await api.privacy.updateNotice(id, { status: 'archived' });
+    } catch (err: unknown) {
+      setLoadError('Failed to archive notice on server. Updated locally.');
+    }
     const now = new Date().toISOString().split('T')[0];
     setNotices(prev => prev.map(n => {
       if (n.id !== id) return n;
@@ -1363,6 +1442,25 @@ const PrivacyNoticeServing: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center gap-2 mb-4 text-slate-400 text-sm">
+          <RefreshCw className="w-4 h-4 animate-spin" />
+          <span>Loading privacy notices...</span>
+        </div>
+      )}
+
+      {/* Error Banner */}
+      {loadError && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-amber-900/30 border border-amber-700/50 rounded-lg">
+          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <span className="text-sm text-amber-300">{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="ml-auto text-amber-400 hover:text-amber-200">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="flex items-center gap-1 mb-6 bg-slate-800/50 backdrop-blur-sm rounded-xl p-1 w-fit border border-slate-700/50">

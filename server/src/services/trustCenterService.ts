@@ -1,6 +1,7 @@
 import { Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 
 interface ControlStatus {
@@ -71,7 +72,7 @@ export class TrustCenterService {
     });
 
     if (!organization) {
-      throw new Error('Organization not found');
+      throw new AppError('Organization not found', 404);
     }
 
     // Get active public certifications
@@ -154,7 +155,7 @@ export class TrustCenterService {
     });
 
     if (!framework) {
-      throw new Error('Framework not found');
+      throw new AppError('Framework not found', 404);
     }
 
     const implementedControls = framework.controls.filter((c) => c.status === 'Implemented').length;
@@ -205,6 +206,13 @@ export class TrustCenterService {
     userId: string,
     organizationId: string
   ) {
+    const existing = await prisma.trustCertificate.findFirst({
+      where: { id: certificateId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Certificate not found', 404);
+    }
+
     const certificate = await prisma.trustCertificate.update({
       where: { id: certificateId },
       data: { status },

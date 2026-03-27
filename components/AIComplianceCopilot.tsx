@@ -577,20 +577,16 @@ export const AIComplianceCopilot: React.FC<AIComplianceCopilotProps> = ({
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error: any) {
-      console.error('Copilot API error, falling back to mock responses:', error);
       setIsApiAvailable(false);
-
-      // Fall back to MOCK_RESPONSES when the API is unavailable
-      const fallback = getMockFallbackResponse(text);
 
       const fallbackMessage: CopilotMessage = {
         id: `msg-${Date.now()}-fallback`,
         role: 'assistant',
-        content: fallback.content + '\n\n---\n*Note: This response was generated from cached compliance data because the AI service is temporarily unavailable. Responses will use live AI analysis once the connection is restored.*',
+        content: 'The AI compliance service is temporarily unavailable. Please try again in a few moments. If the issue persists, contact your administrator.',
         timestamp: new Date(),
-        confidence: fallback.confidence,
-        sources: fallback.sources,
-        followUpQuestions: fallback.followUps,
+        confidence: 0,
+        sources: [],
+        followUpQuestions: [],
       };
 
       setMessages(prev => [...prev, fallbackMessage]);

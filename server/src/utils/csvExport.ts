@@ -4,6 +4,7 @@
  */
 
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 export interface CsvExportOptions {
   filename?: string;
@@ -87,7 +88,7 @@ export function convertToCSV<T extends Record<string, any>>(
     return [headerRow, ...dataRows].join('\n');
   } catch (error) {
     logger.error('CSV conversion error:', error);
-    throw new Error('Failed to convert data to CSV format');
+    throw new AppError('Failed to convert data to CSV format', 500);
   }
 }
 

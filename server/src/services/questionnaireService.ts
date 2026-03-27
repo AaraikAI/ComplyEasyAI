@@ -1,6 +1,7 @@
 import { QuestionnaireStatus, QuestionnaireQuestion, QuestionnaireResponse, Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import logger from '../config/logger';
 
@@ -83,6 +84,13 @@ export class QuestionnaireService {
     userId: string,
     organizationId: string
   ) {
+    const parentQuestionnaire = await prisma.questionnaire.findFirst({
+      where: { id: questionnaireId, organizationId },
+    });
+    if (!parentQuestionnaire) {
+      throw new AppError('Questionnaire not found', 404);
+    }
+
     const createdQuestions = await Promise.all(
       questions.map(async (q, index) => {
         return await prisma.questionnaireQuestion.create({
@@ -119,9 +127,9 @@ export class QuestionnaireService {
     userId: string,
     organizationId: string
   ) {
-    // Get questionnaire with questions
-    const questionnaire = await prisma.questionnaire.findUnique({
-      where: { id: questionnaireId },
+    // Verify questionnaire belongs to this organization
+    const questionnaire = await prisma.questionnaire.findFirst({
+      where: { id: questionnaireId, organizationId },
       include: {
         questions: {
           orderBy: { order: 'asc' },
@@ -131,7 +139,7 @@ export class QuestionnaireService {
     });
 
     if (!questionnaire) {
-      throw new Error('Questionnaire not found');
+      throw new AppError('Questionnaire not found', 404);
     }
 
     // Get organization context for AI
@@ -149,7 +157,7 @@ export class QuestionnaireService {
     });
 
     if (!organization) {
-      throw new Error('Organization not found');
+      throw new AppError('Organization not found', 404);
     }
 
     const responses: QuestionnaireResponse[] = [];
@@ -345,6 +353,14 @@ Format your response as JSON:
     userId: string,
     organizationId: string
   ) {
+    // Verify questionnaire belongs to this organization
+    const parentQuestionnaire = await prisma.questionnaire.findFirst({
+      where: { id: questionnaireId, organizationId },
+    });
+    if (!parentQuestionnaire) {
+      throw new AppError('Questionnaire not found', 404);
+    }
+
     // Check if AI response exists
     const existing = await prisma.questionnaireResponse.findFirst({
       where: {
@@ -400,9 +416,9 @@ Format your response as JSON:
     userId: string,
     organizationId: string
   ) {
-    // Check all required questions have responses
-    const questionnaire = await prisma.questionnaire.findUnique({
-      where: { id: questionnaireId },
+    // Verify questionnaire belongs to this organization
+    const questionnaire = await prisma.questionnaire.findFirst({
+      where: { id: questionnaireId, organizationId },
       include: {
         questions: true,
         responses: true,
@@ -410,7 +426,7 @@ Format your response as JSON:
     });
 
     if (!questionnaire) {
-      throw new Error('Questionnaire not found');
+      throw new AppError('Questionnaire not found', 404);
     }
 
     const requiredQuestions = questionnaire.questions.filter(
@@ -425,8 +441,9 @@ Format your response as JSON:
     );
 
     if (unansweredRequired.length > 0) {
-      throw new Error(
-        `Cannot complete questionnaire: ${unansweredRequired.length} required questions unanswered`
+      throw new AppError(
+        `Cannot complete questionnaire: ${unansweredRequired.length} required questions unanswered`,
+        400
       );
     }
 
@@ -582,7 +599,7 @@ Format your response as JSON:
     });
 
     if (!questionnaire) {
-      throw new Error('Questionnaire not found');
+      throw new AppError('Questionnaire not found', 404);
     }
 
     if (format === 'json') {
@@ -710,12 +727,11 @@ Format your response as JSON:
       } catch (docxError: any) {
         logger.error('[Questionnaire] Error generating DOCX', docxError);
         // Fallback: Try using a simpler approach or return error
-        throw new Error(`DOCX generation failed: ${docxError.message}. Please install 'docx' package: npm install docx`);
+        throw new AppError(`DOCX generation failed: ${docxError.message}. Please install 'docx' package: npm install docx`, 500);
       }
     }
     
     // Return clear validation error with 400 status for unsupported format
-    const { AppError } = require('../middleware/errorHandler');
     throw new AppError(
       `Unsupported export format '${format}'. Supported formats are: 'json', 'pdf', 'docx'.`,
       400

@@ -7,6 +7,7 @@ import axios from 'axios';
 import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 interface JiraTokenResponse {
   access_token: string;
@@ -75,13 +76,13 @@ class JiraService {
       const data: JiraTokenResponse = response.data;
 
       if (!data.access_token) {
-        throw new Error('No access token received from Jira');
+        throw new AppError('No access token received from Jira', 500);
       }
 
       return data;
     } catch (error) {
       logger.error('Error exchanging Jira auth code for token', error);
-      throw new Error('Failed to exchange authorization code');
+      throw new AppError('Failed to exchange authorization code', 500);
     }
   }
 
@@ -106,7 +107,7 @@ class JiraService {
       return response.data;
     } catch (error) {
       logger.error('Error refreshing Jira access token', error);
-      throw new Error('Failed to refresh access token');
+      throw new AppError('Failed to refresh access token', 500);
     }
   }
 
@@ -128,7 +129,7 @@ class JiraService {
       return response.data;
     } catch (error) {
       logger.error('Error fetching Jira accessible resources', error);
-      throw new Error('Failed to fetch accessible resources');
+      throw new AppError('Failed to fetch accessible resources', 500);
     }
   }
 
@@ -187,7 +188,7 @@ class JiraService {
       logger.info(`Jira integration saved for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error saving Jira integration', error);
-      throw new Error('Failed to save integration');
+      throw new AppError('Failed to save integration', 500);
     }
   }
 
@@ -213,7 +214,7 @@ class JiraService {
     const integration = await this.getIntegration(organizationId);
 
     if (!integration || !integration.connected) {
-      throw new Error('Jira integration not connected');
+      throw new AppError('Jira integration not connected', 400);
     }
 
     const config = integration.config as any;
@@ -223,7 +224,7 @@ class JiraService {
 
     if (expiresAt < fiveMinutesFromNow) {
       if (!integration.refreshToken) {
-        throw new Error('No refresh token available');
+        throw new AppError('No refresh token available', 400);
       }
 
       const maxRetries = 3;
@@ -289,7 +290,7 @@ class JiraService {
         
         // Don't retry on authentication errors
         if (error.response?.status === 401 || error.response?.status === 403) {
-          throw new Error('Refresh token is invalid or expired. Please reconnect the integration.');
+          throw new AppError('Refresh token is invalid or expired. Please reconnect the integration.', 403);
         }
 
         // Retry on network errors
@@ -310,7 +311,7 @@ class JiraService {
       }
     }
 
-    throw lastError || new Error('Failed to refresh token after retries');
+    throw lastError || new AppError('Failed to refresh token after retries', 500);
   }
 
   /**
@@ -337,7 +338,7 @@ class JiraService {
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 401) {
-        throw new Error('Authentication failed. Please reconnect Jira integration.');
+        throw new AppError('Authentication failed. Please reconnect Jira integration.', 403);
       }
       throw error;
     }
@@ -369,7 +370,7 @@ class JiraService {
       }));
     } catch (error) {
       logger.error('Error listing Jira projects', error);
-      throw new Error('Failed to list projects');
+      throw new AppError('Failed to list projects', 500);
     }
   }
 
@@ -410,7 +411,7 @@ class JiraService {
       }));
     } catch (error) {
       logger.error('Error listing Jira issues', error);
-      throw new Error('Failed to list issues');
+      throw new AppError('Failed to list issues', 500);
     }
   }
 
@@ -480,7 +481,7 @@ class JiraService {
       };
     } catch (error) {
       logger.error('Error creating Jira issue', error);
-      throw new Error('Failed to create issue');
+      throw new AppError('Failed to create issue', 500);
     }
   }
 
@@ -512,7 +513,7 @@ class JiraService {
       }));
     } catch (error) {
       logger.error('Error fetching Jira audit logs', error);
-      throw new Error('Failed to fetch audit logs');
+      throw new AppError('Failed to fetch audit logs', 500);
     }
   }
 
@@ -525,7 +526,7 @@ class JiraService {
       return await this.listIssues(organizationId, jql, 100);
     } catch (error) {
       logger.error('Error fetching Jira compliance issues', error);
-      throw new Error('Failed to fetch compliance issues');
+      throw new AppError('Failed to fetch compliance issues', 500);
     }
   }
 
@@ -556,7 +557,7 @@ class JiraService {
       return issue;
     } catch (error) {
       logger.error('Error creating Jira compliance ticket', error);
-      throw new Error('Failed to create compliance ticket');
+      throw new AppError('Failed to create compliance ticket', 500);
     }
   }
 
@@ -584,7 +585,7 @@ class JiraService {
       logger.info(`Jira integration disconnected for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error disconnecting Jira integration', error);
-      throw new Error('Failed to disconnect Jira integration');
+      throw new AppError('Failed to disconnect Jira integration', 500);
     }
   }
 
@@ -607,7 +608,7 @@ class JiraService {
     try {
       const integration = await this.getIntegration(organizationId);
       if (!integration || !integration.connected) {
-        throw new Error('Jira integration not connected');
+        throw new AppError('Jira integration not connected', 400);
       }
 
       const direction = options?.direction || 'bidirectional';
@@ -703,7 +704,7 @@ class JiraService {
                       status: this.mapJiraStatusToLocal(jiraIssue.fields?.status?.name),
                       updatedAt: new Date(),
                     },
-                  }).catch(() => { /* Issue may not exist */ });
+                  }).catch((err) => { logger.error('Jira sync issue update failed', { error: err.message, issueId: syncDetails.localIssueId }); });
                   updated++;
                 }
               } else {
@@ -750,7 +751,7 @@ class JiraService {
       return { pushed, pulled, updated, errors };
     } catch (error: any) {
       logger.error('[Jira] Error syncing compliance issues', error);
-      throw new Error(`Issue sync failed: ${error.message}`);
+      throw new AppError(`Issue sync failed: ${error.message}`, 500);
     }
   }
 
@@ -766,12 +767,12 @@ class JiraService {
     try {
       const integration = await this.getIntegration(organizationId);
       if (!integration || !integration.connected) {
-        throw new Error('Jira integration not connected');
+        throw new AppError('Jira integration not connected', 400);
       }
 
       const config = integration.config as any;
       const cloudId = config?.cloudId;
-      if (!cloudId) throw new Error('Jira cloud ID not found');
+      if (!cloudId) throw new AppError('Jira cloud ID not found', 400);
 
       await this.ensureValidToken(organizationId);
       const updatedIntegration = await this.getIntegration(organizationId);
@@ -940,7 +941,7 @@ class JiraService {
                     status: this.mapJiraStatusToLocal(event.issue.fields?.status?.name) as any,
                     updatedAt: new Date(),
                   },
-                }).catch(() => {});
+                }).catch((err) => { logger.error('Jira webhook issue update failed', { error: err.message, issueId: syncDetails.localIssueId }); });
               }
             }
           }

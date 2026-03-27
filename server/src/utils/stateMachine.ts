@@ -5,6 +5,7 @@
  */
 
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 /**
  * Generic state machine configuration type
@@ -100,7 +101,7 @@ export class StateMachine<S extends string> {
     const result = this.canTransition(fromState, toState);
     if (!result.valid) {
       logger.warn(`[StateMachine:${this.config.name}] ${result.error}`);
-      throw new Error(result.error);
+      throw new AppError(result.error || 'Invalid state transition', 400);
     }
   }
 

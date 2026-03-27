@@ -12,6 +12,7 @@
 import crypto from 'crypto';
 import config from '../config';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -25,7 +26,7 @@ const ENCRYPTED_PREFIX = 'enc_v1:';
 function deriveKey(): Buffer {
   const rawKey = config.encryption.key;
   if (!rawKey) {
-    throw new Error('ENCRYPTION_KEY is not configured');
+    throw new AppError('ENCRYPTION_KEY is not configured', 500);
   }
   return crypto.pbkdf2Sync(rawKey, 'complyeasy-credential-salt', 100000, 32, 'sha256');
 }
@@ -98,7 +99,7 @@ export function decryptField(encryptedValue: string): string {
     return decrypted;
   } catch (error: any) {
     logger.error('Failed to decrypt field:', error.message);
-    throw new Error('Credential decryption failed - check ENCRYPTION_KEY');
+    throw new AppError('Credential decryption failed - check ENCRYPTION_KEY', 500);
   }
 }
 

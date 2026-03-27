@@ -1,6 +1,7 @@
 import { IssueStatus, IssuePriority } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 
 /**
@@ -88,12 +89,12 @@ export class IssueManagementService {
     userId: string,
     organizationId: string
   ) {
-    const issue = await prisma.issue.findUnique({
-      where: { id: issueId },
+    const issue = await prisma.issue.findFirst({
+      where: { id: issueId, organizationId },
     });
 
     if (!issue) {
-      throw new Error('Issue not found');
+      throw new AppError('Issue not found', 404);
     }
 
     const updateData: any = { status };
@@ -146,6 +147,13 @@ export class IssueManagementService {
     userId: string,
     organizationId: string
   ) {
+    const existing = await prisma.issue.findFirst({
+      where: { id: issueId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Issue not found', 404);
+    }
+
     const issue = await prisma.issue.update({
       where: { id: issueId },
       data: {

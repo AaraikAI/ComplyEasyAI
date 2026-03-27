@@ -9,12 +9,13 @@ import config, { validateConfig } from './config';
 import logger from './config/logger';
 import prisma, { testConnection } from './config/database';
 import { errorHandler, notFound } from './middleware/errorHandler';
-import { apiLimiter } from './middleware/rateLimiter';
+import { apiLimiter, authLimiter, ssoLimiter, scimLimiter } from './middleware/rateLimiter';
 import { authenticate } from './middleware/auth';
 import websocketService from './services/websocketService';
 import swaggerSpec from './config/swagger';
 import monitoring, { initializeSentry, initializeAPM } from './config/monitoring';
 import { monitoringMiddleware, errorTrackingMiddleware } from './middleware/monitoring';
+import { responseEnvelope } from './middleware/standardResponse';
 
 // Routes
 import authRoutes from './routes/auth';
@@ -239,7 +240,7 @@ const corsOptions = {
       return callback(null, true);
     }
     const allowed = config.security.corsOrigin;
-    if (allowed.length === 0 || allowed.includes(origin)) {
+    if (allowed.length > 0 && allowed.includes(origin)) {
       callback(null, true);
     } else {
       logger.warn(`CORS blocked request from origin: ${origin} (allowed: ${allowed.join(', ')})`);
@@ -255,6 +256,17 @@ const corsOptions = {
 
 // CORS middleware — handles both preflight (OPTIONS) and actual requests
 app.use(cors(corsOptions));
+
+// CORS error handler — catches CORS rejections before they reach the global handler
+// Ensures security headers are applied and no server info is leaked
+app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
+  if (err.message && err.message.includes('not allowed by CORS')) {
+    res.removeHeader('X-Powered-By');
+    res.status(403).json({ error: 'CORS request blocked' });
+    return;
+  }
+  next(err);
+});
 
 // Log CORS origins on startup
 logger.info(`CORS allowed origins: ${config.security.corsOrigin.join(', ') || '(none — all blocked)'}`);
@@ -341,6 +353,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   logger.info(`${req.method} ${req.path} - ${req.ip}`);
   next();
 });
+
+// Standardized response envelope for API routes
+// Wraps JSON responses in { status: 'success', data: ... } format
+// Skips v2 routes (which have their own envelope), webhooks, and health checks
+app.use(responseEnvelope());
 
 // API Documentation (Swagger UI)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -467,12 +484,12 @@ app.get('/health', async (req: Request, res: Response) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/2fa', twoFactorRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/2fa', authLimiter, twoFactorRoutes);
 app.use('/api/risks', apiLimiter, risksRoutes);
 app.use('/api/frameworks', apiLimiter, frameworksRoutes);
 app.use('/api/ai', aiRoutes); // Has its own rate limiter
-app.use('/api/billing', billingRoutes);
+app.use('/api/billing', apiLimiter, billingRoutes);
 app.use('/api/integrations', apiLimiter, integrationsRoutes);
 app.use('/api/eu-regulations', apiLimiter, euRegulationsRoutes);
 app.use('/api/team', apiLimiter, teamRoutes);
@@ -567,8 +584,8 @@ app.use('/api/audit-prep', apiLimiter, auditPrepRoutes);
 app.use('/api/control-testing', apiLimiter, controlTestingRoutes);
 app.use('/api/vendor-monitoring', apiLimiter, vendorMonitoringRoutes);
 app.use('/api/cicd-gates', apiLimiter, cicdGateRoutes);
-app.use('/api/sso', ssoRoutes); // No rate limiter - SSO callbacks need to work
-app.use('/api/scim', scimRoutes); // SCIM has its own auth
+app.use('/api/sso', ssoLimiter, ssoRoutes); // Generous rate limiter for SSO callbacks
+app.use('/api/scim', scimLimiter, scimRoutes); // Generous rate limiter for SCIM provisioning
 app.use('/api/roles', apiLimiter, roleRoutes);
 app.use('/api/branding', apiLimiter, brandingRoutes);
 app.use('/api/search', apiLimiter, searchRoutes);
@@ -587,8 +604,8 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // API Versioned routes (v1, v2)
-app.use('/api/v1', apiVersioningMiddleware(), v1Router);
-app.use('/api/v2', apiVersioningMiddleware(), v2Router);
+app.use('/api/v1', apiLimiter, apiVersioningMiddleware(), v1Router);
+app.use('/api/v2', apiLimiter, apiVersioningMiddleware(), v2Router);
 
 // 404 handler
 app.use(notFound);
