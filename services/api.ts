@@ -452,12 +452,9 @@ export const api = {
     },
 
     uploadEvidence: async (frameworkId: string, controlId: string, formData: FormData) => {
-      const token = getAuthToken();
       const response = await fetch(`${API_BASE_URL}/frameworks/${frameworkId}/controls/${controlId}/evidence`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
         body: formData,
       });
 
@@ -474,12 +471,9 @@ export const api = {
     },
 
     smartUpload: async (frameworkId: string, formData: FormData) => {
-      const token = getAuthToken();
       const response = await fetch(`${API_BASE_URL}/frameworks/${frameworkId}/smart-upload`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
         body: formData,
       });
 
@@ -506,24 +500,6 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ feedback }),
       });
-    },
-
-    smartUploadOld: async (frameworkId: string, formData: FormData) => {
-      const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/frameworks/${frameworkId}/smart-upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || error.message || `HTTP ${response.status}`);
-      }
-
-      return response.json();
     },
 
     create: async (framework: Partial<ComplianceFramework>) => {
@@ -562,11 +538,8 @@ export const api = {
       });
     },
     exportControlMappings: async () => {
-      const token = getAuthToken();
       const response = await fetch(`${API_BASE_URL}/control-mappings/export/csv`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to export');
       const blob = await response.blob();
@@ -2281,6 +2254,11 @@ export const api = {
       getPassport: async (id: string) => fetchAPI<any>(`/modules/dpp/passports/${id}`),
       updatePassport: async (id: string, data: any) => fetchAPI<any>(`/modules/dpp/passports/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
       deletePassport: async (id: string) => fetchAPI<any>(`/modules/dpp/passports/${id}`, { method: 'DELETE' }),
+      getMaterials: async (id: string) => fetchAPI<any[]>(`/modules/dpp/passports/${id}/materials`),
+      getCarbon: async (id: string) => fetchAPI<any[]>(`/modules/dpp/passports/${id}/carbon`),
+      getSupplyChain: async (id: string) => fetchAPI<any[]>(`/modules/dpp/passports/${id}/supply-chain`),
+      getSustainability: async (id: string) => fetchAPI<any>(`/modules/dpp/passports/${id}/sustainability`),
+      getCertifications: async (id: string) => fetchAPI<any>(`/modules/dpp/passports/${id}/certifications`),
     },
 
     // --- ESG Reporting ---
@@ -2311,6 +2289,7 @@ export const api = {
       createRepository: async (data: any) => fetchAPI<any>('/modules/sbom/repositories', { method: 'POST', body: JSON.stringify(data) }),
       updateRepository: async (id: string, data: any) => fetchAPI<any>(`/modules/sbom/repositories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
       deleteRepository: async (id: string) => fetchAPI<any>(`/modules/sbom/repositories/${id}`, { method: 'DELETE' }),
+      listLicenses: async () => fetchAPI<any[]>('/modules/sbom/licenses'),
     },
 
     // --- Post-Market Surveillance ---
@@ -2319,8 +2298,15 @@ export const api = {
       createPlan: async (data: any) => fetchAPI<any>('/modules/surveillance/plans', { method: 'POST', body: JSON.stringify(data) }),
       updatePlan: async (id: string, data: any) => fetchAPI<any>(`/modules/surveillance/plans/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
       deletePlan: async (id: string) => fetchAPI<any>(`/modules/surveillance/plans/${id}`, { method: 'DELETE' }),
+      listIncidents: async () => fetchAPI<any[]>('/modules/surveillance/incidents'),
       createIncident: async (data: any) => fetchAPI<any>('/modules/surveillance/incidents', { method: 'POST', body: JSON.stringify(data) }),
       updateIncident: async (id: string, data: any) => fetchAPI<any>(`/modules/surveillance/incidents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      listCapas: async () => fetchAPI<any[]>('/modules/surveillance/capas'),
+      createCapa: async (data: any) => fetchAPI<any>('/modules/surveillance/capas', { method: 'POST', body: JSON.stringify(data) }),
+      updateCapa: async (id: string, data: any) => fetchAPI<any>(`/modules/surveillance/capas/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      listNonConformities: async () => fetchAPI<any[]>('/modules/surveillance/non-conformities'),
+      listReports: async () => fetchAPI<any[]>('/modules/surveillance/reports'),
+      createReport: async (data: any) => fetchAPI<any>('/modules/surveillance/reports', { method: 'POST', body: JSON.stringify(data) }),
       listRecalls: async () => fetchAPI<any[]>('/modules/surveillance/recalls'),
       createRecall: async (data: any) => fetchAPI<any>('/modules/surveillance/recalls', { method: 'POST', body: JSON.stringify(data) }),
       updateRecall: async (id: string, data: any) => fetchAPI<any>(`/modules/surveillance/recalls/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
@@ -2332,6 +2318,24 @@ export const api = {
       createProduct: async (data: any) => fetchAPI<any>('/modules/decommission/products', { method: 'POST', body: JSON.stringify(data) }),
       updateProduct: async (id: string, data: any) => fetchAPI<any>(`/modules/decommission/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
       deleteProduct: async (id: string) => fetchAPI<any>(`/modules/decommission/products/${id}`, { method: 'DELETE' }),
+      // Workflow tasks
+      listWorkflowTasks: async (productId?: string) => {
+        const qs = productId ? `?productId=${encodeURIComponent(productId)}` : '';
+        return fetchAPI<any[]>(`/modules/decommission/workflow-tasks${qs}`);
+      },
+      updateWorkflowTask: async (id: string, data: any) => fetchAPI<any>(`/modules/decommission/workflow-tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      // Data migration plans
+      listDataPlans: async (productId?: string) => {
+        const qs = productId ? `?productId=${encodeURIComponent(productId)}` : '';
+        return fetchAPI<any[]>(`/modules/decommission/data-plans${qs}`);
+      },
+      updateDataPlan: async (id: string, data: any) => fetchAPI<any>(`/modules/decommission/data-plans/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      // Customer notifications
+      listNotifications: async (productId?: string) => {
+        const qs = productId ? `?productId=${encodeURIComponent(productId)}` : '';
+        return fetchAPI<any[]>(`/modules/decommission/notifications${qs}`);
+      },
+      updateNotification: async (id: string, data: any) => fetchAPI<any>(`/modules/decommission/notifications/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     },
 
     // --- Environmental Lifecycle ---
@@ -2701,6 +2705,25 @@ export const api = {
     recordJITImpression: async (id: string) => fetchAPI<any>(`/privacy/jit-notices/${id}/impression`, { method: 'POST' }),
     recordJITAcceptance: async (id: string) => fetchAPI<any>(`/privacy/jit-notices/${id}/accept`, { method: 'POST' }),
     recordJITDismissal: async (id: string) => fetchAPI<any>(`/privacy/jit-notices/${id}/dismiss`, { method: 'POST' }),
+    // Privacy Notices (Art. 13-14 serving)
+    listNotices: async (params?: Record<string, string>) => {
+      const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+      return fetchAPI<any>(`/privacy/notices${qs}`);
+    },
+    createNotice: async (data: any) => fetchAPI<any>('/privacy/notices', { method: 'POST', body: JSON.stringify(data) }),
+    getNotice: async (id: string) => fetchAPI<any>(`/privacy/notices/${id}`),
+    updateNotice: async (id: string, data: any) => fetchAPI<any>(`/privacy/notices/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteNotice: async (id: string) => fetchAPI<any>(`/privacy/notices/${id}`, { method: 'DELETE' }),
+    recordNoticeImpression: async (id: string) => fetchAPI<any>(`/privacy/notices/${id}/impression`, { method: 'POST' }),
+    recordNoticeAcceptance: async (id: string) => fetchAPI<any>(`/privacy/notices/${id}/accept`, { method: 'POST' }),
+    recordNoticeDismissal: async (id: string) => fetchAPI<any>(`/privacy/notices/${id}/dismiss`, { method: 'POST' }),
+    // Notice Templates
+    listNoticeTemplates: async () => fetchAPI<any>('/privacy/notices/templates'),
+    // Notice Version History
+    listNoticeVersionHistory: async (noticeId?: string) => {
+      const qs = noticeId ? `?noticeId=${noticeId}` : '';
+      return fetchAPI<any>(`/privacy/notices/versions${qs}`);
+    },
   },
 
   // --- Marketplace ---

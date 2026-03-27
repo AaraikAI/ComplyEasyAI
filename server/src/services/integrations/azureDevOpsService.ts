@@ -9,6 +9,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -137,12 +138,12 @@ class AzureDevOpsService {
   private async getClient(organizationId: string): Promise<{ client: AxiosInstance; config: AzureDevOpsConfig }> {
     const integration = await this.getIntegration(organizationId);
     if (!integration || !integration.connected) {
-      throw new Error('Azure DevOps integration not connected');
+      throw new AppError('Azure DevOps integration not connected', 400);
     }
 
     const adoConfig = integration.config as unknown as AzureDevOpsConfig;
     if (!adoConfig?.organization) {
-      throw new Error('Azure DevOps organization not configured');
+      throw new AppError('Azure DevOps organization not configured', 400);
     }
 
     const baseURL = `https://dev.azure.com/${encodeURIComponent(adoConfig.organization)}`;
@@ -156,7 +157,7 @@ class AzureDevOpsService {
       headers['Authorization'] = `Bearer ${token}`;
     } else {
       if (!adoConfig.pat) {
-        throw new Error('Azure DevOps PAT not configured');
+        throw new AppError('Azure DevOps PAT not configured', 400);
       }
       const encoded = Buffer.from(`:${adoConfig.pat}`).toString('base64');
       headers['Authorization'] = `Basic ${encoded}`;
@@ -184,7 +185,7 @@ class AzureDevOpsService {
     }
 
     if (!config.refreshToken) {
-      throw new Error('No refresh token available. Please reconnect the Azure DevOps integration.');
+      throw new AppError('No refresh token available. Please reconnect the Azure DevOps integration.', 400);
     }
 
     return this.refreshOAuthToken(organizationId, config);
@@ -250,7 +251,7 @@ class AzureDevOpsService {
         return access_token;
       } catch (error: any) {
         if (error.response?.status === 401 || error.response?.status === 400) {
-          throw new Error('OAuth refresh token is invalid. Please reconnect the Azure DevOps integration.');
+          throw new AppError('OAuth refresh token is invalid. Please reconnect the Azure DevOps integration.', 403);
         }
         if (attempt < this.maxRetries) {
           const delay = this.baseRetryDelay * Math.pow(2, attempt);
@@ -258,11 +259,11 @@ class AzureDevOpsService {
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         }
-        throw new Error(`Failed to refresh Azure DevOps OAuth token: ${error.message}`);
+        throw new AppError(`Failed to refresh Azure DevOps OAuth token: ${error.message}`, 500);
       }
     }
 
-    throw new Error('Failed to refresh Azure DevOps OAuth token after retries');
+    throw new AppError('Failed to refresh Azure DevOps OAuth token after retries', 500);
   }
 
   /**
@@ -306,7 +307,7 @@ class AzureDevOpsService {
       }
     }
 
-    throw new Error(`[AzureDevOps] ${context} failed after ${this.maxRetries} retries`);
+    throw new AppError(`[AzureDevOps] ${context} failed after ${this.maxRetries} retries`, 500);
   }
 
   // =========================================================================
@@ -493,7 +494,7 @@ class AzureDevOpsService {
       const patchDoc = this.buildPatchDocument(fields);
 
       if (patchDoc.length === 0) {
-        throw new Error('No fields to update');
+        throw new AppError('No fields to update', 400);
       }
 
       const response = await client.patch<AzureDevOpsWorkItem>(
@@ -927,7 +928,7 @@ class AzureDevOpsService {
                       updatedAt: new Date(),
                     },
                   })
-                  .catch(() => {});
+                  .catch((err) => { logger.error('Azure DevOps sync issue update failed', { error: err.message, issueId: syncDetails.localIssueId }); });
                 updated++;
               }
             } else {
@@ -1075,7 +1076,7 @@ class AzureDevOpsService {
                     updatedAt: new Date(),
                   },
                 })
-                .catch(() => {});
+                .catch((err) => { logger.error('Azure DevOps webhook issue update failed', { error: err.message, issueId: syncDetails.localIssueId }); });
             }
           }
           break;

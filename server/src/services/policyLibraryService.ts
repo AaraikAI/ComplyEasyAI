@@ -1,6 +1,7 @@
 import { Policy, Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 
 /**
@@ -247,7 +248,7 @@ Manage risks associated with third-party relationships.
     });
 
     if (!sourceControl) {
-      throw new Error('Source control not found');
+      throw new AppError('Source control not found', 404);
     }
 
     const existingMappings = (sourceControl.mappedControls as { mappings?: unknown[] } | null)?.mappings || [];
@@ -288,7 +289,7 @@ Manage risks associated with third-party relationships.
     const policy = await prisma.policy.findFirst({
       where: { id: policyId, organizationId },
     });
-    if (!policy) throw new Error('Policy not found');
+    if (!policy) throw new AppError('Policy not found', 404);
     return policy;
   }
 
@@ -299,7 +300,7 @@ Manage risks associated with third-party relationships.
     const existing = await prisma.policy.findFirst({
       where: { id: policyId, organizationId },
     });
-    if (!existing) throw new Error('Policy not found');
+    if (!existing) throw new AppError('Policy not found', 404);
 
     const policy = await prisma.policy.update({
       where: { id: policyId },
@@ -325,7 +326,7 @@ Manage risks associated with third-party relationships.
     const existing = await prisma.policy.findFirst({
       where: { id: policyId, organizationId },
     });
-    if (!existing) throw new Error('Policy not found');
+    if (!existing) throw new AppError('Policy not found', 404);
 
     const policy = await prisma.policy.update({
       where: { id: policyId },
@@ -351,7 +352,7 @@ Manage risks associated with third-party relationships.
     const original = await prisma.policy.findFirst({
       where: { id: policyId, organizationId },
     });
-    if (!original) throw new Error('Policy not found');
+    if (!original) throw new AppError('Policy not found', 404);
 
     const duplicate = await prisma.policy.create({
       data: {
@@ -438,6 +439,13 @@ Manage risks associated with third-party relationships.
     userId: string,
     organizationId: string
   ) {
+    const existing = await prisma.policy.findFirst({
+      where: { id: policyId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Policy not found', 404);
+    }
+
     const policy = await prisma.policy.update({
       where: { id: policyId },
       data: {
@@ -466,6 +474,13 @@ Manage risks associated with third-party relationships.
     approverId: string,
     organizationId: string
   ) {
+    const existing = await prisma.policy.findFirst({
+      where: { id: policyId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Policy not found', 404);
+    }
+
     const policy = await prisma.policy.update({
       where: { id: policyId },
       data: {

@@ -40,6 +40,7 @@
 
 import crypto from 'crypto';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 // ============================================================================
 // CONSTANTS
@@ -89,7 +90,7 @@ const BCRYPT_PREFIXES = ['$2a$', '$2b$'];
  */
 export async function hashPassword(password: string): Promise<string> {
   if (!password) {
-    throw new Error('Password cannot be empty');
+    throw new AppError('Password cannot be empty', 400);
   }
 
   const salt = crypto.randomBytes(SALT_LENGTH);

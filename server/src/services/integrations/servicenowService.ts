@@ -9,6 +9,7 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -152,12 +153,12 @@ class ServiceNowService {
   private async getClient(organizationId: string): Promise<AxiosInstance> {
     const integration = await this.getIntegration(organizationId);
     if (!integration || !integration.connected) {
-      throw new Error('ServiceNow integration not connected');
+      throw new AppError('ServiceNow integration not connected', 400);
     }
 
     const config = integration.config as unknown as ServiceNowConfig;
     if (!config?.instanceUrl) {
-      throw new Error('ServiceNow instance URL not configured');
+      throw new AppError('ServiceNow instance URL not configured', 400);
     }
 
     const instanceUrl = config.instanceUrl.replace(/\/+$/, '');
@@ -171,7 +172,7 @@ class ServiceNowService {
       headers['Authorization'] = `Bearer ${token}`;
     } else {
       if (!config.username || !config.password) {
-        throw new Error('ServiceNow basic auth credentials not configured');
+        throw new AppError('ServiceNow basic auth credentials not configured', 400);
       }
       const encoded = Buffer.from(`${config.username}:${config.password}`).toString('base64');
       headers['Authorization'] = `Basic ${encoded}`;
@@ -196,7 +197,7 @@ class ServiceNowService {
     }
 
     if (!config.refreshToken) {
-      throw new Error('No refresh token available. Please reconnect the ServiceNow integration.');
+      throw new AppError('No refresh token available. Please reconnect the ServiceNow integration.', 400);
     }
 
     return this.refreshOAuthToken(organizationId, config);
@@ -250,7 +251,7 @@ class ServiceNowService {
         return access_token;
       } catch (error: any) {
         if (error.response?.status === 401 || error.response?.status === 403) {
-          throw new Error('OAuth refresh token is invalid. Please reconnect the ServiceNow integration.');
+          throw new AppError('OAuth refresh token is invalid. Please reconnect the ServiceNow integration.', 403);
         }
         if (attempt < this.maxRetries) {
           const delay = this.baseRetryDelay * Math.pow(2, attempt);
@@ -258,11 +259,11 @@ class ServiceNowService {
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         }
-        throw new Error(`Failed to refresh ServiceNow OAuth token: ${error.message}`);
+        throw new AppError(`Failed to refresh ServiceNow OAuth token: ${error.message}`, 500);
       }
     }
 
-    throw new Error('Failed to refresh ServiceNow OAuth token after retries');
+    throw new AppError('Failed to refresh ServiceNow OAuth token after retries', 500);
   }
 
   /**
@@ -311,7 +312,7 @@ class ServiceNowService {
       }
     }
 
-    throw new Error(`[ServiceNow] ${context} failed after ${this.maxRetries} retries`);
+    throw new AppError(`[ServiceNow] ${context} failed after ${this.maxRetries} retries`, 500);
   }
 
   // =========================================================================
@@ -875,7 +876,7 @@ class ServiceNowService {
                       updatedAt: new Date(),
                     },
                   })
-                  .catch(() => {});
+                  .catch((err) => { logger.error('ServiceNow sync issue update failed', { error: err.message, issueId: syncDetails.localIssueId }); });
                 updated++;
               }
             } else {
@@ -1020,7 +1021,7 @@ class ServiceNowService {
                   updatedAt: new Date(),
                 },
               })
-              .catch(() => {});
+              .catch((err) => { logger.error('ServiceNow webhook issue update failed', { error: err.message, issueId: syncDetails.localIssueId }); });
           }
           break;
         }

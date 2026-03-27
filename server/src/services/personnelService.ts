@@ -1,6 +1,7 @@
 import { Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 
 /**
@@ -62,6 +63,13 @@ export class PersonnelService {
     userId: string,
     organizationId: string
   ) {
+    const existing = await prisma.personnel.findFirst({
+      where: { id: personnelId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Personnel record not found', 404);
+    }
+
     const personnel = await prisma.personnel.update({
       where: { id: personnelId },
       data: {
@@ -100,6 +108,13 @@ export class PersonnelService {
     userId: string,
     organizationId: string
   ) {
+    const existing = await prisma.personnel.findFirst({
+      where: { id: personnelId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Personnel record not found', 404);
+    }
+
     const personnel = await prisma.personnel.update({
       where: { id: personnelId },
       data: {
@@ -196,6 +211,13 @@ export class PersonnelService {
     userId: string,
     organizationId: string
   ) {
+    const existingReview = await prisma.accessReview.findFirst({
+      where: { id: reviewId, organizationId },
+    });
+    if (!existingReview) {
+      throw new AppError('Access review not found', 404);
+    }
+
     const review = await prisma.accessReview.update({
       where: { id: reviewId },
       data: {
@@ -315,6 +337,13 @@ export class PersonnelService {
     userId: string,
     organizationId: string
   ) {
+    const existing = await prisma.personnel.findFirst({
+      where: { id: personnelId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Personnel record not found', 404);
+    }
+
     const personnel = await prisma.personnel.update({
       where: { id: personnelId },
       data: {
@@ -348,6 +377,13 @@ export class PersonnelService {
     userId: string,
     organizationId: string
   ) {
+    const existing = await prisma.personnel.findFirst({
+      where: { id: personnelId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Personnel record not found', 404);
+    }
+
     const personnel = await prisma.personnel.update({
       where: { id: personnelId },
       data: {
@@ -454,7 +490,7 @@ export class PersonnelService {
     });
 
     if (!existing) {
-      throw new Error('Personnel record not found');
+      throw new AppError('Personnel record not found', 404);
     }
 
     const personnel = await prisma.personnel.update({
@@ -501,7 +537,7 @@ export class PersonnelService {
     });
 
     if (!existing) {
-      throw new Error('Personnel record not found');
+      throw new AppError('Personnel record not found', 404);
     }
 
     // Soft delete - update status to Offboarding and deactivate user

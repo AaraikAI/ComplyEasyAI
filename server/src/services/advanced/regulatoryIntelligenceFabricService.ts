@@ -11,6 +11,7 @@
 
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import * as crypto from 'crypto';
@@ -109,7 +110,7 @@ class RegulatoryIntelligenceFabricService {
           // SECURITY: SSRF Protection - Validate URL before fetching
           const { isUrlSafe } = await import('../../utils/urlValidator');
           if (!isUrlSafe(input.url)) {
-            throw new Error('URL is not allowed for security reasons (SSRF protection)');
+            throw new AppError('URL is not allowed for security reasons (SSRF protection)', 403);
           }
 
           const response = await axios.get(input.url, {
@@ -122,7 +123,7 @@ class RegulatoryIntelligenceFabricService {
           sourceUrl = input.url;
         } catch (urlError: any) {
           logger.error('[RIF] Error fetching regulation from URL', urlError);
-          throw new Error(`Failed to fetch regulation from URL: ${urlError.message}`);
+          throw new AppError(`Failed to fetch regulation from URL: ${urlError.message}`, 500);
         }
       }
       // 2. Ingest from PDF
@@ -131,21 +132,21 @@ class RegulatoryIntelligenceFabricService {
           regulationText = await this.extractTextFromPDF(input.pdfBuffer);
         } catch (pdfError: any) {
           logger.error('[RIF] Error extracting text from PDF', pdfError);
-          throw new Error(`Failed to extract text from PDF: ${pdfError.message}`);
+          throw new AppError(`Failed to extract text from PDF: ${pdfError.message}`, 500);
         }
       }
       // 3. Ingest from text
       else if (input.text) {
         regulationText = input.text;
       } else {
-        throw new Error('No input provided: url, pdfBuffer, or text required');
+        throw new AppError('No input provided: url, pdfBuffer, or text required', 400);
       }
 
       // Check for duplicates
       const duplicate = await this.detectDuplicate(regulationText, organizationId);
       if (duplicate) {
         logger.warn(`[RIF] Duplicate regulation detected: ${duplicate.id}`);
-        throw new Error(`Duplicate regulation detected: ${duplicate.regulationName}`);
+        throw new AppError(`Duplicate regulation detected: ${duplicate.regulationName}`, 409);
       }
 
       // Identify sections
@@ -287,7 +288,7 @@ class RegulatoryIntelligenceFabricService {
       } catch (fallbackError) {
         logger.error('[RIF] Fallback text extraction also failed', fallbackError);
       }
-      throw new Error(`PDF text extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new AppError(`PDF text extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
   }
 
@@ -1546,7 +1547,7 @@ Return only the resolution text, no JSON or formatting.`;
       });
 
       if (!regulatoryChange) {
-        throw new Error('Regulatory change not found');
+        throw new AppError('Regulatory change not found', 404);
       }
 
       // DRY-RUN MODE: Generate preview without making changes
@@ -1625,6 +1626,18 @@ Return only the resolution text, no JSON or formatting.`;
               controlsUpdated++;
             } else {
               // Create new control
+              // Verify framework belongs to the correct organization before creating control
+              const verifiedFramework = await prisma.complianceFramework.findFirst({
+                where: { id: framework.id, organizationId: regulatoryChange.organizationId },
+                select: { id: true },
+              });
+              if (!verifiedFramework) {
+                logger.warn('[RIF] Framework does not belong to organization, skipping control creation', {
+                  frameworkId: framework.id,
+                  organizationId: regulatoryChange.organizationId,
+                });
+                continue;
+              }
               await prisma.frameworkControl.create({
                 data: {
                   frameworkId: framework.id,
@@ -1778,7 +1791,7 @@ Return only the resolution text, no JSON or formatting.`;
       });
 
       if (!regulatoryChange) {
-        throw new Error('Regulatory change not found');
+        throw new AppError('Regulatory change not found', 404);
       }
 
       const frameworks = await prisma.complianceFramework.findMany({
@@ -1982,12 +1995,12 @@ Return only the resolution text, no JSON or formatting.`;
       });
 
       if (!approvalLog) {
-        throw new Error('Approval request not found');
+        throw new AppError('Approval request not found', 404);
       }
 
       const approvalDetails = JSON.parse(approvalLog.details || '{}');
       if (approvalDetails.status !== 'pending_approval') {
-        throw new Error('Approval request is not pending');
+        throw new AppError('Approval request is not pending', 400);
       }
 
       // Execute the auto-update without requiring approval
@@ -2047,7 +2060,7 @@ Return only the resolution text, no JSON or formatting.`;
       });
 
       if (!checkpointLog) {
-        throw new Error('Checkpoint not found');
+        throw new AppError('Checkpoint not found', 404);
       }
 
       const checkpoint = JSON.parse(checkpointLog.details || '{}');
@@ -2336,7 +2349,7 @@ Return only the resolution text, no JSON or formatting.`;
           if (feed.lastError && feed.lastError.includes('timeout')) {
             // Retry after delay
             setTimeout(() => {
-              this.monitorRegulatoryFeeds(organizationId, [feed.id]).catch(() => {});
+              this.monitorRegulatoryFeeds(organizationId, [feed.id]).catch((err) => { logger.error('Regulatory feed retry failed', { error: err.message, feedId: feed.id }); });
             }, feed.pollingInterval * 60 * 1000);
           }
         }
@@ -2377,7 +2390,7 @@ Return only the resolution text, no JSON or formatting.`;
       // SECURITY: SSRF Protection - Validate URL before fetching
       const { isUrlSafe } = await import('../../utils/urlValidator');
       if (!isUrlSafe(feed.url)) {
-        throw new Error('Feed URL is not allowed for security reasons (SSRF protection)');
+        throw new AppError('Feed URL is not allowed for security reasons (SSRF protection)', 403);
       }
 
       const response = await axios.get(feed.url, {
@@ -2530,7 +2543,7 @@ Return only the resolution text, no JSON or formatting.`;
       // SECURITY: SSRF Protection - Validate URL before fetching
       const { isUrlSafe } = await import('../../utils/urlValidator');
       if (!isUrlSafe(feed.url)) {
-        throw new Error('Feed URL is not allowed for security reasons (SSRF protection)');
+        throw new AppError('Feed URL is not allowed for security reasons (SSRF protection)', 403);
       }
 
       const headers: any = {
@@ -2580,7 +2593,7 @@ Return only the resolution text, no JSON or formatting.`;
       // SECURITY: SSRF Protection - Validate URL before fetching
       const { isUrlSafe } = await import('../../utils/urlValidator');
       if (!isUrlSafe(feed.url)) {
-        throw new Error('Feed URL is not allowed for security reasons (SSRF protection)');
+        throw new AppError('Feed URL is not allowed for security reasons (SSRF protection)', 403);
       }
 
       const response = await axios.get(feed.url, {
@@ -2889,7 +2902,7 @@ Return only the resolution text, no JSON or formatting.`;
       });
 
       if (dbFeed.count === 0) {
-        throw new Error('Feed not found');
+        throw new AppError('Feed not found', 404);
       }
 
       const updatedFeed = await prisma.regulatoryFeed.findFirst({
@@ -2897,7 +2910,7 @@ Return only the resolution text, no JSON or formatting.`;
       });
 
       if (!updatedFeed) {
-        throw new Error('Feed not found after update');
+        throw new AppError('Feed not found after update', 404);
       }
 
       // Log to audit log
@@ -3128,7 +3141,7 @@ Return only the resolution text, no JSON or formatting.`;
       };
     } catch (error) {
       logger.error('[RIF] Error extracting PDF content', error);
-      throw new Error(`PDF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new AppError(`PDF extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
   }
 

@@ -5,6 +5,7 @@
 
 import { URL } from 'url';
 import { logSecurityEvent, SecurityEventType } from './securityEventLogger';
+import { AppError } from '../middleware/errorHandler';
 
 // Blocked hostnames (localhost, internal IPs)
 const BLOCKED_HOSTS = [
@@ -106,7 +107,7 @@ export function isUrlSafe(urlString: string): boolean {
  */
 export async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
   if (!isUrlSafe(url)) {
-    throw new Error('URL is not allowed for security reasons (SSRF protection)');
+    throw new AppError('URL is not allowed for security reasons (SSRF protection)', 400);
   }
 
   const response = await fetch(url, {
@@ -128,7 +129,7 @@ export async function safeFetch(url: string, options?: RequestInit): Promise<Res
           message: 'Blocked redirect to internal URL',
           details: { originalUrl: sanitizeUrlForLogging(url), redirectUrl: sanitizeUrlForLogging(resolvedUrl) },
         });
-        throw new Error('Redirect to internal URL blocked (SSRF protection)');
+        throw new AppError('Redirect to internal URL blocked (SSRF protection)', 400);
       }
     }
   }
