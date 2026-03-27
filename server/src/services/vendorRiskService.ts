@@ -93,6 +93,14 @@ export class VendorRiskService {
     organizationId: string;
     userId: string;
   }) {
+    // Verify the vendor belongs to the calling organization
+    const vendor = await prisma.vendor.findFirst({
+      where: { id: data.vendorId, organizationId: data.organizationId },
+    });
+    if (!vendor) {
+      throw new AppError('Vendor not found', 404);
+    }
+
     const assessment = await prisma.vendorAssessment.create({
       data: {
         vendorId: data.vendorId,
@@ -132,6 +140,15 @@ export class VendorRiskService {
     organizationId: string
   ) {
     return prisma.$transaction(async (tx) => {
+      // Verify the assessment's vendor belongs to the calling organization
+      const existing = await tx.vendorAssessment.findFirst({
+        where: { id: assessmentId },
+        include: { vendor: { select: { organizationId: true } } },
+      });
+      if (!existing || existing.vendor.organizationId !== organizationId) {
+        throw new AppError('Assessment not found', 404);
+      }
+
       const assessment = await tx.vendorAssessment.update({
         where: { id: assessmentId },
         data: {

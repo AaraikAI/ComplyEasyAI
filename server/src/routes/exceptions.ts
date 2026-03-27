@@ -10,6 +10,7 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { createExceptionSchema, updateExceptionSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -63,8 +64,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching expiring exceptions:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch expiring exceptions' });
+      throw new AppError('Failed to fetch expiring exceptions', 500);
     }
   })
 );
@@ -114,8 +116,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching exception stats:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch exception statistics' });
+      throw new AppError('Failed to fetch exception statistics', 500);
     }
   })
 );
@@ -169,8 +172,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching exceptions:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch exceptions' });
+      throw new AppError('Failed to fetch exceptions', 500);
     }
   })
 );
@@ -190,14 +194,14 @@ router.get(
       });
 
       if (!exception) {
-        res.status(404).json({ status: 'error', message: 'Exception not found' });
-        return;
+        throw new AppError('Exception not found', 404);
       }
 
       res.json({ status: 'success', data: exception });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching exception:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch exception' });
+      throw new AppError('Failed to fetch exception', 500);
     }
   })
 );
@@ -224,11 +228,7 @@ router.post(
       } = req.body;
 
       if (!controlId || !title || !justification || !riskAcceptance || !expiryDate || !reviewDate) {
-        res.status(400).json({
-          status: 'error',
-          message: 'controlId, title, justification, riskAcceptance, expiryDate, and reviewDate are required',
-        });
-        return;
+        throw new AppError('controlId, title, justification, riskAcceptance, expiryDate, and reviewDate are required', 400);
       }
 
       const exception = await prisma.complianceException.create({
@@ -248,8 +248,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: exception });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating exception:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to create exception' });
+      throw new AppError('Failed to create exception', 500);
     }
   })
 );
@@ -270,8 +271,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Exception not found' });
-        return;
+        throw new AppError('Exception not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -291,8 +291,9 @@ router.patch(
 
       res.json({ status: 'success', data: exception });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating exception:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to update exception' });
+      throw new AppError('Failed to update exception', 500);
     }
   })
 );
@@ -313,16 +314,11 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Exception not found' });
-        return;
+        throw new AppError('Exception not found', 404);
       }
 
       if (existing.status !== 'REQUESTED') {
-        res.status(400).json({
-          status: 'error',
-          message: `Cannot approve exception with status "${existing.status}". Only REQUESTED exceptions can be approved.`,
-        });
-        return;
+        throw new AppError(`Cannot approve exception with status "${existing.status}". Only REQUESTED exceptions can be approved.`, 400);
       }
 
       const exception = await prisma.complianceException.update({
@@ -335,8 +331,9 @@ router.patch(
 
       res.json({ status: 'success', data: exception });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error approving exception:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to approve exception' });
+      throw new AppError('Failed to approve exception', 500);
     }
   })
 );
@@ -357,16 +354,11 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Exception not found' });
-        return;
+        throw new AppError('Exception not found', 404);
       }
 
       if (existing.status !== 'REQUESTED') {
-        res.status(400).json({
-          status: 'error',
-          message: `Cannot reject exception with status "${existing.status}". Only REQUESTED exceptions can be rejected.`,
-        });
-        return;
+        throw new AppError(`Cannot reject exception with status "${existing.status}". Only REQUESTED exceptions can be rejected.`, 400);
       }
 
       const exception = await prisma.complianceException.update({
@@ -376,8 +368,9 @@ router.patch(
 
       res.json({ status: 'success', data: exception });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error rejecting exception:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to reject exception' });
+      throw new AppError('Failed to reject exception', 500);
     }
   })
 );

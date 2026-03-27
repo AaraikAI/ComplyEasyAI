@@ -2,6 +2,8 @@ import { Router } from 'express';
 import auditController from '../controllers/auditController';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import { createAuditLogSchema, archiveAuditLogsSchema } from '../validators/auditSchemas';
 
 const router = Router();
 
@@ -14,10 +16,10 @@ router.get('/', authorize('admin', 'editor'), asyncHandler(auditController.list.
 router.get('/export', authorize('admin', 'editor'), asyncHandler(auditController.exportLogs.bind(auditController)));
 
 // Archive old audit logs (admin only)
-router.post('/archive', authorize('admin'), asyncHandler(auditController.archiveLogs.bind(auditController)));
+router.post('/archive', authorize('admin'), validateBody(archiveAuditLogsSchema), asyncHandler(auditController.archiveLogs.bind(auditController)));
 
 // Create audit log entry (all authenticated users)
-router.post('/', asyncHandler(auditController.log.bind(auditController)));
+router.post('/', validateBody(createAuditLogSchema), asyncHandler(auditController.log.bind(auditController)));
 
 export default router;
 

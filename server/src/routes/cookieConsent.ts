@@ -8,6 +8,13 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  saveCookiePreferencesSchema,
+  updateCookiePreferencesSchema,
+  recordConsentEventSchema,
+} from '../validators/cookieConsentSchemas';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -87,8 +94,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching cookie banner:', error);
-      res.status(500).json({ error: 'Failed to fetch cookie banner configuration' });
+      throw new AppError('Failed to fetch cookie banner configuration', 500);
     }
   })
 );
@@ -99,20 +107,11 @@ router.get(
 
 router.post(
   '/preferences',
+  validateBody(saveCookiePreferencesSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
       const { subjectIdentifier, categories, consentMethod } = req.body;
-
-      if (!subjectIdentifier) {
-        res.status(400).json({ error: 'subjectIdentifier is required' });
-        return;
-      }
-
-      if (!categories || typeof categories !== 'object') {
-        res.status(400).json({ error: 'categories object is required' });
-        return;
-      }
 
       // Upsert consent preference
       const preference = await prisma.consentPreference.upsert({
@@ -175,8 +174,9 @@ router.post(
         preference,
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error saving cookie preferences:', error);
-      res.status(500).json({ error: 'Failed to save cookie preferences' });
+      throw new AppError('Failed to save cookie preferences', 500);
     }
   })
 );
@@ -200,14 +200,14 @@ router.get(
       });
 
       if (!preference) {
-        res.status(404).json({ error: 'No cookie preferences found for this subject' });
-        return;
+        throw new AppError('No cookie preferences found for this subject', 404);
       }
 
       res.json(preference);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching cookie preferences:', error);
-      res.status(500).json({ error: 'Failed to fetch cookie preferences' });
+      throw new AppError('Failed to fetch cookie preferences', 500);
     }
   })
 );
@@ -218,6 +218,7 @@ router.get(
 
 router.patch(
   '/preferences/:subjectId',
+  validateBody(updateCookiePreferencesSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -231,15 +232,10 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'No cookie preferences found for this subject' });
-        return;
+        throw new AppError('No cookie preferences found for this subject', 404);
       }
 
       const { categories } = req.body;
-      if (!categories || typeof categories !== 'object') {
-        res.status(400).json({ error: 'categories object is required' });
-        return;
-      }
 
       // Merge with existing preferences
       const existingPrefs = (existing.preferences as Record<string, any>) || {};
@@ -264,8 +260,9 @@ router.patch(
 
       res.json(preference);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating cookie preferences:', error);
-      res.status(500).json({ error: 'Failed to update cookie preferences' });
+      throw new AppError('Failed to update cookie preferences', 500);
     }
   })
 );
@@ -276,15 +273,11 @@ router.patch(
 
 router.post(
   '/record',
+  validateBody(recordConsentEventSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
       const { subjectIdentifier, action, categories } = req.body;
-
-      if (!subjectIdentifier || !action) {
-        res.status(400).json({ error: 'subjectIdentifier and action are required' });
-        return;
-      }
 
       // Determine consent type based on action
       let consentType: string;
@@ -332,8 +325,9 @@ router.post(
 
       res.status(201).json(record);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error recording consent event:', error);
-      res.status(500).json({ error: 'Failed to record consent event' });
+      throw new AppError('Failed to record consent event', 500);
     }
   })
 );
@@ -382,8 +376,9 @@ router.get(
 
       res.json({ records, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching cookie consent records:', error);
-      res.status(500).json({ error: 'Failed to fetch consent records' });
+      throw new AppError('Failed to fetch consent records', 500);
     }
   })
 );
@@ -407,8 +402,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'No cookie preferences found for this subject' });
-        return;
+        throw new AppError('No cookie preferences found for this subject', 404);
       }
 
       const now = new Date();
@@ -462,8 +456,9 @@ router.delete(
 
       res.json({ message: 'All cookie consent withdrawn', subjectId: req.params.subjectId });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error withdrawing cookie consent:', error);
-      res.status(500).json({ error: 'Failed to withdraw cookie consent' });
+      throw new AppError('Failed to withdraw cookie consent', 500);
     }
   })
 );

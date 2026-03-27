@@ -10,6 +10,7 @@
 
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 export interface SwarmInsight {
   id: string;
@@ -57,7 +58,7 @@ class FederatedSwarmService {
       // Check if already a member
       const existing = await this.getFederationStatus(organizationId);
       if (existing.isParticipating) {
-        throw new Error('Organization is already a federation member');
+        throw new AppError('Organization is already a federation member', 409);
       }
 
       const membershipId = require('crypto').randomUUID();
@@ -146,13 +147,13 @@ class FederatedSwarmService {
       // Check rate limiting
       const rateLimitCheck = await this.checkRateLimit(organizationId);
       if (!rateLimitCheck.allowed) {
-        throw new Error(`Rate limit exceeded. Try again after ${rateLimitCheck.retryAfter} seconds`);
+        throw new AppError(`Rate limit exceeded. Try again after ${rateLimitCheck.retryAfter} seconds`, 429);
       }
 
       // Validate contribution
       const validation = await this.validateContribution(contribution);
       if (!validation.valid) {
-        throw new Error(`Invalid contribution: ${validation.error}`);
+        throw new AppError(`Invalid contribution: ${validation.error}`, 400);
       }
 
       // Apply differential privacy to weights
@@ -1792,7 +1793,7 @@ class FederatedSwarmService {
       });
 
       if (!targetModel) {
-        throw new Error(`Model version ${targetVersion} not found`);
+        throw new AppError(`Model version ${targetVersion} not found`, 404);
       }
 
       // Extract stored weights from the target version's audit log
@@ -1852,7 +1853,7 @@ class FederatedSwarmService {
 
       const model = await this.getFederatedModel(modelType);
       if (!model) {
-        throw new Error('Model not found');
+        throw new AppError('Model not found', 404);
       }
 
       for (const orgId of organizationIds) {

@@ -8,8 +8,16 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  createRegulatoryChangeSchema,
+  updateRegulatoryChangeSchema,
+  createImpactAssessmentSchema,
+  updateImpactSchema,
+} from '../validators/regulatoryChangeSchemas';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 router.use(authenticate);
@@ -66,8 +74,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching regulatory change stats:', error);
-      res.status(500).json({ error: 'Failed to fetch regulatory change stats' });
+      throw new AppError('Failed to fetch regulatory change stats', 500);
     }
   })
 );
@@ -131,8 +140,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error listing regulatory changes:', error);
-      res.status(500).json({ error: 'Failed to list regulatory changes' });
+      throw new AppError('Failed to list regulatory changes', 500);
     }
   })
 );
@@ -158,20 +168,19 @@ router.get(
       });
 
       if (!change) {
-        res.status(404).json({ error: 'Regulatory change not found' });
-        return;
+        throw new AppError('Regulatory change not found', 404);
       }
 
       // Verify org has access (has at least one impact record)
       if (change.impacts.length === 0) {
-        res.status(404).json({ error: 'Regulatory change not found' });
-        return;
+        throw new AppError('Regulatory change not found', 404);
       }
 
       res.json({ status: 'success', data: change });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching regulatory change:', error);
-      res.status(500).json({ error: 'Failed to fetch regulatory change' });
+      throw new AppError('Failed to fetch regulatory change', 500);
     }
   })
 );
@@ -182,6 +191,7 @@ router.get(
 
 router.post(
   '/',
+  validateBody(createRegulatoryChangeSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
 
@@ -197,18 +207,12 @@ router.post(
       } = req.body;
 
       if (!regulationName || !changeType || !title || !summary) {
-        res.status(400).json({
-          error: 'regulationName, changeType, title, and summary are required',
-        });
-        return;
+        throw new AppError('regulationName, changeType, title, and summary are required', 400);
       }
 
       const validChangeTypes = ['NEW_REGULATION', 'AMENDMENT', 'GUIDANCE', 'ENFORCEMENT', 'REPEAL'];
       if (!validChangeTypes.includes(changeType)) {
-        res.status(400).json({
-          error: `changeType must be one of: ${validChangeTypes.join(', ')}`,
-        });
-        return;
+        throw new AppError(`changeType must be one of: ${validChangeTypes.join(', ')}`, 400);
       }
 
       const change = await prisma.regulatoryChangeDetection.create({
@@ -244,8 +248,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: result });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating regulatory change:', error);
-      res.status(500).json({ error: 'Failed to create regulatory change' });
+      throw new AppError('Failed to create regulatory change', 500);
     }
   })
 );
@@ -256,6 +261,7 @@ router.post(
 
 router.patch(
   '/:id',
+  validateBody(updateRegulatoryChangeSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
 
@@ -266,8 +272,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Regulatory change not found' });
-        return;
+        throw new AppError('Regulatory change not found', 404);
       }
 
       const { status, impactAnalysis, title, summary, sourceUrl, effectiveDate } = req.body;
@@ -276,10 +281,7 @@ router.patch(
       if (status) {
         const validStatuses = ['NEW', 'REVIEWING', 'IN_PROGRESS', 'REG_RESOLVED', 'DISMISSED'];
         if (!validStatuses.includes(status)) {
-          res.status(400).json({
-            error: `status must be one of: ${validStatuses.join(', ')}`,
-          });
-          return;
+          throw new AppError(`status must be one of: ${validStatuses.join(', ')}`, 400);
         }
         updateData.status = status;
       }
@@ -299,8 +301,9 @@ router.patch(
 
       res.json({ status: 'success', data: change });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating regulatory change:', error);
-      res.status(500).json({ error: 'Failed to update regulatory change' });
+      throw new AppError('Failed to update regulatory change', 500);
     }
   })
 );
@@ -320,8 +323,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Regulatory change not found' });
-        return;
+        throw new AppError('Regulatory change not found', 404);
       }
 
       // Update all org-scoped impacts to DISMISSED
@@ -350,8 +352,9 @@ router.patch(
         data: { message: 'Regulatory change dismissed for your organization' },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error dismissing regulatory change:', error);
-      res.status(500).json({ error: 'Failed to dismiss regulatory change' });
+      throw new AppError('Failed to dismiss regulatory change', 500);
     }
   })
 );
@@ -397,8 +400,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error listing impacts:', error);
-      res.status(500).json({ error: 'Failed to list impacts' });
+      throw new AppError('Failed to list impacts', 500);
     }
   })
 );
@@ -409,6 +413,7 @@ router.get(
 
 router.post(
   '/:id/impacts',
+  validateBody(createImpactAssessmentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
 
@@ -424,26 +429,19 @@ router.post(
           where: { id: req.params.id },
         });
         if (!change) {
-          res.status(404).json({ error: 'Regulatory change not found' });
-          return;
+          throw new AppError('Regulatory change not found', 404);
         }
       }
 
       const { controlId, impactLevel, requiredAction } = req.body;
 
       if (!controlId || !impactLevel || !requiredAction) {
-        res.status(400).json({
-          error: 'controlId, impactLevel, and requiredAction are required',
-        });
-        return;
+        throw new AppError('controlId, impactLevel, and requiredAction are required', 400);
       }
 
       const validLevels = ['Low', 'Medium', 'High', 'Critical'];
       if (!validLevels.includes(impactLevel)) {
-        res.status(400).json({
-          error: `impactLevel must be one of: ${validLevels.join(', ')}`,
-        });
-        return;
+        throw new AppError(`impactLevel must be one of: ${validLevels.join(', ')}`, 400);
       }
 
       const impact = await prisma.regulatoryChangeImpact.create({
@@ -459,8 +457,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: impact });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error adding impact assessment:', error);
-      res.status(500).json({ error: 'Failed to add impact assessment' });
+      throw new AppError('Failed to add impact assessment', 500);
     }
   })
 );
@@ -471,6 +470,7 @@ router.post(
 
 router.patch(
   '/:id/impacts/:impactId',
+  validateBody(updateImpactSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
 
@@ -484,8 +484,7 @@ router.patch(
       });
 
       if (!impact) {
-        res.status(404).json({ error: 'Impact not found' });
-        return;
+        throw new AppError('Impact not found', 404);
       }
 
       const { status, impactLevel, requiredAction } = req.body;
@@ -494,10 +493,7 @@ router.patch(
       if (status) {
         const validStatuses = ['NEW', 'REVIEWING', 'IN_PROGRESS', 'REG_RESOLVED', 'DISMISSED'];
         if (!validStatuses.includes(status)) {
-          res.status(400).json({
-            error: `status must be one of: ${validStatuses.join(', ')}`,
-          });
-          return;
+          throw new AppError(`status must be one of: ${validStatuses.join(', ')}`, 400);
         }
         updateData.status = status;
       }
@@ -505,10 +501,7 @@ router.patch(
       if (impactLevel) {
         const validLevels = ['Low', 'Medium', 'High', 'Critical'];
         if (!validLevels.includes(impactLevel)) {
-          res.status(400).json({
-            error: `impactLevel must be one of: ${validLevels.join(', ')}`,
-          });
-          return;
+          throw new AppError(`impactLevel must be one of: ${validLevels.join(', ')}`, 400);
         }
         updateData.impactLevel = impactLevel;
       }
@@ -524,8 +517,9 @@ router.patch(
 
       res.json({ status: 'success', data: updated });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating impact:', error);
-      res.status(500).json({ error: 'Failed to update impact' });
+      throw new AppError('Failed to update impact', 500);
     }
   })
 );

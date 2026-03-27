@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 
 /**
@@ -24,7 +25,7 @@ export class MultiWorkspaceService {
     });
 
     if (!parent) {
-      throw new Error('Parent organization not found');
+      throw new AppError('Parent organization not found', 404);
     }
 
     // Update parent to be marked as parent if not already
@@ -79,7 +80,7 @@ export class MultiWorkspaceService {
     });
 
     if (!organization) {
-      throw new Error('Organization not found');
+      throw new AppError('Organization not found', 404);
     }
 
     return {
@@ -137,7 +138,7 @@ export class MultiWorkspaceService {
     });
 
     if (!organization) {
-      throw new Error('Organization not found');
+      throw new AppError('Organization not found', 404);
     }
 
     // If this is a parent organization with children, aggregate metrics across all
@@ -236,7 +237,7 @@ export class MultiWorkspaceService {
     });
 
     if (!admin) {
-      throw new Error('Admin user not found');
+      throw new AppError('Admin user not found', 404);
     }
 
     const user = await prisma.user.findUnique({
@@ -245,12 +246,12 @@ export class MultiWorkspaceService {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new AppError('User not found', 404);
     }
 
     // Verify admin belongs to the same organization as the user being moved
     if (admin.organizationId !== user.organizationId) {
-      throw new Error('Cannot move users from other organizations');
+      throw new AppError('Cannot move users from other organizations', 403);
     }
 
     // Verify the target organization is accessible (same org or a child org)
@@ -259,7 +260,7 @@ export class MultiWorkspaceService {
         where: { id: targetOrganizationId, parentOrganizationId: admin.organizationId },
       });
       if (!targetOrg) {
-        throw new Error('Target organization not accessible');
+        throw new AppError('Target organization not accessible', 403);
       }
     }
 
@@ -305,7 +306,7 @@ export class MultiWorkspaceService {
     });
 
     if (!framework) {
-      throw new Error('Framework not found');
+      throw new AppError('Framework not found', 404);
     }
 
     const cloned = await Promise.all(

@@ -17,6 +17,7 @@ import { asyncHandler } from '../types/express';
 import { Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 router.use(authenticate);
@@ -159,8 +160,9 @@ router.get(
         upcomingDeadlines,
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching privacy dashboard:', error);
-      res.status(500).json({ error: 'Failed to fetch dashboard data' });
+      throw new AppError('Failed to fetch dashboard data', 500);
     }
   })
 );
@@ -199,8 +201,9 @@ router.get(
 
       res.json({ dsars, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching DSARs:', error);
-      res.status(500).json({ error: 'Failed to fetch DSARs' });
+      throw new AppError('Failed to fetch DSARs', 500);
     }
   })
 );
@@ -248,8 +251,9 @@ router.post(
 
       res.status(201).json(dsar);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating DSAR:', error);
-      res.status(500).json({ error: 'Failed to create DSAR' });
+      throw new AppError('Failed to create DSAR', 500);
     }
   })
 );
@@ -264,16 +268,16 @@ router.get(
       });
 
       if (!dsar) {
-        res.status(404).json({ error: 'DSAR not found' });
-        return;
+        throw new AppError('DSAR not found', 404);
       }
 
       const timeline = Array.isArray(dsar.auditTrail) ? dsar.auditTrail : [];
 
       res.json({ ...dsar, timeline });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching DSAR:', error);
-      res.status(500).json({ error: 'Failed to fetch DSAR' });
+      throw new AppError('Failed to fetch DSAR', 500);
     }
   })
 );
@@ -290,8 +294,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'DSAR not found' });
-        return;
+        throw new AppError('DSAR not found', 404);
       }
 
       // Build audit trail entry
@@ -325,8 +328,9 @@ router.patch(
 
       res.json(dsar);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating DSAR:', error);
-      res.status(500).json({ error: 'Failed to update DSAR' });
+      throw new AppError('Failed to update DSAR', 500);
     }
   })
 );
@@ -342,8 +346,7 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'DSAR not found' });
-        return;
+        throw new AppError('DSAR not found', 404);
       }
 
       const now = new Date();
@@ -370,8 +373,9 @@ router.post(
 
       res.json(dsar);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error verifying DSAR identity:', error);
-      res.status(500).json({ error: 'Failed to verify identity' });
+      throw new AppError('Failed to verify identity', 500);
     }
   })
 );
@@ -387,8 +391,7 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'DSAR not found' });
-        return;
+        throw new AppError('DSAR not found', 404);
       }
 
       const now = new Date();
@@ -415,8 +418,9 @@ router.post(
 
       res.json(dsar);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error completing DSAR:', error);
-      res.status(500).json({ error: 'Failed to complete DSAR' });
+      throw new AppError('Failed to complete DSAR', 500);
     }
   })
 );
@@ -455,8 +459,9 @@ router.get(
 
       res.json({ records, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching consent records:', error);
-      res.status(500).json({ error: 'Failed to fetch consent records' });
+      throw new AppError('Failed to fetch consent records', 500);
     }
   })
 );
@@ -493,8 +498,9 @@ router.post(
 
       res.status(201).json(record);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating consent record:', error);
-      res.status(500).json({ error: 'Failed to create consent record' });
+      throw new AppError('Failed to create consent record', 500);
     }
   })
 );
@@ -511,8 +517,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Consent record not found' });
-        return;
+        throw new AppError('Consent record not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -538,8 +543,9 @@ router.patch(
 
       res.json(record);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating consent record:', error);
-      res.status(500).json({ error: 'Failed to update consent record' });
+      throw new AppError('Failed to update consent record', 500);
     }
   })
 );
@@ -578,13 +584,14 @@ router.get(
 
       res.json(purposes);
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       // Return 503 if table doesn't exist yet (migration pending)
       if (error?.code === 'P2021' || error?.code === 'P2010' || error?.message?.includes('does not exist')) {
         logger.warn('Consent records table not yet available');
-        return res.status(503).json({ error: 'Consent management tables not yet available. Please run database migrations.' });
+        throw new AppError('Consent management tables not yet available. Please run database migrations.', 503);
       }
       logger.error('Error fetching consent purposes:', error);
-      res.status(500).json({ error: 'Failed to fetch consent purposes' });
+      throw new AppError('Failed to fetch consent purposes', 500);
     }
   })
 );
@@ -645,7 +652,7 @@ router.get(
         return res.json({ totalRecords: 0, grantedRate: 0, withdrawalRate: 0, byPurpose: {} });
       }
       logger.error('Error fetching consent stats:', error);
-      res.status(500).json({ error: 'Failed to fetch consent stats' });
+      throw new AppError('Failed to fetch consent stats', 500);
     }
   })
 );
@@ -686,7 +693,7 @@ router.get(
         return res.json({ preferences: [], total: 0, page, limit, totalPages: 0 });
       }
       logger.error('Error fetching consent preferences:', error);
-      res.status(500).json({ error: 'Failed to fetch consent preferences' });
+      throw new AppError('Failed to fetch consent preferences', 500);
     }
   })
 );
@@ -735,8 +742,9 @@ router.put(
 
       res.json(preference);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error upserting consent preference:', error);
-      res.status(500).json({ error: 'Failed to update consent preferences' });
+      throw new AppError('Failed to update consent preferences', 500);
     }
   })
 );
@@ -775,7 +783,7 @@ router.get(
         return res.json({ policies: [], total: 0, page, limit, totalPages: 0 });
       }
       logger.error('Error fetching retention policies:', error);
-      res.status(500).json({ error: 'Failed to fetch retention policies' });
+      throw new AppError('Failed to fetch retention policies', 500);
     }
   })
 );
@@ -809,8 +817,9 @@ router.post(
 
       res.status(201).json(policy);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating retention policy:', error);
-      res.status(500).json({ error: 'Failed to create retention policy' });
+      throw new AppError('Failed to create retention policy', 500);
     }
   })
 );
@@ -827,8 +836,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Retention policy not found' });
-        return;
+        throw new AppError('Retention policy not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -849,8 +857,9 @@ router.patch(
 
       res.json(policy);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating retention policy:', error);
-      res.status(500).json({ error: 'Failed to update retention policy' });
+      throw new AppError('Failed to update retention policy', 500);
     }
   })
 );
@@ -866,15 +875,15 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Retention policy not found' });
-        return;
+        throw new AppError('Retention policy not found', 404);
       }
 
       await prisma.retentionPolicy.delete({ where: { id: req.params.id } });
       res.status(204).send();
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting retention policy:', error);
-      res.status(500).json({ error: 'Failed to delete retention policy' });
+      throw new AppError('Failed to delete retention policy', 500);
     }
   })
 );
@@ -906,8 +915,9 @@ router.get(
 
       res.json({ jobs, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching retention jobs:', error);
-      res.status(500).json({ error: 'Failed to fetch retention jobs' });
+      throw new AppError('Failed to fetch retention jobs', 500);
     }
   })
 );
@@ -924,8 +934,7 @@ router.post(
       });
 
       if (!policy) {
-        res.status(404).json({ error: 'Retention policy not found' });
-        return;
+        throw new AppError('Retention policy not found', 404);
       }
 
       const enforcement = await prisma.retentionEnforcement.create({
@@ -958,8 +967,9 @@ router.post(
 
       res.json(enforcement);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error running retention enforcement:', error);
-      res.status(500).json({ error: 'Failed to run retention enforcement' });
+      throw new AppError('Failed to run retention enforcement', 500);
     }
   })
 );
@@ -996,8 +1006,9 @@ router.get(
 
       res.json({ templates, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching SCC templates:', error);
-      res.status(500).json({ error: 'Failed to fetch SCC templates' });
+      throw new AppError('Failed to fetch SCC templates', 500);
     }
   })
 );
@@ -1033,8 +1044,9 @@ router.post(
 
       res.status(201).json(template);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating SCC template:', error);
-      res.status(500).json({ error: 'Failed to create SCC template' });
+      throw new AppError('Failed to create SCC template', 500);
     }
   })
 );
@@ -1050,8 +1062,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'SCC template not found' });
-        return;
+        throw new AppError('SCC template not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -1071,8 +1082,9 @@ router.patch(
 
       res.json(template);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating SCC template:', error);
-      res.status(500).json({ error: 'Failed to update SCC template' });
+      throw new AppError('Failed to update SCC template', 500);
     }
   })
 );
@@ -1088,8 +1100,7 @@ router.get(
       });
 
       if (!scc) {
-        res.status(404).json({ error: 'SCC template not found' });
-        return;
+        throw new AppError('SCC template not found', 404);
       }
 
       const tia = await prisma.tIAAssessment.findUnique({
@@ -1097,14 +1108,14 @@ router.get(
       });
 
       if (!tia) {
-        res.status(404).json({ error: 'TIA assessment not found for this SCC template' });
-        return;
+        throw new AppError('TIA assessment not found for this SCC template', 404);
       }
 
       res.json(tia);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching TIA assessment:', error);
-      res.status(500).json({ error: 'Failed to fetch TIA assessment' });
+      throw new AppError('Failed to fetch TIA assessment', 500);
     }
   })
 );
@@ -1121,8 +1132,7 @@ router.post(
       });
 
       if (!scc) {
-        res.status(404).json({ error: 'SCC template not found' });
-        return;
+        throw new AppError('SCC template not found', 404);
       }
 
       const tia = await prisma.tIAAssessment.upsert({
@@ -1168,8 +1178,9 @@ router.post(
 
       res.json(tia);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating/updating TIA assessment:', error);
-      res.status(500).json({ error: 'Failed to create/update TIA assessment' });
+      throw new AppError('Failed to create/update TIA assessment', 500);
     }
   })
 );
@@ -1201,8 +1212,9 @@ router.get(
 
       res.json({ programs, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching BCR programs:', error);
-      res.status(500).json({ error: 'Failed to fetch BCR programs' });
+      throw new AppError('Failed to fetch BCR programs', 500);
     }
   })
 );
@@ -1240,8 +1252,9 @@ router.post(
 
       res.status(201).json(program);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating BCR program:', error);
-      res.status(500).json({ error: 'Failed to create BCR program' });
+      throw new AppError('Failed to create BCR program', 500);
     }
   })
 );
@@ -1257,8 +1270,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'BCR program not found' });
-        return;
+        throw new AppError('BCR program not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -1281,8 +1293,9 @@ router.patch(
 
       res.json(program);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating BCR program:', error);
-      res.status(500).json({ error: 'Failed to update BCR program' });
+      throw new AppError('Failed to update BCR program', 500);
     }
   })
 );
@@ -1314,8 +1327,9 @@ router.get(
 
       res.json({ preferences, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching marketing opt-outs:', error);
-      res.status(500).json({ error: 'Failed to fetch marketing opt-outs' });
+      throw new AppError('Failed to fetch marketing opt-outs', 500);
     }
   })
 );
@@ -1352,8 +1366,9 @@ router.post(
 
       res.status(201).json(preference);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error processing marketing opt-out:', error);
-      res.status(500).json({ error: 'Failed to process marketing opt-out' });
+      throw new AppError('Failed to process marketing opt-out', 500);
     }
   })
 );
@@ -1392,8 +1407,9 @@ router.get(
 
       res.json({ entries, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching suppression list:', error);
-      res.status(500).json({ error: 'Failed to fetch suppression list' });
+      throw new AppError('Failed to fetch suppression list', 500);
     }
   })
 );
@@ -1435,8 +1451,9 @@ router.post(
 
       res.status(201).json(entry);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error adding to suppression list:', error);
-      res.status(500).json({ error: 'Failed to add to suppression list' });
+      throw new AppError('Failed to add to suppression list', 500);
     }
   })
 );
@@ -1499,8 +1516,9 @@ router.get(
 
       res.json({ entries: paginatedEntries, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching deletion audit log:', error);
-      res.status(500).json({ error: 'Failed to fetch deletion audit log' });
+      throw new AppError('Failed to fetch deletion audit log', 500);
     }
   })
 );
@@ -1528,8 +1546,9 @@ router.get(
 
       res.json({ requests, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching deletion requests:', error);
-      res.status(500).json({ error: 'Failed to fetch deletion requests' });
+      throw new AppError('Failed to fetch deletion requests', 500);
     }
   })
 );
@@ -1567,8 +1586,9 @@ router.post(
 
       res.status(201).json(request);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating deletion request:', error);
-      res.status(500).json({ error: 'Failed to create deletion request' });
+      throw new AppError('Failed to create deletion request', 500);
     }
   })
 );
@@ -1583,14 +1603,14 @@ router.get(
       });
 
       if (!request) {
-        res.status(404).json({ error: 'Deletion request not found' });
-        return;
+        throw new AppError('Deletion request not found', 404);
       }
 
       res.json(request);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching deletion request:', error);
-      res.status(500).json({ error: 'Failed to fetch deletion request' });
+      throw new AppError('Failed to fetch deletion request', 500);
     }
   })
 );
@@ -1606,8 +1626,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Deletion request not found' });
-        return;
+        throw new AppError('Deletion request not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -1640,8 +1659,9 @@ router.patch(
 
       res.json(request);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating deletion request:', error);
-      res.status(500).json({ error: 'Failed to update deletion request' });
+      throw new AppError('Failed to update deletion request', 500);
     }
   })
 );
@@ -1657,8 +1677,7 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Deletion request not found' });
-        return;
+        throw new AppError('Deletion request not found', 404);
       }
 
       const now = new Date();
@@ -1683,8 +1702,9 @@ router.post(
 
       res.json(request);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error verifying deletion request:', error);
-      res.status(500).json({ error: 'Failed to verify deletion request' });
+      throw new AppError('Failed to verify deletion request', 500);
     }
   })
 );
@@ -1700,8 +1720,7 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Deletion request not found' });
-        return;
+        throw new AppError('Deletion request not found', 404);
       }
 
       const now = new Date();
@@ -1723,8 +1742,9 @@ router.post(
 
       res.json(request);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error executing deletion request:', error);
-      res.status(500).json({ error: 'Failed to execute deletion request' });
+      throw new AppError('Failed to execute deletion request', 500);
     }
   })
 );
@@ -1756,8 +1776,9 @@ router.get(
 
       res.json({ restrictions, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching processing restrictions:', error);
-      res.status(500).json({ error: 'Failed to fetch processing restrictions' });
+      throw new AppError('Failed to fetch processing restrictions', 500);
     }
   })
 );
@@ -1786,8 +1807,9 @@ router.post(
 
       res.status(201).json(restriction);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating processing restriction:', error);
-      res.status(500).json({ error: 'Failed to create processing restriction' });
+      throw new AppError('Failed to create processing restriction', 500);
     }
   })
 );
@@ -1803,8 +1825,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Processing restriction not found' });
-        return;
+        throw new AppError('Processing restriction not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -1823,8 +1844,9 @@ router.patch(
 
       res.json(restriction);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating processing restriction:', error);
-      res.status(500).json({ error: 'Failed to update processing restriction' });
+      throw new AppError('Failed to update processing restriction', 500);
     }
   })
 );
@@ -1840,8 +1862,7 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Processing restriction not found' });
-        return;
+        throw new AppError('Processing restriction not found', 404);
       }
 
       const now = new Date();
@@ -1858,8 +1879,9 @@ router.post(
 
       res.json(restriction);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error lifting processing restriction:', error);
-      res.status(500).json({ error: 'Failed to lift processing restriction' });
+      throw new AppError('Failed to lift processing restriction', 500);
     }
   })
 );
@@ -1890,8 +1912,9 @@ router.get(
 
       res.json({ notices, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching AI transparency notices:', error);
-      res.status(500).json({ error: 'Failed to fetch AI transparency notices' });
+      throw new AppError('Failed to fetch AI transparency notices', 500);
     }
   })
 );
@@ -1927,8 +1950,9 @@ router.post(
 
       res.status(201).json(notice);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating AI transparency notice:', error);
-      res.status(500).json({ error: 'Failed to create AI transparency notice' });
+      throw new AppError('Failed to create AI transparency notice', 500);
     }
   })
 );
@@ -1944,8 +1968,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'AI transparency notice not found' });
-        return;
+        throw new AppError('AI transparency notice not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -1966,8 +1989,9 @@ router.patch(
 
       res.json(notice);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating AI transparency notice:', error);
-      res.status(500).json({ error: 'Failed to update AI transparency notice' });
+      throw new AppError('Failed to update AI transparency notice', 500);
     }
   })
 );
@@ -1983,8 +2007,7 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'AI transparency notice not found' });
-        return;
+        throw new AppError('AI transparency notice not found', 404);
       }
 
       const notice = await prisma.aITransparencyNotice.update({
@@ -1998,8 +2021,9 @@ router.post(
 
       res.json(notice);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error publishing AI transparency notice:', error);
-      res.status(500).json({ error: 'Failed to publish AI transparency notice' });
+      throw new AppError('Failed to publish AI transparency notice', 500);
     }
   })
 );
@@ -2031,8 +2055,9 @@ router.get(
 
       res.json({ notices, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching JIT privacy notices:', error);
-      res.status(500).json({ error: 'Failed to fetch JIT privacy notices' });
+      throw new AppError('Failed to fetch JIT privacy notices', 500);
     }
   })
 );
@@ -2072,8 +2097,9 @@ router.post(
 
       res.status(201).json(notice);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating JIT privacy notice:', error);
-      res.status(500).json({ error: 'Failed to create JIT privacy notice' });
+      throw new AppError('Failed to create JIT privacy notice', 500);
     }
   })
 );
@@ -2089,8 +2115,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'JIT privacy notice not found' });
-        return;
+        throw new AppError('JIT privacy notice not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -2108,8 +2133,9 @@ router.patch(
 
       res.json(notice);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating JIT privacy notice:', error);
-      res.status(500).json({ error: 'Failed to update JIT privacy notice' });
+      throw new AppError('Failed to update JIT privacy notice', 500);
     }
   })
 );
@@ -2124,8 +2150,7 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'JIT privacy notice not found' });
-        return;
+        throw new AppError('JIT privacy notice not found', 404);
       }
 
       const notice = await prisma.jITPrivacyNotice.update({
@@ -2135,8 +2160,9 @@ router.post(
 
       res.json({ id: notice.id, impressions: notice.impressions });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error recording impression:', error);
-      res.status(500).json({ error: 'Failed to record impression' });
+      throw new AppError('Failed to record impression', 500);
     }
   })
 );
@@ -2151,8 +2177,7 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'JIT privacy notice not found' });
-        return;
+        throw new AppError('JIT privacy notice not found', 404);
       }
 
       const notice = await prisma.jITPrivacyNotice.update({
@@ -2162,8 +2187,9 @@ router.post(
 
       res.json({ id: notice.id, acceptances: notice.acceptances });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error recording acceptance:', error);
-      res.status(500).json({ error: 'Failed to record acceptance' });
+      throw new AppError('Failed to record acceptance', 500);
     }
   })
 );
@@ -2178,8 +2204,7 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'JIT privacy notice not found' });
-        return;
+        throw new AppError('JIT privacy notice not found', 404);
       }
 
       const notice = await prisma.jITPrivacyNotice.update({
@@ -2189,8 +2214,9 @@ router.post(
 
       res.json({ id: notice.id, dismissals: notice.dismissals });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error recording dismissal:', error);
-      res.status(500).json({ error: 'Failed to record dismissal' });
+      throw new AppError('Failed to record dismissal', 500);
     }
   })
 );
@@ -2234,7 +2260,7 @@ router.get('/notices/:id', asyncHandler(async (req: Request, res: Response) => {
   const notice = await prisma.jITPrivacyNotice.findFirst({
     where: { id: req.params.id, organizationId: user.organizationId },
   });
-  if (!notice) return res.status(404).json({ error: 'Notice not found' });
+  if (!notice) throw new AppError('Notice not found', 404);
   return res.json(notice);
 }));
 
@@ -2244,7 +2270,7 @@ router.patch('/notices/:id', asyncHandler(async (req: Request, res: Response) =>
   const existing = await prisma.jITPrivacyNotice.findFirst({
     where: { id: req.params.id, organizationId: user.organizationId },
   });
-  if (!existing) return res.status(404).json({ error: 'Notice not found' });
+  if (!existing) throw new AppError('Notice not found', 404);
   const notice = await prisma.jITPrivacyNotice.update({
     where: { id: req.params.id },
     data: req.body,
@@ -2258,7 +2284,7 @@ router.delete('/notices/:id', asyncHandler(async (req: Request, res: Response) =
   const existing = await prisma.jITPrivacyNotice.findFirst({
     where: { id: req.params.id, organizationId: user.organizationId },
   });
-  if (!existing) return res.status(404).json({ error: 'Notice not found' });
+  if (!existing) throw new AppError('Notice not found', 404);
   await prisma.jITPrivacyNotice.delete({ where: { id: req.params.id } });
   return res.json({ message: 'Notice deleted' });
 }));
@@ -2269,7 +2295,7 @@ router.post('/notices/:id/impression', asyncHandler(async (req: Request, res: Re
   const notice = await prisma.jITPrivacyNotice.findFirst({
     where: { id: req.params.id, organizationId: user.organizationId },
   });
-  if (!notice) return res.status(404).json({ error: 'Notice not found' });
+  if (!notice) throw new AppError('Notice not found', 404);
   await prisma.jITPrivacyNotice.update({
     where: { id: req.params.id },
     data: { impressions: { increment: 1 } },
@@ -2283,7 +2309,7 @@ router.post('/notices/:id/accept', asyncHandler(async (req: Request, res: Respon
   const notice = await prisma.jITPrivacyNotice.findFirst({
     where: { id: req.params.id, organizationId: user.organizationId },
   });
-  if (!notice) return res.status(404).json({ error: 'Notice not found' });
+  if (!notice) throw new AppError('Notice not found', 404);
   await prisma.jITPrivacyNotice.update({
     where: { id: req.params.id },
     data: { acceptances: { increment: 1 } },
@@ -2297,7 +2323,7 @@ router.post('/notices/:id/dismiss', asyncHandler(async (req: Request, res: Respo
   const notice = await prisma.jITPrivacyNotice.findFirst({
     where: { id: req.params.id, organizationId: user.organizationId },
   });
-  if (!notice) return res.status(404).json({ error: 'Notice not found' });
+  if (!notice) throw new AppError('Notice not found', 404);
   await prisma.jITPrivacyNotice.update({
     where: { id: req.params.id },
     data: { dismissals: { increment: 1 } },
@@ -2364,7 +2390,7 @@ router.post('/child-consent/verify-age', asyncHandler(async (req: Request, res: 
   } = req.body;
 
   if (!consentRecordId || dataSubjectAge === undefined) {
-    return res.status(400).json({ error: 'consentRecordId and dataSubjectAge are required' });
+    throw new AppError('consentRecordId and dataSubjectAge are required', 400);
   }
 
   // Determine minimum age for jurisdiction
@@ -2377,7 +2403,7 @@ router.post('/child-consent/verify-age', asyncHandler(async (req: Request, res: 
   const record = await prisma.consentRecord.findFirst({
     where: { id: consentRecordId, organizationId: orgId },
   });
-  if (!record) return res.status(404).json({ error: 'Consent record not found' });
+  if (!record) throw new AppError('Consent record not found', 404);
 
   const updateData: any = {
     dataSubjectAge,
@@ -2411,13 +2437,13 @@ router.post('/child-consent/parental-consent', asyncHandler(async (req: Request,
   const { consentRecordId, parentalConsentEmail, parentalConsentMethod } = req.body;
 
   if (!consentRecordId) {
-    return res.status(400).json({ error: 'consentRecordId is required' });
+    throw new AppError('consentRecordId is required', 400);
   }
 
   const record = await prisma.consentRecord.findFirst({
     where: { id: consentRecordId, organizationId: orgId, isMinor: true },
   });
-  if (!record) return res.status(404).json({ error: 'Minor consent record not found' });
+  if (!record) throw new AppError('Minor consent record not found', 404);
 
   const updated = await prisma.consentRecord.update({
     where: { id: consentRecordId },

@@ -2,8 +2,10 @@ import { MonitorStatus } from '../generated/prisma/client';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 import geminiService from './geminiService';
 import axios from 'axios';
+import { isWebhookUrlSafe } from '../utils/urlValidator';
 
 
 /**
@@ -63,7 +65,7 @@ export class MonitoringService {
     });
 
     if (!monitor) {
-      throw new Error('Monitor not found');
+      throw new AppError('Monitor not found', 404);
     }
 
     // Execute the monitor based on type
@@ -418,7 +420,7 @@ export class MonitoringService {
     });
 
     if (!monitor) {
-      throw new Error('Monitor not found');
+      throw new AppError('Monitor not found', 404);
     }
 
     return monitor;
@@ -618,7 +620,7 @@ Return ONLY valid JSON in this format (no markdown):
         return parsed;
       }
 
-      throw new Error('Invalid response structure');
+      throw new AppError('Invalid response structure', 500);
     } catch (parseError) {
       // If we can't parse the JSON, try to extract meaningful content
       logger.warn('Failed to parse AI suggestion response:', parseError);
@@ -786,7 +788,7 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
     let failedTests = 0;
 
     // Check via custom HTTP endpoint if configured
-    if (config.endpoint) {
+    if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
         const response = await axios.get(config.endpoint, {
           headers: config.headers || {},
@@ -934,7 +936,7 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
       }
     }
 
-    if (config.endpoint) {
+    if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
         const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
         passedTests++;
@@ -961,7 +963,7 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
     let passedTests = 0;
     let failedTests = 0;
 
-    if (config.endpoint) {
+    if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
         const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
         const data = response.data;
@@ -997,7 +999,7 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
     let passedTests = 0;
     let failedTests = 0;
 
-    if (config.endpoint) {
+    if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
         const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
         const data = response.data;
@@ -1088,7 +1090,7 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
     }
 
     // Custom code scanning endpoint
-    if (config.endpoint) {
+    if (config.endpoint && isWebhookUrlSafe(config.endpoint)) {
       try {
         const response = await axios.get(config.endpoint, { headers: config.headers || {}, timeout: 30000 });
         const data = response.data;

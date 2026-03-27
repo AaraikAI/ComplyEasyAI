@@ -5,6 +5,9 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import { previewAnonymizationSchema, dsarExportAnonymizationSchema } from '../validators/anonymizationSchemas';
+import { AppError } from '../middleware/errorHandler';
 import dataAnonymizationService from '../services/dataAnonymizationService';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -13,21 +16,21 @@ const router = Router();
 router.use(authenticate);
 
 // Preview anonymization (dry run)
-router.post('/preview', authorize('Admin', 'Owner'), asyncHandler(async (req: Request, res: Response) => {
+router.post('/preview', authorize('Admin', 'Owner'), validateBody(previewAnonymizationSchema), asyncHandler(async (req: Request, res: Response) => {
   const { records, fieldConfig } = req.body;
   if (!records || !fieldConfig) {
-    return res.status(400).json({ error: 'records and fieldConfig are required' });
+    throw new AppError('records and fieldConfig are required', 400);
   }
   const anonymized = await dataAnonymizationService.anonymizeBatch(records, fieldConfig);
   return res.json({ original: records, anonymized, count: records.length });
 }));
 
 // Anonymize DSAR export data
-router.post('/dsar-export', authorize('Admin', 'Owner'), asyncHandler(async (req: Request, res: Response) => {
+router.post('/dsar-export', authorize('Admin', 'Owner'), validateBody(dsarExportAnonymizationSchema), asyncHandler(async (req: Request, res: Response) => {
   const user = (req as AuthRequest).user!;
   const orgId = user.organizationId;
   const { dsarId, fieldConfig } = req.body;
-  if (!dsarId) return res.status(400).json({ error: 'dsarId is required' });
+  if (!dsarId) throw new AppError('dsarId is required', 400);
 
   // Default field config for DSAR exports
   const defaultConfig = fieldConfig || {

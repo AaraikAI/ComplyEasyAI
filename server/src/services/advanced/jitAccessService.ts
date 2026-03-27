@@ -7,6 +7,7 @@
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 
 type PrivilegeLevel =
   | 'viewer'
@@ -95,15 +96,15 @@ class JITAccessService {
       const policy = await this.getAccessPolicy(privilege);
 
       if (!policy) {
-        throw new Error(`No access policy found for privilege level: ${privilege}`);
+        throw new AppError(`No access policy found for privilege level: ${privilege}`, 404);
       }
 
       if (!policy.allowedReasons.includes(reason)) {
-        throw new Error(`Reason '${reason}' not allowed for privilege '${privilege}'. Allowed reasons: ${policy.allowedReasons.join(', ')}`);
+        throw new AppError(`Reason '${reason}' not allowed for privilege '${privilege}'. Allowed reasons: ${policy.allowedReasons.join(', ')}`, 400);
       }
 
       if (durationMinutes > policy.maxDuration) {
-        throw new Error(`Duration ${durationMinutes} minutes exceeds maximum of ${policy.maxDuration} minutes for privilege '${privilege}'`);
+        throw new AppError(`Duration ${durationMinutes} minutes exceeds maximum of ${policy.maxDuration} minutes for privilege '${privilege}'`, 400);
       }
 
       // Create access request
@@ -143,7 +144,7 @@ class JITAccessService {
         privilege,
         reason,
       });
-      throw new Error(error.message || 'JIT access request failed');
+      throw new AppError(error.message || 'JIT access request failed', 500);
     }
   }
 
@@ -159,11 +160,11 @@ class JITAccessService {
       const request = await this.getAccessRequest(requestId);
 
       if (!request) {
-        throw new Error('Access request not found');
+        throw new AppError('Access request not found', 404);
       }
 
       if (request.status !== 'pending') {
-        throw new Error('Access request is not pending');
+        throw new AppError('Access request is not pending', 400);
       }
 
       // Verify approver has sufficient privileges
@@ -172,7 +173,7 @@ class JITAccessService {
       });
 
       if (!approver || approver.role !== 'admin') {
-        throw new Error('Insufficient privileges to approve request');
+        throw new AppError('Insufficient privileges to approve request', 403);
       }
 
       // Update request status
@@ -191,7 +192,7 @@ class JITAccessService {
       return session;
     } catch (error) {
       logger.error('Error approving JIT access', error);
-      throw new Error('JIT access approval failed');
+      throw new AppError('JIT access approval failed', 500);
     }
   }
 
@@ -207,11 +208,11 @@ class JITAccessService {
       const request = await this.getAccessRequest(requestId);
 
       if (!request) {
-        throw new Error('Access request not found');
+        throw new AppError('Access request not found', 404);
       }
 
       if (request.status !== 'pending') {
-        throw new Error('Access request is not pending');
+        throw new AppError('Access request is not pending', 400);
       }
 
       // Verify approver has sufficient privileges
@@ -220,7 +221,7 @@ class JITAccessService {
       });
 
       if (!approver || approver.role !== 'admin') {
-        throw new Error('Insufficient privileges to deny request');
+        throw new AppError('Insufficient privileges to deny request', 403);
       }
 
       request.status = 'denied';
@@ -246,7 +247,7 @@ class JITAccessService {
       logger.info(`JIT access denied: ${request.userId} -> ${request.requestedPrivilege} by ${approverId} (reason: ${reason})`);
     } catch (error) {
       logger.error('Error denying JIT access', error);
-      throw new Error('JIT access denial failed');
+      throw new AppError('JIT access denial failed', 500);
     }
   }
 
@@ -284,7 +285,7 @@ class JITAccessService {
       return session;
     } catch (error) {
       logger.error('Error creating JIT session', error);
-      throw new Error('JIT session creation failed');
+      throw new AppError('JIT session creation failed', 500);
     }
   }
 
@@ -300,7 +301,7 @@ class JITAccessService {
       const session = this.activeSessions.get(sessionId);
 
       if (!session || !session.active) {
-        throw new Error('Session not found or inactive');
+        throw new AppError('Session not found or inactive', 404);
       }
 
       // Get policy
@@ -310,7 +311,7 @@ class JITAccessService {
       );
 
       if (currentDuration + additionalMinutes > policy.maxDuration) {
-        throw new Error('Extension would exceed maximum duration');
+        throw new AppError('Extension would exceed maximum duration', 400);
       }
 
       // Extend session
@@ -324,7 +325,7 @@ class JITAccessService {
       return session;
     } catch (error) {
       logger.error('Error extending JIT session', error);
-      throw new Error('JIT session extension failed');
+      throw new AppError('JIT session extension failed', 500);
     }
   }
 
@@ -339,7 +340,7 @@ class JITAccessService {
       const session = this.activeSessions.get(sessionId);
 
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       // Revoke privilege immediately
@@ -354,7 +355,7 @@ class JITAccessService {
       logger.info(`JIT session revoked: ${sessionId} (reason: ${reason})`);
     } catch (error) {
       logger.error('Error revoking JIT session', error);
-      throw new Error('JIT session revocation failed');
+      throw new AppError('JIT session revocation failed', 500);
     }
   }
 
@@ -370,7 +371,7 @@ class JITAccessService {
       const session = this.activeSessions.get(sessionId);
 
       if (!session || !session.active) {
-        throw new Error('Session not found or inactive');
+        throw new AppError('Session not found or inactive', 404);
       }
 
       session.actionsPerformed.push(action);
@@ -897,7 +898,7 @@ class JITAccessService {
     const policy = policies[privilege];
     if (!policy) {
       logger.error(`No access policy found for privilege level: ${privilege}`);
-      throw new Error(`Invalid privilege level: ${privilege}`);
+      throw new AppError(`Invalid privilege level: ${privilege}`, 400);
     }
     return policy;
   }
@@ -1119,15 +1120,15 @@ class JITAccessService {
     try {
       const request = await this.getAccessRequest(requestId);
       if (!request) {
-        throw new Error('Access request not found');
+        throw new AppError('Access request not found', 404);
       }
 
       if (request.userId !== userId) {
-        throw new Error('Unauthorized to cancel this request');
+        throw new AppError('Unauthorized to cancel this request', 403);
       }
 
       if (request.status !== 'pending') {
-        throw new Error(`Cannot cancel request with status: ${request.status}`);
+        throw new AppError(`Cannot cancel request with status: ${request.status}`, 400);
       }
 
       request.status = 'revoked';

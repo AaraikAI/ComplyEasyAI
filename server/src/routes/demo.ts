@@ -9,6 +9,13 @@ import { Router } from 'express';
 import { demoController } from '../controllers/demoController';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler, authAsyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  submitDemoRequestSchema,
+  updateDemoRequestSchema,
+  scheduleDemoSchema,
+  convertDemoSchema,
+} from '../validators/demoSchemas';
 
 const router = Router();
 
@@ -21,7 +28,7 @@ const router = Router();
  * @desc    Submit a demo request (public)
  * @access  Public
  */
-router.post('/request', asyncHandler(demoController.submitDemoRequest.bind(demoController)));
+router.post('/request', validateBody(submitDemoRequestSchema), asyncHandler(demoController.submitDemoRequest.bind(demoController)));
 
 // ============================================================================
 // ADMIN ROUTES (Authentication required)
@@ -52,6 +59,18 @@ router.get(
 );
 
 /**
+ * @route   GET /api/demo/stats
+ * @desc    Alias for /requests/stats — frontend uses this shorter path
+ * @access  Admin only
+ */
+router.get(
+  '/stats',
+  authenticate,
+  authorize('admin'),
+  authAsyncHandler(demoController.getDemoStats.bind(demoController) as any)
+);
+
+/**
  * @route   GET /api/demo/requests/:id
  * @desc    Get a single demo request
  * @access  Admin only
@@ -64,14 +83,28 @@ router.get(
 );
 
 /**
+ * @route   PATCH /api/demo/requests/:id
+ * @desc    Update a demo request (partial update)
+ * @access  Admin only
+ */
+router.patch(
+  '/requests/:id',
+  authenticate,
+  authorize('admin'),
+  validateBody(updateDemoRequestSchema),
+  authAsyncHandler(demoController.updateDemoRequest.bind(demoController) as any)
+);
+
+/**
  * @route   PUT /api/demo/requests/:id
- * @desc    Update a demo request
+ * @desc    Update a demo request (backwards-compatible full replacement)
  * @access  Admin only
  */
 router.put(
   '/requests/:id',
   authenticate,
   authorize('admin'),
+  validateBody(updateDemoRequestSchema),
   authAsyncHandler(demoController.updateDemoRequest.bind(demoController) as any)
 );
 
@@ -84,6 +117,7 @@ router.post(
   '/requests/:id/schedule',
   authenticate,
   authorize('admin'),
+  validateBody(scheduleDemoSchema),
   authAsyncHandler(demoController.scheduleDemo.bind(demoController) as any)
 );
 
@@ -96,6 +130,7 @@ router.post(
   '/requests/:id/convert',
   authenticate,
   authorize('admin'),
+  validateBody(convertDemoSchema),
   authAsyncHandler(demoController.markAsConverted.bind(demoController) as any)
 );
 

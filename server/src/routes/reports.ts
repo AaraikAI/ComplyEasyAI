@@ -9,6 +9,13 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  createReportTemplateSchema,
+  updateReportTemplateSchema,
+  generateReportSchema,
+} from '../validators/reportSchemas';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -200,8 +207,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching report templates:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch report templates' });
+      throw new AppError('Failed to fetch report templates', 500);
     }
   })
 );
@@ -221,8 +229,7 @@ router.get(
       });
 
       if (!template) {
-        res.status(404).json({ status: 'error', message: 'Report template not found' });
-        return;
+        throw new AppError('Report template not found', 404);
       }
 
       const creator = await prisma.user.findUnique({
@@ -238,8 +245,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching report template:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch report template' });
+      throw new AppError('Failed to fetch report template', 500);
     }
   })
 );
@@ -250,6 +258,7 @@ router.get(
 
 router.post(
   '/',
+  validateBody(createReportTemplateSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const userId = (req as any).user.id;
@@ -258,8 +267,7 @@ router.post(
       const { name, description, sections, filters, schedule, recipients, format } = req.body;
 
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        res.status(400).json({ status: 'error', message: 'name is required' });
-        return;
+        throw new AppError('name is required', 400);
       }
 
       const validFormats = ['PDF', 'CSV', 'JSON', 'XLSX'];
@@ -281,8 +289,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: template });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating report template:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to create report template' });
+      throw new AppError('Failed to create report template', 500);
     }
   })
 );
@@ -293,6 +302,7 @@ router.post(
 
 router.patch(
   '/:id',
+  validateBody(updateReportTemplateSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
 
@@ -302,8 +312,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Report template not found' });
-        return;
+        throw new AppError('Report template not found', 404);
       }
 
       const { name, description, sections, filters, schedule, recipients, format } = req.body;
@@ -329,8 +338,9 @@ router.patch(
 
       res.json({ status: 'success', data: template });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating report template:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to update report template' });
+      throw new AppError('Failed to update report template', 500);
     }
   })
 );
@@ -350,8 +360,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Report template not found' });
-        return;
+        throw new AppError('Report template not found', 404);
       }
 
       await prisma.reportTemplate.delete({
@@ -360,8 +369,9 @@ router.delete(
 
       res.json({ status: 'success', data: { id: req.params.id, deleted: true } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting report template:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to delete report template' });
+      throw new AppError('Failed to delete report template', 500);
     }
   })
 );
@@ -372,6 +382,7 @@ router.delete(
 
 router.post(
   '/:id/generate',
+  validateBody(generateReportSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const userId = (req as any).user.id;
@@ -382,8 +393,7 @@ router.post(
       });
 
       if (!template) {
-        res.status(404).json({ status: 'error', message: 'Report template not found' });
-        return;
+        throw new AppError('Report template not found', 404);
       }
 
       const { overrideFilters } = req.body;
@@ -626,8 +636,9 @@ router.post(
 
       res.json({ status: 'success', data: report });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error generating report:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to generate report' });
+      throw new AppError('Failed to generate report', 500);
     }
   })
 );

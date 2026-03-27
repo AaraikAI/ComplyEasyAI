@@ -124,7 +124,7 @@ export function computeAndSaveIntegrity(distDir: string, outputDir?: string): vo
   const integrityKey = process.env.FIPS_INTEGRITY_KEY;
 
   if (!integrityKey) {
-    console.log('FIPS_INTEGRITY_KEY not set — skipping integrity manifest generation');
+    logger.info('FIPS_INTEGRITY_KEY not set — skipping integrity manifest generation');
     return;
   }
 
@@ -135,7 +135,7 @@ export function computeAndSaveIntegrity(distDir: string, outputDir?: string): vo
   });
 
   if (files.length === 0) {
-    console.warn('No FIPS boundary files found in ' + resolvedDist);
+    logger.warn('No FIPS boundary files found', { directory: resolvedDist });
     return;
   }
 
@@ -153,9 +153,7 @@ export function computeAndSaveIntegrity(distDir: string, outputDir?: string): vo
   const manifestPath = path.join(outDir, INTEGRITY_MANIFEST);
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
-  console.log(`FIPS integrity manifest written to ${manifestPath}`);
-  console.log(`  Files: ${files.length}`);
-  console.log(`  Digest: ${digest.substring(0, 32)}...`);
+  logger.info('FIPS integrity manifest written', { path: manifestPath, fileCount: files.length, digestPrefix: digest.substring(0, 32) });
 }
 
 // ============================================================================

@@ -354,9 +354,15 @@ export const USPrivacyTracker: React.FC = () => {
   useEffect(() => {
     if (isLoading) return;
     const timer = setTimeout(() => {
-      api.regulationData.save('us-privacy', 'laws', laws).catch(() => {});
-      api.regulationData.save('us-privacy', 'gaps', gaps).catch(() => {});
-      api.regulationData.save('us-privacy', 'tasks', tasks).catch(() => {});
+      api.regulationData.save('us-privacy', 'laws', laws).catch((err: unknown) => {
+        setLoadError('Failed to save changes. Please retry.');
+      });
+      api.regulationData.save('us-privacy', 'gaps', gaps).catch((err: unknown) => {
+        setLoadError('Failed to save changes. Please retry.');
+      });
+      api.regulationData.save('us-privacy', 'tasks', tasks).catch((err: unknown) => {
+        setLoadError('Failed to save changes. Please retry.');
+      });
     }, 2000);
     return () => clearTimeout(timer);
   }, [laws, gaps, tasks, isLoading]);

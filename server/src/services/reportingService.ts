@@ -1,6 +1,7 @@
 import { AuditLog, RiskItem, Vendor, FrameworkControl, ComplianceFramework, Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 
 interface FrameworkWithControls extends ComplianceFramework {
@@ -452,7 +453,7 @@ export class ReportingService {
       };
     }
 
-    throw new Error(`Unsupported format: ${format}`);
+    throw new AppError(`Unsupported format: ${format}`, 400);
   }
 
   /**

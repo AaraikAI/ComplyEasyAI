@@ -261,7 +261,7 @@ function prepareVerification(
     module: 'contract',
     action: 'verifysourcecode',
     contractaddress: contractAddress,
-    sourceCode: '', // Would be populated from the .sol source
+    sourceCode: (() => { try { return fs.readFileSync(path.resolve(__dirname, '../contracts/ComplianceRegistry.sol'), 'utf8'); } catch { return ''; } })(),
     codeformat: 'solidity-single-file',
     contractname: 'ComplianceRegistry',
     compilerversion: 'v0.8.20+commit.a1b79de6',

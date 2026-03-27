@@ -12,6 +12,7 @@
 import prisma from '../../config/database';
 import { Prisma, RiskStatus } from '../../generated/prisma/client';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 /** Rollback checkpoint data stored as JSON */
 interface RollbackCheckpoint {
@@ -77,7 +78,7 @@ class AgenticAIService {
       
       // Check if entity exists
       if (!action.targetId) {
-        throw new Error('Target ID is required');
+        throw new AppError('Target ID is required', 400);
       }
 
       let affectedControls = 0;
@@ -127,7 +128,7 @@ class AgenticAIService {
         });
 
         if (!risk) {
-          throw new Error('Risk not found');
+          throw new AppError('Risk not found', 404);
         }
 
         affectedRisks = 1;
@@ -136,7 +137,7 @@ class AgenticAIService {
         canRollback = true;
         rollbackComplexity = 'moderate';
       } else {
-        throw new Error(`Unknown action type: ${action.actionType}`);
+        throw new AppError(`Unknown action type: ${action.actionType}`, 400);
       }
 
       // Estimate users affected
@@ -185,7 +186,7 @@ class AgenticAIService {
       return result;
     } catch (error: any) {
       if (error.message?.includes('not found')) {
-        throw new Error(`Entity not found: ${action.targetId}`);
+        throw new AppError(`Entity not found: ${action.targetId}`, 404);
       }
       logger.error('[Agentic AI] Error estimating blast radius', error);
       throw error;
@@ -229,7 +230,7 @@ class AgenticAIService {
     });
 
     if (!control) {
-      throw new Error('Control not found');
+      throw new AppError('Control not found', 404);
     }
 
     let affectedControls = 1;
@@ -414,7 +415,7 @@ class AgenticAIService {
       // Check for concurrent execution locks
       const lockKey = `action_${action.actionType}_${action.targetId}`;
       if (await this.isActionLocked(lockKey, organizationId)) {
-        throw new Error('Action is currently being executed by another process');
+        throw new AppError('Action is currently being executed by another process', 409);
       }
 
       // Validate preconditions
@@ -425,7 +426,7 @@ class AgenticAIService {
           action.targetId
         );
         if (!preconditionsMet.valid) {
-          throw new Error(`Preconditions not met: ${preconditionsMet.reason}`);
+          throw new AppError(`Preconditions not met: ${preconditionsMet.reason}`, 400);
         }
       }
 
@@ -436,7 +437,7 @@ class AgenticAIService {
           organizationId
         );
         if (!dependenciesStatus.allComplete) {
-          throw new Error(`Dependencies not complete: ${dependenciesStatus.pending.join(', ')}`);
+          throw new AppError(`Dependencies not complete: ${dependenciesStatus.pending.join(', ')}`, 400);
         }
       }
 
@@ -446,9 +447,10 @@ class AgenticAIService {
       // Check threshold - block if exceeds
       const threshold = 0.8; // 80% risk score threshold for blocking
       if (blastRadius.riskScore > threshold && !autoApprove) {
-        throw new Error(
+        throw new AppError(
           `Action blocked: Blast radius risk score (${blastRadius.riskScore}) exceeds threshold (${threshold}). ` +
-          `This action would affect ${blastRadius.affectedControls} controls and ${blastRadius.affectedFrameworks} frameworks.`
+          `This action would affect ${blastRadius.affectedControls} controls and ${blastRadius.affectedFrameworks} frameworks.`,
+          400
         );
       }
 
@@ -554,7 +556,7 @@ class AgenticAIService {
           // Rollback on timeout
           await this.rollbackAction(agenticAction, organizationId, userId);
           agenticAction.status = 'rolled_back';
-          throw new Error(`Action timed out after ${timeoutSeconds} seconds`);
+          throw new AppError(`Action timed out after ${timeoutSeconds} seconds`, 408);
         }
         throw timeoutError;
       }
@@ -831,11 +833,11 @@ class AgenticAIService {
         });
 
         if (!dbAction) {
-          throw new Error('Action not found');
+          throw new AppError('Action not found', 404);
         }
 
         if (dbAction.status === 'rolled_back') {
-          throw new Error('Action already rolled back');
+          throw new AppError('Action already rolled back', 409);
         }
 
         action = {
@@ -864,7 +866,7 @@ class AgenticAIService {
       if (checkpoint.expiresAt) {
         const expiresAt = new Date(checkpoint.expiresAt);
         if (expiresAt < new Date()) {
-          throw new Error('Checkpoint expired (older than 30 days)');
+          throw new AppError('Checkpoint expired (older than 30 days)', 400);
         }
       }
 
@@ -1122,11 +1124,11 @@ class AgenticAIService {
     });
 
     if (!dbAction) {
-      throw new Error(`Action ${actionId} not found`);
+      throw new AppError(`Action ${actionId} not found`, 404);
     }
 
     if (dbAction.status !== 'pending') {
-      throw new Error(`Action ${actionId} is not pending approval (current status: ${dbAction.status})`);
+      throw new AppError(`Action ${actionId} is not pending approval (current status: ${dbAction.status})`, 400);
     }
 
     // Update status to approved and store approval metadata in parameters
@@ -1239,7 +1241,7 @@ class AgenticAIService {
       });
     } catch (error) {
       logger.error('[Agentic AI] Error locking action', error);
-      throw new Error('Failed to lock action');
+      throw new AppError('Failed to lock action', 500);
     }
   }
 

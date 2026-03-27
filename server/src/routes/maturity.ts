@@ -12,6 +12,7 @@ import {
   createMaturityAssessmentSchema, generateMaturityRecommendationsSchema,
 } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -46,14 +47,14 @@ router.get(
       });
 
       if (!assessment) {
-        res.status(404).json({ error: 'No maturity assessments found' });
-        return;
+        throw new AppError('No maturity assessments found', 404);
       }
 
       res.json({ status: 'success', data: assessment });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching latest assessment:', error);
-      res.status(500).json({ error: 'Failed to fetch latest assessment' });
+      throw new AppError('Failed to fetch latest assessment', 500);
     }
   })
 );
@@ -113,8 +114,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching assessment trend:', error);
-      res.status(500).json({ error: 'Failed to fetch assessment trend' });
+      throw new AppError('Failed to fetch assessment trend', 500);
     }
   })
 );
@@ -156,8 +158,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching assessments:', error);
-      res.status(500).json({ error: 'Failed to fetch assessments' });
+      throw new AppError('Failed to fetch assessments', 500);
     }
   })
 );
@@ -179,14 +182,14 @@ router.get(
       });
 
       if (!assessment) {
-        res.status(404).json({ error: 'Assessment not found' });
-        return;
+        throw new AppError('Assessment not found', 404);
       }
 
       res.json({ status: 'success', data: assessment });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching assessment:', error);
-      res.status(500).json({ error: 'Failed to fetch assessment' });
+      throw new AppError('Failed to fetch assessment', 500);
     }
   })
 );
@@ -205,29 +208,25 @@ router.post(
       const { domains, assessmentDate } = req.body;
 
       if (!domains || !Array.isArray(domains) || domains.length === 0) {
-        res.status(400).json({ error: 'domains array is required with at least one domain score' });
-        return;
+        throw new AppError('domains array is required with at least one domain score', 400);
       }
 
       // Validate each domain entry
       for (const domain of domains) {
         if (!domain.domain) {
-          res.status(400).json({ error: 'Each domain entry must have a domain name' });
-          return;
+          throw new AppError('Each domain entry must have a domain name', 400);
         }
         if (
           domain.currentLevel !== undefined &&
           (domain.currentLevel < 1 || domain.currentLevel > 5)
         ) {
-          res.status(400).json({ error: 'currentLevel must be between 1 and 5' });
-          return;
+          throw new AppError('currentLevel must be between 1 and 5', 400);
         }
         if (
           domain.targetLevel !== undefined &&
           (domain.targetLevel < 1 || domain.targetLevel > 5)
         ) {
-          res.status(400).json({ error: 'targetLevel must be between 1 and 5' });
-          return;
+          throw new AppError('targetLevel must be between 1 and 5', 400);
         }
       }
 
@@ -259,8 +258,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: assessment });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating assessment:', error);
-      res.status(500).json({ error: 'Failed to create assessment' });
+      throw new AppError('Failed to create assessment', 500);
     }
   })
 );
@@ -284,8 +284,7 @@ router.post(
       });
 
       if (!assessment) {
-        res.status(404).json({ error: 'Assessment not found' });
-        return;
+        throw new AppError('Assessment not found', 404);
       }
 
       const { additionalContext, priorityAreas } = req.body;
@@ -337,8 +336,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error generating recommendations:', error);
-      res.status(500).json({ error: 'Failed to generate recommendations' });
+      throw new AppError('Failed to generate recommendations', 500);
     }
   })
 );

@@ -8,6 +8,9 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import { createMonitoringCheckSchema, triggerVendorCheckSchema } from '../validators/vendorMonitoringSchemas';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -95,8 +98,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error listing monitoring alerts:', error);
-      res.status(500).json({ error: 'Failed to list monitoring alerts' });
+      throw new AppError('Failed to list monitoring alerts', 500);
     }
   })
 );
@@ -162,8 +166,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching monitoring stats:', error);
-      res.status(500).json({ error: 'Failed to fetch monitoring stats' });
+      throw new AppError('Failed to fetch monitoring stats', 500);
     }
   })
 );
@@ -189,10 +194,7 @@ router.get(
       }
       if (checkStatus) {
         if (!VALID_CHECK_STATUSES.includes(checkStatus)) {
-          res.status(400).json({
-            error: `status must be one of: ${VALID_CHECK_STATUSES.join(', ')}`,
-          });
-          return;
+          throw new AppError(`status must be one of: ${VALID_CHECK_STATUSES.join(', ')}`, 400);
         }
         where.status = checkStatus;
       }
@@ -234,8 +236,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error listing monitoring checks:', error);
-      res.status(500).json({ error: 'Failed to list monitoring checks' });
+      throw new AppError('Failed to list monitoring checks', 500);
     }
   })
 );
@@ -246,6 +249,7 @@ router.get(
 
 router.post(
   '/',
+  validateBody(createMonitoringCheckSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
 
@@ -254,15 +258,11 @@ router.post(
       const status = req.body.status || 'PASS'; // Default to PASS for manually created checks
 
       if (!vendorId || !checkType) {
-        res.status(400).json({ error: 'vendorId and checkType are required' });
-        return;
+        throw new AppError('vendorId and checkType are required', 400);
       }
 
       if (!VALID_CHECK_STATUSES.includes(status)) {
-        res.status(400).json({
-          error: `status must be one of: ${VALID_CHECK_STATUSES.join(', ')}`,
-        });
-        return;
+        throw new AppError(`status must be one of: ${VALID_CHECK_STATUSES.join(', ')}`, 400);
       }
 
       // Verify vendor belongs to this org
@@ -271,8 +271,7 @@ router.post(
       });
 
       if (!vendor) {
-        res.status(404).json({ error: 'Vendor not found' });
-        return;
+        throw new AppError('Vendor not found', 404);
       }
 
       const check = await prisma.vendorMonitoringCheck.create({
@@ -287,8 +286,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: check });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating monitoring check:', error);
-      res.status(500).json({ error: 'Failed to create monitoring check' });
+      throw new AppError('Failed to create monitoring check', 500);
     }
   })
 );
@@ -312,8 +312,7 @@ router.get(
       });
 
       if (!vendor) {
-        res.status(404).json({ error: 'Vendor not found' });
-        return;
+        throw new AppError('Vendor not found', 404);
       }
 
       const where: any = {
@@ -367,8 +366,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching vendor monitoring history:', error);
-      res.status(500).json({ error: 'Failed to fetch vendor monitoring history' });
+      throw new AppError('Failed to fetch vendor monitoring history', 500);
     }
   })
 );
@@ -379,6 +379,7 @@ router.get(
 
 router.post(
   '/vendor/:vendorId/check',
+  validateBody(triggerVendorCheckSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const userId = (req as any).user.id;
@@ -398,8 +399,7 @@ router.post(
       });
 
       if (!vendor) {
-        res.status(404).json({ error: 'Vendor not found' });
-        return;
+        throw new AppError('Vendor not found', 404);
       }
 
       const checkTypes = req.body.checkTypes as string[] | undefined;
@@ -493,8 +493,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error triggering vendor monitoring check:', error);
-      res.status(500).json({ error: 'Failed to trigger vendor monitoring check' });
+      throw new AppError('Failed to trigger vendor monitoring check', 500);
     }
   })
 );

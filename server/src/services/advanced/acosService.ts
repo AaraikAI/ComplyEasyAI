@@ -15,6 +15,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import { ComplianceStatus } from '../../generated/prisma/client';
+import { AppError } from '../../middleware/errorHandler';
 
 export interface ComplianceGoal {
   id: string;
@@ -110,21 +111,21 @@ class ACOSService {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         if (deadlineDate < today) {
-          throw new Error('Deadline must be in the future');
+          throw new AppError('Deadline must be in the future', 400);
         }
       }
 
       // Validate name
       if (!goal.name || goal.name.trim() === '') {
-        throw new Error('Goal name is required');
+        throw new AppError('Goal name is required', 400);
       }
       if (goal.name.length > 500) {
-        throw new Error('Goal name must be 500 characters or less');
+        throw new AppError('Goal name must be 500 characters or less', 400);
       }
 
       // Validate frameworks
       if (!goal.frameworks || goal.frameworks.length === 0) {
-        throw new Error('At least one framework must be selected');
+        throw new AppError('At least one framework must be selected', 400);
       }
 
       // Build data object conditionally to handle cases where columns might not exist
@@ -160,7 +161,7 @@ class ACOSService {
         // If error is about unknown argument (column doesn't exist), provide helpful message
         if (error.message && error.message.includes('Unknown argument')) {
           logger.error('[aCOS] Database schema mismatch - name/deadline columns may not exist. Run migration: add_goal_name_deadline.sql');
-          throw new Error('Database schema is out of date. Please run the migration to add name and deadline columns to ComplianceGoal table. See: server/prisma/migrations/add_goal_name_deadline.sql');
+          throw new AppError('Database schema is out of date. Please run the migration to add name and deadline columns to ComplianceGoal table. See: server/prisma/migrations/add_goal_name_deadline.sql', 500);
         }
         throw error;
       }
@@ -224,7 +225,7 @@ class ACOSService {
       });
 
       if (!control) {
-        throw new Error('Control not found');
+        throw new AppError('Control not found', 404);
       }
 
       // Generate UUID for the control loop (database tables don't have default for id)
@@ -240,7 +241,7 @@ class ACOSService {
           },
         });
         if (!parentLoop) {
-          throw new Error('Parent loop not found');
+          throw new AppError('Parent loop not found', 404);
         }
         // Check for circular dependencies (simple check - verify parent doesn't have this control as parent)
         const parentHasThisAsParent = await prisma.controlLoop.findFirst({
@@ -261,7 +262,7 @@ class ACOSService {
             });
             if (!current || !current.parentLoopId) break;
             if (current.parentLoopId === controlId) {
-              throw new Error('Circular dependency detected in control loops');
+              throw new AppError('Circular dependency detected in control loops', 400);
             }
             currentId = current.parentLoopId;
           }
@@ -370,22 +371,22 @@ class ACOSService {
       });
 
       if (!loop) {
-        throw new Error('Control loop not found');
+        throw new AppError('Control loop not found', 404);
       }
 
       const control = loop.control;
       if (!control) {
-        throw new Error('Control not found for this loop');
+        throw new AppError('Control not found for this loop', 404);
       }
 
       // Verify framework exists
       if (!control.framework) {
-        throw new Error('Framework not found for control');
+        throw new AppError('Framework not found for control', 404);
       }
 
       // Check if loop is paused
       if (loop.status === 'paused') {
-        throw new Error('Control loop is paused');
+        throw new AppError('Control loop is paused', 400);
       }
 
       // Check for timeout
@@ -459,7 +460,7 @@ class ACOSService {
 
         // Check timeout
         if (Date.now() - startTime > timeoutMs) {
-          throw new Error('Control loop execution timeout');
+          throw new AppError('Control loop execution timeout', 400);
         }
 
         // 4. ACT: Take autonomous action if needed
@@ -501,7 +502,7 @@ class ACOSService {
 
         // Check timeout again
         if (Date.now() - startTime > timeoutMs) {
-          throw new Error('Control loop execution timeout');
+          throw new AppError('Control loop execution timeout', 400);
         }
 
         // 5. VERIFY: Verify the action was successful
@@ -775,7 +776,7 @@ class ACOSService {
       });
 
       if (!framework) {
-        throw new Error('Framework not found');
+        throw new AppError('Framework not found', 404);
       }
 
       const debts: ComplianceDebt[] = [];
@@ -979,7 +980,7 @@ class ACOSService {
     });
 
     if (!control) {
-      throw new Error('Control not found');
+      throw new AppError('Control not found', 404);
     }
 
     const affectedControls = [control.id];
@@ -1062,7 +1063,7 @@ class ACOSService {
     });
 
     if (!policy) {
-      throw new Error('Policy not found');
+      throw new AppError('Policy not found', 404);
     }
 
     // Find controls that reference this policy
@@ -1132,7 +1133,7 @@ class ACOSService {
     });
 
     if (!framework) {
-      throw new Error('Framework not found');
+      throw new AppError('Framework not found', 404);
     }
 
     // All controls in the framework are affected
@@ -1189,7 +1190,7 @@ class ACOSService {
       });
 
       if (!impact) {
-        throw new Error('Change impact not found');
+        throw new AppError('Change impact not found', 404);
       }
 
       // Mark as resolved (we'll add a resolvedAt field or use a status field)
@@ -1304,7 +1305,7 @@ class ACOSService {
       }));
     } catch (error: any) {
       logger.error('[aCOS] Error getting active control loops', { error: error.message, stack: error.stack, organizationId });
-      throw new Error(`Failed to get control loops: ${error.message || 'Unknown error'}`);
+      throw new AppError(`Failed to get control loops: ${error.message || 'Unknown error'}`, 500);
     }
   }
 
@@ -1324,7 +1325,7 @@ class ACOSService {
       });
 
       if (!loop) {
-        throw new Error('Control loop not found');
+        throw new AppError('Control loop not found', 404);
       }
 
       return {
@@ -1408,7 +1409,7 @@ class ACOSService {
       });
 
       if (!existingLoop) {
-        throw new Error('Control loop not found');
+        throw new AppError('Control loop not found', 404);
       }
 
       // Prepare update data
@@ -1477,11 +1478,11 @@ class ACOSService {
       });
 
       if (!loop) {
-        throw new Error('Control loop not found');
+        throw new AppError('Control loop not found', 404);
       }
 
       if (loop.status === 'paused') {
-        throw new Error('Control loop is already paused');
+        throw new AppError('Control loop is already paused', 400);
       }
 
       const updatedLoop = await prisma.controlLoop.update({
@@ -1538,11 +1539,11 @@ class ACOSService {
       });
 
       if (!loop) {
-        throw new Error('Control loop not found');
+        throw new AppError('Control loop not found', 404);
       }
 
       if (loop.status !== 'paused') {
-        throw new Error('Control loop is not paused');
+        throw new AppError('Control loop is not paused', 400);
       }
 
       const updatedLoop = await prisma.controlLoop.update({
@@ -1607,12 +1608,12 @@ class ACOSService {
       });
 
       if (!loop) {
-        throw new Error('Control loop not found');
+        throw new AppError('Control loop not found', 404);
       }
 
       // Check for child loops
       if (childLoops && childLoops.length > 0) {
-        throw new Error('Cannot delete control loop with child loops. Delete child loops first.');
+        throw new AppError('Cannot delete control loop with child loops. Delete child loops first.', 400);
       }
 
       // Delete the loop (cascade will handle history)
@@ -1697,7 +1698,7 @@ class ACOSService {
       });
 
       if (!goal) {
-        throw new Error('Goal not found');
+        throw new AppError('Goal not found', 404);
       }
 
       return {
@@ -1746,7 +1747,7 @@ class ACOSService {
       });
 
       if (!existingGoal) {
-        throw new Error('Goal not found');
+        throw new AppError('Goal not found', 404);
       }
 
       // Prepare update data
@@ -1768,7 +1769,7 @@ class ACOSService {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           if (deadlineDate < today) {
-            throw new Error('Deadline must be in the future');
+            throw new AppError('Deadline must be in the future', 400);
           }
           updateData.deadline = deadlineDate;
         } else {
@@ -1830,7 +1831,7 @@ class ACOSService {
       });
 
       if (!goal) {
-        throw new Error('Goal not found');
+        throw new AppError('Goal not found', 404);
       }
 
       // Soft delete by updating status
@@ -1868,7 +1869,7 @@ class ACOSService {
       });
 
       if (!goal) {
-        throw new Error('Goal not found');
+        throw new AppError('Goal not found', 404);
       }
 
       // Restore by updating status
@@ -2081,11 +2082,11 @@ class ACOSService {
       });
 
       if (!debt) {
-        throw new Error('Debt not found');
+        throw new AppError('Debt not found', 404);
       }
 
       if (debt.resolvedAt) {
-        throw new Error('Debt already resolved');
+        throw new AppError('Debt already resolved', 400);
       }
 
       // Mark as resolved

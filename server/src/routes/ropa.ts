@@ -12,6 +12,7 @@ import {
   createProcessingActivitySchema, updateProcessingActivitySchema,
 } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -132,8 +133,9 @@ router.get(
         ),
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching RoPA statistics:', error);
-      res.status(500).json({ error: 'Failed to fetch RoPA statistics' });
+      throw new AppError('Failed to fetch RoPA statistics', 500);
     }
   })
 );
@@ -223,8 +225,9 @@ router.get(
       res.setHeader('Content-Type', 'application/json');
       res.json(exportData);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error exporting RoPA records:', error);
-      res.status(500).json({ error: 'Failed to export RoPA records' });
+      throw new AppError('Failed to export RoPA records', 500);
     }
   })
 );
@@ -258,8 +261,9 @@ router.get(
 
       res.json({ records, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching RoPA records:', error);
-      res.status(500).json({ error: 'Failed to fetch RoPA records' });
+      throw new AppError('Failed to fetch RoPA records', 500);
     }
   })
 );
@@ -303,8 +307,7 @@ router.post(
       } = req.body;
 
       if (!activityName || !lawfulBasis) {
-        res.status(400).json({ error: 'activityName and lawfulBasis are required' });
-        return;
+        throw new AppError('activityName and lawfulBasis are required', 400);
       }
 
       // Calculate next review date (12 months from now)
@@ -348,8 +351,9 @@ router.post(
 
       res.status(201).json(record);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating RoPA record:', error);
-      res.status(500).json({ error: 'Failed to create RoPA record' });
+      throw new AppError('Failed to create RoPA record', 500);
     }
   })
 );
@@ -368,14 +372,14 @@ router.get(
       });
 
       if (!record) {
-        res.status(404).json({ error: 'Processing activity record not found' });
-        return;
+        throw new AppError('Processing activity record not found', 404);
       }
 
       res.json(record);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching RoPA record:', error);
-      res.status(500).json({ error: 'Failed to fetch RoPA record' });
+      throw new AppError('Failed to fetch RoPA record', 500);
     }
   })
 );
@@ -395,8 +399,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Processing activity record not found' });
-        return;
+        throw new AppError('Processing activity record not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -421,8 +424,9 @@ router.patch(
 
       res.json(record);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating RoPA record:', error);
-      res.status(500).json({ error: 'Failed to update RoPA record' });
+      throw new AppError('Failed to update RoPA record', 500);
     }
   })
 );
@@ -441,8 +445,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Processing activity record not found' });
-        return;
+        throw new AppError('Processing activity record not found', 404);
       }
 
       const record = await prisma.processingActivityRecord.update({
@@ -452,8 +455,9 @@ router.delete(
 
       res.json({ message: 'Processing activity record archived', id: record.id });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error archiving RoPA record:', error);
-      res.status(500).json({ error: 'Failed to archive RoPA record' });
+      throw new AppError('Failed to archive RoPA record', 500);
     }
   })
 );
@@ -472,8 +476,7 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Processing activity record not found' });
-        return;
+        throw new AppError('Processing activity record not found', 404);
       }
 
       const now = new Date();
@@ -491,8 +494,9 @@ router.post(
 
       res.json(record);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error marking RoPA record as reviewed:', error);
-      res.status(500).json({ error: 'Failed to mark record as reviewed' });
+      throw new AppError('Failed to mark record as reviewed', 500);
     }
   })
 );

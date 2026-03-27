@@ -7,9 +7,51 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import Joi from 'joi';
 import { authenticate } from '../../middleware/auth';
+import { validateBody } from '../../middleware/validate';
+import { AppError } from '../../middleware/errorHandler';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+
+// ============================================================================
+// BATCH SCHEMAS
+// ============================================================================
+
+const batchVendorsSchema = Joi.object({
+  items: Joi.array().items(Joi.object({
+    name: Joi.string().min(1).max(255).required(),
+    website: Joi.string().uri().allow(null, '').optional(),
+    contactName: Joi.string().max(255).allow(null, '').optional(),
+    contactEmail: Joi.string().email().allow(null, '').optional(),
+    category: Joi.string().max(100).optional(),
+    riskLevel: Joi.string().valid('Low', 'Medium', 'High', 'Critical').optional(),
+    status: Joi.string().valid('Active', 'Inactive', 'Under Review').optional(),
+  })).min(1).max(100).required(),
+});
+
+const batchRisksSchema = Joi.object({
+  items: Joi.array().items(Joi.object({
+    title: Joi.string().min(1).max(500).required(),
+    description: Joi.string().max(5000).allow('').optional(),
+    category: Joi.string().max(100).optional(),
+    severity: Joi.string().valid('Low', 'Medium', 'High', 'Critical').optional(),
+    likelihood: Joi.number().integer().min(1).max(5).optional(),
+    impact: Joi.number().integer().min(1).max(5).optional(),
+    status: Joi.string().valid('Open', 'In Progress', 'Mitigated', 'Closed').optional(),
+    mitigationPlan: Joi.string().max(5000).allow(null, '').optional(),
+  })).min(1).max(100).required(),
+});
+
+const batchPoliciesSchema = Joi.object({
+  items: Joi.array().items(Joi.object({
+    title: Joi.string().min(1).max(500).required(),
+    content: Joi.string().max(50000).allow('').optional(),
+    category: Joi.string().max(100).optional(),
+    status: Joi.string().valid('Draft', 'Under Review', 'Approved', 'Archived').optional(),
+    version: Joi.string().max(20).optional(),
+  })).min(1).max(100).required(),
+});
 
 const batchRouter = Router();
 
@@ -64,14 +106,14 @@ function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => P
  *
  * Body: { items: Array<{ name, website?, contactEmail?, category?, ... }> }
  */
-batchRouter.post('/vendors', asyncHandler(async (req: Request, res: Response): Promise<void> => {
+batchRouter.post('/vendors', validateBody(batchVendorsSchema), asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { items } = req.body;
   const user = (req as any).user;
   const organizationId = user.organizationId;
 
   const validationError = validateBatchPayload(items, 'vendor');
   if (validationError) {
-    res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    throw new AppError(validationError, 400);
     return;
   }
 
@@ -112,12 +154,9 @@ batchRouter.post('/vendors', asyncHandler(async (req: Request, res: Response): P
     result.created = created.length;
     result.items = created;
   } catch (error: any) {
-    result.success = false;
-    result.failed = items.length;
-    result.errors.push({ index: -1, error: error.message });
+    if (error instanceof AppError) throw error;
     logger.error('[BatchRoutes] Vendor batch creation failed', error);
-    res.status(400).json(result);
-    return;
+    throw new AppError(error.message || 'Vendor batch creation failed', 400);
   }
 
   logger.info(`[BatchRoutes] Created ${result.created} vendors for org ${organizationId}`);
@@ -134,14 +173,14 @@ batchRouter.post('/vendors', asyncHandler(async (req: Request, res: Response): P
  *
  * Body: { items: Array<{ title, description?, likelihood?, impact?, ... }> }
  */
-batchRouter.post('/risks', asyncHandler(async (req: Request, res: Response): Promise<void> => {
+batchRouter.post('/risks', validateBody(batchRisksSchema), asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { items } = req.body;
   const user = (req as any).user;
   const organizationId = user.organizationId;
 
   const validationError = validateBatchPayload(items, 'risk');
   if (validationError) {
-    res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    throw new AppError(validationError, 400);
     return;
   }
 
@@ -184,12 +223,9 @@ batchRouter.post('/risks', asyncHandler(async (req: Request, res: Response): Pro
     result.created = created.length;
     result.items = created;
   } catch (error: any) {
-    result.success = false;
-    result.failed = items.length;
-    result.errors.push({ index: -1, error: error.message });
+    if (error instanceof AppError) throw error;
     logger.error('[BatchRoutes] Risk batch creation failed', error);
-    res.status(400).json(result);
-    return;
+    throw new AppError(error.message || 'Risk batch creation failed', 400);
   }
 
   logger.info(`[BatchRoutes] Created ${result.created} risks for org ${organizationId}`);
@@ -206,14 +242,14 @@ batchRouter.post('/risks', asyncHandler(async (req: Request, res: Response): Pro
  *
  * Body: { items: Array<{ title, content?, category?, ... }> }
  */
-batchRouter.post('/policies', asyncHandler(async (req: Request, res: Response): Promise<void> => {
+batchRouter.post('/policies', validateBody(batchPoliciesSchema), asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const { items } = req.body;
   const user = (req as any).user;
   const organizationId = user.organizationId;
 
   const validationError = validateBatchPayload(items, 'policy');
   if (validationError) {
-    res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    throw new AppError(validationError, 400);
     return;
   }
 
@@ -253,12 +289,9 @@ batchRouter.post('/policies', asyncHandler(async (req: Request, res: Response): 
     result.created = created.length;
     result.items = created;
   } catch (error: any) {
-    result.success = false;
-    result.failed = items.length;
-    result.errors.push({ index: -1, error: error.message });
+    if (error instanceof AppError) throw error;
     logger.error('[BatchRoutes] Policy batch creation failed', error);
-    res.status(400).json(result);
-    return;
+    throw new AppError(error.message || 'Policy batch creation failed', 400);
   }
 
   logger.info(`[BatchRoutes] Created ${result.created} policies for org ${organizationId}`);
@@ -282,7 +315,7 @@ batchRouter.post('/frameworks', asyncHandler(async (req: Request, res: Response)
 
   const validationError = validateBatchPayload(items, 'framework');
   if (validationError) {
-    res.status(400).json({ success: false, error: { code: 'INVALID_BATCH', message: validationError } });
+    throw new AppError(validationError, 400);
     return;
   }
 
@@ -322,12 +355,9 @@ batchRouter.post('/frameworks', asyncHandler(async (req: Request, res: Response)
     result.created = created.length;
     result.items = created;
   } catch (error: any) {
-    result.success = false;
-    result.failed = items.length;
-    result.errors.push({ index: -1, error: error.message });
+    if (error instanceof AppError) throw error;
     logger.error('[BatchRoutes] Framework batch creation failed', error);
-    res.status(400).json(result);
-    return;
+    throw new AppError(error.message || 'Framework batch creation failed', 400);
   }
 
   logger.info(`[BatchRoutes] Created ${result.created} frameworks for org ${organizationId}`);

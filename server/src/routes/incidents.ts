@@ -189,8 +189,7 @@ router.get(
       });
 
       if (!incident) {
-        res.status(404).json({ error: 'Incident not found' });
-        return;
+        throw new AppError('Incident not found', 404);
       }
 
       res.json({ status: 'success', data: incident });
@@ -278,8 +277,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Incident not found' });
-        return;
+        throw new AppError('Incident not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -347,8 +345,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Incident not found' });
-        return;
+        throw new AppError('Incident not found', 404);
       }
 
       // Soft delete by setting status to CLOSED with a note
@@ -395,8 +392,7 @@ router.get(
       });
 
       if (!incident) {
-        res.status(404).json({ error: 'Incident not found' });
-        return;
+        throw new AppError('Incident not found', 404);
       }
 
       const timeline = await prisma.incidentTimelineEntry.findMany({
@@ -428,8 +424,7 @@ router.post(
       });
 
       if (!incident) {
-        res.status(404).json({ error: 'Incident not found' });
-        return;
+        throw new AppError('Incident not found', 404);
       }
 
       const { action, details } = req.body;
@@ -467,8 +462,7 @@ router.post(
       });
 
       if (!incident) {
-        res.status(404).json({ error: 'Incident not found' });
-        return;
+        throw new AppError('Incident not found', 404);
       }
 
       const { title, assignee, dueDate } = req.body;
@@ -508,8 +502,7 @@ router.patch(
       });
 
       if (!incident) {
-        res.status(404).json({ error: 'Incident not found' });
-        return;
+        throw new AppError('Incident not found', 404);
       }
 
       const existingTask = await prisma.incidentTask.findFirst({
@@ -517,8 +510,7 @@ router.patch(
       });
 
       if (!existingTask) {
-        res.status(404).json({ error: 'Task not found' });
-        return;
+        throw new AppError('Task not found', 404);
       }
 
       const { status, title, assignee, dueDate } = req.body;

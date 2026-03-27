@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 
 interface ZKProof {
   proof: any;
@@ -139,7 +140,7 @@ class ZeroKnowledgeService {
       return { proof, publicSignals };
     } catch (error) {
       logger.error('Error generating compliance proof', error);
-      throw new Error('Failed to generate zero-knowledge compliance proof');
+      throw new AppError('Failed to generate zero-knowledge compliance proof', 500);
     }
   }
 
@@ -196,7 +197,7 @@ class ZeroKnowledgeService {
       return { proof, publicSignals };
     } catch (error) {
       logger.error('Error generating ownership proof', error);
-      throw new Error('Failed to generate zero-knowledge ownership proof');
+      throw new AppError('Failed to generate zero-knowledge ownership proof', 500);
     }
   }
 
@@ -257,7 +258,7 @@ class ZeroKnowledgeService {
       return { proof, publicSignals };
     } catch (error) {
       logger.error('Error generating credential proof', error);
-      throw new Error('Failed to generate zero-knowledge credential proof');
+      throw new AppError('Failed to generate zero-knowledge credential proof', 500);
     }
   }
 
@@ -292,7 +293,7 @@ class ZeroKnowledgeService {
       const circuitPaths = this.circuitPaths.get(circuitName);
       
       if (!circuitPaths) {
-        throw new Error(`Circuit paths not found for ${circuitName}`);
+        throw new AppError(`Circuit paths not found for ${circuitName}`, 404);
       }
 
       // Check if circuit files exist
@@ -301,8 +302,9 @@ class ZeroKnowledgeService {
 
       if (!wasmExists || !zkeyExists) {
         if (process.env.NODE_ENV === 'production') {
-          throw new Error(
-            `Circuit files not found for ${circuitName}. Run compilation and trusted setup.`
+          throw new AppError(
+            `Circuit files not found for ${circuitName}. Run compilation and trusted setup.`,
+            404
           );
         } else {
           // In development, use simulated proof if files don't exist
@@ -350,7 +352,7 @@ class ZeroKnowledgeService {
       const circuitPaths = this.circuitPaths.get(circuitName);
       
       if (!circuitPaths) {
-        throw new Error(`Circuit paths not found for ${circuitName}`);
+        throw new AppError(`Circuit paths not found for ${circuitName}`, 404);
       }
 
       // Check if verification key exists
@@ -358,8 +360,9 @@ class ZeroKnowledgeService {
 
       if (!vkeyExists) {
         if (process.env.NODE_ENV === 'production') {
-          throw new Error(
-            `Verification key not found for ${circuitName}. Run trusted setup.`
+          throw new AppError(
+            `Verification key not found for ${circuitName}. Run trusted setup.`,
+            404
           );
         } else {
           // In development, validate proof structure
@@ -406,9 +409,10 @@ class ZeroKnowledgeService {
    */
   private createSimulatedProof(circuitName: string, input: any): ZKProof {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error(
+      throw new AppError(
         'Development-mode proofs are not allowed in production. ' +
-        'Compile circuits and run trusted setup to generate real proving/verification keys.'
+        'Compile circuits and run trusted setup to generate real proving/verification keys.',
+        403
       );
     }
 

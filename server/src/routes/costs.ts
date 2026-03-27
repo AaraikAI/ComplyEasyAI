@@ -10,6 +10,7 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { createCostSchema, updateCostSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -107,8 +108,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching cost summary:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch cost summary' });
+      throw new AppError('Failed to fetch cost summary', 500);
     }
   })
 );
@@ -172,8 +174,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching cost trend:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch cost trend' });
+      throw new AppError('Failed to fetch cost trend', 500);
     }
   })
 );
@@ -253,8 +256,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching budget comparison:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch budget comparison' });
+      throw new AppError('Failed to fetch budget comparison', 500);
     }
   })
 );
@@ -303,8 +307,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching costs:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch costs' });
+      throw new AppError('Failed to fetch costs', 500);
     }
   })
 );
@@ -333,11 +338,7 @@ router.post(
       } = req.body;
 
       if (!category || !description || amount === undefined || !periodStart || !periodEnd) {
-        res.status(400).json({
-          status: 'error',
-          message: 'category, description, amount, periodStart, and periodEnd are required',
-        });
-        return;
+        throw new AppError('category, description, amount, periodStart, and periodEnd are required', 400);
       }
 
       const validCategories = [
@@ -346,11 +347,7 @@ router.post(
         'LEGAL', 'OTHER',
       ];
       if (!validCategories.includes(category)) {
-        res.status(400).json({
-          status: 'error',
-          message: `category must be one of: ${validCategories.join(', ')}`,
-        });
-        return;
+        throw new AppError(`category must be one of: ${validCategories.join(', ')}`, 400);
       }
 
       const cost = await prisma.complianceCost.create({
@@ -371,8 +368,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: cost });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating cost entry:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to create cost entry' });
+      throw new AppError('Failed to create cost entry', 500);
     }
   })
 );
@@ -393,8 +391,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Cost entry not found' });
-        return;
+        throw new AppError('Cost entry not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -414,8 +411,9 @@ router.patch(
 
       res.json({ status: 'success', data: cost });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating cost entry:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to update cost entry' });
+      throw new AppError('Failed to update cost entry', 500);
     }
   })
 );
@@ -435,8 +433,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Cost entry not found' });
-        return;
+        throw new AppError('Cost entry not found', 404);
       }
 
       await prisma.complianceCost.delete({
@@ -445,8 +442,9 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'Cost entry deleted', id: req.params.id } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting cost entry:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to delete cost entry' });
+      throw new AppError('Failed to delete cost entry', 500);
     }
   })
 );

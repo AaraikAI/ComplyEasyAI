@@ -9,6 +9,7 @@
  */
 
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 import fs from 'fs';
 import path from 'path';
 import whisperService from './whisperService';
@@ -143,7 +144,7 @@ class MultimodalIntakeService {
       
       // Validate format support
       if (!this.isSupportedAudioFormat(format)) {
-        throw new Error(`Unsupported audio format: ${format}`);
+        throw new AppError(`Unsupported audio format: ${format}`, 400);
       }
 
       // Check for long audio (>1 hour)
@@ -532,7 +533,7 @@ class MultimodalIntakeService {
       
       // Validate format support
       if (!this.isSupportedVideoFormat(format)) {
-        throw new Error(`Unsupported video format: ${format}`);
+        throw new AppError(`Unsupported video format: ${format}`, 400);
       }
 
       // Estimate duration

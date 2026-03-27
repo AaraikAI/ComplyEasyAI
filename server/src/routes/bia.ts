@@ -15,6 +15,7 @@ import {
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 router.use(authenticate);
@@ -94,8 +95,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching BIA statistics:', error);
-      res.status(500).json({ error: 'Failed to fetch BIA statistics' });
+      throw new AppError('Failed to fetch BIA statistics', 500);
     }
   })
 );
@@ -149,8 +151,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching business processes:', error);
-      res.status(500).json({ error: 'Failed to fetch business processes' });
+      throw new AppError('Failed to fetch business processes', 500);
     }
   })
 );
@@ -172,8 +175,7 @@ router.get(
       });
 
       if (!process) {
-        res.status(404).json({ error: 'Business process not found' });
-        return;
+        throw new AppError('Business process not found', 404);
       }
 
       // Also find processes that depend on this one (reverse dependencies)
@@ -202,8 +204,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching business process:', error);
-      res.status(500).json({ error: 'Failed to fetch business process' });
+      throw new AppError('Failed to fetch business process', 500);
     }
   })
 );
@@ -233,8 +236,7 @@ router.post(
       } = req.body;
 
       if (!name || !owner || !department) {
-        res.status(400).json({ error: 'name, owner, and department are required' });
-        return;
+        throw new AppError('name, owner, and department are required', 400);
       }
 
       if (criticality) {
@@ -242,25 +244,19 @@ router.post(
           'MISSION_CRITICAL', 'BUSINESS_CRITICAL', 'IMPORTANT', 'STANDARD', 'LOW_PRIORITY',
         ];
         if (!validCriticalities.includes(criticality)) {
-          res.status(400).json({
-            error: `criticality must be one of: ${validCriticalities.join(', ')}`,
-          });
-          return;
+          throw new AppError(`criticality must be one of: ${validCriticalities.join(', ')}`, 400);
         }
       }
 
       // Validate numeric fields
       if (rto !== undefined && (typeof rto !== 'number' || rto < 0)) {
-        res.status(400).json({ error: 'rto must be a non-negative number (hours)' });
-        return;
+        throw new AppError('rto must be a non-negative number (hours)', 400);
       }
       if (rpo !== undefined && (typeof rpo !== 'number' || rpo < 0)) {
-        res.status(400).json({ error: 'rpo must be a non-negative number (hours)' });
-        return;
+        throw new AppError('rpo must be a non-negative number (hours)', 400);
       }
       if (mtpd !== undefined && (typeof mtpd !== 'number' || mtpd < 0)) {
-        res.status(400).json({ error: 'mtpd must be a non-negative number (hours)' });
-        return;
+        throw new AppError('mtpd must be a non-negative number (hours)', 400);
       }
 
       const process = await prisma.businessProcess.create({
@@ -284,8 +280,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: process });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating business process:', error);
-      res.status(500).json({ error: 'Failed to create business process' });
+      throw new AppError('Failed to create business process', 500);
     }
   })
 );
@@ -306,8 +303,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Business process not found' });
-        return;
+        throw new AppError('Business process not found', 404);
       }
 
       // Whitelist updatable fields only
@@ -323,25 +319,19 @@ router.patch(
           'MISSION_CRITICAL', 'BUSINESS_CRITICAL', 'IMPORTANT', 'STANDARD', 'LOW_PRIORITY',
         ];
         if (!validCriticalities.includes(updateData.criticality)) {
-          res.status(400).json({
-            error: `criticality must be one of: ${validCriticalities.join(', ')}`,
-          });
-          return;
+          throw new AppError(`criticality must be one of: ${validCriticalities.join(', ')}`, 400);
         }
       }
 
       // Validate numeric fields if provided
       if (updateData.rto !== undefined && (typeof updateData.rto !== 'number' || updateData.rto < 0)) {
-        res.status(400).json({ error: 'rto must be a non-negative number (hours)' });
-        return;
+        throw new AppError('rto must be a non-negative number (hours)', 400);
       }
       if (updateData.rpo !== undefined && (typeof updateData.rpo !== 'number' || updateData.rpo < 0)) {
-        res.status(400).json({ error: 'rpo must be a non-negative number (hours)' });
-        return;
+        throw new AppError('rpo must be a non-negative number (hours)', 400);
       }
       if (updateData.mtpd !== undefined && (typeof updateData.mtpd !== 'number' || updateData.mtpd < 0)) {
-        res.status(400).json({ error: 'mtpd must be a non-negative number (hours)' });
-        return;
+        throw new AppError('mtpd must be a non-negative number (hours)', 400);
       }
 
       const process = await prisma.businessProcess.update({
@@ -354,8 +344,9 @@ router.patch(
 
       res.json({ status: 'success', data: process });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating business process:', error);
-      res.status(500).json({ error: 'Failed to update business process' });
+      throw new AppError('Failed to update business process', 500);
     }
   })
 );
@@ -375,8 +366,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Business process not found' });
-        return;
+        throw new AppError('Business process not found', 404);
       }
 
       // Check for dependents before deletion
@@ -385,10 +375,7 @@ router.delete(
       });
 
       if (dependents > 0) {
-        res.status(400).json({
-          error: `Cannot delete process: ${dependents} other process(es) depend on it. Remove those dependencies first.`,
-        });
-        return;
+        throw new AppError(`Cannot delete process: ${dependents} other process(es) depend on it. Remove those dependencies first.`, 400);
       }
 
       // Cascade will handle deleting this process's own dependencies
@@ -398,8 +385,9 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'Business process deleted', id: req.params.id } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting business process:', error);
-      res.status(500).json({ error: 'Failed to delete business process' });
+      throw new AppError('Failed to delete business process', 500);
     }
   })
 );
@@ -422,27 +410,23 @@ router.post(
       });
 
       if (!process) {
-        res.status(404).json({ error: 'Business process not found' });
-        return;
+        throw new AppError('Business process not found', 404);
       }
 
       const { dependsOn, type, isCritical } = req.body;
 
       if (!dependsOn || !type) {
-        res.status(400).json({ error: 'dependsOn and type are required' });
-        return;
+        throw new AppError('dependsOn and type are required', 400);
       }
 
       const validTypes = ['INTERNAL_PROCESS', 'VENDOR_SERVICE', 'TECHNOLOGY', 'PERSONNEL', 'FACILITY'];
       if (!validTypes.includes(type)) {
-        res.status(400).json({ error: `type must be one of: ${validTypes.join(', ')}` });
-        return;
+        throw new AppError(`type must be one of: ${validTypes.join(', ')}`, 400);
       }
 
       // Prevent self-dependency
       if (dependsOn === req.params.id) {
-        res.status(400).json({ error: 'A process cannot depend on itself' });
-        return;
+        throw new AppError('A process cannot depend on itself', 400);
       }
 
       // Check for duplicate dependency
@@ -455,8 +439,7 @@ router.post(
       });
 
       if (existingDep) {
-        res.status(400).json({ error: 'This dependency already exists' });
-        return;
+        throw new AppError('This dependency already exists', 400);
       }
 
       const dependency = await prisma.processDependency.create({
@@ -470,8 +453,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: dependency });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error adding dependency:', error);
-      res.status(500).json({ error: 'Failed to add dependency' });
+      throw new AppError('Failed to add dependency', 500);
     }
   })
 );
@@ -493,8 +477,7 @@ router.delete(
       });
 
       if (!process) {
-        res.status(404).json({ error: 'Business process not found' });
-        return;
+        throw new AppError('Business process not found', 404);
       }
 
       const dependency = await prisma.processDependency.findFirst({
@@ -502,8 +485,7 @@ router.delete(
       });
 
       if (!dependency) {
-        res.status(404).json({ error: 'Dependency not found' });
-        return;
+        throw new AppError('Dependency not found', 404);
       }
 
       await prisma.processDependency.delete({
@@ -512,8 +494,9 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'Dependency removed', id: req.params.depId } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error removing dependency:', error);
-      res.status(500).json({ error: 'Failed to remove dependency' });
+      throw new AppError('Failed to remove dependency', 500);
     }
   })
 );

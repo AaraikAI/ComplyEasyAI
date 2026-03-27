@@ -7,6 +7,7 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import prisma from '../config/database';
 import { exportToCsv, validateExportData } from '../utils/csvExport';
+import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 
 const router = Router();
@@ -33,7 +34,7 @@ router.get('/vendors', authenticate, async (req: any, res) => {
     // Validate before export
     const validation = validateExportData(vendors, { maxRows: 10000 });
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+      throw new AppError(validation.error || 'Validation failed', 400);
     }
 
     exportToCsv(res, vendors, {
@@ -42,8 +43,9 @@ router.get('/vendors', authenticate, async (req: any, res) => {
     });
     return;
   } catch (error) {
+    if (error instanceof AppError) throw error;
     logger.error('Vendor export error:', error);
-    return res.status(500).json({ error: 'Export failed' });
+    throw new AppError('Export failed', 500);
   }
 });
 
@@ -62,7 +64,7 @@ router.get('/policies', authenticate, async (req: any, res) => {
 
     const validation = validateExportData(policies, { maxRows: 10000 });
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+      throw new AppError(validation.error || 'Validation failed', 400);
     }
 
     exportToCsv(res, policies, {
@@ -71,8 +73,9 @@ router.get('/policies', authenticate, async (req: any, res) => {
     });
     return;
   } catch (error) {
+    if (error instanceof AppError) throw error;
     logger.error('Policy export error:', error);
-    return res.status(500).json({ error: 'Export failed' });
+    throw new AppError('Export failed', 500);
   }
 });
 
@@ -96,7 +99,7 @@ router.get('/issues', authenticate, async (req: any, res) => {
 
     const validation = validateExportData(issues, { maxRows: 10000 });
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+      throw new AppError(validation.error || 'Validation failed', 400);
     }
 
     exportToCsv(res, issues, {
@@ -105,8 +108,9 @@ router.get('/issues', authenticate, async (req: any, res) => {
     });
     return;
   } catch (error) {
+    if (error instanceof AppError) throw error;
     logger.error('Issue export error:', error);
-    return res.status(500).json({ error: 'Export failed' });
+    throw new AppError('Export failed', 500);
   }
 });
 
@@ -130,7 +134,7 @@ router.get('/risks', authenticate, async (req: any, res) => {
 
     const validation = validateExportData(risks, { maxRows: 10000 });
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+      throw new AppError(validation.error || 'Validation failed', 400);
     }
 
     exportToCsv(res, risks, {
@@ -139,8 +143,9 @@ router.get('/risks', authenticate, async (req: any, res) => {
     });
     return;
   } catch (error) {
+    if (error instanceof AppError) throw error;
     logger.error('Risk export error:', error);
-    return res.status(500).json({ error: 'Export failed' });
+    throw new AppError('Export failed', 500);
   }
 });
 
@@ -164,7 +169,7 @@ router.get('/frameworks', authenticate, async (req: any, res) => {
 
     const validation = validateExportData(frameworks, { maxRows: 10000 });
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+      throw new AppError(validation.error || 'Validation failed', 400);
     }
 
     exportToCsv(res, frameworks, {
@@ -173,8 +178,9 @@ router.get('/frameworks', authenticate, async (req: any, res) => {
     });
     return;
   } catch (error) {
+    if (error instanceof AppError) throw error;
     logger.error('Framework export error:', error);
-    return res.status(500).json({ error: 'Export failed' });
+    throw new AppError('Export failed', 500);
   }
 });
 
@@ -186,7 +192,7 @@ router.get('/audit-logs', authenticate, async (req: any, res) => {
   try {
     // Check if user is admin
     if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
+      throw new AppError('Admin access required', 403);
     }
 
     const organizationId = req.user.organizationId;
@@ -210,7 +216,7 @@ router.get('/audit-logs', authenticate, async (req: any, res) => {
 
     const validation = validateExportData(auditLogs, { maxRows: 50000 });
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+      throw new AppError(validation.error || 'Validation failed', 400);
     }
 
     exportToCsv(res, auditLogs, {
@@ -219,8 +225,9 @@ router.get('/audit-logs', authenticate, async (req: any, res) => {
     });
     return;
   } catch (error) {
+    if (error instanceof AppError) throw error;
     logger.error('Audit log export error:', error);
-    return res.status(500).json({ error: 'Export failed' });
+    throw new AppError('Export failed', 500);
   }
 });
 
@@ -245,7 +252,7 @@ router.get('/monitors', authenticate, async (req: any, res) => {
 
     const validation = validateExportData(monitors, { maxRows: 10000 });
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+      throw new AppError(validation.error || 'Validation failed', 400);
     }
 
     exportToCsv(res, monitors, {
@@ -254,8 +261,9 @@ router.get('/monitors', authenticate, async (req: any, res) => {
     });
     return;
   } catch (error) {
+    if (error instanceof AppError) throw error;
     logger.error('Monitor export error:', error);
-    return res.status(500).json({ error: 'Export failed' });
+    throw new AppError('Export failed', 500);
   }
 });
 

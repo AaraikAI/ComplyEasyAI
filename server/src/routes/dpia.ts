@@ -9,8 +9,19 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  createDPIASchema,
+  updateDPIASchema,
+  dpiaScreeningSchema,
+  createDPIARiskAssessmentSchema,
+  updateDPIARiskAssessmentSchema,
+  dpoConsultationSchema,
+  rejectDPIASchema,
+} from '../validators/dpiaSchemas';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 router.use(authenticate);
@@ -90,8 +101,9 @@ router.get(
         requiresDpoConsultation,
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching DPIA statistics:', error);
-      res.status(500).json({ error: 'Failed to fetch DPIA statistics' });
+      throw new AppError('Failed to fetch DPIA statistics', 500);
     }
   })
 );
@@ -140,7 +152,7 @@ router.get(
         return res.json({ dpias: [], total: 0, page, limit, totalPages: 0 });
       }
       logger.error('Error fetching DPIAs:', error);
-      res.status(500).json({ error: 'Failed to fetch DPIAs' });
+      throw new AppError('Failed to fetch DPIAs', 500);
     }
   })
 );
@@ -151,6 +163,7 @@ router.get(
 
 router.post(
   '/',
+  validateBody(createDPIASchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -167,8 +180,7 @@ router.post(
       } = req.body;
 
       if (!title || !processingActivity) {
-        res.status(400).json({ error: 'title and processingActivity are required' });
-        return;
+        throw new AppError('title and processingActivity are required', 400);
       }
 
       const dpia = await prisma.dataProtectionImpactAssessment.create({
@@ -191,8 +203,9 @@ router.post(
 
       res.status(201).json(dpia);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating DPIA:', error);
-      res.status(500).json({ error: 'Failed to create DPIA' });
+      throw new AppError('Failed to create DPIA', 500);
     }
   })
 );
@@ -212,14 +225,14 @@ router.get(
       });
 
       if (!dpia) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       res.json(dpia);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching DPIA:', error);
-      res.status(500).json({ error: 'Failed to fetch DPIA' });
+      throw new AppError('Failed to fetch DPIA', 500);
     }
   })
 );
@@ -230,6 +243,7 @@ router.get(
 
 router.patch(
   '/:id',
+  validateBody(updateDPIASchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -238,8 +252,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -258,8 +271,9 @@ router.patch(
 
       res.json(dpia);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating DPIA:', error);
-      res.status(500).json({ error: 'Failed to update DPIA' });
+      throw new AppError('Failed to update DPIA', 500);
     }
   })
 );
@@ -278,8 +292,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       const dpia = await prisma.dataProtectionImpactAssessment.update({
@@ -289,8 +302,9 @@ router.delete(
 
       res.json({ message: 'DPIA archived', id: dpia.id });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error archiving DPIA:', error);
-      res.status(500).json({ error: 'Failed to archive DPIA' });
+      throw new AppError('Failed to archive DPIA', 500);
     }
   })
 );
@@ -301,6 +315,7 @@ router.delete(
 
 router.post(
   '/:id/screening',
+  validateBody(dpiaScreeningSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -309,14 +324,12 @@ router.post(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       const { screeningAnswers } = req.body;
       if (!screeningAnswers || typeof screeningAnswers !== 'object') {
-        res.status(400).json({ error: 'screeningAnswers object is required' });
-        return;
+        throw new AppError('screeningAnswers object is required', 400);
       }
 
       // Evaluate whether a full DPIA is required based on Art. 35 criteria
@@ -412,8 +425,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error running DPIA screening:', error);
-      res.status(500).json({ error: 'Failed to run DPIA screening' });
+      throw new AppError('Failed to run DPIA screening', 500);
     }
   })
 );
@@ -424,6 +438,7 @@ router.post(
 
 router.post(
   '/:id/risk-assessment',
+  validateBody(createDPIARiskAssessmentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -432,22 +447,19 @@ router.post(
       });
 
       if (!dpia) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       const { riskDescription, riskCategory, likelihood, impact, existingControls, residualRisk, proposedMitigations } =
         req.body;
 
       if (!riskDescription || !likelihood || !impact) {
-        res.status(400).json({ error: 'riskDescription, likelihood, and impact are required' });
-        return;
+        throw new AppError('riskDescription, likelihood, and impact are required', 400);
       }
 
       const validLevels = ['VeryLow', 'Low', 'Medium', 'High', 'VeryHigh'];
       if (!validLevels.includes(likelihood) || !validLevels.includes(impact)) {
-        res.status(400).json({ error: 'likelihood and impact must be VeryLow, Low, Medium, High, or VeryHigh' });
-        return;
+        throw new AppError('likelihood and impact must be VeryLow, Low, Medium, High, or VeryHigh', 400);
       }
 
       const riskLevel = calculateRiskLevel(likelihood, impact);
@@ -483,8 +495,9 @@ router.post(
 
       res.status(201).json(riskAssessment);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error adding DPIA risk assessment:', error);
-      res.status(500).json({ error: 'Failed to add risk assessment' });
+      throw new AppError('Failed to add risk assessment', 500);
     }
   })
 );
@@ -495,6 +508,7 @@ router.post(
 
 router.patch(
   '/:id/risk-assessment/:riskId',
+  validateBody(updateDPIARiskAssessmentSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -504,8 +518,7 @@ router.patch(
       });
 
       if (!dpia) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       const riskAssessment = await prisma.dPIARiskAssessment.findFirst({
@@ -513,8 +526,7 @@ router.patch(
       });
 
       if (!riskAssessment) {
-        res.status(404).json({ error: 'Risk assessment not found' });
-        return;
+        throw new AppError('Risk assessment not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -537,8 +549,9 @@ router.patch(
 
       res.json(updated);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating DPIA risk assessment:', error);
-      res.status(500).json({ error: 'Failed to update risk assessment' });
+      throw new AppError('Failed to update risk assessment', 500);
     }
   })
 );
@@ -557,8 +570,7 @@ router.delete(
       });
 
       if (!dpia) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       const riskAssessment = await prisma.dPIARiskAssessment.findFirst({
@@ -566,8 +578,7 @@ router.delete(
       });
 
       if (!riskAssessment) {
-        res.status(404).json({ error: 'Risk assessment not found' });
-        return;
+        throw new AppError('Risk assessment not found', 404);
       }
 
       await prisma.dPIARiskAssessment.delete({
@@ -576,8 +587,9 @@ router.delete(
 
       res.json({ message: 'Risk assessment deleted', id: req.params.riskId });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting DPIA risk assessment:', error);
-      res.status(500).json({ error: 'Failed to delete risk assessment' });
+      throw new AppError('Failed to delete risk assessment', 500);
     }
   })
 );
@@ -588,6 +600,7 @@ router.delete(
 
 router.post(
   '/:id/dpo-consultation',
+  validateBody(dpoConsultationSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -596,15 +609,13 @@ router.post(
       });
 
       if (!dpia) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       const { consultationNotes, dpoRecommendation, consultedBy, consultedAt } = req.body;
 
       if (!consultationNotes) {
-        res.status(400).json({ error: 'consultationNotes is required' });
-        return;
+        throw new AppError('consultationNotes is required', 400);
       }
 
       const updated = await prisma.dataProtectionImpactAssessment.update({
@@ -620,8 +631,9 @@ router.post(
 
       res.json(updated);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error recording DPO consultation:', error);
-      res.status(500).json({ error: 'Failed to record DPO consultation' });
+      throw new AppError('Failed to record DPO consultation', 500);
     }
   })
 );
@@ -641,8 +653,7 @@ router.patch(
       });
 
       if (!dpia) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       const updated = await prisma.dataProtectionImpactAssessment.update({
@@ -656,8 +667,9 @@ router.patch(
 
       res.json(updated);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error approving DPIA:', error);
-      res.status(500).json({ error: 'Failed to approve DPIA' });
+      throw new AppError('Failed to approve DPIA', 500);
     }
   })
 );
@@ -669,6 +681,7 @@ router.patch(
 router.patch(
   '/:id/reject',
   authorize('admin'),
+  validateBody(rejectDPIASchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -677,14 +690,12 @@ router.patch(
       });
 
       if (!dpia) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       const { rejectionReason } = req.body;
       if (!rejectionReason) {
-        res.status(400).json({ error: 'rejectionReason is required' });
-        return;
+        throw new AppError('rejectionReason is required', 400);
       }
 
       const updated = await prisma.dataProtectionImpactAssessment.update({
@@ -697,8 +708,9 @@ router.patch(
 
       res.json(updated);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error rejecting DPIA:', error);
-      res.status(500).json({ error: 'Failed to reject DPIA' });
+      throw new AppError('Failed to reject DPIA', 500);
     }
   })
 );
@@ -718,8 +730,7 @@ router.get(
       });
 
       if (!dpia) {
-        res.status(404).json({ error: 'DPIA not found' });
-        return;
+        throw new AppError('DPIA not found', 404);
       }
 
       // Build Art. 35 compliant export structure
@@ -782,8 +793,9 @@ router.get(
       res.setHeader('Content-Type', 'application/json');
       res.json(exportData);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error exporting DPIA:', error);
-      res.status(500).json({ error: 'Failed to export DPIA' });
+      throw new AppError('Failed to export DPIA', 500);
     }
   })
 );

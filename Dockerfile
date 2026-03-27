@@ -99,11 +99,11 @@ USER complyeasy
 
 ENV NODE_ENV=production
 ENV PORT=3001
-# FIPS 140-3 (ISO 19790): Enable OpenSSL FIPS mode in Node.js
-# Requires all crypto operations to use FIPS-approved algorithms only.
-# DEPENDENCY: SHA-1 HMAC, bcrypt, and scrypt migrations must be complete
-# before enabling this flag — non-FIPS algorithms will cause runtime crashes.
-ENV NODE_OPTIONS="--force-fips"
+# FIPS 140-3 (ISO 19790): Enable OpenSSL FIPS mode in Node.js when ENABLE_FIPS=1.
+# Only activate when the base image includes a FIPS-certified OpenSSL module.
+# Alpine's default OpenSSL is NOT FIPS-certified — set ENABLE_FIPS only on
+# FIPS-capable images (e.g., UBI, RHEL-based) to avoid container startup crash.
+ENV NODE_OPTIONS="${ENABLE_FIPS:+--force-fips}"
 
 EXPOSE 3001
 

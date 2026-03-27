@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import config from '../config';
 import logger from '../config/logger';
 import { redactPII, rehydratePII } from '../utils/piiRedaction';
+import { AppError } from '../middleware/errorHandler';
 
 const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
 
@@ -81,7 +82,7 @@ class GeminiService {
     try {
       // Rate limiting
       if (!this.checkRateLimit(userId)) {
-        throw new Error('Rate limit exceeded. Maximum 60 requests per minute. Please try again later.');
+        throw new AppError('Rate limit exceeded. Maximum 60 requests per minute. Please try again later.', 429);
       }
 
       // Malicious prompt injection detection and neutralization
@@ -100,7 +101,7 @@ class GeminiService {
       const timeoutMs = 60000;
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
-          reject(new Error('AI service request timed out after 60 seconds. Please try again with a simpler request.'));
+          reject(new AppError('AI service request timed out after 60 seconds. Please try again with a simpler request.', 500));
         }, timeoutMs);
       });
 
@@ -127,12 +128,12 @@ class GeminiService {
 
       // Handle timeout
       if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
-        throw new Error('AI service request timed out after 60 seconds. Please try again with a simpler request.');
+        throw new AppError('AI service request timed out after 60 seconds. Please try again with a simpler request.', 500);
       }
 
       // Handle service unavailability
       if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
-        throw new Error('AI service temporarily unavailable. Please check your internet connection and try again later.');
+        throw new AppError('AI service temporarily unavailable. Please check your internet connection and try again later.', 500);
       }
 
       // Handle quota exceeded
@@ -144,21 +145,21 @@ class GeminiService {
           status: error.status,
           userId,
         });
-        throw new Error('AI service quota exceeded. Please check your Google AI Studio quota (https://makersuite.google.com/app/apikey) or enable billing in Google Cloud Console for higher limits.');
+        throw new AppError('AI service quota exceeded. Please check your Google AI Studio quota (https://makersuite.google.com/app/apikey) or enable billing in Google Cloud Console for higher limits.', 429);
       }
 
       // Handle model not found
       if (error.message?.includes('404') || error.message?.includes('not found')) {
-        throw new Error('AI model not available. Please check your API key and model configuration.');
+        throw new AppError('AI model not available. Please check your API key and model configuration.', 404);
       }
 
       // Handle authentication errors
       if (error.message?.includes('401') || error.message?.includes('403')) {
-        throw new Error('AI API authentication failed. Please check your API key.');
+        throw new AppError('AI API authentication failed. Please check your API key.', 403);
       }
 
       // Generic error
-      throw new Error(`Failed to generate AI response: ${error.message || 'Unknown error'}`);
+      throw new AppError(`Failed to generate AI response: ${error.message || 'Unknown error'}`, 500);
     }
   }
 

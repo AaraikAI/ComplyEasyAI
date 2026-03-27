@@ -446,7 +446,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                   billingCycle={billingCycle}
                   isUpgrade={isUpgrade}
                   isDowngrade={isDowngrade}
-                  canDowngrade={true} // Would be determined by actual usage
+                  canDowngrade={isDowngrade && !isCurrentTier}
                 />
               );
             })}

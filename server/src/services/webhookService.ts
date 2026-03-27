@@ -12,6 +12,7 @@
 import crypto from 'crypto';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 import { WebhookEventStatus } from '../generated/prisma/client';
 
 // ============================================================================
@@ -168,10 +169,10 @@ class WebhookService {
       };
     } catch (error: any) {
       if (error.code === 'P2002') {
-        throw new Error(`Webhook with name "${options.name}" already exists`);
+        throw new AppError(`Webhook with name "${options.name}" already exists`, 409);
       }
       logger.error('Failed to create webhook', error);
-      throw new Error('Failed to create webhook');
+      throw new AppError('Failed to create webhook', 400);
     }
   }
 
@@ -203,10 +204,10 @@ class WebhookService {
       return webhook;
     } catch (error: any) {
       if (error.code === 'P2025') {
-        throw new Error('Webhook not found');
+        throw new AppError('Webhook not found', 404);
       }
       logger.error('Failed to update webhook', error);
-      throw new Error('Failed to update webhook');
+      throw new AppError('Failed to update webhook', 400);
     }
   }
 
@@ -226,10 +227,10 @@ class WebhookService {
       return true;
     } catch (error: any) {
       if (error.code === 'P2025') {
-        throw new Error('Webhook not found');
+        throw new AppError('Webhook not found', 404);
       }
       logger.error('Failed to delete webhook', error);
-      throw new Error('Failed to delete webhook');
+      throw new AppError('Failed to delete webhook', 400);
     }
   }
 
@@ -273,7 +274,7 @@ class WebhookService {
     });
 
     if (!webhook) {
-      throw new Error('Webhook not found');
+      throw new AppError('Webhook not found', 404);
     }
 
     // Don't expose the secret
@@ -311,7 +312,7 @@ class WebhookService {
     });
 
     if (!webhook) {
-      throw new Error('Webhook not found');
+      throw new AppError('Webhook not found', 404);
     }
 
     const payload: WebhookPayload = {
@@ -501,7 +502,7 @@ class WebhookService {
     // SECURITY: SSRF Protection - Validate webhook URL before making request
     const { isWebhookUrlSafe } = await import('../utils/urlValidator');
     if (!isWebhookUrlSafe(webhook.url)) {
-      throw new Error('Webhook URL is not allowed for security reasons (SSRF protection)');
+      throw new AppError('Webhook URL is not allowed for security reasons (SSRF protection)', 400);
     }
 
     // Generate HMAC signature
@@ -653,11 +654,11 @@ class WebhookService {
     });
 
     if (!event) {
-      throw new Error('Webhook event not found');
+      throw new AppError('Webhook event not found', 404);
     }
 
     if (event.status === 'delivered') {
-      throw new Error('Event already delivered');
+      throw new AppError('Event already delivered', 409);
     }
 
     // Reset for retry

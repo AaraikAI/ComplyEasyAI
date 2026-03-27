@@ -234,39 +234,38 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const [entries, repos] = await Promise.all([
+      const [entries, repos, licenseData] = await Promise.all([
         api.modules.sbom.listEntries(),
         api.modules.sbom.listRepositories(),
+        api.modules.sbom.listLicenses(),
       ]);
-      // The backend returns entries that contain components, vulnerabilities,
-      // licenses, and reports in a unified list. If the API returns structured
-      // data, map it accordingly. Fall back to DEMO data when the response is
-      // empty or missing fields.
+
+      // Map SBOM entries into components, vulnerabilities, and reports
       if (Array.isArray(entries) && entries.length > 0) {
-        // entries may contain components, vulnerabilities, licenses, reports
-        // depending on backend shape. Accept arrays at known keys or at root.
         const comps: SBOMComponent[] = entries.filter((e: any) => e.type === 'component' || e.purl).length > 0
           ? entries.filter((e: any) => e.type === 'component' || e.purl) as SBOMComponent[]
           : (entries as any).components ?? DEMO_COMPONENTS;
         const vulns: Vulnerability[] = (entries as any).vulnerabilities ?? entries.filter((e: any) => e.cveId).length > 0
           ? entries.filter((e: any) => e.cveId) as Vulnerability[]
           : DEMO_VULNERABILITIES;
-        const lics: LicenseInfo[] = (entries as any).licenses ?? entries.filter((e: any) => e.spdxId).length > 0
-          ? entries.filter((e: any) => e.spdxId) as LicenseInfo[]
-          : DEMO_LICENSES;
         const rpts: SBOMReport[] = (entries as any).reports ?? entries.filter((e: any) => e.complianceStatus).length > 0
           ? entries.filter((e: any) => e.complianceStatus) as SBOMReport[]
           : DEMO_REPORTS;
         setComponents(comps.length > 0 ? comps : DEMO_COMPONENTS);
         setVulnerabilities(vulns.length > 0 ? vulns : DEMO_VULNERABILITIES);
-        setLicenses(lics.length > 0 ? lics : DEMO_LICENSES);
         setReports(rpts.length > 0 ? rpts : DEMO_REPORTS);
       }
+
+      // License data from dedicated aggregation endpoint
+      if (Array.isArray(licenseData) && licenseData.length > 0) {
+        setLicenses(licenseData as LicenseInfo[]);
+      }
+
       if (Array.isArray(repos) && repos.length > 0) {
         setRepositories(repos as Repository[]);
       }
     } catch (err: any) {
-      setLoadError('Unable to connect to server. Showing demo data.');
+      setLoadError('Unable to connect to server. Showing reference data.');
     } finally {
       setIsLoading(false);
     }
@@ -859,7 +858,7 @@ export const SBOMManager: React.FC<SBOMManagerProps> = ({ onBack }) => {
               <span>{repo.autoScan ? <span className="text-green-600">Auto-scan ON</span> : <span className="text-gray-400">Auto-scan OFF</span>}</span>
             </div>
             <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-              <button onClick={() => { api.modules.sbom.updateRepository(repo.id, { status: 'scanning' }).catch(() => {}); runScan(); }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><RefreshCw className="w-3 h-3" />Scan Now</button>
+              <button onClick={() => { api.modules.sbom.updateRepository(repo.id, { status: 'scanning' }).catch((err: unknown) => { setLoadError('Failed to trigger scan. Please retry.'); }); runScan(); }} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 inline-flex items-center gap-1"><RefreshCw className="w-3 h-3" />Scan Now</button>
               <button onClick={() => setShowExportModal(true)} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded text-xs hover:bg-gray-50 inline-flex items-center gap-1"><Download className="w-3 h-3" />{t('common.export')}</button>
               <button onClick={() => deleteRepository(repo.id)} className="px-3 py-1.5 border border-red-300 text-red-700 rounded text-xs hover:bg-red-50 inline-flex items-center gap-1"><Trash2 className="w-3 h-3" />{t('common.remove')}</button>
             </div>

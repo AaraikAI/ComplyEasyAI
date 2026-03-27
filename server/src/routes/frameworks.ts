@@ -5,7 +5,18 @@ import { authenticate, authorize } from '../middleware/auth';
 import { enforceLimit } from '../middleware/tierMiddleware';
 import { asyncHandler } from '../types/express';
 import { frameworkLimiter } from '../middleware/rateLimiter';
+import { validateBody } from '../middleware/validate';
+import {
+  createFrameworkSchema,
+  updateFrameworkSchema,
+  applyTemplateSchema,
+  createControlSchema,
+  updateControlSchema,
+  bulkUpdateControlsSchema,
+  rejectSuggestionSchema,
+} from '../validators/frameworkSchemas';
 import frameworkTemplateService from '../services/frameworkTemplateService';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -135,8 +146,7 @@ router.get('/templates/:frameworkType', asyncHandler(async (req: Request, res: R
   const controls = frameworkTemplateService.getTemplatesForFramework(decodedType);
 
   if (controls.length === 0) {
-    res.status(404).json({ error: `No template found for framework type: ${decodedType}` });
-    return;
+    throw new AppError(`No template found for framework type: ${decodedType}`, 404);
   }
 
   const categories = frameworkTemplateService.getTemplateCategories(decodedType);
@@ -149,19 +159,17 @@ router.get('/templates/:frameworkType', asyncHandler(async (req: Request, res: R
 }));
 
 // POST /api/frameworks/:id/apply-template - Apply template controls to an existing framework
-router.post('/:id/apply-template', authorize('admin', 'editor'), asyncHandler(async (req: Request, res: Response) => {
+router.post('/:id/apply-template', authorize('admin', 'editor'), validateBody(applyTemplateSchema), asyncHandler(async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
   const { id } = req.params;
   const { frameworkType } = req.body;
 
   if (!frameworkType) {
-    res.status(400).json({ error: 'frameworkType is required in request body' });
-    return;
+    throw new AppError('frameworkType is required in request body', 400);
   }
 
   if (!frameworkTemplateService.hasTemplate(frameworkType)) {
-    res.status(404).json({ error: `No template found for framework type: ${frameworkType}` });
-    return;
+    throw new AppError(`No template found for framework type: ${frameworkType}`, 404);
   }
 
   const result = await frameworkTemplateService.applyTemplateToFramework(
@@ -195,15 +203,15 @@ router.post('/:id/regenerate-mappings', authorize('admin', 'editor'), asyncHandl
 
 router.get('/', asyncHandler(frameworksController.list.bind(frameworksController)));
 router.get('/:id', asyncHandler(frameworksController.getById.bind(frameworksController)));
-router.post('/', authorize('admin', 'editor'), enforceLimit('maxFrameworks'), asyncHandler(frameworksController.create.bind(frameworksController)));
-router.patch('/:id', authorize('admin', 'editor'), asyncHandler(frameworksController.update.bind(frameworksController)));
+router.post('/', authorize('admin', 'editor'), enforceLimit('maxFrameworks'), validateBody(createFrameworkSchema), asyncHandler(frameworksController.create.bind(frameworksController)));
+router.patch('/:id', authorize('admin', 'editor'), validateBody(updateFrameworkSchema), asyncHandler(frameworksController.update.bind(frameworksController)));
 router.delete('/:id', authorize('admin'), asyncHandler(frameworksController.delete.bind(frameworksController)));
 router.get('/:frameworkId/controls/:controlId/export', authorize('admin', 'editor'), asyncHandler(frameworksController.exportControl.bind(frameworksController)));
 
 // Control management
-router.post('/:frameworkId/controls', authorize('admin', 'editor'), asyncHandler(frameworksController.createControl.bind(frameworksController)));
-router.patch('/:frameworkId/controls/:controlId', authorize('admin', 'editor'), asyncHandler(frameworksController.updateControl.bind(frameworksController)));
-router.post('/:frameworkId/controls/bulk-update', authorize('admin', 'editor'), asyncHandler(frameworksController.bulkUpdateControls.bind(frameworksController)));
+router.post('/:frameworkId/controls', authorize('admin', 'editor'), validateBody(createControlSchema), asyncHandler(frameworksController.createControl.bind(frameworksController)));
+router.patch('/:frameworkId/controls/:controlId', authorize('admin', 'editor'), validateBody(updateControlSchema), asyncHandler(frameworksController.updateControl.bind(frameworksController)));
+router.post('/:frameworkId/controls/bulk-update', authorize('admin', 'editor'), validateBody(bulkUpdateControlsSchema), asyncHandler(frameworksController.bulkUpdateControls.bind(frameworksController)));
 router.delete('/:frameworkId/controls/:controlId', authorize('admin', 'editor'), asyncHandler(frameworksController.deleteControl.bind(frameworksController)));
 
 // Evidence upload
@@ -216,6 +224,6 @@ router.post('/:frameworkId/smart-upload', authorize('admin', 'editor'), upload.s
 // AI Suggestions
 router.get('/:frameworkId/suggestions', authenticate, asyncHandler(frameworksController.getSuggestions.bind(frameworksController)));
 router.post('/suggestions/:suggestionId/accept', authorize('admin', 'editor'), asyncHandler(frameworksController.acceptSuggestion.bind(frameworksController)));
-router.post('/suggestions/:suggestionId/reject', authorize('admin', 'editor'), asyncHandler(frameworksController.rejectSuggestion.bind(frameworksController)));
+router.post('/suggestions/:suggestionId/reject', authorize('admin', 'editor'), validateBody(rejectSuggestionSchema), asyncHandler(frameworksController.rejectSuggestion.bind(frameworksController)));
 
 export default router;

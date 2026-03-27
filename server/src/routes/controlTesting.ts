@@ -10,6 +10,7 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { createControlTestSchema, updateControlTestSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -112,8 +113,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching test coverage:', error);
-      res.status(500).json({ error: 'Failed to fetch test coverage' });
+      throw new AppError('Failed to fetch test coverage', 500);
     }
   })
 );
@@ -177,8 +179,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching test stats:', error);
-      res.status(500).json({ error: 'Failed to fetch test stats' });
+      throw new AppError('Failed to fetch test stats', 500);
     }
   })
 );
@@ -233,8 +236,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error listing control tests:', error);
-      res.status(500).json({ error: 'Failed to list control tests' });
+      throw new AppError('Failed to list control tests', 500);
     }
   })
 );
@@ -260,14 +264,14 @@ router.get(
       });
 
       if (!test) {
-        res.status(404).json({ error: 'Control test not found' });
-        return;
+        throw new AppError('Control test not found', 404);
       }
 
       res.json({ status: 'success', data: test });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching control test:', error);
-      res.status(500).json({ error: 'Failed to fetch control test' });
+      throw new AppError('Failed to fetch control test', 500);
     }
   })
 );
@@ -286,15 +290,11 @@ router.post(
       const { controlId, testType, testConfig, schedule, isActive } = req.body;
 
       if (!controlId || !testType) {
-        res.status(400).json({ error: 'controlId and testType are required' });
-        return;
+        throw new AppError('controlId and testType are required', 400);
       }
 
       if (!VALID_TEST_TYPES.includes(testType)) {
-        res.status(400).json({
-          error: `testType must be one of: ${VALID_TEST_TYPES.join(', ')}`,
-        });
-        return;
+        throw new AppError(`testType must be one of: ${VALID_TEST_TYPES.join(', ')}`, 400);
       }
 
       const test = await prisma.controlTest.create({
@@ -310,8 +310,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: test });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating control test:', error);
-      res.status(500).json({ error: 'Failed to create control test' });
+      throw new AppError('Failed to create control test', 500);
     }
   })
 );
@@ -332,8 +333,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Control test not found' });
-        return;
+        throw new AppError('Control test not found', 404);
       }
 
       const { testType, testConfig, schedule, isActive, controlId } = req.body;
@@ -341,10 +341,7 @@ router.patch(
 
       if (testType !== undefined) {
         if (!VALID_TEST_TYPES.includes(testType)) {
-          res.status(400).json({
-            error: `testType must be one of: ${VALID_TEST_TYPES.join(', ')}`,
-          });
-          return;
+          throw new AppError(`testType must be one of: ${VALID_TEST_TYPES.join(', ')}`, 400);
         }
         updateData.testType = testType;
       }
@@ -361,8 +358,9 @@ router.patch(
 
       res.json({ status: 'success', data: test });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating control test:', error);
-      res.status(500).json({ error: 'Failed to update control test' });
+      throw new AppError('Failed to update control test', 500);
     }
   })
 );
@@ -382,8 +380,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Control test not found' });
-        return;
+        throw new AppError('Control test not found', 404);
       }
 
       await prisma.controlTest.delete({
@@ -395,8 +392,9 @@ router.delete(
         data: { message: 'Control test deleted', id: req.params.id },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting control test:', error);
-      res.status(500).json({ error: 'Failed to delete control test' });
+      throw new AppError('Failed to delete control test', 500);
     }
   })
 );
@@ -417,13 +415,11 @@ router.post(
       });
 
       if (!test) {
-        res.status(404).json({ error: 'Control test not found' });
-        return;
+        throw new AppError('Control test not found', 404);
       }
 
       if (!test.isActive) {
-        res.status(400).json({ error: 'Cannot run an inactive test' });
-        return;
+        throw new AppError('Cannot run an inactive test', 400);
       }
 
       // Create a new result entry representing this test run
@@ -454,8 +450,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: result });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error running control test:', error);
-      res.status(500).json({ error: 'Failed to run control test' });
+      throw new AppError('Failed to run control test', 500);
     }
   })
 );
@@ -478,17 +475,13 @@ router.get(
       });
 
       if (!test) {
-        res.status(404).json({ error: 'Control test not found' });
-        return;
+        throw new AppError('Control test not found', 404);
       }
 
       const where: any = { testId: req.params.id };
       if (resultStatus) {
         if (!VALID_RESULT_STATUSES.includes(resultStatus)) {
-          res.status(400).json({
-            error: `status must be one of: ${VALID_RESULT_STATUSES.join(', ')}`,
-          });
-          return;
+          throw new AppError(`status must be one of: ${VALID_RESULT_STATUSES.join(', ')}`, 400);
         }
         where.status = resultStatus;
       }
@@ -516,8 +509,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error listing test results:', error);
-      res.status(500).json({ error: 'Failed to list test results' });
+      throw new AppError('Failed to list test results', 500);
     }
   })
 );

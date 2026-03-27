@@ -6,6 +6,7 @@ import {
   createPersonnelSchema, updatePersonnelSchema,
   startOffboardingSchema, createAccessReviewSchema, completeAccessReviewSchema,
 } from '../validators/coreModulesSchemas';
+import { AppError } from '../middleware/errorHandler';
 import { authAsyncHandler, AuthenticatedRequest } from '../types/express';
 import { requireEnterpriseFeature } from '../middleware/tierMiddleware';
 
@@ -128,8 +129,7 @@ router.get(
       req.user.organizationId
     );
     if (!personnel) {
-      res.status(404).json({ error: 'Personnel record not found' });
-      return;
+      throw new AppError('Personnel record not found', 404);
     }
     res.json(personnel);
   })

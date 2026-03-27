@@ -17,6 +17,7 @@
 
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 import config from '../../config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import crypto from 'crypto';
@@ -183,7 +184,7 @@ class NeuroSymbolicAIService {
       // Check if API key is configured
       if (!config.gemini.apiKey && !process.env.GEMINI_API_KEY) {
         logger.warn('[NeuroSymbolic] GEMINI_API_KEY not configured');
-        throw new Error('GEMINI_API_KEY environment variable is not set. Please configure your Google AI API key.');
+        throw new AppError('GEMINI_API_KEY environment variable is not set. Please configure your Google AI API key.', 500);
       }
 
       // Use gemini-2.0-flash which is more stable and available
@@ -966,7 +967,7 @@ Format as JSON with: {prediction, confidence, factors}`;
       });
 
       if (!control) {
-        throw new Error('Control not found');
+        throw new AppError('Control not found', 404);
       }
 
       // Build causal chain using neural-symbolic reasoning

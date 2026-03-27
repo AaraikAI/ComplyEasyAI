@@ -27,6 +27,7 @@ import {
 import { randomBytes } from 'crypto';
 import config from '../../config';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 // ============================================================================
 // TYPES
@@ -134,7 +135,7 @@ export class SecretsManagerService {
           value = JSON.parse(value);
         }
       } else {
-        throw new Error('Secret has no value');
+        throw new AppError('Secret has no value', 500);
       }
 
       // Cache the secret
@@ -149,10 +150,10 @@ export class SecretsManagerService {
       return value as T;
     } catch (error: any) {
       if (error.name === 'ResourceNotFoundException') {
-        throw new Error(`Secret not found: ${secretName}`);
+        throw new AppError(`Secret not found: ${secretName}`, 404);
       }
       if (error.name === 'DecryptionFailure') {
-        throw new Error(`Failed to decrypt secret: ${secretName}`);
+        throw new AppError(`Failed to decrypt secret: ${secretName}`, 500);
       }
       logger.error('[SecretsManager] Failed to get secret', { secretName, error: error.message });
       throw error;
@@ -322,7 +323,7 @@ export class SecretsManagerService {
     if (includeSpecial) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
 
     if (!chars) {
-      throw new Error('At least one character type must be enabled');
+      throw new AppError('At least one character type must be enabled', 400);
     }
 
     const bytes = randomBytes(length);

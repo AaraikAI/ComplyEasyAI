@@ -282,23 +282,32 @@ export const ProductDecommissioning: React.FC<ProductDecommissioningProps> = ({ 
   const loadData = useCallback(async (showRefresh = false) => {
     if (showRefresh) setIsRefreshing(true); else setIsLoading(true);
     try {
-      const data = await api.modules.decommission.listProducts();
-      if (data) {
-        // The API returns a combined payload; destructure if available,
-        // otherwise fall back to treating it as the products list.
-        if (Array.isArray(data)) {
-          setProducts(data.length > 0 ? data : DEMO_PRODUCTS);
+      const [productsData, tasksData, plansData, notifsData] = await Promise.all([
+        api.modules.decommission.listProducts().catch(() => null),
+        api.modules.decommission.listWorkflowTasks().catch(() => null),
+        api.modules.decommission.listDataPlans().catch(() => null),
+        api.modules.decommission.listNotifications().catch(() => null),
+      ]);
+      if (productsData) {
+        if (Array.isArray(productsData)) {
+          setProducts(productsData.length > 0 ? productsData : DEMO_PRODUCTS);
         } else {
-          const d = data as any;
+          const d = productsData as any;
           if (d.products) setProducts(d.products);
-          if (d.workflowTasks) setWorkflowTasks(d.workflowTasks);
-          if (d.dataPlans) setDataPlans(d.dataPlans);
-          if (d.notifications) setNotifications(d.notifications);
         }
+      }
+      if (tasksData && Array.isArray(tasksData) && tasksData.length > 0) {
+        setWorkflowTasks(tasksData);
+      }
+      if (plansData && Array.isArray(plansData) && plansData.length > 0) {
+        setDataPlans(plansData);
+      }
+      if (notifsData && Array.isArray(notifsData) && notifsData.length > 0) {
+        setNotifications(notifsData);
       }
       setLoadError(null);
     } catch (err: any) {
-      setLoadError('Unable to connect to server. Showing demo data.');
+      setLoadError('Unable to connect to server. Showing default data.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

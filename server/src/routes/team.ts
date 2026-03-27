@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { enforceLimit } from '../middleware/tierMiddleware';
 import prisma from '../config/database';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 import { validateBody } from '../middleware/validate';
 import { inviteSchema, bulkInviteSchema, updateMemberSchema } from '../validators/teamSchemas';
@@ -56,21 +57,18 @@ router.post(
     const organizationId = authReq.user!.organizationId;
 
     if (!email || !name) {
-      res.status(400).json({ error: 'Email and name are required' });
-      return;
+      throw new AppError('Email and name are required', 400);
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      res.status(400).json({ error: 'Invalid email format' });
-      return;
+      throw new AppError('Invalid email format', 400);
     }
 
     // Validate role
     if (role && !['admin', 'editor', 'viewer'].includes(role)) {
-      res.status(400).json({ error: 'Invalid role. Must be admin, editor, or viewer' });
-      return;
+      throw new AppError('Invalid role. Must be admin, editor, or viewer', 400);
     }
 
     // Check if user already exists
@@ -79,8 +77,7 @@ router.post(
     });
 
     if (existingUser) {
-      res.status(409).json({ error: 'User with this email already exists' });
-      return;
+      throw new AppError('User with this email already exists', 409);
     }
 
     // Create new user
@@ -158,13 +155,11 @@ router.post(
     const organizationId = authReq.user!.organizationId;
 
     if (!Array.isArray(invites) || invites.length === 0) {
-      res.status(400).json({ error: 'Invitations array is required and must not be empty' });
-      return;
+      throw new AppError('Invitations array is required and must not be empty', 400);
     }
 
     if (invites.length > 100) {
-      res.status(400).json({ error: 'Maximum 100 invitations per batch' });
-      return;
+      throw new AppError('Maximum 100 invitations per batch', 400);
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -212,12 +207,7 @@ router.post(
 
     // If validation errors exist, return them without processing
     if (validationErrors.length > 0) {
-      res.status(400).json({
-        error: 'Validation failed',
-        validationErrors,
-        message: 'Please fix validation errors before sending invites',
-      });
-      return;
+      throw new AppError('Validation failed: please fix validation errors before sending invites', 400);
     }
 
     // Process invites
@@ -340,8 +330,7 @@ router.patch(
     const organizationId = authReq.user!.organizationId;
 
     if (!role || !['admin', 'editor', 'viewer'].includes(role)) {
-      res.status(400).json({ error: 'Valid role is required' });
-      return;
+      throw new AppError('Valid role is required', 400);
     }
 
     // Verify user belongs to same organization
@@ -353,8 +342,7 @@ router.patch(
     });
 
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
-      return;
+      throw new AppError('User not found', 404);
     }
 
     // Prevent changing role if this is the only admin
@@ -368,8 +356,7 @@ router.patch(
       });
 
       if (adminCount === 1) {
-        res.status(400).json({ error: 'Cannot change role: This is the only admin user. Please assign another admin before changing this role.' });
-        return;
+        throw new AppError('Cannot change role: This is the only admin user. Please assign another admin before changing this role.', 400);
       }
     }
 
@@ -426,14 +413,12 @@ router.delete(
     });
 
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
-      return;
+      throw new AppError('User not found', 404);
     }
 
     // Prevent deleting yourself
     if (user.id === (req as AuthRequest).user!.id) {
-      res.status(400).json({ error: 'Cannot delete your own account' });
-      return;
+      throw new AppError('Cannot delete your own account', 400);
     }
 
     await prisma.user.delete({

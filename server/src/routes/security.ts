@@ -7,6 +7,33 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  verifyDeviceTrustSchema,
+  evaluateAccessRequestSchema,
+  createZeroTrustPolicySchema,
+  updateZeroTrustPolicySchema,
+  createNetworkSegmentSchema,
+  continuousVerificationSchema,
+  generateComplianceProofSchema,
+  verifyComplianceProofSchema,
+  generateCredentialProofSchema,
+  verifyCredentialProofSchema,
+  generateOwnershipProofSchema,
+  verifyOwnershipProofSchema,
+  generateBYOKKeySchema,
+  importBYOKKeySchema,
+  encryptWithBYOKSchema,
+  decryptWithBYOKSchema,
+  updateBYOKConfigSchema,
+  createCompliancePolicySchema,
+  updateCompliancePolicySchema,
+  evaluateCompliancePolicyBatchSchema,
+  generateComplianceReportSchema,
+  handleCICDWebhookSchema,
+  createCICDIntegrationSchema,
+  detectDriftSchema,
+} from '../validators/securitySchemas';
 import securityController from '../controllers/securityController';
 import { requireVisionaryFeature } from '../middleware/tierMiddleware';
 
@@ -16,56 +43,56 @@ const router = Router();
 router.use(authenticate);
 
 // Zero Trust Security (Visionary tier)
-router.post('/zero-trust/verify-device', ...requireVisionaryFeature('zeroTrustSecurity'), asyncHandler(securityController.verifyDeviceTrust));
-router.post('/zero-trust/evaluate-access', ...requireVisionaryFeature('zeroTrustSecurity'), asyncHandler(securityController.evaluateAccessRequest));
-router.post('/zero-trust/policies', ...requireVisionaryFeature('zeroTrustSecurity'), authorize('admin'), asyncHandler(securityController.createZeroTrustPolicy));
+router.post('/zero-trust/verify-device', ...requireVisionaryFeature('zeroTrustSecurity'), validateBody(verifyDeviceTrustSchema), asyncHandler(securityController.verifyDeviceTrust));
+router.post('/zero-trust/evaluate-access', ...requireVisionaryFeature('zeroTrustSecurity'), validateBody(evaluateAccessRequestSchema), asyncHandler(securityController.evaluateAccessRequest));
+router.post('/zero-trust/policies', ...requireVisionaryFeature('zeroTrustSecurity'), authorize('admin'), validateBody(createZeroTrustPolicySchema), asyncHandler(securityController.createZeroTrustPolicy));
 router.get('/zero-trust/policies', ...requireVisionaryFeature('zeroTrustSecurity'), asyncHandler(securityController.getZeroTrustPolicies));
 router.get('/zero-trust/policies/:policyId', ...requireVisionaryFeature('zeroTrustSecurity'), asyncHandler(securityController.getZeroTrustPolicy));
-router.patch('/zero-trust/policies/:policyId', ...requireVisionaryFeature('zeroTrustSecurity'), authorize('admin'), asyncHandler(securityController.updateZeroTrustPolicy));
+router.patch('/zero-trust/policies/:policyId', ...requireVisionaryFeature('zeroTrustSecurity'), authorize('admin'), validateBody(updateZeroTrustPolicySchema), asyncHandler(securityController.updateZeroTrustPolicy));
 router.delete('/zero-trust/policies/:policyId', ...requireVisionaryFeature('zeroTrustSecurity'), authorize('admin'), asyncHandler(securityController.deleteZeroTrustPolicy));
 router.get('/zero-trust/devices', ...requireVisionaryFeature('zeroTrustSecurity'), asyncHandler(securityController.getDeviceTrusts));
 router.get('/zero-trust/devices/:deviceId', ...requireVisionaryFeature('zeroTrustSecurity'), asyncHandler(securityController.getDeviceTrust));
-router.post('/zero-trust/network-segments', ...requireVisionaryFeature('zeroTrustSecurity'), authorize('admin'), asyncHandler(securityController.createNetworkSegment));
+router.post('/zero-trust/network-segments', ...requireVisionaryFeature('zeroTrustSecurity'), authorize('admin'), validateBody(createNetworkSegmentSchema), asyncHandler(securityController.createNetworkSegment));
 router.get('/zero-trust/network-segments', ...requireVisionaryFeature('zeroTrustSecurity'), asyncHandler(securityController.getNetworkSegments));
-router.post('/zero-trust/continuous-verify', ...requireVisionaryFeature('zeroTrustSecurity'), asyncHandler(securityController.continuousVerification));
+router.post('/zero-trust/continuous-verify', ...requireVisionaryFeature('zeroTrustSecurity'), validateBody(continuousVerificationSchema), asyncHandler(securityController.continuousVerification));
 
 // Zero-Knowledge Proofs (Visionary tier)
-router.post('/zkp/compliance-proof/generate', ...requireVisionaryFeature('zkProofs'), authorize('admin', 'editor'), asyncHandler(securityController.generateComplianceProof));
-router.post('/zkp/compliance-proof/verify', ...requireVisionaryFeature('zkProofs'), asyncHandler(securityController.verifyComplianceProof));
-router.post('/zkp/credential-proof/generate', ...requireVisionaryFeature('zkProofs'), authorize('admin', 'editor'), asyncHandler(securityController.generateCredentialProof));
-router.post('/zkp/credential-proof/verify', ...requireVisionaryFeature('zkProofs'), asyncHandler(securityController.verifyCredentialProof));
-router.post('/zkp/ownership-proof/generate', ...requireVisionaryFeature('zkProofs'), authorize('admin', 'editor'), asyncHandler(securityController.generateOwnershipProof));
-router.post('/zkp/ownership-proof/verify', ...requireVisionaryFeature('zkProofs'), asyncHandler(securityController.verifyOwnershipProof));
+router.post('/zkp/compliance-proof/generate', ...requireVisionaryFeature('zkProofs'), authorize('admin', 'editor'), validateBody(generateComplianceProofSchema), asyncHandler(securityController.generateComplianceProof));
+router.post('/zkp/compliance-proof/verify', ...requireVisionaryFeature('zkProofs'), validateBody(verifyComplianceProofSchema), asyncHandler(securityController.verifyComplianceProof));
+router.post('/zkp/credential-proof/generate', ...requireVisionaryFeature('zkProofs'), authorize('admin', 'editor'), validateBody(generateCredentialProofSchema), asyncHandler(securityController.generateCredentialProof));
+router.post('/zkp/credential-proof/verify', ...requireVisionaryFeature('zkProofs'), validateBody(verifyCredentialProofSchema), asyncHandler(securityController.verifyCredentialProof));
+router.post('/zkp/ownership-proof/generate', ...requireVisionaryFeature('zkProofs'), authorize('admin', 'editor'), validateBody(generateOwnershipProofSchema), asyncHandler(securityController.generateOwnershipProof));
+router.post('/zkp/ownership-proof/verify', ...requireVisionaryFeature('zkProofs'), validateBody(verifyOwnershipProofSchema), asyncHandler(securityController.verifyOwnershipProof));
 router.get('/zkp/proofs', ...requireVisionaryFeature('zkProofs'), asyncHandler(securityController.getZKProofs));
 router.get('/zkp/proofs/:proofId', ...requireVisionaryFeature('zkProofs'), asyncHandler(securityController.getZKProof));
 
 // BYOK (Bring Your Own Key) (Visionary tier)
-router.post('/byok/keys/generate', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), asyncHandler(securityController.generateBYOKKey));
-router.post('/byok/keys/import', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), asyncHandler(securityController.importBYOKKey));
+router.post('/byok/keys/generate', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), validateBody(generateBYOKKeySchema), asyncHandler(securityController.generateBYOKKey));
+router.post('/byok/keys/import', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), validateBody(importBYOKKeySchema), asyncHandler(securityController.importBYOKKey));
 router.get('/byok/keys', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), asyncHandler(securityController.getBYOKKeys));
 router.get('/byok/keys/:keyId', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), asyncHandler(securityController.getBYOKKey));
 router.post('/byok/keys/:keyId/rotate', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), asyncHandler(securityController.rotateBYOKKey));
 router.delete('/byok/keys/:keyId', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), asyncHandler(securityController.deleteBYOKKey));
-router.post('/byok/encrypt', ...requireVisionaryFeature('byokEncryption'), authorize('admin', 'editor'), asyncHandler(securityController.encryptWithBYOK));
-router.post('/byok/decrypt', ...requireVisionaryFeature('byokEncryption'), authorize('admin', 'editor'), asyncHandler(securityController.decryptWithBYOK));
+router.post('/byok/encrypt', ...requireVisionaryFeature('byokEncryption'), authorize('admin', 'editor'), validateBody(encryptWithBYOKSchema), asyncHandler(securityController.encryptWithBYOK));
+router.post('/byok/decrypt', ...requireVisionaryFeature('byokEncryption'), authorize('admin', 'editor'), validateBody(decryptWithBYOKSchema), asyncHandler(securityController.decryptWithBYOK));
 router.get('/byok/config', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), asyncHandler(securityController.getBYOKConfig));
-router.post('/byok/config', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), asyncHandler(securityController.updateBYOKConfig));
+router.post('/byok/config', ...requireVisionaryFeature('byokEncryption'), authorize('admin'), validateBody(updateBYOKConfigSchema), asyncHandler(securityController.updateBYOKConfig));
 
 // Compliance-as-Code (Visionary tier)
-router.post('/compliance-as-code/policies', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), asyncHandler(securityController.createCompliancePolicy));
+router.post('/compliance-as-code/policies', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), validateBody(createCompliancePolicySchema), asyncHandler(securityController.createCompliancePolicy));
 router.get('/compliance-as-code/policies', ...requireVisionaryFeature('complianceAsCode'), asyncHandler(securityController.getCompliancePolicies));
 router.get('/compliance-as-code/policies/:policyId', ...requireVisionaryFeature('complianceAsCode'), asyncHandler(securityController.getCompliancePolicy));
-router.patch('/compliance-as-code/policies/:policyId', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), asyncHandler(securityController.updateCompliancePolicy));
+router.patch('/compliance-as-code/policies/:policyId', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), validateBody(updateCompliancePolicySchema), asyncHandler(securityController.updateCompliancePolicy));
 router.delete('/compliance-as-code/policies/:policyId', ...requireVisionaryFeature('complianceAsCode'), authorize('admin'), asyncHandler(securityController.deleteCompliancePolicy));
 router.post('/compliance-as-code/policies/:policyId/evaluate', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), asyncHandler(securityController.evaluateCompliancePolicy));
-router.post('/compliance-as-code/policies/evaluate-batch', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), asyncHandler(securityController.evaluateCompliancePoliciesBatch));
-router.post('/compliance-as-code/reports/generate', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), asyncHandler(securityController.generateComplianceReport));
+router.post('/compliance-as-code/policies/evaluate-batch', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), validateBody(evaluateCompliancePolicyBatchSchema), asyncHandler(securityController.evaluateCompliancePoliciesBatch));
+router.post('/compliance-as-code/reports/generate', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), validateBody(generateComplianceReportSchema), asyncHandler(securityController.generateComplianceReport));
 router.get('/compliance-as-code/reports', ...requireVisionaryFeature('complianceAsCode'), asyncHandler(securityController.getComplianceReports));
 router.get('/compliance-as-code/reports/:reportId', ...requireVisionaryFeature('complianceAsCode'), asyncHandler(securityController.getComplianceReport));
-router.post('/compliance-as-code/ci-cd/webhook', ...requireVisionaryFeature('complianceAsCode'), asyncHandler(securityController.handleCICDWebhook));
+router.post('/compliance-as-code/ci-cd/webhook', ...requireVisionaryFeature('complianceAsCode'), validateBody(handleCICDWebhookSchema), asyncHandler(securityController.handleCICDWebhook));
 router.get('/compliance-as-code/ci-cd/integrations', ...requireVisionaryFeature('complianceAsCode'), authorize('admin'), asyncHandler(securityController.getCICDIntegrations));
-router.post('/compliance-as-code/ci-cd/integrations', ...requireVisionaryFeature('complianceAsCode'), authorize('admin'), asyncHandler(securityController.createCICDIntegration));
+router.post('/compliance-as-code/ci-cd/integrations', ...requireVisionaryFeature('complianceAsCode'), authorize('admin'), validateBody(createCICDIntegrationSchema), asyncHandler(securityController.createCICDIntegration));
 router.delete('/compliance-as-code/ci-cd/integrations/:integrationId', ...requireVisionaryFeature('complianceAsCode'), authorize('admin'), asyncHandler(securityController.deleteCICDIntegration));
-router.post('/compliance-as-code/drift/detect', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), asyncHandler(securityController.detectDrift));
+router.post('/compliance-as-code/drift/detect', ...requireVisionaryFeature('complianceAsCode'), authorize('admin', 'editor'), validateBody(detectDriftSchema), asyncHandler(securityController.detectDrift));
 
 export default router;

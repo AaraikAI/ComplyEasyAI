@@ -10,6 +10,9 @@ import { Router, Request, Response } from 'express';
 import { Prisma } from '../generated/prisma/client';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import { saveRecentSearchSchema } from '../validators/searchSchemas';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -44,8 +47,7 @@ router.get(
       const limitParam = Math.min(100, Math.max(1, parseInt(req.query.limit as string, 10) || 20));
 
       if (!q) {
-        res.status(400).json({ error: 'Query parameter "q" is required' });
-        return;
+        throw new AppError('Query parameter "q" is required', 400);
       }
 
       // Convert the search query to a tsquery-compatible format
@@ -192,8 +194,9 @@ router.get(
           },
         });
       } catch (fallbackError) {
+        if (fallbackError instanceof AppError) throw fallbackError;
         logger.error('Search fallback error:', fallbackError);
-        res.status(500).json({ error: 'Failed to perform search' });
+        throw new AppError('Failed to perform search', 500);
       }
     }
   })
@@ -244,7 +247,7 @@ router.post(
 
         // Index Controls (model: FrameworkControl)
         const controls = await tx.frameworkControl.findMany({
-          where: { frameworkId: { not: undefined } },
+          where: { frameworkId: { not: undefined }, framework: { organizationId: orgId } },
           select: { id: true, name: true, description: true, status: true, frameworkId: true },
         });
         for (const control of controls) {
@@ -358,8 +361,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error during re-indexing:', error);
-      res.status(500).json({ error: 'Failed to re-index resources' });
+      throw new AppError('Failed to re-index resources', 500);
     }
   })
 );
@@ -404,8 +408,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching recent searches:', error);
-      res.status(500).json({ error: 'Failed to fetch recent searches' });
+      throw new AppError('Failed to fetch recent searches', 500);
     }
   })
 );
@@ -416,6 +421,7 @@ router.get(
 
 router.post(
   '/recent',
+  validateBody(saveRecentSearchSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -423,14 +429,12 @@ router.post(
       const { query, filters } = req.body;
 
       if (!query || typeof query !== 'string') {
-        res.status(400).json({ error: 'query string is required' });
-        return;
+        throw new AppError('query string is required', 400);
       }
 
       const trimmedQuery = query.trim();
       if (!trimmedQuery) {
-        res.status(400).json({ error: 'query cannot be empty' });
-        return;
+        throw new AppError('query cannot be empty', 400);
       }
 
       // Create a deterministic ID so duplicate queries update instead of creating new entries
@@ -483,8 +487,9 @@ router.post(
         data: { message: 'Search query saved', query: trimmedQuery },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error saving recent search:', error);
-      res.status(500).json({ error: 'Failed to save search query' });
+      throw new AppError('Failed to save search query', 500);
     }
   })
 );

@@ -8,8 +8,17 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  createDPOProfileSchema,
+  updateDPOProfileSchema,
+  createDPOTaskSchema,
+  updateDPOTaskSchema,
+  recordDPOActivitySchema,
+} from '../validators/dpoSchemas';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 router.use(authenticate);
@@ -38,14 +47,14 @@ router.get(
       });
 
       if (!profile) {
-        res.status(404).json({ error: 'No DPO profile found for this organization' });
-        return;
+        throw new AppError('No DPO profile found for this organization', 404);
       }
 
       res.json(profile);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching DPO profile:', error);
-      res.status(500).json({ error: 'Failed to fetch DPO profile' });
+      throw new AppError('Failed to fetch DPO profile', 500);
     }
   })
 );
@@ -56,6 +65,7 @@ router.get(
 
 router.post(
   '/profile',
+  validateBody(createDPOProfileSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -63,8 +73,7 @@ router.post(
         req.body;
 
       if (!name || !email) {
-        res.status(400).json({ error: 'name and email are required' });
-        return;
+        throw new AppError('name and email are required', 400);
       }
 
       // Check if profile already exists (unique constraint on organizationId)
@@ -73,8 +82,7 @@ router.post(
       });
 
       if (existing) {
-        res.status(409).json({ error: 'DPO profile already exists for this organization. Use PATCH to update.' });
-        return;
+        throw new AppError('DPO profile already exists for this organization. Use PATCH to update.', 409);
       }
 
       const profile = await prisma.dPOProfile.create({
@@ -94,8 +102,9 @@ router.post(
 
       res.status(201).json(profile);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating DPO profile:', error);
-      res.status(500).json({ error: 'Failed to create DPO profile' });
+      throw new AppError('Failed to create DPO profile', 500);
     }
   })
 );
@@ -106,6 +115,7 @@ router.post(
 
 router.patch(
   '/profile',
+  validateBody(updateDPOProfileSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -114,8 +124,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'No DPO profile found for this organization' });
-        return;
+        throw new AppError('No DPO profile found for this organization', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -136,8 +145,9 @@ router.patch(
 
       res.json(profile);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating DPO profile:', error);
-      res.status(500).json({ error: 'Failed to update DPO profile' });
+      throw new AppError('Failed to update DPO profile', 500);
     }
   })
 );
@@ -157,8 +167,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'No DPO profile found for this organization' });
-        return;
+        throw new AppError('No DPO profile found for this organization', 404);
       }
 
       const { reason } = req.body;
@@ -181,8 +190,9 @@ router.delete(
         reason: reason || 'No reason provided',
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error removing DPO profile:', error);
-      res.status(500).json({ error: 'Failed to remove DPO profile' });
+      throw new AppError('Failed to remove DPO profile', 500);
     }
   })
 );
@@ -202,15 +212,15 @@ router.get(
       });
 
       if (!profile) {
-        res.status(404).json({ error: 'No DPO profile found for this organization' });
-        return;
+        throw new AppError('No DPO profile found for this organization', 404);
       }
 
       const tasks = (profile.tasks as any[]) || [];
       res.json({ tasks, total: tasks.length });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching DPO tasks:', error);
-      res.status(500).json({ error: 'Failed to fetch DPO tasks' });
+      throw new AppError('Failed to fetch DPO tasks', 500);
     }
   })
 );
@@ -221,6 +231,7 @@ router.get(
 
 router.post(
   '/tasks',
+  validateBody(createDPOTaskSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -230,15 +241,13 @@ router.post(
       });
 
       if (!profile) {
-        res.status(404).json({ error: 'No DPO profile found for this organization' });
-        return;
+        throw new AppError('No DPO profile found for this organization', 404);
       }
 
       const { title, description, dueDate, priority, status } = req.body;
 
       if (!title) {
-        res.status(400).json({ error: 'title is required' });
-        return;
+        throw new AppError('title is required', 400);
       }
 
       const tasks = (profile.tasks as any[]) || [];
@@ -262,8 +271,9 @@ router.post(
 
       res.status(201).json(newTask);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error adding DPO task:', error);
-      res.status(500).json({ error: 'Failed to add DPO task' });
+      throw new AppError('Failed to add DPO task', 500);
     }
   })
 );
@@ -274,6 +284,7 @@ router.post(
 
 router.patch(
   '/tasks/:index',
+  validateBody(updateDPOTaskSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const index = parseInt(req.params.index, 10);
@@ -285,15 +296,13 @@ router.patch(
       });
 
       if (!profile) {
-        res.status(404).json({ error: 'No DPO profile found for this organization' });
-        return;
+        throw new AppError('No DPO profile found for this organization', 404);
       }
 
       const tasks = (profile.tasks as any[]) || [];
 
       if (isNaN(index) || index < 0 || index >= tasks.length) {
-        res.status(404).json({ error: `Task at index ${index} not found` });
-        return;
+        throw new AppError(`Task at index ${index} not found`, 404);
       }
 
       const { title, description, dueDate, priority, status } = req.body;
@@ -317,8 +326,9 @@ router.patch(
 
       res.json(tasks[index]);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating DPO task:', error);
-      res.status(500).json({ error: 'Failed to update DPO task' });
+      throw new AppError('Failed to update DPO task', 500);
     }
   })
 );
@@ -340,15 +350,13 @@ router.delete(
       });
 
       if (!profile) {
-        res.status(404).json({ error: 'No DPO profile found for this organization' });
-        return;
+        throw new AppError('No DPO profile found for this organization', 404);
       }
 
       const tasks = (profile.tasks as any[]) || [];
 
       if (isNaN(index) || index < 0 || index >= tasks.length) {
-        res.status(404).json({ error: `Task at index ${index} not found` });
-        return;
+        throw new AppError(`Task at index ${index} not found`, 404);
       }
 
       const removed = tasks.splice(index, 1)[0];
@@ -360,8 +368,9 @@ router.delete(
 
       res.json({ message: 'Task removed', task: removed });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting DPO task:', error);
-      res.status(500).json({ error: 'Failed to delete DPO task' });
+      throw new AppError('Failed to delete DPO task', 500);
     }
   })
 );
@@ -383,8 +392,7 @@ router.get(
       });
 
       if (!profile) {
-        res.status(404).json({ error: 'No DPO profile found for this organization' });
-        return;
+        throw new AppError('No DPO profile found for this organization', 404);
       }
 
       const allEntries = (profile.activityLog as any[]) || [];
@@ -397,8 +405,9 @@ router.get(
 
       res.json({ entries, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching DPO activity log:', error);
-      res.status(500).json({ error: 'Failed to fetch DPO activity log' });
+      throw new AppError('Failed to fetch DPO activity log', 500);
     }
   })
 );
@@ -409,6 +418,7 @@ router.get(
 
 router.post(
   '/activity-log',
+  validateBody(recordDPOActivitySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     try {
@@ -418,15 +428,13 @@ router.post(
       });
 
       if (!profile) {
-        res.status(404).json({ error: 'No DPO profile found for this organization' });
-        return;
+        throw new AppError('No DPO profile found for this organization', 404);
       }
 
       const { action, description, relatedEntity } = req.body;
 
       if (!action) {
-        res.status(400).json({ error: 'action is required' });
-        return;
+        throw new AppError('action is required', 400);
       }
 
       const activityLog = (profile.activityLog as any[]) || [];
@@ -448,8 +456,9 @@ router.post(
 
       res.status(201).json(newEntry);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error recording DPO activity:', error);
-      res.status(500).json({ error: 'Failed to record DPO activity' });
+      throw new AppError('Failed to record DPO activity', 500);
     }
   })
 );
@@ -468,8 +477,7 @@ router.get(
       });
 
       if (!profile) {
-        res.status(404).json({ error: 'No DPO profile found for this organization' });
-        return;
+        throw new AppError('No DPO profile found for this organization', 404);
       }
 
       const tasks = (profile.tasks as any[]) || [];
@@ -531,8 +539,9 @@ router.get(
         certifications: profile.certifications,
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error generating DPO compliance report:', error);
-      res.status(500).json({ error: 'Failed to generate compliance report' });
+      throw new AppError('Failed to generate compliance report', 500);
     }
   })
 );

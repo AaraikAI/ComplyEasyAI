@@ -457,7 +457,7 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
     qrCodeGenerated: p.qrCodeGenerated ?? false,
   });
 
-  // ----- loadData: fetch everything from the backend, fall back to DEMO -----
+  // ----- loadData: fetch products and detail from the backend -----
   const loadData = useCallback(async (showSyncIndicator = false) => {
     if (showSyncIndicator) setIsSyncing(true);
     else setIsLoading(true);
@@ -471,24 +471,31 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
           return match || mapped[0];
         });
 
-        // For each passport fetch detail (materials, carbon, supply chain, versions, sharing)
-        // The detail endpoint is getPassport(id) which may embed sub-resources
-        const firstDetail = await api.modules.dpp.getPassport(mapped[0].id);
-        if (firstDetail) {
-          if (Array.isArray(firstDetail.materials) && firstDetail.materials.length > 0) {
-            setMaterials(firstDetail.materials);
+        // Fetch detail sub-resources for all products in parallel
+        const detailProductId = mapped[0].id;
+        const [materialsRes, carbonRes, supplyChainRes, detailRes] = await Promise.all([
+          api.modules.dpp.getMaterials(detailProductId),
+          api.modules.dpp.getCarbon(detailProductId),
+          api.modules.dpp.getSupplyChain(detailProductId),
+          api.modules.dpp.getPassport(detailProductId),
+        ]);
+
+        if (Array.isArray(materialsRes) && materialsRes.length > 0) {
+          setMaterials(materialsRes);
+        }
+        if (Array.isArray(carbonRes) && carbonRes.length > 0) {
+          setCarbonData(carbonRes);
+        }
+        if (Array.isArray(supplyChainRes) && supplyChainRes.length > 0) {
+          setSupplyChain(supplyChainRes);
+        }
+        // Versions and sharing may be embedded in the detail response
+        if (detailRes) {
+          if (Array.isArray(detailRes.versions) && detailRes.versions.length > 0) {
+            setVersions(detailRes.versions);
           }
-          if (Array.isArray(firstDetail.carbonFootprint) && firstDetail.carbonFootprint.length > 0) {
-            setCarbonData(firstDetail.carbonFootprint);
-          }
-          if (Array.isArray(firstDetail.supplyChain) && firstDetail.supplyChain.length > 0) {
-            setSupplyChain(firstDetail.supplyChain);
-          }
-          if (Array.isArray(firstDetail.versions) && firstDetail.versions.length > 0) {
-            setVersions(firstDetail.versions);
-          }
-          if (Array.isArray(firstDetail.sharingRecords) && firstDetail.sharingRecords.length > 0) {
-            setSharingRecords(firstDetail.sharingRecords);
+          if (Array.isArray(detailRes.sharingRecords) && detailRes.sharingRecords.length > 0) {
+            setSharingRecords(detailRes.sharingRecords);
           }
         }
       }
@@ -502,6 +509,38 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Fetch detail sub-resources when the selected product changes
+  const loadProductDetail = useCallback(async (productId: string) => {
+    try {
+      const [materialsRes, carbonRes, supplyChainRes] = await Promise.all([
+        api.modules.dpp.getMaterials(productId),
+        api.modules.dpp.getCarbon(productId),
+        api.modules.dpp.getSupplyChain(productId),
+      ]);
+      if (Array.isArray(materialsRes) && materialsRes.length > 0) {
+        setMaterials(prev => {
+          // Merge: keep materials for other products, replace for this product
+          const otherMats = prev.filter(m => m.productId !== productId);
+          return [...otherMats, ...materialsRes];
+        });
+      }
+      if (Array.isArray(carbonRes) && carbonRes.length > 0) {
+        setCarbonData(prev => {
+          const otherCarbon = prev.filter(c => c.productId !== productId);
+          return [...otherCarbon, ...carbonRes];
+        });
+      }
+      if (Array.isArray(supplyChainRes) && supplyChainRes.length > 0) {
+        setSupplyChain(prev => {
+          const otherChain = prev.filter(s => s.productId !== productId);
+          return [...otherChain, ...supplyChainRes];
+        });
+      }
+    } catch {
+      // Keep existing data on failure
+    }
+  }, []);
 
   // ----- handleCreatePassport -----
   const handleCreatePassport = useCallback(async () => {
@@ -560,6 +599,13 @@ export const DigitalProductPassport: React.FC<DigitalProductPassportProps> = ({ 
       setIsSharing(false);
     }
   }, [selectedProduct, shareForm]);
+
+  // Fetch sub-resources when the selected product changes
+  useEffect(() => {
+    if (selectedProduct?.id) {
+      loadProductDetail(selectedProduct.id);
+    }
+  }, [selectedProduct?.id, loadProductDetail]);
 
   // Computed
   const productMaterials = useMemo(() => materials.filter(m => m.productId === selectedProduct.id), [materials, selectedProduct]);

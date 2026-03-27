@@ -17,6 +17,46 @@ import crypto from 'crypto';
 const router = Router();
 
 // ============================================================================
+// SCIM TOKEN HASHING MIGRATION
+// ============================================================================
+// Ensures all stored bearer tokens are SHA-256 hashed.
+// Runs once on module load. Plaintext tokens (those NOT matching a 64-char
+// hex string) are hashed in-place so that all future comparisons use hashes.
+// This is idempotent — already-hashed tokens are left unchanged.
+
+const SHA256_HEX_RE = /^[0-9a-f]{64}$/i;
+
+async function migrateScimTokensToHashed(): Promise<void> {
+  try {
+    const configs = await prisma.sCIMConfiguration.findMany({
+      where: { bearerToken: { not: null } },
+      select: { id: true, bearerToken: true },
+    });
+
+    let migrated = 0;
+    for (const cfg of configs) {
+      if (!cfg.bearerToken || SHA256_HEX_RE.test(cfg.bearerToken)) continue;
+      // Token is plaintext — hash it
+      const hashed = crypto.createHash('sha256').update(cfg.bearerToken).digest('hex');
+      await prisma.sCIMConfiguration.update({
+        where: { id: cfg.id },
+        data: { bearerToken: hashed },
+      });
+      migrated++;
+    }
+
+    if (migrated > 0) {
+      logger.info(`[SCIM] Migrated ${migrated} bearer token(s) from plaintext to SHA-256 hash`);
+    }
+  } catch (err) {
+    logger.warn('[SCIM] Token migration check skipped — table may not exist yet', { cause: err });
+  }
+}
+
+// Fire migration on import (non-blocking)
+migrateScimTokensToHashed();
+
+// ============================================================================
 // SCIM BEARER TOKEN AUTH MIDDLEWARE
 // ============================================================================
 
@@ -57,40 +97,40 @@ const scimAuthenticate: RequestHandler = async (
       return;
     }
 
-    // Hash the token to compare against stored hashed tokens
-    // Support both plain-text comparison and hashed comparison
-    const scimConfig = await prisma.sCIMConfiguration.findFirst({
-      where: {
-        enabled: true,
-        bearerToken: token,
-      },
+    // Hash the incoming token and compare against stored hashes.
+    // Migration to SHA-256 hashed storage runs automatically on module load (see above).
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Query all enabled SCIM configs with a token and use timing-safe comparison
+    const enabledConfigs = await prisma.sCIMConfiguration.findMany({
+      where: { enabled: true, bearerToken: { not: null } },
     });
 
-    if (!scimConfig) {
-      // Try hashed comparison
-      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-      const scimConfigHashed = await prisma.sCIMConfiguration.findFirst({
-        where: {
-          enabled: true,
-          bearerToken: hashedToken,
-        },
-      });
+    const hashedTokenBuffer = Buffer.from(hashedToken, 'utf-8');
+    let matchedConfig: typeof enabledConfigs[0] | null = null;
 
-      if (!scimConfigHashed) {
-        res.status(401).json({
-          schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-          detail: 'Invalid or expired bearer token',
-          status: '401',
-        });
-        return;
+    for (const cfg of enabledConfigs) {
+      if (!cfg.bearerToken) continue;
+      const storedBuffer = Buffer.from(cfg.bearerToken, 'utf-8');
+      // Timing-safe comparison requires equal-length buffers
+      if (storedBuffer.length === hashedTokenBuffer.length &&
+          crypto.timingSafeEqual(storedBuffer, hashedTokenBuffer)) {
+        matchedConfig = cfg;
+        break;
       }
-
-      (req as SCIMAuthRequest).scimOrgId = scimConfigHashed.organizationId;
-      (req as SCIMAuthRequest).scimConfigId = scimConfigHashed.id;
-    } else {
-      (req as SCIMAuthRequest).scimOrgId = scimConfig.organizationId;
-      (req as SCIMAuthRequest).scimConfigId = scimConfig.id;
     }
+
+    if (!matchedConfig) {
+      res.status(401).json({
+        schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
+        detail: 'Invalid or expired bearer token',
+        status: '401',
+      });
+      return;
+    }
+
+    (req as SCIMAuthRequest).scimOrgId = matchedConfig.organizationId;
+    (req as SCIMAuthRequest).scimConfigId = matchedConfig.id;
 
     // Update last sync timestamp
     const scimReq = req as SCIMAuthRequest;

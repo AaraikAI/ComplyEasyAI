@@ -13,6 +13,7 @@
 import logger from '../../config/logger';
 import * as tf from '@tensorflow/tfjs';
 import sharp from 'sharp';
+import { AppError } from '../../middleware/errorHandler';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -192,7 +193,7 @@ class LivenessDetectionService {
 
     try {
       const frames = await this.extractFrames(videoBuffer, format);
-      if (frames.length === 0) throw new Error('No frames extracted');
+      if (frames.length === 0) throw new AppError('No frames extracted', 400);
 
       const frameDataList: FrameLivenessData[] = [];
       const frameResults: LivenessResult['frameResults'] = [];
@@ -302,10 +303,10 @@ class LivenessDetectionService {
     const sid = sessionId || crypto.randomUUID();
 
     const challenge = this.activeChallenges.get(challengeId);
-    if (!challenge) throw new Error('Challenge not found or expired');
+    if (!challenge) throw new AppError('Challenge not found or expired', 404);
     if (new Date() > challenge.expiresAt) {
       this.activeChallenges.delete(challengeId);
-      throw new Error('Challenge has expired');
+      throw new AppError('Challenge has expired', 400);
     }
 
     try {

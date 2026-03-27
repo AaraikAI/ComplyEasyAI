@@ -10,6 +10,7 @@
  */
 
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 import { EventEmitter } from 'events';
 import { Queue as BullQueue, Worker as BullWorker, Job as BullJob } from 'bullmq';
 
@@ -174,7 +175,7 @@ class JobQueueService extends EventEmitter {
         'jobs will be lost on restart and cannot scale across instances. ' +
         'Set REDIS_URL environment variable to a Redis connection string.';
       logger.error(errorMsg);
-      throw new Error(errorMsg);
+      throw new AppError(errorMsg, 500);
     }
 
     if (redisUrl) {

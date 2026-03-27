@@ -8,6 +8,14 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  createGatePolicySchema,
+  updateGatePolicySchema,
+  checkComplianceSchema,
+  reportResultSchema,
+} from '../validators/cicdGateSchemas';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -116,7 +124,7 @@ router.get(
         return res.json({ status: 'success', data: { policies: [], total: 0, page, limit, totalPages: 0 } });
       }
       logger.error('Error fetching CI/CD gate policies:', error);
-      res.status(500).json({ error: 'Failed to fetch gate policies' });
+      throw new AppError('Failed to fetch gate policies', 500);
     }
   })
 );
@@ -142,14 +150,14 @@ router.get(
       });
 
       if (!policy) {
-        res.status(404).json({ error: 'Gate policy not found' });
-        return;
+        throw new AppError('Gate policy not found', 404);
       }
 
       res.json({ status: 'success', data: policy });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching CI/CD gate policy:', error);
-      res.status(500).json({ error: 'Failed to fetch gate policy' });
+      throw new AppError('Failed to fetch gate policy', 500);
     }
   })
 );
@@ -161,6 +169,7 @@ router.get(
 router.post(
   '/policies',
   authorize('admin'),
+  validateBody(createGatePolicySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -168,8 +177,7 @@ router.post(
       const { name, description, rules, isActive } = req.body;
 
       if (!name) {
-        res.status(400).json({ error: 'name is required' });
-        return;
+        throw new AppError('name is required', 400);
       }
 
       const policy = await prisma.cICDGatePolicy.create({
@@ -184,8 +192,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: policy });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating CI/CD gate policy:', error);
-      res.status(500).json({ error: 'Failed to create gate policy' });
+      throw new AppError('Failed to create gate policy', 500);
     }
   })
 );
@@ -197,6 +206,7 @@ router.post(
 router.patch(
   '/policies/:id',
   authorize('admin'),
+  validateBody(updateGatePolicySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -206,8 +216,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Gate policy not found' });
-        return;
+        throw new AppError('Gate policy not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -220,8 +229,9 @@ router.patch(
 
       res.json({ status: 'success', data: policy });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating CI/CD gate policy:', error);
-      res.status(500).json({ error: 'Failed to update gate policy' });
+      throw new AppError('Failed to update gate policy', 500);
     }
   })
 );
@@ -242,8 +252,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Gate policy not found' });
-        return;
+        throw new AppError('Gate policy not found', 404);
       }
 
       await prisma.cICDGatePolicy.delete({
@@ -252,8 +261,9 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'Gate policy deleted', id: req.params.id } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting CI/CD gate policy:', error);
-      res.status(500).json({ error: 'Failed to delete gate policy' });
+      throw new AppError('Failed to delete gate policy', 500);
     }
   })
 );
@@ -264,6 +274,7 @@ router.delete(
 
 router.post(
   '/check',
+  validateBody(checkComplianceSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -271,8 +282,7 @@ router.post(
       const { repository, branch, commitHash, policyId, checks, metadata } = req.body;
 
       if (!repository || !branch || !commitHash) {
-        res.status(400).json({ error: 'repository, branch, and commitHash are required' });
-        return;
+        throw new AppError('repository, branch, and commitHash are required', 400);
       }
 
       // Find applicable policies
@@ -352,8 +362,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error checking CI/CD compliance:', error);
-      res.status(500).json({ error: 'Failed to check compliance' });
+      throw new AppError('Failed to check compliance', 500);
     }
   })
 );
@@ -364,6 +375,7 @@ router.post(
 
 router.post(
   '/report',
+  validateBody(reportResultSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -371,14 +383,12 @@ router.post(
       const { policyId, repository, branch, commitHash, status, details } = req.body;
 
       if (!policyId || !repository || !branch || !commitHash || !status) {
-        res.status(400).json({ error: 'policyId, repository, branch, commitHash, and status are required' });
-        return;
+        throw new AppError('policyId, repository, branch, commitHash, and status are required', 400);
       }
 
       const validStatuses = ['PASSED', 'FAILED', 'SKIPPED'];
       if (!validStatuses.includes(status)) {
-        res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}` });
-        return;
+        throw new AppError(`status must be one of: ${validStatuses.join(', ')}`, 400);
       }
 
       // Verify policy belongs to the org
@@ -387,8 +397,7 @@ router.post(
       });
 
       if (!policy) {
-        res.status(404).json({ error: 'Gate policy not found' });
-        return;
+        throw new AppError('Gate policy not found', 404);
       }
 
       const result = await prisma.cICDGateResult.create({
@@ -404,8 +413,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: result });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error reporting pipeline result:', error);
-      res.status(500).json({ error: 'Failed to report pipeline result' });
+      throw new AppError('Failed to report pipeline result', 500);
     }
   })
 );
@@ -451,8 +461,9 @@ router.get(
         data: { results, total, page, limit, totalPages: Math.ceil(total / limit) },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching CI/CD gate results:', error);
-      res.status(500).json({ error: 'Failed to fetch gate results' });
+      throw new AppError('Failed to fetch gate results', 500);
     }
   })
 );
@@ -478,14 +489,14 @@ router.get(
       });
 
       if (!result) {
-        res.status(404).json({ error: 'Gate result not found' });
-        return;
+        throw new AppError('Gate result not found', 404);
       }
 
       res.json({ status: 'success', data: result });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching CI/CD gate result:', error);
-      res.status(500).json({ error: 'Failed to fetch gate result' });
+      throw new AppError('Failed to fetch gate result', 500);
     }
   })
 );

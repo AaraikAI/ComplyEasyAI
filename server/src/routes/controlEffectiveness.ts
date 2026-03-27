@@ -11,6 +11,7 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { createControlEffectivenessSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -110,8 +111,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching effectiveness trend:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch effectiveness trend' });
+      throw new AppError('Failed to fetch effectiveness trend', 500);
     }
   })
 );
@@ -191,8 +193,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching degrading controls:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch degrading controls' });
+      throw new AppError('Failed to fetch degrading controls', 500);
     }
   })
 );
@@ -268,8 +271,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching effectiveness stats:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch effectiveness statistics' });
+      throw new AppError('Failed to fetch effectiveness statistics', 500);
     }
   })
 );
@@ -323,8 +327,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching control effectiveness history:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch control effectiveness history' });
+      throw new AppError('Failed to fetch control effectiveness history', 500);
     }
   })
 );
@@ -374,8 +379,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching effectiveness records:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch effectiveness records' });
+      throw new AppError('Failed to fetch effectiveness records', 500);
     }
   })
 );
@@ -401,20 +407,12 @@ router.post(
       } = req.body;
 
       if (!controlId || !rating || !testMethod) {
-        res.status(400).json({
-          status: 'error',
-          message: 'controlId, rating, and testMethod are required',
-        });
-        return;
+        throw new AppError('controlId, rating, and testMethod are required', 400);
       }
 
       const validRatings = ['EFFECTIVE', 'PARTIALLY_EFFECTIVE', 'INEFFECTIVE', 'NOT_TESTED'];
       if (!validRatings.includes(rating)) {
-        res.status(400).json({
-          status: 'error',
-          message: `rating must be one of: ${validRatings.join(', ')}`,
-        });
-        return;
+        throw new AppError(`rating must be one of: ${validRatings.join(', ')}`, 400);
       }
 
       const record = await prisma.controlEffectivenessRecord.create({
@@ -432,8 +430,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: record });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating effectiveness assessment:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to create effectiveness assessment' });
+      throw new AppError('Failed to create effectiveness assessment', 500);
     }
   })
 );

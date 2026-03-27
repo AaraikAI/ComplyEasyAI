@@ -392,3 +392,117 @@ export const updateProcessMapSchema = Joi.object({
   category: Joi.string().max(100).allow('', null).optional(),
   status: Joi.string().valid('draft', 'active', 'archived').optional(),
 }).min(1).unknown(false);
+
+// ============================================================================
+// UPDATE SCHEMAS (for PATCH endpoints missing dedicated update schemas)
+// ============================================================================
+
+export const updateEscalationPathSchema = Joi.object({
+  name: Joi.string().min(1).max(200).trim().optional(),
+  triggerCriteria: Joi.array().items(Joi.object()).allow(null).optional(),
+  levels: Joi.array().items(Joi.object()).allow(null).optional(),
+  status: Joi.string().valid('active', 'inactive').optional(),
+}).min(1).unknown(false);
+
+export const updateBreachNotificationSchema = Joi.object({
+  content: Joi.string().max(10000).allow('', null).optional(),
+  status: Joi.string().valid(...notificationStatuses).optional(),
+  sentDate: Joi.date().iso().allow(null).optional(),
+  recipientAcknowledged: Joi.boolean().optional(),
+}).min(1).unknown(false);
+
+export const updateBreachTemplateSchema = Joi.object({
+  name: Joi.string().min(1).max(200).trim().optional(),
+  subject: Joi.string().max(300).allow('', null).optional(),
+  body: Joi.string().min(1).max(20000).optional(),
+  variables: Joi.array().items(Joi.string()).allow(null).optional(),
+}).min(1).unknown(false);
+
+export const updateRegulatoryContactSchema = Joi.object({
+  name: Joi.string().min(1).max(200).trim().optional(),
+  authority: Joi.string().min(1).max(200).trim().optional(),
+  email: Joi.string().email().allow('', null).optional(),
+  phone: Joi.string().max(50).allow('', null).optional(),
+  address: Joi.string().max(500).allow('', null).optional(),
+  website: Joi.string().uri().allow('', null).optional(),
+  notificationDeadline: Joi.number().min(0).allow(null).optional(),
+}).min(1).unknown(false);
+
+export const updateSBOMEntrySchema = Joi.object({
+  componentVersion: Joi.string().min(1).max(50).trim().optional(),
+  license: Joi.string().max(100).allow('', null).optional(),
+  licenseRisk: Joi.string().valid(...licenseRisks).optional(),
+  supplier: Joi.string().max(200).allow('', null).optional(),
+  vulnerabilities: Joi.array().items(Joi.object()).allow(null).optional(),
+}).min(1).unknown(false);
+
+export const updateSBOMRepositorySchema = Joi.object({
+  name: Joi.string().min(1).max(200).trim().optional(),
+  url: Joi.string().uri().allow('', null).optional(),
+  branch: Joi.string().max(100).allow('', null).optional(),
+  lastScan: Joi.date().iso().allow(null).optional(),
+}).min(1).unknown(false);
+
+export const updateSurveillancePlanSchema = Joi.object({
+  planType: Joi.string().valid(...planTypes).optional(),
+  frequency: Joi.string().valid(...frequencies).optional(),
+  description: Joi.string().max(2000).allow('', null).optional(),
+  monitoringSources: Joi.array().items(Joi.string()).allow(null).optional(),
+  thresholds: Joi.object().allow(null).optional(),
+  nextReviewDate: Joi.date().iso().allow(null).optional(),
+  status: Joi.string().max(50).allow('', null).optional(),
+}).min(1).unknown(false);
+
+export const updateSurveillanceIncidentSchema = Joi.object({
+  severity: Joi.string().valid(...breachSeverities).optional(),
+  description: Joi.string().max(5000).allow('', null).optional(),
+  status: Joi.string().max(50).allow('', null).optional(),
+  rootCause: Joi.string().max(2000).allow('', null).optional(),
+  correctiveAction: Joi.string().max(2000).allow('', null).optional(),
+}).min(1).unknown(false);
+
+export const updateProductRecallSchema = Joi.object({
+  status: Joi.string().max(50).allow('', null).optional(),
+  correctiveAction: Joi.string().max(2000).allow('', null).optional(),
+  completionDate: Joi.date().iso().allow(null).optional(),
+}).min(1).unknown(false);
+
+export const updateProductDecommissionSchema = Joi.object({
+  lifecycleStage: Joi.string().valid(...lifecycleStages).optional(),
+  endOfSaleDate: Joi.date().iso().allow(null).optional(),
+  endOfSupportDate: Joi.date().iso().allow(null).optional(),
+  endOfLifeDate: Joi.date().iso().allow(null).optional(),
+  migrationPath: Joi.string().max(2000).allow('', null).optional(),
+}).min(1).unknown(false);
+
+export const updateMaterialityAssessmentSchema = Joi.object({
+  stakeholderImpact: Joi.number().min(0).max(100).allow(null).optional(),
+  businessImpact: Joi.number().min(0).max(100).allow(null).optional(),
+  description: Joi.string().max(2000).allow('', null).optional(),
+  sdgAlignment: Joi.array().items(Joi.number().min(1).max(17)).allow(null).optional(),
+}).min(1).unknown(false);
+
+// ============================================================================
+// SYNC & CROSS-MODULE OPERATIONS
+// ============================================================================
+
+export const syncSBOMSchema = Joi.object({
+  repositoryId: Joi.string().max(200).allow('', null).optional(),
+  force: Joi.boolean().optional(),
+}).unknown(false);
+
+export const syncBreachSchema = Joi.object({
+  incidentId: Joi.string().max(200).allow('', null).optional(),
+}).unknown(false);
+
+export const upsertRegulationModuleDataSchema = Joi.object({
+  data: Joi.object().required(),
+}).unknown(true);
+
+export const recordMetricSchema = Joi.object({
+  module: Joi.string().required().min(1).max(200),
+  metricName: Joi.string().required().min(1).max(200),
+  value: Joi.number().required(),
+  timestamp: Joi.date().iso().allow(null).optional(),
+  metadata: Joi.object().allow(null).optional(),
+}).unknown(false);

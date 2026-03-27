@@ -10,6 +10,7 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { createDeadlineSchema, updateDeadlineSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -62,8 +63,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching upcoming deadlines:', error);
-      res.status(500).json({ error: 'Failed to fetch upcoming deadlines' });
+      throw new AppError('Failed to fetch upcoming deadlines', 500);
     }
   })
 );
@@ -94,8 +96,9 @@ router.get(
         meta: { total: deadlines.length },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching overdue deadlines:', error);
-      res.status(500).json({ error: 'Failed to fetch overdue deadlines' });
+      throw new AppError('Failed to fetch overdue deadlines', 500);
     }
   })
 );
@@ -152,8 +155,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching deadlines:', error);
-      res.status(500).json({ error: 'Failed to fetch deadlines' });
+      throw new AppError('Failed to fetch deadlines', 500);
     }
   })
 );
@@ -172,14 +176,14 @@ router.get(
       });
 
       if (!deadline) {
-        res.status(404).json({ error: 'Deadline not found' });
-        return;
+        throw new AppError('Deadline not found', 404);
       }
 
       res.json({ status: 'success', data: deadline });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching deadline:', error);
-      res.status(500).json({ error: 'Failed to fetch deadline' });
+      throw new AppError('Failed to fetch deadline', 500);
     }
   })
 );
@@ -239,8 +243,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: deadline });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating deadline:', error);
-      res.status(500).json({ error: 'Failed to create deadline' });
+      throw new AppError('Failed to create deadline', 500);
     }
   })
 );
@@ -261,8 +266,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Deadline not found' });
-        return;
+        throw new AppError('Deadline not found', 404);
       }
 
       // Joi schema validates type/status enums and date formats; stripUnknown removes extra fields
@@ -281,8 +285,9 @@ router.patch(
 
       res.json({ status: 'success', data: deadline });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating deadline:', error);
-      res.status(500).json({ error: 'Failed to update deadline' });
+      throw new AppError('Failed to update deadline', 500);
     }
   })
 );
@@ -301,13 +306,11 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Deadline not found' });
-        return;
+        throw new AppError('Deadline not found', 404);
       }
 
       if (existing.status === 'COMPLETED') {
-        res.status(400).json({ error: 'Deadline is already completed' });
-        return;
+        throw new AppError('Deadline is already completed', 400);
       }
 
       const deadline = await prisma.complianceDeadline.update({
@@ -320,8 +323,9 @@ router.patch(
 
       res.json({ status: 'success', data: deadline });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error completing deadline:', error);
-      res.status(500).json({ error: 'Failed to complete deadline' });
+      throw new AppError('Failed to complete deadline', 500);
     }
   })
 );
@@ -341,8 +345,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Deadline not found' });
-        return;
+        throw new AppError('Deadline not found', 404);
       }
 
       const deadline = await prisma.complianceDeadline.update({
@@ -352,8 +355,9 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'Deadline cancelled', id: deadline.id } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting deadline:', error);
-      res.status(500).json({ error: 'Failed to delete deadline' });
+      throw new AppError('Failed to delete deadline', 500);
     }
   })
 );
