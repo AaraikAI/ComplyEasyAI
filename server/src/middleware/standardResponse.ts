@@ -338,10 +338,84 @@ export function notFoundHandler(req: Request, res: Response): void {
   res.status(404).json(response);
 }
 
+/**
+ * Response envelope middleware for base API routes.
+ *
+ * Intercepts `res.json()` and wraps successful responses in:
+ *   { status: 'success', data: <body>, meta: { timestamp } }
+ *
+ * Skips wrapping when:
+ * - The response is already wrapped (has `status` and `data` keys)
+ * - The response is an error (has `error` key or `success === false`)
+ * - The response came from a v2 route (already enveloped by v2ResponseEnvelope)
+ * - The path is a webhook, health check, or non-API route
+ */
+export function responseEnvelope(): RequestHandler {
+  // Paths that should never be enveloped
+  const SKIP_PATHS = ['/api/billing/webhook', '/health', '/api/docs', '/api/docs.json', '/api/csrf-token'];
+
+  return (req: Request, res: Response, next: NextFunction): void => {
+    // Skip v2 routes — they have their own envelope
+    if (req.originalUrl.includes('/api/v2/')) {
+      next();
+      return;
+    }
+
+    // Skip non-API or excluded paths
+    const shouldSkip = SKIP_PATHS.some(p => req.originalUrl.startsWith(p));
+    if (shouldSkip || !req.originalUrl.startsWith('/api/')) {
+      next();
+      return;
+    }
+
+    // Store original json method
+    const originalJson = res.json.bind(res);
+
+    // Override json to wrap in envelope
+    res.json = function (body: any) {
+      // Skip if body is null/undefined
+      if (body == null) {
+        return originalJson(body);
+      }
+
+      // Skip if already in envelope format
+      if (body.status === 'success' && body.data !== undefined) {
+        return originalJson(body);
+      }
+      if (body.status === 'error' && body.error) {
+        return originalJson(body);
+      }
+
+      // Skip error responses (have 'error' key at top level or success===false)
+      if (body.error !== undefined || body.success === false) {
+        return originalJson(body);
+      }
+
+      // Skip non-2xx responses (errors are handled by errorHandler)
+      if (res.statusCode >= 400) {
+        return originalJson(body);
+      }
+
+      const envelope = {
+        status: 'success' as const,
+        data: body,
+        meta: {
+          timestamp: new Date().toISOString(),
+        },
+      };
+
+      return originalJson(envelope);
+    } as any;
+
+    next();
+  };
+}
+
 export default {
   standardErrorHandler,
   standardResponseMiddleware,
   notFoundHandler,
+  responseEnvelope,
   ApiError,
   ErrorCodes,
 };

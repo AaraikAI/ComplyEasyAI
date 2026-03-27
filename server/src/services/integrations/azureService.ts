@@ -12,6 +12,7 @@ import { PolicyClient } from '@azure/arm-policy';
 import { GraphRbacManagementClient } from '@azure/graph';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 interface AzureCredentials {
   tenantId: string;
@@ -78,13 +79,13 @@ class AzureService {
     const integration = await this.getIntegration(organizationId);
 
     if (!integration || !integration.connected) {
-      throw new Error('Azure integration not connected');
+      throw new AppError('Azure integration not connected', 400);
     }
 
     const config = integration.config as any;
 
     if (!config.tenantId || !config.clientId || !config.clientSecret || !config.subscriptionId) {
-      throw new Error('Azure credentials incomplete. Please reconnect.');
+      throw new AppError('Azure credentials incomplete. Please reconnect.', 400);
     }
 
     return {
@@ -172,9 +173,9 @@ class AzureService {
     } catch (error: any) {
       logger.error('Error fetching Azure resources', error);
       if (error.statusCode === 401 || error.code === 'AuthenticationError') {
-        throw new Error('Authentication failed. Please reconnect Azure integration.');
+        throw new AppError('Authentication failed. Please reconnect Azure integration.', 403);
       }
-      throw new Error(`Failed to fetch Azure resources: ${error.message}`);
+      throw new AppError(`Failed to fetch Azure resources: ${error.message}`, 500);
     }
   }
 
@@ -203,7 +204,7 @@ class AzureService {
       return resourceGroups;
     } catch (error: any) {
       logger.error('Error fetching Azure resource groups', error);
-      throw new Error(`Failed to fetch resource groups: ${error.message}`);
+      throw new AppError(`Failed to fetch resource groups: ${error.message}`, 500);
     }
   }
 
@@ -239,7 +240,7 @@ class AzureService {
       if (error.statusCode === 404 || error.code === 'ResourceNotFound') {
         return [];
       }
-      throw new Error(`Failed to fetch security recommendations: ${error.message}`);
+      throw new AppError(`Failed to fetch security recommendations: ${error.message}`, 500);
     }
   }
 
@@ -276,7 +277,7 @@ class AzureService {
       if (error.statusCode === 404) {
         return [];
       }
-      throw new Error(`Failed to fetch security alerts: ${error.message}`);
+      throw new AppError(`Failed to fetch security alerts: ${error.message}`, 500);
     }
   }
 
@@ -305,7 +306,7 @@ class AzureService {
       return complianceResults;
     } catch (error: any) {
       logger.error('Error fetching policy compliance', error);
-      throw new Error(`Failed to fetch policy compliance: ${error.message}`);
+      throw new AppError(`Failed to fetch policy compliance: ${error.message}`, 500);
     }
   }
 
@@ -341,7 +342,7 @@ class AzureService {
         logger.warn('Graph API access denied - ensure app has Directory.Read.All permission');
         return [];
       }
-      throw new Error(`Failed to fetch Azure AD users: ${error.message}`);
+      throw new AppError(`Failed to fetch Azure AD users: ${error.message}`, 500);
     }
   }
 
@@ -365,7 +366,7 @@ class AzureService {
       };
     } catch (error: any) {
       logger.error('Error fetching subscription details', error);
-      throw new Error(`Failed to fetch subscription details: ${error.message}`);
+      throw new AppError(`Failed to fetch subscription details: ${error.message}`, 500);
     }
   }
 
@@ -441,7 +442,7 @@ class AzureService {
       return result;
     } catch (error: any) {
       logger.error('Error running Azure compliance scan', error);
-      throw new Error(`Failed to run compliance scan: ${error.message}`);
+      throw new AppError(`Failed to run compliance scan: ${error.message}`, 500);
     }
   }
 
@@ -487,7 +488,7 @@ class AzureService {
       logger.info(`Azure integration disconnected for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error disconnecting Azure', error);
-      throw new Error('Failed to disconnect Azure integration');
+      throw new AppError('Failed to disconnect Azure integration', 500);
     }
   }
 }

@@ -41,6 +41,7 @@ import { ethers } from 'ethers';
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 import { connect, Gateway, Network, Contract } from '@hyperledger/fabric-gateway';
 import { Wallets } from 'fabric-network';
 import * as grpc from '@grpc/grpc-js';
@@ -252,7 +253,7 @@ class BlockchainService {
       logger.info('Blockchain service initialized');
     } catch (error) {
       logger.error('Error initializing blockchain service', error);
-      throw new Error('Blockchain initialization failed');
+      throw new AppError('Blockchain initialization failed', 500);
     }
   }
 
@@ -311,7 +312,7 @@ class BlockchainService {
       return record;
     } catch (error) {
       logger.error('Error recording audit log on blockchain', error);
-      throw new Error('Blockchain audit log recording failed');
+      throw new AppError('Blockchain audit log recording failed', 500);
     }
   }
 
@@ -355,13 +356,13 @@ class BlockchainService {
   ): Promise<{ transactionHash: string; blockNumber: number }> {
     try {
       if (!this.wallet) {
-        throw new Error('Wallet not initialized');
+        throw new AppError('Wallet not initialized', 500);
       }
 
       const provider = network === 'ethereum' ? this.ethereumProvider : this.polygonProvider;
 
       if (!provider) {
-        throw new Error('Provider not initialized');
+        throw new AppError('Provider not initialized', 500);
       }
 
       // Create transaction with data hash in input data
@@ -374,7 +375,7 @@ class BlockchainService {
       const receipt = await tx.wait();
 
       if (!receipt) {
-        throw new Error('Transaction receipt not available');
+        throw new AppError('Transaction receipt not available', 500);
       }
 
       return {
@@ -458,13 +459,13 @@ class BlockchainService {
               return new Uint8Array(derSignature);
             } catch (err) {
               logger.error('[Blockchain] ECDSA signing failed', err);
-              throw new Error(`Hyperledger signer failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+              throw new AppError(`Hyperledger signer failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 500);
             }
           }
 
           // No private key available
           if (process.env.NODE_ENV === 'production') {
-            throw new Error('Hyperledger private key required in production: set HYPERLEDGER_PRIVATE_KEY or HYPERLEDGER_USER_PRIVATE_KEY_PEM');
+            throw new AppError('Hyperledger private key required in production: set HYPERLEDGER_PRIVATE_KEY or HYPERLEDGER_USER_PRIVATE_KEY_PEM', 500);
           }
 
           logger.warn('[Blockchain] No private key configured for Hyperledger signer; returning empty signature (non-production only)');
@@ -497,7 +498,7 @@ class BlockchainService {
   ): Promise<{ transactionId: string; blockHeight: number }> {
     try {
       if (!this.hyperledgerContract) {
-        throw new Error('Hyperledger Fabric not initialized. Configure HYPERLEDGER_* environment variables.');
+        throw new AppError('Hyperledger Fabric not initialized. Configure HYPERLEDGER_* environment variables.', 500);
       }
 
       // Submit transaction to Hyperledger Fabric
@@ -521,7 +522,7 @@ class BlockchainService {
     } catch (error) {
       logger.error('[Blockchain] Error recording on Hyperledger', error);
       if (process.env.NODE_ENV === 'production') {
-        throw new Error('Hyperledger Fabric transaction failed');
+        throw new AppError('Hyperledger Fabric transaction failed', 500);
       }
       // In development, provide more details
       throw error;
@@ -636,7 +637,7 @@ class BlockchainService {
 
       if (network === 'ethereum' || network === 'polygon') {
         if (!this.auditContract) {
-          throw new Error('Smart contract not initialized');
+          throw new AppError('Smart contract not initialized', 500);
         }
 
         const tx = await this.auditContract.recordCompliance(
@@ -674,7 +675,7 @@ class BlockchainService {
       return record;
     } catch (error) {
       logger.error('Error recording compliance proof', error);
-      throw new Error('Blockchain compliance proof recording failed');
+      throw new AppError('Blockchain compliance proof recording failed', 500);
     }
   }
 
@@ -686,7 +687,7 @@ class BlockchainService {
   ): Promise<{ transactionId: string; blockHeight: number }> {
     try {
       if (!this.hyperledgerContract) {
-        throw new Error('Hyperledger Fabric contract not initialized');
+        throw new AppError('Hyperledger Fabric contract not initialized', 500);
       }
 
       // Prepare compliance proof data
@@ -715,7 +716,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error recording compliance on Hyperledger', error);
-      throw new Error('Hyperledger compliance recording failed');
+      throw new AppError('Hyperledger compliance recording failed', 500);
     }
   }
 
@@ -737,7 +738,7 @@ class BlockchainService {
       const validUntilTimestamp = Math.floor(validUntil.getTime() / 1000);
 
       if (!this.auditContract) {
-        throw new Error('Smart contract not initialized');
+        throw new AppError('Smart contract not initialized', 500);
       }
 
       const tx = await this.auditContract.issueComplianceCertificate(
@@ -773,7 +774,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('Error issuing compliance certificate', error);
-      throw new Error('Certificate issuance failed');
+      throw new AppError('Certificate issuance failed', 500);
     }
   }
 
@@ -884,7 +885,7 @@ class BlockchainService {
       return record;
     } catch (error) {
       logger.error('Error creating proof of existence', error);
-      throw new Error('Proof of existence creation failed');
+      throw new AppError('Proof of existence creation failed', 500);
     }
   }
 
@@ -965,12 +966,12 @@ class BlockchainService {
   async deployComplianceContract(network: BlockchainNetwork = 'polygon'): Promise<string> {
     try {
       if (!this.wallet) {
-        throw new Error('Wallet not initialized');
+        throw new AppError('Wallet not initialized', 500);
       }
 
       const provider = network === 'ethereum' ? this.ethereumProvider : this.polygonProvider;
       if (!provider) {
-        throw new Error(`Provider not initialized for ${network}`);
+        throw new AppError(`Provider not initialized for ${network}`, 500);
       }
 
       // Smart contract bytecode — uses COMPLIANCE_CONTRACT_BYTECODE env var if set,
@@ -995,7 +996,7 @@ class BlockchainService {
       // Verify deployment
       const code = await provider.getCode(contractAddress);
       if (code === '0x') {
-        throw new Error('Contract deployment verification failed - no code at address');
+        throw new AppError('Contract deployment verification failed - no code at address', 500);
       }
 
       logger.info(`[Blockchain] Compliance contract deployed to ${network}: ${contractAddress}`);
@@ -1011,7 +1012,7 @@ class BlockchainService {
       return contractAddress;
     } catch (error) {
       logger.error('[Blockchain] Error deploying compliance contract]', error);
-      throw new Error(`Contract deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new AppError(`Contract deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
   }
 
@@ -1023,7 +1024,7 @@ class BlockchainService {
     // Prefers bytecode from COMPLIANCE_CONTRACT_BYTECODE env var for custom contracts
     if (process.env.NODE_ENV === 'production') {
       if (!process.env.COMPLIANCE_CONTRACT_BYTECODE) {
-        throw new Error('COMPLIANCE_CONTRACT_BYTECODE environment variable required in production');
+        throw new AppError('COMPLIANCE_CONTRACT_BYTECODE environment variable required in production', 500);
       }
       return process.env.COMPLIANCE_CONTRACT_BYTECODE;
     }
@@ -1129,7 +1130,7 @@ class BlockchainService {
       const provider = network === 'ethereum' ? this.ethereumProvider : this.polygonProvider;
 
       if (!provider) {
-        throw new Error('Provider not initialized');
+        throw new AppError('Provider not initialized', 500);
       }
 
       const feeData = await provider.getFeeData();
@@ -1141,7 +1142,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('Error estimating gas price', error);
-      throw new Error('Gas price estimation failed');
+      throw new AppError('Gas price estimation failed', 500);
     }
   }
 
@@ -1155,8 +1156,8 @@ class BlockchainService {
    */
   private ensureRegistryContract(): ethers.Contract {
     if (!this.registryContract) {
-      throw new Error(
-        'ComplianceRegistry contract not initialized. Set COMPLIANCE_REGISTRY_ADDRESS and BLOCKCHAIN_PRIVATE_KEY environment variables.'
+      throw new AppError(
+        'ComplianceRegistry contract not initialized. Set COMPLIANCE_REGISTRY_ADDRESS and BLOCKCHAIN_PRIVATE_KEY environment variables.', 500
       );
     }
     return this.registryContract;
@@ -1192,17 +1193,17 @@ class BlockchainService {
   ): Promise<{ contractAddress: string; transactionHash: string; blockNumber: number }> {
     try {
       if (!this.wallet) {
-        throw new Error('Wallet not initialized');
+        throw new AppError('Wallet not initialized', 500);
       }
       const provider = network === 'ethereum' ? this.ethereumProvider : this.polygonProvider;
       if (!provider) {
-        throw new Error(`Provider not initialized for ${network}`);
+        throw new AppError(`Provider not initialized for ${network}`, 500);
       }
 
       const abi = ComplianceRegistryArtifact.abi;
       const bytecode = ComplianceRegistryArtifact.bytecode;
       if (!bytecode) {
-        throw new Error('ComplianceRegistry bytecode not found in artifact');
+        throw new AppError('ComplianceRegistry bytecode not found in artifact', 500);
       }
 
       const walletWithProvider = this.wallet.connect(provider);
@@ -1225,7 +1226,7 @@ class BlockchainService {
       // Verify bytecode was deployed
       const code = await provider.getCode(contractAddress);
       if (code === '0x' || code === '0x0') {
-        throw new Error('Contract deployment verification failed - no code at deployed address');
+        throw new AppError('Contract deployment verification failed - no code at deployed address', 500);
       }
 
       const txHash = contract.deploymentTransaction()?.hash || '';
@@ -1242,8 +1243,8 @@ class BlockchainService {
       return { contractAddress, transactionHash: txHash, blockNumber };
     } catch (error) {
       logger.error('[Blockchain] Error deploying ComplianceRegistry', error);
-      throw new Error(
-        `ComplianceRegistry deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      throw new AppError(
+        `ComplianceRegistry deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500
       );
     }
   }
@@ -1271,7 +1272,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error issuing registry certificate', error);
-      throw new Error('Registry certificate issuance failed');
+      throw new AppError('Registry certificate issuance failed', 500);
     }
   }
 
@@ -1285,7 +1286,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error activating registry certificate', error);
-      throw new Error('Registry certificate activation failed');
+      throw new AppError('Registry certificate activation failed', 500);
     }
   }
 
@@ -1304,7 +1305,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error revoking registry certificate', error);
-      throw new Error('Registry certificate revocation failed');
+      throw new AppError('Registry certificate revocation failed', 500);
     }
   }
 
@@ -1329,7 +1330,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error renewing registry certificate', error);
-      throw new Error('Registry certificate renewal failed');
+      throw new AppError('Registry certificate renewal failed', 500);
     }
   }
 
@@ -1373,7 +1374,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error verifying registry certificate', error);
-      throw new Error('Registry certificate verification failed');
+      throw new AppError('Registry certificate verification failed', 500);
     }
   }
 
@@ -1398,7 +1399,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error reading registry certificate', error);
-      throw new Error('Failed to read registry certificate');
+      throw new AppError('Failed to read registry certificate', 500);
     }
   }
 
@@ -1456,7 +1457,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error recording framework score', error);
-      throw new Error('Registry framework score recording failed');
+      throw new AppError('Registry framework score recording failed', 500);
     }
   }
 
@@ -1478,7 +1479,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error reading latest framework score', error);
-      throw new Error('Failed to read latest framework score');
+      throw new AppError('Failed to read latest framework score', 500);
     }
   }
 
@@ -1507,7 +1508,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error reading framework score history', error);
-      throw new Error('Failed to read framework score history');
+      throw new AppError('Failed to read framework score history', 500);
     }
   }
 
@@ -1539,7 +1540,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error submitting evidence', error);
-      throw new Error('Registry evidence submission failed');
+      throw new AppError('Registry evidence submission failed', 500);
     }
   }
 
@@ -1560,7 +1561,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error reading evidence', error);
-      throw new Error('Failed to read evidence from registry');
+      throw new AppError('Failed to read evidence from registry', 500);
     }
   }
 
@@ -1580,7 +1581,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error reading evidence chain', error);
-      throw new Error('Failed to read evidence chain from registry');
+      throw new AppError('Failed to read evidence chain from registry', 500);
     }
   }
 
@@ -1610,7 +1611,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error recording policy change', error);
-      throw new Error('Registry policy change recording failed');
+      throw new AppError('Registry policy change recording failed', 500);
     }
   }
 
@@ -1648,7 +1649,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error reading policy change', error);
-      throw new Error('Failed to read policy change from registry');
+      throw new AppError('Failed to read policy change from registry', 500);
     }
   }
 
@@ -1676,7 +1677,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error reading policy changes', error);
-      throw new Error('Failed to read policy changes from registry');
+      throw new AppError('Failed to read policy changes from registry', 500);
     }
   }
 
@@ -1705,7 +1706,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error granting role', error);
-      throw new Error('Registry role grant failed');
+      throw new AppError('Registry role grant failed', 500);
     }
   }
 
@@ -1719,7 +1720,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error revoking role', error);
-      throw new Error('Registry role revocation failed');
+      throw new AppError('Registry role revocation failed', 500);
     }
   }
 
@@ -1735,7 +1736,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error pausing registry', error);
-      throw new Error('Registry pause failed');
+      throw new AppError('Registry pause failed', 500);
     }
   }
 
@@ -1749,7 +1750,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error unpausing registry', error);
-      throw new Error('Registry unpause failed');
+      throw new AppError('Registry unpause failed', 500);
     }
   }
 
@@ -1788,7 +1789,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error batch issuing certificates', error);
-      throw new Error('Registry batch certificate issuance failed');
+      throw new AppError('Registry batch certificate issuance failed', 500);
     }
   }
 
@@ -1814,7 +1815,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error batch submitting evidence', error);
-      throw new Error('Registry batch evidence submission failed');
+      throw new AppError('Registry batch evidence submission failed', 500);
     }
   }
 
@@ -1840,7 +1841,7 @@ class BlockchainService {
       return result;
     } catch (error) {
       logger.error('[Blockchain] Error batch recording scores', error);
-      throw new Error('Registry batch score recording failed');
+      throw new AppError('Registry batch score recording failed', 500);
     }
   }
 
@@ -1874,7 +1875,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error fetching registry stats', error);
-      throw new Error('Failed to fetch registry statistics');
+      throw new AppError('Failed to fetch registry statistics', 500);
     }
   }
 
@@ -2283,7 +2284,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error anchoring evidence hash', error);
-      throw new Error(`Evidence anchoring failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new AppError(`Evidence anchoring failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
   }
 
@@ -2407,7 +2408,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error detecting tampering', error);
-      throw new Error(`Tamper detection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new AppError(`Tamper detection failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
   }
 
@@ -2526,7 +2527,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error verifying transaction chain', error);
-      throw new Error(`Transaction chain verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new AppError(`Transaction chain verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
   }
 
@@ -2621,7 +2622,7 @@ class BlockchainService {
       };
     } catch (error) {
       logger.error('[Blockchain] Error getting audit trail history', error);
-      throw new Error('Failed to get audit trail history');
+      throw new AppError('Failed to get audit trail history', 500);
     }
   }
 

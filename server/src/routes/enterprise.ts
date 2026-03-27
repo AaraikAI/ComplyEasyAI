@@ -30,6 +30,7 @@ import {
   predictRisksSchema,
   autopilotOptionsSchema,
 } from '../validators/enterpriseSchemas';
+import { AppError } from '../middleware/errorHandler';
 import { authAsyncHandler, asyncHandler, AuthenticatedRequest } from '../types/express';
 
 // Import all enterprise services
@@ -183,7 +184,7 @@ questionnaireRouter.post(
     const { questionnaireTemplates } = require('../data/questionnaireTemplates');
     const template = questionnaireTemplates.find((t: any) => t.id === req.body.templateId);
     if (!template) {
-      return res.status(404).json({ error: 'Template not found' });
+      throw new AppError('Template not found', 404);
     }
     const questionnaire = await questionnaireService.createQuestionnaire({
       organizationId: req.user.organizationId,
@@ -217,7 +218,7 @@ questionnaireRouter.get(
     );
     const questionnaire = questionnaires.find((q: any) => q.id === req.params.id);
     if (!questionnaire) {
-      return res.status(404).json({ error: 'Questionnaire not found' });
+      throw new AppError('Questionnaire not found', 404);
     }
     return res.json(questionnaire);
   })
@@ -882,7 +883,7 @@ issueRouter.get(
       },
     });
     if (!issue) {
-      return res.status(404).json({ error: 'Issue not found' });
+      throw new AppError('Issue not found', 404);
     }
     return res.json(issue);
   })

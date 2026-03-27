@@ -26,6 +26,7 @@ import { v4 as uuidv4 } from 'uuid';
 import config from '../../config';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 
 // ============================================================================
 // TYPES
@@ -75,13 +76,13 @@ interface S3ServiceConfig {
  */
 function validateRegion(region: string): string {
   if (!region || typeof region !== 'string') {
-    throw new Error('AWS region must be a non-empty string');
+    throw new AppError('AWS region must be a non-empty string', 400);
   }
   // AWS region format: us-east-1, eu-west-2, ap-northeast-1, etc.
   if (!/^[a-z]{2}-[a-z]+-\d+$/.test(region)) {
     // Also allow gov and special regions
     if (!/^[a-z0-9-]+$/.test(region)) {
-      throw new Error(`Invalid AWS region format: ${region}`);
+      throw new AppError(`Invalid AWS region format: ${region}`, 400);
     }
   }
   return region;
@@ -92,11 +93,11 @@ function validateRegion(region: string): string {
  */
 function validateBucketName(bucket: string): string {
   if (!bucket || typeof bucket !== 'string') {
-    throw new Error('S3 bucket name must be a non-empty string');
+    throw new AppError('S3 bucket name must be a non-empty string', 400);
   }
   // S3 bucket naming rules
   if (!/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(bucket)) {
-    throw new Error(`Invalid S3 bucket name: ${bucket}`);
+    throw new AppError(`Invalid S3 bucket name: ${bucket}`, 400);
   }
   return bucket;
 }
@@ -174,7 +175,7 @@ export class S3ServiceV3 {
 
     // Validate configuration
     if (!this.bucket) {
-      throw new Error('S3 bucket not configured');
+      throw new AppError('S3 bucket not configured', 400);
     }
 
     // Validate file
@@ -243,13 +244,13 @@ export class S3ServiceV3 {
       logger.error('[S3v3] Upload failed', { error: error.message, key: s3Key });
 
       if (error.name === 'NoSuchBucket') {
-        throw new Error(`S3 bucket "${this.bucket}" does not exist`);
+        throw new AppError(`S3 bucket "${this.bucket}" does not exist`, 404);
       }
       if (error.name === 'InvalidAccessKeyId' || error.name === 'SignatureDoesNotMatch') {
-        throw new Error('Invalid AWS credentials');
+        throw new AppError('Invalid AWS credentials', 403);
       }
 
-      throw new Error(`Upload failed: ${error.message}`);
+      throw new AppError(`Upload failed: ${error.message}`, 500);
     }
   }
 
@@ -309,7 +310,7 @@ export class S3ServiceV3 {
     });
 
     if (!file) {
-      throw new Error('File not found');
+      throw new AppError('File not found', 404);
     }
 
     await this.deleteFile(file.s3Key);
@@ -376,15 +377,15 @@ export class S3ServiceV3 {
     // Check file size
     if (file.size > this.MAX_FILE_SIZE) {
       const maxSizeMB = this.MAX_FILE_SIZE / 1024 / 1024;
-      throw new Error(
-        `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum of ${maxSizeMB}MB`
+      throw new AppError(
+        `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum of ${maxSizeMB}MB`, 400
       );
     }
 
     // Check MIME type
     if (!this.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      throw new Error(
-        `File type "${file.mimetype}" not allowed. Allowed: PDF, Word, Excel, Images, Text, CSV, JSON, Audio, Video`
+      throw new AppError(
+        `File type "${file.mimetype}" not allowed. Allowed: PDF, Word, Excel, Images, Text, CSV, JSON, Audio, Video`, 400
       );
     }
 
@@ -394,7 +395,7 @@ export class S3ServiceV3 {
 
     for (const ext of dangerousExtensions) {
       if (filename.endsWith(ext)) {
-        throw new Error(`Executable file type ${ext} not allowed`);
+        throw new AppError(`Executable file type ${ext} not allowed`, 400);
       }
     }
   }

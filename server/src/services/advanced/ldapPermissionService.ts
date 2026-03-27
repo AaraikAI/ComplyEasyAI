@@ -10,6 +10,7 @@
  */
 
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 import net from 'net';
 import tls from 'tls';
 import crypto from 'crypto';
@@ -224,7 +225,7 @@ interface BERElement {
 }
 
 function berDecode(buf: Buffer, offset: number = 0): { element: BERElement; bytesRead: number } {
-  if (offset >= buf.length) throw new Error('BER decode: unexpected end of data');
+  if (offset >= buf.length) throw new AppError('BER decode: unexpected end of data', 400);
 
   const tag = buf[offset];
   let pos = offset + 1;
@@ -858,7 +859,7 @@ class LDAPPermissionService {
    * Authenticate a user against Active Directory.
    */
   async authenticateUser(username: string, password: string): Promise<{ authenticated: boolean; user?: ADUser; error?: string }> {
-    if (!this.config) throw new Error('LDAP service not initialized');
+    if (!this.config) throw new AppError('LDAP service not initialized', 500);
 
     try {
       // Create a temporary connection for the bind attempt

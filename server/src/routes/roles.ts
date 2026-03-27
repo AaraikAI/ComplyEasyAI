@@ -8,6 +8,9 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import { createRoleSchema, updateRoleSchema, addPermissionSchema, assignRoleSchema } from '../validators/roleSchemas';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -56,7 +59,7 @@ router.get(
       });
     } catch (error) {
       logger.error('Error fetching custom roles:', error);
-      res.status(500).json({ error: 'Failed to fetch custom roles' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to fetch custom roles', 500);
     }
   })
 );
@@ -80,14 +83,14 @@ router.get(
       });
 
       if (!role) {
-        res.status(404).json({ error: 'Role not found' });
-        return;
+        throw new AppError('Role not found', 404);
       }
 
       res.json({ status: 'success', data: role });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching custom role:', error);
-      res.status(500).json({ error: 'Failed to fetch custom role' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to fetch custom role', 500);
     }
   })
 );
@@ -99,6 +102,7 @@ router.get(
 router.post(
   '/',
   authorize('admin'),
+  validateBody(createRoleSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -106,8 +110,7 @@ router.post(
       const { name, description, permissions } = req.body;
 
       if (!name) {
-        res.status(400).json({ error: 'name is required' });
-        return;
+        throw new AppError('name is required', 400);
       }
 
       // Check for duplicate name within the org
@@ -116,8 +119,7 @@ router.post(
       });
 
       if (existing) {
-        res.status(409).json({ error: `Role with name "${name}" already exists in this organization` });
-        return;
+        throw new AppError(`Role with name "${name}" already exists in this organization`, 409);
       }
 
       const role = await prisma.customRole.create({
@@ -147,8 +149,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: role });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating custom role:', error);
-      res.status(500).json({ error: 'Failed to create custom role' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to create custom role', 500);
     }
   })
 );
@@ -160,6 +163,7 @@ router.post(
 router.patch(
   '/:id',
   authorize('admin'),
+  validateBody(updateRoleSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -169,13 +173,11 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Role not found' });
-        return;
+        throw new AppError('Role not found', 404);
       }
 
       if (existing.isSystem) {
-        res.status(403).json({ error: 'System roles cannot be modified' });
-        return;
+        throw new AppError('System roles cannot be modified', 403);
       }
 
       const { name, description } = req.body;
@@ -186,8 +188,7 @@ router.patch(
           where: { organizationId: user.organizationId, name, id: { not: req.params.id } },
         });
         if (duplicate) {
-          res.status(409).json({ error: `Role with name "${name}" already exists in this organization` });
-          return;
+          throw new AppError(`Role with name "${name}" already exists in this organization`, 409);
         }
       }
 
@@ -205,8 +206,9 @@ router.patch(
 
       res.json({ status: 'success', data: role });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating custom role:', error);
-      res.status(500).json({ error: 'Failed to update custom role' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to update custom role', 500);
     }
   })
 );
@@ -227,13 +229,11 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Role not found' });
-        return;
+        throw new AppError('Role not found', 404);
       }
 
       if (existing.isSystem) {
-        res.status(403).json({ error: 'System roles cannot be deleted' });
-        return;
+        throw new AppError('System roles cannot be deleted', 403);
       }
 
       // Check if any users are assigned to this role
@@ -242,10 +242,7 @@ router.delete(
       });
 
       if (assignedCount > 0) {
-        res.status(409).json({
-          error: `Cannot delete role: ${assignedCount} user(s) are still assigned to this role. Remove all assignments first.`,
-        });
-        return;
+        throw new AppError(`Cannot delete role: ${assignedCount} user(s) are still assigned to this role. Remove all assignments first.`, 409);
       }
 
       // Delete permissions and role (cascade handles permissions via schema)
@@ -255,8 +252,9 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'Role deleted', id: req.params.id } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting custom role:', error);
-      res.status(500).json({ error: 'Failed to delete custom role' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to delete custom role', 500);
     }
   })
 );
@@ -268,6 +266,7 @@ router.delete(
 router.post(
   '/:id/permissions',
   authorize('admin'),
+  validateBody(addPermissionSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -277,33 +276,28 @@ router.post(
       });
 
       if (!role) {
-        res.status(404).json({ error: 'Role not found' });
-        return;
+        throw new AppError('Role not found', 404);
       }
 
       if (role.isSystem) {
-        res.status(403).json({ error: 'Cannot modify permissions on system roles' });
-        return;
+        throw new AppError('Cannot modify permissions on system roles', 403);
       }
 
       const { resource, action, scope } = req.body;
 
       if (!resource || !action) {
-        res.status(400).json({ error: 'resource and action are required' });
-        return;
+        throw new AppError('resource and action are required', 400);
       }
 
       const validActions = ['create', 'read', 'update', 'delete', 'approve', 'export'];
       if (!validActions.includes(action)) {
-        res.status(400).json({ error: `action must be one of: ${validActions.join(', ')}` });
-        return;
+        throw new AppError(`action must be one of: ${validActions.join(', ')}`, 400);
       }
 
       const validScopes = ['OWN', 'TEAM', 'DEPARTMENT', 'ORG'];
       const permissionScope = scope || 'OWN';
       if (!validScopes.includes(permissionScope)) {
-        res.status(400).json({ error: `scope must be one of: ${validScopes.join(', ')}` });
-        return;
+        throw new AppError(`scope must be one of: ${validScopes.join(', ')}`, 400);
       }
 
       // Check for duplicate permission
@@ -312,8 +306,7 @@ router.post(
       });
 
       if (existing) {
-        res.status(409).json({ error: `Permission "${action}" on "${resource}" already exists for this role` });
-        return;
+        throw new AppError(`Permission "${action}" on "${resource}" already exists for this role`, 409);
       }
 
       const permission = await prisma.rolePermission.create({
@@ -327,8 +320,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: permission });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error adding permission to role:', error);
-      res.status(500).json({ error: 'Failed to add permission' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to add permission', 500);
     }
   })
 );
@@ -349,13 +343,11 @@ router.delete(
       });
 
       if (!role) {
-        res.status(404).json({ error: 'Role not found' });
-        return;
+        throw new AppError('Role not found', 404);
       }
 
       if (role.isSystem) {
-        res.status(403).json({ error: 'Cannot modify permissions on system roles' });
-        return;
+        throw new AppError('Cannot modify permissions on system roles', 403);
       }
 
       const permission = await prisma.rolePermission.findFirst({
@@ -363,8 +355,7 @@ router.delete(
       });
 
       if (!permission) {
-        res.status(404).json({ error: 'Permission not found' });
-        return;
+        throw new AppError('Permission not found', 404);
       }
 
       await prisma.rolePermission.delete({
@@ -373,8 +364,9 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'Permission removed', id: req.params.permId } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error removing permission from role:', error);
-      res.status(500).json({ error: 'Failed to remove permission' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to remove permission', 500);
     }
   })
 );
@@ -395,8 +387,7 @@ router.get(
       });
 
       if (!role) {
-        res.status(404).json({ error: 'Role not found' });
-        return;
+        throw new AppError('Role not found', 404);
       }
 
       const where = { roleId: role.id };
@@ -433,8 +424,9 @@ router.get(
         data: { users, total, page, limit, totalPages: Math.ceil(total / limit) },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching users for role:', error);
-      res.status(500).json({ error: 'Failed to fetch users for role' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to fetch users for role', 500);
     }
   })
 );
@@ -446,6 +438,7 @@ router.get(
 router.post(
   '/assign',
   authorize('admin'),
+  validateBody(assignRoleSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -453,8 +446,7 @@ router.post(
       const { userId, roleId } = req.body;
 
       if (!userId || !roleId) {
-        res.status(400).json({ error: 'userId and roleId are required' });
-        return;
+        throw new AppError('userId and roleId are required', 400);
       }
 
       // Verify the role belongs to the org
@@ -463,8 +455,7 @@ router.post(
       });
 
       if (!role) {
-        res.status(404).json({ error: 'Role not found in this organization' });
-        return;
+        throw new AppError('Role not found in this organization', 404);
       }
 
       // Verify the user belongs to the org
@@ -473,8 +464,7 @@ router.post(
       });
 
       if (!targetUser) {
-        res.status(404).json({ error: 'User not found in this organization' });
-        return;
+        throw new AppError('User not found in this organization', 404);
       }
 
       // Check for duplicate assignment
@@ -483,8 +473,7 @@ router.post(
       });
 
       if (existing) {
-        res.status(409).json({ error: 'User is already assigned to this role' });
-        return;
+        throw new AppError('User is already assigned to this role', 409);
       }
 
       const assignment = await prisma.userRole.create({
@@ -497,8 +486,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: assignment });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error assigning role to user:', error);
-      res.status(500).json({ error: 'Failed to assign role' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to assign role', 500);
     }
   })
 );
@@ -522,8 +512,7 @@ router.delete(
       });
 
       if (!role) {
-        res.status(404).json({ error: 'Role not found in this organization' });
-        return;
+        throw new AppError('Role not found in this organization', 404);
       }
 
       const assignment = await prisma.userRole.findFirst({
@@ -531,8 +520,7 @@ router.delete(
       });
 
       if (!assignment) {
-        res.status(404).json({ error: 'Role assignment not found' });
-        return;
+        throw new AppError('Role assignment not found', 404);
       }
 
       await prisma.userRole.delete({
@@ -541,8 +529,9 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'Role assignment removed', userId, roleId } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error removing role from user:', error);
-      res.status(500).json({ error: 'Failed to remove role assignment' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to remove role assignment', 500);
     }
   })
 );

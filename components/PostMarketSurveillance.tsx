@@ -410,22 +410,25 @@ export const PostMarketSurveillance: React.FC<PostMarketSurveillanceProps> = ({ 
     else setIsSyncing(true);
 
     try {
-      const [plansData, recallsData] = await Promise.all([
-        api.modules.surveillance.listPlans(),
-        api.modules.surveillance.listRecalls(),
+      const [plansData, recallsData, incidentsData, capasData, ncData, reportsData] = await Promise.all([
+        api.modules.surveillance.listPlans().catch(() => []),
+        api.modules.surveillance.listRecalls().catch(() => []),
+        api.modules.surveillance.listIncidents().catch(() => []),
+        api.modules.surveillance.listCapas().catch(() => []),
+        api.modules.surveillance.listNonConformities().catch(() => []),
+        api.modules.surveillance.listReports().catch(() => []),
       ]);
 
-      // Only update state when we got valid arrays back from the API
-      if (Array.isArray(plansData) && plansData.length > 0) {
-        setPlans(plansData);
-      }
-      if (Array.isArray(recallsData) && recallsData.length > 0) {
-        setRecalls(recallsData);
-      }
+      if (Array.isArray(plansData) && plansData.length > 0) setPlans(plansData);
+      if (Array.isArray(recallsData) && recallsData.length > 0) setRecalls(recallsData);
+      if (Array.isArray(incidentsData) && incidentsData.length > 0) setIncidents(incidentsData);
+      if (Array.isArray(capasData) && capasData.length > 0) setCapas(capasData);
+      if (Array.isArray(ncData) && ncData.length > 0) setNonConformities(ncData);
+      if (Array.isArray(reportsData) && reportsData.length > 0) setReports(reportsData);
 
       setLoadError(null);
     } catch (err: any) {
-      setLoadError('Unable to connect to server. Showing demo data.');
+      setLoadError('Unable to connect to server. Showing local data.');
     } finally {
       setIsLoading(false);
       setIsSyncing(false);

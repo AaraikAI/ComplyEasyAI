@@ -6,6 +6,16 @@
 import express from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { enforceLimit } from '../middleware/tierMiddleware';
+import { validateBody } from '../middleware/validate';
+import {
+  connectAWSSchema,
+  connectAzureSchema,
+  connectProviderSchema,
+  syncProviderSchema,
+  postSlackMessageSchema,
+  createJiraIssueSchema,
+  collectEvidenceSchema,
+} from '../validators/integrationSchemas';
 import * as integrationsController from '../controllers/integrationsController';
 import { asyncHandler } from '../types/express';
 
@@ -93,6 +103,7 @@ router.post(
   '/slack/message',
   authenticate,
   authorize('admin', 'editor'),
+  validateBody(postSlackMessageSchema),
   asyncHandler(integrationsController.postSlackMessage)
 );
 
@@ -127,6 +138,7 @@ router.post(
   '/jira/issue',
   authenticate,
   authorize('admin', 'editor'),
+  validateBody(createJiraIssueSchema),
   asyncHandler(integrationsController.createJiraIssue)
 );
 
@@ -145,6 +157,7 @@ router.post(
   '/aws/connect',
   authenticate,
   authorize('admin'),
+  validateBody(connectAWSSchema),
   asyncHandler(integrationsController.connectAWS)
 );
 
@@ -170,6 +183,7 @@ router.post(
   '/azure/connect',
   authenticate,
   authorize('admin'),
+  validateBody(connectAzureSchema),
   asyncHandler(integrationsController.connectAzure)
 );
 
@@ -261,6 +275,7 @@ router.post(
   '/:provider/evidence',
   authenticate,
   authorize('admin', 'editor'),
+  validateBody(collectEvidenceSchema),
   asyncHandler(integrationsController.collectProviderEvidence)
 );
 
@@ -303,6 +318,7 @@ router.post(
   authenticate,
   authorize('admin', 'editor'),
   enforceLimit('maxIntegrations'),
+  validateBody(connectProviderSchema),
   asyncHandler(integrationsController.connectProvider)
 );
 
@@ -319,6 +335,7 @@ router.post(
   '/:provider/sync',
   authenticate,
   authorize('admin', 'editor'),
+  validateBody(syncProviderSchema),
   asyncHandler(integrationsController.syncProvider)
 );
 

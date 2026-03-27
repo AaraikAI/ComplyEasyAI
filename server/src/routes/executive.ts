@@ -9,6 +9,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -235,8 +236,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error building executive dashboard:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to build executive dashboard' });
+      throw new AppError('Failed to build executive dashboard', 500);
     }
   })
 );
@@ -282,8 +284,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching RAG status:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch RAG status' });
+      throw new AppError('Failed to fetch RAG status', 500);
     }
   })
 );
@@ -455,8 +458,9 @@ router.post(
       res.setHeader('Content-Type', 'application/json');
       res.json({ status: 'success', data: boardPack });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error generating board pack:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to generate board pack' });
+      throw new AppError('Failed to generate board pack', 500);
     }
   })
 );
@@ -603,8 +607,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching executive trends:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch executive trends' });
+      throw new AppError('Failed to fetch executive trends', 500);
     }
   })
 );

@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 
 interface Policy {
   id: string;
@@ -150,7 +151,7 @@ class ComplianceAsCodeService {
       };
     } catch (error) {
       logger.error('Error creating policy', error);
-      throw new Error('Failed to create compliance policy');
+      throw new AppError('Failed to create compliance policy', 500);
     }
   }
 
@@ -174,7 +175,7 @@ class ComplianceAsCodeService {
       ).catch(() => {
         // If OPA not running, perform basic validation
         if (!rego.includes('package ')) {
-          throw new Error('Rego policy must start with package declaration');
+          throw new AppError('Rego policy must start with package declaration', 400);
         }
         return { data: { result: true } };
       });
@@ -182,7 +183,7 @@ class ComplianceAsCodeService {
       return true;
     } catch (error) {
       logger.error('Rego syntax validation failed', error);
-      throw new Error('Invalid Rego policy syntax');
+      throw new AppError('Invalid Rego policy syntax', 400);
     }
   }
 
@@ -207,7 +208,7 @@ class ComplianceAsCodeService {
       // Production: Fail if OPA unavailable
       if (process.env.NODE_ENV === 'production') {
         logger.error('OPA server unavailable in production', error);
-        throw new Error('OPA server is required for policy management in production');
+        throw new AppError('OPA server is required for policy management in production', 500);
       }
       // Development: Warn but continue
       logger.warn('OPA server not available, policy saved to database only (development mode)', error);
@@ -240,7 +241,7 @@ class ComplianceAsCodeService {
         // Production: Fail if OPA unavailable
         if (process.env.NODE_ENV === 'production') {
           logger.error('OPA server unavailable in production', error);
-          throw new Error('OPA server is required for policy evaluation in production');
+          throw new AppError('OPA server is required for policy evaluation in production', 500);
         }
         // Development: Allow fallback with warning
         logger.warn('OPA server unavailable, using fallback (development mode only)');
@@ -266,7 +267,7 @@ class ComplianceAsCodeService {
       };
     } catch (error) {
       logger.error('Error evaluating policy', error);
-      throw new Error('Policy evaluation failed');
+      throw new AppError('Policy evaluation failed', 500);
     }
   }
 
@@ -279,7 +280,7 @@ class ComplianceAsCodeService {
     input: any
   ): Promise<any> {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('Local policy evaluation is not allowed in production');
+      throw new AppError('Local policy evaluation is not allowed in production', 400);
     }
 
     // Development: Return deny by default (safer than allow all)
@@ -314,7 +315,7 @@ class ComplianceAsCodeService {
       return results;
     } catch (error) {
       logger.error('Error in batch policy evaluation', error);
-      throw new Error('Batch policy evaluation failed');
+      throw new AppError('Batch policy evaluation failed', 500);
     }
   }
 
@@ -358,7 +359,7 @@ class ComplianceAsCodeService {
       };
     } catch (error) {
       logger.error('Error generating compliance report', error);
-      throw new Error('Compliance report generation failed');
+      throw new AppError('Compliance report generation failed', 500);
     }
   }
 
@@ -391,7 +392,7 @@ class ComplianceAsCodeService {
       return webhookId;
     } catch (error) {
       logger.error('Error setting up CI integration', error);
-      throw new Error('CI/CD integration setup failed');
+      throw new AppError('CI/CD integration setup failed', 500);
     }
   }
 
@@ -410,7 +411,7 @@ class ComplianceAsCodeService {
       // Verify webhook signature
       const isValid = this.verifyWebhookSignature(provider, payload, signature);
       if (!isValid) {
-        throw new Error('Invalid webhook signature');
+        throw new AppError('Invalid webhook signature', 400);
       }
 
       // Extract infrastructure/config changes from payload
@@ -427,7 +428,7 @@ class ComplianceAsCodeService {
       return evaluation;
     } catch (error) {
       logger.error('Error handling CI webhook', error);
-      throw new Error('CI/CD webhook handling failed');
+      throw new AppError('CI/CD webhook handling failed', 500);
     }
   }
 
@@ -1026,7 +1027,7 @@ allow {
       };
     } catch (error) {
       logger.error('[ComplianceAsCode] Error fetching organization compliance data', error);
-      throw new Error('Failed to fetch organization compliance data for policy evaluation');
+      throw new AppError('Failed to fetch organization compliance data for policy evaluation', 500);
     }
   }
 
@@ -1071,7 +1072,7 @@ allow {
       });
 
       if (!existing || existing.organizationId !== organizationId) {
-        throw new Error('Policy not found');
+        throw new AppError('Policy not found', 404);
       }
 
       // Validate Rego if provided
@@ -1114,7 +1115,7 @@ allow {
       };
     } catch (error) {
       logger.error('Error updating policy', error);
-      throw new Error('Failed to update compliance policy');
+      throw new AppError('Failed to update compliance policy', 500);
     }
   }
 
@@ -1129,11 +1130,11 @@ allow {
       });
 
       if (!current || current.organizationId !== organizationId) {
-        throw new Error('Policy not found');
+        throw new AppError('Policy not found', 404);
       }
 
       if (!current.previousVersion) {
-        throw new Error('No previous version to rollback to');
+        throw new AppError('No previous version to rollback to', 404);
       }
 
       // Create new version from previous
@@ -1166,7 +1167,7 @@ allow {
       };
     } catch (error) {
       logger.error('Error rolling back policy', error);
-      throw new Error('Failed to rollback policy');
+      throw new AppError('Failed to rollback policy', 500);
     }
   }
 
@@ -1209,7 +1210,7 @@ allow {
       logger.info(`Deleted compliance policy: ${policyId}`);
     } catch (error) {
       logger.error('Error deleting policy', error);
-      throw new Error('Failed to delete compliance policy');
+      throw new AppError('Failed to delete compliance policy', 500);
     }
   }
 
@@ -1232,7 +1233,7 @@ allow {
       };
     } catch (error) {
       logger.error('Error detecting drift', error);
-      throw new Error('Drift detection failed');
+      throw new AppError('Drift detection failed', 500);
     }
   }
 
@@ -1246,7 +1247,7 @@ allow {
     try {
       const policy = await this.getPolicy(policyId);
       if (!policy) {
-        throw new Error('Policy not found');
+        throw new AppError('Policy not found', 404);
       }
 
       // Evaluate with test input
@@ -1257,7 +1258,7 @@ allow {
       return result;
     } catch (error) {
       logger.error('Error testing policy', error);
-      throw new Error('Policy test failed');
+      throw new AppError('Policy test failed', 500);
     }
   }
 
@@ -1277,7 +1278,7 @@ allow {
     try {
       const policy = await this.getPolicy(policyId);
       if (!policy) {
-        throw new Error('Policy not found');
+        throw new AppError('Policy not found', 404);
       }
 
       const testInput = { resource: { type: 'test' } };
@@ -1304,7 +1305,7 @@ allow {
       };
     } catch (error) {
       logger.error('Error benchmarking policy', error);
-      throw new Error('Policy benchmark failed');
+      throw new AppError('Policy benchmark failed', 500);
     }
   }
 }

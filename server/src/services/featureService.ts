@@ -11,6 +11,7 @@
 
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 import { TierName, getTierIndex, TIER_ORDER } from '../config/tiers';
 import {
   FEATURES,
@@ -70,7 +71,7 @@ class FeatureService {
     });
 
     if (!org) {
-      throw new Error('Organization not found');
+      throw new AppError('Organization not found', 404);
     }
 
     const tier = org.plan as TierName;
@@ -132,7 +133,7 @@ class FeatureService {
     // Validate feature exists
     const feature = getFeature(featureId);
     if (!feature || !feature.availableAsAddOn) {
-      throw new Error('Feature not available as add-on');
+      throw new AppError('Feature not available as add-on', 400);
     }
 
     // Get organization and tier
@@ -146,11 +147,11 @@ class FeatureService {
     });
 
     if (!org) {
-      throw new Error('Organization not found');
+      throw new AppError('Organization not found', 404);
     }
 
     if (!org.stripeCustomerId || !org.stripeSubscriptionId) {
-      throw new Error('Organization does not have an active Stripe subscription');
+      throw new AppError('Organization does not have an active Stripe subscription', 400);
     }
 
     const tier = org.plan as TierName;
@@ -160,7 +161,7 @@ class FeatureService {
       const tierIndex = getTierIndex(tier);
       const requiredTierIndex = getTierIndex(feature.requiresTier);
       if (tierIndex < requiredTierIndex) {
-        throw new Error(`Feature requires ${feature.requiresTier} tier or higher`);
+        throw new AppError(`Feature requires ${feature.requiresTier} tier or higher`, 403);
       }
     }
 
@@ -178,7 +179,7 @@ class FeatureService {
     });
 
     if (existing) {
-      throw new Error('Feature already subscribed');
+      throw new AppError('Feature already subscribed', 409);
     }
 
     // Calculate price
@@ -250,7 +251,7 @@ class FeatureService {
       stripePriceId = stripePrice.id;
     } catch (error: any) {
       logger.error('Failed to create Stripe subscription item', { error, featureId, organizationId });
-      throw new Error('Failed to create Stripe subscription item');
+      throw new AppError('Failed to create Stripe subscription item', 500);
     }
 
     // Wrap DB writes in a transaction for atomicity
@@ -323,7 +324,7 @@ class FeatureService {
     });
 
     if (!subscription) {
-      throw new Error('Feature subscription not found');
+      throw new AppError('Feature subscription not found', 404);
     }
 
     // Cancel in Stripe (at period end)
@@ -439,7 +440,7 @@ class FeatureService {
   ): Promise<FeatureSubscriptionResult[]> {
     const bundle = getBundle(bundleId);
     if (!bundle || !bundle.availableAsAddOn) {
-      throw new Error('Bundle not available as add-on');
+      throw new AppError('Bundle not available as add-on', 400);
     }
 
     // Get organization and tier
@@ -449,7 +450,7 @@ class FeatureService {
     });
 
     if (!org) {
-      throw new Error('Organization not found');
+      throw new AppError('Organization not found', 404);
     }
 
     const tier = org.plan as TierName;
@@ -459,7 +460,7 @@ class FeatureService {
       const tierIndex = getTierIndex(tier);
       const requiredTierIndex = getTierIndex(bundle.requiresTier);
       if (tierIndex < requiredTierIndex) {
-        throw new Error(`Bundle requires ${bundle.requiresTier} tier or higher`);
+        throw new AppError(`Bundle requires ${bundle.requiresTier} tier or higher`, 403);
       }
     }
 

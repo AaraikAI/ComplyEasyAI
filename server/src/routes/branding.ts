@@ -10,6 +10,7 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { upsertBrandingSchema } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import multer from 'multer';
@@ -82,8 +83,9 @@ router.get(
 
       res.json({ status: 'success', data: { ...branding, isDefault: false } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching branding config:', error);
-      res.status(500).json({ error: 'Failed to fetch branding configuration' });
+      throw new AppError('Failed to fetch branding configuration', 500);
     }
   })
 );
@@ -162,8 +164,9 @@ router.post(
 
       res.json({ status: 'success', data: branding });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error saving branding config:', error);
-      res.status(500).json({ error: 'Failed to save branding configuration' });
+      throw new AppError('Failed to save branding configuration', 500);
     }
   })
 );
@@ -194,8 +197,9 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'Branding reset to defaults' } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error resetting branding config:', error);
-      res.status(500).json({ error: 'Failed to reset branding configuration' });
+      throw new AppError('Failed to reset branding configuration', 500);
     }
   })
 );
@@ -213,8 +217,7 @@ router.post(
 
     try {
       if (!req.file) {
-        res.status(400).json({ error: 'logo file is required (field name: "logo")' });
-        return;
+        throw new AppError('logo file is required (field name: "logo")', 400);
       }
 
       // Uploads to S3/CloudStorage when AWS_S3_BUCKET is configured.
@@ -253,8 +256,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error uploading logo:', error);
-      res.status(500).json({ error: 'Failed to upload logo' });
+      throw new AppError('Failed to upload logo', 500);
     }
   })
 );
@@ -272,8 +276,7 @@ router.post(
 
     try {
       if (!req.file) {
-        res.status(400).json({ error: 'favicon file is required (field name: "favicon")' });
-        return;
+        throw new AppError('favicon file is required (field name: "favicon")', 400);
       }
 
       let faviconUrl: string;
@@ -310,8 +313,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error uploading favicon:', error);
-      res.status(500).json({ error: 'Failed to upload favicon' });
+      throw new AppError('Failed to upload favicon', 500);
     }
   })
 );

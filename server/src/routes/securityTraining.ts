@@ -15,6 +15,7 @@ import {
 import { asyncHandler } from '../types/express';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 router.use(authenticate);
@@ -140,8 +141,9 @@ router.get(
         categoryBreakdown,
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error generating training compliance report:', error);
-      res.status(500).json({ error: 'Failed to generate compliance report' });
+      throw new AppError('Failed to generate compliance report', 500);
     }
   })
 );
@@ -195,8 +197,9 @@ router.get(
         totalPages: Math.ceil(total / limit),
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching training records:', error);
-      res.status(500).json({ error: 'Failed to fetch training records' });
+      throw new AppError('Failed to fetch training records', 500);
     }
   })
 );
@@ -225,8 +228,9 @@ router.get(
 
       res.json({ records, total: records.length });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching user training records:', error);
-      res.status(500).json({ error: 'Failed to fetch user training records' });
+      throw new AppError('Failed to fetch user training records', 500);
     }
   })
 );
@@ -266,7 +270,7 @@ router.get(
         return res.json({ modules: [], total: 0, page, limit, totalPages: 0 });
       }
       logger.error('Error fetching training modules:', error);
-      res.status(500).json({ error: 'Failed to fetch training modules' });
+      throw new AppError('Failed to fetch training modules', 500);
     }
   })
 );
@@ -297,8 +301,7 @@ router.post(
       } = req.body;
 
       if (!title || !category) {
-        res.status(400).json({ error: 'title and category are required' });
-        return;
+        throw new AppError('title and category are required', 400);
       }
 
       const validCategories = [
@@ -314,10 +317,7 @@ router.post(
         'AccessControl',
       ];
       if (!validCategories.includes(category)) {
-        res.status(400).json({
-          error: `category must be one of: ${validCategories.join(', ')}`,
-        });
-        return;
+        throw new AppError(`category must be one of: ${validCategories.join(', ')}`, 400);
       }
 
       const training = await prisma.securityTraining.create({
@@ -341,8 +341,9 @@ router.post(
 
       res.status(201).json(training);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating training module:', error);
-      res.status(500).json({ error: 'Failed to create training module' });
+      throw new AppError('Failed to create training module', 500);
     }
   })
 );
@@ -366,8 +367,7 @@ router.get(
       });
 
       if (!training) {
-        res.status(404).json({ error: 'Training module not found' });
-        return;
+        throw new AppError('Training module not found', 404);
       }
 
       // Get status breakdown for this training
@@ -388,8 +388,9 @@ router.get(
         ),
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching training module:', error);
-      res.status(500).json({ error: 'Failed to fetch training module' });
+      throw new AppError('Failed to fetch training module', 500);
     }
   })
 );
@@ -410,8 +411,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Training module not found' });
-        return;
+        throw new AppError('Training module not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -427,8 +427,9 @@ router.patch(
 
       res.json(training);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating training module:', error);
-      res.status(500).json({ error: 'Failed to update training module' });
+      throw new AppError('Failed to update training module', 500);
     }
   })
 );
@@ -448,8 +449,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Training module not found' });
-        return;
+        throw new AppError('Training module not found', 404);
       }
 
       const training = await prisma.securityTraining.update({
@@ -459,8 +459,9 @@ router.delete(
 
       res.json({ message: 'Training module archived', id: training.id });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error archiving training module:', error);
-      res.status(500).json({ error: 'Failed to archive training module' });
+      throw new AppError('Failed to archive training module', 500);
     }
   })
 );
@@ -481,15 +482,13 @@ router.post(
       });
 
       if (!training) {
-        res.status(404).json({ error: 'Training module not found or not active' });
-        return;
+        throw new AppError('Training module not found or not active', 404);
       }
 
       const { userIds, dueDate } = req.body;
 
       if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-        res.status(400).json({ error: 'userIds array is required' });
-        return;
+        throw new AppError('userIds array is required', 400);
       }
 
       // Calculate expiry date based on training validity period
@@ -505,8 +504,7 @@ router.post(
       const validUserIds = orgUsers.map((u) => u.id);
 
       if (validUserIds.length === 0) {
-        res.status(400).json({ error: 'No valid users found in organization' });
-        return;
+        throw new AppError('No valid users found in organization', 400);
       }
 
       // Create records, skipping duplicates via upsert
@@ -540,8 +538,9 @@ router.post(
         skippedInvalidUsers: userIds.length - validUserIds.length,
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error assigning training:', error);
-      res.status(500).json({ error: 'Failed to assign training' });
+      throw new AppError('Failed to assign training', 500);
     }
   })
 );
@@ -562,8 +561,7 @@ router.post(
       });
 
       if (!training) {
-        res.status(404).json({ error: 'Training module not found or not active' });
-        return;
+        throw new AppError('Training module not found or not active', 404);
       }
 
       const { dueDate } = req.body;
@@ -604,8 +602,9 @@ router.post(
         assigned: created,
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error assigning training to all users:', error);
-      res.status(500).json({ error: 'Failed to assign training to all users' });
+      throw new AppError('Failed to assign training to all users', 500);
     }
   })
 );
@@ -626,8 +625,7 @@ router.patch(
       });
 
       if (!record) {
-        res.status(404).json({ error: 'Training record not found' });
-        return;
+        throw new AppError('Training record not found', 404);
       }
 
       const { action, score } = req.body;
@@ -639,8 +637,7 @@ router.patch(
         updateData.attempts = { increment: 1 };
       } else if (action === 'complete') {
         if (score === undefined || score === null) {
-          res.status(400).json({ error: 'score is required when completing training' });
-          return;
+          throw new AppError('score is required when completing training', 400);
         }
 
         const passingScore = record.training.passingScore;
@@ -666,8 +663,9 @@ router.patch(
 
       res.json(updated);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating training record:', error);
-      res.status(500).json({ error: 'Failed to update training record' });
+      throw new AppError('Failed to update training record', 500);
     }
   })
 );

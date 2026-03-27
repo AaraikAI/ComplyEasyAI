@@ -21,6 +21,7 @@ import crypto from 'crypto';
 import config from '../../config';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 
 // ---------------------------------------------------------------------------
 // Exported Interfaces
@@ -1450,7 +1451,7 @@ class WebRTCSignalingService {
   private generateTURNCredentials(): { username: string; credential: string } {
     const secret = process.env.WEBRTC_TURN_SECRET || process.env.JWT_SECRET;
     if (!secret) {
-      throw new Error('WEBRTC_TURN_SECRET or JWT_SECRET environment variable is required for TURN credential generation');
+      throw new AppError('WEBRTC_TURN_SECRET or JWT_SECRET environment variable is required for TURN credential generation', 500);
     }
     const ttl = parseInt(process.env.WEBRTC_TURN_TTL || String(TURN_CREDENTIAL_TTL_S), 10);
     const expiry = Math.floor(Date.now() / 1000) + ttl;

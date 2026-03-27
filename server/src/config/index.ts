@@ -191,7 +191,7 @@ const config: Config = {
     level: process.env.LOG_LEVEL || 'info',
   },
   mqtt: {
-    brokerUrl: process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883',
+    brokerUrl: process.env.MQTT_BROKER_URL || (process.env.NODE_ENV === 'production' ? '' : 'mqtt://localhost:1883'),
     username: process.env.MQTT_USERNAME,
     password: process.env.MQTT_PASSWORD,
     clientId: process.env.MQTT_CLIENT_ID || `complyeasy-${Date.now()}`,
@@ -236,8 +236,8 @@ export const validateConfig = (): void => {
 
   if (!process.env.ENCRYPTION_KEY) {
     errors.push('ENCRYPTION_KEY is required');
-  } else if (process.env.ENCRYPTION_KEY.length < 16) {
-    errors.push('ENCRYPTION_KEY must be at least 16 characters long');
+  } else if (process.env.ENCRYPTION_KEY.length < 32) {
+    errors.push('ENCRYPTION_KEY must be at least 32 characters long (64 hex characters recommended for AES-256)');
   }
 
   if (!process.env.GEMINI_API_KEY) {
@@ -294,6 +294,15 @@ export const validateConfig = (): void => {
   // Redis (required for multi-instance production: CSRF tokens, rate limiting, sessions)
   if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL) {
     errors.push('REDIS_URL is required in production for CSRF tokens, rate limiting, and session management across multiple instances');
+  }
+
+  // MQTT Broker (required in production for IoT compliance data)
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.MQTT_BROKER_URL) {
+      warnings.push('MQTT_BROKER_URL is not set — IoT compliance features will not work');
+    } else if (!process.env.MQTT_BROKER_URL.startsWith('mqtts://')) {
+      errors.push('MQTT_BROKER_URL must use mqtts:// (TLS) in production');
+    }
   }
 
   // Log warnings in non-production (config loads before logger to avoid circular dependency)

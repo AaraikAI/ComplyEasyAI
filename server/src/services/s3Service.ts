@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import config from '../config';
 import logger from '../config/logger';
 import prisma from '../config/database';
+import { AppError } from '../middleware/errorHandler';
 
 // Multer file interface to avoid Express.Multer namespace issues
 interface MulterFile {
@@ -21,11 +22,11 @@ interface MulterFile {
 // Configure AWS SDK with region validation (security fix for GHSA-j965-2qgj-vjmq)
 const validateRegion = (region: string): string => {
   if (!region || typeof region !== 'string') {
-    throw new Error('AWS region must be a non-empty string');
+    throw new AppError('AWS region must be a non-empty string', 400);
   }
   // Basic validation - allow alphanumeric, hyphens, underscores
   if (!/^[a-zA-Z0-9_-]+$/.test(region)) {
-    throw new Error('Invalid AWS region format');
+    throw new AppError('Invalid AWS region format', 400);
   }
   return region;
 };
@@ -83,12 +84,12 @@ class S3Service {
       // Validate AWS configuration
       if (!config.aws.s3Bucket) {
         logger.error('S3 bucket not configured');
-        throw new Error('File storage is not configured. Please contact your administrator.');
+        throw new AppError('File storage is not configured. Please contact your administrator.', 400);
       }
 
       if (!config.aws.accessKeyId || !config.aws.secretAccessKey) {
         logger.error('AWS credentials not configured');
-        throw new Error('File storage credentials are not configured. Please contact your administrator.');
+        throw new AppError('File storage credentials are not configured. Please contact your administrator.', 400);
       }
 
       // Validate file
@@ -154,18 +155,18 @@ class S3Service {
       }
       
       if (error.code === 'NoSuchBucket') {
-        throw new Error(`S3 bucket "${config.aws.s3Bucket}" does not exist. Please contact your administrator.`);
+        throw new AppError(`S3 bucket "${config.aws.s3Bucket}" does not exist. Please contact your administrator.`, 500);
       }
       
       if (error.code === 'InvalidAccessKeyId' || error.code === 'SignatureDoesNotMatch') {
-        throw new Error('Invalid AWS credentials. Please contact your administrator.');
+        throw new AppError('Invalid AWS credentials. Please contact your administrator.', 500);
       }
       
       if (error.message) {
-        throw new Error(`Upload failed: ${error.message}`);
+        throw new AppError(`Upload failed: ${error.message}`, 500);
       }
       
-      throw new Error('Failed to upload file. Please try again or contact support.');
+      throw new AppError('Failed to upload file. Please try again or contact support.', 500);
     }
   }
 
@@ -181,7 +182,7 @@ class S3Service {
       return url;
     } catch (error) {
       logger.error('Failed to generate signed URL', error);
-      throw new Error('Failed to generate download URL');
+      throw new AppError('Failed to generate download URL', 500);
     }
   }
 
@@ -195,7 +196,7 @@ class S3Service {
       });
 
       if (!file) {
-        throw new Error('File not found');
+        throw new AppError('File not found', 404);
       }
 
       // Delete from S3
@@ -212,7 +213,7 @@ class S3Service {
       logger.info(`File deleted: ${file.filename}`);
     } catch (error) {
       logger.error('Failed to delete file', error);
-      throw new Error('Failed to delete file');
+      throw new AppError('Failed to delete file', 500);
     }
   }
 
@@ -246,7 +247,7 @@ class S3Service {
       return files;
     } catch (error) {
       logger.error('Failed to list files', error);
-      throw new Error('Failed to list files');
+      throw new AppError('Failed to list files', 500);
     }
   }
 
@@ -254,12 +255,12 @@ class S3Service {
     // Check file size
     if (file.size > this.MAX_FILE_SIZE) {
       const maxSizeMB = this.MAX_FILE_SIZE / 1024 / 1024;
-      throw new Error(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size of ${maxSizeMB}MB`);
+      throw new AppError(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size of ${maxSizeMB}MB`, 400);
     }
 
     // Check MIME type
     if (!this.ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      throw new Error(`File type "${file.mimetype}" is not allowed. Allowed types: PDF, Word, Excel, Images, Text, CSV, JSON, Audio, Video`);
+      throw new AppError(`File type "${file.mimetype}" is not allowed. Allowed types: PDF, Word, Excel, Images, Text, CSV, JSON, Audio, Video`, 400);
     }
 
     // Check for malicious file extensions
@@ -268,7 +269,7 @@ class S3Service {
 
     for (const ext of dangerousExtensions) {
       if (filename.endsWith(ext)) {
-        throw new Error(`Potentially dangerous file type: ${ext}. Executable files are not allowed.`);
+        throw new AppError(`Potentially dangerous file type: ${ext}. Executable files are not allowed.`, 400);
       }
     }
   }
@@ -357,7 +358,7 @@ class S3Service {
       logger.error('[S3] Error scanning file for viruses', error);
       // Fails closed (assumes infected) when virus scanning is unavailable
       if (process.env.NODE_ENV === 'production') {
-        throw new Error(`Virus scan failed: ${error.message}`);
+        throw new AppError(`Virus scan failed: ${error.message}`, 500);
       }
       // In development, allow with warning
       logger.warn('[S3] Virus scan failed, allowing file in development mode');

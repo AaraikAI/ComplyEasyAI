@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { MulterError } from 'multer';
 import logger from '../config/logger';
 import monitoring from '../config/monitoring';
 import { logSecurityEvent, SecurityEventType } from '../utils/securityEventLogger';
@@ -31,6 +32,50 @@ export const errorHandler = (
   if ('type' in err && (err as any).type === 'entity.too.large') {
     res.status(413).json({ error: 'Request body too large', message: 'Maximum payload size is 10MB' });
     return;
+  }
+
+  // Handle Multer file upload errors
+  if (err instanceof MulterError) {
+    const multerMessages: Record<string, string> = {
+      LIMIT_FILE_SIZE: 'File size exceeds the allowed limit',
+      LIMIT_FILE_COUNT: 'Too many files uploaded',
+      LIMIT_FIELD_KEY: 'Field name is too long',
+      LIMIT_FIELD_VALUE: 'Field value is too long',
+      LIMIT_FIELD_COUNT: 'Too many fields in the request',
+      LIMIT_UNEXPECTED_FILE: 'Unexpected file field',
+      LIMIT_PART_COUNT: 'Too many parts in the request',
+    };
+    const message = multerMessages[err.code] || `File upload error: ${err.message}`;
+    logger.warn(`Multer error: ${err.code} - ${err.message} - ${req.originalUrl}`);
+    res.status(400).json({ error: message });
+    return;
+  }
+
+  // Handle Prisma known request errors
+  if (err.constructor?.name === 'PrismaClientKnownRequestError' && 'code' in err) {
+    const prismaErr = err as any;
+    switch (prismaErr.code) {
+      case 'P2002': {
+        const target = prismaErr.meta?.target || 'field';
+        logger.warn(`Prisma unique constraint violation on ${target} - ${req.originalUrl}`);
+        res.status(409).json({ error: `A record with that ${target} already exists` });
+        return;
+      }
+      case 'P2025': {
+        logger.warn(`Prisma record not found - ${req.originalUrl}`);
+        res.status(404).json({ error: 'Record not found' });
+        return;
+      }
+      case 'P2003': {
+        const field = prismaErr.meta?.field_name || 'reference';
+        logger.warn(`Prisma foreign key constraint failed on ${field} - ${req.originalUrl}`);
+        res.status(400).json({ error: `Invalid reference: related record does not exist` });
+        return;
+      }
+      default:
+        // Let other Prisma errors fall through to 500 handler
+        break;
+    }
   }
 
   if (err instanceof AppError) {

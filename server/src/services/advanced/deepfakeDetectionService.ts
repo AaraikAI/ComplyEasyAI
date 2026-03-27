@@ -13,6 +13,7 @@ import logger from '../../config/logger';
 import * as tf from '@tensorflow/tfjs';
 import sharp from 'sharp';
 import crypto from 'crypto';
+import { AppError } from '../../middleware/errorHandler';
 import fs from 'fs';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
@@ -203,7 +204,7 @@ class DeepfakeDetectionService {
     try {
       const frames = await this.extractVideoFrames(videoBuffer, format);
       if (frames.length === 0) {
-        throw new Error('No frames could be extracted from video');
+        throw new AppError('No frames could be extracted from video', 400);
       }
 
       // Per-frame analysis
@@ -294,7 +295,7 @@ class DeepfakeDetectionService {
     options: { epochs?: number; batchSize?: number; validationSplit?: number } = {}
   ): Promise<{ finalLoss: number; finalAccuracy: number }> {
     await this.initialize();
-    if (!this.classifierModel) throw new Error('Classifier not initialized');
+    if (!this.classifierModel) throw new AppError('Classifier not initialized', 500);
 
     const epochs = options.epochs || 50;
     const batchSize = options.batchSize || 32;

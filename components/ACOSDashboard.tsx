@@ -579,7 +579,7 @@ const ACOSDashboard: React.FC<{ onBack: () => void; onNavigate?: (view: string) 
           <ControlLoopsTab loops={loops} onRefresh={() => {
             loadData();
             // Also refresh loops specifically
-            api.acos.getControlLoops().then(l => setLoops((l || []) as any)).catch(() => {});
+            api.acos.getControlLoops().then(l => setLoops((l || []) as any)).catch((err: unknown) => { toast.error('Failed to refresh control loops.'); });
           }} setLoops={setLoops} />
         )}
 

@@ -13,6 +13,14 @@ import { Router, Request, Response, NextFunction } from 'express';
 import webhookController from '../controllers/webhookController';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  createWebhookSchema,
+  updateWebhookSchema,
+  createApiKeySchema,
+  zapierSubscribeSchema,
+  incomingWebhookSchema,
+} from '../validators/webhookSchemas';
 import prisma from '../config/database';
 import crypto from 'crypto';
 import logger from '../config/logger';
@@ -86,11 +94,8 @@ const authenticateApiKey = async (req: Request, res: Response, next: NextFunctio
 
     next();
   } catch (error) {
-    if (error instanceof AppError) {
-      res.status(error.statusCode).json({ error: error.message });
-      return;
-    }
-    res.status(401).json({ error: 'Authentication failed' });
+    if (error instanceof AppError) throw error;
+    throw new AppError('Authentication failed', 401);
   }
 };
 
@@ -109,10 +114,7 @@ const requireScope = (scope: string) => {
       return next();
     }
 
-    res.status(403).json({
-      error: 'Insufficient permissions',
-      message: `API key requires '${scope}' scope`,
-    });
+    return next(new AppError(`API key requires '${scope}' scope`, 403));
   };
 };
 
@@ -134,8 +136,7 @@ async function verifyWebhookSignature(req: Request, res: Response, next: NextFun
 
   if (!signature) {
     logger.warn('Incoming webhook missing signature header', { organizationId });
-    res.status(401).json({ error: 'Missing webhook signature' });
-    return;
+    throw new AppError('Missing webhook signature', 401);
   }
 
   // Look up the webhook secret for this organization
@@ -146,8 +147,7 @@ async function verifyWebhookSignature(req: Request, res: Response, next: NextFun
 
   if (!webhookConfig?.secret) {
     logger.warn('Incoming webhook has no configured secret', { organizationId });
-    res.status(401).json({ error: 'Webhook not configured for this organization' });
-    return;
+    throw new AppError('Webhook not configured for this organization', 401);
   }
 
   // Compute HMAC-SHA256 of the raw request body
@@ -162,8 +162,7 @@ async function verifyWebhookSignature(req: Request, res: Response, next: NextFun
   const expectedBuffer = Buffer.from(expectedSignature, 'hex');
   if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
     logger.warn('Incoming webhook signature mismatch', { organizationId });
-    res.status(401).json({ error: 'Invalid webhook signature' });
-    return;
+    throw new AppError('Invalid webhook signature', 401);
   }
 
   next();
@@ -173,6 +172,7 @@ async function verifyWebhookSignature(req: Request, res: Response, next: NextFun
 router.post(
   '/incoming/:organizationId/:action',
   asyncHandler(verifyWebhookSignature),
+  validateBody(incomingWebhookSchema),
   asyncHandler(webhookController.receiveIncomingWebhook.bind(webhookController))
 );
 
@@ -192,6 +192,7 @@ router.post(
   '/zapier/subscribe',
   authenticateApiKey,
   requireScope('webhook:manage'),
+  validateBody(zapierSubscribeSchema),
   asyncHandler(webhookController.zapierSubscribe.bind(webhookController))
 );
 
@@ -241,10 +242,10 @@ router.get('/', asyncHandler(webhookController.getWebhooks.bind(webhookControlle
 router.get('/:webhookId', asyncHandler(webhookController.getWebhook.bind(webhookController)));
 
 // Create webhook (admin only)
-router.post('/', authorize('admin'), asyncHandler(webhookController.createWebhook.bind(webhookController)));
+router.post('/', authorize('admin'), validateBody(createWebhookSchema), asyncHandler(webhookController.createWebhook.bind(webhookController)));
 
 // Update webhook (admin only)
-router.patch('/:webhookId', authorize('admin'), asyncHandler(webhookController.updateWebhook.bind(webhookController)));
+router.patch('/:webhookId', authorize('admin'), validateBody(updateWebhookSchema), asyncHandler(webhookController.updateWebhook.bind(webhookController)));
 
 // Delete webhook (admin only)
 router.delete('/:webhookId', authorize('admin'), asyncHandler(webhookController.deleteWebhook.bind(webhookController)));
@@ -273,7 +274,7 @@ router.post('/events/:eventId/retry', authorize('admin'), asyncHandler(webhookCo
 router.get('/keys/list', asyncHandler(webhookController.getApiKeys.bind(webhookController)));
 
 // Create API key (admin only)
-router.post('/keys', authorize('admin'), asyncHandler(webhookController.createApiKey.bind(webhookController)));
+router.post('/keys', authorize('admin'), validateBody(createApiKeySchema), asyncHandler(webhookController.createApiKey.bind(webhookController)));
 
 // Revoke API key (admin only)
 router.delete('/keys/:keyId', authorize('admin'), asyncHandler(webhookController.revokeApiKey.bind(webhookController)));

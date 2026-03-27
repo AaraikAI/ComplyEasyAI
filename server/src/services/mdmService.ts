@@ -2,6 +2,7 @@ import prisma from '../config/database';
 import { Prisma } from '../generated/prisma/client';
 import logger from '../config/logger';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 // ---------------------------------------------------------------------------
 // Type definitions (aligned with Prisma models)
@@ -599,7 +600,7 @@ export class MDMService {
       where: { id: data.deviceId, organizationId: data.organizationId },
     });
     if (!device) {
-      throw new Error(`Device not found: ${data.deviceId}`);
+      throw new AppError(`Device not found: ${data.deviceId}`, 404);
     }
 
     const actionRecord = await prisma.deviceAction.create({
@@ -729,7 +730,7 @@ export class MDMService {
       where: { id: deviceId, organizationId },
     });
     if (!device) {
-      throw new Error(`Device not found: ${deviceId}`);
+      throw new AppError(`Device not found: ${deviceId}`, 404);
     }
 
     // Fetch enforced policies that target this device's platform

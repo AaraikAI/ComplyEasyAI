@@ -11,6 +11,7 @@
 
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 import sgMail from '@sendgrid/mail';
 import websocketService from './websocketService';
 import slackService from './integrations/slackService';
@@ -330,7 +331,7 @@ class NotificationService {
   ): Promise<void> {
     const apiKey = process.env.SENDGRID_API_KEY;
     if (!apiKey) {
-      throw new Error('SENDGRID_API_KEY not configured');
+      throw new AppError('SENDGRID_API_KEY not configured', 400);
     }
 
     // Get user email
@@ -339,7 +340,7 @@ class NotificationService {
     });
 
     if (!user || !user.email) {
-      throw new Error('User email not found');
+      throw new AppError('User email not found', 404);
     }
 
     const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@complyeasy.ai';
@@ -372,7 +373,7 @@ class NotificationService {
     // Get Slack integration
     const integration = await slackService.getIntegration(organizationId);
     if (!integration || !integration.connected) {
-      throw new Error('Slack integration not connected');
+      throw new AppError('Slack integration not connected', 400);
     }
 
     // Production-ready: Get user's Slack user ID from integration metadata or user preferences
@@ -480,7 +481,7 @@ class NotificationService {
     const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
-      throw new Error('Twilio credentials not configured');
+      throw new AppError('Twilio credentials not configured', 400);
     }
 
     // Production-ready: Get user phone number from notification preferences or user metadata
@@ -497,7 +498,7 @@ class NotificationService {
     });
 
     if (!user) {
-      throw new Error(`User ${userId} not found`);
+      throw new AppError(`User ${userId} not found`, 404);
     }
 
     // Get phone number from user's notification preferences metadata
@@ -645,7 +646,7 @@ class NotificationService {
   private renderTemplate(template: string, variables: Record<string, any>): string {
     let rendered = template;
     for (const [key, value] of Object.entries(variables)) {
-      rendered = rendered.replace(new RegExp(`{{${key}}}`, 'g'), String(value || ''));
+      rendered = rendered.split(`{{${key}}}`).join(String(value || ''));
     }
     return rendered;
   }

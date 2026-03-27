@@ -13,6 +13,7 @@ import {
   bulkUpdateSchema, bulkExportSchema, bulkDeleteSchema, bulkAssignSchema,
 } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -42,37 +43,21 @@ function validateBulkRequest(
   const { resourceType, resourceIds } = req.body;
 
   if (!resourceType || !SUPPORTED_RESOURCE_TYPES.includes(resourceType)) {
-    res.status(400).json({
-      status: 'error',
-      message: `resourceType is required and must be one of: ${SUPPORTED_RESOURCE_TYPES.join(', ')}`,
-    });
-    return null;
+    throw new AppError(`resourceType is required and must be one of: ${SUPPORTED_RESOURCE_TYPES.join(', ')}`, 400);
   }
 
   if (!Array.isArray(resourceIds) || resourceIds.length === 0) {
-    res.status(400).json({
-      status: 'error',
-      message: 'resourceIds must be a non-empty array of UUIDs',
-    });
-    return null;
+    throw new AppError('resourceIds must be a non-empty array of UUIDs', 400);
   }
 
   if (resourceIds.length > MAX_BULK_IDS) {
-    res.status(400).json({
-      status: 'error',
-      message: `Maximum of ${MAX_BULK_IDS} resource IDs per bulk operation`,
-    });
-    return null;
+    throw new AppError(`Maximum of ${MAX_BULK_IDS} resource IDs per bulk operation`, 400);
   }
 
   // Ensure all IDs are strings
   const sanitizedIds = resourceIds.filter((id: any) => typeof id === 'string' && id.length > 0);
   if (sanitizedIds.length === 0) {
-    res.status(400).json({
-      status: 'error',
-      message: 'resourceIds must contain at least one valid string ID',
-    });
-    return null;
+    throw new AppError('resourceIds must contain at least one valid string ID', 400);
   }
 
   return { orgId, userId, resourceType, resourceIds: sanitizedIds };
@@ -138,11 +123,7 @@ router.post(
     const { updates } = req.body;
 
     if (!updates || typeof updates !== 'object' || Object.keys(updates).length === 0) {
-      res.status(400).json({
-        status: 'error',
-        message: 'updates object is required and must contain at least one field to update',
-      });
-      return;
+      throw new AppError('updates object is required and must contain at least one field to update', 400);
     }
 
     try {
@@ -162,11 +143,7 @@ router.post(
       const missingIds = resourceIds.filter((id) => !existingIds.includes(id));
 
       if (existingIds.length === 0) {
-        res.status(404).json({
-          status: 'error',
-          message: 'No matching resources found in this organization',
-        });
-        return;
+        throw new AppError('No matching resources found in this organization', 404);
       }
 
       // Build safe update payload — only allow known fields
@@ -184,11 +161,7 @@ router.post(
             select: { id: true },
           });
           if (!assignee) {
-            res.status(400).json({
-              status: 'error',
-              message: 'Assignee user not found or not active in this organization',
-            });
-            return;
+            throw new AppError('Assignee user not found or not active in this organization', 400);
           }
         }
         safeUpdates[config.assigneeField] = updates.assignee;
@@ -208,11 +181,7 @@ router.post(
       }
 
       if (Object.keys(safeUpdates).length === 0) {
-        res.status(400).json({
-          status: 'error',
-          message: 'No valid update fields provided. Supported: status, assignee, category, severity, riskLevel',
-        });
-        return;
+        throw new AppError('No valid update fields provided. Supported: status, assignee, category, severity, riskLevel', 400);
       }
 
       const result = await model.updateMany({
@@ -237,8 +206,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error in bulk update:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to perform bulk update' });
+      throw new AppError('Failed to perform bulk update', 500);
     }
   })
 );
@@ -299,8 +269,9 @@ router.post(
       res.setHeader('Content-Type', 'application/json');
       res.json({ status: 'success', data: exportData });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error in bulk export:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to perform bulk export' });
+      throw new AppError('Failed to perform bulk export', 500);
     }
   })
 );
@@ -335,11 +306,7 @@ router.post(
       const existingIds = existing.map((r: any) => r.id);
 
       if (existingIds.length === 0) {
-        res.status(404).json({
-          status: 'error',
-          message: 'No matching resources found in this organization',
-        });
-        return;
+        throw new AppError('No matching resources found in this organization', 404);
       }
 
       // Soft-delete by setting status to a deleted/archived state
@@ -374,8 +341,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error in bulk delete:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to perform bulk delete' });
+      throw new AppError('Failed to perform bulk delete', 500);
     }
   })
 );
@@ -396,11 +364,7 @@ router.post(
     const { assigneeId } = req.body;
 
     if (!assigneeId || typeof assigneeId !== 'string') {
-      res.status(400).json({
-        status: 'error',
-        message: 'assigneeId is required and must be a valid user ID',
-      });
-      return;
+      throw new AppError('assigneeId is required and must be a valid user ID', 400);
     }
 
     try {
@@ -411,11 +375,7 @@ router.post(
       });
 
       if (!assignee) {
-        res.status(400).json({
-          status: 'error',
-          message: 'Assignee user not found or not active in this organization',
-        });
-        return;
+        throw new AppError('Assignee user not found or not active in this organization', 400);
       }
 
       const config = getModelConfig(resourceType);
@@ -433,11 +393,7 @@ router.post(
       const existingIds = existing.map((r: any) => r.id);
 
       if (existingIds.length === 0) {
-        res.status(404).json({
-          status: 'error',
-          message: 'No matching resources found in this organization',
-        });
-        return;
+        throw new AppError('No matching resources found in this organization', 404);
       }
 
       const result = await model.updateMany({
@@ -469,8 +425,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error in bulk assign:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to perform bulk assign' });
+      throw new AppError('Failed to perform bulk assign', 500);
     }
   })
 );

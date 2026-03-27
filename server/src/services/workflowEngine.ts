@@ -16,8 +16,47 @@
  */
 
 import prisma from '../config/database';
+import { Prisma } from '../generated/prisma/client';
 import logger from '../config/logger';
 import axios from 'axios';
+import { isWebhookUrlSafe } from '../utils/urlValidator';
+import { AppError } from '../middleware/errorHandler';
+
+/**
+ * Detect patterns known to cause catastrophic backtracking (ReDoS).
+ * Rejects nested quantifiers such as (a+)+, (a*)+, (a+)*, etc.
+ */
+const REDOS_PATTERNS = [
+  /\([^)]*[+*]\)[+*]/, // nested quantifier: (x+)+ or (x*)*
+  /\([^)]*[+*]\)\{/, // nested quantifier with repetition: (x+){n}
+  /\.\*.*\.\*/, // overlapping greedy wildcards: .*....*
+];
+
+function isReDoSSafe(pattern: string): boolean {
+  return !REDOS_PATTERNS.some((rp) => rp.test(pattern));
+}
+
+/**
+ * Execute regex test with length limits and ReDoS pattern rejection.
+ * Rejects overly long patterns, inputs, and patterns with nested quantifiers.
+ */
+function safeRegexTest(pattern: string, input: string): boolean {
+  if (pattern.length > 200 || input.length > 10000) {
+    logger.warn('Regex input or pattern exceeds safe length limits', {
+      patternLength: pattern.length,
+      inputLength: input.length,
+    });
+    return false;
+  }
+  if (!isReDoSSafe(pattern)) {
+    logger.warn('Regex pattern rejected — contains nested quantifiers (ReDoS risk)', {
+      pattern: pattern.substring(0, 50),
+    });
+    return false;
+  }
+  const regex = new RegExp(pattern, 'i');
+  return regex.test(input);
+}
 
 // Allowlist of Prisma model table names that can be updated via workflow actions.
 // This prevents SQL injection through the `update_status` action's `model` parameter.
@@ -163,8 +202,7 @@ export class WorkflowEngineService {
 
       case 'matches':
         try {
-          const regex = new RegExp(String(expected), 'i');
-          return regex.test(String(actual));
+          return safeRegexTest(String(expected), String(actual));
         } catch {
           logger.warn('Invalid regex in workflow condition', { pattern: expected });
           return false;
@@ -351,6 +389,7 @@ export class WorkflowEngineService {
           const taskDescription = (config.taskDescription as string) || '';
           const assigneeId = (config.assigneeId as string) || '';
           const dueDays = (config.dueDays as number) || 7;
+          const createdById = (context.userId as string) || 'system';
 
           const dueDate = new Date();
           dueDate.setDate(dueDate.getDate() + dueDays);
@@ -361,7 +400,23 @@ export class WorkflowEngineService {
             dueDate: dueDate.toISOString(),
           });
 
-          // Create a notification for the assignee about the new task
+          // Persist the task as an Issue record in the database
+          const issue = await prisma.issue.create({
+            data: {
+              organizationId,
+              title: taskTitle,
+              description: taskDescription,
+              issueType: 'Task',
+              category: 'workflow',
+              priority: 'Medium',
+              status: 'Open',
+              assignedToId: assigneeId || null,
+              createdById,
+              dueDate,
+            },
+          });
+
+          // Notify the assignee about the new task
           if (assigneeId) {
             await prisma.notification.create({
               data: {
@@ -380,7 +435,7 @@ export class WorkflowEngineService {
           return {
             actionType: action.type,
             status: 'success',
-            message: `Task "${taskTitle}" assigned to ${assigneeId}, due ${dueDate.toISOString().slice(0, 10)}`,
+            message: `Task "${taskTitle}" (issue ${issue.id}) assigned to ${assigneeId}, due ${dueDate.toISOString().slice(0, 10)}`,
             durationMs: Date.now() - startTime,
           };
         }
@@ -401,12 +456,8 @@ export class WorkflowEngineService {
           }
 
           if (model && recordId && newStatus) {
-            await prisma.$executeRawUnsafe(
-              `UPDATE "${model}" SET "status" = $1, "updatedAt" = NOW() WHERE "id" = $2 AND "organizationId" = $3`,
-              newStatus,
-              recordId,
-              organizationId
-            );
+            const modelTable = Prisma.raw(`"${model}"`);
+            await prisma.$executeRaw`UPDATE ${modelTable} SET "status" = ${newStatus}, "updatedAt" = NOW() WHERE "id" = ${recordId} AND "organizationId" = ${organizationId}`;
           }
 
           return {
@@ -459,6 +510,18 @@ export class WorkflowEngineService {
             };
           }
 
+          // SSRF protection: validate webhook URL before making request
+          if (!isWebhookUrlSafe(url)) {
+            logger.warn('Webhook URL blocked by SSRF protection', { url: url.substring(0, 200) });
+            return {
+              actionType: action.type,
+              status: 'failure',
+              message: 'Webhook URL is not allowed (SSRF protection)',
+              error: 'Blocked URL',
+              durationMs: Date.now() - startTime,
+            };
+          }
+
           const response = await axios({
             method: method as 'GET' | 'POST' | 'PUT' | 'PATCH',
             url,
@@ -482,13 +545,66 @@ export class WorkflowEngineService {
         case 'add_tag': {
           const tagName = (config.tagName as string) || '';
           const resourceId = (config.resourceId as string) || (context.resourceId as string) || '';
+          const resourceType = (config.resourceType as string) || (context.resourceType as string) || '';
 
-          logger.info('Workflow add_tag action', { tagName, resourceId, organizationId });
+          if (!tagName || !resourceId) {
+            return {
+              actionType: action.type,
+              status: 'failure',
+              message: 'Tag name and resource ID are required',
+              durationMs: Date.now() - startTime,
+            };
+          }
+
+          // Models that support a tags JSON field
+          const TAGGABLE_MODELS = new Set(['Policy']);
+          // Models that support a tags String[] field
+          const TAGGABLE_ARRAY_MODELS = new Set(['ManagedDevice']);
+
+          if (resourceType && TAGGABLE_MODELS.has(resourceType)) {
+            // Append tag to the JSON tags field, avoiding duplicates
+            const modelTable = Prisma.raw(`"${resourceType}"`);
+            await prisma.$executeRaw`
+              UPDATE ${modelTable}
+              SET "tags" = COALESCE("tags", '[]'::jsonb) || to_jsonb(${tagName}::text),
+                  "updatedAt" = NOW()
+              WHERE "id" = ${resourceId}
+                AND "organizationId" = ${organizationId}
+                AND NOT (COALESCE("tags", '[]'::jsonb) ? ${tagName})
+            `;
+          } else if (resourceType && TAGGABLE_ARRAY_MODELS.has(resourceType)) {
+            // Append tag to the String[] tags field, avoiding duplicates
+            const modelTable = Prisma.raw(`"${resourceType}"`);
+            await prisma.$executeRaw`
+              UPDATE ${modelTable}
+              SET "tags" = array_append("tags", ${tagName}),
+                  "updatedAt" = NOW()
+              WHERE "id" = ${resourceId}
+                AND "organizationId" = ${organizationId}
+                AND NOT (${tagName} = ANY("tags"))
+            `;
+          } else {
+            // For resources without a tags field, persist via audit log notification
+            await prisma.notification.create({
+              data: {
+                userId: (context.userId as string) || 'system',
+                organizationId,
+                type: 'info',
+                title: 'Tag Applied',
+                message: `Tag "${tagName}" applied to ${resourceType || 'resource'} ${resourceId}`,
+                status: 'unread',
+                category: 'workflow',
+                channels: ['in_app'],
+              },
+            });
+          }
+
+          logger.info('Workflow add_tag action completed', { tagName, resourceId, resourceType, organizationId });
 
           return {
             actionType: action.type,
             status: 'success',
-            message: `Tag "${tagName}" added to resource ${resourceId}`,
+            message: `Tag "${tagName}" added to ${resourceType || 'resource'} ${resourceId}`,
             durationMs: Date.now() - startTime,
           };
         }
@@ -497,8 +613,25 @@ export class WorkflowEngineService {
           const escalateTo = (config.escalateTo as string) || '';
           const reason = (config.reason as string) || 'Automated escalation';
           const priority = (config.priority as string) || 'high';
+          const createdById = (context.userId as string) || 'system';
+          const priorityMap: Record<string, 'Low' | 'Medium' | 'High' | 'Critical'> = { low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' };
 
-          // Create a high-priority notification for the escalation target
+          // Persist the escalation as an Issue record
+          const escalationIssue = await prisma.issue.create({
+            data: {
+              organizationId,
+              title: `Escalation: ${reason.slice(0, 120)}`,
+              description: reason,
+              issueType: 'Escalation',
+              category: 'workflow',
+              priority: priorityMap[priority.toLowerCase()] ?? 'High',
+              status: 'Open',
+              assignedToId: escalateTo || null,
+              createdById,
+            },
+          });
+
+          // Notify the escalation target
           if (escalateTo) {
             await prisma.notification.create({
               data: {
@@ -517,7 +650,7 @@ export class WorkflowEngineService {
           return {
             actionType: action.type,
             status: 'success',
-            message: `Escalated to ${escalateTo} with priority ${priority}`,
+            message: `Escalated to ${escalateTo} with priority ${priority} (issue ${escalationIssue.id})`,
             durationMs: Date.now() - startTime,
           };
         }
@@ -698,11 +831,11 @@ export class WorkflowEngineService {
     });
 
     if (!workflow) {
-      throw new Error(`Workflow not found: ${workflowId}`);
+      throw new AppError(`Workflow not found: ${workflowId}`, 404);
     }
 
     if (workflow.status !== 'Active') {
-      throw new Error(`Workflow is not active: ${workflow.name} (${workflow.status})`);
+      throw new AppError(`Workflow is not active: ${workflow.name} (${workflow.status})`, 400);
     }
 
     logger.info('Executing workflow', { workflowId, workflowName: workflow.name });

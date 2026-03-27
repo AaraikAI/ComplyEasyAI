@@ -92,3 +92,25 @@ export const aiLimiter = rateLimit({
   handler: createRateLimitHandler('ai'),
   ...storeConfig,
 });
+
+// SSO rate limiter — generous to allow SAML callbacks and login flows
+export const ssoLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: isDev ? 500 : 100,
+  message: 'Too many SSO requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: createRateLimitHandler('sso'),
+  ...storeConfig,
+});
+
+// SCIM provisioning rate limiter — generous to support bulk user provisioning
+export const scimLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: isDev ? 1000 : 200,
+  message: 'Too many SCIM provisioning requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: createRateLimitHandler('scim'),
+  ...storeConfig,
+});

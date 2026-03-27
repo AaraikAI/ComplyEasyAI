@@ -12,6 +12,7 @@ import {
 } from '../validators/coreModulesSchemas';
 import { asyncHandler, AuthenticatedRequest } from '../types/express';
 import mdmService from '../services/mdmService';
+import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 
 const router = Router();
@@ -74,8 +75,7 @@ router.get(
     const user = req.user;
     const device = await mdmService.getDeviceById(req.params.id, user.organizationId);
     if (!device) {
-      res.status(404).json({ error: 'Device not found' });
-      return;
+      throw new AppError('Device not found', 404);
     }
     res.json(device);
   })
@@ -140,8 +140,7 @@ router.post(
     const user = req.user;
     const { newUserId, newUserName, reason } = req.body;
     if (!newUserId) {
-      res.status(400).json({ error: 'newUserId is required' });
-      return;
+      throw new AppError('newUserId is required', 400);
     }
     const device = await mdmService.reassignDevice(req.params.id, user.id, user.organizationId, {
       newUserId,
@@ -149,8 +148,7 @@ router.post(
       reason,
     });
     if (!device) {
-      res.status(404).json({ error: 'Device not found' });
-      return;
+      throw new AppError('Device not found', 404);
     }
     res.json({ success: true, message: 'Device reassigned', device });
   })
@@ -195,8 +193,7 @@ router.get(
     const user = req.user;
     const policy = await mdmService.getPolicyById(req.params.id, user.organizationId);
     if (!policy) {
-      res.status(404).json({ error: 'Policy not found' });
-      return;
+      throw new AppError('Policy not found', 404);
     }
     res.json(policy);
   })

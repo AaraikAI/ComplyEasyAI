@@ -11,6 +11,7 @@
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 import { DeviceTrust as PrismaDeviceTrust, ZeroTrustPolicy as PrismaZeroTrustPolicy, NetworkSegment as PrismaNetworkSegment, Prisma } from '../../generated/prisma/client';
 import ldapPermissionService, { ADUser, PermissionEvaluationResult, RoleMapping } from './ldapPermissionService';
 
@@ -164,7 +165,7 @@ class ZeroTrustService {
       logger.info(`Zero Trust service initialized for org ${organizationId}`);
     } catch (error) {
       logger.error('Error initializing Zero Trust service', error);
-      throw new Error('Zero Trust initialization failed');
+      throw new AppError('Zero Trust initialization failed', 500);
     }
   }
 
@@ -249,7 +250,7 @@ class ZeroTrustService {
         deviceId,
         organizationId,
       });
-      throw new Error(`Device trust verification failed: ${error.message || error}`);
+      throw new AppError(`Device trust verification failed: ${error.message || error}`, 500);
     }
   }
 
@@ -924,7 +925,7 @@ class ZeroTrustService {
       return fullPolicy;
     } catch (error) {
       logger.error('Error creating Zero Trust policy', error);
-      throw new Error('Failed to create Zero Trust policy');
+      throw new AppError('Failed to create Zero Trust policy', 500);
     }
   }
 

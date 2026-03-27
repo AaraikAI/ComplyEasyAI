@@ -12,6 +12,7 @@ import {
   createEvidenceCollectionRuleSchema, updateEvidenceCollectionRuleSchema,
 } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -95,8 +96,9 @@ router.get(
         data: { summary, rules: statusData },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching collection status:', error);
-      res.status(500).json({ error: 'Failed to fetch collection status' });
+      throw new AppError('Failed to fetch collection status', 500);
     }
   })
 );
@@ -148,8 +150,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error listing collection rules:', error);
-      res.status(500).json({ error: 'Failed to list collection rules' });
+      throw new AppError('Failed to list collection rules', 500);
     }
   })
 );
@@ -169,14 +172,14 @@ router.get(
       });
 
       if (!rule) {
-        res.status(404).json({ error: 'Collection rule not found' });
-        return;
+        throw new AppError('Collection rule not found', 404);
       }
 
       res.json({ status: 'success', data: rule });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching collection rule:', error);
-      res.status(500).json({ error: 'Failed to fetch collection rule' });
+      throw new AppError('Failed to fetch collection rule', 500);
     }
   })
 );
@@ -195,15 +198,11 @@ router.post(
       const { controlId, sourceType, integrationId, query, schedule, isActive } = req.body;
 
       if (!controlId || !sourceType) {
-        res.status(400).json({ error: 'controlId and sourceType are required' });
-        return;
+        throw new AppError('controlId and sourceType are required', 400);
       }
 
       if (!VALID_SOURCE_TYPES.includes(sourceType)) {
-        res.status(400).json({
-          error: `sourceType must be one of: ${VALID_SOURCE_TYPES.join(', ')}`,
-        });
-        return;
+        throw new AppError(`sourceType must be one of: ${VALID_SOURCE_TYPES.join(', ')}`, 400);
       }
 
       // Check for duplicate rule on same control + source
@@ -212,11 +211,7 @@ router.post(
       });
 
       if (existing) {
-        res.status(409).json({
-          error: 'A collection rule already exists for this control and source type',
-          existingRuleId: existing.id,
-        });
-        return;
+        throw new AppError('A collection rule already exists for this control and source type', 409);
       }
 
       const rule = await prisma.evidenceCollectionRule.create({
@@ -233,8 +228,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: rule });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating collection rule:', error);
-      res.status(500).json({ error: 'Failed to create collection rule' });
+      throw new AppError('Failed to create collection rule', 500);
     }
   })
 );
@@ -255,8 +251,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Collection rule not found' });
-        return;
+        throw new AppError('Collection rule not found', 404);
       }
 
       const { sourceType, integrationId, query, schedule, isActive, controlId } = req.body;
@@ -264,10 +259,7 @@ router.patch(
 
       if (sourceType !== undefined) {
         if (!VALID_SOURCE_TYPES.includes(sourceType)) {
-          res.status(400).json({
-            error: `sourceType must be one of: ${VALID_SOURCE_TYPES.join(', ')}`,
-          });
-          return;
+          throw new AppError(`sourceType must be one of: ${VALID_SOURCE_TYPES.join(', ')}`, 400);
         }
         updateData.sourceType = sourceType;
       }
@@ -285,8 +277,9 @@ router.patch(
 
       res.json({ status: 'success', data: rule });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating collection rule:', error);
-      res.status(500).json({ error: 'Failed to update collection rule' });
+      throw new AppError('Failed to update collection rule', 500);
     }
   })
 );
@@ -306,8 +299,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Collection rule not found' });
-        return;
+        throw new AppError('Collection rule not found', 404);
       }
 
       await prisma.evidenceCollectionRule.delete({
@@ -319,8 +311,9 @@ router.delete(
         data: { message: 'Collection rule deleted', id: req.params.id },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting collection rule:', error);
-      res.status(500).json({ error: 'Failed to delete collection rule' });
+      throw new AppError('Failed to delete collection rule', 500);
     }
   })
 );
@@ -341,13 +334,11 @@ router.post(
       });
 
       if (!rule) {
-        res.status(404).json({ error: 'Collection rule not found' });
-        return;
+        throw new AppError('Collection rule not found', 404);
       }
 
       if (!rule.isActive) {
-        res.status(400).json({ error: 'Cannot trigger an inactive collection rule' });
-        return;
+        throw new AppError('Cannot trigger an inactive collection rule', 400);
       }
 
       // Update lastCollectedAt to mark the trigger
@@ -370,8 +361,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error triggering collection:', error);
-      res.status(500).json({ error: 'Failed to trigger collection' });
+      throw new AppError('Failed to trigger collection', 500);
     }
   })
 );

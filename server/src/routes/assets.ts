@@ -154,8 +154,7 @@ router.get(
       });
 
       if (!asset) {
-        res.status(404).json({ error: 'Asset not found' });
-        return;
+        throw new AppError('Asset not found', 404);
       }
 
       // Fetch linked risks and controls via the asset's ID in affectedSystems arrays
@@ -268,8 +267,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Asset not found' });
-        return;
+        throw new AppError('Asset not found', 404);
       }
 
       // Joi schema already validates types, classifications, and statuses via .valid()
@@ -308,8 +306,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ error: 'Asset not found' });
-        return;
+        throw new AppError('Asset not found', 404);
       }
 
       const asset = await prisma.asset.update({

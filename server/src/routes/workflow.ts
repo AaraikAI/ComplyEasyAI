@@ -12,6 +12,7 @@ import {
   createWorkflowRuleSchema, updateWorkflowRuleSchema,
 } from '../validators/coreModulesSchemas';
 import { asyncHandler, AuthenticatedRequest } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { Prisma } from '../generated/prisma/client';
@@ -119,8 +120,7 @@ router.get(
     });
 
     if (!workflow) {
-      res.status(404).json({ error: 'Workflow not found' });
-      return;
+      throw new AppError('Workflow not found', 404);
     }
 
     res.json(workflow);
@@ -140,8 +140,7 @@ router.patch(
     });
 
     if (!existing) {
-      res.status(404).json({ error: 'Workflow not found' });
-      return;
+      throw new AppError('Workflow not found', 404);
     }
 
     const data: Prisma.GRCWorkflowUpdateInput = {};
@@ -174,8 +173,7 @@ router.delete(
     });
 
     if (!existing) {
-      res.status(404).json({ error: 'Workflow not found' });
-      return;
+      throw new AppError('Workflow not found', 404);
     }
 
     await prisma.gRCWorkflow.delete({ where: { id: req.params.id } });
@@ -194,8 +192,7 @@ router.post(
     });
 
     if (!source) {
-      res.status(404).json({ error: 'Workflow not found' });
-      return;
+      throw new AppError('Workflow not found', 404);
     }
 
     const copy = await prisma.gRCWorkflow.create({
@@ -228,13 +225,11 @@ router.post(
     });
 
     if (!workflow) {
-      res.status(404).json({ error: 'Workflow not found' });
-      return;
+      throw new AppError('Workflow not found', 404);
     }
 
     if (workflow.status !== 'Active' && workflow.status !== 'Draft') {
-      res.status(400).json({ error: 'Workflow must be Active or Draft to run' });
-      return;
+      throw new AppError('Workflow must be Active or Draft to run', 400);
     }
 
     const execution = await prisma.workflowExecution.create({
@@ -393,8 +388,7 @@ router.get(
     });
 
     if (!execution) {
-      res.status(404).json({ error: 'Execution run not found' });
-      return;
+      throw new AppError('Execution run not found', 404);
     }
 
     res.json(execution);
@@ -413,8 +407,7 @@ router.post(
     });
 
     if (!original) {
-      res.status(404).json({ error: 'Execution run not found' });
-      return;
+      throw new AppError('Execution run not found', 404);
     }
 
     const retry = await prisma.workflowExecution.create({
@@ -506,8 +499,7 @@ router.patch(
     });
 
     if (!existing) {
-      res.status(404).json({ error: 'Rule not found' });
-      return;
+      throw new AppError('Rule not found', 404);
     }
 
     const data: Prisma.GRCWorkflowUpdateInput = {};
@@ -539,8 +531,7 @@ router.delete(
     });
 
     if (!existing) {
-      res.status(404).json({ error: 'Rule not found' });
-      return;
+      throw new AppError('Rule not found', 404);
     }
 
     await prisma.gRCWorkflow.delete({ where: { id: req.params.id } });

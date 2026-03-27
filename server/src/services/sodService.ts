@@ -1,6 +1,7 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 // ---------------------------------------------------------------------------
 // Type definitions (aligned with Prisma SoDRule / SoDViolation models)
@@ -1009,7 +1010,7 @@ export class SoDService {
     });
 
     if (!violation) {
-      throw new Error('Violation not found');
+      throw new AppError('Violation not found', 404);
     }
 
     // Compensating controls are stored in the mitigationAction JSON field
@@ -1038,7 +1039,7 @@ export class SoDService {
     });
 
     if (!violation) {
-      throw new Error('Violation not found');
+      throw new AppError('Violation not found', 404);
     }
 
     const currentMitigation = (violation.mitigationAction as any) || {};
@@ -1097,7 +1098,7 @@ export class SoDService {
     });
 
     if (!violation) {
-      throw new Error('Violation not found');
+      throw new AppError('Violation not found', 404);
     }
 
     const currentMitigation = (violation.mitigationAction as any) || {};
@@ -1105,7 +1106,7 @@ export class SoDService {
 
     const controlIndex = compensatingControls.findIndex((c: any) => c.id === controlId);
     if (controlIndex === -1) {
-      throw new Error('Compensating control not found');
+      throw new AppError('Compensating control not found', 404);
     }
 
     compensatingControls[controlIndex] = {
@@ -1151,7 +1152,7 @@ export class SoDService {
     });
 
     if (!violation) {
-      throw new Error('Violation not found');
+      throw new AppError('Violation not found', 404);
     }
 
     const currentMitigation = (violation.mitigationAction as any) || {};
@@ -1159,7 +1160,7 @@ export class SoDService {
 
     const controlIndex = compensatingControls.findIndex((c: any) => c.id === controlId);
     if (controlIndex === -1) {
-      throw new Error('Compensating control not found');
+      throw new AppError('Compensating control not found', 404);
     }
 
     compensatingControls.splice(controlIndex, 1);

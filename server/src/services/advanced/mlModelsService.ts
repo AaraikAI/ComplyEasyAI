@@ -9,6 +9,7 @@
 
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 import * as tf from '@tensorflow/tfjs';
 import Graph from 'graphology';
 import forceAtlas2 from 'graphology-layout-forceatlas2';
@@ -200,7 +201,7 @@ class MLModelsService {
     await this.initialize();
 
     if (!this.deepfakeModel) {
-      throw new Error('Deepfake detection model not initialized');
+      throw new AppError('Deepfake detection model not initialized', 500);
     }
 
     try {
@@ -447,7 +448,7 @@ class MLModelsService {
     await this.initialize();
 
     if (!this.tgnModel) {
-      throw new Error('TGN model not initialized');
+      throw new AppError('TGN model not initialized', 500);
     }
 
     try {
@@ -591,7 +592,7 @@ class MLModelsService {
     await this.initialize();
 
     if (!this.deepfakeModel) {
-      throw new Error('Deepfake detection model not initialized');
+      throw new AppError('Deepfake detection model not initialized', 500);
     }
 
     try {
@@ -888,7 +889,7 @@ class MLModelsService {
     await this.initialize();
 
     if (!this.tgnModel) {
-      throw new Error('TGN model not initialized');
+      throw new AppError('TGN model not initialized', 500);
     }
 
     try {
@@ -1200,7 +1201,7 @@ class MLModelsService {
       });
 
       if (!modelLog) {
-        throw new Error(`Model ${modelId} not found`);
+        throw new AppError(`Model ${modelId} not found`, 404);
       }
 
       // Calculate metrics based on stored model predictions

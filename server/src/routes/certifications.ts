@@ -13,6 +13,7 @@ import {
   createCertAuditSchema, updateCertAuditSchema,
 } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -71,8 +72,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching expiring certifications:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch expiring certifications' });
+      throw new AppError('Failed to fetch expiring certifications', 500);
     }
   })
 );
@@ -146,8 +148,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching certifications:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch certifications' });
+      throw new AppError('Failed to fetch certifications', 500);
     }
   })
 );
@@ -172,14 +175,14 @@ router.get(
       });
 
       if (!certification) {
-        res.status(404).json({ status: 'error', message: 'Certification not found' });
-        return;
+        throw new AppError('Certification not found', 404);
       }
 
       res.json({ status: 'success', data: certification });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching certification:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch certification' });
+      throw new AppError('Failed to fetch certification', 500);
     }
   })
 );
@@ -207,11 +210,7 @@ router.post(
       } = req.body;
 
       if (!name || !certBody || !issueDate || !expiryDate) {
-        res.status(400).json({
-          status: 'error',
-          message: 'name, certBody, issueDate, and expiryDate are required',
-        });
-        return;
+        throw new AppError('name, certBody, issueDate, and expiryDate are required', 400);
       }
 
       const certification = await prisma.certification.create({
@@ -231,8 +230,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: certification });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating certification:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to create certification' });
+      throw new AppError('Failed to create certification', 500);
     }
   })
 );
@@ -253,8 +253,7 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Certification not found' });
-        return;
+        throw new AppError('Certification not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -273,8 +272,9 @@ router.patch(
 
       res.json({ status: 'success', data: certification });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating certification:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to update certification' });
+      throw new AppError('Failed to update certification', 500);
     }
   })
 );
@@ -294,8 +294,7 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Certification not found' });
-        return;
+        throw new AppError('Certification not found', 404);
       }
 
       // Cascade deletes associated CertAudit records via Prisma schema onDelete: Cascade
@@ -305,8 +304,9 @@ router.delete(
 
       res.json({ status: 'success', data: { message: 'Certification deleted', id: req.params.id } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting certification:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to delete certification' });
+      throw new AppError('Failed to delete certification', 500);
     }
   })
 );
@@ -327,27 +327,18 @@ router.post(
       });
 
       if (!certification) {
-        res.status(404).json({ status: 'error', message: 'Certification not found' });
-        return;
+        throw new AppError('Certification not found', 404);
       }
 
       const { type, scheduledDate, auditorName } = req.body;
 
       if (!type || !scheduledDate) {
-        res.status(400).json({
-          status: 'error',
-          message: 'type and scheduledDate are required',
-        });
-        return;
+        throw new AppError('type and scheduledDate are required', 400);
       }
 
       const validTypes = ['INITIAL', 'SURVEILLANCE_1', 'SURVEILLANCE_2', 'RECERTIFICATION'];
       if (!validTypes.includes(type)) {
-        res.status(400).json({
-          status: 'error',
-          message: `type must be one of: ${validTypes.join(', ')}`,
-        });
-        return;
+        throw new AppError(`type must be one of: ${validTypes.join(', ')}`, 400);
       }
 
       const audit = await prisma.certAudit.create({
@@ -361,8 +352,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: audit });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error scheduling surveillance audit:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to schedule surveillance audit' });
+      throw new AppError('Failed to schedule surveillance audit', 500);
     }
   })
 );
@@ -384,8 +376,7 @@ router.patch(
       });
 
       if (!certification) {
-        res.status(404).json({ status: 'error', message: 'Certification not found' });
-        return;
+        throw new AppError('Certification not found', 404);
       }
 
       const existingAudit = await prisma.certAudit.findFirst({
@@ -393,8 +384,7 @@ router.patch(
       });
 
       if (!existingAudit) {
-        res.status(404).json({ status: 'error', message: 'Audit not found' });
-        return;
+        throw new AppError('Audit not found', 404);
       }
 
       const { pick } = await import('../utils/pick');
@@ -412,8 +402,9 @@ router.patch(
 
       res.json({ status: 'success', data: audit });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating audit results:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to update audit results' });
+      throw new AppError('Failed to update audit results', 500);
     }
   })
 );

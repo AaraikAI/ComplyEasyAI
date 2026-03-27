@@ -13,6 +13,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import crypto from 'crypto';
+import { AppError } from '../../middleware/errorHandler';
 import mqttService from './mqttService';
 
 export interface IoTDevice {
@@ -179,14 +180,14 @@ class PhysicalAIService {
       });
 
       if (existingDevice) {
-        throw new Error(`Device ${device.deviceId} already registered`);
+        throw new AppError(`Device ${device.deviceId} already registered`, 409);
       }
 
       // Validate device certificate if provided
       if (device.certificates && device.certificates.length > 0) {
         const certValidation = await this.validateDeviceCertificates(device.certificates);
         if (!certValidation.valid) {
-          throw new Error(`Certificate validation failed: ${certValidation.error}`);
+          throw new AppError(`Certificate validation failed: ${certValidation.error}`, 400);
         }
       }
 
@@ -397,7 +398,7 @@ class PhysicalAIService {
       });
 
       if (!device) {
-        throw new Error('Device not found');
+        throw new AppError('Device not found', 404);
       }
 
       // Unsubscribe from MQTT if subscribed
@@ -581,7 +582,7 @@ class PhysicalAIService {
       });
 
       if (!device) {
-        throw new Error('Device not found');
+        throw new AppError('Device not found', 404);
       }
 
       const checks: EdgeComplianceCheck[] = [];
@@ -1566,7 +1567,7 @@ class PhysicalAIService {
       });
 
       if (!device) {
-        throw new Error('Device not found');
+        throw new AppError('Device not found', 404);
       }
 
       const now = new Date();
@@ -1679,7 +1680,7 @@ class PhysicalAIService {
       });
 
       if (!device) {
-        throw new Error('Device not found');
+        throw new AppError('Device not found', 404);
       }
 
       const sensorData = device.sensorData as any;
@@ -1720,7 +1721,7 @@ class PhysicalAIService {
       });
 
       if (!device) {
-        throw new Error('Device not found');
+        throw new AppError('Device not found', 404);
       }
 
       const sensorData = device.sensorData as any;
@@ -1792,7 +1793,7 @@ class PhysicalAIService {
       });
 
       if (!device) {
-        throw new Error('Device not found');
+        throw new AppError('Device not found', 404);
       }
 
       const sensorData = device.sensorData as any;
@@ -1936,7 +1937,7 @@ class PhysicalAIService {
       });
 
       if (!device) {
-        throw new Error('Device not found');
+        throw new AppError('Device not found', 404);
       }
 
       const history: Array<{
@@ -2004,7 +2005,7 @@ class PhysicalAIService {
       });
 
       if (!device) {
-        throw new Error('Device not found');
+        throw new AppError('Device not found', 404);
       }
 
       const sensorData = device.sensorData as any;
@@ -2640,7 +2641,7 @@ class PhysicalAIService {
       });
 
       if (!device) {
-        throw new Error('Device not found');
+        throw new AppError('Device not found', 404);
       }
 
       const sensorData = device.sensorData as any;

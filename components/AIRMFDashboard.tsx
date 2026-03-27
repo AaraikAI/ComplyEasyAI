@@ -24,6 +24,7 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
   const { t } = useI18n();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [recentSystems, setRecentSystems] = useState<any[]>([]);
 
   useEffect(() => {
@@ -90,7 +91,7 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
       setStats(dashboardData as DashboardStats);
       setRecentSystems((systems as any[]).slice(0, 5));
     } catch (error: any) {
-      console.error('Failed to load dashboard data:', error);
+      setLoadError(error?.message || 'Failed to load AI RMF data');
     } finally {
       setLoading(false);
     }
@@ -125,6 +126,13 @@ export const AIRMFDashboard: React.FC<AIRMFDashboardProps> = ({ onNavigate }) =>
           <span>New AI System</span>
         </button>
       </div>
+
+      {loadError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between text-sm text-red-700">
+          <span>{loadError}</span>
+          <button onClick={() => setLoadError(null)} className="ml-4 text-red-500 hover:text-red-700">Dismiss</button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

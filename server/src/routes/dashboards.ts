@@ -9,8 +9,17 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  createDashboardSchema,
+  updateDashboardSchema,
+  createWidgetSchema,
+  updateWidgetSchema,
+  cloneDashboardSchema,
+} from '../validators/dashboardSchemas';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 router.use(authenticate);
@@ -159,8 +168,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching dashboards:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch dashboards' });
+      throw new AppError('Failed to fetch dashboards', 500);
     }
   })
 );
@@ -193,8 +203,7 @@ router.get(
       });
 
       if (!dashboard) {
-        res.status(404).json({ status: 'error', message: 'Dashboard not found' });
-        return;
+        throw new AppError('Dashboard not found', 404);
       }
 
       // Get creator info
@@ -212,8 +221,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching dashboard:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch dashboard' });
+      throw new AppError('Failed to fetch dashboard', 500);
     }
   })
 );
@@ -224,6 +234,7 @@ router.get(
 
 router.post(
   '/',
+  validateBody(createDashboardSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const userId = (req as any).user.id;
@@ -232,8 +243,7 @@ router.post(
       const { name, description, isShared, layout } = req.body;
 
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        res.status(400).json({ status: 'error', message: 'name is required' });
-        return;
+        throw new AppError('name is required', 400);
       }
 
       // Enforce per-org dashboard limit
@@ -242,11 +252,7 @@ router.post(
       });
 
       if (existingCount >= 50) {
-        res.status(400).json({
-          status: 'error',
-          message: 'Maximum of 50 dashboards per organization reached',
-        });
-        return;
+        throw new AppError('Maximum of 50 dashboards per organization reached', 400);
       }
 
       const dashboard = await prisma.customDashboard.create({
@@ -262,8 +268,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: dashboard });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating dashboard:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to create dashboard' });
+      throw new AppError('Failed to create dashboard', 500);
     }
   })
 );
@@ -274,6 +281,7 @@ router.post(
 
 router.patch(
   '/:id',
+  validateBody(updateDashboardSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const userId = (req as any).user.id;
@@ -285,14 +293,12 @@ router.patch(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Dashboard not found' });
-        return;
+        throw new AppError('Dashboard not found', 404);
       }
 
       // Only owner or admin can update
       if (existing.createdBy !== userId && userRole !== 'admin') {
-        res.status(403).json({ status: 'error', message: 'Only the dashboard owner or an admin can update this dashboard' });
-        return;
+        throw new AppError('Only the dashboard owner or an admin can update this dashboard', 403);
       }
 
       const { name, description, isShared, layout, isDefault } = req.body;
@@ -324,8 +330,9 @@ router.patch(
 
       res.json({ status: 'success', data: dashboard });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating dashboard:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to update dashboard' });
+      throw new AppError('Failed to update dashboard', 500);
     }
   })
 );
@@ -347,13 +354,11 @@ router.delete(
       });
 
       if (!existing) {
-        res.status(404).json({ status: 'error', message: 'Dashboard not found' });
-        return;
+        throw new AppError('Dashboard not found', 404);
       }
 
       if (existing.createdBy !== userId && userRole !== 'admin') {
-        res.status(403).json({ status: 'error', message: 'Only the dashboard owner or an admin can delete this dashboard' });
-        return;
+        throw new AppError('Only the dashboard owner or an admin can delete this dashboard', 403);
       }
 
       // Cascade delete handles widgets via DB constraint
@@ -363,8 +368,9 @@ router.delete(
 
       res.json({ status: 'success', data: { id: req.params.id, deleted: true } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting dashboard:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to delete dashboard' });
+      throw new AppError('Failed to delete dashboard', 500);
     }
   })
 );
@@ -375,6 +381,7 @@ router.delete(
 
 router.post(
   '/:id/widgets',
+  validateBody(createWidgetSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const userId = (req as any).user.id;
@@ -387,29 +394,22 @@ router.post(
       });
 
       if (!dashboard) {
-        res.status(404).json({ status: 'error', message: 'Dashboard not found' });
-        return;
+        throw new AppError('Dashboard not found', 404);
       }
 
       if (dashboard.createdBy !== userId && userRole !== 'admin') {
-        res.status(403).json({ status: 'error', message: 'Only the dashboard owner or an admin can add widgets' });
-        return;
+        throw new AppError('Only the dashboard owner or an admin can add widgets', 403);
       }
 
       // Enforce widget limit per dashboard
       if (dashboard._count.widgets >= 30) {
-        res.status(400).json({
-          status: 'error',
-          message: 'Maximum of 30 widgets per dashboard reached',
-        });
-        return;
+        throw new AppError('Maximum of 30 widgets per dashboard reached', 400);
       }
 
       const { type, title, config, position } = req.body;
 
       if (!type || !title) {
-        res.status(400).json({ status: 'error', message: 'type and title are required' });
-        return;
+        throw new AppError('type and title are required', 400);
       }
 
       const validTypes = [
@@ -419,11 +419,7 @@ router.post(
       ];
 
       if (!validTypes.includes(type)) {
-        res.status(400).json({
-          status: 'error',
-          message: `type must be one of: ${validTypes.join(', ')}`,
-        });
-        return;
+        throw new AppError(`type must be one of: ${validTypes.join(', ')}`, 400);
       }
 
       const widget = await prisma.dashboardWidget.create({
@@ -438,8 +434,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: widget });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error adding widget to dashboard:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to add widget' });
+      throw new AppError('Failed to add widget', 500);
     }
   })
 );
@@ -450,6 +447,7 @@ router.post(
 
 router.patch(
   '/:id/widgets/:widgetId',
+  validateBody(updateWidgetSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const userId = (req as any).user.id;
@@ -461,13 +459,11 @@ router.patch(
       });
 
       if (!dashboard) {
-        res.status(404).json({ status: 'error', message: 'Dashboard not found' });
-        return;
+        throw new AppError('Dashboard not found', 404);
       }
 
       if (dashboard.createdBy !== userId && userRole !== 'admin') {
-        res.status(403).json({ status: 'error', message: 'Only the dashboard owner or an admin can update widgets' });
-        return;
+        throw new AppError('Only the dashboard owner or an admin can update widgets', 403);
       }
 
       const widget = await prisma.dashboardWidget.findFirst({
@@ -475,8 +471,7 @@ router.patch(
       });
 
       if (!widget) {
-        res.status(404).json({ status: 'error', message: 'Widget not found' });
-        return;
+        throw new AppError('Widget not found', 404);
       }
 
       const { title, type, config, position } = req.body;
@@ -494,8 +489,9 @@ router.patch(
 
       res.json({ status: 'success', data: updated });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating widget:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to update widget' });
+      throw new AppError('Failed to update widget', 500);
     }
   })
 );
@@ -517,13 +513,11 @@ router.delete(
       });
 
       if (!dashboard) {
-        res.status(404).json({ status: 'error', message: 'Dashboard not found' });
-        return;
+        throw new AppError('Dashboard not found', 404);
       }
 
       if (dashboard.createdBy !== userId && userRole !== 'admin') {
-        res.status(403).json({ status: 'error', message: 'Only the dashboard owner or an admin can remove widgets' });
-        return;
+        throw new AppError('Only the dashboard owner or an admin can remove widgets', 403);
       }
 
       const widget = await prisma.dashboardWidget.findFirst({
@@ -531,8 +525,7 @@ router.delete(
       });
 
       if (!widget) {
-        res.status(404).json({ status: 'error', message: 'Widget not found' });
-        return;
+        throw new AppError('Widget not found', 404);
       }
 
       await prisma.dashboardWidget.delete({
@@ -541,8 +534,9 @@ router.delete(
 
       res.json({ status: 'success', data: { id: req.params.widgetId, deleted: true } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting widget:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to delete widget' });
+      throw new AppError('Failed to delete widget', 500);
     }
   })
 );
@@ -553,6 +547,7 @@ router.delete(
 
 router.post(
   '/:id/clone',
+  validateBody(cloneDashboardSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const userId = (req as any).user.id;
@@ -571,8 +566,7 @@ router.post(
       });
 
       if (!source) {
-        res.status(404).json({ status: 'error', message: 'Dashboard not found or not accessible' });
-        return;
+        throw new AppError('Dashboard not found or not accessible', 404);
       }
 
       const { name } = req.body;
@@ -612,8 +606,9 @@ router.post(
 
       res.status(201).json({ status: 'success', data: cloned });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error cloning dashboard:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to clone dashboard' });
+      throw new AppError('Failed to clone dashboard', 500);
     }
   })
 );

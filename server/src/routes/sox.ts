@@ -13,6 +13,7 @@ import {
 } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import soxService from '../services/soxService';
+import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 
 const router = Router();
@@ -84,8 +85,7 @@ router.get(
     const user = (req as AuthRequest).user!;
     const control = await soxService.getSOXControlById(req.params.id, user.organizationId);
     if (!control) {
-      res.status(404).json({ error: 'Control not found' });
-      return;
+      throw new AppError('Control not found', 404);
     }
     res.json(control);
   })
@@ -151,8 +151,7 @@ router.get(
     const user = (req as AuthRequest).user!;
     const test = await soxService.getSOXTestResultById(req.params.id, user.organizationId);
     if (!test) {
-      res.status(404).json({ error: 'Test not found' });
-      return;
+      throw new AppError('Test not found', 404);
     }
     res.json(test);
   })
@@ -218,8 +217,7 @@ router.get(
     const user = (req as AuthRequest).user!;
     const assessment = await soxService.getSOXAssessmentById(req.params.id, user.organizationId);
     if (!assessment) {
-      res.status(404).json({ error: 'Assessment not found' });
-      return;
+      throw new AppError('Assessment not found', 404);
     }
     res.json(assessment);
   })
@@ -259,8 +257,9 @@ router.get(
       const report = await soxService.generateSOXReport(user.organizationId, (fiscalYear as string) || '2026');
       res.json(report);
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error generating SOX report:', error);
-      res.status(500).json({ error: 'Failed to generate report' });
+      throw new AppError('Failed to generate report', 500);
     }
   })
 );

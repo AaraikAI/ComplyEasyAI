@@ -24,6 +24,7 @@ import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { isUrlSafe } from '../../utils/urlValidator';
+import { AppError } from '../../middleware/errorHandler';
 
 type KeyProvider = 'aws_kms' | 'azure_kv' | 'gcp_kms' | 'hashicorp_vault';
 
@@ -174,12 +175,12 @@ class BYOKService {
     if (!this.vaultClients.has(vaultUrl)) {
       // SECURITY: Validate Vault URL to prevent SSRF
       if (!isUrlSafe(vaultUrl)) {
-        throw new Error('Invalid Vault URL for security reasons (SSRF protection)');
+        throw new AppError('Invalid Vault URL for security reasons (SSRF protection)', 403);
       }
 
       const vaultToken = token || process.env.VAULT_TOKEN;
       if (!vaultToken) {
-        throw new Error('HashiCorp Vault token is required');
+        throw new AppError('HashiCorp Vault token is required', 400);
       }
 
       const client = axios.create({
@@ -205,7 +206,7 @@ class BYOKService {
     try {
       // Production check: all providers must be valid
       if (!['aws_kms', 'azure_kv', 'gcp_kms', 'hashicorp_vault'].includes(config.provider)) {
-        throw new Error(`Unsupported provider: ${config.provider}`);
+        throw new AppError(`Unsupported provider: ${config.provider}`, 400);
       }
 
       if (config.provider === 'aws_kms') {
@@ -217,12 +218,12 @@ class BYOKService {
       } else if (config.provider === 'hashicorp_vault') {
         return await this.generateDataKeyVault(config);
       } else {
-        throw new Error(`Unsupported provider: ${config.provider}`);
+        throw new AppError(`Unsupported provider: ${config.provider}`, 400);
       }
     } catch (error) {
       logger.error('Error generating data key', error);
       await this.trackKeyUsage(organizationId, config.keyId, config.provider, 'generate', false, 0, error);
-      throw new Error('Failed to generate data encryption key');
+      throw new AppError('Failed to generate data encryption key', 500);
     }
   }
 
@@ -232,7 +233,7 @@ class BYOKService {
   private async generateDataKeyAWS(config: BYOKConfig): Promise<DataKey> {
     // Production check
     if (process.env.NODE_ENV === 'production' && !config.credentials && !process.env.AWS_ACCESS_KEY_ID) {
-      throw new Error('AWS credentials required in production');
+      throw new AppError('AWS credentials required in production', 400);
     }
 
     const client = this.getKMSClient(
@@ -248,7 +249,7 @@ class BYOKService {
     const response = await client.send(command);
 
     if (!response.Plaintext || !response.CiphertextBlob) {
-      throw new Error('KMS did not return data key');
+      throw new AppError('KMS did not return data key', 500);
     }
 
     logger.info(`Generated data key using AWS KMS: ${config.keyId}`);
@@ -264,12 +265,12 @@ class BYOKService {
    */
   private async generateDataKeyAzure(config: BYOKConfig): Promise<DataKey> {
     if (!config.vaultUrl) {
-      throw new Error('Azure Key Vault URL is required');
+      throw new AppError('Azure Key Vault URL is required', 400);
     }
 
     // Production check
     if (process.env.NODE_ENV === 'production' && !process.env.AZURE_CLIENT_ID) {
-      throw new Error('Azure credentials required in production');
+      throw new AppError('Azure credentials required in production', 400);
     }
 
     const keyClient = this.getAzureKeyClient(config.vaultUrl);
@@ -301,17 +302,17 @@ class BYOKService {
    */
   private async generateDataKeyGCP(config: BYOKConfig): Promise<DataKey> {
     if (!config.keyRing || !config.location) {
-      throw new Error('GCP key ring and location are required');
+      throw new AppError('GCP key ring and location are required', 400);
     }
 
     // Production check
     if (process.env.NODE_ENV === 'production' && !process.env.GOOGLE_APPLICATION_CREDENTIALS && !config.credentials) {
-      throw new Error('GCP credentials required in production');
+      throw new AppError('GCP credentials required in production', 400);
     }
 
     const projectId = process.env.GCP_PROJECT_ID || config.credentials?.projectId;
     if (!projectId) {
-      throw new Error('GCP project ID is required');
+      throw new AppError('GCP project ID is required', 400);
     }
 
     const client = this.getGCPKMSClient(projectId, config.location, config.credentials);
@@ -328,7 +329,7 @@ class BYOKService {
     });
 
     if (!encryptResponse.ciphertext) {
-      throw new Error('GCP KMS did not return encrypted key');
+      throw new AppError('GCP KMS did not return encrypted key', 500);
     }
 
     logger.info(`Generated data key using GCP KMS: ${config.keyId}`);
@@ -344,12 +345,12 @@ class BYOKService {
    */
   private async generateDataKeyVault(config: BYOKConfig): Promise<DataKey> {
     if (!config.vaultUrl) {
-      throw new Error('HashiCorp Vault URL is required');
+      throw new AppError('HashiCorp Vault URL is required', 400);
     }
 
     // Production check
     if (process.env.NODE_ENV === 'production' && !config.credentials?.vaultToken && !process.env.VAULT_TOKEN) {
-      throw new Error('HashiCorp Vault token required in production');
+      throw new AppError('HashiCorp Vault token required in production', 400);
     }
 
     const vaultClient = this.getVaultClient(config.vaultUrl, config.credentials?.vaultToken);
@@ -366,7 +367,7 @@ class BYOKService {
     });
 
     if (!encryptResponse.data?.data?.ciphertext) {
-      throw new Error('Vault did not return encrypted key');
+      throw new AppError('Vault did not return encrypted key', 500);
     }
 
     logger.info(`Generated data key using HashiCorp Vault: ${config.keyId}`);
@@ -424,7 +425,7 @@ class BYOKService {
     } catch (error) {
       await this.trackKeyUsage(organizationId, config.keyId, config.provider, 'encrypt', false, dataSize, error);
       logger.error('Error encrypting data with BYOK', error);
-      throw new Error('BYOK encryption failed');
+      throw new AppError('BYOK encryption failed', 500);
     }
   }
 
@@ -452,7 +453,7 @@ class BYOKService {
       } else if (config.provider === 'hashicorp_vault') {
         dekPlaintext = await this.decryptDataKeyVault(encryptedPayload.encryptedDataKey, config);
       } else {
-        throw new Error(`Unsupported provider: ${config.provider}`);
+        throw new AppError(`Unsupported provider: ${config.provider}`, 400);
       }
 
       // Decrypt data with DEK
@@ -482,7 +483,7 @@ class BYOKService {
         await this.trackKeyUsage(organizationId, config.keyId, config.provider, 'decrypt', false, dataSize, error);
       }
       logger.error('Error decrypting data with BYOK', error);
-      throw new Error('BYOK decryption failed');
+      throw new AppError('BYOK decryption failed', 500);
     }
   }
 
@@ -503,7 +504,7 @@ class BYOKService {
     const response = await client.send(command);
 
     if (!response.Plaintext) {
-      throw new Error('KMS did not return decrypted key');
+      throw new AppError('KMS did not return decrypted key', 500);
     }
 
     return Buffer.from(response.Plaintext);
@@ -514,7 +515,7 @@ class BYOKService {
    */
   private async decryptDataKeyAzure(encryptedKey: string, config: BYOKConfig): Promise<Buffer> {
     if (!config.vaultUrl) {
-      throw new Error('Azure Key Vault URL is required');
+      throw new AppError('Azure Key Vault URL is required', 400);
     }
 
     const cryptoClient = new CryptographyClient(
@@ -535,12 +536,12 @@ class BYOKService {
    */
   private async decryptDataKeyGCP(encryptedKey: string, config: BYOKConfig): Promise<Buffer> {
     if (!config.keyRing || !config.location) {
-      throw new Error('GCP key ring and location are required');
+      throw new AppError('GCP key ring and location are required', 400);
     }
 
     const projectId = process.env.GCP_PROJECT_ID || config.credentials?.projectId;
     if (!projectId) {
-      throw new Error('GCP project ID is required');
+      throw new AppError('GCP project ID is required', 400);
     }
 
     const client = this.getGCPKMSClient(projectId, config.location, config.credentials);
@@ -552,7 +553,7 @@ class BYOKService {
     });
 
     if (!decryptResponse.plaintext) {
-      throw new Error('GCP KMS did not return decrypted key');
+      throw new AppError('GCP KMS did not return decrypted key', 500);
     }
 
     return Buffer.from(decryptResponse.plaintext);
@@ -563,7 +564,7 @@ class BYOKService {
    */
   private async decryptDataKeyVault(encryptedKey: string, config: BYOKConfig): Promise<Buffer> {
     if (!config.vaultUrl) {
-      throw new Error('HashiCorp Vault URL is required');
+      throw new AppError('HashiCorp Vault URL is required', 400);
     }
 
     const vaultClient = this.getVaultClient(config.vaultUrl, config.credentials?.vaultToken);
@@ -575,7 +576,7 @@ class BYOKService {
     });
 
     if (!decryptResponse.data?.data?.plaintext) {
-      throw new Error('Vault did not return decrypted key');
+      throw new AppError('Vault did not return decrypted key', 500);
     }
 
     return Buffer.from(decryptResponse.data.data.plaintext, 'base64');
@@ -593,7 +594,7 @@ class BYOKService {
     try {
       // Production check
       if (process.env.NODE_ENV === 'production' && !credentials && !process.env.AWS_ACCESS_KEY_ID) {
-        throw new Error('AWS credentials required in production');
+        throw new AppError('AWS credentials required in production', 400);
       }
 
       const client = this.getKMSClient(region, credentials);
@@ -613,7 +614,7 @@ class BYOKService {
       const response = await client.send(command);
 
       if (!response.KeyMetadata?.KeyId) {
-        throw new Error('Failed to create KMS key');
+        throw new AppError('Failed to create KMS key', 500);
       }
 
       logger.info(`Created AWS KMS key: ${response.KeyMetadata.KeyId} for org ${organizationId}`);
@@ -621,7 +622,7 @@ class BYOKService {
       return response.KeyMetadata.KeyId;
     } catch (error: any) {
       logger.error('Error creating AWS KMS key', error);
-      throw new Error(`AWS KMS key creation failed: ${error.message || error}`);
+      throw new AppError(`AWS KMS key creation failed: ${error.message || error}`, 500);
     }
   }
 
@@ -636,7 +637,7 @@ class BYOKService {
     try {
       // Production check
       if (process.env.NODE_ENV === 'production' && !process.env.AZURE_CLIENT_ID) {
-        throw new Error('Azure credentials required in production');
+        throw new AppError('Azure credentials required in production', 400);
       }
 
       const keyClient = this.getAzureKeyClient(vaultUrl);
@@ -655,7 +656,7 @@ class BYOKService {
       } catch (error: any) {
         // Handle 302 redirect (authentication required)
         if (error.statusCode === 302 || error.message?.includes('302') || error.message?.includes('redirect')) {
-          throw new Error('Azure authentication required. Please ensure you are authenticated with Azure CLI or have valid credentials configured.');
+          throw new AppError('Azure authentication required. Please ensure you are authenticated with Azure CLI or have valid credentials configured.', 400);
         }
         throw error;
       }
@@ -665,7 +666,7 @@ class BYOKService {
       return result.name;
     } catch (error: any) {
       logger.error('Error creating Azure Key Vault key', error);
-      throw new Error(`Azure Key Vault key creation failed: ${error.message || error}`);
+      throw new AppError(`Azure Key Vault key creation failed: ${error.message || error}`, 500);
     }
   }
 
@@ -683,7 +684,7 @@ class BYOKService {
     try {
       // Production check
       if (process.env.NODE_ENV === 'production' && !process.env.GOOGLE_APPLICATION_CREDENTIALS && !credentials) {
-        throw new Error('GCP credentials required in production');
+        throw new AppError('GCP credentials required in production', 400);
       }
 
       // Handle credentials - if it's a JSON string, parse it; if it's a file path, validate it exists
@@ -698,7 +699,7 @@ class BYOKService {
           if (fs.existsSync(credentials)) {
             parsedCredentials = JSON.parse(fs.readFileSync(credentials, 'utf8'));
           } else {
-            throw new Error(`GCP service account file not found: ${credentials}. Please provide a valid file path or JSON credentials.`);
+            throw new AppError(`GCP service account file not found: ${credentials}. Please provide a valid file path or JSON credentials.`, 400);
           }
         }
       }
@@ -734,7 +735,7 @@ class BYOKService {
       return key.name!;
     } catch (error: any) {
       logger.error('Error creating GCP KMS key', error);
-      throw new Error(`GCP KMS key creation failed: ${error.message || error}`);
+      throw new AppError(`GCP KMS key creation failed: ${error.message || error}`, 500);
     }
   }
 
@@ -750,7 +751,7 @@ class BYOKService {
     try {
       // Production check
       if (process.env.NODE_ENV === 'production' && !token && !process.env.VAULT_TOKEN) {
-        throw new Error('HashiCorp Vault token required in production');
+        throw new AppError('HashiCorp Vault token required in production', 400);
       }
 
       const vaultClient = this.getVaultClient(vaultUrl, token);
@@ -768,7 +769,7 @@ class BYOKService {
       return keyName;
     } catch (error: any) {
       logger.error('Error creating HashiCorp Vault key', error);
-      throw new Error(`HashiCorp Vault key creation failed: ${error.message || error}`);
+      throw new AppError(`HashiCorp Vault key creation failed: ${error.message || error}`, 500);
     }
   }
 
@@ -898,7 +899,7 @@ class BYOKService {
       return reencryptedData;
     } catch (error) {
       logger.error('Error during key rotation', error);
-      throw new Error('Key rotation failed');
+      throw new AppError('Key rotation failed', 500);
     }
   }
 
@@ -974,7 +975,7 @@ class BYOKService {
       return stats;
     } catch (error) {
       logger.error('Error getting key usage stats', error);
-      throw new Error('Failed to get key usage statistics');
+      throw new AppError('Failed to get key usage statistics', 500);
     }
   }
 
@@ -1019,7 +1020,7 @@ class BYOKService {
       logger.info(`Set rotation policy for key ${keyId} in org ${organizationId}`);
     } catch (error) {
       logger.error('Error setting key rotation policy', error);
-      throw new Error('Failed to set key rotation policy');
+      throw new AppError('Failed to set key rotation policy', 500);
     }
   }
 
@@ -1154,7 +1155,7 @@ class BYOKService {
       return rotatedCount;
     } catch (error) {
       logger.error('Error checking key rotations', error);
-      throw new Error('Failed to check key rotations');
+      throw new AppError('Failed to check key rotations', 500);
     }
   }
 
@@ -1215,7 +1216,7 @@ class BYOKService {
       } else if (config.provider === 'gcp_kms') {
         const projectId = process.env.GCP_PROJECT_ID || config.credentials?.projectId;
         if (!projectId || !config.keyRing || !config.location) {
-          throw new Error('GCP configuration incomplete');
+          throw new AppError('GCP configuration incomplete', 400);
         }
 
         const client = this.getGCPKMSClient(projectId, config.location, config.credentials);
@@ -1242,7 +1243,7 @@ class BYOKService {
       }
     } catch (error) {
       logger.error('Error scheduling key deletion', error);
-      throw new Error('Key deletion failed');
+      throw new AppError('Key deletion failed', 500);
     }
   }
 }

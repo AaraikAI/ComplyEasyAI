@@ -7,6 +7,7 @@ import { google, Auth } from 'googleapis';
 import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 interface GoogleTokens {
   access_token: string;
@@ -61,7 +62,7 @@ class GoogleService {
       const { tokens } = await this.oauth2Client.getToken(code);
 
       if (!tokens.access_token) {
-        throw new Error('No access token received from Google');
+        throw new AppError('No access token received from Google', 500);
       }
 
       return {
@@ -71,7 +72,7 @@ class GoogleService {
       };
     } catch (error) {
       logger.error('Error exchanging Google auth code for tokens', error);
-      throw new Error('Failed to exchange authorization code');
+      throw new AppError('Failed to exchange authorization code', 500);
     }
   }
 
@@ -93,7 +94,7 @@ class GoogleService {
       };
     } catch (error) {
       logger.error('Error fetching Google user info', error);
-      throw new Error('Failed to fetch user information');
+      throw new AppError('Failed to fetch user information', 500);
     }
   }
 
@@ -112,7 +113,7 @@ class GoogleService {
       };
     } catch (error) {
       logger.error('Error refreshing Google access token', error);
-      throw new Error('Failed to refresh access token');
+      throw new AppError('Failed to refresh access token', 500);
     }
   }
 
@@ -167,7 +168,7 @@ class GoogleService {
       logger.info(`Google integration saved for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error saving Google integration', error);
-      throw new Error('Failed to save integration');
+      throw new AppError('Failed to save integration', 500);
     }
   }
 
@@ -193,7 +194,7 @@ class GoogleService {
     const integration = await this.getIntegration(organizationId);
 
     if (!integration || !integration.connected) {
-      throw new Error('Google integration not connected');
+      throw new AppError('Google integration not connected', 400);
     }
 
     // Check if token is expired or will expire in next 5 minutes
@@ -203,7 +204,7 @@ class GoogleService {
 
     if (expiresAt < fiveMinutesFromNow) {
       if (!integration.refreshToken) {
-        throw new Error('No refresh token available');
+        throw new AppError('No refresh token available', 400);
       }
 
       const maxRetries = 3;
@@ -263,7 +264,7 @@ class GoogleService {
         
         // Don't retry on authentication errors (invalid refresh token)
         if (error.response?.status === 401 || error.response?.status === 403) {
-          throw new Error('Refresh token is invalid or expired. Please reconnect the integration.');
+          throw new AppError('Refresh token is invalid or expired. Please reconnect the integration.', 403);
         }
 
         // Retry on network errors
@@ -284,7 +285,7 @@ class GoogleService {
       }
     }
 
-    throw lastError || new Error('Failed to refresh token after retries');
+    throw lastError || new AppError('Failed to refresh token after retries', 500);
   }
 
   /**
@@ -319,10 +320,10 @@ class GoogleService {
       logger.error('Error syncing Google users', error);
 
       if (error.code === 401) {
-        throw new Error('Authentication failed. Please reconnect Google integration.');
+        throw new AppError('Authentication failed. Please reconnect Google integration.', 403);
       }
 
-      throw new Error('Failed to sync users from Google Workspace');
+      throw new AppError('Failed to sync users from Google Workspace', 500);
     }
   }
 
@@ -356,10 +357,10 @@ class GoogleService {
       logger.error('Error syncing Google groups', error);
 
       if (error.code === 401) {
-        throw new Error('Authentication failed. Please reconnect Google integration.');
+        throw new AppError('Authentication failed. Please reconnect Google integration.', 403);
       }
 
-      throw new Error('Failed to sync groups from Google Workspace');
+      throw new AppError('Failed to sync groups from Google Workspace', 500);
     }
   }
 
@@ -399,10 +400,10 @@ class GoogleService {
       logger.error('Error fetching Google audit logs', error);
 
       if (error.code === 401) {
-        throw new Error('Authentication failed. Please reconnect Google integration.');
+        throw new AppError('Authentication failed. Please reconnect Google integration.', 403);
       }
 
-      throw new Error('Failed to fetch audit logs from Google');
+      throw new AppError('Failed to fetch audit logs from Google', 500);
     }
   }
 
@@ -445,10 +446,10 @@ class GoogleService {
       logger.error('Error listing Google Drive files', error);
 
       if (error.code === 401) {
-        throw new Error('Authentication failed. Please reconnect Google integration.');
+        throw new AppError('Authentication failed. Please reconnect Google integration.', 403);
       }
 
-      throw new Error('Failed to list files from Google Drive');
+      throw new AppError('Failed to list files from Google Drive', 500);
     }
   }
 
@@ -488,7 +489,7 @@ class GoogleService {
       logger.info(`Google integration disconnected for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error disconnecting Google integration', error);
-      throw new Error('Failed to disconnect Google integration');
+      throw new AppError('Failed to disconnect Google integration', 500);
     }
   }
 }

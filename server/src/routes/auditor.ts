@@ -7,6 +7,20 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  matchAuditorsSchema,
+  createAuditorProfileSchema,
+  updateAuditorProfileSchema,
+  createEngagementSchema,
+  updateEngagementSchema,
+  createFindingSchema,
+  updateFindingSchema,
+  createWorkpaperSchema,
+  updateWorkpaperSchema,
+  createRequestSchema,
+  updateRequestSchema,
+} from '../validators/auditorSchemas';
 import auditorService from '../services/auditorService';
 import { AuthRequest } from '../middleware/auth';
 
@@ -34,6 +48,7 @@ router.get(
 
 router.post(
   '/match',
+  validateBody(matchAuditorsSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
@@ -59,6 +74,7 @@ router.get(
 router.post(
   '/profiles',
   authorize('admin', 'editor'),
+  validateBody(createAuditorProfileSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
@@ -80,6 +96,7 @@ router.get(
 router.patch(
   '/profiles/:id',
   authorize('admin', 'editor'),
+  validateBody(updateAuditorProfileSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
@@ -116,6 +133,7 @@ router.get(
 router.post(
   '/engagements',
   authorize('admin', 'editor'),
+  validateBody(createEngagementSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
@@ -137,6 +155,7 @@ router.get(
 router.patch(
   '/engagements/:id',
   authorize('admin', 'editor'),
+  validateBody(updateEngagementSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
@@ -173,6 +192,7 @@ router.get(
 router.post(
   '/findings',
   authorize('admin', 'editor'),
+  validateBody(createFindingSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
@@ -197,6 +217,7 @@ router.get(
 router.patch(
   '/findings/:id',
   authorize('admin', 'editor'),
+  validateBody(updateFindingSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
@@ -233,6 +254,7 @@ router.get(
 router.post(
   '/workpapers',
   authorize('admin', 'editor'),
+  validateBody(createWorkpaperSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
@@ -257,6 +279,7 @@ router.get(
 router.patch(
   '/workpapers/:id',
   authorize('admin', 'editor'),
+  validateBody(updateWorkpaperSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
@@ -293,6 +316,7 @@ router.get(
 router.post(
   '/requests',
   authorize('admin', 'editor'),
+  validateBody(createRequestSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;
@@ -317,6 +341,7 @@ router.get(
 router.patch(
   '/requests/:id',
   authorize('admin', 'editor'),
+  validateBody(updateRequestSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as AuthRequest;
     const organizationId = authReq.user!.organizationId;

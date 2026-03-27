@@ -17,6 +17,7 @@
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { Prisma } from '../generated/prisma/client';
+import { AppError } from '../middleware/errorHandler';
 
 /** JSON-stored threat entry in ICT Risk Assessment */
 interface ThreatJson {
@@ -297,7 +298,7 @@ export async function getICTRiskAssessment(
   });
 
   if (!assessment) {
-    throw new Error('ICT risk assessment not found');
+    throw new AppError('ICT risk assessment not found', 404);
   }
 
   return assessment;
@@ -330,7 +331,7 @@ export async function updateICTRiskAssessment(
   });
 
   if (!existing) {
-    throw new Error('ICT risk assessment not found');
+    throw new AppError('ICT risk assessment not found', 404);
   }
 
   // Auto-calculate risk classification if likelihood and impact provided
@@ -387,7 +388,7 @@ export async function deleteICTRiskAssessment(
   });
 
   if (!existing) {
-    throw new Error('ICT risk assessment not found');
+    throw new AppError('ICT risk assessment not found', 404);
   }
 
   await prisma.dORAICTRiskAssessment.delete({
@@ -414,7 +415,7 @@ export async function scoreICTRiskAssessment(
   });
 
   if (!assessment) {
-    throw new Error('ICT risk assessment not found');
+    throw new AppError('ICT risk assessment not found', 404);
   }
 
   const threats = (assessment.threats as unknown as ThreatJson[]) || [];
@@ -621,7 +622,7 @@ export async function getICTIncident(
   });
 
   if (!incident) {
-    throw new Error('ICT incident not found');
+    throw new AppError('ICT incident not found', 404);
   }
 
   return incident;
@@ -661,7 +662,7 @@ export async function updateICTIncident(
   });
 
   if (!existing) {
-    throw new Error('ICT incident not found');
+    throw new AppError('ICT incident not found', 404);
   }
 
   const updateData: any = { ...data };
@@ -742,7 +743,7 @@ export async function deleteICTIncident(
   });
 
   if (!existing) {
-    throw new Error('ICT incident not found');
+    throw new AppError('ICT incident not found', 404);
   }
 
   // Add archive event to timeline
@@ -794,7 +795,7 @@ export async function escalateIncident(
   });
 
   if (!existing) {
-    throw new Error('ICT incident not found');
+    throw new AppError('ICT incident not found', 404);
   }
 
   const currentTimeline = (existing.timeline as unknown as TimelineEventJson[]) || [];
@@ -949,7 +950,7 @@ export async function getThirdPartyProvider(
   });
 
   if (!provider) {
-    throw new Error('Third-party provider not found');
+    throw new AppError('Third-party provider not found', 404);
   }
 
   return provider;
@@ -987,7 +988,7 @@ export async function updateThirdPartyProvider(
   });
 
   if (!existing) {
-    throw new Error('Third-party provider not found');
+    throw new AppError('Third-party provider not found', 404);
   }
 
   const updateData: any = {};
@@ -1035,7 +1036,7 @@ export async function deleteThirdPartyProvider(
   });
 
   if (!existing) {
-    throw new Error('Third-party provider not found');
+    throw new AppError('Third-party provider not found', 404);
   }
 
   await prisma.dORAThirdPartyProvider.delete({
@@ -1353,7 +1354,7 @@ export async function getResilienceTest(
   });
 
   if (!test) {
-    throw new Error('Resilience test not found');
+    throw new AppError('Resilience test not found', 404);
   }
 
   return test;
@@ -1389,7 +1390,7 @@ export async function updateResilienceTest(
   });
 
   if (!existing) {
-    throw new Error('Resilience test not found');
+    throw new AppError('Resilience test not found', 404);
   }
 
   const updateData: any = {};
@@ -1436,7 +1437,7 @@ export async function deleteResilienceTest(
   });
 
   if (!existing) {
-    throw new Error('Resilience test not found');
+    throw new AppError('Resilience test not found', 404);
   }
 
   await prisma.dORAResilienceTest.delete({
@@ -1474,12 +1475,13 @@ export async function executeResilienceTest(
   });
 
   if (!existing) {
-    throw new Error('Resilience test not found');
+    throw new AppError('Resilience test not found', 404);
   }
 
   if (existing.status !== 'planned') {
-    throw new Error(
-      `Cannot execute test in status "${existing.status}". Test must be in "planned" status.`
+    throw new AppError(
+      `Cannot execute test in status "${existing.status}". Test must be in "planned" status.`,
+      400
     );
   }
 
@@ -1487,8 +1489,9 @@ export async function executeResilienceTest(
   if (existing.testType === 'tlpt') {
     const participants = (existing.participants as unknown as ParticipantJson[]) || [];
     if (participants.length === 0) {
-      throw new Error(
-        'TLPT requires qualified external testers per DORA Article 26(8). Add external testers before execution.'
+      throw new AppError(
+        'TLPT requires qualified external testers per DORA Article 26(8). Add external testers before execution.',
+        400
       );
     }
   }
@@ -1651,7 +1654,7 @@ export async function getInformationRegisterEntry(
   });
 
   if (!entry) {
-    throw new Error('Information register entry not found');
+    throw new AppError('Information register entry not found', 404);
   }
 
   return entry;
@@ -1691,7 +1694,7 @@ export async function updateInformationRegisterEntry(
   });
 
   if (!existing) {
-    throw new Error('Information register entry not found');
+    throw new AppError('Information register entry not found', 404);
   }
 
   const updateData: any = {};
@@ -1749,7 +1752,7 @@ export async function deleteInformationRegisterEntry(
   });
 
   if (!existing) {
-    throw new Error('Information register entry not found');
+    throw new AppError('Information register entry not found', 404);
   }
 
   await prisma.dORAInformationRegister.delete({

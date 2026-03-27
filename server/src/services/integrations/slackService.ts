@@ -7,6 +7,7 @@ import axios from 'axios';
 import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 interface SlackTokenResponse {
   ok: boolean;
@@ -86,13 +87,13 @@ class SlackService {
       const data: SlackTokenResponse = response.data;
 
       if (!data.ok || !data.access_token) {
-        throw new Error('No access token received from Slack');
+        throw new AppError('No access token received from Slack', 500);
       }
 
       return data;
     } catch (error) {
       logger.error('Error exchanging Slack auth code for token', error);
-      throw new Error('Failed to exchange authorization code');
+      throw new AppError('Failed to exchange authorization code', 500);
     }
   }
 
@@ -108,7 +109,7 @@ class SlackService {
       });
 
       if (!response.data.ok) {
-        throw new Error(response.data.error || 'Failed to fetch user info');
+        throw new AppError(response.data.error || 'Failed to fetch user info', 500);
       }
 
       return {
@@ -122,7 +123,7 @@ class SlackService {
       };
     } catch (error) {
       logger.error('Error fetching Slack user info', error);
-      throw new Error('Failed to fetch user information');
+      throw new AppError('Failed to fetch user information', 500);
     }
   }
 
@@ -176,7 +177,7 @@ class SlackService {
       logger.info(`Slack integration saved for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error saving Slack integration', error);
-      throw new Error('Failed to save integration');
+      throw new AppError('Failed to save integration', 500);
     }
   }
 
@@ -207,13 +208,13 @@ class SlackService {
       });
 
       if (!response.data.ok) {
-        throw new Error(response.data.error || 'Slack API request failed');
+        throw new AppError(response.data.error || 'Slack API request failed', 500);
       }
 
       return response.data;
     } catch (error: any) {
       if (error.response?.data?.error === 'invalid_auth') {
-        throw new Error('Authentication failed. Please reconnect Slack integration.');
+        throw new AppError('Authentication failed. Please reconnect Slack integration.', 403);
       }
       throw error;
     }
@@ -227,7 +228,7 @@ class SlackService {
       const integration = await this.getIntegration(organizationId);
 
       if (!integration || !integration.connected || !integration.accessToken) {
-        throw new Error('Slack integration not connected');
+        throw new AppError('Slack integration not connected', 400);
       }
 
       const data = await this.makeRequest(integration.accessToken, 'conversations.list', {
@@ -251,7 +252,7 @@ class SlackService {
       }));
     } catch (error) {
       logger.error('Error listing Slack channels', error);
-      throw new Error('Failed to list channels');
+      throw new AppError('Failed to list channels', 500);
     }
   }
 
@@ -263,7 +264,7 @@ class SlackService {
       const integration = await this.getIntegration(organizationId);
 
       if (!integration || !integration.connected || !integration.accessToken) {
-        throw new Error('Slack integration not connected');
+        throw new AppError('Slack integration not connected', 400);
       }
 
       const data = await this.makeRequest(integration.accessToken, 'users.list', {
@@ -291,7 +292,7 @@ class SlackService {
         }));
     } catch (error) {
       logger.error('Error listing Slack users', error);
-      throw new Error('Failed to list users');
+      throw new AppError('Failed to list users', 500);
     }
   }
 
@@ -307,7 +308,7 @@ class SlackService {
       const integration = await this.getIntegration(organizationId);
 
       if (!integration || !integration.connected || !integration.accessToken) {
-        throw new Error('Slack integration not connected');
+        throw new AppError('Slack integration not connected', 400);
       }
 
       const data = await this.makeRequest(integration.accessToken, 'conversations.history', {
@@ -329,7 +330,7 @@ class SlackService {
       }));
     } catch (error) {
       logger.error('Error fetching Slack channel history', error);
-      throw new Error('Failed to fetch channel history');
+      throw new AppError('Failed to fetch channel history', 500);
     }
   }
 
@@ -346,7 +347,7 @@ class SlackService {
       const integration = await this.getIntegration(organizationId);
 
       if (!integration || !integration.connected || !integration.accessToken) {
-        throw new Error('Slack integration not connected');
+        throw new AppError('Slack integration not connected', 400);
       }
 
       const response = await axios.post(
@@ -365,7 +366,7 @@ class SlackService {
       );
 
       if (!response.data.ok) {
-        throw new Error(response.data.error || 'Failed to post message');
+        throw new AppError(response.data.error || 'Failed to post message', 500);
       }
 
       logger.info(`Posted message to Slack channel ${channelId} for org ${organizationId}`);
@@ -377,7 +378,7 @@ class SlackService {
       };
     } catch (error) {
       logger.error('Error posting Slack message', error);
-      throw new Error('Failed to post message');
+      throw new AppError('Failed to post message', 500);
     }
   }
 
@@ -389,7 +390,7 @@ class SlackService {
       const integration = await this.getIntegration(organizationId);
 
       if (!integration || !integration.connected || !integration.accessToken) {
-        throw new Error('Slack integration not connected');
+        throw new AppError('Slack integration not connected', 400);
       }
 
       const data = await this.makeRequest(integration.accessToken, 'admin.audit.anomaly.allow.getList', {
@@ -415,7 +416,7 @@ class SlackService {
         return [];
       }
       logger.error('Error fetching Slack audit logs', error);
-      throw new Error('Failed to fetch audit logs');
+      throw new AppError('Failed to fetch audit logs', 500);
     }
   }
 
@@ -478,7 +479,7 @@ class SlackService {
       logger.info(`Sent compliance notification to Slack channel ${channelId}`);
     } catch (error) {
       logger.error('Error sending compliance notification', error);
-      throw new Error('Failed to send notification');
+      throw new AppError('Failed to send notification', 500);
     }
   }
 
@@ -524,7 +525,7 @@ class SlackService {
       logger.info(`Slack integration disconnected for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error disconnecting Slack integration', error);
-      throw new Error('Failed to disconnect Slack integration');
+      throw new AppError('Failed to disconnect Slack integration', 500);
     }
   }
 
@@ -632,7 +633,7 @@ class SlackService {
       );
 
       if (!response.data.ok) {
-        throw new Error(response.data.error || 'Failed to send Slack alert');
+        throw new AppError(response.data.error || 'Failed to send Slack alert', 500);
       }
 
       logger.info(`[Slack] Compliance alert sent to ${alertChannel}: ${alert.title}`);
@@ -654,7 +655,7 @@ class SlackService {
     try {
       const integration = await this.getIntegration(organizationId);
       if (!integration || !integration.connected) {
-        throw new Error('Slack integration not connected');
+        throw new AppError('Slack integration not connected', 400);
       }
 
       const currentConfig = (integration.config as any) || {};
@@ -675,7 +676,7 @@ class SlackService {
       logger.info(`[Slack] Alert channel configured for org ${organizationId}: ${channelId}`);
     } catch (error) {
       logger.error('[Slack] Error configuring alert channel', error);
-      throw new Error('Failed to configure alert channel');
+      throw new AppError('Failed to configure alert channel', 500);
     }
   }
 

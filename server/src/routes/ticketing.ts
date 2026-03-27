@@ -20,6 +20,7 @@ import logger from '../config/logger';
 import jiraService from '../services/integrations/jiraService';
 import servicenowService from '../services/integrations/servicenowService';
 import azureDevOpsService from '../services/integrations/azureDevOpsService';
+import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
 router.use(authenticate);
@@ -96,7 +97,7 @@ router.get(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     // Look for any connected ticketing integration
@@ -146,17 +147,17 @@ router.post(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const config: TicketingConfig = req.body;
 
     if (!config.provider) {
-      return res.status(400).json({ error: 'Provider is required (jira, servicenow, azure_devops)' });
+      throw new AppError('Provider is required (jira, servicenow, azure_devops)', 400);
     }
 
     if (!['jira', 'servicenow', 'azure_devops'].includes(config.provider)) {
-      return res.status(400).json({ error: 'Invalid provider. Use jira, servicenow, or azure_devops' });
+      throw new AppError('Invalid provider. Use jira, servicenow, or azure_devops', 400);
     }
 
     try {
@@ -259,8 +260,9 @@ router.post(
         provider: config.provider,
       });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error('Error saving ticketing config', error);
-      res.status(500).json({ error: error.message || 'Failed to save configuration' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to save configuration', 500);
     }
   })
 );
@@ -274,13 +276,13 @@ router.delete(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { provider } = req.query as { provider?: TicketingProvider };
 
     if (!provider) {
-      return res.status(400).json({ error: 'Provider query parameter is required' });
+      throw new AppError('Provider query parameter is required', 400);
     }
 
     try {
@@ -295,14 +297,15 @@ router.delete(
           await azureDevOpsService.disconnect(organizationId);
           break;
         default:
-          return res.status(400).json({ error: 'Invalid provider' });
+          throw new AppError('Invalid provider', 400);
       }
 
       logger.info(`Ticketing integration disconnected: ${provider} for org ${organizationId}`);
       res.json({ success: true, message: `${provider} integration disconnected` });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error('Error disconnecting ticketing integration', error);
-      res.status(500).json({ error: error.message || 'Failed to disconnect' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to disconnect', 500);
     }
   })
 );
@@ -317,13 +320,13 @@ router.post(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { provider } = req.body as { provider?: TicketingProvider };
 
     if (!provider) {
-      return res.status(400).json({ error: 'Provider is required' });
+      throw new AppError('Provider is required', 400);
     }
 
     try {
@@ -346,7 +349,7 @@ router.post(
           result = await azureDevOpsService.testConnection(organizationId);
           break;
         default:
-          return res.status(400).json({ error: 'Invalid provider' });
+          throw new AppError('Invalid provider', 400);
       }
 
       res.json(result);
@@ -370,7 +373,7 @@ router.post(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { provider, direction, since } = req.body as {
@@ -380,7 +383,7 @@ router.post(
     };
 
     if (!provider) {
-      return res.status(400).json({ error: 'Provider is required' });
+      throw new AppError('Provider is required', 400);
     }
 
     const sinceDate = since ? new Date(since) : undefined;
@@ -408,7 +411,7 @@ router.post(
           });
           break;
         default:
-          return res.status(400).json({ error: 'Invalid provider' });
+          throw new AppError('Invalid provider', 400);
       }
 
       // Update last sync time
@@ -422,8 +425,9 @@ router.post(
         syncResult: result,
       });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error(`Ticketing sync failed for ${provider}`, error);
-      res.status(500).json({ error: error.message || `Sync failed for ${provider}` });
+      throw new AppError(error instanceof Error ? error.message : `Sync failed for ${provider}`, 500);
     }
   })
 );
@@ -438,7 +442,7 @@ router.post(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const {
@@ -455,10 +459,10 @@ router.post(
     } = req.body;
 
     if (!provider) {
-      return res.status(400).json({ error: 'Provider is required' });
+      throw new AppError('Provider is required', 400);
     }
     if (!title) {
-      return res.status(400).json({ error: 'Title is required' });
+      throw new AppError('Title is required', 400);
     }
 
     try {
@@ -471,7 +475,7 @@ router.post(
           const targetProjectKey = projectKey || config?.projectKey || '';
 
           if (!targetProjectKey) {
-            return res.status(400).json({ error: 'Jira project key is required' });
+            throw new AppError('Jira project key is required', 400);
           }
 
           ticket = await jiraService.createComplianceTicket(organizationId, targetProjectKey, {
@@ -511,7 +515,7 @@ router.post(
         }
 
         default:
-          return res.status(400).json({ error: 'Invalid provider' });
+          throw new AppError('Invalid provider', 400);
       }
 
       // Record in audit log
@@ -538,8 +542,9 @@ router.post(
         ticket,
       });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating ticket', error);
-      res.status(500).json({ error: error.message || 'Failed to create ticket' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to create ticket', 500);
     }
   })
 );
@@ -553,7 +558,7 @@ router.get(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { provider, page = '1', limit = '20' } = req.query as Record<string, string>;
@@ -658,13 +663,13 @@ router.get(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { provider } = req.query as { provider?: TicketingProvider };
 
     if (!provider) {
-      return res.status(400).json({ error: 'Provider query parameter is required' });
+      throw new AppError('Provider query parameter is required', 400);
     }
 
     try {
@@ -686,13 +691,14 @@ router.get(
           status = await azureDevOpsService.getSyncStatus(organizationId);
           break;
         default:
-          return res.status(400).json({ error: 'Invalid provider' });
+          throw new AppError('Invalid provider', 400);
       }
 
       res.json({ provider, ...status });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error(`Error getting sync status for ${provider}`, error);
-      res.status(500).json({ error: error.message || 'Failed to get sync status' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to get sync status', 500);
     }
   })
 );
@@ -706,7 +712,7 @@ router.get(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const integrations = await prisma.integration.findMany({
@@ -751,13 +757,13 @@ router.post(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const config: TicketingConfig = req.body;
 
     if (!config.provider || !['jira', 'servicenow', 'azure_devops'].includes(config.provider)) {
-      return res.status(400).json({ error: 'Valid provider required (jira, servicenow, azure_devops)' });
+      throw new AppError('Valid provider required (jira, servicenow, azure_devops)', 400);
     }
 
     try {
@@ -874,8 +880,9 @@ router.post(
           : null,
       });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error('Error creating ticketing connection', error);
-      res.status(500).json({ error: error.message || 'Failed to create connection' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to create connection', 500);
     }
   })
 );
@@ -889,7 +896,7 @@ router.delete(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { id } = req.params;
@@ -899,7 +906,7 @@ router.delete(
     });
 
     if (!integration) {
-      return res.status(404).json({ error: 'Connection not found' });
+      throw new AppError('Connection not found', 404);
     }
 
     try {
@@ -918,8 +925,9 @@ router.delete(
       logger.info(`Ticketing connection ${id} deleted for org ${organizationId}`);
       res.json({ success: true, message: 'Connection removed' });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting ticketing connection', error);
-      res.status(500).json({ error: error.message || 'Failed to delete connection' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to delete connection', 500);
     }
   })
 );
@@ -933,7 +941,7 @@ router.post(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { id } = req.params;
@@ -943,7 +951,7 @@ router.post(
     });
 
     if (!integration) {
-      return res.status(404).json({ error: 'Connection not found' });
+      throw new AppError('Connection not found', 404);
     }
 
     try {
@@ -981,7 +989,7 @@ router.get(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { id } = req.params;
@@ -1003,7 +1011,7 @@ router.get(
     });
 
     if (!syncRecord) {
-      return res.status(404).json({ error: 'Ticket sync record not found' });
+      throw new AppError('Ticket sync record not found', 404);
     }
 
     let parsedDetails: any = {};
@@ -1066,7 +1074,7 @@ router.patch(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { id } = req.params;
@@ -1088,7 +1096,7 @@ router.patch(
     });
 
     if (!syncRecord) {
-      return res.status(404).json({ error: 'Ticket sync record not found' });
+      throw new AppError('Ticket sync record not found', 404);
     }
 
     let parsedDetails: any = {};
@@ -1121,8 +1129,9 @@ router.patch(
 
       res.json({ success: true, statusResult });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error(`Error syncing ticket ${id}`, error);
-      res.status(500).json({ error: error.message || 'Failed to sync ticket status' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to sync ticket status', 500);
     }
   })
 );
@@ -1137,7 +1146,7 @@ router.post(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { provider } = req.body as { provider?: TicketingProvider };
@@ -1188,8 +1197,9 @@ router.post(
 
       res.json({ success: true, results });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error('Error in bulk sync', error);
-      res.status(500).json({ error: error.message || 'Bulk sync failed' });
+      throw new AppError(error instanceof Error ? error.message : 'Bulk sync failed', 500);
     }
   })
 );
@@ -1203,13 +1213,13 @@ router.get(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { provider } = req.params as { provider: TicketingProvider };
 
     if (!['jira', 'servicenow', 'azure_devops'].includes(provider)) {
-      return res.status(400).json({ error: 'Invalid provider' });
+      throw new AppError('Invalid provider', 400);
     }
 
     const integration = await prisma.integration.findUnique({
@@ -1268,18 +1278,18 @@ router.put(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const organizationId = req.user?.organizationId;
     if (!organizationId) {
-      return res.status(403).json({ error: 'Organization context required' });
+      throw new AppError('Organization context required', 403);
     }
 
     const { provider } = req.params as { provider: TicketingProvider };
     const { mappingRules } = req.body;
 
     if (!['jira', 'servicenow', 'azure_devops'].includes(provider)) {
-      return res.status(400).json({ error: 'Invalid provider' });
+      throw new AppError('Invalid provider', 400);
     }
 
     if (!mappingRules || typeof mappingRules !== 'object') {
-      return res.status(400).json({ error: 'mappingRules object is required' });
+      throw new AppError('mappingRules object is required', 400);
     }
 
     try {
@@ -1290,7 +1300,7 @@ router.put(
       });
 
       if (!integration) {
-        return res.status(404).json({ error: `${provider} integration not found` });
+        throw new AppError(`${provider} integration not found`, 404);
       }
 
       const existingConfig = (integration.config || {}) as any;
@@ -1309,8 +1319,9 @@ router.put(
         mappingRules,
       });
     } catch (error: any) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating field mapping', error);
-      res.status(500).json({ error: error.message || 'Failed to update field mapping' });
+      throw new AppError(error instanceof Error ? error.message : 'Failed to update field mapping', 500);
     }
   })
 );
@@ -1349,7 +1360,7 @@ router.post(
           result = await azureDevOpsService.processWebhookEvent(orgId, req.body);
           break;
         default:
-          return res.status(400).json({ error: 'Invalid provider' });
+          throw new AppError('Invalid provider', 400);
       }
 
       res.json({ received: true, processed: result.processed });

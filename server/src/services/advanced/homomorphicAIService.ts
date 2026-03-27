@@ -7,6 +7,7 @@
 import crypto from 'crypto';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 
 // Lazy-load node-seal (ESM-only package) to avoid crashing the CJS server at startup
 let _sealModule: any = null;
@@ -78,7 +79,7 @@ class HomomorphicAIService {
       logger.info('Homomorphic AI service initialized with Microsoft SEAL');
     } catch (error) {
       logger.error('Failed to initialize SEAL library', error);
-      throw new Error('Homomorphic encryption initialization failed');
+      throw new AppError('Homomorphic encryption initialization failed', 500);
     }
   }
 
@@ -159,7 +160,7 @@ class HomomorphicAIService {
             polyModulusDegree,
             coeffModulusBitSizes,
           });
-          throw new Error(`Invalid coefficient modulus parameters for ${securityLevel}-bit security: ${error.message || error}`);
+          throw new AppError(`Invalid coefficient modulus parameters for ${securityLevel}-bit security: ${error.message || error}`, 400);
         }
       }
 
@@ -224,16 +225,17 @@ class HomomorphicAIService {
               error: fallbackError.message || fallbackError,
               polyModulusDegree,
             });
-            throw new Error(
+            throw new AppError(
               `CKKS context creation failed at all supported security levels. ` +
               `tc256 is not supported for CKKS in SEAL, and tc192 also failed. ` +
               `Please use 192-bit or 128-bit security for CKKS, or use BFV scheme for 256-bit security. ` +
-              `Original error: ${error.message || error}`
+              `Original error: ${error.message || error}`,
+              500
             );
           }
         } else {
           // For other cases, throw the original error
-          throw new Error(`SEAL context creation failed: ${error.message || error}`);
+          throw new AppError(`SEAL context creation failed: ${error.message || error}`, 500);
         }
       }
 
@@ -254,7 +256,7 @@ class HomomorphicAIService {
           polyModulusDegree,
           coeffModulusBitSizes: coeffModInfo,
         });
-        throw new Error(errorMsg);
+        throw new AppError(errorMsg, 400);
       }
       
       // Log the actual security level being used
@@ -298,7 +300,7 @@ class HomomorphicAIService {
       };
     } catch (error) {
       logger.error('Error generating homomorphic keys', error);
-      throw new Error('Failed to generate encryption keys');
+      throw new AppError('Failed to generate encryption keys', 500);
     }
   }
 
@@ -379,7 +381,7 @@ class HomomorphicAIService {
             securityLevel,
             scheme,
           });
-          throw new Error(`Invalid coefficient modulus parameters: ${error.message || error}`);
+          throw new AppError(`Invalid coefficient modulus parameters: ${error.message || error}`, 400);
         }
 
         // Create context using EXACTLY the same logic as key generation
@@ -398,7 +400,7 @@ class HomomorphicAIService {
           // First try with strict security level validation (same as key generation)
           context = this.seal.Context(parms, true, sealSecurityLevel);
           if (!context.parametersSet()) {
-            throw new Error('Context parameters not valid');
+            throw new AppError('Context parameters not valid', 400);
           }
           logger.debug('Successfully created context with strict validation', {
             securityLevel,
@@ -411,7 +413,7 @@ class HomomorphicAIService {
               logger.info('Using tc192 validation for 256-bit CKKS encryption (matching key generation fallback)');
               context = this.seal.Context(parms, true, this.seal.SecurityLevel.tc192);
               if (!context.parametersSet()) {
-                throw new Error('Context parameters not valid even with tc192');
+                throw new AppError('Context parameters not valid even with tc192', 400);
               }
             } catch (fallbackError: any) {
               logger.error('Context creation failed even with tc192 fallback', {
@@ -421,9 +423,10 @@ class HomomorphicAIService {
                 securityLevel,
                 scheme,
               });
-              throw new Error(
+              throw new AppError(
                 `Failed to create SEAL context matching key generation: ${fallbackError.message || fallbackError}. ` +
-                `This usually means the parameters don't match those used to generate the key.`
+                `This usually means the parameters don't match those used to generate the key.`,
+                500
               );
             }
           } else {
@@ -436,17 +439,18 @@ class HomomorphicAIService {
               securityLevel,
               scheme,
             });
-            throw new Error(
+            throw new AppError(
               `Failed to create SEAL context: ${error.message || error}. ` +
               `This usually means the encryption parameters don't match those used to generate the key. ` +
-              `Please ensure you're using the same security level and parameters from key generation.`
+              `Please ensure you're using the same security level and parameters from key generation.`,
+              500
             );
           }
         }
         
         // Final validation
         if (!context.parametersSet()) {
-          throw new Error('Context parameters not valid after creation');
+          throw new AppError('Context parameters not valid after creation', 400);
         }
 
         const encoder = this.seal.CKKSEncoder(context);
@@ -454,7 +458,7 @@ class HomomorphicAIService {
         // Load public key first
         // Validate that publicKey is a string and not empty
         if (!publicKey || typeof publicKey !== 'string' || publicKey.trim().length === 0) {
-          throw new Error('Public key is invalid or empty');
+          throw new AppError('Public key is invalid or empty', 400);
         }
         
         let pubKey;
@@ -473,7 +477,7 @@ class HomomorphicAIService {
             securityLevel,
             scheme,
           });
-          throw new Error(`Failed to load public key: ${error.message || error}. This usually means the context parameters don't match those used to generate the key.`);
+          throw new AppError(`Failed to load public key: ${error.message || error}. This usually means the context parameters don't match those used to generate the key.`, 500);
         }
         
         // Create encryptor with the loaded public key
@@ -489,7 +493,7 @@ class HomomorphicAIService {
             dataLength: data.length,
             scale,
           });
-          throw new Error(`Failed to encode data: ${error.message || error}`);
+          throw new AppError(`Failed to encode data: ${error.message || error}`, 500);
         }
 
         const ciphertext = this.seal.CipherText();
@@ -500,7 +504,7 @@ class HomomorphicAIService {
             error: error.message || error,
             dataLength: data.length,
           });
-          throw new Error(`Failed to encrypt data: ${error.message || error}`);
+          throw new AppError(`Failed to encrypt data: ${error.message || error}`, 500);
         }
 
         return {
@@ -566,7 +570,7 @@ class HomomorphicAIService {
         },
         dataLength: data.length,
       });
-      throw new Error(`Failed to encrypt data homomorphically: ${error.message || error}`);
+      throw new AppError(`Failed to encrypt data homomorphically: ${error.message || error}`, 500);
     }
   }
 
@@ -649,7 +653,7 @@ class HomomorphicAIService {
       }
     } catch (error) {
       logger.error('Error decrypting data', error);
-      throw new Error('Failed to decrypt homomorphic data');
+      throw new AppError('Failed to decrypt homomorphic data', 500);
     }
   }
 
@@ -688,7 +692,7 @@ class HomomorphicAIService {
       }
       
       if (!context.parametersSet()) {
-        throw new Error('SEAL context parameters not valid for linear regression');
+        throw new AppError('SEAL context parameters not valid for linear regression', 400);
       }
       
       const evaluator = this.seal.Evaluator(context);
@@ -758,7 +762,7 @@ class HomomorphicAIService {
         },
         weightsLength: weights.length,
       });
-      throw new Error(`Encrypted inference failed: ${error.message || error}`);
+      throw new AppError(`Encrypted inference failed: ${error.message || error}`, 500);
     }
   }
 
@@ -847,7 +851,7 @@ class HomomorphicAIService {
       };
     } catch (error) {
       logger.error('Error in encrypted polynomial evaluation', error);
-      throw new Error('Encrypted polynomial evaluation failed');
+      throw new AppError('Encrypted polynomial evaluation failed', 500);
     }
   }
 
@@ -909,7 +913,7 @@ class HomomorphicAIService {
       };
     } catch (error) {
       logger.error('Error in encrypted statistics', error);
-      throw new Error('Encrypted statistics computation failed');
+      throw new AppError('Encrypted statistics computation failed', 500);
     }
   }
 
@@ -997,7 +1001,7 @@ class HomomorphicAIService {
       };
     } catch (error) {
       logger.error('Error in encrypted NN inference', error);
-      throw new Error('Encrypted neural network inference failed');
+      throw new AppError('Encrypted neural network inference failed', 500);
     }
   }
 

@@ -9,6 +9,8 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import { upsertSSOConfigSchema } from '../validators/ssoSchemas';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import config from '../config';
@@ -423,6 +425,7 @@ router.get(
 router.post(
   '/config',
   authorize('admin'),
+  validateBody(upsertSSOConfigSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
 
@@ -439,17 +442,6 @@ router.post(
         autoProvision,
         domains,
       } = req.body;
-
-      if (!provider) {
-        res.status(400).json({ error: 'provider is required' });
-        return;
-      }
-
-      const validProviders = ['SAML', 'OIDC', 'AZURE_AD', 'OKTA', 'GOOGLE_WORKSPACE', 'ONELOGIN', 'PING_IDENTITY'];
-      if (!validProviders.includes(provider)) {
-        res.status(400).json({ error: `provider must be one of: ${validProviders.join(', ')}` });
-        return;
-      }
 
       const ssoConfig = await prisma.sSOConfiguration.upsert({
         where: { organizationId: user.organizationId },

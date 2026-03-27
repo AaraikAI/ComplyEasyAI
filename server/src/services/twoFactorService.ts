@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import { hashPassword, verifyPassword } from '../utils/fipsPasswordHashing';
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 interface TwoFactorSetup {
   secret: string;
@@ -37,7 +38,7 @@ class TwoFactorService {
       }) as TwoFactorSecret;
 
       if (!secret.otpauth_url) {
-        throw new Error('Failed to generate OTP auth URL');
+        throw new AppError('Failed to generate OTP auth URL', 500);
       }
 
       // Generate QR code
@@ -67,7 +68,7 @@ class TwoFactorService {
       };
     } catch (error) {
       logger.error('Error setting up 2FA', error);
-      throw new Error('Failed to setup two-factor authentication');
+      throw new AppError('Failed to setup two-factor authentication', 500);
     }
   }
 
@@ -82,11 +83,11 @@ class TwoFactorService {
       });
 
       if (!user || !user.twoFactorSecret) {
-        throw new Error('2FA not set up for this user');
+        throw new AppError('2FA not set up for this user', 400);
       }
 
       if (user.twoFactorEnabled) {
-        throw new Error('2FA already enabled');
+        throw new AppError('2FA already enabled', 409);
       }
 
       const secret = this.decryptSecret(user.twoFactorSecret);
@@ -117,7 +118,7 @@ class TwoFactorService {
       return true;
     } catch (error) {
       logger.error('Error verifying 2FA token', error);
-      throw new Error('Failed to verify two-factor authentication');
+      throw new AppError('Failed to verify two-factor authentication', 500);
     }
   }
 
@@ -239,7 +240,7 @@ class TwoFactorService {
       return true;
     } catch (error) {
       logger.error('Error disabling 2FA', error);
-      throw new Error('Failed to disable two-factor authentication');
+      throw new AppError('Failed to disable two-factor authentication', 500);
     }
   }
 
@@ -268,7 +269,7 @@ class TwoFactorService {
       return backupCodes;
     } catch (error) {
       logger.error('Error regenerating backup codes', error);
-      throw new Error('Failed to regenerate backup codes');
+      throw new AppError('Failed to regenerate backup codes', 500);
     }
   }
 
@@ -365,7 +366,7 @@ class TwoFactorService {
    */
   private deriveEncryptionKey(): Buffer {
     if (!process.env.ENCRYPTION_KEY) {
-      throw new Error('ENCRYPTION_KEY environment variable is required for 2FA encryption');
+      throw new AppError('ENCRYPTION_KEY environment variable is required for 2FA encryption', 400);
     }
     const salt = crypto.createHash('sha256').update(process.env.ENCRYPTION_KEY).digest().subarray(0, 16);
     // FIPS 140-3 compliant: PBKDF2-SHA256 (SP 800-132)
@@ -422,7 +423,7 @@ class TwoFactorService {
         return decrypted;
       }
 
-      throw new Error('Invalid encrypted secret format');
+      throw new AppError('Invalid encrypted secret format', 400);
     } finally {
       key.fill(0); // FIPS 140-3 key zeroization
     }

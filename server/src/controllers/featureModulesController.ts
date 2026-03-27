@@ -476,7 +476,22 @@ export const getDPP: RequestHandler = async (req, res) => {
     where: { id: req.params.id, organizationId: getOrgId(req) },
   });
   if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
-  res.json(passport);
+
+  // Map JSON fields to the sub-resource keys the frontend expects
+  const result: Record<string, any> = { ...passport };
+  result.materials = Array.isArray(passport.materialComposition) ? passport.materialComposition : [];
+  result.carbonFootprint = (() => {
+    const cf = passport.carbonFootprint as any;
+    if (!cf) return [];
+    // If stored as stages array, return directly
+    if (Array.isArray(cf)) return cf;
+    // If stored as { total, stages: [...] }, extract stages
+    if (cf.stages && Array.isArray(cf.stages)) return cf.stages;
+    return [];
+  })();
+  result.supplyChain = Array.isArray(passport.supplyChain) ? passport.supplyChain : [];
+
+  res.json(result);
 };
 
 export const updateDPP: RequestHandler = async (req, res) => {
@@ -490,6 +505,108 @@ export const updateDPP: RequestHandler = async (req, res) => {
 export const deleteDPP: RequestHandler = async (req, res) => {
   await prisma.digitalProductPassport.delete({ where: { id: req.params.id } });
   res.json({ success: true });
+};
+
+/**
+ * Returns the material composition for a given DPP record.
+ * Reads from the materialComposition JSON field.
+ */
+export const getDPPMaterials: RequestHandler = async (req, res) => {
+  try {
+    const passport = await prisma.digitalProductPassport.findFirst({
+      where: { id: req.params.id, organizationId: getOrgId(req) },
+      select: { materialComposition: true },
+    });
+    if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+    const materials = Array.isArray(passport.materialComposition) ? passport.materialComposition : [];
+    res.json(materials);
+  } catch (error) {
+    logger.error('Error fetching DPP materials:', error);
+    res.json([]);
+  }
+};
+
+/**
+ * Returns the carbon footprint breakdown for a given DPP record.
+ * Reads from the carbonFootprint JSON field.
+ */
+export const getDPPCarbon: RequestHandler = async (req, res) => {
+  try {
+    const passport = await prisma.digitalProductPassport.findFirst({
+      where: { id: req.params.id, organizationId: getOrgId(req) },
+      select: { carbonFootprint: true },
+    });
+    if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+    const cf = passport.carbonFootprint as any;
+    let stages: any[] = [];
+    if (Array.isArray(cf)) stages = cf;
+    else if (cf && Array.isArray(cf.stages)) stages = cf.stages;
+    res.json(stages);
+  } catch (error) {
+    logger.error('Error fetching DPP carbon data:', error);
+    res.json([]);
+  }
+};
+
+/**
+ * Returns the supply chain nodes for a given DPP record.
+ * Reads from the supplyChain JSON field.
+ */
+export const getDPPSupplyChain: RequestHandler = async (req, res) => {
+  try {
+    const passport = await prisma.digitalProductPassport.findFirst({
+      where: { id: req.params.id, organizationId: getOrgId(req) },
+      select: { supplyChain: true },
+    });
+    if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+    const chain = Array.isArray(passport.supplyChain) ? passport.supplyChain : [];
+    res.json(chain);
+  } catch (error) {
+    logger.error('Error fetching DPP supply chain:', error);
+    res.json([]);
+  }
+};
+
+/**
+ * Returns the sustainability/circularity metrics for a given DPP record.
+ * Reads from the circularityMetrics JSON field.
+ */
+export const getDPPSustainability: RequestHandler = async (req, res) => {
+  try {
+    const passport = await prisma.digitalProductPassport.findFirst({
+      where: { id: req.params.id, organizationId: getOrgId(req) },
+      select: { circularityMetrics: true, recyclabilityScore: true, repairabilityScore: true, durabilityRating: true, energyClass: true },
+    });
+    if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+    const metrics = (passport.circularityMetrics as any) || {};
+    res.json({
+      ...metrics,
+      recyclabilityScore: passport.recyclabilityScore,
+      repairabilityScore: passport.repairabilityScore,
+      durabilityRating: passport.durabilityRating,
+      energyClass: passport.energyClass,
+    });
+  } catch (error) {
+    logger.error('Error fetching DPP sustainability:', error);
+    res.json({});
+  }
+};
+
+/**
+ * Returns compliance and certification status for a given DPP record.
+ */
+export const getDPPCertifications: RequestHandler = async (req, res) => {
+  try {
+    const passport = await prisma.digitalProductPassport.findFirst({
+      where: { id: req.params.id, organizationId: getOrgId(req) },
+      select: { complianceStatus: true, passportVersion: true, publicUrl: true, qrCodeData: true },
+    });
+    if (!passport) { res.status(404).json({ error: 'Digital Product Passport not found' }); return; }
+    res.json(passport);
+  } catch (error) {
+    logger.error('Error fetching DPP certifications:', error);
+    res.json({});
+  }
 };
 
 // ============================================================================
@@ -639,6 +756,66 @@ export const updateSBOMRepository: RequestHandler = async (req, res) => {
 export const deleteSBOMRepository: RequestHandler = async (req, res) => {
   await prisma.sBOMRepository.delete({ where: { id: req.params.id } });
   res.json({ success: true });
+};
+
+/**
+ * Aggregates license data from SBOM entries, grouping by license name and
+ * computing component counts, risk levels, and compatibility data.
+ */
+export const listSBOMLicenses: RequestHandler = async (req, res) => {
+  try {
+    const entries = await prisma.sBOMEntry.findMany({
+      where: { organizationId: getOrgId(req) },
+      select: { license: true, licenseRisk: true },
+    });
+
+    // License classification reference data
+    const LICENSE_DB: Record<string, { spdxId: string; name: string; category: string; obligations: string[]; compatible: boolean; notes: string }> = {
+      'MIT': { spdxId: 'MIT', name: 'MIT License', category: 'Permissive', obligations: ['Include copyright notice', 'Include license text'], compatible: true, notes: 'Most permissive. No issues for commercial use.' },
+      'Apache-2.0': { spdxId: 'Apache-2.0', name: 'Apache License 2.0', category: 'Permissive', obligations: ['Include copyright notice', 'Include license text', 'State changes', 'Include NOTICE file'], compatible: true, notes: 'Patent grant included. Compatible with most other licenses.' },
+      'LGPL-2.1': { spdxId: 'LGPL-2.1', name: 'GNU Lesser General Public License v2.1', category: 'Weak Copyleft', obligations: ['Provide source for LGPL components', 'Allow relinking', 'Include license text', 'State changes'], compatible: true, notes: 'Dynamic linking generally acceptable. Static linking may trigger copyleft.' },
+      'GPL-3.0': { spdxId: 'GPL-3.0', name: 'GNU General Public License v3.0', category: 'Copyleft', obligations: ['Provide complete source code', 'Include license text', 'State changes', 'No additional restrictions', 'Preserve installation information'], compatible: false, notes: 'Strong copyleft. May require full source disclosure of derivative works.' },
+      'BSD-3-Clause': { spdxId: 'BSD-3-Clause', name: 'BSD 3-Clause License', category: 'Permissive', obligations: ['Include copyright notice', 'Include license text'], compatible: true, notes: 'Very permissive. No endorsement clause.' },
+      'ISC': { spdxId: 'ISC', name: 'ISC License', category: 'Permissive', obligations: ['Include copyright notice'], compatible: true, notes: 'Functionally equivalent to MIT.' },
+    };
+
+    // Group entries by license
+    const licenseMap = new Map<string, { count: number; risk: string }>();
+    for (const entry of entries) {
+      const lic = entry.license || 'Unknown';
+      const existing = licenseMap.get(lic);
+      if (existing) {
+        existing.count += 1;
+        // Keep the highest risk level
+        const riskRank: Record<string, number> = { 'High': 3, 'Medium': 2, 'Low': 1, 'None': 0 };
+        if ((riskRank[entry.licenseRisk || 'None'] || 0) > (riskRank[existing.risk] || 0)) {
+          existing.risk = entry.licenseRisk || 'None';
+        }
+      } else {
+        licenseMap.set(lic, { count: 1, risk: entry.licenseRisk || 'None' });
+      }
+    }
+
+    const licenses = Array.from(licenseMap.entries()).map(([license, data], idx) => {
+      const ref = LICENSE_DB[license];
+      return {
+        id: `L${String(idx + 1).padStart(3, '0')}`,
+        spdxId: ref?.spdxId || license,
+        name: ref?.name || license,
+        category: ref?.category || 'Proprietary',
+        risk: data.risk,
+        componentCount: data.count,
+        obligations: ref?.obligations || ['Comply with specific license terms'],
+        compatible: ref?.compatible ?? false,
+        notes: ref?.notes || 'Review specific license terms.',
+      };
+    });
+
+    res.json(licenses);
+  } catch (error) {
+    logger.error('Error aggregating SBOM licenses:', error);
+    res.json([]);
+  }
 };
 
 // ============================================================================

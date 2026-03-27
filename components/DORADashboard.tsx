@@ -977,6 +977,13 @@ export const DORADashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         </div>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded-lg flex items-center justify-between text-sm text-red-300">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="ml-4 text-red-400 hover:text-red-200">Dismiss</button>
+          </div>
+        )}
+
         <div className="flex gap-1 mb-6 border-b border-slate-700 overflow-x-auto">
           {tabs.map(tab => (
             <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSearchQuery(''); setCategoryFilter('all'); }} className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.key ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'}`}>

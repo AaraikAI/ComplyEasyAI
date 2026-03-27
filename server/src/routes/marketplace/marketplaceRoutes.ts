@@ -9,6 +9,9 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/auth';
+import { validateBody } from '../../middleware/validate';
+import { installIntegrationSchema, configureIntegrationSchema } from '../../validators/marketplaceSchemas';
+import { AppError } from '../../middleware/errorHandler';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 
@@ -463,8 +466,7 @@ marketplaceRouter.get('/', asyncHandler(async (req: Request, res: Response) => {
 marketplaceRouter.get('/:slug', asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const integration = MARKETPLACE_CATALOG.find(i => i.slug === req.params.slug);
   if (!integration) {
-    res.status(404).json({ error: 'Integration not found' });
-    return;
+    throw new AppError('Integration not found', 404);
   }
 
   const user = (req as any).user;
@@ -484,16 +486,14 @@ marketplaceRouter.get('/:slug', asyncHandler(async (req: Request, res: Response)
  * POST /api/marketplace/:slug/install
  * Install an integration for the organization.
  */
-marketplaceRouter.post('/:slug/install', asyncHandler(async (req: Request, res: Response): Promise<void> => {
+marketplaceRouter.post('/:slug/install', validateBody(installIntegrationSchema), asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const integration = MARKETPLACE_CATALOG.find(i => i.slug === req.params.slug);
   if (!integration) {
-    res.status(404).json({ error: 'Integration not found' });
-    return;
+    throw new AppError('Integration not found', 404);
   }
 
   if (integration.status === 'coming_soon') {
-    res.status(400).json({ error: 'This integration is not yet available' });
-    return;
+    throw new AppError('This integration is not yet available', 400);
   }
 
   const user = (req as any).user;
@@ -504,8 +504,7 @@ marketplaceRouter.post('/:slug/install', asyncHandler(async (req: Request, res: 
   });
 
   if (existing) {
-    res.status(409).json({ error: 'Integration already installed', integration: existing });
-    return;
+    throw new AppError('Integration already installed', 409);
   }
 
   // Validate required configuration
@@ -518,12 +517,7 @@ marketplaceRouter.post('/:slug/install', asyncHandler(async (req: Request, res: 
   }
 
   if (missingFields.length > 0) {
-    res.status(400).json({
-      error: 'Missing required configuration fields',
-      missingFields,
-      configSchema: integration.configSchema,
-    });
-    return;
+    throw new AppError(`Missing required configuration fields: ${missingFields.join(', ')}`, 400);
   }
 
   // Create integration record
@@ -550,15 +544,14 @@ marketplaceRouter.post('/:slug/install', asyncHandler(async (req: Request, res: 
  * PUT /api/marketplace/:slug/configure
  * Update configuration for an installed integration.
  */
-marketplaceRouter.put('/:slug/configure', asyncHandler(async (req: Request, res: Response): Promise<void> => {
+marketplaceRouter.put('/:slug/configure', validateBody(configureIntegrationSchema), asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const user = (req as any).user;
   const installed = await prisma.integration.findFirst({
     where: { organizationId: user.organizationId, provider: req.params.slug },
   });
 
   if (!installed) {
-    res.status(404).json({ error: 'Integration not installed' });
-    return;
+    throw new AppError('Integration not installed', 404);
   }
 
   const updated = await prisma.integration.update({
@@ -581,8 +574,7 @@ marketplaceRouter.post('/:slug/uninstall', asyncHandler(async (req: Request, res
   });
 
   if (!installed) {
-    res.status(404).json({ error: 'Integration not installed' });
-    return;
+    throw new AppError('Integration not installed', 404);
   }
 
   await prisma.integration.delete({ where: { id: installed.id } });
@@ -628,8 +620,7 @@ marketplaceRouter.post('/:slug/test', asyncHandler(async (req: Request, res: Res
   });
 
   if (!installed) {
-    res.status(404).json({ error: 'Integration not installed' });
-    return;
+    throw new AppError('Integration not installed', 404);
   }
 
   // Perform actual connection test by checking integration status

@@ -9,6 +9,9 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import { updateNotificationPreferencesSchema } from '../validators/notificationSchemas';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -62,8 +65,9 @@ router.get(
 
       res.json({ status: 'success', data: { unreadCount: count } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching unread notification count:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch unread count' });
+      throw new AppError('Failed to fetch unread count', 500);
     }
   })
 );
@@ -97,8 +101,9 @@ router.get(
 
       res.json({ status: 'success', data: prefs });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching notification preferences:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch notification preferences' });
+      throw new AppError('Failed to fetch notification preferences', 500);
     }
   })
 );
@@ -109,6 +114,7 @@ router.get(
 
 router.patch(
   '/preferences',
+  validateBody(updateNotificationPreferencesSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
 
@@ -137,8 +143,9 @@ router.patch(
 
       res.json({ status: 'success', data: prefs });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error updating notification preferences:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to update notification preferences' });
+      throw new AppError('Failed to update notification preferences', 500);
     }
   })
 );
@@ -171,8 +178,9 @@ router.post(
         data: { markedRead: result.count },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error marking all notifications as read:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to mark all notifications as read' });
+      throw new AppError('Failed to mark all notifications as read', 500);
     }
   })
 );
@@ -250,8 +258,9 @@ router.get(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error fetching notifications:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to fetch notifications' });
+      throw new AppError('Failed to fetch notifications', 500);
     }
   })
 );
@@ -276,8 +285,7 @@ router.patch(
       });
 
       if (!notification) {
-        res.status(404).json({ status: 'error', message: 'Notification not found' });
-        return;
+        throw new AppError('Notification not found', 404);
       }
 
       const updated = await prisma.notification.update({
@@ -290,8 +298,9 @@ router.patch(
 
       res.json({ status: 'success', data: updated });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error marking notification as read:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to mark notification as read' });
+      throw new AppError('Failed to mark notification as read', 500);
     }
   })
 );
@@ -316,8 +325,7 @@ router.delete(
       });
 
       if (!notification) {
-        res.status(404).json({ status: 'error', message: 'Notification not found' });
-        return;
+        throw new AppError('Notification not found', 404);
       }
 
       await prisma.notification.delete({
@@ -326,8 +334,9 @@ router.delete(
 
       res.json({ status: 'success', data: { id: req.params.id, deleted: true } });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error deleting notification:', error);
-      res.status(500).json({ status: 'error', message: 'Failed to delete notification' });
+      throw new AppError('Failed to delete notification', 500);
     }
   })
 );

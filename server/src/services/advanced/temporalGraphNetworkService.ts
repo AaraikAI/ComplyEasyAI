@@ -10,6 +10,7 @@
 
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 import mlModelsService from './mlModelsService';
 import notificationService from '../notificationService';
 import webhookService from '../webhookService';
@@ -721,7 +722,7 @@ class TemporalGraphNetworkService {
       });
 
       if (!framework) {
-        throw new Error('Framework not found');
+        throw new AppError('Framework not found', 404);
       }
 
       const currentScore = framework.progress;

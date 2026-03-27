@@ -13,6 +13,7 @@ import {
 } from '../validators/coreModulesSchemas';
 import { asyncHandler } from '../types/express';
 import sodService from '../services/sodService';
+import { AppError } from '../middleware/errorHandler';
 import logger from '../config/logger';
 
 const router = Router();
@@ -75,8 +76,7 @@ router.get(
     const user = (req as AuthRequest).user!;
     const rule = await sodService.getSoDRuleById(req.params.id, user.organizationId);
     if (!rule) {
-      res.status(404).json({ error: 'Rule not found' });
-      return;
+      throw new AppError('Rule not found', 404);
     }
     res.json(rule);
   })
@@ -138,8 +138,7 @@ router.get(
     const user = (req as AuthRequest).user!;
     const violation = await sodService.getSoDViolationById(req.params.id, user.organizationId);
     if (!violation) {
-      res.status(404).json({ error: 'Violation not found' });
-      return;
+      throw new AppError('Violation not found', 404);
     }
     res.json(violation);
   })

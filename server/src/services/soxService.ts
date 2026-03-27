@@ -2,6 +2,7 @@ import { Prisma } from '../generated/prisma/client';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 // ---------------------------------------------------------------------------
 // Type helpers – mirrors the dedicated Prisma models
@@ -256,7 +257,7 @@ export class SOXService {
     const existing = await this.getSOXControlById(id, organizationId);
     if (!existing) return false;
 
-    await prisma.sOXControl.delete({ where: { id } });
+    await prisma.sOXControl.deleteMany({ where: { id, organizationId } });
 
     await AuditLogger.log({
       userId,
@@ -644,7 +645,7 @@ export class SOXService {
     const existing = await this.getSOXAssessmentById(id, organizationId);
     if (!existing) return false;
 
-    await prisma.sOXAssessment.delete({ where: { id } });
+    await prisma.sOXAssessment.deleteMany({ where: { id, organizationId } });
 
     await AuditLogger.log({
       userId,
@@ -669,11 +670,11 @@ export class SOXService {
   ) {
     const control = await this.getSOXControlById(controlId, organizationId);
     if (!control) {
-      throw new Error(`Control not found: ${controlId}`);
+      throw new AppError(`Control not found: ${controlId}`, 404);
     }
 
     if (control.automationType === 'Manual') {
-      throw new Error('Cannot automate testing for manual controls');
+      throw new AppError('Cannot automate testing for manual controls', 400);
     }
 
     logger.info(`[SOX] Starting automated testing for control: ${control.controlNumber}`);
@@ -1003,7 +1004,7 @@ export class SOXService {
   ) {
     const control = await this.getSOXControlById(controlId, organizationId);
     if (!control) {
-      throw new Error(`Control not found: ${controlId}`);
+      throw new AppError(`Control not found: ${controlId}`, 404);
     }
 
     // Scoring criteria (each item is worth points)

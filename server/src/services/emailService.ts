@@ -1,6 +1,7 @@
 import sgMail from '@sendgrid/mail';
 import config from '../config';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 
 // Validate and set SendGrid API key
 if (!config.sendgrid.apiKey) {
@@ -25,17 +26,17 @@ class EmailService {
       // Check if SendGrid is configured
       if (!config.sendgrid.apiKey) {
         logger.error('SENDGRID_API_KEY is not configured. Cannot send email.');
-        throw new Error('Email service is not configured. Please set SENDGRID_API_KEY in your .env file.');
+        throw new AppError('Email service is not configured. Please set SENDGRID_API_KEY in your .env file.', 400);
       }
 
       if (!config.sendgrid.apiKey.startsWith('SG.')) {
         logger.error(`Invalid SendGrid API key format. Key should start with "SG."`);
-        throw new Error('Invalid SendGrid API key format. Please check your SENDGRID_API_KEY in the .env file.');
+        throw new AppError('Invalid SendGrid API key format. Please check your SENDGRID_API_KEY in the .env file.', 400);
       }
 
       if (!config.sendgrid.fromEmail) {
         logger.error('SENDGRID_FROM_EMAIL is not configured.');
-        throw new Error('Email sender is not configured. Please set SENDGRID_FROM_EMAIL in your .env file.');
+        throw new AppError('Email sender is not configured. Please set SENDGRID_FROM_EMAIL in your .env file.', 400);
       }
 
       const msg = {
@@ -62,13 +63,13 @@ class EmailService {
       
       // Provide more specific error messages
       if (error.code === 401 || error.message?.includes('Unauthorized')) {
-        throw new Error('SendGrid API key is invalid. Please check your SENDGRID_API_KEY in the .env file.');
+        throw new AppError('SendGrid API key is invalid. Please check your SENDGRID_API_KEY in the .env file.', 403);
       }
       if (error.message?.includes('Forbidden') || error.code === 403) {
-        throw new Error('SendGrid API key does not have permission to send emails. Please verify your API key permissions.');
+        throw new AppError('SendGrid API key does not have permission to send emails. Please verify your API key permissions.', 403);
       }
       if (error.message?.includes('sender')) {
-        throw new Error(`SendGrid sender email "${config.sendgrid.fromEmail}" is not verified. Please verify it in SendGrid dashboard.`);
+        throw new AppError(`SendGrid sender email "${config.sendgrid.fromEmail}" is not verified. Please verify it in SendGrid dashboard.`, 400);
       }
       
       throw error;

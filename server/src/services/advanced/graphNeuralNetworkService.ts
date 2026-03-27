@@ -20,6 +20,7 @@ import Graph from 'graphology';
 import forceAtlas2 from 'graphology-layout-forceatlas2';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -1392,7 +1393,7 @@ class GraphNeuralNetworkService {
       const nodeIds = graph.nodes();
 
       if (nodeIds.length === 0) {
-        throw new Error('No training data available');
+        throw new AppError('No training data available', 400);
       }
 
       // Normalise features

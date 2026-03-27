@@ -9,15 +9,16 @@ import { Prisma } from '../../generated/prisma/client';
 import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 // Security fix for GHSA-j965-2qgj-vjmq: Validate AWS region parameter
 const validateRegion = (region: string): string => {
   if (!region || typeof region !== 'string') {
-    throw new Error('AWS region must be a non-empty string');
+    throw new AppError('AWS region must be a non-empty string', 400);
   }
   // Basic validation - allow alphanumeric, hyphens, underscores
   if (!/^[a-zA-Z0-9_-]+$/.test(region)) {
-    throw new Error('Invalid AWS region format');
+    throw new AppError('Invalid AWS region format', 400);
   }
   return region;
 };
@@ -123,7 +124,7 @@ class AWSService {
       logger.info(`AWS integration saved for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error saving AWS integration', error);
-      throw new Error('Failed to save integration');
+      throw new AppError('Failed to save integration', 500);
     }
   }
 
@@ -148,7 +149,7 @@ class AWSService {
     const integration = await this.getIntegration(organizationId);
 
     if (!integration || !integration.connected) {
-      throw new Error('AWS integration not connected');
+      throw new AppError('AWS integration not connected', 400);
     }
 
     const config = integration.config as any;
@@ -209,10 +210,10 @@ class AWSService {
       }));
     } catch (error: any) {
       if (error.code === 'InvalidClientTokenId' || error.code === 'SignatureDoesNotMatch') {
-        throw new Error('Authentication failed. Please reconnect AWS integration.');
+        throw new AppError('Authentication failed. Please reconnect AWS integration.', 403);
       }
       logger.error('Error fetching CloudTrail events', error);
-      throw new Error('Failed to fetch CloudTrail events');
+      throw new AppError('Failed to fetch CloudTrail events', 500);
     }
   }
 
@@ -277,7 +278,7 @@ class AWSService {
       return securityStatus;
     } catch (error) {
       logger.error('Error checking S3 bucket security', error);
-      throw new Error('Failed to check S3 bucket security');
+      throw new AppError('Failed to check S3 bucket security', 500);
     }
   }
 
@@ -330,7 +331,7 @@ class AWSService {
       return userDetails;
     } catch (error) {
       logger.error('Error fetching IAM users', error);
-      throw new Error('Failed to fetch IAM users');
+      throw new AppError('Failed to fetch IAM users', 500);
     }
   }
 
@@ -391,7 +392,7 @@ class AWSService {
         };
       }
       logger.error('Error fetching AWS Config compliance', error);
-      throw new Error('Failed to fetch AWS Config compliance');
+      throw new AppError('Failed to fetch AWS Config compliance', 500);
     }
   }
 
@@ -443,7 +444,7 @@ class AWSService {
         return [];
       }
       logger.error('Error fetching Security Hub findings', error);
-      throw new Error('Failed to fetch Security Hub findings');
+      throw new AppError('Failed to fetch Security Hub findings', 500);
     }
   }
 
@@ -511,7 +512,7 @@ class AWSService {
       };
     } catch (error) {
       logger.error('Error running AWS compliance scan', error);
-      throw new Error('Failed to run compliance scan');
+      throw new AppError('Failed to run compliance scan', 500);
     }
   }
 
@@ -537,7 +538,7 @@ class AWSService {
       logger.info(`AWS integration disconnected for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error disconnecting AWS integration', error);
-      throw new Error('Failed to disconnect AWS integration');
+      throw new AppError('Failed to disconnect AWS integration', 500);
     }
   }
 }

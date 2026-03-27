@@ -9,6 +9,14 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  analyzeFrameworkSchema,
+  mockQuestionsSchema,
+  executiveSummarySchema,
+  exportEvidenceSchema,
+} from '../validators/auditPrepSchemas';
+import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
 
@@ -90,7 +98,7 @@ async function analyzeFrameworkGaps(
   }
 
   if (!framework) {
-    throw new Error('FRAMEWORK_NOT_FOUND');
+    throw new AppError('Framework not found', 404);
   }
 
   const controls = framework.controls;
@@ -191,13 +199,13 @@ async function analyzeFrameworkGaps(
 
 router.post(
   '/analyze',
+  validateBody(analyzeFrameworkSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const frameworkId = req.body.framework as string;
 
     if (!frameworkId) {
-      res.status(400).json({ error: 'framework is required' });
-      return;
+      throw new AppError('framework is required', 400);
     }
 
     try {
@@ -272,12 +280,9 @@ router.post(
         },
       });
     } catch (error: any) {
-      if (error.message === 'FRAMEWORK_NOT_FOUND') {
-        res.status(404).json({ error: 'Framework not found' });
-        return;
-      }
+      if (error instanceof AppError) throw error;
       logger.error('Error running audit analysis:', error);
-      res.status(500).json({ error: 'Failed to run audit analysis' });
+      throw new AppError('Failed to run audit analysis', 500);
     }
   })
 );
@@ -350,12 +355,9 @@ router.get(
         },
       });
     } catch (error: any) {
-      if (error.message === 'FRAMEWORK_NOT_FOUND') {
-        res.status(404).json({ error: 'Framework not found' });
-        return;
-      }
+      if (error instanceof AppError) throw error;
       logger.error('Error calculating audit readiness:', error);
-      res.status(500).json({ error: 'Failed to calculate audit readiness' });
+      throw new AppError('Failed to calculate audit readiness', 500);
     }
   })
 );
@@ -400,12 +402,9 @@ router.get(
         },
       });
     } catch (error: any) {
-      if (error.message === 'FRAMEWORK_NOT_FOUND') {
-        res.status(404).json({ error: 'Framework not found' });
-        return;
-      }
+      if (error instanceof AppError) throw error;
       logger.error('Error listing audit gaps:', error);
-      res.status(500).json({ error: 'Failed to list audit gaps' });
+      throw new AppError('Failed to list audit gaps', 500);
     }
   })
 );
@@ -416,6 +415,7 @@ router.get(
 
 router.post(
   '/mock-questions/:frameworkId',
+  validateBody(mockQuestionsSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
 
@@ -430,8 +430,7 @@ router.post(
       });
 
       if (!framework) {
-        res.status(404).json({ error: 'Framework not found' });
-        return;
+        throw new AppError('Framework not found', 404);
       }
 
       const controlCount = req.body.count || 10;
@@ -481,8 +480,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error generating mock audit questions:', error);
-      res.status(500).json({ error: 'Failed to generate mock audit questions' });
+      throw new AppError('Failed to generate mock audit questions', 500);
     }
   })
 );
@@ -511,8 +511,7 @@ router.post(
       });
 
       if (!framework) {
-        res.status(404).json({ error: 'Framework not found' });
-        return;
+        throw new AppError('Framework not found', 404);
       }
 
       // Organize evidence by control, grouped by category
@@ -580,8 +579,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error generating evidence package:', error);
-      res.status(500).json({ error: 'Failed to generate evidence package' });
+      throw new AppError('Failed to generate evidence package', 500);
     }
   })
 );
@@ -707,12 +707,9 @@ router.get(
         },
       });
     } catch (error: any) {
-      if (error.message === 'FRAMEWORK_NOT_FOUND') {
-        res.status(404).json({ error: 'Framework not found' });
-        return;
-      }
+      if (error instanceof AppError) throw error;
       logger.error('Error calculating remediation timeline:', error);
-      res.status(500).json({ error: 'Failed to calculate remediation timeline' });
+      throw new AppError('Failed to calculate remediation timeline', 500);
     }
   })
 );
@@ -723,13 +720,13 @@ router.get(
 
 router.post(
   '/executive-summary',
+  validateBody(executiveSummarySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const frameworkId = req.body.framework as string;
 
     if (!frameworkId) {
-      res.status(400).json({ error: 'framework is required' });
-      return;
+      throw new AppError('framework is required', 400);
     }
 
     try {
@@ -757,12 +754,9 @@ router.post(
         },
       });
     } catch (error: any) {
-      if (error.message === 'FRAMEWORK_NOT_FOUND') {
-        res.status(404).json({ error: 'Framework not found' });
-        return;
-      }
+      if (error instanceof AppError) throw error;
       logger.error('Error generating executive summary:', error);
-      res.status(500).json({ error: 'Failed to generate executive summary' });
+      throw new AppError('Failed to generate executive summary', 500);
     }
   })
 );
@@ -773,14 +767,14 @@ router.post(
 
 router.post(
   '/export-evidence',
+  validateBody(exportEvidenceSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const orgId = (req as any).user.organizationId;
     const frameworkId = req.body.framework as string;
     const evidenceIds = req.body.evidenceIds as string[] | undefined;
 
     if (!frameworkId) {
-      res.status(400).json({ error: 'framework is required' });
-      return;
+      throw new AppError('framework is required', 400);
     }
 
     try {
@@ -798,8 +792,7 @@ router.post(
       });
 
       if (!framework) {
-        res.status(404).json({ error: 'Framework not found' });
-        return;
+        throw new AppError('Framework not found', 404);
       }
 
       const evidencePackage = framework.controls
@@ -824,8 +817,9 @@ router.post(
         },
       });
     } catch (error) {
+      if (error instanceof AppError) throw error;
       logger.error('Error exporting evidence:', error);
-      res.status(500).json({ error: 'Failed to export evidence' });
+      throw new AppError('Failed to export evidence', 500);
     }
   })
 );

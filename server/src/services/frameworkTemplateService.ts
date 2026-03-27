@@ -6,6 +6,7 @@
  */
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 import { SOC2_CONTROLS } from '../data/frameworks/soc2Controls';
 import { ISO27001_CONTROLS } from '../data/frameworks/iso27001Controls';
 import { HIPAA_CONTROLS } from '../data/frameworks/hipaaControls';
@@ -1515,7 +1516,7 @@ export class FrameworkTemplateService {
     });
 
     if (!framework) {
-      throw new Error('Framework not found or does not belong to this organization');
+      throw new AppError('Framework not found or does not belong to this organization', 404);
     }
 
     // Get existing control names to avoid duplicates
@@ -1944,7 +1945,7 @@ export class FrameworkTemplateService {
     });
 
     if (!framework) {
-      throw new Error('Framework not found');
+      throw new AppError('Framework not found', 404);
     }
 
     // Delete existing mappings for this framework's controls

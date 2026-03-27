@@ -10,6 +10,7 @@
 
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 export interface SimulationScenario {
   id: string;
@@ -1153,7 +1154,7 @@ class ComplianceDigitalTwinService {
       });
 
       if (!scenario) {
-        throw new Error('Scenario not found');
+        throw new AppError('Scenario not found', 404);
       }
 
       const parameters = scenario.parameters as any;
@@ -1182,7 +1183,7 @@ class ComplianceDigitalTwinService {
       });
 
       if (!scenario) {
-        throw new Error('Scenario not found');
+        throw new AppError('Scenario not found', 404);
       }
 
       // Delete simulation results

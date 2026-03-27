@@ -10,6 +10,7 @@
 
 import prisma from '../config/database';
 import logger from '../config/logger';
+import { AppError } from '../middleware/errorHandler';
 import { AuditLogger } from '../utils/auditLogger';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -424,7 +425,7 @@ class AuditorService {
     });
 
     if (!profile) {
-      throw new Error('Auditor profile not found');
+      throw new AppError('Auditor profile not found', 404);
     }
 
     return profile;
@@ -457,7 +458,7 @@ class AuditorService {
       where: { id: profileId, organizationId },
     });
     if (!existing) {
-      throw new Error('Auditor profile not found');
+      throw new AppError('Auditor profile not found', 404);
     }
 
     const profile = await prisma.auditorProfile.update({
@@ -484,7 +485,7 @@ class AuditorService {
       where: { id: profileId, organizationId },
     });
     if (!existing) {
-      throw new Error('Auditor profile not found');
+      throw new AppError('Auditor profile not found', 404);
     }
 
     await prisma.auditorProfile.delete({
@@ -571,7 +572,7 @@ class AuditorService {
       where: { id: data.auditorId, organizationId },
     });
     if (!auditor) {
-      throw new Error('Auditor profile not found');
+      throw new AppError('Auditor profile not found', 404);
     }
 
     const id = uuidv4();
@@ -626,7 +627,7 @@ class AuditorService {
     });
 
     if (!engagement) {
-      throw new Error('Audit engagement not found');
+      throw new AppError('Audit engagement not found', 404);
     }
 
     return engagement;
@@ -658,7 +659,7 @@ class AuditorService {
       where: { id: engagementId, organizationId },
     });
     if (!existing) {
-      throw new Error('Audit engagement not found');
+      throw new AppError('Audit engagement not found', 404);
     }
 
     const engagement = await prisma.$transaction(async (tx) => {
@@ -703,7 +704,7 @@ class AuditorService {
       where: { id: engagementId, organizationId },
     });
     if (!existing) {
-      throw new Error('Audit engagement not found');
+      throw new AppError('Audit engagement not found', 404);
     }
 
     await prisma.auditEngagement.delete({
@@ -787,7 +788,7 @@ class AuditorService {
       where: { id: data.engagementId, organizationId },
     });
     if (!engagement) {
-      throw new Error('Audit engagement not found');
+      throw new AppError('Audit engagement not found', 404);
     }
 
     const id = uuidv4();
@@ -842,7 +843,7 @@ class AuditorService {
     });
 
     if (!finding) {
-      throw new Error('Audit finding not found');
+      throw new AppError('Audit finding not found', 404);
     }
 
     return finding;
@@ -872,7 +873,7 @@ class AuditorService {
       where: { id: findingId, organizationId },
     });
     if (!existing) {
-      throw new Error('Audit finding not found');
+      throw new AppError('Audit finding not found', 404);
     }
 
     const finding = await prisma.auditFinding.update({
@@ -903,7 +904,7 @@ class AuditorService {
       where: { id: findingId, organizationId },
     });
     if (!existing) {
-      throw new Error('Audit finding not found');
+      throw new AppError('Audit finding not found', 404);
     }
 
     await prisma.auditFinding.delete({
@@ -989,7 +990,7 @@ class AuditorService {
       where: { id: data.engagementId, organizationId },
     });
     if (!engagement) {
-      throw new Error('Audit engagement not found');
+      throw new AppError('Audit engagement not found', 404);
     }
 
     const id = uuidv4();
@@ -1044,7 +1045,7 @@ class AuditorService {
     });
 
     if (!workpaper) {
-      throw new Error('Workpaper not found');
+      throw new AppError('Workpaper not found', 404);
     }
 
     return workpaper;
@@ -1074,7 +1075,7 @@ class AuditorService {
       },
     });
     if (!existing) {
-      throw new Error('Workpaper not found');
+      throw new AppError('Workpaper not found', 404);
     }
 
     const workpaper = await prisma.auditWorkpaper.update({
@@ -1109,7 +1110,7 @@ class AuditorService {
       },
     });
     if (!existing) {
-      throw new Error('Workpaper not found');
+      throw new AppError('Workpaper not found', 404);
     }
 
     await prisma.auditWorkpaper.delete({
@@ -1197,7 +1198,7 @@ class AuditorService {
       where: { id: data.engagementId, organizationId },
     });
     if (!engagement) {
-      throw new Error('Audit engagement not found');
+      throw new AppError('Audit engagement not found', 404);
     }
 
     const id = uuidv4();
@@ -1251,7 +1252,7 @@ class AuditorService {
     });
 
     if (!request) {
-      throw new Error('Audit request not found');
+      throw new AppError('Audit request not found', 404);
     }
 
     return request;
@@ -1279,7 +1280,7 @@ class AuditorService {
       },
     });
     if (!existing) {
-      throw new Error('Audit request not found');
+      throw new AppError('Audit request not found', 404);
     }
 
     const request = await prisma.auditRequest.update({
@@ -1314,7 +1315,7 @@ class AuditorService {
       },
     });
     if (!existing) {
-      throw new Error('Audit request not found');
+      throw new AppError('Audit request not found', 404);
     }
 
     await prisma.auditRequest.delete({

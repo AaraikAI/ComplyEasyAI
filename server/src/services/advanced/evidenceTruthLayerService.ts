@@ -12,6 +12,7 @@
 import prisma from '../../config/database';
 import logger from '../../config/logger';
 import crypto from 'crypto';
+import { AppError } from '../../middleware/errorHandler';
 import mlModelsService from './mlModelsService';
 import NTPClient from 'ntp-client';
 import byokService from './byokService';
@@ -753,7 +754,7 @@ class EvidenceTruthLayerService {
       logger.error('[Evidence Truth Layer] Error getting organization signing key', error);
       // Fallback: generate temporary key (configure SIGNING_KEY for persistent keys)
       if (process.env.NODE_ENV === 'production') {
-        throw new Error('Failed to retrieve signing key from secure key store');
+        throw new AppError('Failed to retrieve signing key from secure key store', 500);
       }
       const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
         modulusLength: 2048,
@@ -2058,7 +2059,7 @@ class EvidenceTruthLayerService {
       const history = await this.getAnalysisHistory(evidenceId, organizationId);
 
       if (!analysis) {
-        throw new Error('Analysis not found');
+        throw new AppError('Analysis not found', 404);
       }
 
       const report = {

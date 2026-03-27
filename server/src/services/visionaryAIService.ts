@@ -2,6 +2,7 @@ import prisma from '../config/database';
 import logger from '../config/logger';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AuditLogger } from '../utils/auditLogger';
+import { AppError } from '../middleware/errorHandler';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -166,7 +167,7 @@ export class VisionaryAIService {
     });
 
     if (!organization) {
-      throw new Error('Organization not found');
+      throw new AppError('Organization not found', 404);
     }
 
     // AI-powered prediction
@@ -231,7 +232,7 @@ export class VisionaryAIService {
     });
 
     if (!organization) {
-      throw new Error('Organization not found');
+      throw new AppError('Organization not found', 404);
     }
 
     // Use AI to generate comprehensive policy
@@ -490,7 +491,7 @@ Make it professional, legally sound, and actionable.`;
     });
 
     if (!organization) {
-      throw new Error('Organization not found');
+      throw new AppError('Organization not found', 404);
     }
 
     // Calculate your score

@@ -4,12 +4,17 @@
  * Production-level routes for the 4-tier subscription system.
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import billingController from '../controllers/billingController';
 import { authenticate, authorize } from '../middleware/auth';
+import { AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
 import { validateBody } from '../middleware/validate';
 import { checkoutSchema, changeTierSchema, cancelSubscriptionSchema, addAddonSchema, requestQuoteSchema } from '../validators/billingSchemas';
+import tierService from '../services/tierService';
+import { TierName, TIER_ORDER, TIERS, FEATURE_DISPLAY_NAMES, LIMIT_DISPLAY_NAMES } from '../config/tiers';
+import { AppError } from '../middleware/errorHandler';
+import logger from '../config/logger';
 
 const router = Router();
 
@@ -28,6 +33,85 @@ router.get('/subscription', asyncHandler(billingController.getSubscription.bind(
 
 // Get available tiers with comparison
 router.get('/tiers', asyncHandler(billingController.getAvailableTiers.bind(billingController)));
+
+// Compare current tier with a target tier
+router.get('/compare/:targetTier', asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  try {
+    const authReq = req as AuthRequest;
+    const { targetTier } = req.params;
+    const organizationId = authReq.user!.organizationId;
+
+    // Validate target tier
+    if (!TIER_ORDER.includes(targetTier as TierName)) {
+      throw new AppError(`Invalid tier: ${targetTier}. Valid tiers: ${TIER_ORDER.join(', ')}`, 400);
+    }
+
+    const currentTierName = await tierService.getOrganizationTier(organizationId);
+    const target = targetTier as TierName;
+    const currentTierConfig = TIERS[currentTierName];
+    const targetTierConfig = TIERS[target];
+
+    // Build feature comparison
+    const featureChanges: Array<{ feature: string; displayName: string; current: boolean; target: boolean; change: 'added' | 'removed' | 'unchanged' }> = [];
+    for (const key of Object.keys(currentTierConfig.features) as Array<keyof typeof currentTierConfig.features>) {
+      const currentVal = currentTierConfig.features[key];
+      const targetVal = targetTierConfig.features[key];
+      if (currentVal !== targetVal) {
+        featureChanges.push({
+          feature: key,
+          displayName: FEATURE_DISPLAY_NAMES[key] || key,
+          current: currentVal,
+          target: targetVal,
+          change: targetVal ? 'added' : 'removed',
+        });
+      }
+    }
+
+    // Build limit comparison
+    const limitChanges: Array<{ limit: string; displayName: string; current: number; target: number; currentDisplay: string; targetDisplay: string }> = [];
+    for (const key of Object.keys(currentTierConfig.limits) as Array<keyof typeof currentTierConfig.limits>) {
+      const currentVal = currentTierConfig.limits[key];
+      const targetVal = targetTierConfig.limits[key];
+      if (currentVal !== targetVal) {
+        limitChanges.push({
+          limit: key,
+          displayName: LIMIT_DISPLAY_NAMES[key] || key,
+          current: currentVal,
+          target: targetVal,
+          currentDisplay: currentVal === -1 ? 'Unlimited' : String(currentVal),
+          targetDisplay: targetVal === -1 ? 'Unlimited' : String(targetVal),
+        });
+      }
+    }
+
+    // Use tierService comparison for additional context
+    const comparison = tierService.compareTiers(currentTierName, target);
+
+    res.json({
+      currentTier: {
+        name: currentTierName,
+        displayName: currentTierConfig.displayName,
+        tagline: currentTierConfig.tagline,
+        pricing: currentTierConfig.pricing,
+      },
+      targetTier: {
+        name: target,
+        displayName: targetTierConfig.displayName,
+        tagline: targetTierConfig.tagline,
+        pricing: targetTierConfig.pricing,
+      },
+      direction: TIER_ORDER.indexOf(target) > TIER_ORDER.indexOf(currentTierName) ? 'upgrade' : 'downgrade',
+      featureChanges,
+      limitChanges,
+      comparison,
+      targetHighlights: targetTierConfig.highlights,
+    });
+  } catch (error) {
+    logger.error('Compare tiers error', error);
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to compare tiers', 500);
+  }
+}));
 
 // Get usage metrics
 router.get('/usage', asyncHandler(billingController.getUsageMetrics.bind(billingController)));

@@ -17,6 +17,7 @@ import prisma from '../../config/database';
 import logger from '../../config/logger';
 import crypto from 'crypto';
 import { EventEmitter } from 'events';
+import { AppError } from '../../middleware/errorHandler';
 
 // Task Types
 export interface SwarmTask {
@@ -365,7 +366,7 @@ class SwarmTaskAllocationService extends EventEmitter {
     try {
       const agent = this.agents.get(agentId);
       if (!agent) {
-        throw new Error('Agent not found');
+        throw new AppError('Agent not found', 404);
       }
 
       const oldStatus = agent.status;
@@ -437,7 +438,7 @@ class SwarmTaskAllocationService extends EventEmitter {
     try {
       const agent = this.agents.get(agentId);
       if (!agent) {
-        throw new Error('Agent not found');
+        throw new AppError('Agent not found', 404);
       }
 
       // Set to available if load allows
@@ -474,7 +475,7 @@ class SwarmTaskAllocationService extends EventEmitter {
   } {
     const agent = this.agents.get(agentId);
     if (!agent) {
-      throw new Error('Agent not found');
+      throw new AppError('Agent not found', 404);
     }
 
     // Count assigned tasks
@@ -550,7 +551,7 @@ class SwarmTaskAllocationService extends EventEmitter {
       // Validate task
       const validation = this.validateTask(swarmTask);
       if (!validation.valid) {
-        throw new Error(`Task validation failed: ${validation.error}`);
+        throw new AppError(`Task validation failed: ${validation.error}`, 400);
       }
 
       // Set timeout if maxExecutionTime is specified
@@ -1027,12 +1028,12 @@ class SwarmTaskAllocationService extends EventEmitter {
     try {
       const task = this.activeTasks.get(taskId);
       if (!task) {
-        throw new Error('Task not found');
+        throw new AppError('Task not found', 404);
       }
 
       const assignment = task.assignedAgents.find(a => a.agentId === agentId);
       if (!assignment) {
-        throw new Error('Agent not assigned to this task');
+        throw new AppError('Agent not assigned to this task', 400);
       }
 
       if (assignment.status === 'pending') {
@@ -1109,12 +1110,12 @@ class SwarmTaskAllocationService extends EventEmitter {
     try {
       const task = this.activeTasks.get(taskId);
       if (!task) {
-        throw new Error('Task not found');
+        throw new AppError('Task not found', 404);
       }
 
       const assignment = task.assignedAgents.find(a => a.agentId === agentId);
       if (!assignment) {
-        throw new Error('Agent not assigned to this task');
+        throw new AppError('Agent not assigned to this task', 400);
       }
 
       assignment.status = result.success ? 'completed' : 'failed';

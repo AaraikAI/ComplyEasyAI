@@ -18,6 +18,8 @@ import { ROUTES } from './routes/routeConfig';
 import { api } from './services/api';
 import { Toaster } from 'sonner';
 import { toast } from 'sonner';
+import GlobalSearch from './components/GlobalSearch';
+import NotificationCenter from './components/NotificationCenter';
 
 // ── Lazy-loaded public pages ──────────────────────────────────────────
 const SignupPage = lazy(() => import('./components/SignupPage'));
@@ -77,13 +79,11 @@ const AIComplianceCopilot = lazy(() => import('./components/AIComplianceCopilot'
 const ExecutiveDashboard = lazy(() => import('./components/ExecutiveDashboard'));
 const ComplianceCalendar = lazy(() => import('./components/ComplianceCalendar'));
 const MaturityAssessment = lazy(() => import('./components/MaturityAssessment'));
-const GlobalSearch = lazy(() => import('./components/GlobalSearch'));
 const RegulatoryChangeTracker = lazy(() => import('./components/RegulatoryChangeTracker'));
 const SSOSettings = lazy(() => import('./components/SSOSettings'));
 const SCIMSettings = lazy(() => import('./components/SCIMSettings'));
 const RoleManager = lazy(() => import('./components/RoleManager'));
 const BrandingSettings = lazy(() => import('./components/BrandingSettings'));
-const NotificationCenter = lazy(() => import('./components/NotificationCenter'));
 const TicketingIntegrations = lazy(() => import('./components/TicketingIntegrations'));
 const AccessibilitySettings = lazy(() => import('./components/AccessibilitySettings'));
 const OfflineBanner = lazy(() => import('./components/OfflineBanner'));

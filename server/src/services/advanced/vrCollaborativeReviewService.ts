@@ -16,6 +16,7 @@ import notificationService from '../notificationService';
 import crypto from 'crypto';
 import webrtcSignalingService, { WebRTCSessionConfig, WebRTCPeer } from './webrtcSignalingService';
 import { Prisma } from '../../generated/prisma/client';
+import { AppError } from '../../middleware/errorHandler';
 
 // VR Session Types
 export interface SessionSummary {
@@ -796,16 +797,16 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found or inactive');
+        throw new AppError('Session not found or inactive', 404);
       }
 
       if (session.status === 'completed') {
-        throw new Error('Session has already ended');
+        throw new AppError('Session has already ended', 400);
       }
 
       // Check max participants
       if (session.maxParticipants && session.participants.length >= session.maxParticipants) {
-        throw new Error(`Session is full (max ${session.maxParticipants} participants)`);
+        throw new AppError(`Session is full (max ${session.maxParticipants} participants)`, 400);
       }
 
       // Check permissions
@@ -813,7 +814,7 @@ class VRCollaborativeReviewService {
         const user = await prisma.user.findUnique({ where: { id: userId } });
         const userRole = user?.role || 'viewer';
         if (!session.permissions.canJoin.includes(userId) && !session.permissions.canJoin.includes(userRole)) {
-          throw new Error('You do not have permission to join this session');
+          throw new AppError('You do not have permission to join this session', 403);
         }
       }
 
@@ -893,7 +894,7 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       // Remove participant
@@ -953,11 +954,11 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       if (session.hostUserId !== hostUserId) {
-        throw new Error('Only the host can start the session');
+        throw new AppError('Only the host can start the session', 403);
       }
 
       session.status = 'active';
@@ -1009,7 +1010,7 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       session.status = 'completed';
@@ -1081,7 +1082,7 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       const user = await prisma.user.findUnique({
@@ -1255,7 +1256,7 @@ class VRCollaborativeReviewService {
       });
 
       if (!dbScenario) {
-        throw new Error('Training scenario not found');
+        throw new AppError('Training scenario not found', 404);
       }
 
       // Load full scenario data
@@ -1333,7 +1334,7 @@ class VRCollaborativeReviewService {
       let progress = this.trainingProgress.get(progressKey);
 
       if (!progress) {
-        throw new Error('Training progress not found');
+        throw new AppError('Training progress not found', 404);
       }
 
       if (completed && !progress.completedTasks.includes(taskId)) {
@@ -1373,7 +1374,7 @@ class VRCollaborativeReviewService {
       const progress = this.trainingProgress.get(progressKey);
 
       if (!progress) {
-        throw new Error('Training progress not found');
+        throw new AppError('Training progress not found', 404);
       }
 
       // Get scenario assessment criteria
@@ -1425,7 +1426,7 @@ class VRCollaborativeReviewService {
       const progress = this.trainingProgress.get(progressKey);
 
       if (!progress) {
-        throw new Error('Training progress not found');
+        throw new AppError('Training progress not found', 404);
       }
 
       // Evaluate performance
@@ -1544,7 +1545,7 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       const recording: VRRecording = {
@@ -1753,18 +1754,18 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       const annotations = this.annotations.get(sessionId) || [];
       const annotation = annotations.find(a => a.id === annotationId);
 
       if (!annotation) {
-        throw new Error('Annotation not found');
+        throw new AppError('Annotation not found', 404);
       }
 
       if (annotation.authorId !== userId && !session.permissions?.canEdit?.includes(userId)) {
-        throw new Error('You do not have permission to edit this annotation');
+        throw new AppError('You do not have permission to edit this annotation', 403);
       }
 
       // Update annotation
@@ -1810,18 +1811,18 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       const annotations = this.annotations.get(sessionId) || [];
       const annotation = annotations.find(a => a.id === annotationId);
 
       if (!annotation) {
-        throw new Error('Annotation not found');
+        throw new AppError('Annotation not found', 404);
       }
 
       if (annotation.authorId !== userId && !session.permissions?.canEdit?.includes(userId)) {
-        throw new Error('You do not have permission to delete this annotation');
+        throw new AppError('You do not have permission to delete this annotation', 403);
       }
 
       // Remove annotation
@@ -1926,7 +1927,7 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       const user = await prisma.user.findUnique({
@@ -2080,7 +2081,7 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       const user = await prisma.user.findUnique({
@@ -2128,11 +2129,11 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       if (session.hostUserId !== userId && !session.permissions?.canEdit?.includes(userId)) {
-        throw new Error('Only host or authorized users can toggle voice chat');
+        throw new AppError('Only host or authorized users can toggle voice chat', 403);
       }
 
       const voiceChat = this.voiceChatStates.get(sessionId) || {
@@ -2286,12 +2287,12 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       const voiceChat = this.voiceChatStates.get(sessionId);
       if (!voiceChat || !voiceChat.enabled) {
-        throw new Error('Voice chat is not enabled for this session');
+        throw new AppError('Voice chat is not enabled for this session', 400);
       }
 
       // Check if participant already in voice chat
@@ -2426,12 +2427,12 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       // Only host or the participant themselves can mute
       if (session.hostUserId !== requestedBy && targetUserId !== requestedBy) {
-        throw new Error('You do not have permission to mute this participant');
+        throw new AppError('You do not have permission to mute this participant', 403);
       }
 
       const voiceChat = this.voiceChatStates.get(sessionId);
@@ -2486,14 +2487,14 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       const participantMap = this.sessionParticipants.get(sessionId);
       const participant = participantMap?.get(userId);
 
       if (!participant) {
-        throw new Error('Participant not found');
+        throw new AppError('Participant not found', 404);
       }
 
       // Stop any existing screen sharing
@@ -2574,14 +2575,14 @@ class VRCollaborativeReviewService {
     try {
       const participantMap = this.sessionParticipants.get(sessionId);
       if (!participantMap) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       const follower = participantMap.get(followerId);
       const target = participantMap.get(targetUserId);
 
       if (!follower || !target) {
-        throw new Error('Participant not found');
+        throw new AppError('Participant not found', 404);
       }
 
       follower.isFollowing = targetUserId;
@@ -2628,11 +2629,11 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       if (session.hostUserId !== userId) {
-        throw new Error('Only the host can enable presenter mode');
+        throw new AppError('Only the host can enable presenter mode', 403);
       }
 
       // Set user as presenter
@@ -2663,7 +2664,7 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       // Reload compliance data
@@ -2719,7 +2720,7 @@ class VRCollaborativeReviewService {
     try {
       const session = this.activeSessions.get(sessionId);
       if (!session) {
-        throw new Error('Session not found');
+        throw new AppError('Session not found', 404);
       }
 
       session.environment.theme = theme;
@@ -3423,7 +3424,7 @@ class VRCollaborativeReviewService {
     }
   ): Promise<WebRTCSessionConfig> {
     const session = this.activeSessions.get(sessionId);
-    if (!session) throw new Error('VR session not found');
+    if (!session) throw new AppError('VR session not found', 404);
 
     const maxPeers = options?.maxPeers ?? session.maxParticipants ?? 20;
     const topology = options?.topology ?? (session.participants.length > 6 ? 'sfu' : 'mesh');
@@ -3436,7 +3437,7 @@ class VRCollaborativeReviewService {
     });
     const config = webrtcSignalingService.getSessionConfig(sessionId);
     logger.info(`[VR Review] WebRTC session initialized for ${sessionId}`);
-    if (!config) throw new Error('WebRTC session config not available');
+    if (!config) throw new AppError('WebRTC session config not available', 404);
     return config;
   }
 
@@ -3731,7 +3732,7 @@ class VRCollaborativeReviewService {
 
       const template = templates[templateId];
       if (!template) {
-        throw new Error(`Template "${templateId}" not found. Available: ${Object.keys(templates).join(', ')}`);
+        throw new AppError(`Template "${templateId}" not found. Available: ${Object.keys(templates).join(', ')}`, 404);
       }
 
       const difficulty = customization?.difficulty || 'intermediate';

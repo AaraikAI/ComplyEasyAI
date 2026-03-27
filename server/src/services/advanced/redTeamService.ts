@@ -11,6 +11,7 @@
 
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 import jobQueueService, { QUEUE_NAMES } from '../queue/jobQueue';
 
 export interface RedTeamScenario {
@@ -115,7 +116,7 @@ class RedTeamService {
       const checkTimeout = () => {
         const elapsed = Date.now() - startTime;
         if (elapsed > timeLimit) {
-          throw new Error('TIMEOUT');
+          throw new AppError('TIMEOUT', 408);
         }
         return elapsed;
       };

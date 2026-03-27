@@ -7,6 +7,7 @@ import axios from 'axios';
 import config from '../../config';
 import prisma from '../../config/database';
 import logger from '../../config/logger';
+import { AppError } from '../../middleware/errorHandler';
 
 interface GitHubTokenResponse {
   access_token: string;
@@ -71,13 +72,13 @@ class GitHubService {
       const data: GitHubTokenResponse = response.data;
 
       if (!data.access_token) {
-        throw new Error('No access token received from GitHub');
+        throw new AppError('No access token received from GitHub', 500);
       }
 
       return data.access_token;
     } catch (error) {
       logger.error('Error exchanging GitHub auth code for token', error);
-      throw new Error('Failed to exchange authorization code');
+      throw new AppError('Failed to exchange authorization code', 500);
     }
   }
 
@@ -96,7 +97,7 @@ class GitHubService {
       return response.data;
     } catch (error) {
       logger.error('Error fetching GitHub user info', error);
-      throw new Error('Failed to fetch user information');
+      throw new AppError('Failed to fetch user information', 500);
     }
   }
 
@@ -151,7 +152,7 @@ class GitHubService {
       logger.info(`GitHub integration saved for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error saving GitHub integration', error);
-      throw new Error('Failed to save integration');
+      throw new AppError('Failed to save integration', 500);
     }
   }
 
@@ -185,7 +186,7 @@ class GitHubService {
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 401) {
-        throw new Error('Authentication failed. Please reconnect GitHub integration.');
+        throw new AppError('Authentication failed. Please reconnect GitHub integration.', 403);
       }
       throw error;
     }
@@ -199,7 +200,7 @@ class GitHubService {
       const integration = await this.getIntegration(organizationId);
 
       if (!integration || !integration.connected || !integration.accessToken) {
-        throw new Error('GitHub integration not connected');
+        throw new AppError('GitHub integration not connected', 400);
       }
 
       const repos = await this.makeRequest(integration.accessToken, '/user/repos', {
@@ -226,7 +227,7 @@ class GitHubService {
       }));
     } catch (error) {
       logger.error('Error listing GitHub repositories', error);
-      throw new Error('Failed to list repositories');
+      throw new AppError('Failed to list repositories', 500);
     }
   }
 
@@ -243,7 +244,7 @@ class GitHubService {
       const integration = await this.getIntegration(organizationId);
 
       if (!integration || !integration.connected || !integration.accessToken) {
-        throw new Error('GitHub integration not connected');
+        throw new AppError('GitHub integration not connected', 400);
       }
 
       const params: any = { per_page: 100 };
@@ -267,7 +268,7 @@ class GitHubService {
       }));
     } catch (error) {
       logger.error('Error fetching GitHub commits', error);
-      throw new Error('Failed to fetch repository commits');
+      throw new AppError('Failed to fetch repository commits', 500);
     }
   }
 
@@ -279,7 +280,7 @@ class GitHubService {
       const integration = await this.getIntegration(organizationId);
 
       if (!integration || !integration.connected || !integration.accessToken) {
-        throw new Error('GitHub integration not connected');
+        throw new AppError('GitHub integration not connected', 400);
       }
 
       const alerts = await this.makeRequest(
@@ -308,7 +309,7 @@ class GitHubService {
         return [];
       }
       logger.error('Error fetching GitHub security alerts', error);
-      throw new Error('Failed to fetch security alerts');
+      throw new AppError('Failed to fetch security alerts', 500);
     }
   }
 
@@ -320,7 +321,7 @@ class GitHubService {
       const integration = await this.getIntegration(organizationId);
 
       if (!integration || !integration.connected || !integration.accessToken) {
-        throw new Error('GitHub integration not connected');
+        throw new AppError('GitHub integration not connected', 400);
       }
 
       const events = await this.makeRequest(
@@ -344,7 +345,7 @@ class GitHubService {
         return [];
       }
       logger.error('Error fetching GitHub audit log', error);
-      throw new Error('Failed to fetch audit log');
+      throw new AppError('Failed to fetch audit log', 500);
     }
   }
 
@@ -393,7 +394,7 @@ class GitHubService {
       };
     } catch (error) {
       logger.error('Error scanning GitHub repositories for compliance', error);
-      throw new Error('Failed to scan repositories');
+      throw new AppError('Failed to scan repositories', 500);
     }
   }
 
@@ -437,7 +438,7 @@ class GitHubService {
       logger.info(`GitHub integration disconnected for organization ${organizationId}`);
     } catch (error) {
       logger.error('Error disconnecting GitHub integration', error);
-      throw new Error('Failed to disconnect GitHub integration');
+      throw new AppError('Failed to disconnect GitHub integration', 500);
     }
   }
 }

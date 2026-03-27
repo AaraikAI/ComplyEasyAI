@@ -11,6 +11,7 @@
 import mqtt, { MqttClient } from 'mqtt';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 import physicalAIService from './physicalAIService';
 
 export interface MQTTConfig {
@@ -140,7 +141,7 @@ class MQTTService {
     callback: (message: DeviceMessage) => void
   ): void {
     if (!this.client || !this.isConnected) {
-      throw new Error('MQTT client not connected');
+      throw new AppError('MQTT client not connected', 500);
     }
 
     this.client.subscribe(topic, (error) => {
@@ -178,7 +179,7 @@ class MQTTService {
    */
   publish(topic: string, payload: any, options?: { qos?: 0 | 1 | 2; retain?: boolean }): void {
     if (!this.client || !this.isConnected) {
-      throw new Error('MQTT client not connected');
+      throw new AppError('MQTT client not connected', 500);
     }
 
     const message = JSON.stringify(payload);

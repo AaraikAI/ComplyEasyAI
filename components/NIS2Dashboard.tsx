@@ -277,11 +277,21 @@ export const NIS2Dashboard: React.FC = () => {
   useEffect(() => {
     if (isLoading) return;
     const timer = setTimeout(() => {
-      api.regulationData.save('nis2', 'entity', entity).catch(() => {});
-      api.regulationData.save('nis2', 'measures', measures).catch(() => {});
-      api.regulationData.save('nis2', 'incidents', incidents).catch(() => {});
-      api.regulationData.save('nis2', 'suppliers', suppliers).catch(() => {});
-      api.regulationData.save('nis2', 'bcps', bcps).catch(() => {});
+      api.regulationData.save('nis2', 'entity', entity).catch((err: unknown) => {
+        setLoadError('Failed to save changes. Please retry.');
+      });
+      api.regulationData.save('nis2', 'measures', measures).catch((err: unknown) => {
+        setLoadError('Failed to save changes. Please retry.');
+      });
+      api.regulationData.save('nis2', 'incidents', incidents).catch((err: unknown) => {
+        setLoadError('Failed to save changes. Please retry.');
+      });
+      api.regulationData.save('nis2', 'suppliers', suppliers).catch((err: unknown) => {
+        setLoadError('Failed to save changes. Please retry.');
+      });
+      api.regulationData.save('nis2', 'bcps', bcps).catch((err: unknown) => {
+        setLoadError('Failed to save changes. Please retry.');
+      });
     }, 2000);
     return () => clearTimeout(timer);
   }, [entity, measures, incidents, suppliers, bcps, isLoading]);
