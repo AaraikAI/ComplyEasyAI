@@ -66,11 +66,8 @@ jest.mock('../../components/shared', () => {
   };
 });
 
-jest.mock('react-native/Libraries/Alert/Alert', () => ({
-  alert: jest.fn(),
-}));
-
 import { Alert } from 'react-native';
+jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
 
 beforeEach(() => {
   jest.clearAllMocks();
