@@ -44,12 +44,12 @@ describe('ReportingCenter', () => {
 
   it('renders without crashing', () => {
     renderWithRouter();
-    expect(screen.getByText('Reports')).toBeInTheDocument();
+    expect(screen.getAllByText('Reports').length).toBeGreaterThan(0);
   });
 
   it('renders all tab labels', () => {
     renderWithRouter();
-    expect(screen.getByText('Reports')).toBeInTheDocument();
+    expect(screen.getAllByText('Reports').length).toBeGreaterThan(0);
     expect(screen.getByText('Report Builder')).toBeInTheDocument();
     expect(screen.getByText('AI Generator')).toBeInTheDocument();
     expect(screen.getByText('ESG Reports')).toBeInTheDocument();
@@ -57,9 +57,11 @@ describe('ReportingCenter', () => {
 
   it('all tabs are clickable buttons', () => {
     renderWithRouter();
+    const nav = screen.getByRole('navigation', { name: 'Tabs' });
     ['Reports', 'Report Builder', 'AI Generator', 'ESG Reports'].forEach(label => {
-      const button = screen.getByText(label).closest('button');
-      expect(button).toBeInTheDocument();
+      const buttons = nav.querySelectorAll('button');
+      const button = Array.from(buttons).find(btn => btn.textContent?.includes(label));
+      expect(button).toBeTruthy();
       expect(button).not.toBeDisabled();
     });
   });
@@ -101,7 +103,10 @@ describe('ReportingCenter', () => {
     await waitFor(() => {
       expect(screen.getByTestId('esg-reporting')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText('Reports'));
+    // Use the tab navigation to find the Reports button specifically
+    const nav = screen.getByRole('navigation', { name: 'Tabs' });
+    const reportsBtn = Array.from(nav.querySelectorAll('button')).find(btn => btn.textContent?.includes('Reports') && !btn.textContent?.includes('ESG'));
+    fireEvent.click(reportsBtn!);
     await waitFor(() => {
       expect(screen.getByTestId('reports')).toBeInTheDocument();
     });
