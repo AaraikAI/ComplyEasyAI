@@ -32,7 +32,7 @@ const mockLogout = jest.fn();
 const mockMe = jest.fn();
 const mockSetTokens = jest.fn();
 const mockClearTokens = jest.fn();
-const mockGetAccessToken = jest.fn(() => null);
+const mockGetAccessToken = jest.fn((): string | null => null);
 
 jest.mock('../../services/api', () => ({
   api: {
@@ -42,9 +42,9 @@ jest.mock('../../services/api', () => ({
       get me() { return mockMe; },
     },
   },
-  setTokens: (...args: any[]) => mockSetTokens(...args),
-  clearTokens: (...args: any[]) => mockClearTokens(...args),
-  getAccessToken: (...args: any[]) => mockGetAccessToken(...args),
+  setTokens: (...args: unknown[]) => mockSetTokens(...args),
+  clearTokens: (...args: unknown[]) => mockClearTokens(...args),
+  getAccessToken: () => mockGetAccessToken(),
 }));
 
 import * as SecureStore from 'expo-secure-store';
