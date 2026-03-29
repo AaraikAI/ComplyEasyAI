@@ -34,6 +34,10 @@ import { AuditLogger } from '../../../utils/auditLogger';
 describe('VendorRiskService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Restore $transaction mock after clearAllMocks wipes it
+    (prismaMock.$transaction as jest.Mock).mockImplementation(
+      (callback: (tx: typeof prismaMock) => Promise<unknown>) => callback(prismaMock)
+    );
   });
 
   describe('createVendor()', () => {
@@ -102,6 +106,7 @@ describe('VendorRiskService', () => {
         updatedAt: new Date(),
       };
 
+      prismaMock.vendor.findFirst.mockResolvedValue(createMockVendor());
       prismaMock.vendorAssessment.create.mockResolvedValue(mockAssessment);
 
       const result = await vendorRiskService.createVendorAssessment({
@@ -136,6 +141,11 @@ describe('VendorRiskService', () => {
         updatedAt: new Date(),
       };
 
+      prismaMock.vendorAssessment.findFirst.mockResolvedValue({
+        id: 'assessment-123',
+        vendorId: 'vendor-123',
+        vendor: { organizationId: 'org-123' },
+      } as any);
       prismaMock.vendorAssessment.update.mockResolvedValue(mockAssessment);
       prismaMock.vendor.update.mockResolvedValue(createMockVendor({ riskScore: 85, riskLevel: 'Low' }));
 
@@ -290,9 +300,9 @@ describe('VendorRiskService', () => {
         monitors: [{ status: 'Passing' }],
       };
 
-      prismaMock.vendor.findUnique.mockResolvedValue(mockVendor);
+      prismaMock.vendor.findFirst.mockResolvedValue(mockVendor);
 
-      const scorecard = await vendorRiskService.getVendorScorecard('vendor-123');
+      const scorecard = await vendorRiskService.getVendorScorecard('vendor-123', 'org-123');
 
       expect(scorecard).toHaveProperty('vendorId');
       expect(scorecard).toHaveProperty('vendorName');
@@ -303,10 +313,10 @@ describe('VendorRiskService', () => {
     });
 
     it('should throw error for non-existent vendor', async () => {
-      prismaMock.vendor.findUnique.mockResolvedValue(null);
+      prismaMock.vendor.findFirst.mockResolvedValue(null);
 
       await expect(
-        vendorRiskService.getVendorScorecard('non-existent')
+        vendorRiskService.getVendorScorecard('non-existent', 'org-123')
       ).rejects.toThrow('Vendor not found');
     });
   });
@@ -399,9 +409,9 @@ describe('VendorRiskService', () => {
         reviews: [],
         monitors: [],
       };
-      prismaMock.vendor.findUnique.mockResolvedValue(mockVendorWithCerts);
+      prismaMock.vendor.findFirst.mockResolvedValue(mockVendorWithCerts);
 
-      const scorecard = await vendorRiskService.getVendorScorecard('vendor-123');
+      const scorecard = await vendorRiskService.getVendorScorecard('vendor-123', 'org-123');
 
       // Should be 100% with all 4 certifications
       expect(scorecard.complianceScore).toBe(100);
@@ -421,9 +431,9 @@ describe('VendorRiskService', () => {
         reviews: [],
         monitors: [],
       };
-      prismaMock.vendor.findUnique.mockResolvedValue(mockVendor);
+      prismaMock.vendor.findFirst.mockResolvedValue(mockVendor);
 
-      const scorecard = await vendorRiskService.getVendorScorecard('vendor-123');
+      const scorecard = await vendorRiskService.getVendorScorecard('vendor-123', 'org-123');
 
       // Should be 50% with 2 out of 4 certifications
       expect(scorecard.complianceScore).toBe(50);

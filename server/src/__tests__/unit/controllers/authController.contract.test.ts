@@ -73,6 +73,13 @@ jest.mock('../../../config', () => ({
   },
 }));
 
+jest.mock('isomorphic-dompurify', () => ({
+  __esModule: true,
+  default: {
+    sanitize: jest.fn((input: string) => input),
+  },
+}));
+
 import authController from '../../../controllers/authController';
 import { AppError } from '../../../middleware/errorHandler';
 
@@ -101,6 +108,9 @@ describe('AuthController Contract Tests', () => {
     fipsHashing.hashPassword.mockResolvedValue('hashed-password');
     fipsHashing.verifyPassword.mockResolvedValue(true);
     fipsHashing.needsRehash.mockReturnValue(false);
+
+    const DOMPurify = require('isomorphic-dompurify').default;
+    DOMPurify.sanitize.mockImplementation((input: string) => input);
 
     (prismaMock.$transaction as jest.Mock<any>).mockImplementation(
       (callback: (tx: typeof prismaMock) => Promise<unknown>) => callback(prismaMock)
@@ -248,11 +258,20 @@ describe('AuthController Contract Tests', () => {
 
       await authController.verifyMagicLink(mockReq as Request, mockRes as Response);
 
+      // Tokens are now set via httpOnly cookies, not in JSON body
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
+      );
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'refresh_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
+      );
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
           twoFactorRequired: false,
-          accessToken: expect.any(String),
-          refreshToken: expect.any(String),
           user: expect.objectContaining({
             id: 'user-123',
             email: 'test@example.com',
@@ -293,11 +312,11 @@ describe('AuthController Contract Tests', () => {
 
       await authController.refreshToken(mockReq as Request, mockRes as Response);
 
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          accessToken: expect.any(String),
-          refreshToken: expect.any(String),
-        })
+      // Tokens are set via httpOnly cookies
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
       );
     });
   });
@@ -346,10 +365,14 @@ describe('AuthController Contract Tests', () => {
 
       await authController.login(mockReq as Request, mockRes as Response);
 
+      // Tokens are set via httpOnly cookies
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
+      );
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          accessToken: expect.any(String),
-          refreshToken: expect.any(String),
           user: expect.objectContaining({
             id: 'user-123',
             email: 'test@example.com',
@@ -381,7 +404,8 @@ describe('AuthController Contract Tests', () => {
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
           requires2FA: true,
-          userId: 'user-123',
+          twoFactorToken: expect.any(String),
+          message: 'Two-factor authentication required',
         })
       );
     });

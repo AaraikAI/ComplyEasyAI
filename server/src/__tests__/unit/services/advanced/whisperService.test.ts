@@ -53,12 +53,16 @@ jest.mock('fs', () => ({
   unlink: jest.fn(),
 }));
 
-jest.mock('util', () => ({
-  promisify: jest.fn().mockImplementation((fn: any) => {
-    if (fn === undefined) return jest.fn().mockResolvedValue(undefined);
-    return jest.fn().mockResolvedValue(undefined);
-  }),
-}));
+jest.mock('util', () => {
+  const actual = jest.requireActual('util') as Record<string, unknown>;
+  return {
+    ...actual,
+    promisify: jest.fn().mockImplementation((fn: any) => {
+      if (fn === undefined) return jest.fn().mockResolvedValue(undefined);
+      return jest.fn().mockResolvedValue(undefined);
+    }),
+  };
+});
 
 import whisperService from '../../../../services/advanced/whisperService';
 
