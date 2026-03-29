@@ -93,6 +93,7 @@ describe('PersonnelService', () => {
         user: { id: userId },
       };
 
+      prismaMock.personnel.findFirst.mockResolvedValue({ id: personnelId, organizationId } as any);
       prismaMock.personnel.update.mockResolvedValue(mockPersonnel as any);
       prismaMock.user.update.mockResolvedValue({} as any);
 
@@ -125,6 +126,7 @@ describe('PersonnelService', () => {
         onboardingStatus: 'Offboarding',
       };
 
+      prismaMock.personnel.findFirst.mockResolvedValue({ id: personnelId, organizationId } as any);
       prismaMock.personnel.update.mockResolvedValue(mockPersonnel as any);
       prismaMock.user.update.mockResolvedValue({} as any);
       prismaMock.accessReview.create.mockResolvedValue({} as any);

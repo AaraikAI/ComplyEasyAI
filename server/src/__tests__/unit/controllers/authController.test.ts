@@ -108,6 +108,8 @@ jest.mock('../../../utils/securityEventLogger', () => ({
     USER_REGISTERED: 'USER_REGISTERED',
     PASSWORD_CHANGED: 'PASSWORD_CHANGED',
     LOGOUT: 'LOGOUT',
+    TWO_FACTOR_FAILURE: 'TWO_FACTOR_FAILURE',
+    TWO_FACTOR_SUCCESS: 'TWO_FACTOR_SUCCESS',
   },
 }));
 
@@ -116,6 +118,13 @@ jest.mock('../../../utils/fipsPasswordHashing', () => ({
   hashPassword: jest.fn<any>().mockResolvedValue('hashed-password'),
   verifyPassword: jest.fn<any>().mockResolvedValue(true),
   needsRehash: jest.fn().mockReturnValue(false),
+}));
+
+jest.mock('isomorphic-dompurify', () => ({
+  __esModule: true,
+  default: {
+    sanitize: jest.fn((input: string) => input),
+  },
 }));
 
 import jwt from 'jsonwebtoken';
@@ -183,6 +192,9 @@ describe('AuthController', () => {
     fipsHashing.hashPassword.mockResolvedValue('hashed-password');
     fipsHashing.verifyPassword.mockResolvedValue(true);
     fipsHashing.needsRehash.mockReturnValue(false);
+
+    const DOMPurify = require('isomorphic-dompurify').default;
+    DOMPurify.sanitize.mockImplementation((input: string) => input);
   });
 
   afterEach(() => {
@@ -419,10 +431,19 @@ describe('AuthController', () => {
 
       expect(prismaMock.magicLink.update).toHaveBeenCalledWith({ where: { token: 'valid-token' }, data: { used: true } });
       expect(prismaMock.auditLog.create).toHaveBeenCalled();
+      // Tokens are set via httpOnly cookies, not in JSON body
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
+      );
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'refresh_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
+      );
       expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         twoFactorRequired: false,
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
         user: expect.objectContaining({ id: 'user-123', email: 'user@example.com' }),
       }));
     });
@@ -477,7 +498,13 @@ describe('AuthController', () => {
 
       await authController.refreshToken(mockReq as Request, mockRes as Response);
 
-      expect(mockRes.json).toHaveBeenCalledWith({ accessToken: 'new-access-token', refreshToken: 'refresh-token' });
+      // Tokens are set via httpOnly cookies, not in JSON body
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
+      );
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Token refreshed successfully' });
     });
 
     it('should handle unexpected error and throw generic AppError', async () => {
@@ -562,9 +589,9 @@ describe('AuthController', () => {
 
       await authController.login(mockReq as Request, mockRes as Response);
 
-      expect(mockRes.json).toHaveBeenCalledWith({
-        requires2FA: true, userId: 'user-123', message: 'Two-factor authentication required',
-      });
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        requires2FA: true, twoFactorToken: expect.any(String), message: 'Two-factor authentication required',
+      }));
     });
 
     it('should login successfully with valid credentials', async () => {
@@ -576,9 +603,13 @@ describe('AuthController', () => {
 
       await authController.login(mockReq as Request, mockRes as Response);
 
+      // Tokens are set via httpOnly cookies, not in JSON body
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
+      );
       expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
         user: expect.objectContaining({ id: 'user-123' }),
       }));
     });
@@ -625,7 +656,15 @@ describe('AuthController', () => {
 
       await authController.login(mockReq as Request, mockRes as Response);
 
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ accessToken: expect.any(String) }));
+      // Tokens are set via httpOnly cookies, not in JSON body
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
+      );
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        user: expect.objectContaining({ id: 'user-123' }),
+      }));
     });
   });
 
@@ -897,8 +936,13 @@ describe('AuthController', () => {
 
       await authController.completeTwoFactorLogin(mockReq as Request, mockRes as Response);
 
+      // Tokens are set via httpOnly cookies, not in JSON body
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
+      );
       expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
-        accessToken: expect.any(String), refreshToken: expect.any(String),
         user: expect.objectContaining({ id: 'user-123' }),
       }));
     });
@@ -914,7 +958,15 @@ describe('AuthController', () => {
 
       await authController.completeTwoFactorLogin(mockReq as Request, mockRes as Response);
 
-      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ accessToken: expect.any(String) }));
+      // Tokens are set via httpOnly cookies, not in JSON body
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'access_token',
+        expect.any(String),
+        expect.objectContaining({ httpOnly: true })
+      );
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        user: expect.objectContaining({ id: 'user-123' }),
+      }));
     });
 
     it('should handle unexpected error with generic AppError', async () => {

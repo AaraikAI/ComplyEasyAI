@@ -98,7 +98,7 @@ describe('IssueManagementService', () => {
   describe('updateIssueStatus()', () => {
     it('should update an existing issue status', async () => {
       const existingIssue = createMockIssue({ status: 'Open' });
-      prismaMock.issue.findUnique.mockResolvedValue(existingIssue);
+      prismaMock.issue.findFirst.mockResolvedValue(existingIssue);
       const updatedIssue = createMockIssue({ status: 'In_Progress' });
       prismaMock.issue.update.mockResolvedValue(updatedIssue);
 
@@ -120,6 +120,8 @@ describe('IssueManagementService', () => {
 
   describe('assignIssue()', () => {
     it('should assign issue to a user', async () => {
+      const existingIssue = createMockIssue({ status: 'Open' });
+      prismaMock.issue.findFirst.mockResolvedValue(existingIssue);
       const assignedIssue = createMockIssue({ assignedToId: 'user-456' });
       prismaMock.issue.update.mockResolvedValue(assignedIssue);
 

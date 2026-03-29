@@ -69,6 +69,10 @@ describe('QuestionnaireService', () => {
         { questionText: 'Question 2', questionType: 'multiple-choice' },
       ];
 
+      prismaMock.questionnaire.findFirst.mockResolvedValue({
+        id: 'questionnaire-123',
+        organizationId: 'org-123',
+      } as any);
       prismaMock.questionnaireQuestion.create.mockResolvedValue({
         id: 'question-123',
       } as any);
@@ -94,6 +98,10 @@ describe('QuestionnaireService', () => {
         responseData: { answer: 'Yes' },
       };
 
+      prismaMock.questionnaire.findFirst.mockResolvedValue({
+        id: 'questionnaire-123',
+        organizationId: 'org-123',
+      } as any);
       prismaMock.questionnaireResponse.create.mockResolvedValue({
         id: 'response-123',
       } as any);

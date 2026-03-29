@@ -363,7 +363,7 @@ describe('SOXService', () => {
       it('should delete control', async () => {
         const existingControl = createMockSOXControl();
         prismaMock.sOXControl.findFirst.mockResolvedValue(existingControl);
-        prismaMock.sOXControl.delete.mockResolvedValue(existingControl);
+        prismaMock.sOXControl.deleteMany.mockResolvedValue({ count: 1 });
 
         const result = await soxService.deleteSOXControl('sox-ctrl-123', 'admin-123', 'org-123');
 
@@ -664,7 +664,7 @@ describe('SOXService', () => {
       it('should delete assessment', async () => {
         const existingAssessment = createMockSOXAssessment();
         prismaMock.sOXAssessment.findFirst.mockResolvedValue(existingAssessment);
-        prismaMock.sOXAssessment.delete.mockResolvedValue(existingAssessment);
+        prismaMock.sOXAssessment.deleteMany.mockResolvedValue({ count: 1 });
 
         const result = await soxService.deleteSOXAssessment('assessment-123', 'admin-123', 'org-123');
 
@@ -689,6 +689,12 @@ describe('SOXService', () => {
       prismaMock.sOXTestResult.create.mockResolvedValue(mockTestResult);
       prismaMock.sOXControl.findUnique.mockResolvedValue(mockControl);
       prismaMock.sOXControl.update.mockResolvedValue(mockControl);
+      prismaMock.evidenceAnalysis.findMany.mockResolvedValue([
+        { id: 'ev-1', verificationStatus: 'completed' },
+      ] as any);
+      prismaMock.auditLog.findMany.mockResolvedValue([
+        { id: 'log-1', action: 'SOX-001' },
+      ] as any);
 
       const result = await soxService.automateControlTesting('org-123', 'sox-ctrl-123', 'admin-123');
 
@@ -725,6 +731,12 @@ describe('SOXService', () => {
       prismaMock.sOXTestResult.create.mockResolvedValue(mockTestResult);
       prismaMock.sOXControl.findUnique.mockResolvedValue(mockControl);
       prismaMock.sOXControl.update.mockResolvedValue(mockControl);
+      prismaMock.evidenceAnalysis.findMany.mockResolvedValue([
+        { id: 'ev-1', verificationStatus: 'completed' },
+      ] as any);
+      prismaMock.auditLog.findMany.mockResolvedValue([
+        { id: 'log-1', action: 'SOX-001' },
+      ] as any);
 
       const result = await soxService.automateControlTesting('org-123', 'sox-ctrl-123', 'admin-123');
 
@@ -745,6 +757,17 @@ describe('SOXService', () => {
       prismaMock.sOXTestResult.create.mockResolvedValue(mockTestResult);
       prismaMock.sOXControl.findUnique.mockResolvedValue(mockControl);
       prismaMock.sOXControl.update.mockResolvedValue(mockControl);
+      prismaMock.evidenceAnalysis.findMany.mockResolvedValue([
+        { id: 'ev-1', verificationStatus: 'completed', createdAt: new Date('2026-01-15'), analyzedAt: new Date('2026-01-15') },
+        { id: 'ev-2', verificationStatus: 'completed', createdAt: new Date('2026-02-15'), analyzedAt: new Date('2026-02-15') },
+        { id: 'ev-3', verificationStatus: 'completed', createdAt: new Date('2026-03-15'), analyzedAt: new Date('2026-03-15') },
+        { id: 'ev-4', verificationStatus: 'completed', createdAt: new Date('2025-10-15'), analyzedAt: new Date('2025-10-15') },
+        { id: 'ev-5', verificationStatus: 'completed', createdAt: new Date('2025-11-15'), analyzedAt: new Date('2025-11-15') },
+        { id: 'ev-6', verificationStatus: 'completed', createdAt: new Date('2025-12-15'), analyzedAt: new Date('2025-12-15') },
+      ] as any);
+      prismaMock.auditLog.findMany.mockResolvedValue([
+        { id: 'log-1', action: 'SOX-001' },
+      ] as any);
 
       const result = await soxService.automateControlTesting('org-123', 'sox-ctrl-123', 'admin-123');
 

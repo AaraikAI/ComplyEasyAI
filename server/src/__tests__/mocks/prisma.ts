@@ -2132,6 +2132,7 @@ export const prismaMock = {
     create: createMockFn(),
     update: createMockFn(),
     delete: createMockFn(),
+    deleteMany: createMockFn(),
     count: createMockFn(),
   },
   sOXAssessment: {
@@ -2141,6 +2142,7 @@ export const prismaMock = {
     create: createMockFn(),
     update: createMockFn(),
     delete: createMockFn(),
+    deleteMany: createMockFn(),
     count: createMockFn(),
   },
   sOXTestResult: {

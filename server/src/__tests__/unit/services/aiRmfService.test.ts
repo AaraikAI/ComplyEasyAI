@@ -203,6 +203,10 @@ const mockAISystem = (overrides: Record<string, unknown> = {}) => ({
 describe('AIRMFService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Restore $transaction mock after clearAllMocks wipes it
+    (prismaMock.$transaction as jest.Mock).mockImplementation(
+      (callback: (tx: typeof prismaMock) => Promise<unknown>) => callback(prismaMock)
+    );
   });
 
   // ======================================================================

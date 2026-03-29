@@ -1269,7 +1269,7 @@ export const IntegrationModal: React.FC<IntegrationModalProps> = ({
                 value={serviceAccountJson}
                 onChange={(e) => setServiceAccountJson(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none font-mono text-sm"
-                placeholder='{"type": "service_account", "project_id": "...", ...}'
+                placeholder="Paste your service account JSON key here"
                 rows={8}
                 required
               />
