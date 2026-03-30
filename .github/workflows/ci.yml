@@ -123,11 +123,13 @@ jobs:
         working-directory: ./server
       - run: npx prisma generate
         working-directory: ./server
-      - name: Create DB extensions
-        run: PGPASSWORD=test psql -h localhost -U test -d test_db -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+      - name: Reset test DB and create extensions
+        run: |
+          PGPASSWORD=test psql -h localhost -U test -d test_db -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+          PGPASSWORD=test psql -h localhost -U test -d test_db -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
 
       - name: Push schema to test DB
-        run: npx prisma db push --accept-data-loss --force-reset
+        run: npx prisma db push --accept-data-loss
         working-directory: ./server
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
@@ -208,10 +210,12 @@ jobs:
 
       - run: npx prisma generate
         working-directory: ./server
-      - name: Create DB extensions
-        run: PGPASSWORD=test psql -h localhost -U test -d test_db -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+      - name: Reset test DB and create extensions
+        run: |
+          PGPASSWORD=test psql -h localhost -U test -d test_db -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+          PGPASSWORD=test psql -h localhost -U test -d test_db -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
       - name: Push schema to test DB
-        run: npx prisma db push --accept-data-loss --force-reset
+        run: npx prisma db push --accept-data-loss
         working-directory: ./server
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test_db
