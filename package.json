@@ -38,6 +38,10 @@
     "socket.io-client": "^4.8.3",
     "sonner": "^2.0.7"
   },
+  "optionalDependencies": {
+    "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.10",
+    "@rolldown/binding-linux-x64-musl": "1.0.0-rc.10"
+  },
   "overrides": {
     "flatted": "3.4.2"
   },
