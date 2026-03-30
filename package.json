@@ -40,7 +40,13 @@
   },
   "optionalDependencies": {
     "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.10",
-    "@rolldown/binding-linux-x64-musl": "1.0.0-rc.10"
+    "@rolldown/binding-linux-x64-musl": "1.0.0-rc.10",
+    "lightningcss-linux-x64-gnu": "1.32.0",
+    "lightningcss-linux-x64-musl": "1.32.0",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.2.2",
+    "@tailwindcss/oxide-linux-x64-musl": "4.2.2",
+    "@unrs/resolver-binding-linux-x64-gnu": "1.11.1",
+    "@unrs/resolver-binding-linux-x64-musl": "1.11.1"
   },
   "overrides": {
     "flatted": "3.4.2"
