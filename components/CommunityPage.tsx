@@ -3,7 +3,7 @@ import {
   Shield, Users, MessageSquare, Heart, Star, Award, Calendar,
   TrendingUp, ExternalLink, ArrowRight, Search, Filter, ThumbsUp,
   MessageCircle, Eye, Clock, CheckCircle, Zap, BookOpen, Code,
-  GitBranch, Globe, Slack, Video, FileText, HelpCircle, Lightbulb,
+  GitBranch, Globe, MessagesSquare, Video, FileText, HelpCircle, Lightbulb,
   Trophy, Target, Share2, Bookmark, Bell, ChevronRight, Hash
 } from 'lucide-react';
 import { useI18n } from '../contexts/I18nContext';
@@ -307,8 +307,8 @@ export const CommunityPage: React.FC = () => {
                 rel="noopener noreferrer"
                 className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all"
               >
-                <Slack className="w-5 h-5" />
-                Join Slack
+                <MessagesSquare className="w-5 h-5" />
+                Join MessagesSquare
                 <ExternalLink className="w-4 h-4" />
               </a>
               <button className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all">
@@ -722,8 +722,8 @@ export const CommunityPage: React.FC = () => {
               rel="noopener noreferrer"
               className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all"
             >
-              <Slack className="w-5 h-5" />
-              Join Slack Community
+              <MessagesSquare className="w-5 h-5" />
+              Join MessagesSquare Community
             </a>
             <a 
               href="/signup"
