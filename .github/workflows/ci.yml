@@ -223,6 +223,14 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Start frontend preview
+        run: |
+          npx vite preview --port 4173 &
+          for i in $(seq 1 15); do
+            wget -qO- http://localhost:4173/ > /dev/null 2>&1 && break
+            sleep 2
+          done
+
       - name: Start backend
         working-directory: ./server
         run: |
