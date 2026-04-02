@@ -196,7 +196,7 @@ router.post(
       try {
         verifySamlSignature(samlResponseXml, ssoConfig.certificate);
       } catch (sigError: any) {
-        logger.error('SSO ACS: SAML signature verification failed', { error: sigError.message });
+        logger.error('SSO ACS: SAML signature verification failed', { error: sigError.message, ip: req.ip, ssoConfigId: ssoConfig.id });
         res.status(401).json({ error: 'SAML signature verification failed' });
         return;
       }

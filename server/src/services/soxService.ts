@@ -324,6 +324,14 @@ export class SOXService {
       ? (typeof data.remediationDeadline === 'string' ? new Date(data.remediationDeadline) : data.remediationDeadline)
       : null;
 
+    // Verify parent SOXControl belongs to caller's organization
+    const parentControl = await prisma.sOXControl.findFirst({
+      where: { id: data.controlId, organizationId: data.organizationId },
+    });
+    if (!parentControl) {
+      throw new AppError('SOX control not found', 404);
+    }
+
     const testResult = await prisma.sOXTestResult.create({
       data: {
         id,
@@ -460,7 +468,7 @@ export class SOXService {
     if (data.reviewDate !== undefined) updateData.reviewDate = data.reviewDate;
 
     const updated = await prisma.sOXTestResult.update({
-      where: { id },
+      where: { id, control: { organizationId } },
       data: updateData as Prisma.SOXTestResultUpdateInput,
     });
 
@@ -481,7 +489,7 @@ export class SOXService {
     const existing = await this.getSOXTestResultById(id, organizationId);
     if (!existing) return false;
 
-    await prisma.sOXTestResult.delete({ where: { id } });
+    await prisma.sOXTestResult.delete({ where: { id, control: { organizationId } } });
 
     await AuditLogger.log({
       userId,

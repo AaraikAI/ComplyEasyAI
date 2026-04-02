@@ -672,4 +672,4 @@ jobs:
           fields: repo,message,commit,author,action,eventName,ref,workflow
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        continue-on-error: true
+        continue-on-error: true # Notification failure should not block pipeline
