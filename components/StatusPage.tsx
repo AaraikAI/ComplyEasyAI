@@ -219,6 +219,27 @@ export const StatusPage: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [subscribedMaintenance, setSubscribedMaintenance] = useState<Set<string>>(new Set());
+  const [liveServices, setLiveServices] = useState<ServiceStatus[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const response = await fetch('/api/health', { credentials: 'include' });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.services && Array.isArray(data.services)) {
+            setLiveServices(data.services);
+          }
+        }
+      } catch {
+        // API unavailable — keep using fallback data
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStatus();
+  }, []);
 
   useEffect(() => {
     if (autoRefresh) {
@@ -229,11 +250,13 @@ export const StatusPage: React.FC = () => {
     }
   }, [autoRefresh]);
 
+  const activeServices = liveServices || services;
+
   const getOverallStatus = () => {
-    const hasOutage = services.some(s => s.status === 'major_outage');
-    const hasPartialOutage = services.some(s => s.status === 'partial_outage');
-    const hasDegraded = services.some(s => s.status === 'degraded');
-    const hasMaintenance = services.some(s => s.status === 'maintenance');
+    const hasOutage = activeServices.some(s => s.status === 'major_outage');
+    const hasPartialOutage = activeServices.some(s => s.status === 'partial_outage');
+    const hasDegraded = activeServices.some(s => s.status === 'degraded');
+    const hasMaintenance = activeServices.some(s => s.status === 'maintenance');
 
     if (hasOutage) return { status: 'major_outage', text: 'Major System Outage', color: 'red' };
     if (hasPartialOutage) return { status: 'partial_outage', text: 'Partial System Outage', color: 'orange' };
@@ -393,7 +416,7 @@ export const StatusPage: React.FC = () => {
           </h2>
           <div className="bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden">
             <div className="divide-y divide-slate-700">
-              {services.map((service) => {
+              {activeServices.map((service) => {
                 const Icon = service.icon;
                 return (
                   <div key={service.name} className="p-4 hover:bg-slate-700/30 transition-all">

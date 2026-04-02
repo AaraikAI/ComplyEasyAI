@@ -85,9 +85,9 @@ export class MonitoringService {
       },
     });
 
-    // Update monitor status and last run (ownership verified above)
+    // Update monitor status and last run (defense-in-depth: org in WHERE)
     await prisma.continuousMonitor.update({
-      where: { id: monitorId },
+      where: { id: monitorId, organizationId },
       data: {
         status: result.status,
         lastRun: new Date(),
@@ -397,7 +397,7 @@ export class MonitoringService {
     }
 
     const monitor = await prisma.continuousMonitor.update({
-      where: { id: monitorId },
+      where: { id: monitorId, organizationId },
       data: { active },
     });
 
@@ -459,7 +459,7 @@ export class MonitoringService {
     }
 
     const monitor = await prisma.continuousMonitor.update({
-      where: { id: monitorId },
+      where: { id: monitorId, organizationId },
       data: {
         ...data,
         updatedAt: new Date(),
@@ -490,8 +490,8 @@ export class MonitoringService {
       throw new AppError('Monitor not found', 404);
     }
 
-    await prisma.monitorResult.deleteMany({ where: { monitorId } });
-    await prisma.continuousMonitor.delete({ where: { id: monitorId } });
+    await prisma.monitorResult.deleteMany({ where: { monitorId, monitor: { organizationId } } });
+    await prisma.continuousMonitor.delete({ where: { id: monitorId, organizationId } });
 
     await AuditLogger.log({
       userId,

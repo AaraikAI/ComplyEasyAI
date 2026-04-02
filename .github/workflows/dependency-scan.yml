@@ -30,7 +30,7 @@ jobs:
 
       - name: Audit root dependencies
         id: audit_root
-        continue-on-error: true
+        continue-on-error: true # Known unfixable: elliptic, aws-sdk v2, serialize-javascript — see audit-exclusions.json
         run: |
           npm audit --json > /tmp/root-audit.json 2>&1 || true
           HIGH_COUNT=$(jq '[.vulnerabilities | to_entries[] | select(.value.severity == "high" or .value.severity == "critical")] | length' /tmp/root-audit.json 2>/dev/null || echo "0")
@@ -38,7 +38,7 @@ jobs:
 
       - name: Audit server dependencies
         id: audit_server
-        continue-on-error: true
+        continue-on-error: true # Known unfixable: elliptic, aws-sdk v2, serialize-javascript — see audit-exclusions.json
         working-directory: server
         run: |
           npm audit --json > /tmp/server-audit.json 2>&1 || true

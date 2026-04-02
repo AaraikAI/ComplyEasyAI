@@ -153,9 +153,9 @@ jobs:
       - name: Submit iOS to App Store
         if: needs.build-ios.result == 'success'
         run: eas submit --platform ios --latest --non-interactive
-        continue-on-error: true
+        continue-on-error: true # Store submission APIs are flaky — failures are monitored separately
 
       - name: Submit Android to Google Play
         if: needs.build-android.result == 'success'
         run: eas submit --platform android --latest --non-interactive
-        continue-on-error: true
+        continue-on-error: true # Store submission APIs are flaky — failures are monitored separately

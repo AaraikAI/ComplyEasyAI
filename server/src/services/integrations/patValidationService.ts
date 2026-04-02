@@ -5,6 +5,8 @@
 
 import axios from 'axios';
 import logger from '../../config/logger';
+import { isUrlSafe } from '../../utils/urlValidator';
+import { AppError } from '../../middleware/errorHandler';
 
 interface ValidationResult {
   valid: boolean;
@@ -13,6 +15,15 @@ interface ValidationResult {
 }
 
 class PATValidationService {
+  /**
+   * Verify baseUrl is safe before use in HTTP requests (SSRF protection).
+   */
+  private validateBaseUrl(baseUrl: string | undefined): void {
+    if (baseUrl && !isUrlSafe(baseUrl)) {
+      throw new AppError('Invalid base URL', 400);
+    }
+  }
+
   /**
    * Validate PAT for a specific provider
    */
@@ -184,6 +195,7 @@ class PATValidationService {
    * Validate GitLab Personal Access Token
    */
   private async validateGitLabToken(token: string, baseUrl?: string): Promise<ValidationResult> {
+    this.validateBaseUrl(baseUrl);
     const apiUrl = baseUrl ? `${baseUrl}/api/v4/user` : 'https://gitlab.com/api/v4/user';
     
     try {
@@ -323,6 +335,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Jenkins base URL is required' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       // Jenkins uses Basic Auth with username:token
@@ -563,6 +576,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Kubernetes API server URL is required' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/v1/namespaces`, {
@@ -600,6 +614,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Confluence base URL is required' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/rest/api/user/current`, {
@@ -807,6 +822,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Okta base URL is required' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/v1/users/me`, {
@@ -843,6 +859,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Workday base URL is required' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       // Workday uses OAuth2, validate by checking token format and making a test call
@@ -898,6 +915,7 @@ class PATValidationService {
    * Validate Sentry API Token
    */
   private async validateSentryToken(token: string, baseUrl?: string): Promise<ValidationResult> {
+    this.validateBaseUrl(baseUrl);
     const apiUrl = baseUrl ? `${baseUrl}/api/0/` : 'https://sentry.io/api/0/';
     
     try {
@@ -967,6 +985,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Auth0 domain is required' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       const response = await axios.get(`https://${baseUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}/api/v2/users`, {
@@ -1001,6 +1020,7 @@ class PATValidationService {
    * Validate Datadog API Key
    */
   private async validateDatadogToken(token: string, baseUrl?: string): Promise<ValidationResult> {
+    this.validateBaseUrl(baseUrl);
     const apiUrl = baseUrl || 'https://api.datadoghq.com';
     
     try {
@@ -1039,6 +1059,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Qualys base URL is required (e.g., https://qualysapi.qualys.com)' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       // Qualys uses Basic Auth with username:password format
@@ -1080,6 +1101,7 @@ class PATValidationService {
    * Validate Tenable.io API Token
    */
   private async validateTenableToken(token: string, baseUrl?: string): Promise<ValidationResult> {
+    this.validateBaseUrl(baseUrl);
     const apiUrl = baseUrl || 'https://cloud.tenable.com';
     
     try {
@@ -1121,6 +1143,7 @@ class PATValidationService {
    * Validate CrowdStrike API Token
    */
   private async validateCrowdStrikeToken(token: string, baseUrl?: string): Promise<ValidationResult> {
+    this.validateBaseUrl(baseUrl);
     const apiUrl = baseUrl || 'https://api.crowdstrike.com';
     
     try {
@@ -1181,6 +1204,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Palo Alto base URL is required (e.g., https://your-firewall.paloaltonetworks.com)' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       // Palo Alto uses API key in header
@@ -1218,6 +1242,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Rapid7 base URL is required (e.g., https://your-instance.rapid7.com)' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       // Rapid7 uses Basic Auth with username:password
@@ -1259,6 +1284,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Splunk base URL is required (e.g., https://your-instance.splunkcloud.com)' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       // Splunk uses Bearer token or Basic Auth
@@ -1294,6 +1320,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'BambooHR subdomain is required (e.g., yourcompany for yourcompany.bamboohr.com)' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       const apiUrl = baseUrl.includes('.') ? baseUrl : `https://api.bamboohr.com/api/gateway.php/${baseUrl}/v1`;
@@ -1331,6 +1358,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'ADP API base URL is required' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       // ADP uses OAuth2 - token should be client_id:client_secret
@@ -1379,6 +1407,7 @@ class PATValidationService {
    * Validate MongoDB Atlas API Token
    */
   private async validateMongoDBToken(token: string, baseUrl?: string): Promise<ValidationResult> {
+    this.validateBaseUrl(baseUrl);
     try {
       // MongoDB Atlas uses Public Key:Private Key format
       const [publicKey, privateKey] = token.includes(':') ? token.split(':') : [token, ''];
@@ -1521,6 +1550,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Elasticsearch base URL is required (e.g., https://your-cluster.es.amazonaws.com)' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/`, {
@@ -1590,6 +1620,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Salesforce instance URL is required (e.g., https://yourinstance.salesforce.com)' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       // Salesforce uses OAuth2 - token should be access_token or client_id:client_secret
@@ -1686,6 +1717,7 @@ class PATValidationService {
     if (!baseUrl) {
       return { valid: false, error: 'Zendesk subdomain is required (e.g., yourcompany for yourcompany.zendesk.com)' };
     }
+    this.validateBaseUrl(baseUrl);
 
     try {
       // Zendesk uses email/token format or API token
@@ -1724,6 +1756,7 @@ class PATValidationService {
    * Validate PayPal API Token
    */
   private async validatePayPalToken(token: string, baseUrl?: string): Promise<ValidationResult> {
+    this.validateBaseUrl(baseUrl);
     try {
       // PayPal uses client_id:client_secret format
       const [clientId, clientSecret] = token.includes(':') ? token.split(':') : [token, ''];
