@@ -10,6 +10,13 @@
 
 import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import { asyncHandler } from '../types/express';
+import { validateBody } from '../middleware/validate';
+import {
+  scimCreateUserSchema,
+  scimReplaceUserSchema,
+  scimPatchUserSchema,
+  scimCreateGroupSchema,
+} from '../validators/scimSchemas';
 import prisma from '../config/database';
 import logger from '../config/logger';
 import crypto from 'crypto';
@@ -319,6 +326,7 @@ router.get(
 
 router.post(
   '/v2/Users',
+  validateBody(scimCreateUserSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
@@ -328,16 +336,6 @@ router.post(
       const { userName, name, emails, active, externalId, title, department } = req.body;
 
       const email = userName || (emails && emails[0]?.value);
-
-      if (!email) {
-        res.status(400).json({
-          schemas: ['urn:ietf:params:scim:api:messages:2.0:Error'],
-          detail: 'userName or emails[0].value is required',
-          scimType: 'invalidValue',
-          status: '400',
-        });
-        return;
-      }
 
       // Check for existing user
       const existing = await prisma.user.findFirst({
@@ -428,6 +426,7 @@ router.get(
 
 router.put(
   '/v2/Users/:id',
+  validateBody(scimReplaceUserSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
@@ -484,6 +483,7 @@ router.put(
 
 router.patch(
   '/v2/Users/:id',
+  validateBody(scimPatchUserSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;
@@ -706,6 +706,7 @@ router.get(
 
 router.post(
   '/v2/Groups',
+  validateBody(scimCreateGroupSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const scimReq = req as SCIMAuthRequest;
     const orgId = scimReq.scimOrgId!;

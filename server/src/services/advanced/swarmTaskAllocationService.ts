@@ -247,6 +247,8 @@ class SwarmTaskAllocationService extends EventEmitter {
       healthCheckInterval: 30000, // 30 seconds
       qualityThreshold: 0.8,
     };
+    logger.warn('[SwarmTaskAllocation] Service initialized — in-memory state cleared on restart. ' +
+      'Reset Maps: agents, taskQueue, activeTasks, completedTasks, historicalMetrics, metricAlerts');
   }
 
   /**

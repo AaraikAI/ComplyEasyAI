@@ -740,8 +740,7 @@ export class WorkflowEngineService {
         case 'lt': return Number(actual) < Number(trigger.conditionValue);
         case 'contains': return String(actual).toLowerCase().includes(trigger.conditionValue.toLowerCase());
         case 'matches':
-          try { return new RegExp(trigger.conditionValue, 'i').test(String(actual)); }
-          catch { return false; }
+          return safeRegexTest(trigger.conditionValue, String(actual));
         default: return false;
       }
     }

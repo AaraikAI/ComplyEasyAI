@@ -377,7 +377,6 @@ jobs:
           tags: |
             type=ref,event=branch
             type=sha,prefix=
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build & push API
         uses: docker/build-push-action@v7
@@ -399,7 +398,6 @@ jobs:
           tags: |
             type=ref,event=branch
             type=sha,prefix=
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build & push Web
         uses: docker/build-push-action@v7
@@ -494,14 +492,12 @@ jobs:
       - name: Sign API image
         run: |
           cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}
-          cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest
         env:
           COSIGN_EXPERIMENTAL: 1
 
       - name: Sign Web image
         run: |
           cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:${{ github.sha }}
-          cosign sign --yes ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-web:latest
         env:
           COSIGN_EXPERIMENTAL: 1
 
@@ -551,10 +547,8 @@ jobs:
           ECR: ${{ steps.ecr.outputs.registry }}
           ECR_REPO: complyeasy-production-api
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest
-          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest $ECR/$ECR_REPO:latest
-          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest $ECR/$ECR_REPO:${{ github.sha }}
-          docker push $ECR/$ECR_REPO:latest
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}
+          docker tag  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }} $ECR/$ECR_REPO:${{ github.sha }}
           docker push $ECR/$ECR_REPO:${{ github.sha }}
 
       - name: Pre-migration database backup

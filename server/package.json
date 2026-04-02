@@ -78,6 +78,8 @@
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "@sendgrid/mail": "^8.1.4",
+    "@sentry/node": "^10.46.0",
+    "@sentry/profiling-node": "^10.46.0",
     "@tensorflow/tfjs": "^4.21.0",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/pdfkit": "^0.17.4",
@@ -138,9 +140,7 @@
     "uuid": "^13.0.0",
     "winston": "^3.17.0",
     "winston-elasticsearch": "^0.19.0",
-    "xml-crypto": "^6.1.2",
-    "@sentry/node": "^10.46.0",
-    "@sentry/profiling-node": "^10.46.0"
+    "xml-crypto": "^6.1.2"
   },
   "devDependencies": {
     "@jest/globals": "^30.3.0",
@@ -169,6 +169,7 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^11.0.0",
     "circom": "^0.5.46",
+    "graphology-types": "^0.24.8",
     "jest": "^30.3.0",
     "jest-junit": "^16.0.0",
     "js-yaml": "^4.1.1",
@@ -243,6 +244,7 @@
     },
     "aws-sdk": {
       "elliptic": "^6.6.1"
-    }
+    },
+    "brace-expansion": "^5.0.5"
   }
 }

@@ -73,11 +73,23 @@ interface AccessApprovalPolicy {
  * 5. Session monitoring and extension
  */
 class JITAccessService {
+  // In-memory session store — sessions are lost on server restart.
+  // For production deployments with persistence requirements,
+  // sessions should be stored in Redis or PostgreSQL.
   private activeSessions: Map<string, JITSession> = new Map();
   private sessionCheckInterval: NodeJS.Timeout | null = null;
 
   constructor() {
+    logger.warn('[JITAccess] Service initialized — in-memory session store cleared on restart. ' +
+      'Any previously active JIT sessions have been invalidated.');
     this.startSessionMonitoring();
+  }
+
+  /**
+   * Returns the number of currently active JIT sessions (for monitoring).
+   */
+  getActiveSessionCount(): number {
+    return this.activeSessions.size;
   }
 
   /**
@@ -280,7 +292,9 @@ class JITAccessService {
       // Store session in database
       await this.storeSession(session);
 
-      logger.info(`JIT session created: ${sessionId} (expires ${endTime.toISOString()})`);
+      logger.info(`[JITAccess] Session created: ${sessionId} for user=${request.userId} ` +
+        `privilege=${request.requestedPrivilege} org=${request.organizationId} ` +
+        `expires=${endTime.toISOString()} activeSessions=${this.activeSessions.size}`);
 
       return session;
     } catch (error) {
@@ -352,7 +366,8 @@ class JITAccessService {
       await this.updateSession(session);
       this.activeSessions.delete(sessionId);
 
-      logger.info(`JIT session revoked: ${sessionId} (reason: ${reason})`);
+      logger.info(`[JITAccess] Session revoked: ${sessionId} user=${session.userId} ` +
+        `privilege=${session.privilege} reason=${reason} activeSessions=${this.activeSessions.size}`);
     } catch (error) {
       logger.error('Error revoking JIT session', error);
       throw new AppError('JIT session revocation failed', 500);

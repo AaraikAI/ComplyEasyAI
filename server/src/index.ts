@@ -8,7 +8,7 @@ import crypto from 'crypto';
 import config, { validateConfig } from './config';
 import logger from './config/logger';
 import prisma, { testConnection } from './config/database';
-import { errorHandler, notFound } from './middleware/errorHandler';
+import { AppError, errorHandler, notFound } from './middleware/errorHandler';
 import { apiLimiter, authLimiter, ssoLimiter, scimLimiter } from './middleware/rateLimiter';
 import { authenticate } from './middleware/auth';
 import websocketService from './services/websocketService';
@@ -179,6 +179,28 @@ try {
   logger.info('Monitoring initialized');
 } catch (error) {
   logger.warn('Monitoring initialization failed:', error);
+}
+
+// Validate critical environment variables required for safe operation
+function validateRequiredEnvVars(): void {
+  const required = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'ENCRYPTION_KEY'];
+  const missing = required.filter((name) => !process.env[name]);
+
+  if (missing.length > 0) {
+    logger.error(`Missing required environment variables: ${missing.join(', ')}`);
+    throw new AppError(
+      `Server cannot start — missing required environment variables: ${missing.join(', ')}`,
+      500
+    );
+  }
+}
+
+try {
+  validateRequiredEnvVars();
+  logger.info('✓ Required environment variables present');
+} catch (error) {
+  logger.error('❌ Environment variable validation failed:', error);
+  process.exit(1);
 }
 
 // Validate configuration on startup

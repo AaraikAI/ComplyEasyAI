@@ -8,6 +8,8 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateQuery } from '../middleware/validate';
+import { complianceHistoryQuerySchema } from '../validators/complianceSchemas';
 import prisma from '../config/database';
 
 const router = Router();
@@ -16,6 +18,7 @@ router.use(authenticate);
 // GET /compliance/history - Get historical compliance scores
 router.get(
   '/history',
+  validateQuery(complianceHistoryQuerySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const orgId = user.organizationId;

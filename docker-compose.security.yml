@@ -57,7 +57,7 @@ services:
       - ELASTICSEARCH_HOSTPORT=http://elasticsearch:9200
       - ELASTICSEARCH_INDEX=falco
       - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:-changeme}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD:?Set ELASTICSEARCH_PASSWORD in .env}
       # Prometheus metrics
       - PROMETHEUS_EXTRALABELS="app:complyeasy"
       # Alert manager

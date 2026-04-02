@@ -15,6 +15,39 @@ import { AppError } from '../../middleware/errorHandler';
 import { DeviceTrust as PrismaDeviceTrust, ZeroTrustPolicy as PrismaZeroTrustPolicy, NetworkSegment as PrismaNetworkSegment, Prisma } from '../../generated/prisma/client';
 import ldapPermissionService, { ADUser, PermissionEvaluationResult, RoleMapping } from './ldapPermissionService';
 
+// --- Safe regex helpers (ReDoS protection) ---
+const REDOS_PATTERNS = [
+  /\([^)]*[+*]\)[+*]/,   // nested quantifier: (x+)+ or (x*)*
+  /\([^)]*[+*]\)\{/,     // nested quantifier with repetition: (x+){n}
+  /\.\*.*\.\*/,          // overlapping greedy wildcards: .*....*
+];
+
+function isReDoSSafe(pattern: string): boolean {
+  return !REDOS_PATTERNS.some((rp) => rp.test(pattern));
+}
+
+function safeRegexTest(pattern: string, input: string): boolean {
+  if (pattern.length > 200 || input.length > 10000) {
+    logger.warn('Regex input or pattern exceeds safe length limits', {
+      patternLength: pattern.length,
+      inputLength: input.length,
+    });
+    return false;
+  }
+  if (!isReDoSSafe(pattern)) {
+    logger.warn('Regex pattern rejected — contains nested quantifiers (ReDoS risk)', {
+      pattern: pattern.substring(0, 50),
+    });
+    return false;
+  }
+  try {
+    const regex = new RegExp(pattern);
+    return regex.test(input);
+  } catch {
+    return false;
+  }
+}
+
 /** Shape of the JSON rules stored in ZeroTrustPolicy.rules */
 interface PolicyRulesJson {
   blockedLocations?: string[];
@@ -857,11 +890,7 @@ class ZeroTrustService {
           return false;
         case 'matches':
           if (typeof left === 'string' && typeof right === 'string') {
-            try {
-              return new RegExp(right).test(left);
-            } catch {
-              return false;
-            }
+            return safeRegexTest(right, left);
           }
           return false;
         default:
