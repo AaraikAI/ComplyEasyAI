@@ -2692,7 +2692,8 @@ class PhysicalAIService {
       const firmwareRegistry = process.env.FIRMWARE_REGISTRY_URL;
       if (firmwareRegistry) {
         try {
-          const response = await axios.get(`${firmwareRegistry}/firmware/${deviceType}/latest`, {
+          const safeDeviceType = encodeURIComponent(deviceType);
+          const response = await axios.get(`${firmwareRegistry}/firmware/${safeDeviceType}/latest`, {
             timeout: 5000,
             headers: {
               'User-Agent': 'ComplyEasyAI-PhysicalAI/1.0',

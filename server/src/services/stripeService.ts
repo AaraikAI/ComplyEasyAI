@@ -383,8 +383,8 @@ class StripeService {
             customer: org.stripeCustomerId,
           });
           details.nextInvoiceAmount = upcomingInvoice.amount_due / 100;
-        } catch {
-          // No upcoming invoice
+        } catch (invoiceError) {
+          logger.warn('[Stripe] Failed to preview upcoming invoice', { customerId: org.stripeCustomerId, error: invoiceError });
         }
       }
 

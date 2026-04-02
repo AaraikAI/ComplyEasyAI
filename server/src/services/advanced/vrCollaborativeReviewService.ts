@@ -360,6 +360,7 @@ class VRCollaborativeReviewService {
    */
   async initialize(): Promise<void> {
     try {
+      logger.warn('[VR Review] Service initialized — in-memory VR session state (6 Maps: activeSessions, sessionParticipants, sessionChats, voiceChatStates, trainingProgress, annotations) cleared on restart. Any previously active sessions have been invalidated.');
       logger.info('[VR Review] Initializing service - restoring sessions from database...');
       await this.restoreSessionsFromDatabase();
       this.startCleanupJob();
