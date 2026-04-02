@@ -73,7 +73,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:-localdev123}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
     command: ["npx", "prisma", "migrate", "deploy"]
     restart: "no"
     networks:
@@ -117,7 +117,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:-localdev123}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD:-localredis123}@redis:6379/0
       JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-prod-min-32chars}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
@@ -268,7 +268,7 @@ services:
   # TOOLS: pgAdmin (optional)
   # =========================================================================
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:8.14
     container_name: complyeasy-pgadmin
     restart: unless-stopped
     profiles: ["tools"]
@@ -298,7 +298,7 @@ services:
     command: npx prisma studio
     profiles: ["tools"]
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:-localdev123}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-complyeasy}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-complyeasy}?schema=public
     ports:
       - "5555:5555"
     depends_on:

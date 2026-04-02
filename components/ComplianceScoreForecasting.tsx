@@ -337,7 +337,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
           setProjections(data.projections);
         }
       })
-      .catch(() => { /* keep fallback data */ });
+      .catch((error) => { console.warn('Failed to fetch data:', error); });
 
     fetch('/api/compliance/history', { credentials: 'include' })
       .then((res) => res.ok ? res.json() : null)
@@ -346,7 +346,7 @@ export const ComplianceScoreForecasting: React.FC<ComplianceScoreForecastingProp
           setHistoricalData(data.data);
         }
       })
-      .catch(() => { /* keep fallback data */ });
+      .catch((error) => { console.warn('Failed to fetch data:', error); });
   }, []);
 
   // Computed values

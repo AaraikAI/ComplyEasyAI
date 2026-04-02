@@ -28,3 +28,23 @@ export function validateBody(schema: SchemaLike) {
     next();
   };
 }
+
+export function validateQuery(schema: SchemaLike) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const { error, value } = schema.validate(req.query, {
+      abortEarly: false,
+      stripUnknown: true,
+      convert: true,
+    });
+
+    if (error) {
+      const message = error.details.map((d) => d.message).join('; ');
+      logger.warn('Query validation failed', { path: req.path, method: req.method, errors: error.details });
+      next(new AppError(message, 400));
+      return;
+    }
+
+    req.query = value;
+    next();
+  };
+}

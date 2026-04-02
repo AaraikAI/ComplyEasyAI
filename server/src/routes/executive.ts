@@ -9,6 +9,8 @@
 import { Router, Request, Response } from 'express';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../types/express';
+import { validateBody, validateQuery } from '../middleware/validate';
+import { executiveTrendsQuerySchema, boardPackSchema } from '../validators/executiveSchemas';
 import { AppError } from '../middleware/errorHandler';
 import prisma from '../config/database';
 import logger from '../config/logger';
@@ -297,6 +299,7 @@ router.get(
 
 router.post(
   '/board-pack',
+  validateBody(boardPackSchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const orgId = user.organizationId;
@@ -471,6 +474,7 @@ router.post(
 
 router.get(
   '/trends',
+  validateQuery(executiveTrendsQuerySchema),
   asyncHandler(async (req: Request, res: Response) => {
     const user = (req as AuthRequest).user!;
     const orgId = user.organizationId;

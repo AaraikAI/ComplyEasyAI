@@ -232,6 +232,13 @@ class JobQueueService extends EventEmitter {
     }
 
     this.initialized = true;
+
+    if (!this.redisConnected) {
+      logger.warn('[JobQueue] In-memory queue state cleared on restart — 7 Maps reset ' +
+        '(queues, processors, isProcessing, concurrency, activeJobs, scheduledJobs, stats). ' +
+        'Any pending or in-progress jobs from the previous process have been lost.');
+    }
+
     logger.info(`[JobQueue] Service initialized with ${Object.keys(QUEUE_NAMES).length} queues (mode: ${this.redisConnected ? 'redis/bullmq' : 'in-memory'})`);
   }
 

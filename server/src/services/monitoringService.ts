@@ -60,8 +60,8 @@ export class MonitoringService {
     userId: string,
     organizationId: string
   ) {
-    const monitor = await prisma.continuousMonitor.findUnique({
-      where: { id: monitorId },
+    const monitor = await prisma.continuousMonitor.findFirst({
+      where: { id: monitorId, organizationId },
     });
 
     if (!monitor) {
@@ -85,7 +85,7 @@ export class MonitoringService {
       },
     });
 
-    // Update monitor status and last run
+    // Update monitor status and last run (ownership verified above)
     await prisma.continuousMonitor.update({
       where: { id: monitorId },
       data: {
@@ -388,6 +388,14 @@ export class MonitoringService {
     userId: string,
     organizationId: string
   ) {
+    // Verify organization ownership
+    const existing = await prisma.continuousMonitor.findFirst({
+      where: { id: monitorId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Monitor not found', 404);
+    }
+
     const monitor = await prisma.continuousMonitor.update({
       where: { id: monitorId },
       data: { active },
@@ -442,6 +450,14 @@ export class MonitoringService {
     userId: string,
     organizationId: string
   ) {
+    // Verify organization ownership
+    const existing = await prisma.continuousMonitor.findFirst({
+      where: { id: monitorId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Monitor not found', 404);
+    }
+
     const monitor = await prisma.continuousMonitor.update({
       where: { id: monitorId },
       data: {
@@ -466,6 +482,14 @@ export class MonitoringService {
    * Delete a monitor
    */
   async deleteMonitor(monitorId: string, userId: string, organizationId: string) {
+    // Verify organization ownership
+    const existing = await prisma.continuousMonitor.findFirst({
+      where: { id: monitorId, organizationId },
+    });
+    if (!existing) {
+      throw new AppError('Monitor not found', 404);
+    }
+
     await prisma.monitorResult.deleteMany({ where: { monitorId } });
     await prisma.continuousMonitor.delete({ where: { id: monitorId } });
 

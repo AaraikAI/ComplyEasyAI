@@ -80,7 +80,8 @@ export const ContractAnalyzer: React.FC<{ onBack: () => void }> = ({ onBack }) =
           .then(data => {
             if (data) resolve(data.text || '');
           })
-          .catch(() => {
+          .catch((error) => {
+            console.warn('Failed to fetch data:', error);
             reject(new Error(`Failed to send ${file.name} to server for text extraction. Please paste the content manually.`));
           });
       } else {
