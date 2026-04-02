@@ -795,6 +795,14 @@ class AgenticAIService {
     try {
       const { mitigationPlan, status } = agenticAction.parameters;
 
+      // Verify ownership before update (defense-in-depth)
+      const riskRecord = await prisma.riskItem.findFirst({
+        where: { id: agenticAction.targetId, organizationId },
+      });
+      if (!riskRecord) {
+        throw new AppError('Risk item not found', 404);
+      }
+
       await prisma.riskItem.update({
         where: { id: agenticAction.targetId },
         data: {
@@ -998,6 +1006,14 @@ class AgenticAIService {
 
       // Restore previous state based on action type
       if (action.actionType === 'control_update') {
+        // Verify ownership before rollback (defense-in-depth)
+        const controlRecord = await prisma.frameworkControl.findFirst({
+          where: { id: action.targetId, framework: { organizationId } },
+        });
+        if (!controlRecord) {
+          throw new AppError('Control not found', 404);
+        }
+
         await prisma.frameworkControl.update({
           where: { id: action.targetId },
           data: {
@@ -1008,6 +1024,14 @@ class AgenticAIService {
           },
         });
       } else if (action.actionType === 'risk_mitigation') {
+        // Verify ownership before rollback (defense-in-depth)
+        const riskRecord = await prisma.riskItem.findFirst({
+          where: { id: action.targetId, organizationId },
+        });
+        if (!riskRecord) {
+          throw new AppError('Risk item not found', 404);
+        }
+
         await prisma.riskItem.update({
           where: { id: action.targetId },
           data: {
@@ -1017,7 +1041,14 @@ class AgenticAIService {
           },
         });
       } else if (action.actionType === 'policy_create') {
-        // Delete the policy that was created
+        // Verify ownership before rollback (defense-in-depth)
+        const policyRecord = await prisma.policy.findFirst({
+          where: { id: action.targetId, organizationId },
+        });
+        if (!policyRecord) {
+          throw new AppError('Policy not found', 404);
+        }
+
         await prisma.policy.delete({
           where: { id: action.targetId },
         });

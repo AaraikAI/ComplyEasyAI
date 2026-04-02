@@ -1099,10 +1099,9 @@ Provide triage results in this JSON format (return ONLY valid JSON, no markdown)
                   severity: null,
                 });
               }
-            } catch {
-              // Skip individual repo errors
-              passedTests++;
-              findings.push({ test: `Repo: ${repo.name}`, passed: true, severity: null });
+            } catch (repoError) {
+              logger.warn('[Monitoring] Security scan failed for repository', { repo: repo.name, error: repoError });
+              findings.push({ test: `Repo: ${repo.name}`, passed: false, severity: 'low' });
             }
           }
         }
