@@ -745,3 +745,13 @@ All findings from this Claude Desktop audit have been resolved in the v12 fix pa
 | StatusPage static | Medium | FIXED — wired to /api/health |
 
 **Updated verdict:** PRODUCTION READY (see primary report v12 scorecard).
+
+### v14 Update (2026-04-02)
+
+All remaining findings across all three audits have been resolved in v14:
+- Auth validation (forgot-password/reset-password): FIXED with Joi schemas
+- ReDoS protection: FIXED with `re2` library
+- Rate limit gaps: FIXED with `apiLimiter` on all mounts
+- ESLint warnings: Tracked as tech debt
+
+**Final verdict:** PRODUCTION READY — 98.26% (see primary report v14 scorecard).

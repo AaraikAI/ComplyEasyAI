@@ -420,8 +420,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 label: 'Score',
                 data: (() => {
                   if (frameworksData.length === 0) {
-                    // Default sample data if no frameworks
-                    return [92, 93, 94, 93.5, 94.2, 94.5, 94.2];
+                    return [0, 0, 0, 0, 0, 0, 0];
                   }
                   // Calculate base score from actual data
                   const totalControls = frameworksData.reduce((sum: number, fw: any) => 
@@ -482,8 +481,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 label: 'Compliance %',
                 data: (() => {
                   if (frameworksData.length === 0) {
-                    // Default sample data
-                    return [95, 0, 0, 0, 0];
+                    return [0, 0, 0, 0, 0];
                   }
                   return frameworksData.slice(0, 5).map((fw: any) => {
                     if (!fw.controls || fw.controls.length === 0) {
@@ -511,7 +509,7 @@ const RealTimeAnalytics: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   label: 'Passed',
                   data: (() => {
                     if (frameworksData.length === 0) {
-                      return [850, 865, 880, 892];
+                      return [0, 0, 0, 0];
                     }
                     // Calculate passed controls for each week
                     const totalControls = frameworksData.reduce((sum: number, fw: any) => 

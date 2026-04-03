@@ -263,3 +263,16 @@ All findings from this Cursor audit have been resolved in the v12 fix pass, cros
 | L1-L4 | Low | Tracked as tech debt |
 
 **Updated verdict:** PRODUCTION READY (see primary report v12 scorecard).
+
+### v14 Update (2026-04-02)
+
+All 4 remaining findings from the v13 Cursor agent audit have been resolved:
+
+| v13 Finding | Severity | Resolution |
+|-------------|----------|------------|
+| Gap #1 — forgot-password/reset-password no validateBody | Medium | FIXED — Joi schemas (`forgotPasswordSchema`, `resetPasswordSchema`) added to `authSchemas.ts`; `validateBody()` middleware added to both routes |
+| Gap #2 — ReDoS wrapper insufficient (no re2) | Medium | FIXED — `re2` package installed; `new RE2()` replaces `new RegExp()` in both `zeroTrustService.ts` and `workflowEngine.ts` |
+| Gap #3 — Rate limit gaps (webhook + docs) | Low | FIXED — `apiLimiter` added to `/api/billing/webhook` and `/api/docs` mounts |
+| Gap #4 — ESLint 1260 warnings | Low | Tracked as tech debt |
+
+**Final verdict:** PRODUCTION READY — 98.26% (see primary report v14 scorecard).
