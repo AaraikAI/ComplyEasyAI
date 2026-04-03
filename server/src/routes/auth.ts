@@ -3,7 +3,7 @@ import authController from '../controllers/authController';
 import { authLimiter } from '../middleware/rateLimiter';
 import { asyncHandler } from '../types/express';
 import { validateBody } from '../middleware/validate';
-import { magicLinkSchema, loginSchema, registerSchema, completeTwoFactorSchema, updateProfileSchema, changePasswordSchema } from '../validators/authSchemas';
+import { magicLinkSchema, loginSchema, registerSchema, completeTwoFactorSchema, updateProfileSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from '../validators/authSchemas';
 
 const router = Router();
 
@@ -14,8 +14,8 @@ router.post('/2fa/complete', authLimiter, validateBody(completeTwoFactorSchema),
 router.post('/register', authLimiter, validateBody(registerSchema), asyncHandler(authController.register.bind(authController)));
 router.post('/refresh', authLimiter, asyncHandler(authController.refreshToken.bind(authController)));
 router.post('/logout', asyncHandler(authController.logout.bind(authController)));
-router.post('/forgot-password', authLimiter, asyncHandler(authController.forgotPassword.bind(authController)));
-router.post('/reset-password', authLimiter, asyncHandler(authController.resetPassword.bind(authController)));
+router.post('/forgot-password', authLimiter, validateBody(forgotPasswordSchema), asyncHandler(authController.forgotPassword.bind(authController)));
+router.post('/reset-password', authLimiter, validateBody(resetPasswordSchema), asyncHandler(authController.resetPassword.bind(authController)));
 
 // User profile update (requires authentication)
 import { authenticate } from '../middleware/auth';

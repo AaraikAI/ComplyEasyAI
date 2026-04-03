@@ -18,6 +18,7 @@
 import prisma from '../config/database';
 import { Prisma } from '../generated/prisma/client';
 import logger from '../config/logger';
+import RE2 from 're2';
 import axios from 'axios';
 import { isWebhookUrlSafe } from '../utils/urlValidator';
 import { AppError } from '../middleware/errorHandler';
@@ -54,8 +55,12 @@ function safeRegexTest(pattern: string, input: string): boolean {
     });
     return false;
   }
-  const regex = new RegExp(pattern, 'i');
-  return regex.test(input);
+  try {
+    const regex = new RE2(pattern, 'i');
+    return regex.test(input);
+  } catch {
+    return false;
+  }
 }
 
 // Allowlist of Prisma model table names that can be updated via workflow actions.

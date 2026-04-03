@@ -9,6 +9,7 @@
  */
 
 import crypto from 'crypto';
+import RE2 from 're2';
 import logger from '../../config/logger';
 import prisma from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
@@ -41,7 +42,7 @@ function safeRegexTest(pattern: string, input: string): boolean {
     return false;
   }
   try {
-    const regex = new RegExp(pattern);
+    const regex = new RE2(pattern);
     return regex.test(input);
   } catch {
     return false;

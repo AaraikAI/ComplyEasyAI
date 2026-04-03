@@ -358,7 +358,7 @@ app.use(helmet({
 
 // Body parsing middleware
 // Special handling for Stripe webhooks (requires raw body)
-app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/billing/webhook', apiLimiter, express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -382,7 +382,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(responseEnvelope());
 
 // API Documentation (Swagger UI)
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+app.use('/api/docs', apiLimiter, swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'ComplyEasy AI API Docs',
 }));
