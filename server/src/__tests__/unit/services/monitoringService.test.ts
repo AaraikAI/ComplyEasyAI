@@ -137,7 +137,7 @@ describe('MonitoringService', () => {
 
       expect(prismaMock.continuousMonitor.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'monitor-123' },
+          where: { id: 'monitor-123', organizationId: 'org-123' },
           data: expect.objectContaining({
             status: expect.any(String),
             lastRun: expect.any(Date),

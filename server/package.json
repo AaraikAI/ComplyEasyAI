@@ -246,6 +246,7 @@
     "aws-sdk": {
       "elliptic": "^6.6.1"
     },
-    "brace-expansion": "^5.0.5"
+    "brace-expansion": "^5.0.5",
+    "jsdom": "~27.0.0"
   }
 }
