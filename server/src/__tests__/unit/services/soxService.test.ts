@@ -395,7 +395,7 @@ describe('SOXService', () => {
         const mockResult = createMockSOXTestResult();
         const mockControl = createMockSOXControl();
         prismaMock.sOXTestResult.create.mockResolvedValue(mockResult);
-        prismaMock.sOXControl.findUnique.mockResolvedValue(mockControl);
+        prismaMock.sOXControl.findFirst.mockResolvedValue(mockControl);
         prismaMock.sOXControl.update.mockResolvedValue(mockControl);
 
         const result = await soxService.createSOXTestResult({
@@ -422,7 +422,7 @@ describe('SOXService', () => {
         const mockResult = createMockSOXTestResult({ conclusion: 'Effective' });
         const mockControl = createMockSOXControl();
         prismaMock.sOXTestResult.create.mockResolvedValue(mockResult);
-        prismaMock.sOXControl.findUnique.mockResolvedValue(mockControl);
+        prismaMock.sOXControl.findFirst.mockResolvedValue(mockControl);
         prismaMock.sOXControl.update.mockResolvedValue({ ...mockControl, status: 'Effective' });
 
         await soxService.createSOXTestResult({
@@ -445,7 +445,7 @@ describe('SOXService', () => {
       it('should auto-classify deficiency based on exceptions', async () => {
         const mockResult = createMockSOXTestResult({ exceptionsFound: 5 });
         prismaMock.sOXTestResult.create.mockResolvedValue(mockResult);
-        prismaMock.sOXControl.findUnique.mockResolvedValue(createMockSOXControl());
+        prismaMock.sOXControl.findFirst.mockResolvedValue(createMockSOXControl());
         prismaMock.sOXControl.update.mockResolvedValue(createMockSOXControl());
 
         await soxService.createSOXTestResult({
@@ -469,7 +469,7 @@ describe('SOXService', () => {
       it('should handle legacy field aliases', async () => {
         const mockResult = createMockSOXTestResult();
         prismaMock.sOXTestResult.create.mockResolvedValue(mockResult);
-        prismaMock.sOXControl.findUnique.mockResolvedValue(createMockSOXControl());
+        prismaMock.sOXControl.findFirst.mockResolvedValue(createMockSOXControl());
         prismaMock.sOXControl.update.mockResolvedValue(createMockSOXControl());
 
         await soxService.createSOXTestResult({
@@ -687,7 +687,7 @@ describe('SOXService', () => {
 
       prismaMock.sOXControl.findFirst.mockResolvedValue(mockControl);
       prismaMock.sOXTestResult.create.mockResolvedValue(mockTestResult);
-      prismaMock.sOXControl.findUnique.mockResolvedValue(mockControl);
+      prismaMock.sOXControl.findFirst.mockResolvedValue(mockControl);
       prismaMock.sOXControl.update.mockResolvedValue(mockControl);
       prismaMock.evidenceAnalysis.findMany.mockResolvedValue([
         { id: 'ev-1', verificationStatus: 'completed' },
@@ -729,7 +729,7 @@ describe('SOXService', () => {
 
       prismaMock.sOXControl.findFirst.mockResolvedValue(mockControl);
       prismaMock.sOXTestResult.create.mockResolvedValue(mockTestResult);
-      prismaMock.sOXControl.findUnique.mockResolvedValue(mockControl);
+      prismaMock.sOXControl.findFirst.mockResolvedValue(mockControl);
       prismaMock.sOXControl.update.mockResolvedValue(mockControl);
       prismaMock.evidenceAnalysis.findMany.mockResolvedValue([
         { id: 'ev-1', verificationStatus: 'completed' },
@@ -755,7 +755,7 @@ describe('SOXService', () => {
 
       prismaMock.sOXControl.findFirst.mockResolvedValue(mockControl);
       prismaMock.sOXTestResult.create.mockResolvedValue(mockTestResult);
-      prismaMock.sOXControl.findUnique.mockResolvedValue(mockControl);
+      prismaMock.sOXControl.findFirst.mockResolvedValue(mockControl);
       prismaMock.sOXControl.update.mockResolvedValue(mockControl);
       prismaMock.evidenceAnalysis.findMany.mockResolvedValue([
         { id: 'ev-1', verificationStatus: 'completed', createdAt: new Date('2026-01-15'), analyzedAt: new Date('2026-01-15') },
