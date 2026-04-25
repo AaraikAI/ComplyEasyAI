@@ -98,7 +98,7 @@ describe('MonitoringService', () => {
         failedTests: 0,
       };
 
-      prismaMock.continuousMonitor.findUnique.mockResolvedValue(mockMonitor as any);
+      prismaMock.continuousMonitor.findFirst.mockResolvedValue(mockMonitor as any);
       prismaMock.monitorResult.create.mockResolvedValue(mockResult as any);
       prismaMock.continuousMonitor.update.mockResolvedValue({} as any);
 
@@ -111,7 +111,7 @@ describe('MonitoringService', () => {
     });
 
     it('should throw error if monitor not found', async () => {
-      prismaMock.continuousMonitor.findUnique.mockResolvedValue(null);
+      prismaMock.continuousMonitor.findFirst.mockResolvedValue(null);
 
       await expect(
         monitoringService.executeMonitor('invalid-id', 'user-123', 'org-123')
@@ -126,7 +126,7 @@ describe('MonitoringService', () => {
         configuration: {},
       };
 
-      prismaMock.continuousMonitor.findUnique.mockResolvedValue(mockMonitor as any);
+      prismaMock.continuousMonitor.findFirst.mockResolvedValue(mockMonitor as any);
       prismaMock.monitorResult.create.mockResolvedValue({
         id: 'result-123',
         status: 'Passing',
