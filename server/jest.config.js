@@ -15,6 +15,11 @@ module.exports = {
         ignoreCodes: [151001], // Ignore isolatedModules warning
       },
     }],
+    '^.+\\.jsx?$': ['ts-jest', {
+      tsconfig: 'tsconfig.test.json',
+      isolatedModules: true,
+      diagnostics: false,
+    }],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverageFrom: [
