@@ -131,7 +131,7 @@
     "snarkjs": "^0.7.6",
     "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
-    "stripe": "^22.0.2",
+    "stripe": "~21.0.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "tesseract.js": "^7.0.0",
