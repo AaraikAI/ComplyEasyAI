@@ -423,6 +423,7 @@ describe('SOXService', () => {
         const mockControl = createMockSOXControl();
         prismaMock.sOXTestResult.create.mockResolvedValue(mockResult);
         prismaMock.sOXControl.findFirst.mockResolvedValue(mockControl);
+        prismaMock.sOXControl.findUnique.mockResolvedValue(mockControl);
         prismaMock.sOXControl.update.mockResolvedValue({ ...mockControl, status: 'Effective' });
 
         await soxService.createSOXTestResult({
