@@ -74,10 +74,8 @@ afterEach(() => {
   jest.restoreAllMocks();
   
   // Clear any pending promises/timeouts (only if fake timers are active)
-  try {
+  if (jest.isMockFunction(setTimeout)) {
     jest.runOnlyPendingTimers();
-  } catch {
-    // Fake timers not enabled for this test — safe to ignore
   }
   
   // Clear any event listeners that might leak
