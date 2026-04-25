@@ -73,8 +73,12 @@ afterEach(() => {
   // Restore all mocks
   jest.restoreAllMocks();
   
-  // Clear any pending promises/timeouts
-  jest.runOnlyPendingTimers();
+  // Clear any pending promises/timeouts (only if fake timers are active)
+  try {
+    jest.runOnlyPendingTimers();
+  } catch {
+    // Fake timers not enabled for this test — safe to ignore
+  }
   
   // Clear any event listeners that might leak
   process.removeAllListeners('unhandledRejection');

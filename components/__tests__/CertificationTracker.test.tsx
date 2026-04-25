@@ -36,7 +36,7 @@ const MOCK_CERTIFICATIONS = [
   },
   {
     id: 'cert-3', name: 'PCI DSS v4.0', frameworkId: 'PCIDSS', scope: 'Payment Systems', status: 'EXPIRING_SOON',
-    certBody: 'QSA Inc', issueDate: '2024-04-14T00:00:00Z', expiryDate: '2026-04-14T00:00:00Z',
+    certBody: 'QSA Inc', issueDate: '2024-04-14T00:00:00Z', expiryDate: '2026-07-14T00:00:00Z',
     surveillanceAudits: [],
     documents: [],
     controlsInScope: 250, nonconformities: 5,
@@ -229,7 +229,7 @@ describe('CertificationTracker', () => {
 
   it('shows expiry warning for certs expiring within 90 days', async () => {
     await renderAndWait(<CertificationTracker />);
-    // PCI DSS expires 2026-04-14 which may be within 90 days of test date (2026-03-16)
+    // PCI DSS expires 2026-07-14 which is within 90 days of test run
     const content = document.body.textContent || '';
     expect(content).toContain('until expiry');
   });

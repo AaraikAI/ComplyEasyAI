@@ -336,7 +336,7 @@ describe('api service', () => {
 
     it('verifyMagicLink throws when no access token', async () => {
       mockFetch.mockResolvedValueOnce(ok({ csrfToken: 'csrf' }));
-      mockFetch.mockResolvedValueOnce(ok({ user: { id: '1' } }));
+      mockFetch.mockResolvedValueOnce(ok({ success: false }));
       await expect(api.auth.verifyMagicLink('tok')).rejects.toThrow('No access token received');
     });
 

@@ -233,7 +233,7 @@ export const api = {
           name: response.user.name,
           email: response.user.email,
           role: response.user.role,
-          avatar: response.user.avatar || response.user.name.substring(0, 2).toUpperCase(),
+          avatar: response.user.avatar || (response.user.name ? response.user.name.substring(0, 2).toUpperCase() : '??'),
           organizationId: response.user.organization?.id || response.user.organizationId,
           organization: response.user.organization ? { id: response.user.organization.id, name: response.user.organization.name, plan: response.user.organization.plan } : undefined,
         };
@@ -285,7 +285,7 @@ export const api = {
           name: response.user.name,
           email: response.user.email,
           role: response.user.role,
-          avatar: response.user.avatar || response.user.name.substring(0, 2).toUpperCase(),
+          avatar: response.user.avatar || (response.user.name ? response.user.name.substring(0, 2).toUpperCase() : '??'),
           organizationId: response.user.organization?.id || response.user.organizationId,
           organization: response.user.organization ? { id: response.user.organization.id, name: response.user.organization.name, plan: response.user.organization.plan } : undefined,
         };
