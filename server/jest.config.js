@@ -15,13 +15,13 @@ module.exports = {
         ignoreCodes: [151001], // Ignore isolatedModules warning
       },
     }],
-    '^.+\\.jsx?$': ['ts-jest', {
+    '^.+\\.m?jsx?$': ['ts-jest', {
       tsconfig: 'tsconfig.test.json',
       isolatedModules: true,
       diagnostics: false,
     }],
   },
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'mjs', 'json', 'node'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
