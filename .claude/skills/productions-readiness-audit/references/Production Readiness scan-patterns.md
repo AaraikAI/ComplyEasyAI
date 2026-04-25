@@ -222,7 +222,35 @@ grep -rn $EXT "origin.*\*\|Access-Control-Allow-Origin.*\*\|cors()" $SRC | grep 
 
 # F6: Disabled security features
 grep -rn $EXT -i "verify.*false\|secure.*false\|rejectUnauthorized.*false\|SSL_VERIFY.*false\|check_hostname.*False" $SRC | grep -v node_modules | grep -v test > /tmp/audit_F6.txt
+
+# F7: SSRF — ALL outbound HTTP calls with user-controllable URLs (v4 addition)
+grep -rn $EXT "axios(\|axios\.\(get\|post\|put\|patch\|delete\|request\)\|fetch(\|got(\|request(\|http\.get\|https\.get\|http\.request\|https\.request" $SRC | grep -v node_modules | grep -v test | grep -v "\.d\.ts" > /tmp/audit_F7.txt
+# For EACH match: Is the URL user-controllable? Is there SSRF validation?
+# ANY outbound call without URL validation where input comes from user/DB/config = HIGH SSRF
+
+# F8: Credential storage in plaintext (v4 addition)
+grep -rn $EXT "bearerToken\|apiKey\|secretKey\|accessToken\|serviceToken\|webhookSecret\|signingKey\|scimToken\|apiSecret" $SRC | grep -v node_modules | grep -v test | grep -v "\.d\.ts" > /tmp/audit_F8.txt
+# For EACH match: Is the credential hashed before storage? Compared in constant-time?
+
+# F9: Dynamic code execution with user input (v4 addition — ReDoS, eval, etc.)
+grep -rn $EXT "new RegExp(\|eval(\|Function(\|vm\.run\|child_process\.\(exec\|spawn\)" $SRC | grep -v node_modules | grep -v test > /tmp/audit_F9.txt
+# For EACH match: Is input user-controllable? Is it sanitized/sandboxed?
+
+# F10: Default-value security — configs that fail-open (v4 addition)
+grep -rn $EXT "\.length === 0\|\.length == 0\|=== \[\]\|\.length < 1" $SRC | grep -v node_modules | grep -v test | grep -i "cors\|origin\|allow\|whitelist" > /tmp/audit_F10.txt
+# Check: Does empty config mean "allow all" (fail-open) or "deny all" (fail-closed)?
+
+# F11: throw new Error() instead of AppError in services (v4 addition)
+grep -rn $EXT "throw new Error(" $SRC | grep -v node_modules | grep -v test | grep -v "AppError\|HttpError\|ApiError\|ValidationError" > /tmp/audit_F11.txt
+# Services throwing bare Error instead of AppError cause incorrect HTTP status codes
 ```
+
+**Context verification for Category F (v4 additions):**
+- **F7 (SSRF):** For each outbound HTTP call, trace where the URL comes from. If it's from a constant/env var → FALSE_POSITIVE. If it's from user input/DB without validation → PRODUCTION_GAP (HIGH).
+- **F8 (Credential storage):** Check if the credential is part of a comparison/query (storage) vs just a variable name. If stored in DB without hashing → MEDIUM.
+- **F9 (Dynamic code):** Check if user-controllable. If input is hardcoded → FALSE_POSITIVE. If user-supplied regex without timeout → MEDIUM (ReDoS).
+- **F10 (Fail-open defaults):** Check if empty config allows everything or blocks everything. Fail-open = MEDIUM.
+- **F11 (Error class):** In server service files, `throw new Error()` should be `throw new AppError()`. In utilities or non-HTTP code → FALSE_POSITIVE.
 
 ---
 
@@ -338,6 +366,49 @@ grep -rn $EXT "bcrypt\|argon2\|scrypt\|pbkdf2\|hash.*password\|password.*hash\|m
 **Cross-reference L1 with L2:** Every endpoint in L2 that handles user data should appear in L1 (has auth). Unprotected sensitive endpoints are Critical severity.
 
 **Cross-reference L3 with L4:** Every endpoint accepting an ID from the request should also filter by the authenticated user's ID/org. Missing scoping is a horizontal privilege escalation vulnerability.
+
+### L7: Exhaustive Multi-Tenant Write Operation Trace (v4 addition — MANDATORY)
+
+```bash
+# L7: ALL Prisma write operations in service files — verify each has organizationId
+grep -rn $EXT "\.create(\|\.update(\|\.delete(\|\.upsert(\|\.updateMany(\|\.deleteMany(" $SRC | grep -v node_modules | grep -v test | grep -v "\.d\.ts" > /tmp/audit_L7.txt
+```
+
+For EACH write operation: Read the full function. Check if `organizationId` is in the `where` clause (updates/deletes) or verified via prior lookup (creates). Cross-reference: If one function in a service has org checks but another doesn't → higher confidence it's a bug. **This catches the class of bug where `getById` has org filtering but `create` and `complete` don't.**
+
+### L8: Cross-Entity Consistency Audit (v4 addition)
+
+When a function queries/processes multiple entity types, verify ALL have the same security filters:
+```bash
+# L8: Functions querying 3+ different Prisma models — check for missing org filters
+grep -rn $EXT "prisma\.\w\+\.\(findMany\|findFirst\|count\|create\|update\|delete\)" $SRC | grep -v node_modules | grep -v test > /tmp/audit_L8.txt
+```
+Group by function. If a function queries 5 models and 4 have `organizationId` but 1 doesn't → cross-tenant data leak.
+
+### L9: Rate Limit Coverage Measurement (v4 addition)
+
+```bash
+# L9: All route mounts — identify which have rate limiting
+grep -rn "app\.use.*apiLimiter\|app\.use.*rateLimiter\|router\.use.*limiter" $SRC | grep -v node_modules > /tmp/audit_L9_with_limits.txt
+grep -rn "app\.use.*api/\|app\.use.*Route\|app\.use.*router" $SRC | grep -v node_modules > /tmp/audit_L9_all_routes.txt
+```
+Cross-reference: Every route group MUST have rate limiting. Missing = LOW finding.
+
+### L10: Error Response Consistency Audit (v4 addition)
+
+```bash
+# L10: Manual error responses that bypass global error handler
+grep -rn "res\.status(500)\|res\.status(400)\|res\.status(404)\|res\.status(409)" $SRC | grep -v node_modules | grep -v test | grep -v middleware > /tmp/audit_L10.txt
+```
+Routes that catch errors internally and send `res.status(N).json(...)` bypass: Sentry capture, security event logging, consistent error format. Flag as MEDIUM.
+
+### L11: Silent .catch(() => {}) in Frontend (v4 addition — completeness fix)
+
+```bash
+# L11: ALL silent catch blocks in frontend components
+grep -rn "\.catch(() => {})\|\.catch(() => {\s*})\|\.catch(function() {})" components/ --include="*.tsx" --include="*.ts" | grep -v test > /tmp/audit_L11.txt
+```
+**EVERY match must be classified.** Previous audits flagged some but missed others. Process the ENTIRE list.
 
 ---
 
@@ -538,6 +609,330 @@ grep -rn "canary\|blue.green\|rolling\|gradual\|percentage\|weight" $(find . -pa
 # S8: Mobile secure storage
 grep -rn "AsyncStorage\|SecureStore\|Keychain\|EncryptedStorage\|EncryptedSharedPreferences\|flutter_secure_storage\|keychain" $SRC | grep -v node_modules | grep -v test > /tmp/audit_S8.txt 2>/dev/null
 ```
+
+---
+
+## Category T: v9 Methodology Completeness Scans
+
+These patterns were added after v8 audits found 9 of 18 issues required agent initiative rather than being guaranteed by scan patterns.
+
+```bash
+# T1: Docker Compose fail-open security defaults (:-) — should be (:?)
+COMPOSE_FILES=$(find . -name "docker-compose*" -not -path "*/node_modules/*")
+if [ -n "$COMPOSE_FILES" ]; then
+  grep -n ':-' $COMPOSE_FILES | grep -iE 'password|secret|key|token|admin|credential' > /tmp/audit_T1.txt 2>/dev/null
+fi
+
+# T2: CI pipeline :latest tags in push/deploy operations
+CI_FILES=$(find . -path "*/.github/workflows/*" -o -path "*/.gitlab-ci*" 2>/dev/null)
+if [ -n "$CI_FILES" ]; then
+  grep -rn ':latest' $CI_FILES | grep -iE 'push|tag|deploy|ecr|registry|gcr|docker' > /tmp/audit_T2.txt 2>/dev/null
+fi
+
+# T3: Lint config existence per sub-project
+> /tmp/audit_T3.txt
+for dir in $(find . -name "package.json" -not -path "*/node_modules/*" -maxdepth 2 -exec dirname {} \;); do
+  if [ -d "$dir/src" ]; then
+    HAS_CONFIG=$(ls "$dir"/eslint.config.* "$dir"/.eslintrc* 2>/dev/null | head -1)
+    if [ -z "$HAS_CONFIG" ]; then
+      echo "MISSING: $dir has src/ but no ESLint config" >> /tmp/audit_T3.txt
+    fi
+  fi
+done
+
+# T4: Security wrapper bypass — raw unsafe patterns outside safe functions
+# Dynamically detects safe wrappers and finds bypasses
+> /tmp/audit_T4.txt
+# RegExp wrapper bypass
+SAFE_REGEX=$(grep -rl "function safeRegex\|function safe_regex\|safeRegexTest" server/src/ --include="*.ts" 2>/dev/null | head -1)
+if [ -n "$SAFE_REGEX" ]; then
+  grep -rn "new RegExp(" server/src/ --include="*.ts" | grep -v test | grep -v generated | grep -v "safeRegex" >> /tmp/audit_T4.txt
+fi
+# URL validator bypass
+SAFE_URL=$(grep -rl "isUrlSafe\|isWebhookUrlSafe" server/src/ --include="*.ts" 2>/dev/null | head -1)
+if [ -n "$SAFE_URL" ]; then
+  grep -rn "axios\.\(get\|post\|put\|delete\)\|fetch(" server/src/ --include="*.ts" | grep -v test | grep -v generated | grep -v "isUrlSafe\|isWebhookUrlSafe" | grep -v "process\.env\|localhost\|127\.0\.0\.1" >> /tmp/audit_T4.txt
+fi
+
+# T5: Startup env validation for critical vars
+> /tmp/audit_T5.txt
+for VAR in DATABASE_URL JWT_SECRET JWT_REFRESH_SECRET ENCRYPTION_KEY; do
+  VALIDATED=$(grep -rn "$VAR" server/src/config/ server/src/index.ts --include="*.ts" 2>/dev/null | grep -iE 'throw|assert|required|errors\.push|\?\:')
+  if [ -z "$VALIDATED" ]; then
+    echo "NOT_VALIDATED: $VAR" >> /tmp/audit_T5.txt
+  fi
+done
+
+# T6: Docker HEALTHCHECK per Dockerfile
+> /tmp/audit_T6.txt
+for df in $(find . -name "Dockerfile*" -not -path "*/node_modules/*"); do
+  grep -q "HEALTHCHECK" "$df" || echo "MISSING_HEALTHCHECK: $df" >> /tmp/audit_T6.txt
+done
+
+# T7: Cross-compose variable consistency
+> /tmp/audit_T7.txt
+for VAR in POSTGRES_PASSWORD ELASTICSEARCH_PASSWORD REDIS_PASSWORD JWT_SECRET JWT_REFRESH_SECRET ENCRYPTION_KEY; do
+  PATTERNS=$(grep -h "$VAR" $(find . -name "docker-compose*" -not -path "*/node_modules/*") 2>/dev/null | grep -oE '\$\{'"$VAR"'[^}]*\}' | sort -u)
+  COUNT=$(echo "$PATTERNS" | grep -c . 2>/dev/null)
+  if [ "$COUNT" -gt 1 ]; then
+    HAS_OPEN=$(echo "$PATTERNS" | grep ':-')
+    HAS_CLOSED=$(echo "$PATTERNS" | grep ':?')
+    if [ -n "$HAS_OPEN" ] && [ -n "$HAS_CLOSED" ]; then
+      echo "INCONSISTENT: $VAR uses both :- and :? across compose files" >> /tmp/audit_T7.txt
+      echo "$PATTERNS" >> /tmp/audit_T7.txt
+    fi
+  fi
+done
+
+# T8: In-memory state in server services (for criticality classification)
+grep -rn "new Map()\|new Set()\|= {}\s*;" server/src/services/ --include="*.ts" | grep -v test | grep -v node_modules | grep -v generated > /tmp/audit_T8.txt 2>/dev/null
+```
+
+**Context verification for Category T:**
+- **T1 (Compose fail-open):** `:-` on password/secret/key = HIGH. `:-` on empty string for optional API keys = FALSE_POSITIVE.
+- **T2 (CI :latest):** `:latest` in `docker push` to production registry = MEDIUM. In cosign sign-only = LOW.
+- **T3 (Lint config):** Missing config = MEDIUM. Sub-project without `src/` dir = FALSE_POSITIVE.
+- **T4 (Wrapper bypass):** Each bypass = same severity as the vulnerability class (ReDoS = MEDIUM, SSRF = HIGH).
+- **T5 (Env validation):** Missing validation for critical var = MEDIUM.
+- **T6 (HEALTHCHECK):** Missing = MEDIUM.
+- **T7 (Cross-compose):** Inconsistency = MEDIUM. Document whether dev-profile defaults are accepted.
+- **T8 (In-memory):** Classify by impact before reporting (see CLAUDE.md v9 rules).
+
+### v10 Additions: CI Quality Gates & Peer Dependencies
+
+```bash
+# T9: CI quality gate bypasses (continue-on-error in ALL workflow files)
+> /tmp/audit_T9.txt
+ALL_WORKFLOWS=$(find . -path "*/.github/workflows/*" -name "*.yml" -o -path "*/.gitlab-ci*" 2>/dev/null)
+if [ -n "$ALL_WORKFLOWS" ]; then
+  grep -rn "continue-on-error" $ALL_WORKFLOWS 2>/dev/null \
+    | grep -v "# Known unfixable\|# Expected\|# Acceptable" \
+    > /tmp/audit_T9.txt || true
+fi
+
+# T10: Peer dependency completeness
+> /tmp/audit_T10.txt
+for pkg_dir in . server; do
+  if [ -f "$pkg_dir/package.json" ]; then
+    UNMET=$(cd "$pkg_dir" && npm ls --all 2>&1 | grep -i "UNMET PEER\|missing peer" || true)
+    if [ -n "$UNMET" ]; then
+      echo "UNMET_PEER: $pkg_dir" >> /tmp/audit_T10.txt
+      echo "$UNMET" >> /tmp/audit_T10.txt
+    fi
+  fi
+done 2>/dev/null || true
+```
+
+**Context verification:**
+- **T9 (continue-on-error):** On test/build/lint/scan steps = MEDIUM (quality gate bypass). On known-unfixable dep audit with `# Known unfixable` comment = FALSE_POSITIVE. On E2E test steps = LOW (flakiness is common but should be monitored).
+- **T10 (Peer deps):** Each unmet peer dep that causes TS errors or runtime failures = MEDIUM. Peer deps that are optional/have no impact = FALSE_POSITIVE.
+
+### v11 Additions: Depth Gaps & Honest Incompleteness
+
+```bash
+# T11: Credential encryption-at-rest verification
+grep -rn "prisma\.\(integration\|credential\|oAuth\).*\(create\|update\|upsert\)" server/src/ --include="*.ts" \
+  | grep -v test | grep -v node_modules > /tmp/audit_T11.txt 2>/dev/null
+
+# T12: SSRF via function URL parameters (overrides safe defaults)
+grep -rn "baseUrl\?: string\|url: string\|endpoint\?: string" server/src/services/ --include="*.ts" \
+  | grep -v test | grep -v node_modules | grep -v "\.d\.ts" > /tmp/audit_T12.txt 2>/dev/null
+
+# T13: Infrastructure config default passwords (beyond compose)
+find . \( -path "*/logstash/*" -o -path "*/nginx/*" -o -path "*/prometheus/*" -o -path "*/grafana/*" \) \
+  -not -path "*/node_modules/*" \( -name "*.conf" -o -name "*.yml" \) \
+  -exec grep -ln "changeme\|default.*password" {} \; > /tmp/audit_T13.txt 2>/dev/null
+
+# T14: Controller inline error responses (extends L10 beyond routes/)
+grep -rn "res\.status(" server/src/controllers/ --include="*.ts" \
+  | grep -v test | grep -v node_modules > /tmp/audit_T14.txt 2>/dev/null
+
+# T15: StatusPage/health display components without API wiring
+for comp in $(find components/ -name "*Status*" -o -name "*Health*" -o -name "*Uptime*" 2>/dev/null); do
+  HAS_API=$(grep -c "fetch\|api\.\|useQuery\|/health\|/status" "$comp" 2>/dev/null || echo 0)
+  [ "$HAS_API" -lt 2 ] && echo "STATIC: $comp" >> /tmp/audit_T15.txt
+done 2>/dev/null
+```
+
+**Context verification:**
+- **T11:** Verify `encrypt()` is called on token/secret fields before Prisma write. Plaintext storage = MEDIUM.
+- **T12:** If function accepts URL/baseUrl parameter and makes HTTP call without `isUrlSafe()` = PRODUCTION_GAP (MEDIUM for SSRF).
+- **T13:** Any `changeme` or weak default in infra config = HIGH.
+- **T14:** Manual `res.status()` in catch blocks without `logger.error()` = bypasses Sentry. Count and report.
+- **T15:** Operational display component with static data instead of live API = MEDIUM.
+
+### v10 Shell Compatibility Note
+
+All T-scan patterns in the scan-runner MUST:
+- Use `find` instead of `ls` for file existence checks (glob expansion failure kills `set -e` scripts)
+- Use `safe_grep` or `|| true` for all grep calls
+- Use `2>/dev/null` on all file operations that may target non-existent paths
+- Be tested with zero matching files to verify they don't crash
+
+### v12 Additions: Cross-Audit Reconciliation & Depth Gaps
+
+These patterns were added after cross-comparing Claude Code, Claude Desktop, and Cursor audit reports on the same codebase. Claude Code scored highest (97.95%) but missed 9 findings the other tools caught. Root causes: no Node version consistency grep, no server-only console audit, dev compose literal values not scanned, auth-critical endpoints not specifically validated, fixable vulns not acted on, tsc OOM not detected, SSO/SCIM error paths not audited.
+
+```bash
+# T16: Node version cross-consistency (CI vs Docker vs package.json)
+> /tmp/audit_T16.txt
+echo "--- CI workflows ---" >> /tmp/audit_T16.txt
+grep -rn 'node-version' .github/workflows/ 2>/dev/null >> /tmp/audit_T16.txt || true
+echo "--- Dockerfiles ---" >> /tmp/audit_T16.txt
+grep -n 'FROM node' $(find . -name "Dockerfile*" -not -path "*/node_modules/*") 2>/dev/null >> /tmp/audit_T16.txt || true
+echo "--- package.json engines ---" >> /tmp/audit_T16.txt
+grep -A2 '"engines"' package.json server/package.json 2>/dev/null >> /tmp/audit_T16.txt || true
+# Compare: if CI Node major != Docker Node major → HIGH finding
+
+# T17: Server-only console statements (NOT frontend/scripts/CLI)
+grep -rn "console\.\(log\|warn\|error\|info\|debug\)" server/src/ --include="*.ts" \
+  | grep -v test | grep -v node_modules | grep -v "\.d\.ts" | grep -v "scripts/" \
+  > /tmp/audit_T17.txt 2>/dev/null || true
+
+# T18: Dev compose literal hardcoded security values (not ${VAR} references)
+grep -n 'JWT_SECRET=\|ENCRYPTION_KEY=\|POSTGRES_PASSWORD=\|REDIS_PASSWORD=' \
+  $(find . -name "docker-compose*" -not -path "*/node_modules/*") 2>/dev/null \
+  | grep -v '\${' | grep -v '#' \
+  > /tmp/audit_T18.txt 2>/dev/null || true
+
+# T19: Auth-critical endpoint validation (specific endpoints must have validateBody)
+for ENDPOINT in "forgot-password" "reset-password" "login" "register" "change-password"; do
+  FILE=$(grep -rl "$ENDPOINT" server/src/routes/ --include="*.ts" 2>/dev/null | head -1)
+  if [ -n "$FILE" ]; then
+    HAS_VALIDATE=$(grep -c "validateBody\|validate(\|schema\|Joi\.\|zod\." "$FILE" 2>/dev/null || echo 0)
+    echo "$ENDPOINT in $FILE (validate_refs: $HAS_VALIDATE)"
+  fi
+done > /tmp/audit_T19.txt 2>/dev/null || true
+
+# T20: Fixable npm vulnerabilities (must be acted on, not just reported)
+(cd server && npm audit --json 2>/dev/null | node -e "
+  const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+  const v=d.vulnerabilities||{};
+  Object.entries(v).forEach(([k,e])=>{
+    if(e.fixAvailable) console.log('FIXABLE:',k,e.severity);
+  });
+" 2>/dev/null || echo "Could not parse") > /tmp/audit_T20.txt
+
+# T21: Build memory requirements (tsc OOM detection)
+grep -rn "max-old-space-size\|NODE_OPTIONS" .github/workflows/ Dockerfile* package.json server/package.json 2>/dev/null \
+  > /tmp/audit_T21.txt || true
+
+# T22: SSO/SCIM security-path error handling (auth flows need security logging)
+grep -n "catch\|res\.status\|logger\.\(error\|warn\)" server/src/routes/sso.ts server/src/routes/scim.ts 2>/dev/null \
+  > /tmp/audit_T22.txt || true
+
+# T23: Cross-audit reconciliation (MANUAL — agent compares previous reports)
+# Agent must read all previous *_PRODUCTION_READINESS_REPORT.md files
+# Build union of all findings, verify each against current code
+
+# T24: Rate limit mount gap enumeration (specific routes missing limiters)
+grep -n "app\.use.*'/api/" server/src/index.ts server/src/app.ts 2>/dev/null | while read LINE; do
+  HAS_LIMITER=$(echo "$LINE" | grep -c "Limiter\|limiter\|rateLimit" || echo 0)
+  [ "$HAS_LIMITER" -eq 0 ] && echo "NO_LIMITER: $LINE"
+done > /tmp/audit_T24.txt 2>/dev/null || true
+
+# T25: ReDoS wrapper effectiveness (does the safe function actually prevent ReDoS?)
+SAFE_REGEX_FILE=$(grep -rl "safeRegexTest" server/src/ --include="*.ts" 2>/dev/null | head -1)
+if [ -n "$SAFE_REGEX_FILE" ]; then
+  grep -c "re2\|RE2\|timeout\|setTimeout" "$SAFE_REGEX_FILE" || echo "0 — NO re2/timeout"
+fi > /tmp/audit_T25.txt 2>/dev/null || true
+```
+
+**Context verification:**
+- **T16 (Node version):** CI major version != Docker major version = HIGH finding. `engines` field missing = MEDIUM.
+- **T17 (Server console):** `console.log` in server production code (not scripts/CLI) = LOW finding per instance. Replace with `logger.*`.
+- **T18 (Dev compose literals):** Literal `JWT_SECRET=dev-...` in compose env block (not `${VAR:-...}` syntax) = LOW if dev-only profile, MEDIUM if no profile separation.
+- **T19 (Auth validation):** Auth-critical endpoints (login, register, forgot-password, reset-password, change-password) without `validateBody()` = MEDIUM. Higher severity than general validation gaps.
+- **T20 (Fixable vulns):** Each fixable vulnerability that `npm audit fix` can resolve = same severity as npm audit reports. Agent MUST run `npm audit fix` or explain why not.
+- **T21 (Build memory):** If tsc/build OOMs without NODE_OPTIONS, and CI doesn't set it = MEDIUM (CI will crash).
+- **T22 (SSO/SCIM errors):** SSO/SCIM catch blocks without `logger.error()` including IP/session context = MEDIUM. Inline `res.status()` in auth flows bypassing Sentry = HIGH (security-sensitive).
+- **T23 (Cross-audit):** MANUAL gate. Agent must reconcile findings from all available previous reports.
+- **T24 (Rate limit gaps):** Each API mount without rate limiter = LOW. Auth-related mounts without limiter = MEDIUM.
+- **T25 (ReDoS effectiveness):** Safe wrapper using only length guard (no re2/timeout) = wrapper is INSUFFICIENT. All call sites still vulnerable = MEDIUM.
+
+### v13 Additions: Context Enrichment Outputs
+
+These enriched output files are produced by Step 8.5 of the scan-runner (v3.2+). They pre-extract function context for EVERY L7 write operation and F7 HTTP call, enabling the AI agent to classify without navigating raw source files.
+
+#### Enriched Output Files
+
+| File | Source | Records | Content |
+|------|--------|---------|---------|
+| `/tmp/audit_L7_enriched.txt` | `/tmp/audit_L7.txt` | 682 blocks | Function signature, org presence, 21-line context per write op |
+| `/tmp/audit_L7_summary.txt` | L7 enriched | Per-file | Priority classification (MIXED_ORG / ZERO_ORG / ALL_SCOPED) |
+| `/tmp/audit_F7_enriched.txt` | `/tmp/audit_F7.txt` | 97 blocks | URL source, validation presence, call-site context |
+| `/tmp/audit_service_summary.txt` | 89 service files | 89 blocks | All 99,393 lines deep-read; per-file write/HTTP/error/org counts |
+| `/tmp/audit_component_wiring_detail.txt` | 154 components | 154 blocks | API refs, DEFAULT_ constants, state setters, pre-classification |
+
+#### L7 Enriched Block Format
+```
+═══ L7 #NNN ═══ FILE:LINE ═══ HINT: <classification>
+FUNC_SIG: <function signature>
+FUNC_SCOPE: lines N..M
+ORG_IN_SIGNATURE: YES/NO
+ORG_REFS_IN_FUNC: <count>
+ORG_NEAR_WRITE: <count within ±5 lines>
+WRITE_OP: .create( | .update( | .delete( | .upsert(
+PARENT_ID_REFS: <count of non-org entity IDs>
+--- CONTEXT (lines N..M) ---
+>>> <match line highlighted with >>>
+--- END L7 #NNN ---
+```
+
+**L7 HINT taxonomy:**
+- `ORG_SCOPED` — organizationId found within ±5 lines of write → likely safe
+- `ORG_IN_FUNC_NOT_IN_WRITE` — orgId in function but not near this specific write → needs verification
+- `NO_ORG_CHECK` — zero orgId references in function → likely PRODUCTION_GAP
+- `CHILD_ENTITY_NO_ORG` — has parent entity ID but no orgId → parent-child chain check needed
+
+#### F7 Enriched Block Format
+```
+═══ F7 #NN ═══ FILE:LINE ═══ HINT: <classification>
+FUNC_SIG: <function signature>
+CALL_TYPE: axios.get | fetch | got | etc.
+URL_SOURCE: ENV_VAR | HARDCODED_CONSTANT | CONFIG_OBJECT | PARAM_OR_DYNAMIC
+HAS_URL_PARAM: YES/NO
+VALIDATION_IN_FUNC: <count>
+--- CONTEXT ---
+>>> <match line>
+--- END F7 #NN ---
+```
+
+**F7 HINT taxonomy:**
+- `ENV_URL_SAFE` — URL from process.env, no override parameter
+- `CONSTANT_URL_SAFE` — hardcoded https:// URL, no override parameter
+- `CONFIG_URL_LIKELY_SAFE` — URL from config object, no override parameter
+- `VALIDATED` — isUrlSafe/validateBaseUrl present in function
+- `PARAM_URL_NO_VALIDATION` — function accepts URL parameter without validation → PRODUCTION_GAP
+- `DYNAMIC_URL_NO_VALIDATION` — URL from dynamic source without validation → PRODUCTION_GAP
+
+#### Service Summary Block Format
+```
+═══ SERVICE: <filepath> ═══
+LINES: <total>
+FUNCTIONS: <count>
+WRITE_OPS: <count> (scoped: N, unscoped: M)
+OUTBOUND_HTTP: <count>
+BARE_ERRORS: <count>
+EMPTY_CATCHES: <count>
+CONSOLE_LOGS: <count>
+ORG_REFS: <count>
+URL_VALIDATORS: <count>
+ORG_FLAG: MIXED_ORG | ZERO_ORG | ALL_ORG_SCOPED | NO_WRITES
+WRITE_DETAILS:
+  L<line>: [ORG_OK] <match text>
+  L<line>: [NO_ORG] <match text>
+--- END SERVICE ---
+```
+
+#### Completion Gates for Enrichment
+
+| Gate | Requirement |
+|------|-------------|
+| L7 enrichment | `grep -c "^═══ L7 #" /tmp/audit_L7_enriched.txt` == `wc -l < /tmp/audit_L7.txt` |
+| F7 enrichment | `grep -c "^═══ F7 #" /tmp/audit_F7_enriched.txt` == `wc -l < /tmp/audit_F7.txt` |
+| Service summary | `grep -c "^═══ SERVICE:" /tmp/audit_service_summary.txt` == 89 |
+| Component detail | `grep -c "^═══ COMPONENT:" /tmp/audit_component_wiring_detail.txt` == 154 |
 
 ---
 

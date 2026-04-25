@@ -100,6 +100,63 @@ For every endpoint that accepts an ID parameter:
 - [ ] Can user A request user B's resource by changing the ID?
 - [ ] For update/delete: Is ownership verified before modification?
 
+### Exhaustive Multi-Tenant Write Operation Trace (v4 — MANDATORY)
+
+**Do NOT check one function per service and extrapolate. Check EVERY write operation.**
+
+Previous audits found `getVendorById` had org filtering and declared the service "safe." But `createVendorAssessment` and `completeVendorAssessment` in the SAME file had no org check — a cross-tenant write vulnerability.
+
+```bash
+# Find ALL Prisma write operations in service files
+grep -rn "\.create(\|\.update(\|\.delete(\|\.upsert(\|\.updateMany(\|\.deleteMany(" server/src/services/ --include="*.ts" | grep -v node_modules | grep -v test > /tmp/audit_all_writes.txt
+```
+
+For EACH write operation:
+1. Read the full function (not just the grep line)
+2. Check: Does the function verify the entity belongs to the caller's organization BEFORE writing?
+3. For `.create()`: Is there a prior `findFirst` that verifies the parent entity's organizationId?
+4. For `.update()` / `.delete()`: Is organizationId in the `where` clause, either directly or via a relation filter?
+5. **Cross-reference within the same service:** If `getById` has org checks but `create`/`complete`/`update` don't → HIGH confidence this is a bug, not intentional.
+
+### Cross-Entity Consistency Check (v4)
+
+When a single function processes multiple entity types (e.g., search indexing, bulk migration, dashboard aggregation):
+- Verify ALL entity types have the SAME security filters
+- One missing `organizationId` filter among 5 entities = cross-tenant data leak
+- This is a pattern where grep finds the filter on 4 of 5 entities and the auditor stops looking
+
+### Credential Storage Completeness (v4)
+
+Check ALL credential types, not just passwords:
+```bash
+grep -rn "bearerToken\|apiKey\|secretKey\|accessToken\|serviceToken\|webhookSecret\|signingKey" server/src/ --include="*.ts" | grep -v node_modules | grep -v test
+```
+- SCIM bearer tokens, API keys, webhook secrets MUST be hashed before storage
+- If stored in plaintext → MEDIUM finding
+- If compared without constant-time comparison → LOW finding
+
+### Default-Value Security (v4)
+
+For every security config, check the fallback when the env var is UNSET:
+- CORS origins empty → must DENY all (not allow all)
+- JWT secret missing → must THROW at startup (not use a default)
+- Rate limit missing → must use strict default (not unlimited)
+- SSL mode missing → must require SSL (not disable)
+
+```bash
+# Check config defaults
+grep -rn "process\.env\.\w\+ ||\|??\|: \w" server/src/config/ --include="*.ts" | grep -v test
+```
+
+### Dynamic Code Execution Audit (v4)
+
+```bash
+grep -rn "new RegExp(\|eval(\|Function(\|vm\.run\|child_process\.\(exec\|spawn\)" server/src/ --include="*.ts" | grep -v node_modules | grep -v test
+```
+- User-supplied regex without timeout → ReDoS vulnerability (MEDIUM)
+- `eval()` with user input → Code injection (CRITICAL)
+- `child_process.exec` with user input → Command injection (CRITICAL)
+
 ### RLS Policies (Supabase-specific)
 
 ```bash

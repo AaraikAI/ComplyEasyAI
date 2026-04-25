@@ -165,7 +165,14 @@ async function fetchAPI<T>(
       throw new Error(errorMessage);
     }
 
-    return response.json();
+    const json = await response.json();
+
+    // Auto-unwrap the backend's standard envelope { status: 'success', data, meta }
+    if (json && json.status === 'success' && json.data !== undefined) {
+      return json.data;
+    }
+
+    return json;
   } catch (error: any) {
     clearTimeout(timeoutId);
 
@@ -213,11 +220,14 @@ export const api = {
         body: JSON.stringify({ token }),
       });
 
-      if (response.accessToken) {
-        // Tokens are set via httpOnly cookies by the backend; just flag UI
-        setAuthToken(response.accessToken);
+      if (response.twoFactorRequired) {
+        return response;
+      }
 
-        // Map backend user response to frontend User type
+      if (response.user) {
+        // Tokens are set via httpOnly cookies by the backend; flag UI as authenticated
+        setAuthToken('__cookie__');
+
         const user = {
           id: response.user.id,
           name: response.user.name,

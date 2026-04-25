@@ -55,6 +55,50 @@ For each business rule found:
 5. **Thresholds & Limits**
    - [ ] **Thresholds**: Check all limits, quotas, and overflow handling. Verify what happens when limits are exceeded — graceful degradation or crash?
 
+### Algorithm Correctness Verification (v4 — MANDATORY)
+
+**Previous audits confirmed endpoints "exist and return data" but never checked mathematical correctness.**
+
+For every computation/aggregation:
+1. **Averaging:** Is the denominator correct? Per-group counts (correct) vs global count (bug). E.g., a compliance history endpoint averaging 4 metric types — if `count` is shared across all types, each type's average is divided by too large a number.
+2. **Division by zero:** Does the code guard against `/ 0`? Check every `/` and `%` operator in calculation functions.
+3. **Accumulation:** When summing across categories, are accumulators initialized per category or globally?
+
+```bash
+# Find aggregation/averaging logic
+grep -rn "/ count\|/ total\|\.length\|\.reduce\|average\|sum(" server/src/ --include="*.ts" | grep -v node_modules | grep -v test
+```
+
+### Action Implementation Verification (v4 — MANDATORY)
+
+**Previous audits confirmed handlers "run" but not that they "do what they claim."**
+
+For every action handler (workflow steps, CRUD operations, command handlers):
+1. Read the full handler body
+2. Verify it contains an actual side effect (DB write, API call, file operation)
+3. A handler that returns `{ status: 'success', message: 'Tag added' }` without a Prisma call = **no-op handler** → PRODUCTION_GAP
+
+```bash
+# Find action handlers
+grep -rn "case '\|actionType\|handler\[" server/src/ --include="*.ts" | grep -v node_modules | grep -v test
+```
+
+### Error Propagation Completeness (v4)
+
+Routes that catch errors internally and send manual responses bypass:
+- Sentry error tracking
+- Security event logging
+- Consistent error format
+
+```bash
+# Find routes with manual error responses
+grep -rn "res\.status(500)\|catch.*res\.status" server/src/routes/ --include="*.ts" | grep -v test
+# Find services using bare Error instead of AppError
+grep -rn "throw new Error(" server/src/services/ --include="*.ts" | grep -v AppError | grep -v test
+```
+
+Flag manual error responses as MEDIUM. Flag bare `Error` throws as MEDIUM.
+
 ### Common Business Logic Red Flags
 
 ```bash
